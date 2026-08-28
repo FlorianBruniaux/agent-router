@@ -1,0 +1,37 @@
+crates/router-types/tests/contracts.rs
+  s_787e22a0128d74::t_96681b4e083759 1-4,6-56,73
+  s_787e22a0128d74::t_aa18bd2787ab94 5,57-72
+Cargo.toml
+  s_787e22a0128d74::t_96681b4e083759 1-24
+crates/router-types/Cargo.toml
+  s_787e22a0128d74::t_96681b4e083759 1-13
+rust-toolchain.toml
+  s_787e22a0128d74::t_96681b4e083759 1-3
+crates/router-types/src/lib.rs
+  s_787e22a0128d74::t_aa18bd2787ab94 1-12
+crates/router-types/src/decision.rs
+  s_787e22a0128d74::t_aa18bd2787ab94 1-58
+crates/router-types/src/asset.rs
+  s_787e22a0128d74::t_aa18bd2787ab94 1-168
+  s_787e22a0128d74::t_5d44c03efce6b9 169-174
+crates/router-types/src/task.rs
+  s_787e22a0128d74::t_aa18bd2787ab94 1-41
+Cargo.lock
+  s_787e22a0128d74::t_83c88e44928475 1-128
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "69b85866ca2534e9d715068c048845871b90e2d4",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
