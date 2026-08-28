@@ -1,0 +1,33 @@
+crates/router-policy/tests/constraints.rs
+  s_787e22a0128d74::t_c0520df78a7fe8 1-93,119-141,143-234
+  s_787e22a0128d74::t_35f6581884c9a4 94-118
+  s_787e22a0128d74::t_dfff344337fd8d 142
+  s_787e22a0128d74::t_c51f75773ef1b5 235-260
+crates/router-policy/Cargo.toml
+  s_787e22a0128d74::t_c0520df78a7fe8 1-12
+crates/router-policy/src/lib.rs
+  s_787e22a0128d74::t_c0520df78a7fe8 1
+  s_787e22a0128d74::t_26e14aa38d74bc 2-8
+crates/router-policy/src/constraint.rs
+  s_787e22a0128d74::t_26e14aa38d74bc 1-224
+Cargo.toml
+  s_787e22a0128d74::t_c0520df78a7fe8 5
+Cargo.lock
+  s_787e22a0128d74::t_ec412517fc1657 45-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "ac23da1c5dd2b39b9e9a36c56a423a604e2b603a",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
