@@ -2,7 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use router_catalog::Catalog;
 use router_policy::{
-    CapabilityKnowledge, ConstraintEngine, EligibilityContext, Support, is_eligible,
+    CapabilityKnowledge, ConstraintEngine, ConstraintVerdict, EligibilityContext, Support,
+    is_eligible,
 };
 use router_types::{
     Capability, EffortLevel, HarnessId, HostSnapshot, ModelId, ModelSpec, RiskLevel, StageKind,
@@ -48,6 +49,28 @@ fn unsupported_effort_is_excluded() {
 }
 
 #[test]
+fn model_unsupported_effort_is_excluded_even_when_host_announces_it() {
+    let mut context = fixture_context(
+        "gpt-5.6-terra",
+        StageKind::Execute,
+        EffortLevel::Ultra,
+        RiskLevel::Medium,
+    );
+    context.host.supported_efforts.insert(
+        ModelId::parse("gpt-5.6-terra").unwrap(),
+        BTreeSet::from([EffortLevel::Ultra]),
+    );
+
+    let verdicts = ConstraintEngine::default().evaluate(&context);
+
+    assert!(!is_eligible(&verdicts));
+    assert_eq!(
+        evidence_for(&verdicts, "model.effort.unsupported"),
+        "model 'gpt-5.6-terra' does not support effort 'ultra'"
+    );
+}
+
+#[test]
 fn missing_required_capability_is_excluded() {
     let mut context = fixture_context(
         "gpt-5.6-terra",
@@ -67,6 +90,10 @@ fn missing_required_capability_is_excluded() {
             .iter()
             .any(|verdict| verdict.code() == "host.capability.missing")
     );
+    assert_eq!(
+        evidence_for(&verdicts, "host.capability.missing"),
+        "host 'codex-host' is known not to support capability 'vision'"
+    );
 }
 
 #[test]
@@ -85,6 +112,10 @@ fn model_that_cannot_serve_stage_is_excluded() {
         verdicts
             .iter()
             .any(|verdict| verdict.code() == "model.stage.unsupported")
+    );
+    assert_eq!(
+        evidence_for(&verdicts, "model.stage.unsupported"),
+        "model 'gpt-5.6-luna' cannot serve stage 'verify'"
     );
 }
 
@@ -136,7 +167,7 @@ fn engine_preserves_every_verdict_in_fixed_constraint_order() {
 }
 
 #[test]
-fn no_host_models_means_no_model_is_eligible_for_any_catalog_stage() {
+fn empty_host_excludes_every_catalog_model_stage() {
     let catalog = Catalog::from_json(include_bytes!(
         "../../../assets/catalogs/codex-core-v1.json"
     ))
@@ -149,11 +180,7 @@ fn no_host_models_means_no_model_is_eligible_for_any_catalog_stage() {
         capabilities: BTreeSet::new(),
     };
 
-    for model_id in ["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"] {
-        let model = catalog
-            .model(&ModelId::parse(model_id).unwrap())
-            .unwrap()
-            .clone();
+    for (model_id, model) in catalog.models() {
         for stage in &model.stages {
             let effort = *model.efforts.iter().next().unwrap();
             let context = EligibilityContext {
@@ -177,6 +204,18 @@ fn no_host_models_means_no_model_is_eligible_for_any_catalog_stage() {
             );
         }
     }
+}
+
+fn evidence_for<'a>(verdicts: &'a [ConstraintVerdict], code: &str) -> &'a str {
+    verdicts
+        .iter()
+        .find(|verdict| verdict.code() == code)
+        .and_then(|verdict| match verdict {
+            ConstraintVerdict::Excluded { evidence, .. }
+            | ConstraintVerdict::Unknown { evidence, .. } => Some(evidence.as_str()),
+            ConstraintVerdict::Eligible { .. } => None,
+        })
+        .unwrap_or_else(|| panic!("missing non-eligible verdict '{code}'"))
 }
 
 fn fixture_context(

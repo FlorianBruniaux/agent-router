@@ -113,23 +113,36 @@ pub struct EffortSupported;
 
 impl Constraint for EffortSupported {
     fn evaluate(&self, context: &EligibilityContext) -> ConstraintVerdict {
-        let supported = context
+        let host_supports_effort = context
             .host
             .supported_efforts
             .get(&context.model.id)
             .is_some_and(|efforts| efforts.contains(&context.effort));
 
-        if supported {
-            eligible("host.effort.supported")
-        } else {
-            excluded(
+        if !host_supports_effort {
+            return excluded(
                 "host.effort.unsupported",
                 format!(
-                    "host '{}' does not support effort '{:?}' for model '{}'",
-                    context.host.id, context.effort, context.model.id
+                    "host '{}' does not support effort '{}' for model '{}'",
+                    context.host.id,
+                    effort_label(context.effort),
+                    context.model.id
                 ),
-            )
+            );
         }
+
+        if !context.model.efforts.contains(&context.effort) {
+            return excluded(
+                "model.effort.unsupported",
+                format!(
+                    "model '{}' does not support effort '{}'",
+                    context.model.id,
+                    effort_label(context.effort)
+                ),
+            );
+        }
+
+        eligible("host.effort.supported")
     }
 }
 
@@ -143,8 +156,9 @@ impl Constraint for StageSupported {
             excluded(
                 "model.stage.unsupported",
                 format!(
-                    "model '{}' cannot serve stage '{:?}'",
-                    context.model.id, context.stage
+                    "model '{}' cannot serve stage '{}'",
+                    context.model.id,
+                    stage_label(context.stage)
                 ),
             )
         }
@@ -161,8 +175,9 @@ impl Constraint for CapabilitiesSatisfied {
                     return excluded(
                         "host.capability.missing",
                         format!(
-                            "host '{}' is known not to support capability '{:?}'",
-                            context.host.id, capability
+                            "host '{}' is known not to support capability '{}'",
+                            context.host.id,
+                            capability_label(*capability)
                         ),
                     );
                 }
@@ -173,8 +188,9 @@ impl Constraint for CapabilitiesSatisfied {
                     return excluded(
                         "host.capability.missing",
                         format!(
-                            "host '{}' has no supported capability '{:?}'",
-                            context.host.id, capability
+                            "host '{}' has no supported capability '{}'",
+                            context.host.id,
+                            capability_label(*capability)
                         ),
                     );
                 }
@@ -182,8 +198,9 @@ impl Constraint for CapabilitiesSatisfied {
                     return excluded(
                         "model.capability.unsupported",
                         format!(
-                            "model '{}' cannot provide capability '{:?}'",
-                            context.model.id, capability
+                            "model '{}' cannot provide capability '{}'",
+                            context.model.id,
+                            capability_label(*capability)
                         ),
                     );
                 }
@@ -217,8 +234,40 @@ fn unknown_capability(context: &EligibilityContext, capability: Capability) -> C
     ConstraintVerdict::Unknown {
         code,
         evidence: format!(
-            "host '{}' has unknown support for capability '{:?}'",
-            context.host.id, capability
+            "host '{}' has unknown support for capability '{}'",
+            context.host.id,
+            capability_label(capability)
         ),
+    }
+}
+
+fn effort_label(effort: EffortLevel) -> &'static str {
+    match effort {
+        EffortLevel::None => "none",
+        EffortLevel::Minimal => "minimal",
+        EffortLevel::Low => "low",
+        EffortLevel::Medium => "medium",
+        EffortLevel::High => "high",
+        EffortLevel::Xhigh => "xhigh",
+        EffortLevel::Max => "max",
+        EffortLevel::Ultra => "ultra",
+    }
+}
+
+fn stage_label(stage: StageKind) -> &'static str {
+    match stage {
+        StageKind::Plan => "plan",
+        StageKind::Execute => "execute",
+        StageKind::Verify => "verify",
+    }
+}
+
+fn capability_label(capability: Capability) -> &'static str {
+    match capability {
+        Capability::Tools => "tools",
+        Capability::Subagents => "subagents",
+        Capability::Vision => "vision",
+        Capability::Network => "network",
+        Capability::WorkspaceWrite => "workspace_write",
     }
 }

@@ -70,6 +70,22 @@ fn loads_exact_codex_models() {
 }
 
 #[test]
+fn iterates_models_in_deterministic_id_order() {
+    let catalog = Catalog::from_json(include_bytes!(
+        "../../../assets/catalogs/codex-core-v1.json"
+    ))
+    .unwrap();
+
+    assert_eq!(
+        catalog
+            .models()
+            .map(|(model_id, _)| model_id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["gpt-5.6-luna", "gpt-5.6-sol", "gpt-5.6-terra"]
+    );
+}
+
+#[test]
 fn exposes_catalog_version_and_builtin_skill_metadata() {
     let bytes = include_bytes!("../../../assets/catalogs/codex-core-v1.json");
     let catalog = Catalog::from_json(bytes).unwrap();

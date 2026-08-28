@@ -27,6 +27,10 @@ impl Catalog {
         self.models.get(id)
     }
 
+    pub fn models(&self) -> impl Iterator<Item = (&ModelId, &ModelSpec)> {
+        self.models.iter()
+    }
+
     pub fn skill(&self, id: &SkillId) -> Option<&SkillSpec> {
         self.skills.get(id)
     }
