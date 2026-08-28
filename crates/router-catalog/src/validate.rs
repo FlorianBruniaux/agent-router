@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use router_types::{
     Capability, EffortLevel, ModelId, ModelSpec, SkillId, SkillSpec, SkillTrust, StageKind,
@@ -19,9 +19,9 @@ pub(super) struct RawCatalog {
 #[derive(Deserialize)]
 pub(super) struct RawModelSpec {
     id: String,
-    stages: Vec<StageKind>,
-    efforts: Vec<EffortLevel>,
-    capabilities: Vec<Capability>,
+    stages: Vec<String>,
+    efforts: Vec<String>,
+    capabilities: Vec<String>,
     quality_micros: i64,
     cost_micros: i64,
     latency_micros: i64,
@@ -32,8 +32,8 @@ pub(super) struct RawModelSpec {
 pub(super) struct RawSkillSpec {
     id: String,
     description: String,
-    task_kinds: Vec<TaskKind>,
-    required_capabilities: Vec<Capability>,
+    task_kinds: Vec<String>,
+    required_capabilities: Vec<String>,
     trust: String,
 }
 
@@ -99,14 +99,17 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
                 "relative latency must be non-negative",
             ));
         }
+        let stages = parse_stages(raw_model.stages, &path)?;
+        let efforts = parse_efforts(raw_model.efforts, &path)?;
+        let capabilities = parse_model_capabilities(raw_model.capabilities, &path)?;
 
         models.insert(
             id.clone(),
             ModelSpec {
                 id,
-                stages: raw_model.stages.into_iter().collect(),
-                efforts: raw_model.efforts.into_iter().collect(),
-                capabilities: raw_model.capabilities.into_iter().collect(),
+                stages,
+                efforts,
+                capabilities,
                 quality_micros: raw_model.quality_micros,
                 cost_micros: raw_model.cost_micros,
                 latency_micros: raw_model.latency_micros,
@@ -133,14 +136,17 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
             ));
         }
         let trust = parse_skill_trust(&raw_skill.trust, &path)?;
+        let task_kinds = parse_task_kinds(raw_skill.task_kinds, &path)?;
+        let required_capabilities =
+            parse_skill_capabilities(raw_skill.required_capabilities, &path)?;
 
         skills.insert(
             id.clone(),
             SkillSpec {
                 id,
                 description: raw_skill.description,
-                task_kinds: raw_skill.task_kinds.into_iter().collect(),
-                required_capabilities: raw_skill.required_capabilities.into_iter().collect(),
+                task_kinds,
+                required_capabilities,
                 trust,
             },
         );
@@ -165,11 +171,123 @@ fn parse_model_id(value: &str, path: &str) -> Result<ModelId, CatalogError> {
 }
 
 fn parse_skill_trust(value: &str, path: &str) -> Result<SkillTrust, CatalogError> {
-    serde_json::from_value(serde_json::Value::String(value.into())).map_err(|_| {
-        CatalogError::new(
+    match value {
+        "builtin" => Ok(SkillTrust::Builtin),
+        "trusted_local" => Ok(SkillTrust::TrustedLocal),
+        "verified_third_party" => Ok(SkillTrust::VerifiedThirdParty),
+        "untrusted" => Ok(SkillTrust::Untrusted),
+        "blocked" => Ok(SkillTrust::Blocked),
+        _ => Err(CatalogError::new(
             "catalog.skill.invalid_trust",
             format!("{path}.trust"),
             "skill trust must be builtin, trusted_local, verified_third_party, untrusted, or blocked",
-        )
-    })
+        )),
+    }
+}
+
+fn parse_stages(values: Vec<String>, path: &str) -> Result<BTreeSet<StageKind>, CatalogError> {
+    values
+        .into_iter()
+        .enumerate()
+        .map(|(index, value)| match value.as_str() {
+            "plan" => Ok(StageKind::Plan),
+            "execute" => Ok(StageKind::Execute),
+            "verify" => Ok(StageKind::Verify),
+            _ => Err(CatalogError::new(
+                "catalog.model.invalid_stage",
+                format!("{path}.stages[{index}]"),
+                "model stage must be plan, execute, or verify",
+            )),
+        })
+        .collect()
+}
+
+fn parse_efforts(values: Vec<String>, path: &str) -> Result<BTreeSet<EffortLevel>, CatalogError> {
+    values
+        .into_iter()
+        .enumerate()
+        .map(|(index, value)| match value.as_str() {
+            "none" => Ok(EffortLevel::None),
+            "minimal" => Ok(EffortLevel::Minimal),
+            "low" => Ok(EffortLevel::Low),
+            "medium" => Ok(EffortLevel::Medium),
+            "high" => Ok(EffortLevel::High),
+            "xhigh" => Ok(EffortLevel::Xhigh),
+            "max" => Ok(EffortLevel::Max),
+            "ultra" => Ok(EffortLevel::Ultra),
+            _ => Err(CatalogError::new(
+                "catalog.model.invalid_effort",
+                format!("{path}.efforts[{index}]"),
+                "model effort must be none, minimal, low, medium, high, xhigh, max, or ultra",
+            )),
+        })
+        .collect()
+}
+
+fn parse_model_capabilities(
+    values: Vec<String>,
+    path: &str,
+) -> Result<BTreeSet<Capability>, CatalogError> {
+    parse_capabilities(
+        values,
+        path,
+        "capabilities",
+        "catalog.model.invalid_capability",
+    )
+}
+
+fn parse_skill_capabilities(
+    values: Vec<String>,
+    path: &str,
+) -> Result<BTreeSet<Capability>, CatalogError> {
+    parse_capabilities(
+        values,
+        path,
+        "required_capabilities",
+        "catalog.skill.invalid_capability",
+    )
+}
+
+fn parse_capabilities(
+    values: Vec<String>,
+    path: &str,
+    field: &str,
+    code: &str,
+) -> Result<BTreeSet<Capability>, CatalogError> {
+    values
+        .into_iter()
+        .enumerate()
+        .map(|(index, value)| match value.as_str() {
+            "tools" => Ok(Capability::Tools),
+            "subagents" => Ok(Capability::Subagents),
+            "vision" => Ok(Capability::Vision),
+            "network" => Ok(Capability::Network),
+            "workspace_write" => Ok(Capability::WorkspaceWrite),
+            _ => Err(CatalogError::new(
+                code,
+                format!("{path}.{field}[{index}]"),
+                "capability must be tools, subagents, vision, network, or workspace_write",
+            )),
+        })
+        .collect()
+}
+
+fn parse_task_kinds(values: Vec<String>, path: &str) -> Result<BTreeSet<TaskKind>, CatalogError> {
+    values
+        .into_iter()
+        .enumerate()
+        .map(|(index, value)| match value.as_str() {
+            "explore" => Ok(TaskKind::Explore),
+            "implement" => Ok(TaskKind::Implement),
+            "review" => Ok(TaskKind::Review),
+            "architecture" => Ok(TaskKind::Architecture),
+            "security" => Ok(TaskKind::Security),
+            "migration" => Ok(TaskKind::Migration),
+            _ => Err(CatalogError::new(
+                "catalog.skill.invalid_task_kind",
+                format!("{path}.task_kinds[{index}]"),
+                "skill task kind must be explore, implement, review, architecture, security, or migration",
+            )),
+        })
+        .collect()
 }

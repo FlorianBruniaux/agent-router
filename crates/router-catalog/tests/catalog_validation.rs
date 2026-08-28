@@ -1,5 +1,10 @@
+use std::collections::BTreeSet;
+
 use router_catalog::Catalog;
-use router_types::{ModelId, SkillId};
+use router_types::{
+    Capability, EffortLevel, ModelId, ModelSpec, SkillId, SkillSpec, SkillTrust, StageKind,
+    TaskKind,
+};
 
 #[test]
 fn rejects_bare_model_alias_in_catalog() {
@@ -19,20 +24,48 @@ fn rejects_duplicate_model_ids() {
 fn loads_exact_codex_models() {
     let bytes = include_bytes!("../../../assets/catalogs/codex-core-v1.json");
     let catalog = Catalog::from_json(bytes).unwrap();
-    assert!(
-        catalog
-            .model(&ModelId::parse("gpt-5.6-sol").unwrap())
-            .is_some()
+    let sol_id = ModelId::parse("gpt-5.6-sol").unwrap();
+    let terra_id = ModelId::parse("gpt-5.6-terra").unwrap();
+    let luna_id = ModelId::parse("gpt-5.6-luna").unwrap();
+
+    assert_eq!(
+        catalog.model(&sol_id),
+        Some(&ModelSpec {
+            id: sol_id.clone(),
+            stages: BTreeSet::from([StageKind::Plan, StageKind::Execute, StageKind::Verify]),
+            efforts: BTreeSet::from([EffortLevel::High, EffortLevel::Xhigh, EffortLevel::Max]),
+            capabilities: BTreeSet::from([Capability::Tools, Capability::Subagents]),
+            quality_micros: 950_000,
+            cost_micros: 900_000,
+            latency_micros: 900_000,
+            source: "builtin-policy-prior".into(),
+        })
     );
-    assert!(
-        catalog
-            .model(&ModelId::parse("gpt-5.6-terra").unwrap())
-            .is_some()
+    assert_eq!(
+        catalog.model(&terra_id),
+        Some(&ModelSpec {
+            id: terra_id.clone(),
+            stages: BTreeSet::from([StageKind::Execute, StageKind::Verify]),
+            efforts: BTreeSet::from([EffortLevel::Medium, EffortLevel::High, EffortLevel::Xhigh]),
+            capabilities: BTreeSet::from([Capability::Tools, Capability::Subagents]),
+            quality_micros: 820_000,
+            cost_micros: 550_000,
+            latency_micros: 550_000,
+            source: "builtin-policy-prior".into(),
+        })
     );
-    assert!(
-        catalog
-            .model(&ModelId::parse("gpt-5.6-luna").unwrap())
-            .is_some()
+    assert_eq!(
+        catalog.model(&luna_id),
+        Some(&ModelSpec {
+            id: luna_id.clone(),
+            stages: BTreeSet::from([StageKind::Execute]),
+            efforts: BTreeSet::from([EffortLevel::Low, EffortLevel::Medium, EffortLevel::High]),
+            capabilities: BTreeSet::from([Capability::Tools]),
+            quality_micros: 650_000,
+            cost_micros: 200_000,
+            latency_micros: 200_000,
+            source: "builtin-policy-prior".into(),
+        })
     );
 }
 
@@ -42,38 +75,140 @@ fn exposes_catalog_version_and_builtin_skill_metadata() {
     let catalog = Catalog::from_json(bytes).unwrap();
 
     assert_eq!(catalog.version(), "codex-core-v1");
-    assert!(catalog.skill(&SkillId::parse("tdd").unwrap()).is_some());
+    let tdd_id = SkillId::parse("tdd").unwrap();
+    let critique_plan_id = SkillId::parse("critique-plan").unwrap();
+    let security_guardian_id = SkillId::parse("security-guardian").unwrap();
+
+    assert_eq!(
+        catalog.skill(&tdd_id),
+        Some(&SkillSpec {
+            id: tdd_id.clone(),
+            description: "Guides a red-green-refactor implementation cycle.".into(),
+            task_kinds: BTreeSet::from([TaskKind::Implement]),
+            required_capabilities: BTreeSet::from([Capability::Tools]),
+            trust: SkillTrust::Builtin,
+        })
+    );
+    assert_eq!(
+        catalog.skill(&critique_plan_id),
+        Some(&SkillSpec {
+            id: critique_plan_id.clone(),
+            description: "Challenges implementation plans for omissions and unsafe assumptions."
+                .into(),
+            task_kinds: BTreeSet::from([
+                TaskKind::Architecture,
+                TaskKind::Migration,
+                TaskKind::Security,
+            ]),
+            required_capabilities: BTreeSet::new(),
+            trust: SkillTrust::Builtin,
+        })
+    );
+    assert_eq!(
+        catalog.skill(&security_guardian_id),
+        Some(&SkillSpec {
+            id: security_guardian_id.clone(),
+            description: "Reviews changes for security boundaries and unsafe behavior.".into(),
+            task_kinds: BTreeSet::from([TaskKind::Security, TaskKind::Review]),
+            required_capabilities: BTreeSet::from([Capability::Tools]),
+            trust: SkillTrust::Builtin,
+        })
+    );
 }
 
 #[test]
 fn rejects_invalid_catalog_semantics_with_specific_codes() {
-    for (field, value, expected_code) in [
-        ("schema_version", "2", "catalog.schema.unsupported_version"),
-        ("version", "\"\"", "catalog.version.empty"),
-        ("models[0].id", "\"\"", "catalog.model.invalid_id"),
-        ("models[0].stages", "[]", "catalog.model.empty_stages"),
-        ("models[0].efforts", "[]", "catalog.model.empty_efforts"),
+    for (field, value, expected_code, expected_path) in [
+        (
+            "schema_version",
+            "2",
+            "catalog.schema.unsupported_version",
+            "schema_version",
+        ),
+        ("version", "\"\"", "catalog.version.empty", "version"),
+        (
+            "models[0].id",
+            "\"\"",
+            "catalog.model.invalid_id",
+            "models[0].id",
+        ),
+        (
+            "models[0].stages",
+            "[]",
+            "catalog.model.empty_stages",
+            "models[0].stages",
+        ),
+        (
+            "models[0].efforts",
+            "[]",
+            "catalog.model.empty_efforts",
+            "models[0].efforts",
+        ),
         (
             "models[0].quality_micros",
             "1000001",
             "catalog.model.quality_out_of_range",
+            "models[0].quality_micros",
         ),
-        ("models[0].cost_micros", "-1", "catalog.model.negative_cost"),
+        (
+            "models[0].cost_micros",
+            "-1",
+            "catalog.model.negative_cost",
+            "models[0].cost_micros",
+        ),
         (
             "models[0].latency_micros",
             "-1",
             "catalog.model.negative_latency",
+            "models[0].latency_micros",
         ),
         (
             "skills[0].trust",
             "\"unknown\"",
             "catalog.skill.invalid_trust",
+            "skills[0].trust",
         ),
-        ("skills[0].id", "\"\"", "catalog.skill.invalid_id"),
+        (
+            "skills[0].id",
+            "\"\"",
+            "catalog.skill.invalid_id",
+            "skills[0].id",
+        ),
+        (
+            "models[0].stages",
+            "[\"deploy\"]",
+            "catalog.model.invalid_stage",
+            "models[0].stages[0]",
+        ),
+        (
+            "models[0].efforts",
+            "[\"turbo\"]",
+            "catalog.model.invalid_effort",
+            "models[0].efforts[0]",
+        ),
+        (
+            "models[0].capabilities",
+            "[\"teleport\"]",
+            "catalog.model.invalid_capability",
+            "models[0].capabilities[0]",
+        ),
+        (
+            "skills[0].task_kinds",
+            "[\"deploy\"]",
+            "catalog.skill.invalid_task_kind",
+            "skills[0].task_kinds[0]",
+        ),
+        (
+            "skills[0].required_capabilities",
+            "[\"teleport\"]",
+            "catalog.skill.invalid_capability",
+            "skills[0].required_capabilities[0]",
+        ),
     ] {
         let bytes = invalid_catalog(field, value);
         let error = Catalog::from_json(bytes.as_bytes()).unwrap_err();
         assert_eq!(error.code(), expected_code, "field {field}");
+        assert_eq!(error.path, expected_path, "field {field}");
     }
 }
 
@@ -92,11 +227,15 @@ fn invalid_catalog(field: &str, value: &str) -> String {
         | "models[0].efforts"
         | "models[0].quality_micros"
         | "models[0].cost_micros"
-        | "models[0].latency_micros" => {
+        | "models[0].latency_micros"
+        | "models[0].capabilities" => {
             let field = field.rsplit('.').next().unwrap();
             parsed["models"][0][field] = replacement;
         }
-        "skills[0].trust" | "skills[0].id" => {
+        "skills[0].trust"
+        | "skills[0].id"
+        | "skills[0].task_kinds"
+        | "skills[0].required_capabilities" => {
             let field = field.rsplit('.').next().unwrap();
             parsed["skills"][0][field] = replacement;
         }
