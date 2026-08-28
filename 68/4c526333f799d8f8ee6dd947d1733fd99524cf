@@ -1,0 +1,42 @@
+tests/fixtures/catalogs/invalid-alias.json
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1-17
+Cargo.toml
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 4
+tests/fixtures/catalogs/duplicate-model.json
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1-27
+crates/router-catalog/tests/catalog_validation.rs
+  s_787e22a0128d74::t_37b46488bac266 47,65,83-85,89-92,97-108,114
+  s_787e22a0128d74::t_0d86a856cd2aef 2,39
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1,3-38,40-46,48-64,66-82,86-88,93-96,109
+  s_787e22a0128d74::t_64a1a2aa3ad6a5 110-113,115-119
+crates/router-catalog/src/error.rs
+  s_787e22a0128d74::t_37b46488bac266 1-27
+crates/router-catalog/src/lib.rs
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1
+  s_787e22a0128d74::t_37b46488bac266 2-37
+crates/router-catalog/src/validate.rs
+  s_787e22a0128d74::t_37b46488bac266 2-175
+  s_787e22a0128d74::t_0d86a856cd2aef 1
+crates/router-catalog/Cargo.toml
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1-15
+assets/catalogs/codex-core-v1.json
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 1-59
+Cargo.lock
+  s_787e22a0128d74::t_0ba851f9a1be4a 35-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "684c526333f799d8f8ee6dd947d1733fd99524cf",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
