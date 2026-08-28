@@ -7,6 +7,9 @@ license.workspace = true
 
 [dependencies]
 router-types = { path = "../router-types" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
 
 [dev-dependencies]
 router-catalog = { path = "../router-catalog" }

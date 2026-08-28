@@ -48,6 +48,9 @@ version = "0.1.0"
 dependencies = [
  "router-catalog",
  "router-types",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
