@@ -43,6 +43,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-policy"
+version = "0.1.0"
+dependencies = [
+ "router-catalog",
+ "router-types",
+]
+
+[[package]]
 name = "router-types"
 version = "0.1.0"
 dependencies = [
