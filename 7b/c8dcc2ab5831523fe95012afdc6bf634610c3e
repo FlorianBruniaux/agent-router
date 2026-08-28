@@ -1,0 +1,23 @@
+crates/router-catalog/tests/catalog_validation.rs
+  s_787e22a0128d74::t_1e2c7cb22d0ea4 154-156
+  s_787e22a0128d74::t_ccff1fc498a154 1-2,4-7,27-42,44-55,57-68,78-116,121-146,151-153,157,163,169-205,211,230-231,235-238
+crates/router-catalog/src/validate.rs
+  s_787e22a0128d74::t_9532053e6c1ad9 1,22-24,35-36,102-104,110-112,139-141,148-149,174-180,184-288
+  s_787e22a0128d74::t_18b65808843b46 289-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "7bc8dcc2ab5831523fe95012afdc6bf634610c3e",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
