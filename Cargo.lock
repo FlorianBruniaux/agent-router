@@ -33,6 +33,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-catalog"
+version = "0.1.0"
+dependencies = [
+ "router-types",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "router-types"
 version = "0.1.0"
 dependencies = [
