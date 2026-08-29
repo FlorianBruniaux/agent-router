@@ -1,0 +1,48 @@
+tests/fixtures/requests/codex-implementation.json
+  s_787e22a0128d74::t_9283914346b927 1-27
+crates/router-policy/src/lib.rs
+  s_787e22a0128d74::t_0d165ee91451bb 4,6-7,16
+tests/fixtures/requests/codex-security.json
+  s_787e22a0128d74::t_96514509ebcde3 12,15
+  s_787e22a0128d74::t_9283914346b927 1-11,13-14,16-26
+tests/fixtures/requests/no-compatible-plan.json
+  s_787e22a0128d74::t_9283914346b927 1-20
+crates/router-policy/tests/routing.rs
+  s_787e22a0128d74::t_ceb315a26c4dd3 19-24,153-157,192-194,197-199
+  s_787e22a0128d74::t_4bf05d53190ab0 59
+  s_787e22a0128d74::t_171f84d5b29d1d 51-55,102-112,158-169
+  s_787e22a0128d74::t_9283914346b927 1-18,25-50,56-58,60-85,87-101,113-152,170-191,195-196,200-268
+  s_787e22a0128d74::t_96514509ebcde3 86
+crates/router-policy/Cargo.toml
+  s_787e22a0128d74::t_0d165ee91451bb 9-10,14
+crates/router-policy/src/score.rs
+  s_787e22a0128d74::t_0d165ee91451bb 1-3,5-74,76-116,143
+  s_787e22a0128d74::t_4bf05d53190ab0 4,75,117-142
+crates/router-policy/src/route.rs
+  s_787e22a0128d74::t_d71d2f39d2ba71 42-43
+  s_787e22a0128d74::t_0d165ee91451bb 1-41,44-110,112-131
+  s_787e22a0128d74::t_3e3bbba942a6f9 111
+crates/router-types/src/decision.rs
+  s_787e22a0128d74::t_0d165ee91451bb 59-74
+crates/router-policy/src/preset.rs
+  s_787e22a0128d74::t_0d165ee91451bb 2-160,165-238
+  s_787e22a0128d74::t_e1827abee53da2 1,161-164
+Cargo.lock
+  s_787e22a0128d74::t_146da014ef3014 5-64,71-76,115,120,176-186,218-223,230-235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "bb8b0a68b6300ebef03cd16c6ed1ce3eaa96aa8b",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
