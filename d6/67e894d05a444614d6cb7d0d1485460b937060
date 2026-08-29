@@ -1,0 +1,21 @@
+crates/router-policy/tests/retrieval.rs
+  s_787e22a0128d74::t_af3039c0de8f04 24,41,63
+crates/router-policy/src/retrieval.rs
+  s_787e22a0128d74::t_2daff69767c704 50-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "d667e894d05a444614d6cb7d0d1485460b937060",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
