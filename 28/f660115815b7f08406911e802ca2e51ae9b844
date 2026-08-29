@@ -1,0 +1,25 @@
+crates/router-catalog/src/lib.rs
+  s_787e22a0128d74::t_1d19d9098f85fc 12-16
+crates/router-catalog/src/validate.rs
+  s_787e22a0128d74::t_1d19d9098f85fc 9,55-75
+crates/router-catalog/tests/catalog_validation.rs
+  s_787e22a0128d74::t_2691df5b12d7d8 275-337
+docs/reference/json-contracts.md
+  s_787e22a0128d74::t_1d19d9098f85fc 13-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "28f660115815b7f08406911e802ca2e51ae9b844",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
