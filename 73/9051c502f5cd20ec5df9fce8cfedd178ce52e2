@@ -1,0 +1,32 @@
+crates/router-policy/src/score.rs
+  s_787e22a0128d74::t_8ae56909dcd178 9,27,98-120
+  s_787e22a0128d74::t_9d1707e16f910f 220,222,282-286,290-325,339-349
+  s_787e22a0128d74::t_ea8a1b46340e2b 121-122,350-352,374,379
+README.md
+  s_787e22a0128d74::t_58784cc7c4c01b 69-73
+crates/router-policy/src/route.rs
+  s_787e22a0128d74::t_42bc6169b3db76 144
+  s_787e22a0128d74::t_5110d0de594332 9,110
+  s_787e22a0128d74::t_8ae56909dcd178 32-33,109,119,128,135-137,142-143,145-154
+crates/agent-router-cli/tests/cli.rs
+  s_787e22a0128d74::t_a4b0792bc695ad 150-163,310-391
+  s_787e22a0128d74::t_9e984466c25266 149
+docs/reference/json-contracts.md
+  s_787e22a0128d74::t_58784cc7c4c01b 214-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "739051c502f5cd20ec5df9fce8cfedd178ce52e2",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
