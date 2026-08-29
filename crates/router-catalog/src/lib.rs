@@ -9,6 +9,11 @@ use router_types::{ModelId, ModelSpec, SkillId, SkillSpec};
 
 pub use error::CatalogError;
 
+/// Maximum number of model rows accepted by the MVP catalog parser.
+pub const MAX_CATALOG_MODELS: usize = 64;
+/// Maximum number of skill rows accepted by the MVP catalog parser.
+pub const MAX_CATALOG_SKILLS: usize = 256;
+
 #[derive(Debug)]
 pub struct Catalog {
     version: String,

@@ -6,7 +6,7 @@ use router_types::{
 };
 use serde::Deserialize;
 
-use crate::{Catalog, CatalogError};
+use crate::{Catalog, CatalogError, MAX_CATALOG_MODELS, MAX_CATALOG_SKILLS};
 
 #[derive(Deserialize)]
 pub(super) struct RawCatalog {
@@ -50,6 +50,27 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
             "catalog.version.empty",
             "version",
             "catalog version must not be empty",
+        ));
+    }
+    if raw.models.is_empty() {
+        return Err(CatalogError::new(
+            "catalog.models.empty",
+            "models",
+            "catalog must declare at least one model",
+        ));
+    }
+    if raw.models.len() > MAX_CATALOG_MODELS {
+        return Err(CatalogError::new(
+            "catalog.models.too_many",
+            "models",
+            format!("catalog must declare at most {MAX_CATALOG_MODELS} models"),
+        ));
+    }
+    if raw.skills.len() > MAX_CATALOG_SKILLS {
+        return Err(CatalogError::new(
+            "catalog.skills.too_many",
+            "skills",
+            format!("catalog must declare at most {MAX_CATALOG_SKILLS} skills"),
         ));
     }
 

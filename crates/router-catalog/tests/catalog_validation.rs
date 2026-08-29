@@ -272,3 +272,66 @@ fn rejects_duplicate_skill_ids() {
     let error = Catalog::from_json(&bytes).unwrap_err();
     assert_eq!(error.code(), "catalog.skill.duplicate_id");
 }
+
+#[test]
+fn rejects_empty_model_catalogs_with_a_structured_error() {
+    let bytes = generated_catalog(0, 0);
+
+    let error = Catalog::from_json(&bytes).unwrap_err();
+    assert_eq!(error.code(), "catalog.models.empty");
+    assert_eq!(error.path, "models");
+}
+
+#[test]
+fn enforces_model_catalog_cardinality_boundaries() {
+    assert!(Catalog::from_json(&generated_catalog(64, 0)).is_ok());
+
+    let error = Catalog::from_json(&generated_catalog(65, 0)).unwrap_err();
+    assert_eq!(error.code(), "catalog.models.too_many");
+    assert_eq!(error.path, "models");
+}
+
+#[test]
+fn enforces_skill_catalog_cardinality_boundaries() {
+    assert!(Catalog::from_json(&generated_catalog(1, 256)).is_ok());
+
+    let error = Catalog::from_json(&generated_catalog(1, 257)).unwrap_err();
+    assert_eq!(error.code(), "catalog.skills.too_many");
+    assert_eq!(error.path, "skills");
+}
+
+fn generated_catalog(model_count: usize, skill_count: usize) -> Vec<u8> {
+    let models = (0..model_count)
+        .map(|index| {
+            serde_json::json!({
+                "id": format!("model-{index}"),
+                "stages": ["execute"],
+                "efforts": ["low"],
+                "capabilities": ["tools"],
+                "quality_micros": 1,
+                "cost_micros": 0,
+                "latency_micros": 0,
+                "source": "test-policy-prior"
+            })
+        })
+        .collect::<Vec<_>>();
+    let skills = (0..skill_count)
+        .map(|index| {
+            serde_json::json!({
+                "id": format!("skill-{index}"),
+                "description": "Generated boundary-test skill.",
+                "task_kinds": ["implement"],
+                "required_capabilities": [],
+                "trust": "builtin"
+            })
+        })
+        .collect::<Vec<_>>();
+
+    serde_json::to_vec(&serde_json::json!({
+        "schema_version": 1,
+        "version": "generated-boundary-test-v1",
+        "models": models,
+        "skills": skills
+    }))
+    .unwrap()
+}

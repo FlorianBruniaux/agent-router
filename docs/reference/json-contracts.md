@@ -10,6 +10,11 @@ capabilities, not actual model execution.
 Catalog files use a numeric `schema_version` and exact model identifiers. The
 following is a complete valid catalog with one model and one skill.
 
+The MVP accepts from 1 through 64 model rows (`MAX_CATALOG_MODELS`) and from 0
+through 256 skill rows (`MAX_CATALOG_SKILLS`). An empty `models` list is
+rejected with `catalog.models.empty`; over-limit model and skill lists are
+rejected with `catalog.models.too_many` and `catalog.skills.too_many`.
+
 ```json
 {
   "schema_version": 1,
