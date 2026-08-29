@@ -6,7 +6,9 @@ The project will select and explain a complete execution plan across models, rea
 
 ## Status
 
-Design and implementation planning. No runtime code or global integration is installed yet.
+Dry-run routing only. The binary deterministically selects or rejects a route;
+it does not execute a host, call a model provider, create a worktree, or install
+anything globally.
 
 ## Initial scope
 
@@ -21,13 +23,55 @@ The first vertical slice is deterministic and read-only:
 
 Codex and Claude integration, durable execution, worktrees, embeddings, feedback learning, and policy sidecars remain outside the first slice.
 
+## Quickstart
+
+Build the workspace:
+
+```bash
+cargo build --workspace
+```
+
+Run the full test suite:
+
+```bash
+cargo test --workspace
+```
+
+Route a normalized request against an explicit catalog. The command only emits
+JSON to standard output:
+
+```bash
+cargo run -p agent-router-cli -- route \
+  --request tests/fixtures/requests/codex-implementation.json \
+  --catalog assets/catalogs/codex-core-v1.json \
+  --json
+```
+
+Save that decision and explain it without re-routing or executing anything:
+
+```bash
+cargo run -p agent-router-cli -- route \
+  --request tests/fixtures/requests/codex-implementation.json \
+  --catalog assets/catalogs/codex-core-v1.json \
+  --json > /tmp/agent-router-decision.json
+
+cargo run -p agent-router-cli -- explain \
+  --decision /tmp/agent-router-decision.json
+```
+
+`route` exits `0` for a selected route, `3` for a valid `no_route` decision,
+`2` for invalid command input or catalog data, and `4` for an internal error.
+
 ## Documentation
 
 - `docs/superpowers/specs/2026-08-28-agent-router-core-design.md`
 - `docs/specs/functional-specification.md`
 - `docs/specs/technical-specification.md`
 - `docs/research/repository-analysis.md`
+- `docs/reference/json-contracts.md`
 
 ## Safety boundary
 
-This repository does not modify `~/.config/ai-agents`, `~/.codex`, `~/.claude`, hooks, plugins, or global skills without a separately approved installation workflow.
+This repository has no global installation path. It does not modify
+`~/.config/ai-agents`, `~/.codex`, `~/.claude`, hooks, plugins, or global
+skills without a separately approved installation workflow.
