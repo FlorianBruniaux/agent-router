@@ -1,0 +1,21 @@
+crates/agent-router-cli/tests/cli.rs
+  s_787e22a0128d74::t_52ffa04d526759 42-87
+crates/agent-router-cli/src/main.rs
+  s_787e22a0128d74::t_f4f0274d139a34 9,19-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "add662d8b9622acf32c7301419897bd355d98bdd",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
