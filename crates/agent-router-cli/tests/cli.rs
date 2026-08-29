@@ -40,6 +40,52 @@ fn no_route_request() -> PathBuf {
 }
 
 #[test]
+fn help_is_rendered_by_clap_on_stdout_with_success() {
+    let mut command = command();
+    command
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage: agent-router"))
+        .stdout(predicate::str::contains("route"))
+        .stderr(predicate::str::is_empty());
+}
+
+#[test]
+fn route_help_is_rendered_by_clap_on_stdout_with_success() {
+    let mut command = command();
+    command
+        .args(["route", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Usage: agent-router route"))
+        .stdout(predicate::str::contains("--catalog <CATALOG>"))
+        .stderr(predicate::str::is_empty());
+}
+
+#[test]
+fn version_is_rendered_by_clap_on_stdout_with_success() {
+    let mut command = command();
+    command
+        .arg("--version")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("agent-router 0.1.0"))
+        .stderr(predicate::str::is_empty());
+}
+
+#[test]
+fn invalid_command_remains_an_opaque_syntax_error() {
+    let mut command = command();
+    command
+        .arg("not-a-command")
+        .assert()
+        .code(2)
+        .stdout(predicate::str::is_empty())
+        .stderr("error: cli.invalid\n");
+}
+
+#[test]
 fn route_emits_versioned_json_without_mutating_home() {
     let temp_home = TempDir::new().unwrap();
     let mut command = command();

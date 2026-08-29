@@ -6,7 +6,7 @@ mod render;
 
 use std::{fs, path::Path, process::ExitCode};
 
-use clap::Parser;
+use clap::{Parser, error::ErrorKind};
 use cli::Cli;
 use command::Commands;
 use router_catalog::Catalog;
@@ -16,7 +16,15 @@ use router_types::{DecisionEnvelope, RouteDecision, RouteRequest};
 fn main() -> ExitCode {
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
-        Err(_) => return report_error(CliError::InvalidCommand),
+        Err(error) => match error.kind() {
+            ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
+                return match error.print() {
+                    Ok(()) => ExitCode::SUCCESS,
+                    Err(_) => report_error(CliError::Internal),
+                };
+            }
+            _ => return report_error(CliError::InvalidCommand),
+        },
     };
 
     match run(cli.command) {
