@@ -3,7 +3,7 @@ members = [
     "crates/router-types",
     "crates/router-catalog",
     "crates/router-policy",
-    # "crates/agent-router-cli",
+    "crates/agent-router-cli",
 ]
 resolver = "2"
 
