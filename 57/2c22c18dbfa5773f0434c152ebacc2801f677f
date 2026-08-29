@@ -1,0 +1,39 @@
+tests/fixtures/decisions/codex-implementation.json
+  s_787e22a0128d74::t_d4a937672363c9 1-273
+crates/agent-router-cli/src/render.rs
+  s_787e22a0128d74::t_6ac74d1bc943b1 1-67
+crates/agent-router-cli/tests/cli.rs
+  s_787e22a0128d74::t_6283386060071d 1-100,118-161,163-165
+  s_787e22a0128d74::t_a7ae2a89356d5d 101-117
+  s_787e22a0128d74::t_b6bfc09e87747e 162
+  s_787e22a0128d74::t_553100a42448d9 166-168
+Cargo.toml
+  s_787e22a0128d74::t_6283386060071d 6
+crates/agent-router-cli/src/cli.rs
+  s_787e22a0128d74::t_6ac74d1bc943b1 1-10
+crates/agent-router-cli/Cargo.toml
+  s_787e22a0128d74::t_6283386060071d 1-12,18-22
+  s_787e22a0128d74::t_6ac74d1bc943b1 13-17
+crates/agent-router-cli/src/command.rs
+  s_787e22a0128d74::t_6ac74d1bc943b1 1-19
+crates/agent-router-cli/src/main.rs
+  s_787e22a0128d74::t_6ac74d1bc943b1 1-129
+Cargo.lock
+  s_787e22a0128d74::t_9fd469576b0c83 5-104,114-124,131-176,196-201,212-236,247-263,270-275,288-293,300-356,375-409,442-454,509-514,526-544,577-582,589-612
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "572c22c18dbfa5773f0434c152ebacc2801f677f",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
