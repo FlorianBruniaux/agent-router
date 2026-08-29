@@ -57,7 +57,7 @@ pub(crate) fn rank_plans(
         }
     }
 
-    let mut plans = Vec::new();
+    let mut plans = Vec::with_capacity(4);
     for plan in &stages[0] {
         for execute in &stages[1] {
             for verify in &stages[2] {
@@ -83,32 +83,23 @@ pub(crate) fn rank_plans(
                     });
                     continue;
                 }
-                plans.push(to_ranked_plan([plan, execute, verify], task_kind, risk)?);
+                plans.push(to_ranked_plan([plan, execute, verify], risk)?);
+                plans.sort_by(compare_ranked);
+                if plans.len() > 3 {
+                    plans.truncate(3);
+                }
             }
         }
     }
-    plans.sort_by(compare_ranked);
     Ok(plans)
 }
 
-fn to_ranked_plan(
-    stages: [&StageCandidate; 3],
-    task_kind: TaskKind,
-    risk: RiskLevel,
-) -> Result<RankedPlan, RouteError> {
-    let quality_micros = if task_kind == TaskKind::Architecture {
-        [stages[0], stages[2]]
-            .iter()
-            .map(|stage| i128::from(stage.model.quality_micros))
-            .min()
-            .expect("an architecture plan has plan and verify stages")
-    } else {
-        stages
-            .iter()
-            .map(|stage| i128::from(stage.model.quality_micros))
-            .min()
-            .expect("a plan has three stages")
-    };
+fn to_ranked_plan(stages: [&StageCandidate; 3], risk: RiskLevel) -> Result<RankedPlan, RouteError> {
+    let quality_micros = stages
+        .iter()
+        .map(|stage| i128::from(stage.model.quality_micros))
+        .min()
+        .expect("a plan has three stages");
     let total_cost_micros = checked_sum(
         stages
             .iter()
@@ -197,8 +188,13 @@ fn compare_ranked(left: &RankedPlan, right: &RankedPlan) -> Ordering {
 
 #[cfg(test)]
 mod tests {
-    use super::{RankedPlan, compare_ranked};
-    use router_types::ExecutionPlan;
+    use std::collections::BTreeSet;
+
+    use super::{RankedPlan, compare_ranked, rank_plans, to_ranked_plan};
+    use crate::preset::StageCandidate;
+    use router_types::{
+        EffortLevel, ExecutionPlan, ModelId, ModelSpec, RiskLevel, StageKind, TaskKind,
+    };
 
     #[test]
     fn equal_utility_prefers_lower_cost_before_lexicographic_model_key() {
@@ -206,6 +202,58 @@ mod tests {
         let higher_cost_earlier_id = ranked(200, "a-model");
 
         assert!(compare_ranked(&lower_cost_later_id, &higher_cost_earlier_id).is_lt());
+    }
+
+    #[test]
+    fn streaming_top_three_matches_full_sort_oracle() {
+        let stages = candidate_stages(3);
+        let mut exclusions = vec![];
+
+        let actual = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::Medium,
+            &mut exclusions,
+        )
+        .unwrap();
+        let mut oracle = Vec::new();
+        for plan in &stages[0] {
+            for execute in &stages[1] {
+                for verify in &stages[2] {
+                    oracle
+                        .push(to_ranked_plan([plan, execute, verify], RiskLevel::Medium).unwrap());
+                }
+            }
+        }
+        oracle.sort_by(compare_ranked);
+        oracle.truncate(3);
+
+        assert_eq!(rank_keys(&actual), rank_keys(&oracle));
+    }
+
+    #[test]
+    fn sixty_four_models_retain_only_three_stable_results() {
+        let stages = candidate_stages(64);
+        let mut first_exclusions = vec![];
+        let mut second_exclusions = vec![];
+
+        let first = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::Medium,
+            &mut first_exclusions,
+        )
+        .unwrap();
+        let second = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::Medium,
+            &mut second_exclusions,
+        )
+        .unwrap();
+
+        assert_eq!(first.len(), 3);
+        assert_eq!(rank_keys(&first), rank_keys(&second));
     }
 
     fn ranked(total_cost_micros: i128, model_key: &str) -> RankedPlan {
@@ -218,5 +266,53 @@ mod tests {
             total_cost_micros,
             model_key: model_key.into(),
         }
+    }
+
+    fn candidate_stages(count: usize) -> Vec<Vec<StageCandidate>> {
+        [StageKind::Plan, StageKind::Execute, StageKind::Verify]
+            .into_iter()
+            .map(|kind| {
+                (0..count)
+                    .map(|index| {
+                        let effort = match kind {
+                            StageKind::Execute => EffortLevel::Medium,
+                            StageKind::Plan | StageKind::Verify => EffortLevel::High,
+                        };
+                        StageCandidate {
+                            kind,
+                            model: ModelSpec {
+                                id: ModelId::parse(format!("provider-model-{index:02}")).unwrap(),
+                                stages: BTreeSet::from([
+                                    StageKind::Plan,
+                                    StageKind::Execute,
+                                    StageKind::Verify,
+                                ]),
+                                efforts: BTreeSet::from([EffortLevel::Medium, EffortLevel::High]),
+                                capabilities: BTreeSet::new(),
+                                quality_micros: 1_000_000 - index as i64,
+                                cost_micros: index as i64,
+                                latency_micros: (count - index) as i64,
+                                source: "test-prior".into(),
+                            },
+                            effort,
+                            skills: vec![],
+                        }
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    fn rank_keys(plans: &[RankedPlan]) -> Vec<(i64, i128, String)> {
+        plans
+            .iter()
+            .map(|plan| {
+                (
+                    plan.plan.utility_micros,
+                    plan.total_cost_micros,
+                    plan.model_key.clone(),
+                )
+            })
+            .collect()
     }
 }

@@ -122,6 +122,73 @@ fn malformed_request_returns_code_two_and_keeps_its_body_off_stderr() {
 }
 
 #[test]
+fn invalid_embedded_skill_candidates_return_request_invalid() {
+    let cases = [
+        ("negative", -1, "valid-source", 1),
+        ("above-max", 1_000_001, "valid-source", 1),
+        ("i64-max", i64::MAX, "valid-source", 1),
+        ("empty-source", 500_000, "", 1),
+        ("too-many", 500_000, "valid-source", 257),
+    ];
+
+    for (name, score, source, count) in cases {
+        let temporary = TempDir::new().unwrap();
+        let request = temporary.path().join(format!("{name}.json"));
+        write_request_candidates(&request, score, source, count);
+
+        let mut command = command();
+        command
+            .args(route_args(request, catalog_path()))
+            .assert()
+            .code(2)
+            .stdout(predicate::str::is_empty())
+            .stderr("error: request.invalid\n");
+    }
+}
+
+#[test]
+fn oversized_request_is_rejected_before_json_parsing() {
+    let temporary = TempDir::new().unwrap();
+    let request = temporary.path().join("oversized-request.json");
+    fs::write(&request, vec![b' '; 1024 * 1024 + 1]).unwrap();
+
+    command()
+        .args(route_args(request, catalog_path()))
+        .assert()
+        .code(2)
+        .stdout(predicate::str::is_empty())
+        .stderr("error: request.too_large\n");
+}
+
+#[test]
+fn oversized_catalog_is_rejected_before_json_parsing() {
+    let temporary = TempDir::new().unwrap();
+    let catalog = temporary.path().join("oversized-catalog.json");
+    fs::write(&catalog, vec![b' '; 4 * 1024 * 1024 + 1]).unwrap();
+
+    command()
+        .args(route_args(implementation_request(), catalog))
+        .assert()
+        .code(2)
+        .stdout(predicate::str::is_empty())
+        .stderr("error: catalog.too_large\n");
+}
+
+#[test]
+fn oversized_decision_is_rejected_before_json_parsing() {
+    let temporary = TempDir::new().unwrap();
+    let decision = temporary.path().join("oversized-decision.json");
+    fs::write(&decision, vec![b' '; 8 * 1024 * 1024 + 1]).unwrap();
+
+    command()
+        .args(["explain", "--decision", decision.to_str().unwrap()])
+        .assert()
+        .code(2)
+        .stdout(predicate::str::is_empty())
+        .stderr("error: decision.too_large\n");
+}
+
+#[test]
 fn invalid_catalog_returns_code_two_and_a_single_concise_error_line() {
     let mut command = command();
     command
@@ -211,4 +278,17 @@ fn explain_no_route_prints_each_exclusion_without_the_request_body() {
         .stdout(predicate::str::contains("Evidence:"))
         .stdout(predicate::str::contains("Implement without an available planning model").not())
         .stderr(predicate::str::is_empty());
+}
+
+fn write_request_candidates(path: &std::path::Path, score: i64, source: &str, count: usize) {
+    let mut request: serde_json::Value =
+        serde_json::from_slice(&fs::read(implementation_request()).unwrap()).unwrap();
+    let candidate = serde_json::json!({
+        "skill": "tdd",
+        "source": source,
+        "score_micros": score
+    });
+    request["skill_candidates"] =
+        serde_json::Value::Array((0..count).map(|_| candidate.clone()).collect());
+    fs::write(path, serde_json::to_vec(&request).unwrap()).unwrap();
 }

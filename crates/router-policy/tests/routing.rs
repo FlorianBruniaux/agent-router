@@ -100,7 +100,7 @@ fn high_risk_security_uses_fresh_verifier_with_at_least_execute_quality() {
             .flat_map(|stage| &stage.skills)
             .any(|skill| skill.as_str() == "security-guardian")
     );
-    assert!(
+    assert_eq!(
         decision
             .exclusions()
             .iter()
@@ -108,8 +108,9 @@ fn high_risk_security_uses_fresh_verifier_with_at_least_execute_quality() {
                 exclusion.model.as_str() == "gpt-5.6-luna"
                     && exclusion.code == "model.stage.unsupported"
             })
-            .count()
-            >= 3
+            .count(),
+        2,
+        "one plan and one verify exclusion remain after exact deduplication"
     );
     assert!(decision.exclusions().iter().any(|exclusion| {
         exclusion.model.as_str() == "gpt-5.6-luna"
@@ -160,8 +161,8 @@ fn high_risk_architecture_uses_the_highest_quality_eligible_verifier() {
     assert_stage(
         &plan.stages[1],
         StageKind::Execute,
-        "gpt-5.6-terra",
-        EffortLevel::Medium,
+        "gpt-5.6-sol",
+        EffortLevel::High,
     );
     assert_stage(
         &plan.stages[2],
@@ -174,6 +175,80 @@ fn high_risk_architecture_uses_the_highest_quality_eligible_verifier() {
             && exclusion.model.as_str() == "gpt-5.6-terra"
             && exclusion.code == "verification.architecture.not_max_quality"
     }));
+}
+
+#[test]
+fn architecture_quality_floor_includes_execute_stage() {
+    let catalog = architecture_quality_catalog();
+    let request = architecture_quality_request();
+
+    let decision = Router::stable_v1().route(&request, &catalog).unwrap();
+    let plan = decision.selected_plan().unwrap();
+
+    assert_eq!(plan.stages[1].model.as_str(), "review-executor-z-strong");
+    assert_eq!(plan.utility_micros, 800_000);
+}
+
+#[test]
+fn untrusted_skill_neither_attaches_nor_changes_utility() {
+    let catalog = untrusted_skill_catalog();
+    let request = untrusted_skill_request(true);
+    let baseline = untrusted_skill_request(false);
+
+    let decision = Router::stable_v1().route(&request, &catalog).unwrap();
+    let baseline_decision = Router::stable_v1().route(&baseline, &catalog).unwrap();
+    let plan = decision.selected_plan().unwrap();
+
+    assert!(plan.stages.iter().all(|stage| stage.skills.is_empty()));
+    assert_eq!(
+        plan.utility_micros,
+        baseline_decision.selected_plan().unwrap().utility_micros
+    );
+}
+
+#[test]
+fn negative_embedded_skill_score_is_invalid_request() {
+    assert_invalid_skill_request(
+        invalid_candidate_request(-1, "valid-source", 1),
+        "request.skill_candidate.score_out_of_range",
+        "skill_candidates[0].score_micros",
+    );
+}
+
+#[test]
+fn embedded_skill_score_above_normalized_max_is_invalid_request() {
+    assert_invalid_skill_request(
+        invalid_candidate_request(1_000_001, "valid-source", 1),
+        "request.skill_candidate.score_out_of_range",
+        "skill_candidates[0].score_micros",
+    );
+}
+
+#[test]
+fn embedded_skill_score_i64_max_is_invalid_request() {
+    assert_invalid_skill_request(
+        invalid_candidate_request(i64::MAX, "valid-source", 1),
+        "request.skill_candidate.score_out_of_range",
+        "skill_candidates[0].score_micros",
+    );
+}
+
+#[test]
+fn empty_embedded_skill_source_is_invalid_request() {
+    assert_invalid_skill_request(
+        invalid_candidate_request(500_000, "", 1),
+        "request.skill_candidate.source.empty",
+        "skill_candidates[0].source",
+    );
+}
+
+#[test]
+fn more_than_256_embedded_skill_candidates_is_invalid_request() {
+    assert_invalid_skill_request(
+        invalid_candidate_request(500_000, "valid-source", 257),
+        "request.skill_candidates.too_many",
+        "skill_candidates",
+    );
 }
 
 #[test]
@@ -227,6 +302,19 @@ fn exclusions_are_sorted_by_stage_model_and_code() {
         (pair[0].stage, &pair[0].model, &pair[0].code)
             <= (pair[1].stage, &pair[1].model, &pair[1].code)
     }));
+    assert!(decision.exclusions().windows(2).all(|pair| {
+        (
+            pair[0].stage,
+            &pair[0].model,
+            &pair[0].code,
+            &pair[0].evidence,
+        ) != (
+            pair[1].stage,
+            &pair[1].model,
+            &pair[1].code,
+            &pair[1].evidence,
+        )
+    }));
 }
 
 #[test]
@@ -256,16 +344,13 @@ fn latency_sum_uses_wide_arithmetic_without_panicking() {
 }
 
 #[test]
-fn retrieved_skill_sum_uses_wide_arithmetic_without_panicking() {
+fn retrieved_skill_sum_uses_validated_normalized_scores() {
     let catalog = extreme_catalog(0, 0, &["limit-skill-a", "limit-skill-b"]);
     let request = extreme_request(&["limit-skill-a", "limit-skill-b"]);
 
     let decision = Router::stable_v1().route(&request, &catalog).unwrap();
 
-    assert_eq!(
-        decision.selected_plan().unwrap().utility_micros,
-        922_337_203_686_477_580
-    );
+    assert_eq!(decision.selected_plan().unwrap().utility_micros, 1_100_000);
 }
 
 #[test]
@@ -531,9 +616,139 @@ fn extreme_request(skill_ids: &[&str]) -> RouteRequest {
             .map(|id| SkillCandidate {
                 skill: SkillId::parse(*id).unwrap(),
                 source: "limit-fixture".into(),
-                score_micros: i64::MAX,
+                score_micros: 1_000_000,
             })
             .collect(),
         capability_knowledge: BTreeMap::new(),
     }
+}
+
+fn architecture_quality_catalog() -> Catalog {
+    Catalog::from_json(
+        br#"{
+          "schema_version": 1,
+          "version": "architecture-quality-v1",
+          "models": [
+            {"id":"review-planner","stages":["plan"],"efforts":["high"],"capabilities":["tools"],"quality_micros":900000,"cost_micros":0,"latency_micros":0,"source":"test-prior"},
+            {"id":"review-executor-a-weak","stages":["execute"],"efforts":["medium"],"capabilities":["tools"],"quality_micros":1,"cost_micros":0,"latency_micros":0,"source":"test-prior"},
+            {"id":"review-executor-z-strong","stages":["execute"],"efforts":["medium"],"capabilities":["tools"],"quality_micros":800000,"cost_micros":0,"latency_micros":0,"source":"test-prior"},
+            {"id":"review-verifier","stages":["verify"],"efforts":["high"],"capabilities":["tools"],"quality_micros":900000,"cost_micros":0,"latency_micros":0,"source":"test-prior"}
+          ],
+          "skills": []
+        }"#,
+    )
+    .unwrap()
+}
+
+fn architecture_quality_request() -> RouteRequest {
+    let ids = [
+        "review-planner",
+        "review-executor-a-weak",
+        "review-executor-z-strong",
+        "review-verifier",
+    ]
+    .map(|id| ModelId::parse(id).unwrap());
+    RouteRequest {
+        task: TaskContext {
+            objective: "preserve execution quality in architecture routing".into(),
+            kind: TaskKind::Architecture,
+            risk: RiskLevel::High,
+            required_capabilities: BTreeSet::from([Capability::Tools]),
+            acceptance: vec!["strong executor wins".into()],
+        },
+        host: HostSnapshot {
+            id: "architecture-quality-host".into(),
+            harness: HarnessId::parse("codex").unwrap(),
+            supported_models: ids.iter().cloned().collect(),
+            supported_efforts: BTreeMap::from([
+                (ids[0].clone(), BTreeSet::from([EffortLevel::High])),
+                (ids[1].clone(), BTreeSet::from([EffortLevel::Medium])),
+                (ids[2].clone(), BTreeSet::from([EffortLevel::Medium])),
+                (ids[3].clone(), BTreeSet::from([EffortLevel::High])),
+            ]),
+            capabilities: BTreeSet::from([Capability::Tools]),
+        },
+        skill_candidates: vec![],
+        capability_knowledge: BTreeMap::new(),
+    }
+}
+
+fn untrusted_skill_catalog() -> Catalog {
+    Catalog::from_json(
+        br#"{
+          "schema_version": 1,
+          "version": "untrusted-skill-v1",
+          "models": [{
+            "id":"provider-trust-model",
+            "stages":["plan","execute","verify"],
+            "efforts":["medium","high"],
+            "capabilities":["tools"],
+            "quality_micros":800000,
+            "cost_micros":0,
+            "latency_micros":0,
+            "source":"test-prior"
+          }],
+          "skills": [{
+            "id":"untrusted-helper",
+            "description":"must not influence routing",
+            "task_kinds":["implement"],
+            "required_capabilities":["tools"],
+            "trust":"untrusted"
+          }]
+        }"#,
+    )
+    .unwrap()
+}
+
+fn untrusted_skill_request(with_candidate: bool) -> RouteRequest {
+    let model = ModelId::parse("provider-trust-model").unwrap();
+    RouteRequest {
+        task: TaskContext {
+            objective: "enforce skill trust".into(),
+            kind: TaskKind::Implement,
+            risk: RiskLevel::Medium,
+            required_capabilities: BTreeSet::from([Capability::Tools]),
+            acceptance: vec!["untrusted has no effect".into()],
+        },
+        host: HostSnapshot {
+            id: "trust-host".into(),
+            harness: HarnessId::parse("codex").unwrap(),
+            supported_models: BTreeSet::from([model.clone()]),
+            supported_efforts: BTreeMap::from([(
+                model,
+                BTreeSet::from([EffortLevel::Medium, EffortLevel::High]),
+            )]),
+            capabilities: BTreeSet::from([Capability::Tools]),
+        },
+        skill_candidates: with_candidate
+            .then(|| SkillCandidate {
+                skill: SkillId::parse("untrusted-helper").unwrap(),
+                source: "trust-fixture".into(),
+                score_micros: 1_000_000,
+            })
+            .into_iter()
+            .collect(),
+        capability_knowledge: BTreeMap::new(),
+    }
+}
+
+fn invalid_candidate_request(score_micros: i64, source: &str, count: usize) -> RouteRequest {
+    let mut request = load_request("codex-implementation.json");
+    request.skill_candidates = (0..count)
+        .map(|_| SkillCandidate {
+            skill: SkillId::parse("tdd").unwrap(),
+            source: source.into(),
+            score_micros,
+        })
+        .collect();
+    request
+}
+
+fn assert_invalid_skill_request(request: RouteRequest, code: &str, path: &str) {
+    let error = Router::stable_v1()
+        .route(&request, &load_builtin_catalog())
+        .unwrap_err();
+    assert!(error.is_invalid_request());
+    assert_eq!(error.code(), code);
+    assert_eq!(error.path(), Some(path));
 }

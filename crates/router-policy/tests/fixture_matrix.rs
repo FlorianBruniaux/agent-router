@@ -207,7 +207,7 @@ fn fixture_cases() -> [FixtureCase; 12] {
         FixtureCase {
             filename: "codex-architecture.json",
             selected: true,
-            stage_models: Some(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-sol"]),
+            stage_models: Some(["gpt-5.6-sol", "gpt-5.6-sol", "gpt-5.6-sol"]),
             stage_efforts: None,
             skill: Some("critique-plan"),
             utility_micros: None,

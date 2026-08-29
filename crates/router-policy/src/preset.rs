@@ -176,8 +176,10 @@ fn compatible_skills(
         let Some(skill) = catalog.skill(&candidate.skill) else {
             continue;
         };
-        if skill.trust == SkillTrust::Blocked
-            || !skill.task_kinds.contains(&request.task.kind)
+        if !matches!(
+            skill.trust,
+            SkillTrust::Builtin | SkillTrust::TrustedLocal | SkillTrust::VerifiedThirdParty
+        ) || !skill.task_kinds.contains(&request.task.kind)
             || !skill.required_capabilities.iter().all(|capability| {
                 request_support(request, *capability) == Support::Supported
                     && model.capabilities.contains(capability)

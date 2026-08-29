@@ -5,6 +5,8 @@ use thiserror::Error;
 
 use crate::{preset::build_candidates, score::rank_plans};
 
+pub const MAX_ROUTE_SKILL_CANDIDATES: usize = 256;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PolicyConfig {
     schema_version: String,
@@ -39,6 +41,7 @@ impl Router {
         request: &RouteRequest,
         catalog: &Catalog,
     ) -> Result<DecisionEnvelope, RouteError> {
+        validate_request(request)?;
         let canonical_request =
             serde_json::to_vec(request).map_err(RouteError::SerializeRequest)?;
         let decision_id = decision_id(
@@ -90,6 +93,12 @@ impl Router {
 
 #[derive(Debug, Error)]
 pub enum RouteError {
+    #[error("{code} at {path}: {message}")]
+    InvalidRequest {
+        code: &'static str,
+        path: String,
+        message: &'static str,
+    },
     #[error("route.request.serialize: {0}")]
     SerializeRequest(serde_json::Error),
     #[error("route.arithmetic.out_of_range: {component} is outside the supported range")]
@@ -99,6 +108,7 @@ pub enum RouteError {
 impl RouteError {
     pub fn code(&self) -> &'static str {
         match self {
+            Self::InvalidRequest { code, .. } => code,
             Self::SerializeRequest(_) => "route.request.serialize",
             Self::ArithmeticOutOfRange { .. } => "route.arithmetic.out_of_range",
         }
@@ -107,9 +117,48 @@ impl RouteError {
     pub fn component(&self) -> Option<&'static str> {
         match self {
             Self::SerializeRequest(_) => None,
+            Self::InvalidRequest { .. } => None,
             Self::ArithmeticOutOfRange { component } => Some(component),
         }
     }
+
+    pub fn path(&self) -> Option<&str> {
+        match self {
+            Self::InvalidRequest { path, .. } => Some(path),
+            Self::SerializeRequest(_) | Self::ArithmeticOutOfRange { .. } => None,
+        }
+    }
+
+    pub fn is_invalid_request(&self) -> bool {
+        matches!(self, Self::InvalidRequest { .. })
+    }
+}
+
+fn validate_request(request: &RouteRequest) -> Result<(), RouteError> {
+    if request.skill_candidates.len() > MAX_ROUTE_SKILL_CANDIDATES {
+        return Err(RouteError::InvalidRequest {
+            code: "request.skill_candidates.too_many",
+            path: "skill_candidates".into(),
+            message: "request must contain at most 256 skill candidates",
+        });
+    }
+    for (index, candidate) in request.skill_candidates.iter().enumerate() {
+        if candidate.source.is_empty() {
+            return Err(RouteError::InvalidRequest {
+                code: "request.skill_candidate.source.empty",
+                path: format!("skill_candidates[{index}].source"),
+                message: "skill candidate source must not be empty",
+            });
+        }
+        if !(0..=1_000_000).contains(&candidate.score_micros) {
+            return Err(RouteError::InvalidRequest {
+                code: "request.skill_candidate.score_out_of_range",
+                path: format!("skill_candidates[{index}].score_micros"),
+                message: "skill candidate score must be between 0 and 1_000_000",
+            });
+        }
+    }
+    Ok(())
 }
 
 fn decision_id(
@@ -131,13 +180,19 @@ fn decision_id(
     hex::encode(hasher.finalize())
 }
 
-fn normalize_exclusions(exclusions: &mut [Exclusion]) {
+fn normalize_exclusions(exclusions: &mut Vec<Exclusion>) {
     exclusions.sort_by(|left, right| {
         left.stage
             .cmp(&right.stage)
             .then_with(|| left.model.cmp(&right.model))
             .then_with(|| left.code.cmp(&right.code))
             .then_with(|| left.evidence.cmp(&right.evidence))
+    });
+    exclusions.dedup_by(|left, right| {
+        left.stage == right.stage
+            && left.model == right.model
+            && left.code == right.code
+            && left.evidence == right.evidence
     });
 }
 

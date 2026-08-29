@@ -124,36 +124,6 @@
         },
         {
           "stage": "plan",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
           "model": "gpt-5.6-terra",
           "code": "host.effort.unsupported",
           "evidence": "host 'codex-local' does not support effort 'low' for model 'gpt-5.6-terra'"
@@ -169,36 +139,6 @@
           "model": "gpt-5.6-terra",
           "code": "host.effort.unsupported",
           "evidence": "host 'codex-local' does not support effort 'ultra' for model 'gpt-5.6-terra'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-terra",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-terra",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-terra",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-terra",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
-        },
-        {
-          "stage": "plan",
-          "model": "gpt-5.6-terra",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
         },
         {
           "stage": "plan",
@@ -229,36 +169,6 @@
           "model": "gpt-5.6-luna",
           "code": "host.effort.unsupported",
           "evidence": "host 'codex-local' does not support effort 'xhigh' for model 'gpt-5.6-luna'"
-        },
-        {
-          "stage": "verify",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
-        },
-        {
-          "stage": "verify",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
-        },
-        {
-          "stage": "verify",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
-        },
-        {
-          "stage": "verify",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
-        },
-        {
-          "stage": "verify",
-          "model": "gpt-5.6-luna",
-          "code": "model.stage.unsupported",
-          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
         },
         {
           "stage": "verify",

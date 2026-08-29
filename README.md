@@ -62,6 +62,19 @@ cargo run -p agent-router-cli -- explain \
 `route` exits `0` for a selected route, `3` for a valid `no_route` decision,
 `2` for invalid command input or catalog data, and `4` for an internal error.
 
+## Resource and trust boundaries
+
+Catalogs contain at most 64 models and 256 skills. Routing evaluates the
+bounded 64^3 stage combination space without materializing it, retains only the
+best three routes, and deduplicates identical exclusions. The CLI reads at most
+1 MiB for requests, 4 MiB for catalogs, and 8 MiB for decisions before
+rejecting an oversized file.
+
+Route requests contain at most 256 skill candidates with non-empty sources and
+scores from 0 through 1,000,000. Only built-in, trusted-local, and verified
+third-party skills can attach or improve utility. Untrusted and blocked skills
+have no routing effect.
+
 ## Documentation
 
 - `docs/superpowers/specs/2026-08-28-agent-router-core-design.md`

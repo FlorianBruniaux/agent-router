@@ -89,11 +89,21 @@ Unknown required capability evidence is recorded in `missing_evidence`; it
 excludes high-risk and critical candidates with
 `host.capability.unknown_high_risk`.
 
+Embedded `skill_candidates` are validated again at the authoritative router
+boundary, regardless of their adapter. A request accepts at most 256 rows.
+Every source must be non-empty and every integer score must be from 0 through
+1,000,000. Duplicate valid skill IDs are allowed and contribute only their
+highest score once.
+
 ## BM25 candidate document
 
 The retrieval adapter accepts a separate versioned candidate document. Its
 skill IDs must be unique, scores are integers from 0 through 1,000,000,
 and the router attaches only catalog-compatible skills.
+
+Only `builtin`, `trusted_local`, and `verified_third_party` catalog skills may
+attach to a plan or improve utility. `untrusted` and `blocked` skills are
+ignored by routing, even when retrieval returns them.
 
 ```json
 {
@@ -193,11 +203,24 @@ At most two alternatives follow the selected plan. Skills are de-duplicated by
 skill ID and preserve the highest candidate score before one binding is emitted
 per compatible stage.
 
+The validated catalog limit bounds the complete candidate product at 64^3, or
+262,144, plan-execute-verify combinations. The router scores that complete
+bounded product through a streaming accumulator that holds at most four routes
+temporarily and retains exactly the best three: one selected plan and at most
+two alternatives. It never materializes the full Cartesian product. Identical
+exclusions are deduplicated after sorting by stage, model ID, code, and
+evidence.
+
+The CLI reads inputs through bounded streams before parsing: route requests are
+limited to 1 MiB, catalogs to 4 MiB, and stored decisions to 8 MiB. Oversized
+files fail with `request.too_large`, `catalog.too_large`, or
+`decision.too_large`.
+
 ## CLI exit codes
 
 | Code | Meaning |
 | --- | --- |
 | `0` | A compatible route was selected. |
-| `2` | Command syntax, input JSON, or catalog validation failed. |
+| `2` | Command syntax, file limits, request semantics, input JSON, or catalog validation failed. |
 | `3` | The request was valid but produced `no_route`. |
 | `4` | An internal serialization or invariant failure occurred. |
