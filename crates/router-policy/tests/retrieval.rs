@@ -21,6 +21,7 @@ fn rejects_unknown_candidate_schema() {
     let error = parse_candidate_document(bytes).unwrap_err();
 
     assert_eq!(error.code(), "retrieval.schema.unsupported");
+    assert_eq!(error.path(), "schema_version");
 }
 
 #[test]
@@ -37,6 +38,7 @@ fn rejects_duplicate_skill_ids() {
     let error = parse_candidate_document(bytes).unwrap_err();
 
     assert_eq!(error.code(), "retrieval.candidate.duplicate_skill");
+    assert_eq!(error.path(), "candidates[1].skill");
 }
 
 #[test]
@@ -58,6 +60,7 @@ fn rejects_scores_outside_the_normalized_range() {
         let error = parse_candidate_document(bytes.as_bytes()).unwrap_err();
 
         assert_eq!(error.code(), "retrieval.candidate.score_out_of_range");
+        assert_eq!(error.path(), "candidates[0].score_micros");
     }
 }
 

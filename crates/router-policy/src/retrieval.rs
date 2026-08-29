@@ -47,6 +47,10 @@ impl RetrievalError {
     pub fn code(&self) -> &str {
         self.code
     }
+
+    pub fn path(&self) -> &str {
+        &self.path
+    }
 }
 
 #[derive(Deserialize)]
