@@ -25,24 +25,32 @@ pub(crate) fn rank_plans(
         return Ok(Vec::new());
     }
 
-    let security_verify_quality = if task_kind == TaskKind::Security {
+    let verifier_quality_policy = match task_kind {
+        TaskKind::Security => Some(("security", "verification.security.not_max_quality")),
+        TaskKind::Architecture => {
+            Some(("architecture", "verification.architecture.not_max_quality"))
+        }
+        _ => None,
+    };
+    let required_verify_quality = verifier_quality_policy.map(|_| {
         stages[2]
             .iter()
             .map(|candidate| candidate.model.quality_micros)
             .max()
-    } else {
-        None
-    };
-    if let Some(required_quality) = security_verify_quality {
+            .expect("the verify stage has candidates")
+    });
+    if let (Some((task_label, exclusion_code)), Some(required_quality)) =
+        (verifier_quality_policy, required_verify_quality)
+    {
         for verify in &stages[2] {
             if verify.model.quality_micros < required_quality {
                 exclusions.push(Exclusion {
                     stage: StageKind::Verify,
                     model: verify.model.id.clone(),
-                    code: "verification.security.not_max_quality".into(),
+                    code: exclusion_code.into(),
                     evidence: format!(
-                        "security verify model '{}' quality {} is below eligible maximum {}",
-                        verify.model.id, verify.model.quality_micros, required_quality
+                        "{task_label} verify model '{}' quality {} is below eligible maximum {}",
+                        verify.model.id, verify.model.quality_micros, required_quality,
                     ),
                 });
             }
@@ -53,7 +61,7 @@ pub(crate) fn rank_plans(
     for plan in &stages[0] {
         for execute in &stages[1] {
             for verify in &stages[2] {
-                if security_verify_quality
+                if required_verify_quality
                     .is_some_and(|quality| verify.model.quality_micros < quality)
                 {
                     continue;
@@ -75,7 +83,7 @@ pub(crate) fn rank_plans(
                     });
                     continue;
                 }
-                plans.push(to_ranked_plan([plan, execute, verify], risk)?);
+                plans.push(to_ranked_plan([plan, execute, verify], task_kind, risk)?);
             }
         }
     }
@@ -83,12 +91,24 @@ pub(crate) fn rank_plans(
     Ok(plans)
 }
 
-fn to_ranked_plan(stages: [&StageCandidate; 3], risk: RiskLevel) -> Result<RankedPlan, RouteError> {
-    let quality_micros = stages
-        .iter()
-        .map(|stage| i128::from(stage.model.quality_micros))
-        .min()
-        .expect("a plan has three stages");
+fn to_ranked_plan(
+    stages: [&StageCandidate; 3],
+    task_kind: TaskKind,
+    risk: RiskLevel,
+) -> Result<RankedPlan, RouteError> {
+    let quality_micros = if task_kind == TaskKind::Architecture {
+        [stages[0], stages[2]]
+            .iter()
+            .map(|stage| i128::from(stage.model.quality_micros))
+            .min()
+            .expect("an architecture plan has plan and verify stages")
+    } else {
+        stages
+            .iter()
+            .map(|stage| i128::from(stage.model.quality_micros))
+            .min()
+            .expect("a plan has three stages")
+    };
     let total_cost_micros = checked_sum(
         stages
             .iter()

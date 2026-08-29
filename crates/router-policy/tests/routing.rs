@@ -141,6 +141,42 @@ fn security_uses_highest_quality_eligible_verifier_when_sol_is_unavailable() {
 }
 
 #[test]
+fn high_risk_architecture_uses_the_highest_quality_eligible_verifier() {
+    let catalog = load_builtin_catalog();
+    let request: RouteRequest = serde_json::from_slice(include_bytes!(
+        "../../../tests/fixtures/requests/codex-architecture.json"
+    ))
+    .unwrap();
+
+    let decision = Router::stable_v1().route(&request, &catalog).unwrap();
+    let plan = decision.selected_plan().unwrap();
+
+    assert_stage(
+        &plan.stages[0],
+        StageKind::Plan,
+        "gpt-5.6-sol",
+        EffortLevel::High,
+    );
+    assert_stage(
+        &plan.stages[1],
+        StageKind::Execute,
+        "gpt-5.6-terra",
+        EffortLevel::Medium,
+    );
+    assert_stage(
+        &plan.stages[2],
+        StageKind::Verify,
+        "gpt-5.6-sol",
+        EffortLevel::High,
+    );
+    assert!(decision.exclusions().iter().any(|exclusion| {
+        exclusion.stage == StageKind::Verify
+            && exclusion.model.as_str() == "gpt-5.6-terra"
+            && exclusion.code == "verification.architecture.not_max_quality"
+    }));
+}
+
+#[test]
 fn missing_plan_stage_returns_no_route_instead_of_a_partial_plan() {
     let catalog = load_builtin_catalog();
     let request = load_request("no-compatible-plan.json");

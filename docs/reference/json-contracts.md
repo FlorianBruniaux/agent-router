@@ -87,7 +87,7 @@ excludes high-risk and critical candidates with
 ## BM25 candidate document
 
 The retrieval adapter accepts a separate versioned candidate document. Its
-candidate IDs must be unique, scores are integers from 0 through 1,000,000,
+skill IDs must be unique, scores are integers from 0 through 1,000,000,
 and the router attaches only catalog-compatible skills.
 
 ```json
