@@ -1,0 +1,43 @@
+tests/fixtures/requests/codex-exploration.json
+  s_787e22a0128d74::t_9f8b2c0934fc19 1-20
+tests/fixtures/requests/claude-unknown-host.json
+  s_787e22a0128d74::t_8acaa1587a49d7 1-22
+tests/fixtures/requests/missing-tools.json
+  s_787e22a0128d74::t_123519af3a9657 1-23
+tests/fixtures/requests/unsupported-effort.json
+  s_787e22a0128d74::t_ee7c19fafec108 1-19
+docs/reference/json-contracts.md
+  s_787e22a0128d74::t_3d65e50ce11250 1-198
+tests/fixtures/requests/codex-architecture.json
+  s_787e22a0128d74::t_47df5bca06bd15 1-26
+tests/fixtures/requests/empty-skill-candidates.json
+  s_787e22a0128d74::t_33816050bde656 1-21
+tests/fixtures/requests/explicit-skill.json
+  s_787e22a0128d74::t_12c4db2adc62cc 1-32
+tests/fixtures/requests/codex-migration.json
+  s_787e22a0128d74::t_499d2b1ae41dd2 1-30
+crates/router-policy/tests/fixture_matrix.rs
+  s_787e22a0128d74::t_dfc6dfdc5b3aad 152
+  s_787e22a0128d74::t_9b41f65b0a2ed6 1-151,153-281
+  s_787e22a0128d74::t_6b3e4456bb930b 282-297
+tests/fixtures/requests/high-risk-unknown-capability.json
+  s_787e22a0128d74::t_7d2226dd3273c5 1-22
+README.md
+  s_787e22a0128d74::t_3d65e50ce11250 9-11,26-64,71,75-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "a538f9ebcdf6fcee2013925ab13e0bc3b62df2cd",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-terra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
