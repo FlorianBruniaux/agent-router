@@ -1,0 +1,51 @@
+crates/router-types/tests/contracts.rs
+  s_787e22a0128d74::t_9bf78b9faeb942 134-135
+  s_787e22a0128d74::t_456d7ca1151022 4-6,75-133
+crates/router-types/src/task.rs
+  s_787e22a0128d74::t_68a370de007520 1,27-34,49-50
+crates/router-policy/src/route.rs
+  s_787e22a0128d74::t_a4c3219772fa94 56,95-112
+  s_787e22a0128d74::t_beab31d20033e2 51-55
+crates/router-policy/src/preset.rs
+  s_787e22a0128d74::t_68a370de007520 5-6,40,55,139,144-168,182
+crates/router-policy/src/score.rs
+  s_787e22a0128d74::t_beab31d20033e2 4-5,20,28-49,56-60
+  s_787e22a0128d74::t_a4c3219772fa94 9,14,23,25-26,78,83,86,89,92-97,100-101,111-125,148,156-166
+  s_787e22a0128d74::t_c233da89b19cd9 27,191
+crates/router-types/src/lib.rs
+  s_787e22a0128d74::t_68a370de007520 12
+crates/router-policy/tests/routing.rs
+  s_787e22a0128d74::t_c1181b740ea847 231
+  s_787e22a0128d74::t_de7bd2dff509b8 8,122,196-230,232-243,267-268,436-437,440-500
+  s_787e22a0128d74::t_456d7ca1151022 6-7,124,244-266
+  s_787e22a0128d74::t_dd606ace6a450e 118-121,137-140
+  s_787e22a0128d74::t_1514963b65f5ba 125-136,365-434
+  s_787e22a0128d74::t_68a370de007520 364,439,501
+  s_d812a5cba40e21::t_637f8b3694974a 123,435,438
+tests/fixtures/requests/codex-security.json
+  s_787e22a0128d74::t_1514963b65f5ba 12,15-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "67d02f0c9a2e5596889d33a6cf479ec3986ef063",
+  "prompts": {},
+  "sessions": {
+    "s_787e22a0128d74": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a048f1-6c01-74b0-957c-5613dbb569d7",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_d812a5cba40e21": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a033c4-cc98-74d2-adf5-63f175b8463b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
