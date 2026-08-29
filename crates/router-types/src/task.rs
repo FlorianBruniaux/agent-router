@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -24,6 +24,14 @@ pub enum TaskKind {
     Migration,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CapabilitySupport {
+    Supported,
+    Unsupported,
+    Unknown,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct TaskContext {
     pub objective: String,
@@ -38,4 +46,6 @@ pub struct RouteRequest {
     pub task: TaskContext,
     pub host: HostSnapshot,
     pub skill_candidates: Vec<SkillCandidate>,
+    #[serde(default)]
+    pub capability_knowledge: BTreeMap<Capability, CapabilitySupport>,
 }

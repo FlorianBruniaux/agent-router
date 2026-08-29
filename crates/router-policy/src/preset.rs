@@ -2,7 +2,8 @@ use std::collections::BTreeMap;
 
 use router_catalog::Catalog;
 use router_types::{
-    Capability, EffortLevel, Exclusion, ModelSpec, RouteRequest, SkillId, SkillTrust, StageKind,
+    Capability, CapabilitySupport, EffortLevel, Exclusion, HostSnapshot, ModelSpec, RouteRequest,
+    SkillId, SkillTrust, StageKind,
 };
 
 use crate::{
@@ -36,6 +37,7 @@ pub(crate) struct CandidateBuild {
 pub(crate) fn build_candidates(request: &RouteRequest, catalog: &Catalog) -> CandidateBuild {
     let engine = ConstraintEngine::default();
     let capabilities = capability_knowledge(request);
+    let host = constraint_host(request);
     let mut stages = Vec::with_capacity(3);
     let mut exclusions = Vec::new();
     let mut missing_evidence = Vec::new();
@@ -50,7 +52,7 @@ pub(crate) fn build_candidates(request: &RouteRequest, catalog: &Catalog) -> Can
             for effort in effort_preference(preferred) {
                 let context = EligibilityContext {
                     task: request.task.clone(),
-                    host: request.host.clone(),
+                    host: host.clone(),
                     model: model.clone(),
                     stage,
                     effort,
@@ -134,16 +136,34 @@ fn capability_knowledge(request: &RouteRequest) -> CapabilityKnowledge {
         .task
         .required_capabilities
         .iter()
-        .map(|capability| {
-            let support = if request.host.capabilities.contains(capability) {
-                Support::Supported
-            } else {
-                Support::Unsupported
-            };
-            (*capability, support)
-        })
+        .map(|capability| (*capability, request_support(request, *capability)))
         .collect::<BTreeMap<Capability, Support>>()
         .into()
+}
+
+fn constraint_host(request: &RouteRequest) -> HostSnapshot {
+    let mut host = request.host.clone();
+    for (capability, support) in &request.capability_knowledge {
+        match support {
+            CapabilitySupport::Supported => {
+                host.capabilities.insert(*capability);
+            }
+            CapabilitySupport::Unsupported | CapabilitySupport::Unknown => {
+                host.capabilities.remove(capability);
+            }
+        }
+    }
+    host
+}
+
+fn request_support(request: &RouteRequest, capability: Capability) -> Support {
+    match request.capability_knowledge.get(&capability) {
+        Some(CapabilitySupport::Supported) => Support::Supported,
+        Some(CapabilitySupport::Unsupported) => Support::Unsupported,
+        Some(CapabilitySupport::Unknown) => Support::Unknown,
+        None if request.host.capabilities.contains(&capability) => Support::Supported,
+        None => Support::Unsupported,
+    }
 }
 
 fn compatible_skills(
@@ -159,7 +179,7 @@ fn compatible_skills(
         if skill.trust == SkillTrust::Blocked
             || !skill.task_kinds.contains(&request.task.kind)
             || !skill.required_capabilities.iter().all(|capability| {
-                request.host.capabilities.contains(capability)
+                request_support(request, *capability) == Support::Supported
                     && model.capabilities.contains(capability)
             })
         {

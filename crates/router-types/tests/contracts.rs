@@ -1,8 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use router_types::{
-    Capability, EffortLevel, HarnessId, HostSnapshot, ModelId, RiskLevel, SkillCandidate, SkillId,
-    StageKind, TaskContext, TaskKind, VerificationIndependence,
+    Capability, CapabilitySupport, EffortLevel, HarnessId, HostSnapshot, ModelId, RiskLevel,
+    RouteRequest, SkillCandidate, SkillId, StageKind, TaskContext, TaskKind,
+    VerificationIndependence,
 };
 
 #[test]
@@ -70,4 +71,65 @@ fn plan_stage_serializes_verification_independence_when_present() {
         serde_json::to_string(&stage).unwrap(),
         r#"{"kind":"verify","model":"gpt-5.6-terra","effort":"high","skills":[],"verification_independence":"fresh_instance"}"#
     );
+}
+
+#[test]
+fn route_request_defaults_missing_capability_knowledge_for_old_json() {
+    let request: RouteRequest = serde_json::from_str(
+        r#"{
+          "task": {
+            "objective": "old fixture",
+            "kind": "implement",
+            "risk": "medium",
+            "required_capabilities": ["tools"],
+            "acceptance": []
+          },
+          "host": {
+            "id": "old-host",
+            "harness": "codex",
+            "supported_models": [],
+            "supported_efforts": {},
+            "capabilities": ["tools"]
+          },
+          "skill_candidates": []
+        }"#,
+    )
+    .unwrap();
+
+    assert!(request.capability_knowledge.is_empty());
+}
+
+#[test]
+fn route_request_serializes_explicit_capability_support_in_stable_order() {
+    let request: RouteRequest = serde_json::from_str(
+        r#"{
+          "task": {
+            "objective": "tri-state fixture",
+            "kind": "security",
+            "risk": "high",
+            "required_capabilities": ["tools", "vision"],
+            "acceptance": []
+          },
+          "host": {
+            "id": "tri-state-host",
+            "harness": "codex",
+            "supported_models": [],
+            "supported_efforts": {},
+            "capabilities": ["tools"]
+          },
+          "skill_candidates": [],
+          "capability_knowledge": {
+            "vision": "unsupported",
+            "tools": "unknown"
+          }
+        }"#,
+    )
+    .unwrap();
+
+    assert_eq!(
+        request.capability_knowledge.get(&Capability::Tools),
+        Some(&CapabilitySupport::Unknown)
+    );
+    let json = serde_json::to_string(&request).unwrap();
+    assert!(json.contains(r#""capability_knowledge":{"tools":"unknown","vision":"unsupported"}"#));
 }

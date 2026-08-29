@@ -9,4 +9,4 @@ pub use asset::{
 pub use decision::{
     DecisionEnvelope, Exclusion, ExecutionPlan, PlanStage, RouteDecision, VerificationIndependence,
 };
-pub use task::{RiskLevel, RouteRequest, TaskContext, TaskKind};
+pub use task::{CapabilitySupport, RiskLevel, RouteRequest, TaskContext, TaskKind};

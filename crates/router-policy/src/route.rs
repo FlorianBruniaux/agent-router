@@ -48,7 +48,12 @@ impl Router {
             &self.config.policy_version,
         );
         let mut build = build_candidates(request, catalog);
-        let mut ranked = rank_plans(&build.stages, request.task.risk, &mut build.exclusions);
+        let mut ranked = rank_plans(
+            &build.stages,
+            request.task.kind,
+            request.task.risk,
+            &mut build.exclusions,
+        )?;
         normalize_exclusions(&mut build.exclusions);
         build.missing_evidence.sort();
         build.missing_evidence.dedup();
@@ -87,6 +92,24 @@ impl Router {
 pub enum RouteError {
     #[error("route.request.serialize: {0}")]
     SerializeRequest(serde_json::Error),
+    #[error("route.arithmetic.out_of_range: {component} is outside the supported range")]
+    ArithmeticOutOfRange { component: &'static str },
+}
+
+impl RouteError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::SerializeRequest(_) => "route.request.serialize",
+            Self::ArithmeticOutOfRange { .. } => "route.arithmetic.out_of_range",
+        }
+    }
+
+    pub fn component(&self) -> Option<&'static str> {
+        match self {
+            Self::SerializeRequest(_) => None,
+            Self::ArithmeticOutOfRange { component } => Some(component),
+        }
+    }
 }
 
 fn decision_id(
