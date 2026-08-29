@@ -6,7 +6,7 @@ use router_types::{
 };
 
 use crate::preset::{PRESET_NAME, StageCandidate};
-use crate::route::RouteError;
+use crate::route::{MAX_PLAN_WORK_UNITS, RouteError};
 
 #[derive(Debug)]
 pub(crate) struct RankedPlan {
@@ -24,6 +24,7 @@ pub(crate) fn rank_plans(
     if stages.len() != 3 || stages.iter().any(Vec::is_empty) {
         return Ok(Vec::new());
     }
+    enforce_work_limit(stages)?;
 
     let verifier_quality_policy = match task_kind {
         TaskKind::Security => Some(("security", "verification.security.not_max_quality")),
@@ -92,6 +93,31 @@ pub(crate) fn rank_plans(
         }
     }
     Ok(plans)
+}
+
+fn enforce_work_limit(stages: &[Vec<StageCandidate>]) -> Result<(), RouteError> {
+    let combinations = stages
+        .iter()
+        .map(Vec::len)
+        .try_fold(1_usize, usize::checked_mul);
+    let payload_per_combination = stages.iter().try_fold(1_usize, |payload, stage| {
+        let max_skills = stage
+            .iter()
+            .map(|candidate| candidate.skills.len())
+            .max()
+            .unwrap_or(0);
+        payload.checked_add(max_skills)
+    });
+    let work_units = combinations
+        .zip(payload_per_combination)
+        .and_then(|(combinations, payload)| combinations.checked_mul(payload));
+    if work_units.is_none_or(|actual| actual > MAX_PLAN_WORK_UNITS) {
+        return Err(RouteError::WorkLimitExceeded {
+            actual: work_units,
+            max: MAX_PLAN_WORK_UNITS,
+        });
+    }
+    Ok(())
 }
 
 fn to_ranked_plan(stages: [&StageCandidate; 3], risk: RiskLevel) -> Result<RankedPlan, RouteError> {
@@ -191,9 +217,9 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::{RankedPlan, compare_ranked, rank_plans, to_ranked_plan};
-    use crate::preset::StageCandidate;
+    use crate::preset::{AttachedSkill, StageCandidate};
     use router_types::{
-        EffortLevel, ExecutionPlan, ModelId, ModelSpec, RiskLevel, StageKind, TaskKind,
+        EffortLevel, ExecutionPlan, ModelId, ModelSpec, RiskLevel, SkillId, StageKind, TaskKind,
     };
 
     #[test]
@@ -253,7 +279,48 @@ mod tests {
         .unwrap();
 
         assert_eq!(first.len(), 3);
+        assert_eq!(first[0].plan.utility_micros, 999_981);
+        assert_eq!(
+            first[0].model_key,
+            "provider-model-00\0provider-model-00\0provider-model-00"
+        );
         assert_eq!(rank_keys(&first), rank_keys(&second));
+    }
+
+    #[test]
+    fn sixty_four_models_with_256_skills_exceeds_work_budget_before_scoring() {
+        let stages = candidate_stages_with_skills(64, 256, i64::MAX);
+        let mut exclusions = vec![];
+
+        let error = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::Medium,
+            &mut exclusions,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "route.resource.work_limit_exceeded");
+        assert!(error.is_invalid_request());
+        assert_eq!(error.work_limit(), Some((Some(201_588_736), 1_000_000)));
+    }
+
+    #[test]
+    fn thirty_two_models_with_256_skills_exceeds_work_budget_before_scoring() {
+        let stages = candidate_stages_with_skills(32, 256, i64::MAX);
+        let mut exclusions = vec![];
+
+        let error = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::Medium,
+            &mut exclusions,
+        )
+        .unwrap_err();
+
+        assert_eq!(error.code(), "route.resource.work_limit_exceeded");
+        assert!(error.is_invalid_request());
+        assert_eq!(error.work_limit(), Some((Some(25_198_592), 1_000_000)));
     }
 
     fn ranked(total_cost_micros: i128, model_key: &str) -> RankedPlan {
@@ -269,6 +336,20 @@ mod tests {
     }
 
     fn candidate_stages(count: usize) -> Vec<Vec<StageCandidate>> {
+        candidate_stages_with_skills(count, 0, 0)
+    }
+
+    fn candidate_stages_with_skills(
+        count: usize,
+        skill_count: usize,
+        cost_micros: i64,
+    ) -> Vec<Vec<StageCandidate>> {
+        let skills = (0..skill_count)
+            .map(|index| AttachedSkill {
+                id: SkillId::parse(format!("work-skill-{index:03}")).unwrap(),
+                score_micros: 1_000_000,
+            })
+            .collect::<Vec<_>>();
         [StageKind::Plan, StageKind::Execute, StageKind::Verify]
             .into_iter()
             .map(|kind| {
@@ -290,12 +371,12 @@ mod tests {
                                 efforts: BTreeSet::from([EffortLevel::Medium, EffortLevel::High]),
                                 capabilities: BTreeSet::new(),
                                 quality_micros: 1_000_000 - index as i64,
-                                cost_micros: index as i64,
+                                cost_micros: cost_micros.saturating_add(index as i64),
                                 latency_micros: (count - index) as i64,
                                 source: "test-prior".into(),
                             },
                             effort,
-                            skills: vec![],
+                            skills: skills.clone(),
                         }
                     })
                     .collect()

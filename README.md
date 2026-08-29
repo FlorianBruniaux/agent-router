@@ -66,8 +66,11 @@ cargo run -p agent-router-cli -- explain \
 
 Catalogs contain at most 64 models and 256 skills. Routing evaluates the
 bounded 64^3 stage combination space without materializing it, retains only the
-best three routes, and deduplicates identical exclusions. The CLI reads at most
-1 MiB for requests, 4 MiB for catalogs, and 8 MiB for decisions before
+best three routes, and deduplicates identical exclusions. Before scoring, it
+also enforces `Router::MAX_PLAN_WORK_UNITS = 1,000,000` over the combined model
+and attached-skill payload. Inputs within each individual limit can therefore
+still be rejected when their combined routing work is too large. The CLI reads
+at most 1 MiB for requests, 4 MiB for catalogs, and 8 MiB for decisions before
 rejecting an oversized file.
 
 Route requests contain at most 256 skill candidates with non-empty sources and

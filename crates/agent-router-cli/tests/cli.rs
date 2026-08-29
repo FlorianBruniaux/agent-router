@@ -147,6 +147,21 @@ fn invalid_embedded_skill_candidates_return_request_invalid() {
 }
 
 #[test]
+fn combined_routing_work_limit_returns_request_invalid() {
+    let temporary = TempDir::new().unwrap();
+    let request = temporary.path().join("work-limit-request.json");
+    let catalog = temporary.path().join("work-limit-catalog.json");
+    write_work_limit_fixture(&request, &catalog, 32, 256);
+
+    command()
+        .args(route_args(request, catalog))
+        .assert()
+        .code(2)
+        .stdout(predicate::str::is_empty())
+        .stderr("error: request.invalid\n");
+}
+
+#[test]
 fn oversized_request_is_rejected_before_json_parsing() {
     let temporary = TempDir::new().unwrap();
     let request = temporary.path().join("oversized-request.json");
@@ -291,4 +306,86 @@ fn write_request_candidates(path: &std::path::Path, score: i64, source: &str, co
     request["skill_candidates"] =
         serde_json::Value::Array((0..count).map(|_| candidate.clone()).collect());
     fs::write(path, serde_json::to_vec(&request).unwrap()).unwrap();
+}
+
+fn write_work_limit_fixture(
+    request_path: &std::path::Path,
+    catalog_path: &std::path::Path,
+    model_count: usize,
+    skill_count: usize,
+) {
+    let model_ids = (0..model_count)
+        .map(|index| format!("provider-work-{index:02}"))
+        .collect::<Vec<_>>();
+    let skill_ids = (0..skill_count)
+        .map(|index| format!("work-skill-{index:03}"))
+        .collect::<Vec<_>>();
+    let models = model_ids
+        .iter()
+        .map(|id| {
+            serde_json::json!({
+                "id": id,
+                "stages": ["plan", "execute", "verify"],
+                "efforts": ["medium", "high"],
+                "capabilities": ["tools"],
+                "quality_micros": 800000,
+                "cost_micros": 0,
+                "latency_micros": 0,
+                "source": "work-limit-fixture"
+            })
+        })
+        .collect::<Vec<_>>();
+    let skills = skill_ids
+        .iter()
+        .map(|id| {
+            serde_json::json!({
+                "id": id,
+                "description": "work limit fixture",
+                "task_kinds": ["implement"],
+                "required_capabilities": ["tools"],
+                "trust": "builtin"
+            })
+        })
+        .collect::<Vec<_>>();
+    let supported_efforts = model_ids
+        .iter()
+        .map(|id| (id.clone(), serde_json::json!(["medium", "high"])))
+        .collect::<serde_json::Map<_, _>>();
+    let skill_candidates = skill_ids
+        .iter()
+        .map(|id| {
+            serde_json::json!({
+                "skill": id,
+                "source": "work-limit-fixture",
+                "score_micros": 1000000
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let catalog = serde_json::json!({
+        "schema_version": 1,
+        "version": "work-limit-v1",
+        "models": models,
+        "skills": skills
+    });
+    let request = serde_json::json!({
+        "task": {
+            "objective": "reject excessive combined routing work",
+            "kind": "implement",
+            "risk": "medium",
+            "required_capabilities": ["tools"],
+            "acceptance": ["work budget is authoritative"]
+        },
+        "host": {
+            "id": "work-limit-host",
+            "harness": "codex",
+            "supported_models": model_ids,
+            "supported_efforts": supported_efforts,
+            "capabilities": ["tools"]
+        },
+        "skill_candidates": skill_candidates,
+        "capability_knowledge": {}
+    });
+    fs::write(catalog_path, serde_json::to_vec(&catalog).unwrap()).unwrap();
+    fs::write(request_path, serde_json::to_vec(&request).unwrap()).unwrap();
 }

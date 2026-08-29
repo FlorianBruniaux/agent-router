@@ -211,6 +211,27 @@ two alternatives. It never materializes the full Cartesian product. Identical
 exclusions are deduplicated after sorting by stage, model ID, code, and
 evidence.
 
+Before entering the three combination loops, the router applies the public
+`Router::MAX_PLAN_WORK_UNITS` ceiling of 1,000,000. It computes the estimate
+with checked integer arithmetic:
+
+```text
+combinations = plan_candidates * execute_candidates * verify_candidates
+payload_per_combination = 1
+  + max_plan_candidate_skills
+  + max_execute_candidate_skills
+  + max_verify_candidate_skills
+work_units = combinations * payload_per_combination
+```
+
+An overflow or a value above the ceiling fails immediately with
+`route.resource.work_limit_exceeded`, before any plan is scored or cloned. The
+error records `actual` when the checked result is representable and always
+records `max`. It is invalid input, so the CLI emits the opaque
+`request.invalid` line and exits `2`. The model, skill, candidate, and file
+limits remain independently enforced, but satisfying each individual limit
+does not guarantee acceptance when their combined work exceeds this budget.
+
 The CLI reads inputs through bounded streams before parsing: route requests are
 limited to 1 MiB, catalogs to 4 MiB, and stored decisions to 8 MiB. Oversized
 files fail with `request.too_large`, `catalog.too_large`, or

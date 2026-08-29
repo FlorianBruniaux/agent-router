@@ -6,6 +6,7 @@ use thiserror::Error;
 use crate::{preset::build_candidates, score::rank_plans};
 
 pub const MAX_ROUTE_SKILL_CANDIDATES: usize = 256;
+pub(crate) const MAX_PLAN_WORK_UNITS: usize = 1_000_000;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PolicyConfig {
@@ -28,6 +29,8 @@ pub struct Router {
 }
 
 impl Router {
+    pub const MAX_PLAN_WORK_UNITS: usize = crate::route::MAX_PLAN_WORK_UNITS;
+
     pub fn new(config: PolicyConfig) -> Self {
         Self { config }
     }
@@ -103,6 +106,8 @@ pub enum RouteError {
     SerializeRequest(serde_json::Error),
     #[error("route.arithmetic.out_of_range: {component} is outside the supported range")]
     ArithmeticOutOfRange { component: &'static str },
+    #[error("route.resource.work_limit_exceeded: actual={actual:?} max={max}")]
+    WorkLimitExceeded { actual: Option<usize>, max: usize },
 }
 
 impl RouteError {
@@ -111,6 +116,7 @@ impl RouteError {
             Self::InvalidRequest { code, .. } => code,
             Self::SerializeRequest(_) => "route.request.serialize",
             Self::ArithmeticOutOfRange { .. } => "route.arithmetic.out_of_range",
+            Self::WorkLimitExceeded { .. } => "route.resource.work_limit_exceeded",
         }
     }
 
@@ -119,18 +125,33 @@ impl RouteError {
             Self::SerializeRequest(_) => None,
             Self::InvalidRequest { .. } => None,
             Self::ArithmeticOutOfRange { component } => Some(component),
+            Self::WorkLimitExceeded { .. } => None,
         }
     }
 
     pub fn path(&self) -> Option<&str> {
         match self {
             Self::InvalidRequest { path, .. } => Some(path),
-            Self::SerializeRequest(_) | Self::ArithmeticOutOfRange { .. } => None,
+            Self::SerializeRequest(_)
+            | Self::ArithmeticOutOfRange { .. }
+            | Self::WorkLimitExceeded { .. } => None,
         }
     }
 
     pub fn is_invalid_request(&self) -> bool {
-        matches!(self, Self::InvalidRequest { .. })
+        matches!(
+            self,
+            Self::InvalidRequest { .. } | Self::WorkLimitExceeded { .. }
+        )
+    }
+
+    pub fn work_limit(&self) -> Option<(Option<usize>, usize)> {
+        match self {
+            Self::WorkLimitExceeded { actual, max } => Some((*actual, *max)),
+            Self::InvalidRequest { .. }
+            | Self::SerializeRequest(_)
+            | Self::ArithmeticOutOfRange { .. } => None,
+        }
     }
 }
 
