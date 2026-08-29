@@ -1,7 +1,10 @@
 #![forbid(unsafe_code)]
 
 mod constraint;
+mod preset;
 mod retrieval;
+mod route;
+mod score;
 
 pub use constraint::{
     CapabilitiesSatisfied, CapabilityKnowledge, Constraint, ConstraintEngine, ConstraintVerdict,
@@ -10,3 +13,4 @@ pub use constraint::{
 pub use retrieval::{
     RetrievalError, SkillRetriever, StaticSkillRetriever, parse_candidate_document,
 };
+pub use route::{PolicyConfig, RouteError, Router};

@@ -56,3 +56,19 @@ pub struct DecisionEnvelope {
     pub policy_version: String,
     pub decision: RouteDecision,
 }
+
+impl DecisionEnvelope {
+    pub fn selected_plan(&self) -> Option<&ExecutionPlan> {
+        match &self.decision {
+            RouteDecision::Selected { plan, .. } => Some(plan),
+            RouteDecision::NoRoute { .. } => None,
+        }
+    }
+
+    pub fn exclusions(&self) -> &[Exclusion] {
+        match &self.decision {
+            RouteDecision::Selected { exclusions, .. }
+            | RouteDecision::NoRoute { exclusions, .. } => exclusions,
+        }
+    }
+}
