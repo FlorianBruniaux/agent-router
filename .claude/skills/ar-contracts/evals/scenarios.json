@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Verify deterministic routing for identical inputs",
+    "Check the JSON decision contract before changing exclusions",
+    "Does an untrusted skill affect routing utility?",
+    "Verify the no_route exit contract",
+    "Vérifie les invariants de sélection du routeur",
+    "Les contraintes doivent précéder le scoring",
+    "Contrôle la stabilité du JSON produit",
+    "Check unknown high-risk capability exclusion"
+  ],
+  "negative": [
+    "Run the harness projection installer",
+    "Format the Rust workspace"
+  ]
+}

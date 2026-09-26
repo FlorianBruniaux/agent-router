@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Prepare a handoff for the next Agent Router session",
+    "Record branch and verification limits for the reviewer",
+    "Write the exact next action after this harness change",
+    "Transfer the task without losing uncommitted ownership",
+    "Prépare la passation de cette session",
+    "Documente les preuves et les UNKNOWN",
+    "Rédige le relais pour la prochaine tâche",
+    "Summarize the current issue scope for another developer"
+  ],
+  "negative": [
+    "Open a production deployment",
+    "Fix a Rust compiler error"
+  ]
+}

@@ -1,0 +1,8 @@
+title = "Agent Router source and harness scan"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Compiled artifacts and private transaction backups are not release inputs"
+paths = ['''(^|/)target/''', '''(^|/)\.harness-state/''']

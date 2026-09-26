@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Review filesystem path traversal in harness generation",
+    "Check that the hook cannot grant permissions",
+    "Inspect stale capability snapshot handling",
+    "Review the sidecar authority boundary without implementing it",
+    "Vérifie les frontières de permissions",
+    "Contrôle les chemins et les liens symboliques",
+    "Audite la provenance des snapshots",
+    "Check subprocess arguments for shell injection"
+  ],
+  "negative": [
+    "Improve the CLI welcome text",
+    "Implement Jev model execution"
+  ]
+}
