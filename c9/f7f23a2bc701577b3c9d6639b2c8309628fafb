@@ -1,0 +1,210 @@
+xtask/Cargo.toml
+  s_86ed8bd547d4f8::t_b246cf980c4d5c 1-20
+.claude/agents/rust-code-reviewer.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-30
+xtask/tests/fixtures/claude-denied.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.claude/agents/rust-explorer.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-30
+.codex/agents/rust-implementer.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-7
+.claude/agents/rust-test-engineer.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-30
+xtask/tests/fixtures/codex-success.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.claude/skills/ar-host-adapter/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.claude/skills/ar-permissions-security/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-40
+.claude/agents/rust-implementer.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-30
+harness/session-start.sh
+  s_86ed8bd547d4f8::t_07b23ebbc18b89 1-8
+.codex/agents/rust-explorer.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-7
+.agents/skills/ar-rust-quality/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.agents/skills/ar-session-handoff/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.claude/skills/ar-contract-tests/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-40
+.agents/skills/ar-permissions-security/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-40
+docs/harness-evidence.md
+  s_86ed8bd547d4f8::t_5f703cb2c0bb92 12-15,28-57
+  s_86ed8bd547d4f8::t_c28b5eca96e483 1-9,11,16-27,59-62
+  s_86ed8bd547d4f8::t_4276ba9b3f67f6 10,58,63-91
+Cargo.toml
+  s_86ed8bd547d4f8::t_b246cf980c4d5c 7
+xtask/src/main.rs
+  s_86ed8bd547d4f8::t_07b23ebbc18b89 1-22,24-80
+  s_86ed8bd547d4f8::t_eda70501340473 23
+xtask/tests/fixtures/codex-invalid.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.agents/skills/ar-rust-quality/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-42
+.agents/skills/ar-permissions-security/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+docs/adr/0001-project-harness.md
+  s_86ed8bd547d4f8::t_f5acc1088bc321 1-80
+.harness-generated.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-20,22-39,41-44
+  s_86ed8bd547d4f8::t_dc43890fe5defc 21,40
+.codex/config.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-4
+xtask/tests/fixtures/claude-noop.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.codex/agents/rust-security-reviewer.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-7
+.codex/hooks.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-6,8-16
+  s_86ed8bd547d4f8::t_1bc248cf093814 7
+xtask/tests/fixtures/claude-invalid.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+xtask/src/projection.rs
+  s_86ed8bd547d4f8::t_8a9fb3510265a4 69
+  s_86ed8bd547d4f8::t_2f31c130375b3f 177-181
+  s_86ed8bd547d4f8::t_b246cf980c4d5c 1-68,70-73,75-131,133-139,141-146,148-165,167-176,182-188,190-199,201-212,214-275
+  s_86ed8bd547d4f8::t_dca1cffe9e8ba0 74,132,140,147,166,189,200,213
+.claude/skills/ar-session-handoff/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.agents/skills/ar-contract-tests/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.agents/skills/ar-host-adapter/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.gitignore
+  s_86ed8bd547d4f8::t_b246cf980c4d5c 7-9
+xtask/src/lib.rs
+  s_86ed8bd547d4f8::t_8a9fb3510265a4 29-48
+  s_86ed8bd547d4f8::t_b246cf980c4d5c 1-28,49-94
+.agents/skills/ar-contracts/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-38
+.claude/skills/ar-rust-quality/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.gitleaks.toml
+  s_86ed8bd547d4f8::t_c28b5eca96e483 1-8
+.claude/skills/ar-contract-tests/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+scripts/check-host-syntax.py
+  s_86ed8bd547d4f8::t_967bb3839a1a50 1-14
+xtask/src/transaction.rs
+  s_86ed8bd547d4f8::t_da5363b36545fa 117-123
+  s_86ed8bd547d4f8::t_2f31c130375b3f 166-168
+  s_86ed8bd547d4f8::t_8a9fb3510265a4 161,164-165,169-170
+  s_86ed8bd547d4f8::t_07b23ebbc18b89 1-26,28-29,31,33-114,116,124-136,138-159,163,171-174
+  s_86ed8bd547d4f8::t_b041259f1b2413 27,30,32,115,137,160,162
+xtask/tests/fixtures/claude-success.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.agents/skills/ar-contract-tests/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-40
+.codex/agents/rust-test-engineer.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-7
+xtask/src/hook.rs
+  s_86ed8bd547d4f8::t_07b23ebbc18b89 1-35,37-65
+  s_86ed8bd547d4f8::t_191b2ecfba5c4b 36
+.agents/skills/ar-host-adapter/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-38
+.agents/skills/ar-session-handoff/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-42
+.claude/agents/rust-security-reviewer.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-30
+.agents/skills/ar-contracts/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.claude/skills/ar-host-adapter/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-38
+README.md
+  s_86ed8bd547d4f8::t_967bb3839a1a50 83-84
+xtask/tests/harness.rs
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 20-23,78-79,86-89,95-96,104-107,113-120,134-137,145-149,164-165,174-175,177-178,193-195,197-198,237-238,246-250,258-260,262-264,272-276,283-285,287-291,293-297,300-304,306-318,321-325,332-337
+  s_86ed8bd547d4f8::t_d48ad74820e71e 1-19,33,53-77,80-85,90-94,97-103,108-112,121-133,138-144,150-163,166-173,176,179-192,196,199-213,236,239-245,251-257,261,265-271,277-282,286,292,298-299,305,319-320,326-331,338-343
+  s_86ed8bd547d4f8::t_2f31c130375b3f 24-32,38-39,42-52
+  s_86ed8bd547d4f8::t_8a9fb3510265a4 34-37,40-41
+  s_86ed8bd547d4f8::t_da5363b36545fa 214-218,224-226,231-235
+  s_86ed8bd547d4f8::t_0999ab3a7f38ec 219-223,227-230
+.github/workflows/ci.yml
+  s_86ed8bd547d4f8::t_967bb3839a1a50 1-19,23-39,41
+  s_86ed8bd547d4f8::t_c28b5eca96e483 20-22,40,42
+xtask/tests/fixtures/codex-noop.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+.claude/settings.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-6,8-16
+  s_86ed8bd547d4f8::t_32677bdeed2f95 7
+.claude/skills/ar-contracts/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-38
+docs/harness.md
+  s_86ed8bd547d4f8::t_da5363b36545fa 55-56
+  s_86ed8bd547d4f8::t_967bb3839a1a50 1-54,57-128,130-184
+  s_86ed8bd547d4f8::t_5f703cb2c0bb92 129
+.claude/skills/ar-permissions-security/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.claude/skills/ar-rust-quality/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-42
+.claude/skills/ar-contracts/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-16
+.codex/agents/rust-code-reviewer.toml
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-7
+AGENTS.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-55
+.claude/skills/ar-session-handoff/SKILL.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-42
+xtask/tests/fixtures/codex-denied.json
+  s_86ed8bd547d4f8::t_cfbf8f121d6ab2 1
+CLAUDE.md
+  s_86ed8bd547d4f8::t_5adc3097e9c43a 1-55
+Cargo.lock
+  s_86ed8bd547d4f8::t_c2667d2dbdf120 613-627
+harness/agents/rust-code-reviewer.md
+  s_86ed8bd547d4f8::t_59571d8bcbb85d 1-17
+harness/agents/rust-explorer.md
+  s_86ed8bd547d4f8::t_793cb60b16c63e 1-17
+harness/agents/rust-implementer.md
+  s_86ed8bd547d4f8::t_e4ff0bb3470e8b 1-17
+harness/agents/rust-security-reviewer.md
+  s_86ed8bd547d4f8::t_e91c3d2ff462f8 1-17
+harness/agents/rust-test-engineer.md
+  s_86ed8bd547d4f8::t_e1a49da2362e92 1-17
+harness/instructions.md
+  s_86ed8bd547d4f8::t_7449f0579a823c 1-54
+harness/manifest.json
+  s_86ed8bd547d4f8::t_863f5c94cc41ba 1-48
+harness/skills/ar-contract-tests/SKILL.md
+  s_86ed8bd547d4f8::t_28abef26d8cc7b 1-40
+harness/skills/ar-contract-tests/evals/scenarios.json
+  s_86ed8bd547d4f8::t_9f2e580bb76319 1-16
+harness/skills/ar-contracts/SKILL.md
+  s_86ed8bd547d4f8::t_40dbee36c8c3a9 1-38
+harness/skills/ar-contracts/evals/scenarios.json
+  s_86ed8bd547d4f8::t_a6b28db63d252f 1-16
+harness/skills/ar-host-adapter/SKILL.md
+  s_86ed8bd547d4f8::t_6efb04ce46a434 1-38
+harness/skills/ar-host-adapter/evals/scenarios.json
+  s_86ed8bd547d4f8::t_5681ab8c78f22f 1-16
+harness/skills/ar-permissions-security/SKILL.md
+  s_86ed8bd547d4f8::t_5453aa31ba6a47 1-40
+harness/skills/ar-permissions-security/evals/scenarios.json
+  s_86ed8bd547d4f8::t_7f6a8fd07c2e61 1-16
+harness/skills/ar-rust-quality/SKILL.md
+  s_86ed8bd547d4f8::t_8619fcf31b4963 1-42
+harness/skills/ar-rust-quality/evals/scenarios.json
+  s_86ed8bd547d4f8::t_cf3dc9d3d3170a 1-16
+harness/skills/ar-session-handoff/SKILL.md
+  s_86ed8bd547d4f8::t_9325b0fdad8f10 1-42
+harness/skills/ar-session-handoff/evals/scenarios.json
+  s_86ed8bd547d4f8::t_6a02e23c4515b7 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c9f7f23a2bc701577b3c9d6639b2c8309628fafb",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
