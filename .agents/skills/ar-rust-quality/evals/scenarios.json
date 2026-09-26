@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Run the Rust quality gate before committing",
+    "Check Clippy with warnings denied",
+    "Validate the workspace format and tests",
+    "Verify generated harness parity in the quality gate",
+    "Lance les contrôles Rust complets",
+    "Vérifie le formatage et les tests du workspace",
+    "Contrôle la parité avant le commit",
+    "Report which Rust gates actually passed"
+  ],
+  "negative": [
+    "Redesign the policy scoring formula",
+    "Implement a host adapter"
+  ]
+}

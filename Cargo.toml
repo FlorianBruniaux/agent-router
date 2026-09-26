@@ -4,6 +4,7 @@ members = [
     "crates/router-catalog",
     "crates/router-policy",
     "crates/agent-router-cli",
+    "xtask",
 ]
 resolver = "2"
 

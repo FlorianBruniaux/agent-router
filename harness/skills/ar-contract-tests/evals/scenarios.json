@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Add a contract fixture for a malformed hook input",
+    "Reproduce this CLI exit-code regression",
+    "Write negative tests for the versioned JSON contract",
+    "Test a missing hook dependency",
+    "Ajoute un test de non-régression sur les fixtures",
+    "Reproduis ce défaut avec un cas minimal",
+    "Vérifie les sorties de protocole du hook",
+    "Assert byte-identical decisions in a fixture"
+  ],
+  "negative": [
+    "Change the workspace architecture",
+    "Run formatting only"
+  ]
+}

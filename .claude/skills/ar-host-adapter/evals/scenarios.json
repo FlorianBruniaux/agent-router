@@ -1,0 +1,16 @@
+{
+  "positive": [
+    "Implement the host adapter in the approved follow-up issue",
+    "Define adapter capability evidence with provenance",
+    "Design the unsupported host protocol response",
+    "Add fixtures for an unavailable host adapter",
+    "Définis le contrat du futur adaptateur hôte",
+    "Vérifie les preuves de capacités du host",
+    "Encadre la provenance des observations hôte",
+    "Review adapter unknown versus unsupported behavior"
+  ],
+  "negative": [
+    "Bootstrap the issue 12 development harness",
+    "Execute a model with the router"
+  ]
+}

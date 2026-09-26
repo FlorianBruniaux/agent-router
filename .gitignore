@@ -4,3 +4,6 @@
 *.db-shm
 *.db-wal
 .DS_Store
+/.harness-state/
+/.claude/settings.local.json
+/.codex/*.local.toml

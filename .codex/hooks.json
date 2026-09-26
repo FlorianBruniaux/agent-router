@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "sh \"$(git rev-parse --show-toplevel)/harness/session-start.sh\" codex # launcher-sha256:f13b6b571bcd1911440c8c475ceb19543b77949e5b72cddea5470bc71a545a3b rust-sha256:a970c7436a833eaa09caf0278574c97f3e7ebc6c9d7c28d2d8298881c7c87362",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume|clear|compact"
+      }
+    ]
+  }
+}

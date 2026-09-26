@@ -80,6 +80,8 @@ have no routing effect.
 
 ## Documentation
 
+- [Development harness](docs/harness.md): shared Codex and Claude Code project
+  instructions, agents, skills, hooks and validation, separate from the product.
 - `docs/superpowers/specs/2026-08-28-agent-router-core-design.md`
 - `docs/specs/functional-specification.md`
 - `docs/specs/technical-specification.md`

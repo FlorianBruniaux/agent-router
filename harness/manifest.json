@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "name": "rust-explorer",
+      "description": "Map Rust call paths, invariants and affected crates without edits.",
+      "writable": false,
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "medium"
+    },
+    {
+      "name": "rust-implementer",
+      "description": "Implement an assigned Rust change with explicit file ownership and regression tests.",
+      "writable": true,
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "high"
+    },
+    {
+      "name": "rust-test-engineer",
+      "description": "Reproduce Rust failures and add contract fixtures and regression tests.",
+      "writable": true,
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "high"
+    },
+    {
+      "name": "rust-security-reviewer",
+      "description": "Review permissions, secrets, subprocess, paths and hook protocol boundaries.",
+      "writable": false,
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "high"
+    },
+    {
+      "name": "rust-code-reviewer",
+      "description": "Independently review concrete defects and issue acceptance evidence.",
+      "writable": false,
+      "codex_model": "gpt-6-astra",
+      "codex_effort": "high"
+    }
+  ],
+  "skills": [
+    "ar-contracts",
+    "ar-host-adapter",
+    "ar-rust-quality",
+    "ar-contract-tests",
+    "ar-permissions-security",
+    "ar-session-handoff"
+  ]
+}
