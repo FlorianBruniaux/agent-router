@@ -35,17 +35,24 @@ project files, or launched subagents.
 | Fresh session | `exec --ephemeral --json`, read-only, approvals never | `--no-session-persistence`, plan mode, project settings only |
 | Five project agents | All five named from loaded context in native-settings canary | All five listed in native `system.init.agents` |
 | Six project skills | All six named from loaded context | All six listed in native `system.init.skills` |
-| Hook invocation | `UNKNOWN`, no project marker delivered | Native `SessionStart:startup` hook response, exit 0, project marker in stdout |
-| Context delivery | `UNKNOWN`, model explicitly returned UNKNOWN | Model returned `agent-router-harness:claude:parity-ok` without being given its value |
-| Trust of exact current definition | `UNKNOWN`; `/hooks` review remains required | Execution observed; no separate persisted-trust claim |
+| Hook invocation | Native trusted startup delivered the project marker | Native `SessionStart:startup` hook response, exit 0, project marker in stdout |
+| Context delivery | Model returned `agent-router-harness:codex:parity-ok` without being given its value | Model returned `agent-router-harness:claude:parity-ok` without being given its value |
+| Trust of exact current definition | Native `/hooks` review followed by `hooks/list`: trusted and enabled | Execution observed; no separate persisted-trust claim |
 | Tool interception | Not applicable | Not applicable |
 
 Codex's first isolated canary used `--ignore-user-config`: it discovered skills
 but did not expose agents. A second canary retained native user settings and
-exposed all project agents; neither delivered the project hook marker. This
-does not identify the missing trust/activation cause. No global configuration
-or trust record was edited. Native agent invocation and OS sandbox enforcement
-were not established by these discovery canaries.
+exposed all project agents; neither delivered the project hook marker. The follow-up native `/hooks` review identified the project hook as new. Only
+that project hook was trusted through the native interface; other pending hooks
+were left unchanged. No global hook definitions or permission configuration were
+edited. Native trust metadata was saved by Codex. The read-only `hooks/list` API
+then confirmed the exact command, enabled state and native definition hash
+`sha256:9061124d55c803672933c148d0b707da2e32d3670463b8d2b03cafe9b4b02d94`.
+This native hash differs from the file hash below by design. A fresh ephemeral
+canary delivered `agent-router-harness:codex:parity-ok`. Unrelated MCP startup
+failures were present and did not prevent this observed effect. Native agent
+invocation and OS sandbox enforcement were not established by these discovery
+canaries.
 
 ## Independent review
 
@@ -84,8 +91,9 @@ Final definition SHA-256:
 - `.codex/hooks.json`: `6ab4648dfa4dbdd4ae1b649006c1ea28e1a984de06597f92599d93d30c4da7b0`
 - `.claude/settings.json`: `3cc3d6927a28d6b8a89555fee39b9dc4317c44220375ce15465da1a4019592f6`
 
-The Codex next action is a fresh trusted project session, `/hooks` inspection,
-native trust of the exact reviewed definition if needed, then another canary
-that receives the project marker. Do not close #12 until this and parity are
-verified. CI execution status belongs to the draft PR; local green checks are
-not remote CI evidence.
+The Codex native-trust and fresh-session criteria were verified on 2026-09-26
+UTC. CI passed on the implementation commit `c9f7f23a2bc701577b3c9d6639b2c8309628fafb`
+for Linux, macOS and secrets (push run 36261774490 and PR run 36261791523).
+This evidence update must also pass the PR checks before merge. The project
+harness is complete within issue #12; this does not implement product routing
+or establish runtime capabilities for future HostProbe snapshots.
