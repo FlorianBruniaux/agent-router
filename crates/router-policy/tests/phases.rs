@@ -99,6 +99,7 @@ fn restrictions() -> EffectiveRestrictions {
 
 fn candidate(id: &str, model_id: &str) -> PhaseCandidate {
     PhaseCandidate {
+        tool_policy: router_types::PhaseToolPolicy::Restricted,
         id: id.into(),
         model: model(model_id),
         effort: EffortLevel::Medium,
@@ -198,6 +199,47 @@ fn prefer(request: &mut PhaseRouteRequest, preferred: &str) {
     request.restrictions.policy_hash = hex::encode(Sha256::digest(
         serde_json::to_vec(&request.restrictions).unwrap(),
     ));
+}
+
+#[test]
+fn native_host_tools_require_explicit_permission_and_cannot_hide_an_allowlist() {
+    let mut input = request();
+    input.candidates.truncate(1);
+    input.candidates[0].tool_policy = PhaseToolPolicy::NativeHost;
+    let denied = route(input.clone());
+    assert!(denied.selected.is_none());
+    assert!(
+        denied
+            .exclusions
+            .iter()
+            .any(|e| e.code == "permission.unknown_or_denied")
+    );
+    input.permissions.insert(
+        PhasePermission::NativeHostTools,
+        CapabilitySupport::Supported,
+    );
+    let accepted = route(input.clone());
+    assert_eq!(
+        accepted.selected.as_ref().unwrap().candidate.tool_policy,
+        PhaseToolPolicy::NativeHost
+    );
+    input.candidates[0].tools.insert("shell".into());
+    let conflict = route(input);
+    assert!(conflict.selected.is_none());
+    assert!(
+        conflict
+            .exclusions
+            .iter()
+            .any(|e| e.code == "tools.policy.conflict")
+    );
+}
+
+#[test]
+fn restricted_default_preserves_the_original_candidate_wire_bytes() {
+    let value = serde_json::to_value(candidate("test", "fixture-primary")).unwrap();
+    assert!(value.get("tool_policy").is_none());
+    let decoded: PhaseCandidate = serde_json::from_value(value).unwrap();
+    assert_eq!(decoded.tool_policy, PhaseToolPolicy::Restricted);
 }
 
 #[test]

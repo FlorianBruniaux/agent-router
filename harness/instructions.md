@@ -1,14 +1,18 @@
 # Agent Router development harness
 
-Agent Router currently computes and explains deterministic dry-run plans. It
-executes no model, host, subagent or worktree. This development harness is
-separate tooling. Issue #12 must not implement HostProbe or product adapters.
+Agent Router computes deterministic plans and prepares bounded host requests.
+Native execution requires an explicit approval digest, fresh capability evidence
+and a verified OS sandbox. Routing and preparation do not execute anything.
+This development harness is separate tooling; its hooks grant no product authority.
 
 ## Architecture and Rust
 
 - `router-types` owns serialized contracts; `router-catalog` validates catalogs;
   `router-policy` applies constraints before scoring; `agent-router-cli` owns
-  application I/O. `xtask` owns only the development harness.
+  application I/O; `router-prepare` assembles selected assets and typed prompts;
+  `router-runtime` supervises approved processes and private artifacts.
+  Feature-specific evidence formats live with their validating library.
+  `xtask` owns only the development harness.
 - Preserve deterministic output, bounded input and work limits, explicit
   UNKNOWN evidence, and the trust rules in `docs/reference/json-contracts.md`.
 - Use typed `thiserror` errors in libraries. Add operation context at CLI
@@ -38,7 +42,7 @@ Run from the repository root, through `rtk` where available:
 ```sh
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-cargo test --workspace --locked
+cargo test --workspace --all-features --locked
 cargo run -p xtask --locked -- check
 ```
 

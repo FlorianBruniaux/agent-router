@@ -13,8 +13,10 @@ diagnostics and redacted audit export. Routing and planning commands are dry
 runs. Optional loopback backends propose shadow decisions; they do not replace
 the active deterministic receipt.
 
-Durable execution and offline feedback are being integrated. Their presence in
-the workspace is not a claim that all roadmap acceptance criteria have passed.
+The development workspace also contains explicit preparation, durable execution,
+private feedback and signed offline policy activation. Execution requires a
+reviewed digest and live sandbox enforcement. Their presence is not a claim
+that all roadmap acceptance criteria have passed.
 See [the completion ledger](docs/completion.md) for outstanding gates, including
 human validation of the evaluation corpus. No global installation is performed.
 
@@ -111,6 +113,11 @@ have no routing effect.
   instructions, agents, skills, hooks and validation, separate from the product.
 - [Routing boundary decisions](docs/adr/0002-bounded-routing-pipeline.md)
 - [Optional local backends](docs/backends.md)
+- [Prepare an execution request](docs/preparation.md)
+- [CLI execution and privacy controls](docs/cli-execution.md)
+- [Durable runtime and sandbox evidence](docs/runtime.md)
+- [Metadata and catalog binding](docs/retrieval.md)
+- [Private feedback and offline policy](docs/feedback.md)
 - [Replay and evaluation](crates/router-eval/README.md)
 - [Source distribution](docs/distribution.md)
 - [Completion and outstanding acceptance](docs/completion.md)

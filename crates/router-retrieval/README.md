@@ -18,12 +18,37 @@ let policy_candidates = index.skill_candidates(&query)?;
 # }
 ```
 
-The JSON envelope uses `schema_version: "1"`, a nonempty `catalog_version`, and
+The legacy JSON document uses `schema_version: "1"`, a nonempty `catalog_version`, and
 an `assets` array. Each asset has `id`, `kind`, `trust` and `description`, plus
 optional `task_kinds`, `triggers`, `examples`, `tags`, `paths`, `anti_triggers`,
 and `body: { "path": "relative/path.md", "sha256": "<64 lowercase hex digits>" }`.
 Kinds are `agent`, `skill`, `prompt`, and `tool`. Trust uses the existing
 `router_types::SkillTrust` contract. Unknown envelope/metadata fields are rejected.
+Version 1 is explicitly **unbound**: the version label does not identify current
+catalog contents, and `validate_catalog_hash` refuses it. Its existing search
+and body APIs remain compatible for callers that deliberately use legacy data.
+
+Version 2 is a `MetadataEnvelope` containing `schema_version: "2"`,
+`catalog_content_sha256`, `metadata_content_sha256`, and a nested `metadata`
+document. Construct it with `MetadataEnvelope::new(metadata, catalog_hash)` and
+serialize with `canonical_json()`. Both digests must be 64 lowercase hex digits;
+the metadata digest is recomputed from canonical metadata. `Bm25Index::from_json`
+accepts either version, and `build_bound(metadata, catalog_hash)` constructs a
+v2 index directly. Source and index hashes include the catalog binding.
+
+For v2, every ranking or body-read operation requires the independently loaded
+catalog digest: `search_with_catalog`, `search_current_with_catalog`,
+`skill_candidates_with_catalog` and `load_body_with_catalog`. An unchanged
+catalog version with changed content is refused before scoring or filesystem
+I/O. The legacy methods without that digest refuse v2 rather than silently
+discarding its binding. A prior successful `validate_catalog_hash` does not
+disable this per-operation check. The read-only `asset` getter exposes metadata
+for preparation checks, without ranking, reading a body or granting authority.
+
+V1 search JSON remains schema 1 without a catalog digest. V2 search JSON uses
+schema 2 and includes `catalog_content_sha256`. See
+[`docs/retrieval.md`](../../docs/retrieval.md) for the caller's trust boundary and
+explicit migration procedure.
 
 Identifiers are validated; assets and metadata lists are sorted before hashing.
 `source_hash()` records the canonical metadata, including catalog version,

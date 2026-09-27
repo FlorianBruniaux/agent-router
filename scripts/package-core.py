@@ -24,7 +24,7 @@ FORBIDDEN_PARTS = {
     ".git", ".codex", ".claude", ".agents", ".agent-router", ".harness-state",
     "target", "node_modules", "private", "telemetry", "policy-packs", "credentials",
 }
-SUFFIXES = {".rs", ".toml", ".json", ".md", ".txt", ".yaml", ".yml"}
+SUFFIXES = {".rs", ".toml", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"}
 CONTENT_RULES = (
     ("private_home_path", re.compile(rb"(?:/Users/|/home/)[A-Za-z0-9_.-]+[/\\]")),
     ("private_windows_path", re.compile(rb"[A-Za-z]:[\\/]+Users[\\/]+[^\s\"']+")),
@@ -225,6 +225,56 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
     if sum(map(len, files.values())) > MAX_TOTAL:
         raise PackageError("source.total_size_exceeded")
     return files
+
+
+def validate_projected_lock(original: bytes, projected: bytes, packages: list[dict]) -> None:
+    before = tomllib.loads(original.decode())
+    after = tomllib.loads(projected.decode())
+    if before.get("version") != after.get("version"):
+        raise PackageError("workspace.lock_version_changed")
+    previous = {(p["name"], p["version"], p.get("source")): p for p in before["package"]}
+    selected = {(p["name"], p["version"]) for p in packages}
+    actual = {(p["name"], p["version"]) for p in after["package"] if not p.get("source")}
+    if selected != actual:
+        raise PackageError("workspace.lock_member_mismatch")
+
+    def dependencies(package: dict, lock: dict) -> set[tuple]:
+        result = set()
+        for dependency in package.get("dependencies", []):
+            parts = dependency.split(" ", 2)
+            matches = [p for p in lock["package"] if p["name"] == parts[0]
+                       and (len(parts) < 2 or p["version"] == parts[1])
+                       and (len(parts) < 3 or f"({p.get('source')})" == parts[2])]
+            if len(matches) != 1:
+                raise PackageError("workspace.lock_dependency_ambiguous")
+            match = matches[0]
+            result.add((match["name"], match["version"], match.get("source")))
+        return result
+
+    for package in after["package"]:
+        key = (package["name"], package["version"], package.get("source"))
+        prior = previous.get(key)
+        if prior is None or prior.get("checksum") != package.get("checksum"):
+            raise PackageError("workspace.lock_dependency_changed")
+        if not dependencies(package, after) <= dependencies(prior, before):
+            raise PackageError("workspace.lock_dependency_graph_changed")
+        if not package.get("source") and key[:2] not in selected:
+            raise PackageError("workspace.lock_excluded_member")
+
+
+def projected_lock(files: dict[str, bytes], packages: list[dict]) -> bytes:
+    # Cargo may prune inactive workspace packages even when every version stays
+    # pinned. Resolve only the copied workspace, offline, without building it.
+    with tempfile.TemporaryDirectory(prefix="agent-router-package-lock-") as directory:
+        staging = Path(directory)
+        for name, data in files.items():
+            destination = staging / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(data)
+        run(["cargo", "metadata", "--offline", "--all-features", "--format-version", "1"], staging)
+        lock = (staging / "Cargo.lock").read_bytes()
+    validate_projected_lock(files["Cargo.lock"], lock, packages)
+    return lock
 
 
 def crate_evidence(package: dict, cargo_home: Path) -> tuple[dict, dict[str, bytes]]:
@@ -446,9 +496,11 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
     if read_source(root, "Cargo.toml") != original_manifest:
         raise PackageError("source.changed_during_discovery")
     files = collect_sources(root, packages, distribution, excluded)
-    source_hashes = {name: digest(data) for name, data in files.items()}
-    original_hashes = dict(source_hashes, **{"Cargo.toml": digest(original_manifest)})
+    collected_hashes = {name: digest(data) for name, data in files.items()}
+    original_hashes = dict(collected_hashes, **{"Cargo.toml": digest(original_manifest)})
     lock = tomllib.loads(files["Cargo.lock"].decode())
+    files["Cargo.lock"] = projected_lock(files, packages)
+    source_hashes = {name: digest(data) for name, data in files.items()}
     inventory, texts = license_inventory(lock, packages, cargo_home, root)
     try:
         resolved = json.loads(run(["cargo", "metadata", "--locked", "--offline", "--all-features", "--format-version", "1"], root))
@@ -456,7 +508,8 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
     except PackageError:
         scopes = {}
     for item in inventory:
-        item["dependency_scopes"] = scopes.get((item["name"], item["version"]), ["UNKNOWN"])
+        item["dependency_scopes"] = scopes.get((item["name"], item["version"]),
+                                               ["outside_selected_workspace"] if scopes else ["UNKNOWN"])
     missing = [f"{p['name']}@{p['version']}" for p in inventory
                if p["source"] != "workspace" and (p["evidence"] not in {"checksum_verified", "checksum_and_upstream_verified"}
                                                     or p["license_declared"] == "NOASSERTION")]
@@ -522,7 +575,8 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
         "excluded_packages": [{"name": p["name"], "path": p["relative"]} for p in excluded],
         "source_transformations": ["Cargo.toml workspace membership selects " +
                                    ("core packages, excluding development, integration and private packages" if distribution == "core" else
-                                    "public integrations and their public path dependency closure, excluding development and private packages")],
+                                    "public integrations and their public path dependency closure, excluding development and private packages"),
+                                   "Cargo.lock projected offline to included workspace; original dependency identities and checksums preserved"],
         "evidence": {"license_inventory": "complete", "license_texts": "complete" if not missing else "incomplete", "missing_licenses": missing,
                      "dependency_scope": f"all_{distribution}_members_all_features_all_targets" if scopes else "UNKNOWN",
                      "gitleaks": scanner, "legal_compatibility_review": "UNKNOWN", "security_review": "UNKNOWN",
@@ -536,7 +590,7 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
     for name, expected in original_hashes.items():
         if digest(read_source(root, name)) != expected:
             raise PackageError(f"source.changed_during_export: {name}")
-    if {name: digest(data) for name, data in collect_sources(root, packages, distribution, excluded).items()} != source_hashes:
+    if {name: digest(data) for name, data in collect_sources(root, packages, distribution, excluded).items()} != collected_hashes:
         raise PackageError("source.file_set_changed_during_export")
     output.parent.mkdir(parents=True, exist_ok=True)
     # Publish only a verified, complete file; link is atomic and refuses an existing destination.

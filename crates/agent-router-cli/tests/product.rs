@@ -34,6 +34,93 @@ fn write(path: &Path, value: &Value) {
 }
 
 #[test]
+fn active_policy_store_changes_routing_and_explicit_file_overrides_it() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let store = root.join("feedback");
+    let path = root.join("strict-policy.json");
+    let policy = router_types::PhasePolicy {
+        minimum_utility_micros: i64::MAX,
+        version: "strict-test".into(),
+        ..Default::default()
+    };
+    write(&path, &serde_json::to_value(policy).unwrap());
+    command()
+        .args(["policy", "--store"])
+        .arg(&store)
+        .args(["baseline", "--policy"])
+        .arg(&path)
+        .args(["--now", "100", "--json"])
+        .assert()
+        .success();
+    let receipt = parsed(
+        phase("route-phase")
+            .arg("--policy-store")
+            .arg(&store)
+            .assert()
+            .code(3),
+    );
+    assert_eq!(receipt["abstention"], "below_threshold");
+    assert!(receipt["selected"].is_null());
+    let override_receipt = parsed(
+        phase("route-phase")
+            .arg("--policy-store")
+            .arg(&store)
+            .arg("--policy")
+            .arg(fixture("phase-policy.json"))
+            .assert()
+            .success(),
+    );
+    assert!(!override_receipt["selected"].is_null());
+    assert_ne!(receipt["policy_hash"], override_receipt["policy_hash"]);
+}
+
+#[test]
+fn catalog_content_change_invalidates_bound_metadata_even_with_same_version() {
+    let temp = tempfile::tempdir().unwrap();
+    let metadata = temp.path().join("metadata.json");
+    let catalog = temp.path().join("catalog.json");
+    let bound = temp.path().join("bound.json");
+    write(
+        &metadata,
+        &json!({"schema_version":"1","catalog_version":"fixture","assets":[]}),
+    );
+    let mut contents: Value =
+        serde_json::from_slice(&fs::read(fixture("phase-catalog.json")).unwrap()).unwrap();
+    write(&catalog, &contents);
+    let envelope = parsed(
+        command()
+            .args(["index", "--metadata"])
+            .arg(&metadata)
+            .arg("--catalog")
+            .arg(&catalog)
+            .arg("--json")
+            .assert()
+            .success(),
+    );
+    write(&bound, &envelope);
+    contents["models"][0]["quality_micros"] =
+        json!(contents["models"][0]["quality_micros"].as_u64().unwrap() - 1);
+    write(&catalog, &contents);
+    command()
+        .args(["search", "--metadata"])
+        .arg(&bound)
+        .arg("--catalog")
+        .arg(&catalog)
+        .args(["--query", "Rust", "--json"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("retrieval.catalog.mismatch"));
+    command()
+        .args(["search", "--metadata"])
+        .arg(&bound)
+        .args(["--query", "Rust", "--json"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("retrieval.catalog.required"));
+}
+
+#[test]
 fn doctor_and_audit_never_echo_private_artifact_content() {
     let dir = tempfile::tempdir().unwrap();
     let directory = fs::canonicalize(dir.path()).unwrap();

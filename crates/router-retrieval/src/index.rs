@@ -33,16 +33,30 @@ pub struct Bm25Index {
     source_hash: String,
     index_hash: String,
     catalog_version: String,
+    catalog_hash: Option<String>,
 }
 
 impl Bm25Index {
     pub fn from_json(bytes: &[u8]) -> Result<Self> {
-        Self::build(parse(bytes)?)
+        Self::build_source(parse_source(bytes)?)
     }
 
     pub fn build(document: MetadataDocument) -> Result<Self> {
         let document = canonical(document)?;
         let source_hash = hash_document(&document)?;
+        Self::build_source((document, source_hash, None))
+    }
+
+    pub fn build_bound(document: MetadataDocument, catalog_hash: &str) -> Result<Self> {
+        Self::build_envelope(MetadataEnvelope::new(document, catalog_hash)?)
+    }
+
+    pub fn build_envelope(envelope: MetadataEnvelope) -> Result<Self> {
+        Self::build_source(bound_source(envelope)?)
+    }
+
+    fn build_source(source: CanonicalSource) -> Result<Self> {
+        let (document, source_hash, catalog_hash) = source;
         let index_hash = digest(format!("{INDEX_VERSION}\0{source_hash}\0k1=1.2;b=0.75;positive-idf;boosts=8000,6000,5000,3000,2500,2000,2000").as_bytes());
         let mut index = Self {
             assets: Vec::new(),
@@ -52,6 +66,7 @@ impl Bm25Index {
             source_hash,
             index_hash,
             catalog_version: document.catalog_version,
+            catalog_hash,
         };
         let mut total_terms = 0usize;
         for metadata in document.assets {
@@ -106,6 +121,26 @@ impl Bm25Index {
     pub fn catalog_version(&self) -> &str {
         &self.catalog_version
     }
+    /// None means legacy v1 metadata with no catalog content binding.
+    pub fn catalog_hash(&self) -> Option<&str> {
+        self.catalog_hash.as_deref()
+    }
+    /// The expected digest must come from the caller's independently loaded
+    /// authoritative catalog, never from this metadata envelope itself.
+    pub fn validate_catalog_hash(&self, expected: &str) -> Result<()> {
+        validate_digest(expected)?;
+        match self.catalog_hash() {
+            None => Err(RetrievalError::UnboundCatalog),
+            Some(actual) if actual != expected => Err(RetrievalError::CatalogMismatch),
+            Some(_) => Ok(()),
+        }
+    }
+    pub(crate) fn require_unbound(&self) -> Result<()> {
+        if self.catalog_hash.is_some() {
+            return Err(RetrievalError::CatalogBindingRequired);
+        }
+        Ok(())
+    }
     pub fn len(&self) -> usize {
         self.assets.len()
     }
@@ -116,7 +151,7 @@ impl Bm25Index {
     /// Canonical metadata order/whitespace does not invalidate an index; changed
     /// metadata, catalog version, trust, body references or hashes do.
     pub fn is_current(&self, source: &[u8]) -> Result<bool> {
-        Ok(hash_document(&canonical(parse(source)?)?)? == self.source_hash)
+        Ok(parse_source(source)?.1 == self.source_hash)
     }
 
     pub fn search_current(&self, source: &[u8], query: &SearchQuery) -> Result<SearchResult> {
@@ -126,7 +161,22 @@ impl Bm25Index {
         self.search(query)
     }
 
-    pub(crate) fn asset(&self, kind: AssetKind, id: &str) -> Option<&AssetMetadata> {
+    pub fn search_current_with_catalog(
+        &self,
+        source: &[u8],
+        query: &SearchQuery,
+        catalog_hash: &str,
+    ) -> Result<SearchResult> {
+        self.validate_catalog_hash(catalog_hash)?;
+        if !self.is_current(source)? {
+            return Err(RetrievalError::Stale);
+        }
+        self.search_validated(query)
+    }
+
+    /// Inspect metadata only. This accessor neither ranks nor reads a body and
+    /// grants no authority; execution preparation must validate_catalog_hash.
+    pub fn asset(&self, kind: AssetKind, id: &str) -> Option<&AssetMetadata> {
         self.assets
             .binary_search_by(|a| (a.metadata.kind, a.metadata.id.as_str()).cmp(&(kind, id)))
             .ok()
@@ -134,14 +184,34 @@ impl Bm25Index {
     }
 
     pub fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
+        self.require_unbound()?;
+        self.search_validated(query)
+    }
+
+    pub fn search_with_catalog(
+        &self,
+        query: &SearchQuery,
+        catalog_hash: &str,
+    ) -> Result<SearchResult> {
+        self.validate_catalog_hash(catalog_hash)?;
+        self.search_validated(query)
+    }
+
+    fn search_validated(&self, query: &SearchQuery) -> Result<SearchResult> {
         validate_query(query)?;
         let terms = tokenize::terms(&query.text);
         if terms.len() > MAX_QUERY_TERMS {
             return Err(RetrievalError::Limit("query terms"));
         }
         let mut result = SearchResult {
-            schema_version: "1".into(),
+            schema_version: if self.catalog_hash.is_some() {
+                "2"
+            } else {
+                "1"
+            }
+            .into(),
             catalog_version: self.catalog_version.clone(),
+            catalog_content_sha256: self.catalog_hash.clone(),
             source_hash: self.source_hash.clone(),
             index_hash: self.index_hash.clone(),
             policy: query.policy,
@@ -309,9 +379,23 @@ impl Bm25Index {
     /// Adapter for the existing policy contract. Trust is independently checked
     /// again by router-policy against its authoritative catalog.
     pub fn skill_candidates(&self, query: &SearchQuery) -> Result<Vec<SkillCandidate>> {
+        self.require_unbound()?;
+        self.skill_candidates_validated(query)
+    }
+
+    pub fn skill_candidates_with_catalog(
+        &self,
+        query: &SearchQuery,
+        catalog_hash: &str,
+    ) -> Result<Vec<SkillCandidate>> {
+        self.validate_catalog_hash(catalog_hash)?;
+        self.skill_candidates_validated(query)
+    }
+
+    fn skill_candidates_validated(&self, query: &SearchQuery) -> Result<Vec<SkillCandidate>> {
         let mut query = query.clone();
         query.kind = Some(AssetKind::Skill);
-        let result = self.search(&query)?;
+        let result = self.search_validated(&query)?;
         if result.abstention.is_some() {
             return Ok(Vec::new());
         }
@@ -412,14 +496,89 @@ fn fields(asset: &AssetMetadata) -> Result<Vec<(Field, String)>> {
     ])
 }
 
-fn parse(bytes: &[u8]) -> Result<MetadataDocument> {
+type CanonicalSource = (MetadataDocument, String, Option<String>);
+
+#[derive(serde::Deserialize)]
+#[serde(untagged)]
+enum MetadataInput {
+    Unbound(MetadataDocument),
+    Bound(MetadataEnvelope),
+}
+
+impl MetadataEnvelope {
+    pub fn new(metadata: MetadataDocument, catalog_hash: &str) -> Result<Self> {
+        validate_digest(catalog_hash)?;
+        let metadata = canonical(metadata)?;
+        Ok(Self {
+            schema_version: "2".into(),
+            catalog_content_sha256: catalog_hash.into(),
+            metadata_content_sha256: hash_document(&metadata)?,
+            metadata,
+        })
+    }
+
+    pub fn canonical_json(&self) -> Result<Vec<u8>> {
+        let canonical = validate_envelope(self.clone())?;
+        let bytes = serde_json::to_vec(&canonical)
+            .map_err(|_| RetrievalError::Invalid("metadata serialization"))?;
+        if bytes.len() > MAX_DOCUMENT_BYTES {
+            return Err(RetrievalError::Limit("metadata document bytes"));
+        }
+        Ok(bytes)
+    }
+}
+
+fn validate_digest(value: &str) -> Result<()> {
+    if value.len() != 64
+        || !value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    {
+        return Err(RetrievalError::Invalid("catalog or metadata SHA-256"));
+    }
+    Ok(())
+}
+
+fn validate_envelope(mut envelope: MetadataEnvelope) -> Result<MetadataEnvelope> {
+    if envelope.schema_version != "2" {
+        return Err(RetrievalError::Invalid("bound metadata schema"));
+    }
+    validate_digest(&envelope.catalog_content_sha256)?;
+    validate_digest(&envelope.metadata_content_sha256)?;
+    envelope.metadata = canonical(envelope.metadata)?;
+    if hash_document(&envelope.metadata)? != envelope.metadata_content_sha256 {
+        return Err(RetrievalError::Stale);
+    }
+    Ok(envelope)
+}
+
+fn bound_source(envelope: MetadataEnvelope) -> Result<CanonicalSource> {
+    let envelope = validate_envelope(envelope)?;
+    let source_hash = hash_document(&envelope)?;
+    Ok((
+        envelope.metadata,
+        source_hash,
+        Some(envelope.catalog_content_sha256),
+    ))
+}
+
+fn parse_source(bytes: &[u8]) -> Result<CanonicalSource> {
     if bytes.len() > MAX_DOCUMENT_BYTES {
         return Err(RetrievalError::Limit("metadata document bytes"));
     }
-    serde_json::from_slice(bytes).map_err(|_| RetrievalError::Invalid("metadata JSON schema"))
+    let input = serde_json::from_slice(bytes)
+        .map_err(|_| RetrievalError::Invalid("metadata JSON schema"))?;
+    match input {
+        MetadataInput::Unbound(document) => {
+            let document = canonical(document)?;
+            let source_hash = hash_document(&document)?;
+            Ok((document, source_hash, None))
+        }
+        MetadataInput::Bound(envelope) => bound_source(envelope),
+    }
 }
 
-fn hash_document(document: &MetadataDocument) -> Result<String> {
+fn hash_document(document: &impl serde::Serialize) -> Result<String> {
     let bytes = serde_json::to_vec(document)
         .map_err(|_| RetrievalError::Invalid("metadata serialization"))?;
     if bytes.len() > MAX_DOCUMENT_BYTES {

@@ -21,6 +21,9 @@ pub(crate) fn retrieval_error(error: RetrievalError) -> CliError {
         RetrievalError::Invalid(_) => "retrieval.invalid",
         RetrievalError::Limit(_) => "retrieval.limit",
         RetrievalError::Stale => "retrieval.stale",
+        RetrievalError::UnboundCatalog => "retrieval.catalog.unbound",
+        RetrievalError::CatalogBindingRequired => "retrieval.catalog.required",
+        RetrievalError::CatalogMismatch => "retrieval.catalog.mismatch",
         RetrievalError::Selection => "retrieval.selection",
         RetrievalError::UnsafePath => "retrieval.path",
         RetrievalError::BodyHashMismatch => "retrieval.integrity",
@@ -55,6 +58,8 @@ pub(crate) fn read_index(path: &Path) -> Result<Bm25Index, CliError> {
 }
 pub(crate) fn search(
     path: &Path,
+    catalog: Option<&Path>,
+    now: Option<u64>,
     text: &str,
     kind: Option<&str>,
     top_k: usize,
@@ -69,7 +74,17 @@ pub(crate) fn search(
         .map(|kind| serde_json::from_value(serde_json::json!(kind)))
         .transpose()
         .map_err(|_| CliError::InvalidCommand)?;
-    let result = read_index(path)?.search(&query).map_err(retrieval_error)?;
+    let index = read_index(path)?;
+    let result = if let Some(path) = catalog {
+        let (catalog, _) = crate::catalogs::load(path, now, 86400)?;
+        let hash = catalog
+            .content_hash()
+            .map_err(|_| CliError::CatalogInvalid)?;
+        index.search_with_catalog(&query, &hash)
+    } else {
+        index.search(&query)
+    }
+    .map_err(retrieval_error)?;
     json_output(
         &result,
         if result.abstention.is_some() {
@@ -78,6 +93,24 @@ pub(crate) fn search(
             ExitCode::SUCCESS
         },
     )
+}
+pub(crate) fn index(
+    metadata: &Path,
+    catalog: &Path,
+    now: Option<u64>,
+    json: bool,
+) -> Result<Outcome, CliError> {
+    if !json {
+        return Err(CliError::JsonOutputRequired);
+    }
+    let document = crate::phases::read_json(metadata, router_retrieval::MAX_DOCUMENT_BYTES)?;
+    let (catalog, _) = crate::catalogs::load(catalog, now, 86400)?;
+    let hash = catalog
+        .content_hash()
+        .map_err(|_| CliError::CatalogInvalid)?;
+    let envelope =
+        router_retrieval::MetadataEnvelope::new(document, &hash).map_err(retrieval_error)?;
+    json_output(&envelope, ExitCode::SUCCESS)
 }
 fn read_task(path: &Path) -> Result<TaskInput, CliError> {
     let bytes = read_bounded(

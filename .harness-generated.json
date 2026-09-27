@@ -38,7 +38,7 @@
     ".codex/agents/rust-test-engineer.toml": "e2caa220a1e53bd9f656ad700fcb6170d91451ddd7b6ed8cba5f7abf93782018",
     ".codex/config.toml": "32718eeef1f9dc0de9b4892ee19e1cda684d18095b2137166ac2653bc6bca885",
     ".codex/hooks.json": "6ab4648dfa4dbdd4ae1b649006c1ea28e1a984de06597f92599d93d30c4da7b0",
-    "AGENTS.md": "982fe0238e2de41dfd74bada22e8d48a1ea1a502854becee2f97ff981dc3acc0",
-    "CLAUDE.md": "982fe0238e2de41dfd74bada22e8d48a1ea1a502854becee2f97ff981dc3acc0"
+    "AGENTS.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564",
+    "CLAUDE.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564"
   }
 }

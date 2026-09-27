@@ -19,6 +19,7 @@ fn validation() -> SnapshotValidation {
 }
 fn candidate(id: &str, model_id: &str) -> PhaseCandidate {
     PhaseCandidate {
+        tool_policy: router_types::PhaseToolPolicy::Restricted,
         id: id.into(),
         model: model(model_id),
         effort: EffortLevel::Medium,

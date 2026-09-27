@@ -34,6 +34,30 @@ pub(crate) fn error(error: PhaseRouteError) -> CliError {
     })
 }
 pub(crate) fn load(inputs: &PhaseArgs) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
+    load_with_policy(inputs, None)
+}
+pub(crate) fn selected_policy(inputs: &PhaseArgs) -> Result<router_types::PhasePolicy, CliError> {
+    if let Some(path) = &inputs.policy {
+        return read_json(path, 64 * 1024);
+    }
+    if let Some(path) = &inputs.policy_store {
+        if !path.is_dir() || !path.join("feedback.sqlite3").is_file() {
+            return Err(CliError::Product("policy.store.unavailable"));
+        }
+        let store = router_feedback::FeedbackStore::open(path)
+            .map_err(|_| CliError::Product("policy.store.invalid"))?;
+        return store
+            .active_policy()
+            .map_err(|_| CliError::Product("policy.active.invalid"))?
+            .map(|artifact| artifact.policy)
+            .ok_or(CliError::Product("policy.active.missing"));
+    }
+    Ok(router_types::PhasePolicy::default())
+}
+pub(crate) fn load_with_policy(
+    inputs: &PhaseArgs,
+    pinned: Option<router_types::PhasePolicy>,
+) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
     let request = read_json(&inputs.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
     let snapshot = inspect::read_snapshot(
         &inputs.host_snapshot,
@@ -45,11 +69,11 @@ pub(crate) fn load(inputs: &PhaseArgs) -> Result<(PhaseRouter, ValidatedPhaseCon
     if embedded.is_some_and(|value| value.hash() != snapshot.hash()) {
         return Err(CliError::Product("catalog.snapshot.mismatch"));
     }
-    let router = if let Some(path) = &inputs.policy {
-        PhaseRouter::new(read_json(path, 64 * 1024)?).map_err(error)?
-    } else {
-        PhaseRouter::stable_v2()
+    let policy = match pinned {
+        Some(policy) => policy,
+        None => selected_policy(inputs)?,
     };
+    let router = PhaseRouter::new(policy).map_err(error)?;
     let context = router
         .context(request, &snapshot, &catalog)
         .map_err(error)?;

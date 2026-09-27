@@ -1,9 +1,8 @@
 //! Read-only, explicitly scoped diagnostics and redacted audit export.
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 mod audit;
 mod diagnose;
-#[allow(unsafe_code)]
 mod files;
 
 pub use audit::{AuditInput, build_audit_bundle, verify_audit_bundle};

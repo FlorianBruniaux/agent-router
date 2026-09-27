@@ -1,0 +1,183 @@
+use crate::{RuntimeEvidence, TransportOutcome, VerificationOutcome};
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RunState {
+    Planned,
+    AwaitingApproval,
+    Queued,
+    Preparing,
+    Running,
+    SucceededTransport,
+    Verifying,
+    Verified,
+    Failed,
+    VerificationFailed,
+    TimedOut,
+    Cancelled,
+    Blocked,
+}
+impl RunState {
+    pub fn terminal(self) -> bool {
+        matches!(
+            self,
+            Self::Verified
+                | Self::Failed
+                | Self::VerificationFailed
+                | Self::TimedOut
+                | Self::Cancelled
+                | Self::Blocked
+        )
+    }
+    pub fn permits(self, next: Self) -> bool {
+        use RunState::*;
+        matches!(
+            (self, next),
+            (Planned, AwaitingApproval | Cancelled)
+                | (AwaitingApproval, Queued | Cancelled)
+                | (Queued, Preparing | Blocked | Cancelled)
+                | (Preparing, Running | Failed | Blocked | Cancelled)
+                | (Running, SucceededTransport | Failed | TimedOut | Cancelled)
+                | (SucceededTransport, Verifying)
+                | (Verifying, Verified | VerificationFailed)
+        )
+    }
+}
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum QueueReason {
+    Dependencies,
+    GlobalCapacity,
+    ProviderCapacity,
+    AgentCapacity,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RunFailure {
+    Authentication,
+    RateLimit,
+    Timeout,
+    Crash,
+    Network,
+    Policy,
+    Verification,
+    Interrupted,
+    OutputLimit,
+    Spawn,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RunSummary {
+    pub run_id: String,
+    pub definition_hash: String,
+    pub approval_digest: String,
+    pub receipt_id: String,
+    pub plan_id: String,
+    pub node_id: String,
+    pub state: RunState,
+    pub attempts: u32,
+    pub failure: Option<RunFailure>,
+    pub worktree: Option<String>,
+    pub artifact_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "OutputRetentionPolicy::is_disabled")]
+    pub output_retention: OutputRetentionPolicy,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuntimeEvent {
+    pub sequence: u64,
+    pub run_id: String,
+    pub kind: String,
+    pub state: RunState,
+    pub detail: String,
+    pub previous_hash: String,
+    pub event_hash: String,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RunCompletion {
+    pub run: RunSummary,
+    pub transport: TransportOutcome,
+    pub stdout_sha256: String,
+    pub stderr_sha256: String,
+    pub stdout_bytes: usize,
+    pub stderr_bytes: usize,
+    pub validation: VerificationOutcome,
+    pub objective: VerificationOutcome,
+    pub memory_enforcement: MemoryEnforcement,
+    pub runtime_evidence: Option<RuntimeEvidence>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_artifacts: Option<OutputArtifacts>,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "mode", rename_all = "snake_case", deny_unknown_fields)]
+pub enum OutputRetentionPolicy {
+    #[default]
+    Disabled,
+    PrivateArtifacts {
+        retention_seconds: u64,
+    },
+}
+impl OutputRetentionPolicy {
+    pub fn is_disabled(&self) -> bool {
+        *self == Self::Disabled
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum OutputArtifactsState {
+    Pending,
+    Retained,
+    Purging,
+    Purged,
+}
+
+/// Metadata only. Captured process bytes are never serialized into a receipt.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OutputArtifact {
+    pub path: String,
+    pub sha256: String,
+    pub bytes: usize,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct OutputArtifacts {
+    pub schema_version: u32,
+    pub run_id: String,
+    pub attempt: u32,
+    pub state: OutputArtifactsState,
+    pub created_at_unix_seconds: u64,
+    pub expires_at_unix_seconds: u64,
+    pub truncated: bool,
+    pub stdout: OutputArtifact,
+    pub stderr: OutputArtifact,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MemoryEnforcement {
+    Enforced,
+    NotRequested,
+    Unsupported,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct VerificationRecord {
+    pub verifier: String,
+    pub evidence_sha256: String,
+    pub artifact_sha256: Option<String>,
+    pub validation: VerificationOutcome,
+    pub objective: VerificationOutcome,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IntegrationPreview {
+    pub run_id: String,
+    pub source_state: String,
+    pub artifact_sha256: String,
+    pub approval_digest: String,
+    pub changed_paths: Vec<String>,
+}

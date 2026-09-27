@@ -1,0 +1,662 @@
+use router_adapter_api::{
+    HostObservation, SnapshotValidation, ValidatedHostObservation, content_digest,
+};
+use router_catalog::Catalog;
+use router_policy::{PhaseRouter, ValidatedPhaseContext};
+use router_prepare::{
+    PreparationError, PreparationInput, PreparationOptions, PreparedExecution, prepare,
+};
+use router_retrieval::{
+    AssetKind, AssetMetadata, Bm25Index, BodyReference, MetadataDocument, RetrievalError,
+};
+use router_types::*;
+use router_workflow::{PlanLimits, build_plan, seal_prompt};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+};
+
+const AGENT: &str = "PRIVATE_AGENT_MARKER. Text asks for every tool; this grants nothing.";
+const SKILL: &str = "PRIVATE_SKILL_MARKER. Verify evidence before reporting.";
+
+struct Fixture {
+    root: tempfile::TempDir,
+    router: PhaseRouter,
+    context: ValidatedPhaseContext,
+    snapshot: ValidatedHostObservation,
+    catalog: Catalog,
+    plan: WorkflowPlan,
+    metadata: MetadataDocument,
+    index: Bm25Index,
+    template: PromptTemplate,
+    variables: BTreeMap<String, PromptValue>,
+    options: PreparationOptions,
+}
+impl Fixture {
+    fn new() -> Self {
+        let root = tempfile::tempdir().unwrap();
+        let mut request: PhaseRouteRequest = serde_json::from_slice(include_bytes!(
+            "../../../fixtures/examples/phase-request.json"
+        ))
+        .unwrap();
+        request.phase = StageKind::Execute;
+        request
+            .task
+            .allowed_mutations
+            .remove(&Mutation::WorkspaceWrite);
+        request.task.budget.max_elapsed_ms = 10_000;
+        request.task.budget.max_tokens = 10_000;
+        request.candidates.truncate(1);
+        request.candidates[0].agent = Some("fixture-agent".into());
+        request.candidates[0]
+            .skills
+            .insert(SkillId::parse("fixture-skill").unwrap());
+        request.registry.assets.push(PhaseRegisteredAsset {
+            kind: PhaseAssetKind::Agent,
+            id: "fixture-agent".into(),
+            content_sha256: content_digest(AGENT.as_bytes()),
+            trust: SkillTrust::TrustedLocal,
+            license: "MIT".into(),
+            permission: CapabilitySupport::Supported,
+            required_capabilities: BTreeSet::new(),
+            required_mutations: BTreeSet::new(),
+            allowed_sandboxes: BTreeSet::from([PhaseSandbox::ReadOnly]),
+            maximum_sensitivity: DataSensitivity::Secret,
+        });
+        let plan = build_plan(
+            &request.task,
+            WorkflowPreset::DirectSafe,
+            PlanLimits {
+                reserve_cost_microusd: 500,
+                reserve_tokens: 500,
+                reserve_elapsed_ms: 1000,
+                ..PlanLimits::default()
+            },
+        )
+        .unwrap();
+        let observation: HostObservation = serde_json::from_slice(include_bytes!(
+            "../../../fixtures/examples/phase-snapshot.json"
+        ))
+        .unwrap();
+        let snapshot = ValidatedHostObservation::from_observation(
+            observation,
+            SnapshotValidation {
+                now_unix_seconds: 100,
+                max_age_seconds: 100,
+            },
+        )
+        .unwrap();
+        let mut catalog: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap();
+        catalog["skills"] = serde_json::json!([{
+            "id":"fixture-skill", "description":"fixture instruction", "task_kinds":["explore"],
+            "required_capabilities":[], "trust":"trusted_local"
+        }]);
+        let catalog = Catalog::from_json(&serde_json::to_vec(&catalog).unwrap()).unwrap();
+        let router = PhaseRouter::stable_v2();
+        let context = router.context(request, &snapshot, &catalog).unwrap();
+        let template = seal_prompt(PromptTemplate {
+            schema_version: 1,
+            id: "fixture-prompt".into(),
+            version: "v1".into(),
+            template: "Summarize ${subject}; return ${count} findings.".into(),
+            variables: BTreeMap::from([
+                ("subject".into(), PromptVariableType::Text),
+                ("count".into(), PromptVariableType::Integer),
+            ]),
+            compatible_hosts: BTreeSet::from(["codex".into()]),
+            compatible_models: BTreeSet::from([ModelId::parse("fixture-best").unwrap()]),
+            max_rendered_bytes: 4096,
+            output_contract: "Evidence-bearing findings.".into(),
+            content_sha256: String::new(),
+        })
+        .unwrap();
+        let prompt_bytes = serde_json::to_vec_pretty(&template).unwrap();
+        let metadata = MetadataDocument {
+            schema_version: "1".into(),
+            catalog_version: catalog.version().into(),
+            assets: vec![
+                asset(
+                    AssetKind::Agent,
+                    "fixture-agent",
+                    "agent.txt",
+                    AGENT.as_bytes(),
+                ),
+                asset(
+                    AssetKind::Skill,
+                    "fixture-skill",
+                    "skill.txt",
+                    SKILL.as_bytes(),
+                ),
+                asset(
+                    AssetKind::Prompt,
+                    "fixture-prompt",
+                    "prompt.json",
+                    &prompt_bytes,
+                ),
+                asset(
+                    AssetKind::Skill,
+                    "unselected",
+                    "never-created",
+                    b"never read",
+                ),
+            ],
+        };
+        fs::write(root.path().join("agent.txt"), AGENT).unwrap();
+        fs::write(root.path().join("skill.txt"), SKILL).unwrap();
+        fs::write(root.path().join("prompt.json"), prompt_bytes).unwrap();
+        let index = Bm25Index::build_bound(metadata.clone(), context.catalog_hash()).unwrap();
+        let options = PreparationOptions {
+            schema_version: 1,
+            workspace: root.path().canonicalize().unwrap().to_str().unwrap().into(),
+            source_state: "a".repeat(40),
+            target: ExecutionTarget::ExternalWorker,
+            allow_degradation: false,
+            timeout_ms: 500,
+            max_output_bytes: 8192,
+            max_input_bytes: 65536,
+            now_unix_seconds: 100,
+            max_snapshot_age_seconds: 100,
+        };
+        Self {
+            root,
+            router,
+            context,
+            snapshot,
+            catalog,
+            plan,
+            metadata,
+            index,
+            template,
+            variables: BTreeMap::from([
+                (
+                    "subject".into(),
+                    PromptValue::Text("PRIVATE_VARIABLE_MARKER".into()),
+                ),
+                ("count".into(), PromptValue::Integer(2)),
+            ]),
+            options,
+        }
+    }
+    fn prepare(&self) -> Result<PreparedExecution, PreparationError> {
+        prepare(PreparationInput {
+            router: &self.router,
+            context: &self.context,
+            plan: &self.plan,
+            node_id: "execute",
+            index: &self.index,
+            body_root: self.root.path(),
+            template: &self.template,
+            variables: &self.variables,
+            options: &self.options,
+        })
+    }
+    fn reindex(&mut self) {
+        self.index =
+            Bm25Index::build_bound(self.metadata.clone(), self.context.catalog_hash()).unwrap();
+    }
+    fn reroute(&mut self, request: PhaseRouteRequest) {
+        self.context = self
+            .router
+            .context(request, &self.snapshot, &self.catalog)
+            .unwrap();
+    }
+}
+fn asset(kind: AssetKind, id: &str, path: &str, bytes: &[u8]) -> AssetMetadata {
+    AssetMetadata {
+        id: id.into(),
+        kind,
+        trust: SkillTrust::TrustedLocal,
+        task_kinds: vec![TaskKind::Explore],
+        triggers: vec![],
+        description: "synthetic fixture".into(),
+        examples: vec![],
+        tags: vec![],
+        paths: vec![],
+        anti_triggers: vec![],
+        body: Some(BodyReference {
+            path: path.into(),
+            sha256: content_digest(bytes),
+        }),
+    }
+}
+
+#[test]
+fn selected_bodies_are_bound_and_preview_is_redacted_without_approval() {
+    let fixture = Fixture::new();
+    let prepared = fixture.prepare().unwrap();
+    assert_eq!(
+        prepared.receipt(),
+        &fixture.router.route(&fixture.context).unwrap()
+    );
+    assert_eq!(prepared.preview().assets.len(), 3);
+    assert_eq!(prepared.request().skills.len(), 1);
+    assert_eq!(prepared.request().skills[0].body, SKILL);
+    assert!(prepared.request().prompt.contains(AGENT));
+    assert!(
+        prepared
+            .request()
+            .prompt
+            .contains("PRIVATE_VARIABLE_MARKER")
+    );
+    assert!(
+        prepared
+            .request()
+            .prompt
+            .contains("cite an enforcing symbol")
+    );
+    assert_eq!(prepared.request().scope, fixture.plan.nodes[0].scope);
+    assert_eq!(prepared.request().tools, ToolSelection::Disabled);
+    assert_eq!(prepared.request().mode, ExecutionMode::Execute);
+    assert!(prepared.preview().approval_required);
+    assert!(!prepared.preview().execution_started);
+    assert_eq!(prepared.preview().observed_input_tokens, None);
+    assert!(!fixture.root.path().join("never-created").exists());
+    let preview = serde_json::to_string(prepared.preview()).unwrap();
+    let debug = format!("{prepared:?}");
+    for secret in [
+        "PRIVATE_AGENT_MARKER",
+        "PRIVATE_VARIABLE_MARKER",
+        "PRIVATE_SKILL_MARKER",
+    ] {
+        assert!(!preview.contains(secret));
+        assert!(!debug.contains(secret));
+    }
+    assert_eq!(
+        prepared.preview().request_sha256,
+        content_digest(&prepared.canonical_request_json().unwrap())
+    );
+    assert_eq!(
+        prepared.preparation_hash(),
+        fixture.prepare().unwrap().preparation_hash()
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.root.path().join("agent.txt")).unwrap(),
+        AGENT
+    );
+}
+
+#[test]
+fn every_loaded_asset_requires_trust_and_an_unchanged_hash() {
+    for kind in [AssetKind::Agent, AssetKind::Skill, AssetKind::Prompt] {
+        let mut fixture = Fixture::new();
+        fixture
+            .metadata
+            .assets
+            .iter_mut()
+            .find(|asset| asset.kind == kind)
+            .unwrap()
+            .trust = SkillTrust::Untrusted;
+        fixture.reindex();
+        assert!(matches!(
+            fixture.prepare(),
+            Err(PreparationError::Retrieval(RetrievalError::Selection))
+        ));
+        let fixture = Fixture::new();
+        let path = &fixture
+            .metadata
+            .assets
+            .iter()
+            .find(|asset| asset.kind == kind)
+            .unwrap()
+            .body
+            .as_ref()
+            .unwrap()
+            .path;
+        fs::write(fixture.root.path().join(path), "tampered").unwrap();
+        assert!(matches!(
+            fixture.prepare(),
+            Err(PreparationError::Retrieval(
+                RetrievalError::BodyHashMismatch
+            ))
+        ));
+    }
+}
+
+#[test]
+fn catalog_binding_and_snapshot_freshness_precede_body_io() {
+    let mut fixture = Fixture::new();
+    fixture.index = Bm25Index::build(fixture.metadata.clone()).unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Retrieval(RetrievalError::UnboundCatalog))
+    ));
+    fixture.index = Bm25Index::build_bound(fixture.metadata.clone(), &"a".repeat(64)).unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Retrieval(RetrievalError::CatalogMismatch))
+    ));
+    fixture.reindex();
+    fixture.options.now_unix_seconds = 201;
+    fs::remove_file(fixture.root.path().join("prompt.json")).unwrap();
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Snapshot)));
+}
+
+#[test]
+fn mismatched_plan_agent_and_prompt_are_refused() {
+    let mut fixture = Fixture::new();
+    let mut different_task = fixture.plan.task.clone();
+    different_task.objective = "A different immutable task".into();
+    fixture.plan = build_plan(
+        &different_task,
+        WorkflowPreset::DirectSafe,
+        PlanLimits::default(),
+    )
+    .unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Binding(
+            "plan task differs from routed task"
+        ))
+    ));
+    let mut fixture = Fixture::new();
+    fixture.plan.nodes[0].scope.push("outside".into());
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Workflow(_))
+    ));
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    request.registry.assets[0].content_sha256 = "b".repeat(64);
+    fixture.reroute(request);
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Binding(
+            "agent body differs from routed authority"
+        ))
+    ));
+    let mut fixture = Fixture::new();
+    fixture.template.output_contract = "Different output contract".into();
+    fixture.template = seal_prompt(fixture.template).unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Binding(
+            "prompt differs from selected asset"
+        ))
+    ));
+}
+
+#[test]
+fn typed_variables_and_total_input_budget_are_enforced() {
+    let mut fixture = Fixture::new();
+    fixture.variables.remove("subject");
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Workflow(_))
+    ));
+    let mut fixture = Fixture::new();
+    fixture
+        .variables
+        .insert("count".into(), PromptValue::Text("2".into()));
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Workflow(_))
+    ));
+    let mut fixture = Fixture::new();
+    fixture.options.max_input_bytes = 1;
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Limit)));
+    let mut fixture = Fixture::new();
+    fixture.options.timeout_ms = fixture.plan.nodes[0].budget.max_elapsed_ms + 1;
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Binding("node authority or budget"))
+    ));
+}
+
+#[test]
+fn changing_a_variable_or_source_changes_preparation_identity() {
+    let mut fixture = Fixture::new();
+    let first = fixture.prepare().unwrap();
+    fixture
+        .variables
+        .insert("count".into(), PromptValue::Integer(3));
+    let second = fixture.prepare().unwrap();
+    assert_eq!(first.receipt(), second.receipt());
+    assert_ne!(first.preparation_hash(), second.preparation_hash());
+    assert_ne!(
+        first.preview().request_sha256,
+        second.preview().request_sha256
+    );
+    fixture.options.source_state = "b".repeat(40);
+    assert_ne!(
+        second.preparation_hash(),
+        fixture.prepare().unwrap().preparation_hash()
+    );
+}
+
+#[test]
+fn native_host_tool_authority_is_preserved_and_never_inferred_from_instructions() {
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    request.candidates[0].tool_policy = PhaseToolPolicy::NativeHost;
+    fixture.reroute(request.clone());
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Abstained)
+    ));
+    request.permissions.insert(
+        PhasePermission::NativeHostTools,
+        CapabilitySupport::Supported,
+    );
+    fixture.reroute(request);
+    assert_eq!(
+        fixture.prepare().unwrap().request().tools,
+        ToolSelection::HostPolicy
+    );
+}
+
+#[test]
+fn a_registered_allowlist_is_preserved_without_loading_tool_bodies() {
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    request.candidates[0].tools.insert("read-file".into());
+    request.registry.assets.push(PhaseRegisteredAsset {
+        kind: PhaseAssetKind::Tool,
+        id: "read-file".into(),
+        content_sha256: "c".repeat(64),
+        trust: SkillTrust::TrustedLocal,
+        license: "MIT".into(),
+        permission: CapabilitySupport::Supported,
+        required_capabilities: BTreeSet::new(),
+        required_mutations: BTreeSet::new(),
+        allowed_sandboxes: BTreeSet::from([PhaseSandbox::ReadOnly]),
+        maximum_sensitivity: DataSensitivity::Secret,
+    });
+    fixture.reroute(request);
+    let prepared = fixture.prepare().unwrap();
+    assert_eq!(
+        prepared.request().tools,
+        ToolSelection::AllowList(vec!["read-file".into()])
+    );
+    assert_eq!(prepared.preview().assets.len(), 3);
+}
+
+#[test]
+fn no_agent_or_skill_does_not_load_their_metadata_or_files() {
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    request.candidates[0].agent = None;
+    request.candidates[0].skills.clear();
+    fixture.reroute(request);
+    fs::remove_file(fixture.root.path().join("agent.txt")).unwrap();
+    fs::remove_file(fixture.root.path().join("skill.txt")).unwrap();
+    let prepared = fixture.prepare().unwrap();
+    assert_eq!(prepared.preview().assets.len(), 1);
+    assert!(prepared.request().skills.is_empty());
+    assert_eq!(prepared.request().agent, None);
+}
+
+#[test]
+fn abstention_and_parent_reconfiguration_cannot_become_execution_requests() {
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    request.permissions.remove(&PhasePermission::ModelInference);
+    fixture.reroute(request);
+    fs::remove_file(fixture.root.path().join("prompt.json")).unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Abstained)
+    ));
+    let mut fixture = Fixture::new();
+    fixture.options.target = ExecutionTarget::ParentConversation;
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Adapter(
+            router_adapter_api::AdapterError::Unsupported("parent-model-change")
+        ))
+    ));
+}
+
+#[test]
+fn agent_tool_skill_and_mutation_capabilities_survive_preparation() {
+    for source in ["agent", "tool", "skill", "mutation"] {
+        let mut fixture = Fixture::new();
+        let mut request = fixture.context.request().clone();
+        match source {
+            "agent" => {
+                request.registry.assets[0]
+                    .required_capabilities
+                    .insert(Capability::Network);
+            }
+            "tool" => {
+                let mut tool = request.registry.assets[0].clone();
+                tool.kind = PhaseAssetKind::Tool;
+                tool.id = "remote-read".into();
+                tool.required_capabilities.insert(Capability::Network);
+                request.registry.assets.push(tool);
+                request.candidates[0].tools.insert("remote-read".into());
+            }
+            "skill" => {
+                let mut catalog: serde_json::Value =
+                    serde_json::from_slice(&fixture.catalog.canonical_json().unwrap()).unwrap();
+                catalog["skills"][0]["required_capabilities"] = serde_json::json!(["network"]);
+                fixture.catalog =
+                    Catalog::from_json(&serde_json::to_vec(&catalog).unwrap()).unwrap();
+            }
+            "mutation" => {
+                request.registry.assets[0]
+                    .required_mutations
+                    .insert(Mutation::Network);
+            }
+            _ => unreachable!(),
+        }
+        fixture.reroute(request.clone());
+        fixture.reindex();
+        let prepared = fixture.prepare().unwrap();
+        assert!(
+            prepared
+                .request()
+                .required_capabilities
+                .contains(&Capability::Network),
+            "{source}"
+        );
+        assert!(
+            prepared
+                .preview()
+                .required_capabilities
+                .contains(&Capability::Network)
+        );
+        assert!(
+            prepared
+                .receipt()
+                .selected
+                .as_ref()
+                .unwrap()
+                .candidate
+                .required_capabilities
+                .is_empty()
+        );
+        request
+            .permissions
+            .insert(PhasePermission::Network, CapabilitySupport::Unsupported);
+        fixture.reroute(request);
+        assert!(
+            matches!(fixture.prepare(), Err(PreparationError::Abstained)),
+            "{source}"
+        );
+        assert!(
+            fixture
+                .router
+                .execution_capabilities(
+                    &fixture.context,
+                    prepared.receipt().selected.as_ref().unwrap()
+                )
+                .is_err()
+        );
+    }
+}
+
+#[test]
+fn effective_capabilities_require_an_exact_eligible_selection() {
+    let fixture = Fixture::new();
+    let receipt = fixture.router.route(&fixture.context).unwrap();
+    let selected = receipt.selected.as_ref().unwrap();
+    assert!(
+        fixture
+            .router
+            .execution_capabilities(&fixture.context, selected)
+            .unwrap()
+            .is_empty()
+    );
+    let mut forged = selected.clone();
+    forged.score.utility_micros += 1;
+    assert!(
+        fixture
+            .router
+            .execution_capabilities(&fixture.context, &forged)
+            .is_err()
+    );
+    let mut forged = selected.clone();
+    forged
+        .candidate
+        .required_capabilities
+        .insert(Capability::Network);
+    assert!(
+        fixture
+            .router
+            .execution_capabilities(&fixture.context, &forged)
+            .is_err()
+    );
+}
+
+#[test]
+fn serialized_request_limit_accounts_for_json_escaping() {
+    let mut fixture = Fixture::new();
+    fixture.template.max_rendered_bytes = 65536;
+    fixture.template = seal_prompt(fixture.template).unwrap();
+    let bytes = serde_json::to_vec(&fixture.template).unwrap();
+    fs::write(fixture.root.path().join("prompt.json"), &bytes).unwrap();
+    fixture
+        .metadata
+        .assets
+        .iter_mut()
+        .find(|asset| asset.kind == AssetKind::Prompt)
+        .unwrap()
+        .body
+        .as_mut()
+        .unwrap()
+        .sha256 = content_digest(&bytes);
+    fixture.reindex();
+    fixture.options.max_input_bytes = 128 * 1024;
+    // The rendered prompt fits, but serializing a JSON prompt string inside the
+    // execution document adds another escaping layer beyond the parser bound.
+    fixture
+        .variables
+        .insert("subject".into(), PromptValue::Text("\"".repeat(40000)));
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Limit)));
+}
+
+#[cfg(unix)]
+#[test]
+fn selected_symlink_is_refused_but_unselected_missing_file_is_ignored() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new();
+    fs::remove_file(fixture.root.path().join("skill.txt")).unwrap();
+    symlink("agent.txt", fixture.root.path().join("skill.txt")).unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Retrieval(RetrievalError::UnsafePath))
+    ));
+}

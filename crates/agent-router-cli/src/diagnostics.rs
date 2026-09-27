@@ -97,7 +97,9 @@ pub(crate) fn audit(command: AuditCommand) -> Result<Outcome, CliError> {
             if !json {
                 return Err(CliError::JsonOutputRequired);
             }
-            let bundle: router_types::AuditBundle = read_json(&bundle, MAX_FILE_BYTES)?;
+            // Allowlist projections and per-record hashes can expand a valid
+            // bounded input set. Keep bundle transport separately bounded.
+            let bundle: router_types::AuditBundle = read_json(&bundle, 32 * 1024 * 1024)?;
             router_doctor::verify_audit_bundle(&bundle, expected_root.as_deref()).map_err(error)?;
             json_output(
                 &serde_json::json!({"schema_version":1,"valid":true,"root_hash":bundle.root_hash,"trusted_root_matched":expected_root.is_some(),"signature_verified":false}),

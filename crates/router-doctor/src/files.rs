@@ -27,7 +27,6 @@ pub(crate) struct ReadRoot;
 #[cfg(unix)]
 impl ReadRoot {
     pub(crate) fn open(path: &str) -> Result<Self> {
-        use std::os::fd::AsRawFd;
         if !Path::new(path).is_absolute() || path.len() > 4096 || path.contains('\0') {
             return Err(DoctorError::Path);
         }
@@ -35,7 +34,7 @@ impl ReadRoot {
         for part in Path::new(path).components() {
             match part {
                 Component::RootDir => {}
-                Component::Normal(name) => directory = open_at(directory.as_raw_fd(), name, true)?,
+                Component::Normal(name) => directory = open_at(&directory, name, true)?,
                 _ => return Err(DoctorError::Path),
             }
         }
@@ -43,7 +42,6 @@ impl ReadRoot {
     }
 
     pub(crate) fn file(&self, path: &str) -> Result<File> {
-        use std::os::fd::AsRawFd;
         if !relative(path) {
             return Err(DoctorError::Path);
         }
@@ -54,7 +52,7 @@ impl ReadRoot {
                 return Err(DoctorError::Path);
             };
             let last = index + 1 == parts.len();
-            let file = open_at(directory.as_raw_fd(), name, !last)?;
+            let file = open_at(&directory, name, !last)?;
             if last {
                 if !file.metadata().map_err(|_| DoctorError::Read)?.is_file() {
                     return Err(DoctorError::Path);
@@ -67,30 +65,108 @@ impl ReadRoot {
     }
 }
 
-#[cfg(unix)]
-fn open_at(
-    directory: std::os::fd::RawFd,
-    name: &std::ffi::OsStr,
-    is_directory: bool,
-) -> Result<File> {
-    use std::{
-        ffi::CString,
-        os::{fd::FromRawFd, unix::ffi::OsStrExt},
-    };
-    let name = CString::new(name.as_bytes()).map_err(|_| DoctorError::Path)?;
-    let flags = libc::O_RDONLY
-        | libc::O_NOFOLLOW
-        | libc::O_CLOEXEC
-        | libc::O_NONBLOCK
-        | if is_directory { libc::O_DIRECTORY } else { 0 };
-    // SAFETY: name is NUL-terminated, directory remains owned and open, flags
-    // request read-only access and no creation. A successful fd is owned once.
-    let descriptor = unsafe { libc::openat(directory, name.as_ptr(), flags) };
-    if descriptor < 0 {
-        return Err(DoctorError::Read);
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+    use std::{fs, io::Read, os::unix::fs::symlink, sync::mpsc, time::Duration};
+
+    #[test]
+    fn renamed_root_cannot_redirect_an_open_descriptor() {
+        let temp = tempfile::tempdir().unwrap();
+        let parent = temp.path().canonicalize().unwrap();
+        let original = parent.join("root");
+        let outside = parent.join("outside");
+        fs::create_dir(&original).unwrap();
+        fs::create_dir(&outside).unwrap();
+        fs::write(original.join("artifact"), "original").unwrap();
+        fs::write(outside.join("artifact"), "outside-secret").unwrap();
+        let root = ReadRoot::open(original.to_str().unwrap()).unwrap();
+        fs::rename(&original, parent.join("moved-root")).unwrap();
+        symlink(&outside, &original).unwrap();
+        assert_eq!(
+            fs::read_to_string(original.join("artifact")).unwrap(),
+            "outside-secret"
+        );
+        let mut content = String::new();
+        root.file("artifact")
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
+        assert_eq!(content, "original");
+        assert!(ReadRoot::open(original.to_str().unwrap()).is_err());
     }
-    // SAFETY: openat just returned a fresh valid descriptor, transferred to File.
-    Ok(unsafe { File::from_raw_fd(descriptor) })
+
+    #[test]
+    fn renamed_intermediate_directory_stays_bound_to_its_descriptor() {
+        let temp = tempfile::tempdir().unwrap();
+        let parent = temp.path().canonicalize().unwrap();
+        fs::create_dir(parent.join("inner")).unwrap();
+        fs::create_dir(parent.join("outside")).unwrap();
+        fs::write(parent.join("inner/artifact"), "original").unwrap();
+        fs::write(parent.join("outside/artifact"), "outside-secret").unwrap();
+        let root = ReadRoot::open(parent.to_str().unwrap()).unwrap();
+        let directory = open_at(&root.0, std::ffi::OsStr::new("inner"), true).unwrap();
+        fs::rename(parent.join("inner"), parent.join("moved-inner")).unwrap();
+        symlink(parent.join("outside"), parent.join("inner")).unwrap();
+        let mut content = String::new();
+        open_at(&directory, std::ffi::OsStr::new("artifact"), false)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
+        assert_eq!(content, "original");
+        assert!(root.file("inner/artifact").is_err());
+    }
+
+    #[test]
+    fn fifo_and_directory_are_rejected_without_waiting_for_a_writer() {
+        use rustix::fs::{Mode, OFlags, openat};
+        let temp = tempfile::tempdir().unwrap();
+        let parent = temp.path().canonicalize().unwrap();
+        let root = ReadRoot::open(parent.to_str().unwrap()).unwrap();
+        fs::create_dir(parent.join("directory")).unwrap();
+        assert!(matches!(root.file("directory"), Err(DoctorError::Path)));
+        // rustix exposes mkfifoat on Linux but not Apple platforms. Only test
+        // fixture setup launches this POSIX utility; the reader never spawns.
+        assert!(
+            std::process::Command::new("mkfifo")
+                .arg(parent.join("fifo"))
+                .status()
+                .unwrap()
+                .success()
+        );
+        let directory = root.0.try_clone().unwrap();
+        let (sender, receiver) = mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            let _ = sender.send(matches!(root.file("fifo"), Err(DoctorError::Path)));
+        });
+        let result = receiver.recv_timeout(Duration::from_secs(5));
+        if matches!(result, Err(mpsc::RecvTimeoutError::Timeout)) {
+            // Unblock a regressed blocking reader before failing this test.
+            let _writer = openat(
+                &directory,
+                "fifo",
+                OFlags::WRONLY | OFlags::NONBLOCK,
+                Mode::empty(),
+            );
+            panic!("FIFO read did not return without a writer");
+        }
+        assert_eq!(result, Ok(true));
+        worker.join().unwrap();
+    }
+}
+
+#[cfg(unix)]
+fn open_at(directory: &File, name: &std::ffi::OsStr, is_directory: bool) -> Result<File> {
+    use rustix::fs::{Mode, OFlags, openat};
+    let mut flags = OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK;
+    if is_directory {
+        flags |= OFlags::DIRECTORY;
+    }
+    // The descriptor stays borrowed for the call. OwnedFd transfers ownership
+    // to File without raw descriptor conversion or unsafe application code.
+    openat(directory, name, flags, Mode::empty())
+        .map(File::from)
+        .map_err(|_| DoctorError::Read)
 }
 
 #[cfg(not(unix))]

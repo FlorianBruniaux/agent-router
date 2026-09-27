@@ -31,6 +31,12 @@ pub enum RetrievalError {
     Limit(&'static str),
     #[error("retrieval.stale: metadata source changed; rebuild the index")]
     Stale,
+    #[error("retrieval.catalog.unbound: legacy metadata has no catalog content binding")]
+    UnboundCatalog,
+    #[error("retrieval.catalog.required: supply the current catalog digest before selection")]
+    CatalogBindingRequired,
+    #[error("retrieval.catalog.mismatch: catalog content changed; rebuild the bound metadata")]
+    CatalogMismatch,
     #[error("retrieval.selection: asset is absent, untrusted, blocked or has no body")]
     Selection,
     #[error("retrieval.path: body path must remain a regular file beneath the supplied root")]

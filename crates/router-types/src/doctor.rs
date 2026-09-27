@@ -128,6 +128,9 @@ pub struct AuditRecord {
     pub content_sha256: String,
     pub byte_count: usize,
     pub metadata: AuditMetadata,
+    /// Absent in v1. V2 is a typed projection of unverified input claims.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub projection: Option<AuditProjection>,
     pub previous_hash: String,
     pub record_hash: String,
 }
@@ -140,6 +143,248 @@ pub struct AuditBundle {
     pub root_hash: String,
     pub raw_content_included: bool,
     pub signature_verified: bool,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditProvenance {
+    UnverifiedInput,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditProjection {
+    pub provenance: AuditProvenance,
+    pub data: AuditProjectionData,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(
+    tag = "type",
+    content = "fields",
+    rename_all = "snake_case",
+    deny_unknown_fields
+)]
+pub enum AuditProjectionData {
+    EffectiveConfig(AuditConfiguration),
+    Catalog(AuditCatalog),
+    Decision(AuditDecision),
+    Events(AuditEvents),
+    Evidence(AuditEvidence),
+    Versions(AuditVersions),
+}
+
+/// All free-form identities, including declared digest values, are hashed
+/// again under an audit domain. They are correlation keys, not source proofs.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditReferences {
+    pub receipt_sha256: Option<String>,
+    pub context_sha256: Option<String>,
+    pub catalog_sha256: Option<String>,
+    pub policy_sha256: Option<String>,
+    pub snapshot_sha256: Option<String>,
+    pub pool_sha256: Option<String>,
+    pub registry_sha256: Option<String>,
+    pub evidence_sha256: Option<String>,
+    pub definition_sha256: Option<String>,
+    pub approval_sha256: Option<String>,
+    pub plan_sha256: Option<String>,
+    pub node_sha256: Option<String>,
+    pub artifact_sha256: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditBudget {
+    pub max_cost_microusd: Option<u64>,
+    pub max_tokens: Option<u64>,
+    pub max_elapsed_ms: Option<u64>,
+    pub max_concurrency: Option<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditConfiguration {
+    pub source_sha256: Vec<String>,
+    pub allowed_model_sha256: Option<Vec<String>>,
+    pub allowed_capabilities: Option<Vec<crate::Capability>>,
+    pub allowed_mutations: Option<Vec<crate::Mutation>>,
+    pub preferred_model_sha256: Option<String>,
+    pub budget: AuditBudget,
+    pub references: AuditReferences,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditDecisionVerdict {
+    Selected,
+    Abstained,
+    Unknown,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditDecision {
+    pub verdict: AuditDecisionVerdict,
+    pub phase: Option<crate::StageKind>,
+    pub candidate_sha256: Option<String>,
+    pub model_sha256: Option<String>,
+    pub effort: Option<crate::EffortLevel>,
+    pub sandbox: Option<crate::PhaseSandbox>,
+    pub verification: Option<crate::PhaseVerification>,
+    pub required_capabilities: Option<Vec<crate::Capability>>,
+    pub required_mutations: Option<Vec<crate::Mutation>>,
+    pub asset_count: Option<u64>,
+    pub abstention: Option<crate::PhaseAbstention>,
+    pub utility_micros: Option<i64>,
+    pub estimated_cost_microusd: Option<u64>,
+    pub estimated_tokens: Option<u64>,
+    pub estimated_elapsed_ms: Option<u64>,
+    pub alternatives: Option<u64>,
+    pub exclusions: Option<u64>,
+    pub unavailable: Option<u64>,
+    pub references: AuditReferences,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditRunState {
+    Planned,
+    AwaitingApproval,
+    Queued,
+    Preparing,
+    Running,
+    SucceededTransport,
+    Verifying,
+    Verified,
+    Failed,
+    VerificationFailed,
+    TimedOut,
+    Cancelled,
+    Blocked,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditEventKind {
+    Planned,
+    Transition,
+    Approval,
+    Queued,
+    Started,
+    Completed,
+    Verification,
+    Cancelled,
+    Recovery,
+    Integration,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditFailure {
+    Authentication,
+    RateLimit,
+    Timeout,
+    Crash,
+    Network,
+    Policy,
+    Verification,
+    Interrupted,
+    OutputLimit,
+    Spawn,
+    Budget,
+    Cancelled,
+    Unknown,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditRuntimeItem {
+    pub sequence: Option<u64>,
+    pub run_sha256: Option<String>,
+    pub event_sha256: Option<String>,
+    pub state: Option<AuditRunState>,
+    pub kind: Option<AuditEventKind>,
+    pub transport_kind: Option<crate::TransportEventKind>,
+    pub failure: Option<AuditFailure>,
+    pub attempts: Option<u64>,
+    pub recorded_at_unix_seconds: Option<u64>,
+    pub termination: Option<crate::TransportTermination>,
+    pub exit_code: Option<i32>,
+    pub elapsed_ms: Option<u64>,
+    pub stdout_bytes: Option<u64>,
+    pub stderr_bytes: Option<u64>,
+    pub stdout_sha256: Option<String>,
+    pub stderr_sha256: Option<String>,
+    pub validation: Option<crate::VerificationOutcome>,
+    pub objective: Option<crate::VerificationOutcome>,
+    pub requested_model_sha256: Option<String>,
+    pub requested_effort: Option<crate::EffortLevel>,
+    pub references: AuditReferences,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditEvents {
+    pub total_entries: u64,
+    pub omitted_entries: u64,
+    pub entries: Vec<AuditRuntimeItem>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditEvidence {
+    pub termination: Option<crate::TransportTermination>,
+    pub exit_code: Option<i32>,
+    pub elapsed_ms: Option<u64>,
+    pub transport_success: Option<bool>,
+    pub stream_complete: Option<bool>,
+    pub validation: Option<crate::VerificationOutcome>,
+    pub objective: Option<crate::VerificationOutcome>,
+    pub model_sha256: Vec<String>,
+    pub model_source_sha256: Vec<String>,
+    pub observed_effort: Option<crate::EffortLevel>,
+    pub event_count: Option<u64>,
+    pub references: AuditReferences,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AuditBackendKind {
+    Deterministic,
+    Laya,
+    Jev,
+    Unknown,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditVersion {
+    pub identity_sha256: Option<String>,
+    pub major: Option<u32>,
+    pub minor: Option<u32>,
+    pub patch: Option<u32>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditVersions {
+    pub policy: AuditVersion,
+    pub backend: AuditBackendKind,
+    pub backend_version: AuditVersion,
+    pub producer: AuditVersion,
+    pub references: AuditReferences,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditCatalog {
+    pub version: AuditVersion,
+    pub model_count: Option<u64>,
+    pub skill_count: Option<u64>,
+    pub asset_count: Option<u64>,
+    pub references: AuditReferences,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
