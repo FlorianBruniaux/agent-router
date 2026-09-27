@@ -1,0 +1,171 @@
+docs/adr/0005-durable-backend-activation.md
+  s_86ed8bd547d4f8::t_073dd90a2c7c09 1-32
+crates/router-backend-store/src/files.rs
+  s_86ed8bd547d4f8::t_2579ead4b57dac 1-22,31-86,88-94,96-290
+  s_86ed8bd547d4f8::t_1398c2deb0be05 23-30,87,95
+crates/agent-router-cli/tests/support/native_fixture.rs
+  s_86ed8bd547d4f8::t_1f56a711828b5e 116-122
+crates/agent-router-cli/tests/backend_execution.rs
+  s_86ed8bd547d4f8::t_19e3234051da0b 1-793
+  s_86ed8bd547d4f8::t_7da6b2a043aaa3 794-809
+docs/completion.md
+  s_86ed8bd547d4f8::t_073dd90a2c7c09 17,19,21,52-53,78-100
+docs/other-hosts.md
+  s_86ed8bd547d4f8::t_073dd90a2c7c09 1-222
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_4e5afe269c16ef 42-51
+Cargo.lock
+  s_86ed8bd547d4f8::t_b007987414f124 29-49,71-72,75-76,81-82,88,783-823,854,859,861-863,926-944,985,988,990-992,1021,1025-1026,1028-1030
+Cargo.toml
+  s_86ed8bd547d4f8::t_af858450ebdc31 6-8,24-25
+README.md
+  s_86ed8bd547d4f8::t_635244861b49e8 63,167,186
+crates/adapter-copilot/Cargo.toml
+  s_86ed8bd547d4f8::t_1afed73151473f 1-15
+crates/adapter-copilot/src/lib.rs
+  s_86ed8bd547d4f8::t_0065ee27f62f62 1-213
+crates/adapter-copilot/src/stream.rs
+  s_86ed8bd547d4f8::t_1455e651cf1ca1 1-209
+crates/adapter-copilot/tests/conformance.rs
+  s_86ed8bd547d4f8::t_0a7a4351f346c6 1-511
+crates/adapter-copilot/tests/fixtures/source-derived/README.md
+  s_86ed8bd547d4f8::t_e522c26dfcf16c 1-6
+crates/adapter-copilot/tests/fixtures/source-derived/version.txt
+  s_86ed8bd547d4f8::t_62756e6f8d39b4 1-2
+crates/adapter-copilot/tests/stream.rs
+  s_86ed8bd547d4f8::t_f0dd55bc1c2dce 1-323
+crates/adapter-opencode/Cargo.toml
+  s_86ed8bd547d4f8::t_4ae64ef2229625 1-12
+crates/adapter-opencode/src/lib.rs
+  s_86ed8bd547d4f8::t_70e5a310f5f4e9 1-195
+crates/adapter-opencode/src/stream.rs
+  s_86ed8bd547d4f8::t_de93dc227aa967 1-218
+crates/adapter-opencode/tests/fixtures/source-derived/README.md
+  s_86ed8bd547d4f8::t_da86a0fd24ebf7 1-5
+crates/adapter-opencode/tests/fixtures/source-derived/version.txt
+  s_86ed8bd547d4f8::t_7fe4d39ededc05 1
+crates/adapter-opencode/tests/stream.rs
+  s_86ed8bd547d4f8::t_171f281c2bafa5 1-269
+crates/agent-router-cli/Cargo.toml
+  s_86ed8bd547d4f8::t_a636e45db58ffa 16-17,24-25,35-37,48-49
+crates/agent-router-cli/src/backend_activation.rs
+  s_86ed8bd547d4f8::t_1edc918181ab75 1-218
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_b3ad7dab33448b 36-42
+crates/agent-router-cli/src/coordinator.rs
+  s_86ed8bd547d4f8::t_68e13bf6558c4e 6-8,142,154,158-169,172,178,186,257,262-274,284-291,307-312,338,382,384,387-392,400-403,411,413,417-421,427-435,445,481-504
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_36e47e8eef1e39 8,37-38,89-94,120,158,191,198-203,292,296-307,319,323,330,335-338,344-363,367-374,400,402,408,436-453,554-565,567,580,584,591,600,604,627,645-651,658,807-881
+crates/agent-router-cli/src/execution_backend.rs
+  s_86ed8bd547d4f8::t_b023a2eb22fd34 1-150
+crates/agent-router-cli/src/execution_feedback.rs
+  s_86ed8bd547d4f8::t_b515642626862d 24,36-38,43-47
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_b1e78ca65b48f2 4,12,126
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_20fe96bc26722d 23,137-163,175,203,207-210
+crates/agent-router-cli/tests/backend_activation.rs
+  s_86ed8bd547d4f8::t_f114f4b743775c 1-391
+crates/agent-router-cli/tests/native_hosts.rs
+  s_86ed8bd547d4f8::t_5277e7abb28157 1-344
+crates/router-adapter-api/src/execution.rs
+  s_86ed8bd547d4f8::t_2c0c1f9a2d2bef 71-87
+crates/router-backend-policy/Cargo.toml
+  s_86ed8bd547d4f8::t_7691523e3b0360 1-23
+crates/router-backend-policy/src/activation.rs
+  s_86ed8bd547d4f8::t_7ff40109ff5d75 1-227
+crates/router-backend-policy/src/crypto.rs
+  s_86ed8bd547d4f8::t_85243bfdc6d925 1-108
+crates/router-backend-policy/src/decision.rs
+  s_86ed8bd547d4f8::t_c6408dabfc846d 1-241
+crates/router-backend-policy/src/lib.rs
+  s_86ed8bd547d4f8::t_8fff7cd81d6964 1-79
+crates/router-backend-policy/src/promotion.rs
+  s_86ed8bd547d4f8::t_66c7cb17a490b9 1-427
+crates/router-backend-policy/src/types.rs
+  s_86ed8bd547d4f8::t_80731665fc9f94 1-185
+crates/router-backend-policy/tests/promotion.rs
+  s_86ed8bd547d4f8::t_fb74ef69a59e9a 1-1034
+crates/router-backend-store/Cargo.toml
+  s_86ed8bd547d4f8::t_8f665ab9e720a0 1-28
+crates/router-backend-store/src/json.rs
+  s_86ed8bd547d4f8::t_697e0d09b485c0 1-95
+crates/router-backend-store/src/lib.rs
+  s_86ed8bd547d4f8::t_58394c4f18a1b5 1-642
+crates/router-backend-store/tests/store.rs
+  s_86ed8bd547d4f8::t_ad0065090d19f5 1-634
+crates/router-backend-store/tests/support/fixture.rs
+  s_86ed8bd547d4f8::t_54b61d09b5e6b2 1-430
+crates/router-coordinator/Cargo.toml
+  s_86ed8bd547d4f8::t_5904260770bab7 9,28-31
+crates/router-coordinator/src/lib.rs
+  s_86ed8bd547d4f8::t_436a69fa4e4a25 8,73-75,98-102,220-237,247,251,259,297-314,337,341,487-502,510-511,514-517,541,553,558-564
+crates/router-coordinator/tests/workflow.rs
+  s_86ed8bd547d4f8::t_96d5ff7904f280 1105-1199
+crates/router-execution-decision/Cargo.toml
+  s_86ed8bd547d4f8::t_cdf5e764b772ff 1-23
+crates/router-execution-decision/README.md
+  s_86ed8bd547d4f8::t_cb7c17c20ab9f7 1-48
+crates/router-execution-decision/src/lib.rs
+  s_86ed8bd547d4f8::t_316e6fee1487a8 1-206
+crates/router-execution-decision/tests/decision.rs
+  s_86ed8bd547d4f8::t_a37f6af1c3ed2f 1-119
+crates/router-execution-decision/tests/support/assets.rs
+  s_86ed8bd547d4f8::t_062ba67b0a21fc 1-98
+crates/router-execution-decision/tests/support/synthetic.rs
+  s_86ed8bd547d4f8::t_0b0a682b259b5c 1-511
+crates/router-prepare/Cargo.toml
+  s_86ed8bd547d4f8::t_d15b9a71d3902f 9,23-26
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_bde04011eab3ea 9,21-22,127,130-132,200-210,243-244,355,427-435,440,476
+crates/router-prepare/tests/preparation.rs
+  s_86ed8bd547d4f8::t_250756085dd894 813-873
+crates/router-runtime/Cargo.toml
+  s_86ed8bd547d4f8::t_4f63ea0c23697a 9,27-31
+crates/router-runtime/src/artifacts.rs
+  s_86ed8bd547d4f8::t_0b3f0f51424295 209,221-245
+crates/router-runtime/src/error.rs
+  s_86ed8bd547d4f8::t_a46f5b2aa96a34 3-4
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_5574e3701a21a5 8,18,29,88,96-98,205,214,216-230,282,337-356,378-388,396,429,439,472,557-575,589-599,607,629,642,675-685,718-759,762-770,781-807,815-824,827-830,837,860-865,867-874,876,942,997,1002-1004,1009-1011,1046-1055,1100-1102,1178,1238,1392,1411,1433-1440
+crates/router-runtime/src/native_version.rs
+  s_86ed8bd547d4f8::t_15a43996ccc57c 1-115
+crates/router-runtime/src/process.rs
+  s_86ed8bd547d4f8::t_c6c495a8a97f0e 78-92,99,125-130
+crates/router-runtime/src/workflow.rs
+  s_86ed8bd547d4f8::t_533a789cfce4a3 11,15
+crates/router-runtime/tests/native_version.rs
+  s_86ed8bd547d4f8::t_76a50b00826204 1-355
+crates/router-runtime/tests/runtime.rs
+  s_86ed8bd547d4f8::t_6089053cd0f191 742,747,1886-2698
+crates/router-types/src/execution_decision.rs
+  s_86ed8bd547d4f8::t_7dd37eebde04d0 1-26
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_ed3db6a4857fde 40-42
+docs/adr/0004-signed-backend-promotion.md
+  s_86ed8bd547d4f8::t_4f8aedd221c6ec 1-28
+docs/backend-execution.md
+  s_86ed8bd547d4f8::t_04b6cf8e31a376 1-97
+docs/backend-promotion.md
+  s_86ed8bd547d4f8::t_ea945e5be548a6 1-71
+docs/backend-store.md
+  s_86ed8bd547d4f8::t_1fae6d035d9e01 1-181
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_0ca587c180488a 1-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bd9c16ad0814416af2672b51fc9583b7210e31b1",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
