@@ -9,14 +9,33 @@ license.workspace = true
 name = "agent-router"
 path = "src/main.rs"
 
+[features]
+default = ["codex", "claude"]
+codex = ["dep:adapter-codex"]
+claude = ["dep:adapter-claude"]
+local-sidecar = ["router-decision/local-sidecar"]
+
 [dependencies]
+router-adapter-api = { path = "../router-adapter-api" }
+adapter-codex = { path = "../adapter-codex", optional = true }
+adapter-claude = { path = "../adapter-claude", optional = true }
+router-decision = { path = "../router-decision" }
+router-eval = { path = "../router-eval" }
+router-doctor = { path = "../router-doctor" }
+router-feedback = { path = "../router-feedback" }
+router-retrieval = { path = "../router-retrieval" }
 clap.workspace = true
 router-catalog = { path = "../router-catalog" }
 router-policy = { path = "../router-policy" }
 router-types = { path = "../router-types" }
+router-workflow = { path = "../router-workflow" }
+serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
 assert_cmd.workspace = true
 predicates.workspace = true
 tempfile.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

@@ -1,0 +1,28 @@
+{
+  "packages": [
+    {
+      "crate_sha256": "6184e33543162437515c2e2b48714794e37845ec9851711914eec9d308f6ebe8",
+      "files": [
+        {
+          "path": "licenses/third-party/difflib-0.4.0/LICENSE",
+          "sha256": "6725d1437fc6c77301f2ff0e7d52914cf4f9509213e1078dc77d9356dbe6eac5",
+          "url": "https://github.com/DimaKudosh/difflib/blob/f035fb8e656f27119e23eca9d5b996df14f3885e/LICENSE"
+        }
+      ],
+      "name": "difflib",
+      "source_blobs": {
+        "Cargo.toml": "2edf6df6a6fc159647a10691c025786ca594cdf8",
+        "examples/example.rs": "3f06d0adb76887e74329c8ab48e7e568c5ea417a",
+        "src/differ.rs": "5caef9a7a8d34c7a2c2f8cdb737ded2ed7a9f1d6",
+        "src/lib.rs": "ca6b1cc38b974d95769240c63f47a043083c9d02",
+        "src/sequencematcher.rs": "4157808631acc62605fd6b446d17523ae8a86152",
+        "src/utils.rs": "b711bf82ba0e14439d80806afb70722e60195e03",
+        "tests/tests.rs": "8f49de9eba313a09863de5110eca83e022a2156d"
+      },
+      "source_commit": "f035fb8e656f27119e23eca9d5b996df14f3885e",
+      "source_correspondence": "All packaged Rust files and Cargo.toml.orig match upstream Git blobs at source_commit.",
+      "version": "0.4.0"
+    }
+  ],
+  "schema_version": 1
+}

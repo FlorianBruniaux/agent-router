@@ -6,9 +6,12 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+hex.workspace = true
+router-adapter-api = { path = "../router-adapter-api" }
 router-types = { path = "../router-types" }
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

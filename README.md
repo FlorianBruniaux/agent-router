@@ -2,13 +2,21 @@
 
 Local-first universal router for agentic coding harnesses.
 
-The project will select and explain a complete execution plan across models, reasoning effort, agents, skills, prompts, tools, sandbox policies, verification, and host adapters.
+Agent Router selects and explains bounded plans across models, reasoning effort,
+agents, skills, tools, sandbox policies and verification requirements.
 
 ## Status
 
-Dry-run routing only. The binary deterministically selects or rejects a route;
-it does not execute a host, call a model provider, create a worktree, or install
-anything globally.
+The CLI supports deterministic routing, phase routing, passive host inspection,
+versioned catalogs, BM25 retrieval, eight workflow presets, replay evaluation,
+diagnostics and redacted audit export. Routing and planning commands are dry
+runs. Optional loopback backends propose shadow decisions; they do not replace
+the active deterministic receipt.
+
+Durable execution and offline feedback are being integrated. Their presence in
+the workspace is not a claim that all roadmap acceptance criteria have passed.
+See [the completion ledger](docs/completion.md) for outstanding gates, including
+human validation of the evaluation corpus. No global installation is performed.
 
 ## Initial scope
 
@@ -21,7 +29,8 @@ The first vertical slice is deterministic and read-only:
 - select a `plan-execute-verify` plan;
 - emit stable JSON for `route` and `explain`.
 
-Codex and Claude integration, durable execution, worktrees, embeddings, feedback learning, and policy sidecars remain outside the first slice.
+Version 1 route receipts remain compatible. New contracts add provenance and
+explicit authority without changing that original command's default behavior.
 
 ## Quickstart
 
@@ -62,6 +71,24 @@ cargo run -p agent-router-cli -- explain \
 `route` exits `0` for a selected route, `3` for a valid `no_route` decision,
 `2` for invalid command input or catalog data, and `4` for an internal error.
 
+Route one phase using the documented synthetic fixtures:
+
+```sh
+cargo run -p agent-router-cli -- route-phase \
+  --context fixtures/examples/phase-request.json \
+  --host-snapshot fixtures/examples/phase-snapshot.json \
+  --catalog fixtures/examples/phase-catalog.json --now 100 --json
+```
+
+`--now 100` is for these fixtures only. Real host evidence expires and must be
+refreshed. `inspect --host codex --json` reads the Codex model cache without
+launching a model. Claude inspection takes an explicit native stream file and
+its observation time; unknown effort support remains unknown.
+
+Use `agent-router --help` and each subcommand's `--help` for the implemented
+file-based interfaces. Commands require `--json` for stable machine output.
+Missing task authority produces clarification fields and exit code 3.
+
 ## Resource and trust boundaries
 
 Catalogs contain at most 64 models and 256 skills. Routing evaluates the
@@ -82,6 +109,11 @@ have no routing effect.
 
 - [Development harness](docs/harness.md): shared Codex and Claude Code project
   instructions, agents, skills, hooks and validation, separate from the product.
+- [Routing boundary decisions](docs/adr/0002-bounded-routing-pipeline.md)
+- [Optional local backends](docs/backends.md)
+- [Replay and evaluation](crates/router-eval/README.md)
+- [Source distribution](docs/distribution.md)
+- [Completion and outstanding acceptance](docs/completion.md)
 - `docs/superpowers/specs/2026-08-28-agent-router-core-design.md`
 - `docs/specs/functional-specification.md`
 - `docs/specs/technical-specification.md`

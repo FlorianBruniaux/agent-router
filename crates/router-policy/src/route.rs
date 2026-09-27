@@ -44,9 +44,43 @@ impl Router {
         request: &RouteRequest,
         catalog: &Catalog,
     ) -> Result<DecisionEnvelope, RouteError> {
+        self.route_internal(request, catalog, None)
+    }
+
+    /// Bind an externally validated snapshot to the decision identity. The hash
+    /// provides integrity and provenance, not authorization or runtime evidence.
+    pub fn route_with_snapshot_hash(
+        &self,
+        request: &RouteRequest,
+        catalog: &Catalog,
+        snapshot_hash: &str,
+    ) -> Result<DecisionEnvelope, RouteError> {
+        if snapshot_hash.len() != 64
+            || !snapshot_hash
+                .bytes()
+                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        {
+            return Err(RouteError::InvalidRequest {
+                code: "snapshot.hash.invalid",
+                path: "host_snapshot_hash".into(),
+                message: "expected a lowercase SHA-256 digest",
+            });
+        }
+        self.route_internal(request, catalog, Some(snapshot_hash))
+    }
+
+    fn route_internal(
+        &self,
+        request: &RouteRequest,
+        catalog: &Catalog,
+        snapshot_hash: Option<&str>,
+    ) -> Result<DecisionEnvelope, RouteError> {
         validate_request(request)?;
-        let canonical_request =
-            serde_json::to_vec(request).map_err(RouteError::SerializeRequest)?;
+        let canonical_request = match snapshot_hash {
+            Some(hash) => serde_json::to_vec(&("host-observation-v1", request, hash)),
+            None => serde_json::to_vec(request),
+        }
+        .map_err(RouteError::SerializeRequest)?;
         let decision_id = decision_id(
             &self.config.schema_version,
             &canonical_request,
@@ -87,6 +121,7 @@ impl Router {
         Ok(DecisionEnvelope {
             schema_version: self.config.schema_version.clone(),
             decision_id,
+            host_snapshot_hash: snapshot_hash.map(str::to_owned),
             catalog_version: catalog.version().into(),
             policy_version: self.config.policy_version.clone(),
             decision,

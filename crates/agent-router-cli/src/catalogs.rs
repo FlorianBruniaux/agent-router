@@ -1,0 +1,198 @@
+use crate::{
+    CliError, MAX_CATALOG_BYTES, Outcome, command::CatalogCommand, inspect, product::json_output,
+    read_bounded, read_catalog,
+};
+use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+use router_catalog::{AssetKind, Catalog, GeneratedCatalog, GenerationConfig};
+use std::{path::Path, process::ExitCode};
+
+fn bytes(path: &Path) -> Result<Vec<u8>, CliError> {
+    read_bounded(
+        path,
+        MAX_CATALOG_BYTES,
+        CliError::CatalogRead,
+        CliError::CatalogTooLarge,
+    )
+}
+fn validation(now: Option<u64>, max_age_seconds: u64) -> Result<SnapshotValidation, CliError> {
+    Ok(SnapshotValidation {
+        now_unix_seconds: inspect::current_time(now)?,
+        max_age_seconds,
+    })
+}
+fn generated(
+    bytes: &[u8],
+    now: Option<u64>,
+    max_age: u64,
+) -> Result<Option<GeneratedCatalog>, CliError> {
+    let value: serde_json::Value =
+        serde_json::from_slice(bytes).map_err(|_| CliError::CatalogInvalid)?;
+    if value
+        .get("schema_version")
+        .and_then(serde_json::Value::as_u64)
+        == Some(2)
+    {
+        Ok(Some(
+            GeneratedCatalog::from_json(bytes, validation(now, max_age)?)
+                .map_err(|_| CliError::CatalogInvalid)?,
+        ))
+    } else {
+        Ok(None)
+    }
+}
+pub(crate) fn load(
+    path: &Path,
+    now: Option<u64>,
+    max_age: u64,
+) -> Result<(Catalog, Option<ValidatedHostObservation>), CliError> {
+    let bytes = bytes(path)?;
+    if let Some(generated) = generated(&bytes, now, max_age)? {
+        let snapshot = ValidatedHostObservation::from_observation(
+            generated.snapshot().clone(),
+            validation(now, max_age)?,
+        )
+        .map_err(|error| CliError::Snapshot(error.code()))?;
+        Ok((generated.catalog().clone(), Some(snapshot)))
+    } else {
+        Ok((
+            Catalog::from_json(&bytes).map_err(|_| CliError::CatalogInvalid)?,
+            None,
+        ))
+    }
+}
+
+pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
+    let max_age = router_adapter_api::DEFAULT_MAX_AGE_SECONDS;
+    match command {
+        CatalogCommand::Refresh {
+            host_snapshot,
+            prior,
+            registry,
+            now,
+            json,
+        } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let snapshot = inspect::read_snapshot(&host_snapshot, now, max_age)?;
+            let prior = read_catalog(&prior)?;
+            let config = registry
+                .map(|path| {
+                    GenerationConfig::from_json(&bytes(&path)?)
+                        .map_err(|_| CliError::CatalogInvalid)
+                })
+                .transpose()?
+                .unwrap_or_default();
+            let generated = GeneratedCatalog::generate(&snapshot, &prior, &config)
+                .map_err(|_| CliError::CatalogInvalid)?;
+            let document: serde_json::Value = serde_json::from_slice(
+                &generated
+                    .canonical_json()
+                    .map_err(|_| CliError::CatalogInvalid)?,
+            )
+            .map_err(|_| CliError::Internal)?;
+            json_output(&document, ExitCode::SUCCESS)
+        }
+        CatalogCommand::Validate { catalog, now, json } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let bytes = bytes(&catalog)?;
+            let (version, hash, schema) = if let Some(generated) = generated(&bytes, now, max_age)?
+            {
+                (
+                    generated.catalog().version().to_owned(),
+                    generated.content_hash().to_owned(),
+                    2,
+                )
+            } else {
+                let catalog = Catalog::from_json(&bytes).map_err(|_| CliError::CatalogInvalid)?;
+                (
+                    catalog.version().to_owned(),
+                    catalog
+                        .content_hash()
+                        .map_err(|_| CliError::CatalogInvalid)?,
+                    1,
+                )
+            };
+            json_output(
+                &serde_json::json!({"schema_version":1,"valid":true,"catalog_schema_version":schema,"catalog_version":version,"content_hash":hash}),
+                ExitCode::SUCCESS,
+            )
+        }
+        CatalogCommand::List { catalog, now, json } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let bytes = bytes(&catalog)?;
+            if let Some(generated) = generated(&bytes, now, max_age)? {
+                json_output(
+                    &serde_json::json!({"schema_version":1,"content_hash":generated.content_hash(),"assets":generated.assets()}),
+                    ExitCode::SUCCESS,
+                )
+            } else {
+                let catalog = Catalog::from_json(&bytes).map_err(|_| CliError::CatalogInvalid)?;
+                let assets: Vec<_> = catalog
+                    .models()
+                    .map(|(id, _)| serde_json::json!({"kind":"model","id":id}))
+                    .chain(
+                        catalog
+                            .skills()
+                            .map(|(id, _)| serde_json::json!({"kind":"skill","id":id})),
+                    )
+                    .collect();
+                json_output(
+                    &serde_json::json!({"schema_version":1,"assets":assets}),
+                    ExitCode::SUCCESS,
+                )
+            }
+        }
+        CatalogCommand::Show {
+            catalog,
+            id,
+            kind,
+            now,
+            json,
+        } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let bytes = bytes(&catalog)?;
+            let kind: AssetKind = serde_json::from_value(serde_json::json!(kind))
+                .map_err(|_| CliError::InvalidCommand)?;
+            if let Some(generated) = generated(&bytes, now, max_age)? {
+                let canonical = generated
+                    .resolve(kind, &id)
+                    .map_err(|_| CliError::Product("catalog.asset.unknown"))?;
+                let asset = generated
+                    .assets()
+                    .iter()
+                    .find(|asset| asset.kind == kind && asset.id == canonical)
+                    .ok_or(CliError::Product("catalog.asset.unknown"))?;
+                json_output(
+                    &serde_json::json!({"schema_version":1,"requested_id":id,"asset":asset}),
+                    ExitCode::SUCCESS,
+                )
+            } else {
+                let catalog = Catalog::from_json(&bytes).map_err(|_| CliError::CatalogInvalid)?;
+                let asset = match kind {
+                    AssetKind::Model => catalog
+                        .models()
+                        .find(|(key, _)| key.as_str() == id)
+                        .map(|(_, value)| serde_json::to_value(value)),
+                    AssetKind::Skill => catalog
+                        .skills()
+                        .find(|(key, _)| key.as_str() == id)
+                        .map(|(_, value)| serde_json::to_value(value)),
+                    _ => None,
+                }
+                .ok_or(CliError::Product("catalog.asset.unknown"))?
+                .map_err(|_| CliError::Internal)?;
+                json_output(
+                    &serde_json::json!({"schema_version":1,"asset":asset}),
+                    ExitCode::SUCCESS,
+                )
+            }
+        }
+    }
+}
