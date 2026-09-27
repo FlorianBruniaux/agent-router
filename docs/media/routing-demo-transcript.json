@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "source": "actual CLI stdout captured by render-readme-demo.py",
+  "binary_sha256": "86319d43bea69b84b7606642467ddf8ad47db544cd9e861c6735485c4e4c9437",
+  "binary_version_stdout": "agent-router 0.1.0\n",
+  "fixture_kind": "synthetic public engineering inputs; not provider availability",
+  "path_mapping": "binary displayed as agent-router; output directory displayed as docs/media",
+  "timing": {
+    "kind": "editorial holds, not measured CLI latency",
+    "duration_ms": 24000
+  },
+  "inputs_sha256": {
+    "tests/fixtures/requests/codex-implementation.json": "c2af5a7ef9c64e8d51d04a1187ec5174653a4faa3b0015504b6847dbd05e6d55",
+    "assets/catalogs/codex-core-v1.json": "4e49598643c47fe86d3f8db1956c8b74a498b7a373e26682c1c1986cb7740052",
+    "fixtures/examples/phase-request.json": "0877df2bd531e9893a6a9a03748e972f5f30b4fbf43d2de5533ded9bc27bf408",
+    "fixtures/examples/phase-snapshot.json": "0df3dda9b5b03d634fc93a03792c5314e844e4723f8b4d08fef0068a0cb41769",
+    "fixtures/examples/phase-catalog.json": "82d9a1dfc21ccee9cb4fa42f3fa019d1d9a65488ffcaa1bc174f28fb2cded698"
+  },
+  "generated_snapshot_sha256": "509a00dbcf8c8c4c6354e61c34a40b5c20aab96c54aa19d509e50801ced9b917",
+  "frames": [
+    {
+      "file": "frames/01-route.png",
+      "duration_ms": 8000
+    },
+    {
+      "file": "frames/02-explain.png",
+      "duration_ms": 8000
+    },
+    {
+      "file": "frames/03-unavailable.png",
+      "duration_ms": 8000
+    }
+  ],
+  "commands": [
+    {
+      "argv": [
+        "agent-router",
+        "route",
+        "--request",
+        "tests/fixtures/requests/codex-implementation.json",
+        "--catalog",
+        "assets/catalogs/codex-core-v1.json",
+        "--json"
+      ],
+      "exit_code": 0,
+      "stdout": "{\n  \"schema_version\": \"1\",\n  \"decision_id\": \"10ced74ca293e346792899b283d9206cc71e78e36e2a248581702c15d47265ca\",\n  \"catalog_version\": \"codex-core-v1\",\n  \"policy_version\": \"stable-v1\",\n  \"decision\": {\n    \"selected\": {\n      \"plan\": {\n        \"preset\": \"plan-execute-verify\",\n        \"stages\": [\n          {\n            \"kind\": \"plan\",\n            \"model\": \"gpt-5.6-sol\",\n            \"effort\": \"high\",\n            \"skills\": [\n              \"tdd\"\n            ]\n          },\n          {\n            \"kind\": \"execute\",\n            \"model\": \"gpt-5.6-terra\",\n            \"effort\": \"medium\",\n            \"skills\": [\n              \"tdd\"\n            ]\n          },\n          {\n            \"kind\": \"verify\",\n            \"model\": \"gpt-5.6-terra\",\n            \"effort\": \"high\",\n            \"skills\": [\n              \"tdd\"\n            ]\n          }\n        ],\n        \"utility_micros\": 165500\n      },\n      \"alternatives\": [\n        {\n          \"preset\": \"plan-execute-verify\",\n          \"stages\": [\n            {\n              \"kind\": \"plan\",\n              \"model\": \"gpt-5.6-sol\",\n              \"effort\": \"high\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            },\n            {\n              \"kind\": \"execute\",\n              \"model\": \"gpt-5.6-luna\",\n              \"effort\": \"medium\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            },\n            {\n              \"kind\": \"verify\",\n              \"model\": \"gpt-5.6-terra\",\n              \"effort\": \"high\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            }\n          ],\n          \"utility_micros\": 118000\n        },\n        {\n          \"preset\": \"plan-execute-verify\",\n          \"stages\": [\n            {\n              \"kind\": \"plan\",\n              \"model\": \"gpt-5.6-sol\",\n              \"effort\": \"high\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            },\n            {\n              \"kind\": \"execute\",\n              \"model\": \"gpt-5.6-sol\",\n              \"effort\": \"high\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            },\n            {\n              \"kind\": \"verify\",\n              \"model\": \"gpt-5.6-sol\",\n              \"effort\": \"high\",\n              \"skills\": [\n                \"tdd\"\n              ]\n            }\n          ],\n          \"utility_micros\": 50500\n        }\n      ],\n      \"exclusions\": [\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'max' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'ultra' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'xhigh' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"model.stage.unsupported\",\n          \"evidence\": \"model 'gpt-5.6-luna' cannot serve stage 'plan'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-terra\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'low' for model 'gpt-5.6-terra'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-terra\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'max' for model 'gpt-5.6-terra'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-terra\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'ultra' for model 'gpt-5.6-terra'\"\n        },\n        {\n          \"stage\": \"plan\",\n          \"model\": \"gpt-5.6-terra\",\n          \"code\": \"model.stage.unsupported\",\n          \"evidence\": \"model 'gpt-5.6-terra' cannot serve stage 'plan'\"\n        },\n        {\n          \"stage\": \"execute\",\n          \"model\": \"gpt-5.6-sol\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'medium' for model 'gpt-5.6-sol'\"\n        },\n        {\n          \"stage\": \"verify\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'max' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"verify\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'ultra' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"verify\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"host.effort.unsupported\",\n          \"evidence\": \"host 'codex-local' does not support effort 'xhigh' for model 'gpt-5.6-luna'\"\n        },\n        {\n          \"stage\": \"verify\",\n          \"model\": \"gpt-5.6-luna\",\n          \"code\": \"model.stage.unsupported\",\n          \"evidence\": \"model 'gpt-5.6-luna' cannot serve stage 'verify'\"\n        }\n      ],\n      \"missing_evidence\": []\n    }\n  }\n}\n",
+      "stderr": "",
+      "stdout_sha256": "a6176edb9a4cc90a9539ccada0659def705dd6963dfe56ae5f9c6618fdaa00e8",
+      "name": "route",
+      "shown_stdout_lines": [
+        9,
+        12,
+        13,
+        14,
+        20,
+        21,
+        22,
+        28,
+        29,
+        30,
+        36
+      ],
+      "screen_command": [
+        "$ agent-router route \\",
+        "    --request tests/fixtures/requests/codex-implementation.json \\",
+        "    --catalog assets/catalogs/codex-core-v1.json --json"
+      ]
+    },
+    {
+      "argv": [
+        "agent-router",
+        "explain",
+        "--decision",
+        "docs/media/route-decision.json"
+      ],
+      "exit_code": 0,
+      "stdout": "Decision 10ced74ca293e346792899b283d9206cc71e78e36e2a248581702c15d47265ca\nPreset: plan-execute-verify\nPlan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high\nExcluded candidates: 13\nMissing evidence: 0\n",
+      "stderr": "",
+      "stdout_sha256": "bdadc90a96a94ffd428788dece970116eaf87b9e1d5b6a92ef65e4a433c0541e",
+      "name": "explain",
+      "shown_stdout_lines": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "screen_command": [
+        "$ agent-router explain \\",
+        "    --decision docs/media/route-decision.json"
+      ]
+    },
+    {
+      "argv": [
+        "agent-router",
+        "route-phase",
+        "--context",
+        "fixtures/examples/phase-request.json",
+        "--host-snapshot",
+        "docs/media/fixtures/phase-unavailable.json",
+        "--catalog",
+        "fixtures/examples/phase-catalog.json",
+        "--now",
+        "100",
+        "--json"
+      ],
+      "exit_code": 3,
+      "stdout": "{\n  \"schema_version\": 2,\n  \"receipt_id\": \"1b8bc94fa0b053dead3fc82d0f67e441407a7b3b8c51aff71795238a1d399421\",\n  \"phase\": \"plan\",\n  \"context_hash\": \"731381406d5c8916a69e888a3ecaebd9541315dc91e775c115529baf41150f70\",\n  \"snapshot_hash\": \"b55a4b05902441161f2e65928774bdfc5dbc96c295b4927529e3f6d6b8b6069e\",\n  \"catalog_hash\": \"03f730e22892c287a594f49e6f473bd8af3fe52407084ee273bf8d5801e136f8\",\n  \"policy_hash\": \"2dac95563038fc4caf05728c96cafeb48f9fd038a1e33174354a56059a29ae99\",\n  \"pool_hash\": \"d6e2f0479110a5a6e1757812945139ae46828f8aa4c1388085d426f5b654d69e\",\n  \"registry_hash\": \"e65b6983a0dc10f0d5af77d298feab798debeb60a396d6b2ec183605a99395fe\",\n  \"selected\": null,\n  \"alternatives\": [],\n  \"exclusions\": [\n    {\n      \"candidate_id\": \"primary\",\n      \"code\": \"effort.host.unsupported\",\n      \"evidence\": \"fixture-best Medium\"\n    },\n    {\n      \"candidate_id\": \"primary\",\n      \"code\": \"model.host.unsupported\",\n      \"evidence\": \"fixture-best\"\n    },\n    {\n      \"candidate_id\": \"secondary\",\n      \"code\": \"effort.host.unsupported\",\n      \"evidence\": \"fixture-second Medium\"\n    },\n    {\n      \"candidate_id\": \"secondary\",\n      \"code\": \"model.host.unsupported\",\n      \"evidence\": \"fixture-second\"\n    }\n  ],\n  \"abstention\": \"no_eligible_candidate\",\n  \"unavailable\": []\n}\n",
+      "stderr": "",
+      "stdout_sha256": "ef760710cdc9d362298059b514a893c8f11013a751d11394310501492d002cb1",
+      "name": "unavailable",
+      "shown_stdout_lines": [
+        11,
+        20,
+        21,
+        22,
+        30,
+        31,
+        32,
+        35
+      ],
+      "screen_command": [
+        "$ agent-router route-phase \\",
+        "    --context fixtures/examples/phase-request.json \\",
+        "    --host-snapshot docs/media/fixtures/phase-unavailable.json \\",
+        "    --catalog fixtures/examples/phase-catalog.json --now 100 --json"
+      ]
+    }
+  ]
+}

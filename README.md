@@ -1,134 +1,217 @@
-# agent-router
+# Agent Router
 
-Local-first universal router for agentic coding harnesses.
+**Choose the model, effort and skills for each coding task. Review the decision. Run an approved workflow.**
 
-Agent Router selects and explains bounded plans across models, reasoning effort,
-agents, skills, tools, sandbox policies and verification requirements.
+<table>
+  <tr>
+    <td width="64">
+      <a href="https://www.florian.bruniaux.com/about/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=agent-router"><img src="https://cc.bruniaux.com/author.png" width="56" height="56" alt="Florian Bruniaux" /></a>
+    </td>
+    <td>
+      <strong><a href="https://www.florian.bruniaux.com/about/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=agent-router">Florian BRUNIAUX</a></strong> &middot; AI Founding Engineer @ <a href="https://methode-aristote.fr/">Méthode Aristote</a><br />
+      <a href="https://www.florian.bruniaux.com/blog/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=agent-router">Blog &#8599;</a> &middot; <a href="https://www.florian.bruniaux.com/projects/?utm_source=github&amp;utm_medium=readme&amp;utm_campaign=agent-router">Projects &#8599;</a> &middot; <a href="https://github.com/FlorianBruniaux/ccboard">CCBoard</a>
+    </td>
+  </tr>
+</table>
 
-## Status
+<p align="center">
+  <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/ci.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/ci.yml/badge.svg?branch=main" alt="Rust quality and secret checks" /></a>
+  <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Linux runtime canaries" /></a>
+  <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.85%2B-dc7336?logo=rust" alt="Rust 1.85 or newer" /></a>
+  <a href="licenses/LICENSE-MIT"><img src="https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-597ee5" alt="MIT or Apache 2.0 license" /></a>
+  <a href="#host-support"><img src="https://img.shields.io/badge/Runtime-macOS%20%7C%20Linux-597ee5" alt="Runtime: macOS and Linux" /></a>
+</p>
 
-The CLI supports deterministic routing, phase routing, passive host inspection,
-versioned catalogs, BM25 retrieval, eight workflow presets, replay evaluation,
-diagnostics and redacted audit export. Routing and planning commands are dry
-runs. Optional loopback backends propose shadow decisions; they do not replace
-the active deterministic receipt.
+<p align="center">
+  <a href="#quick-start">Quick start</a> &middot;
+  <a href="#features">Features</a> &middot;
+  <a href="#how-it-works">How it works</a> &middot;
+  <a href="#documentation">Documentation</a> &middot;
+  <a href="https://github.com/FlorianBruniaux/agent-router/issues/11">Roadmap</a>
+</p>
 
-The development workspace also contains explicit preparation, durable execution,
-private feedback and signed offline policy activation. Execution requires a
-reviewed digest and live sandbox enforcement. Their presence is not a claim
-that all roadmap acceptance criteria have passed.
-See [the completion ledger](docs/completion.md) for outstanding gates, including
-human validation of the evaluation corpus. No global installation is performed.
+Agent Router is a local Rust CLI for routing coding work across models, agents,
+skills and tools. It checks constraints before scoring, explains its choices,
+and separates planning, execution and verification. Your coding host continues
+to own its interaction, credentials and native permissions.
 
-## Initial scope
+<p align="center">
+  <img src="docs/media/routing-demo.gif" width="920" alt="Agent Router running local routing fixtures and explaining the resulting decision." />
+</p>
 
-The first vertical slice is deterministic and read-only:
+<p align="center">
+  <a href="docs/media/routing-demo.mp4">Watch the demo</a> &middot;
+  <a href="docs/media/README.md">Commands and reproduction</a>
+</p>
 
-- import a small built-in catalog;
-- accept a normalized task request;
-- retrieve candidate skills through an adapter contract;
-- enforce hard compatibility constraints;
-- select a `plan-execute-verify` plan;
-- emit stable JSON for `route` and `explain`.
+The demo uses bundled synthetic fixtures and actual CLI output. It makes no
+model call. Model names in those fixtures are examples, not availability claims.
 
-Version 1 route receipts remain compatible. New contracts add provenance and
-explicit authority without changing that original command's default behavior.
+## Features
 
-## Quickstart
+| Capability | What you can do | Interface / guide |
+| --- | --- | --- |
+| **Explainable routing** | Select a model and effort for plan, execute and verify; inspect exclusions and missing evidence. | `route`, `route-phase`, `explain` |
+| **Host evidence** | Read supported local host evidence and keep unknown capabilities explicit. | `inspect`, [contracts](docs/reference/json-contracts.md) |
+| **Catalogs and search** | Validate versioned catalogs and search asset metadata with bounded BM25 retrieval. | `catalog`, `index`, `search`, [retrieval](docs/retrieval.md) |
+| **Workflow planning** | Normalize task requirements and build one of eight presets with budgets and dependencies. | `normalize`, `plan`, `workflow` |
+| **Review before execution** | Prepare a request, bind selected assets and approve the exact execution digest. | `assets`, `prepare`, `run`, [execution](docs/cli-execution.md) |
+| **Durable execution** | Track runs, cancel work, recover interrupted attempts and isolate writes in Git worktrees. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
+| **Coordinated workflows** | Run approved waves, pass declared artifacts and require verification before integration. | `coordinate`, [coordination](docs/coordinator.md) |
+| **Explicit integration** | Preview, apply or discard a verified patch; control output retention and purge. | `artifacts`, [controls](docs/cli-execution.md) |
+| **Evaluation and feedback** | Replay decisions, compare policies offline and store consented, redacted feedback locally. | `replay`, `eval`, `feedback`, `policy` |
+| **Optional semantic proposals** | Compare a bounded local backend against the deterministic baseline in shadow mode. | `backend`, [boundaries](docs/backends.md) |
+| **Diagnostics and audit** | Inspect configuration, storage and evidence; export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
+| **Separate distributions** | Export core and integration workspaces with integrity manifests and license inventory. | [Distribution](docs/distribution.md) |
 
-Build the workspace:
+The project is under active development. Human validation of the evaluation
+corpus, the full startup target and additional native host evidence remain open.
+See the [completion ledger](docs/completion.md) and [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11)
+for acceptance criteria. Public release is still gated by license and security review.
 
-```bash
-cargo build --workspace
+## Quick start
+
+### Build from source
+
+Use Rust 1.85 or newer. The repository pins the development toolchain in
+[`rust-toolchain.toml`](rust-toolchain.toml). Clone access is required while the
+repository is private.
+
+```sh
+git clone git@github.com:FlorianBruniaux/agent-router.git
+cd agent-router
+cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
+./target/release/agent-router --help
 ```
 
-Run the full test suite:
+The default CLI includes the Codex and Claude adapter features. To build the
+routing CLI without those host adapters, use `--no-default-features`. Routing
+works offline once Cargo dependencies are available; no Python or semantic
+service is required at runtime. There is no published package-manager install
+or automatic global configuration step.
 
-```bash
-cargo test --workspace
-```
+### Route a task and read the explanation
 
-Route a normalized request against an explicit catalog. The command only emits
-JSON to standard output:
+These commands use the bundled example catalog and request. They only produce
+a decision and explanation; they do not launch a host or call a model.
 
-```bash
-cargo run -p agent-router-cli -- route \
-  --request tests/fixtures/requests/codex-implementation.json \
-  --catalog assets/catalogs/codex-core-v1.json \
-  --json
-```
-
-Save that decision and explain it without re-routing or executing anything:
-
-```bash
-cargo run -p agent-router-cli -- route \
+```sh
+./target/release/agent-router route \
   --request tests/fixtures/requests/codex-implementation.json \
   --catalog assets/catalogs/codex-core-v1.json \
   --json > /tmp/agent-router-decision.json
 
-cargo run -p agent-router-cli -- explain \
+./target/release/agent-router explain \
   --decision /tmp/agent-router-decision.json
 ```
 
-`route` exits `0` for a selected route, `3` for a valid `no_route` decision,
-`2` for invalid command input or catalog data, and `4` for an internal error.
+For that fixture, the explanation includes:
 
-Route one phase using the documented synthetic fixtures:
-
-```sh
-cargo run -p agent-router-cli -- route-phase \
-  --context fixtures/examples/phase-request.json \
-  --host-snapshot fixtures/examples/phase-snapshot.json \
-  --catalog fixtures/examples/phase-catalog.json --now 100 --json
+```text
+Preset: plan-execute-verify
+Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
+Excluded candidates: 13
+Missing evidence: 0
 ```
 
-`--now 100` is for these fixtures only. Real host evidence expires and must be
-refreshed. `inspect --host codex --json` reads the Codex model cache without
-launching a model. Claude inspection takes an explicit native stream file and
-its observation time; unknown effort support remains unknown.
+For phase-specific routing, try the synthetic observed-host fixture:
 
-Use `agent-router --help` and each subcommand's `--help` for the implemented
-file-based interfaces. Commands require `--json` for stable machine output.
-Missing task authority produces clarification fields and exit code 3.
+```sh
+./target/release/agent-router route-phase \
+  --context fixtures/examples/phase-request.json \
+  --host-snapshot fixtures/examples/phase-snapshot.json \
+  --catalog fixtures/examples/phase-catalog.json \
+  --now 100 --json
+```
 
-## Resource and trust boundaries
+`--now 100` is only for the fixture's clock. Real host evidence must be fresh.
+Most product commands expose stable machine output through `--json`; run
+`agent-router <command> --help` for the required inputs. `route` exits `0` for a
+selection, `3` for a valid no-route result, `2` for invalid input and `4` for an
+internal error.
 
-Catalogs contain at most 64 models and 256 skills. Routing evaluates the
-bounded 64^3 stage combination space without materializing it, retains only the
-best three routes, and deduplicates identical exclusions. Before scoring, it
-also enforces `Router::MAX_PLAN_WORK_UNITS = 1,000,000` over the combined model
-and attached-skill payload. Inputs within each individual limit can therefore
-still be rejected when their combined routing work is too large. The CLI reads
-at most 1 MiB for requests, 4 MiB for catalogs, and 8 MiB for decisions before
-rejecting an oversized file.
+### Run an approved workflow
 
-Route requests contain at most 256 skill candidates with non-empty sources and
-scores from 0 through 1,000,000. Only built-in, trusted-local, and verified
-third-party skills can attach or improve utility. Untrusted and blocked skills
-have no routing effect.
+Follow the [preparation guide](docs/preparation.md), then the
+[single-run guide](docs/cli-execution.md) or [workflow guide](docs/coordinator.md).
+Execution requires current asset authority, a reviewed digest, explicit storage
+and a working native sandbox. A successful process exit is separate from
+verification of the task's result.
+
+## How it works
+
+```mermaid
+flowchart LR
+    T[Task and constraints] --> C[Catalog and host evidence]
+    C --> F[Filter admissible candidates]
+    F --> R[Score and explain]
+    R --> P[Prepare and review]
+    P --> A{Exact approval}
+    A --> E[Sandboxed execution]
+    E --> V[Independent verification]
+    V --> I[Explicit patch integration]
+```
+
+The deterministic receipt records the decision and its evidence. An optional
+semantic proposal stays within the admissible candidate pool. Unknown
+permissions or incompatible assets cannot become valid through a higher score.
+Execution binds the request, binary, sandbox and asset contracts to an approval.
+Later workflow steps receive only declared, bounded artifacts.
+
+## Host support
+
+| Host / platform | Current evidence and boundary |
+| --- | --- |
+| **Codex** | CLI adapter, passive model-cache inspection and native stream decoding. Requested model identity remains separate from observed identity. |
+| **Claude Code** | CLI adapter and explicit native-stream inspection. Missing model or effort evidence remains unknown. |
+| **Other hosts** | Integration descriptors and synthetic conformance fixtures are available. [Integration status](integrations/additional-hosts.md) records remaining native proof. |
+| **macOS** | Seatbelt supervisor and real local sandbox/recovery canaries. Process-group cleanup does not establish containment of detached descendants. |
+| **Linux** | Bubblewrap supervisor with PID namespace cleanup, exercised by [native runtime CI](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
+| **Windows** | Native execution is not implemented. |
+
+Host CLIs and credentials are supplied separately. Agent Router does not
+silently install them, bypass their permission systems or change the model of
+an existing parent conversation.
 
 ## Documentation
 
-- [Development harness](docs/harness.md): shared Codex and Claude Code project
-  instructions, agents, skills, hooks and validation, separate from the product.
-- [Routing boundary decisions](docs/adr/0002-bounded-routing-pipeline.md)
-- [Optional local backends](docs/backends.md)
-- [Prepare an execution request](docs/preparation.md)
-- [CLI execution and privacy controls](docs/cli-execution.md)
-- [Durable runtime and sandbox evidence](docs/runtime.md)
-- [Metadata and catalog binding](docs/retrieval.md)
-- [Private feedback and offline policy](docs/feedback.md)
-- [Replay and evaluation](crates/router-eval/README.md)
-- [Source distribution](docs/distribution.md)
-- [Completion and outstanding acceptance](docs/completion.md)
-- `docs/superpowers/specs/2026-08-28-agent-router-core-design.md`
-- `docs/specs/functional-specification.md`
-- `docs/specs/technical-specification.md`
-- `docs/research/repository-analysis.md`
-- `docs/reference/json-contracts.md`
+| Start here | Go deeper |
+| --- | --- |
+| [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
+| [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |
+| [Coordinate a workflow](docs/coordinator.md) | [JSON contracts](docs/reference/json-contracts.md) |
+| [Search catalogs](docs/retrieval.md) | [Routing architecture](docs/adr/0002-bounded-routing-pipeline.md) |
+| [Evaluate decisions](docs/evaluation.md) | [Private feedback and offline policy](docs/feedback.md) |
+| [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |
+| [Build source distributions](docs/distribution.md) | [Development harness](docs/harness.md) |
 
-## Safety boundary
+The [functional specification](docs/specs/functional-specification.md) and
+[technical specification](docs/specs/technical-specification.md) define the wider
+project. The [completion ledger](docs/completion.md) distinguishes delivered
+behavior from outstanding acceptance.
 
-This repository has no global installation path. It does not modify
-`~/.config/ai-agents`, `~/.codex`, `~/.claude`, hooks, plugins, or global
-skills without a separately approved installation workflow.
+## Development
+
+```sh
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo test --workspace --locked
+cargo run -p xtask --locked -- check
+```
+
+Native sandbox canaries are separate from the ordinary test suite and require
+their platform prerequisites. See [runtime verification](docs/runtime.md).
+The shared Codex/Claude development harness is separate from the product.
+No global instructions, hooks or skills are installed by these commands.
+
+Use the [issue tracker](https://github.com/FlorianBruniaux/agent-router/issues)
+for bugs and feature requests. Include the command, version, platform and a
+redacted reproduction. Keep credentials, prompts and private policy data out
+of reports.
+
+## License
+
+The project is licensed under [MIT](licenses/LICENSE-MIT) or
+[Apache 2.0](licenses/LICENSE-APACHE), at your option. Dependency provenance,
+license inventory and release review boundaries are documented in the
+[distribution guide](docs/distribution.md).
