@@ -1,0 +1,473 @@
+.github/workflows/ci.yml
+  s_a587b5c02ec5ed::t_be156d8d6ea6eb 27
+Cargo.lock
+  s_86ed8bd547d4f8::t_583d36c5959143 5-28,33-34,37,39,41-44,46,48-49,54-65,146-151,178-187,194-199,231,246-251,271-307,324-347,358-369,376-387,407-417,429-446,477-487,500-511,539-554,609-617,647-658,663-694,698-734,743,746,753-766,776-809,823-828,856,883-913,920-936,955,984,1005-1010,1026-1031,1062-1087
+Cargo.toml
+  s_86ed8bd547d4f8::t_ee55d644b1c224 4-8,12-15
+README.md
+  s_86ed8bd547d4f8::t_24153b3b277256 5-6,10-19,32-33,74-91,112-116
+crates/adapter-claude/Cargo.toml
+  s_86ed8bd547d4f8::t_9fb75f7c7279eb 1-14
+crates/adapter-claude/src/execution.rs
+  s_86ed8bd547d4f8::t_d0dfea76d681bd 1-71
+crates/adapter-claude/src/lib.rs
+  s_86ed8bd547d4f8::t_14582194088ddd 1-7
+crates/adapter-claude/src/probe.rs
+  s_86ed8bd547d4f8::t_c7f1adfb425395 1-136
+crates/adapter-claude/tests/conformance.rs
+  s_86ed8bd547d4f8::t_ba49c0309b7518 1-593
+crates/adapter-claude/tests/fixtures/claude.jsonl
+  s_86ed8bd547d4f8::t_e845f81857ee85 1-3
+crates/adapter-claude/tests/fixtures/codex.jsonl
+  s_86ed8bd547d4f8::t_2b495fbea63e94 1-4
+crates/adapter-codex/Cargo.toml
+  s_86ed8bd547d4f8::t_10951b21ba1338 1-20
+crates/adapter-codex/src/execution.rs
+  s_86ed8bd547d4f8::t_b80efa17519a23 1-62
+crates/adapter-codex/src/lib.rs
+  s_86ed8bd547d4f8::t_5b9ad33c12e5fd 1-262
+crates/adapter-codex/tests/fixtures/models-cache.json
+  s_86ed8bd547d4f8::t_8676de18760e29 1-17
+crates/adapter-codex/tests/probe.rs
+  s_86ed8bd547d4f8::t_91401e63964046 1-177
+crates/agent-router-cli/Cargo.toml
+  s_86ed8bd547d4f8::t_bcdc45c1e6663b 12-17,19-26,31-32,39-41
+crates/agent-router-cli/src/catalogs.rs
+  s_86ed8bd547d4f8::t_071700311ea3c4 1-198
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_e774ef256808fe 3-26,30-113,120-175,183-349
+crates/agent-router-cli/src/diagnostics.rs
+  s_86ed8bd547d4f8::t_b034ded4867145 1-108
+crates/agent-router-cli/src/evaluation.rs
+  s_86ed8bd547d4f8::t_38b5cf9c431fc9 1-114
+crates/agent-router-cli/src/feedback.rs
+  s_86ed8bd547d4f8::t_1f2aca96cb917b 1-201
+crates/agent-router-cli/src/inspect.rs
+  s_86ed8bd547d4f8::t_b8ea9c36ee1b0c 1-146
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_84391dd4b024fa 3,6-11,14,70-75,95-99,119-166,171-225,230-238,243-275,328-338
+crates/agent-router-cli/src/phases.rs
+  s_86ed8bd547d4f8::t_f2762ff78ee600 1-159
+crates/agent-router-cli/src/product.rs
+  s_86ed8bd547d4f8::t_8fde8898c9ee59 1-141
+crates/agent-router-cli/tests/inspect.rs
+  s_86ed8bd547d4f8::t_ece22149468bb8 1-222
+crates/agent-router-cli/tests/product.rs
+  s_86ed8bd547d4f8::t_5a946106ff62bb 1-436
+crates/router-adapter-api/Cargo.toml
+  s_86ed8bd547d4f8::t_556efab65bb8d2 1-14
+crates/router-adapter-api/src/execution.rs
+  s_86ed8bd547d4f8::t_1fb0529e06c5b3 1-509
+crates/router-adapter-api/src/lib.rs
+  s_86ed8bd547d4f8::t_b96ce120ad15d5 1-453
+crates/router-adapter-api/tests/snapshots.rs
+  s_86ed8bd547d4f8::t_735d79da04020e 1-290
+crates/router-catalog/Cargo.toml
+  s_86ed8bd547d4f8::t_38c8e880383f09 9-10,14
+crates/router-catalog/src/generated.rs
+  s_86ed8bd547d4f8::t_f4d905123dea93 1-614
+crates/router-catalog/src/lib.rs
+  s_86ed8bd547d4f8::t_87714b6be51bb0 4,10-11,14-17,24,50-53,57-88
+crates/router-catalog/tests/fixtures/capability-drift.json
+  s_86ed8bd547d4f8::t_7bc7a0d2f737b7 1-18
+crates/router-catalog/tests/fixtures/conflicting-aliases.json
+  s_86ed8bd547d4f8::t_930e15de70d129 1-7
+crates/router-catalog/tests/fixtures/deprecated-model.json
+  s_86ed8bd547d4f8::t_6b4d5265979553 1-18
+crates/router-catalog/tests/fixtures/generated-prior.json
+  s_86ed8bd547d4f8::t_b0107f404d84b7 1-25
+crates/router-catalog/tests/generated_catalogs.rs
+  s_86ed8bd547d4f8::t_3abbc2602b3698 1-442
+crates/router-decision/Cargo.toml
+  s_86ed8bd547d4f8::t_bcab82ef43a3d6 1-23
+crates/router-decision/src/lib.rs
+  s_86ed8bd547d4f8::t_c0c2bd3f82eb01 1-341
+crates/router-decision/src/sidecar.rs
+  s_86ed8bd547d4f8::t_d38b76958ce8aa 1-307
+crates/router-decision/tests/backends.rs
+  s_a587b5c02ec5ed::t_a5c2214a540fb0 1-294
+crates/router-doctor/Cargo.toml
+  s_86ed8bd547d4f8::t_6db1cde6c1382d 1-21
+crates/router-doctor/src/audit.rs
+  s_86ed8bd547d4f8::t_84002dea6d9346 1-125
+crates/router-doctor/src/diagnose.rs
+  s_86ed8bd547d4f8::t_685ad01eacea49 1-338
+crates/router-doctor/src/files.rs
+  s_86ed8bd547d4f8::t_0280a1b2cfbb26 1-104
+crates/router-doctor/src/lib.rs
+  s_86ed8bd547d4f8::t_af6e9c8f1697b9 1-33
+crates/router-doctor/tests/audit.rs
+  s_86ed8bd547d4f8::t_e98af9747d4115 1-99
+crates/router-doctor/tests/catalogs.rs
+  s_86ed8bd547d4f8::t_6c46b439d8ad53 1-139
+crates/router-doctor/tests/diagnostics.rs
+  s_86ed8bd547d4f8::t_e53f43fbf3c1aa 1-255
+crates/router-eval/Cargo.toml
+  s_a587b5c02ec5ed::t_407cb418194d4b 1-20
+crates/router-eval/README.md
+  s_a587b5c02ec5ed::t_d41ce2b0715adc 1-39
+crates/router-eval/examples/candidate_corpus.rs
+  s_a587b5c02ec5ed::t_5541099d423de7 1-479
+crates/router-eval/src/candidate_replay.rs
+  s_a587b5c02ec5ed::t_60120deeeaefa8 1-214
+crates/router-eval/src/corpus.rs
+  s_a587b5c02ec5ed::t_99e800dc33deef 1-69
+crates/router-eval/src/lib.rs
+  s_a587b5c02ec5ed::t_db54e61d3278fb 1-62
+crates/router-eval/src/promotion.rs
+  s_a587b5c02ec5ed::t_601dd129e4429d 1-375
+crates/router-eval/src/replay.rs
+  s_a587b5c02ec5ed::t_c9118d2cc90d26 1-500
+crates/router-eval/tests/candidate_replays.rs
+  s_a587b5c02ec5ed::t_7029f0e35a1de7 1-208
+crates/router-eval/tests/replay.rs
+  s_a587b5c02ec5ed::t_7d044eb469185f 1-658
+crates/router-feedback/Cargo.toml
+  s_a587b5c02ec5ed::t_c4e505266dd39d 1-24
+crates/router-feedback/src/learning.rs
+  s_a587b5c02ec5ed::t_0f7b33d514719c 1-333
+crates/router-feedback/src/lib.rs
+  s_a587b5c02ec5ed::t_198c7a52a29733 1-185
+crates/router-feedback/src/policy.rs
+  s_a587b5c02ec5ed::t_7bd1eeaba005c5 1-795
+crates/router-feedback/src/store.rs
+  s_a587b5c02ec5ed::t_c30a5b28d75e90 1-479
+crates/router-feedback/tests/common/mod.rs
+  s_a587b5c02ec5ed::t_1037ecceed825c 1-234
+crates/router-feedback/tests/feedback.rs
+  s_a587b5c02ec5ed::t_5173fc75cebe2c 1-795
+crates/router-policy/Cargo.toml
+  s_86ed8bd547d4f8::t_ee8c07aada29fa 9-10
+crates/router-policy/src/lib.rs
+  s_86ed8bd547d4f8::t_0f003746c66331 4,14-17
+crates/router-policy/src/phases.rs
+  s_86ed8bd547d4f8::t_f058dbc8c0f25b 1-705
+crates/router-policy/src/route.rs
+  s_86ed8bd547d4f8::t_3442ef84fbed8f 46-76,79-83,124
+crates/router-policy/tests/phases.rs
+  s_86ed8bd547d4f8::t_17d0fb501c7f70 1-685
+crates/router-retrieval/Cargo.toml
+  s_86ed8bd547d4f8::t_2918815383e40c 1-20
+crates/router-retrieval/README.md
+  s_86ed8bd547d4f8::t_4fa4cb5917c962 1-90
+crates/router-retrieval/examples/benchmark.rs
+  s_86ed8bd547d4f8::t_990625b62c8832 1-67
+crates/router-retrieval/src/body.rs
+  s_86ed8bd547d4f8::t_eea07758af04b7 1-114
+crates/router-retrieval/src/index.rs
+  s_86ed8bd547d4f8::t_333e973509a6b8 1-512
+crates/router-retrieval/src/lib.rs
+  s_86ed8bd547d4f8::t_b4f76a39a0c442 1-62
+crates/router-retrieval/src/tokenize.rs
+  s_86ed8bd547d4f8::t_e832cf8ef51927 1-50
+crates/router-retrieval/src/types.rs
+  s_86ed8bd547d4f8::t_28b04e21a1c7fa 1-221
+crates/router-retrieval/tests/fixtures/corpus.json
+  s_86ed8bd547d4f8::t_762d495bfc2701 1-22
+crates/router-retrieval/tests/retrieval.rs
+  s_86ed8bd547d4f8::t_546d14eedea43e 1-560
+crates/router-types/src/backend.rs
+  s_86ed8bd547d4f8::t_55f7afc5824eb8 1-55
+crates/router-types/src/decision.rs
+  s_86ed8bd547d4f8::t_b900d366910860 55-56
+crates/router-types/src/doctor.rs
+  s_86ed8bd547d4f8::t_dda5728ea903e3 1-209
+crates/router-types/src/execution.rs
+  s_86ed8bd547d4f8::t_719255d6e12b13 1-224
+crates/router-types/src/feedback.rs
+  s_a587b5c02ec5ed::t_c2e5cc608f52d3 1-159
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_e68635fd3c157b 13-30
+crates/router-types/src/phases.rs
+  s_86ed8bd547d4f8::t_af0922a3b81b6f 1-202
+crates/router-types/src/workflow.rs
+  s_86ed8bd547d4f8::t_c479368041f4e9 1-190
+crates/router-workflow/Cargo.toml
+  s_86ed8bd547d4f8::t_09c2b6c6b14f05 1-13
+crates/router-workflow/src/lib.rs
+  s_86ed8bd547d4f8::t_8310da5e69b0e6 1-44
+crates/router-workflow/src/normalize.rs
+  s_86ed8bd547d4f8::t_e67619003ffa13 1-155
+crates/router-workflow/src/plan.rs
+  s_86ed8bd547d4f8::t_46fdab97019fed 1-637
+crates/router-workflow/src/policy.rs
+  s_86ed8bd547d4f8::t_190aa5f7efd745 1-141
+crates/router-workflow/src/prompt.rs
+  s_86ed8bd547d4f8::t_a42d02257e85c5 1-143
+crates/router-workflow/tests/contracts.rs
+  s_86ed8bd547d4f8::t_addeb7652e766f 1-388
+docs/adr/0002-bounded-routing-pipeline.md
+  s_86ed8bd547d4f8::t_048075b1085d13 1-63
+docs/backends.md
+  s_86ed8bd547d4f8::t_87f47c9443efb2 1-59
+docs/completion.md
+  s_86ed8bd547d4f8::t_3e68e41434fc71 1-59
+docs/distribution.md
+  s_86ed8bd547d4f8::t_9c9089479976d5 1-126
+docs/doctor.md
+  s_86ed8bd547d4f8::t_7fca2c187fc312 1-63
+docs/evaluation.md
+  s_a587b5c02ec5ed::t_1c196804536388 1-79
+docs/feedback.md
+  s_a587b5c02ec5ed::t_3af77b493124a8 1-140
+fixtures/examples/README.md
+  s_86ed8bd547d4f8::t_fb3050435c90f4 1-22
+fixtures/examples/phase-catalog.json
+  s_86ed8bd547d4f8::t_b076d086591848 1-53
+fixtures/examples/phase-policy.json
+  s_86ed8bd547d4f8::t_f74bde1a2e7c0c 1-11
+fixtures/examples/phase-request.json
+  s_86ed8bd547d4f8::t_3bccc93a48c282 1-107
+fixtures/examples/phase-snapshot.json
+  s_86ed8bd547d4f8::t_11ffc38d5b2269 1-71
+licenses/LICENSE-APACHE
+  s_86ed8bd547d4f8::t_e1616a441852cc 1-176
+licenses/LICENSE-MIT
+  s_86ed8bd547d4f8::t_28341e0f9f7ad9 1-21
+licenses/README.md
+  s_86ed8bd547d4f8::t_d612a48d4a1dd4 1-23
+licenses/third-party/difflib-0.4.0/LICENSE
+  s_86ed8bd547d4f8::t_07ae291491ec7b 1-21
+licenses/third-party/evidence.json
+  s_86ed8bd547d4f8::t_65f260b0cd7618 1-28
+scripts/package-core.py
+  s_86ed8bd547d4f8::t_45797f7ef1df2d 1-579
+scripts/test-package-core.py
+  s_86ed8bd547d4f8::t_bd30e676fa90f5 1-223
+tests/fixtures/evaluation/README.md
+  s_a587b5c02ec5ed::t_63fda081210362 1-31
+tests/fixtures/evaluation/candidate-corpus-v1.json
+  s_a587b5c02ec5ed::t_1bd0c53dcf80bf 1-1506
+tests/fixtures/evaluation/human-review-worksheet-v1.json
+  s_a587b5c02ec5ed::t_1bffe1fa97c97a 1-2007
+tests/fixtures/evaluation/replay-manifest-v1.json
+  s_a587b5c02ec5ed::t_68237d671d8ee6 1-2007
+tests/fixtures/evaluation/replays/candidate-001.json
+  s_a587b5c02ec5ed::t_f2062a1a6ab795 1
+tests/fixtures/evaluation/replays/candidate-002.json
+  s_a587b5c02ec5ed::t_3fcc837710b9a1 1
+tests/fixtures/evaluation/replays/candidate-003.json
+  s_a587b5c02ec5ed::t_390bc776d68484 1
+tests/fixtures/evaluation/replays/candidate-004.json
+  s_a587b5c02ec5ed::t_bb1c1b7e40df1a 1
+tests/fixtures/evaluation/replays/candidate-005.json
+  s_a587b5c02ec5ed::t_32ff1fc2b505bc 1
+tests/fixtures/evaluation/replays/candidate-006.json
+  s_a587b5c02ec5ed::t_0202bc7c1070ec 1
+tests/fixtures/evaluation/replays/candidate-007.json
+  s_a587b5c02ec5ed::t_874670200f22f0 1
+tests/fixtures/evaluation/replays/candidate-008.json
+  s_a587b5c02ec5ed::t_5eb2a8f7a936d1 1
+tests/fixtures/evaluation/replays/candidate-009.json
+  s_a587b5c02ec5ed::t_8cf42e0505091f 1
+tests/fixtures/evaluation/replays/candidate-010.json
+  s_a587b5c02ec5ed::t_da80740e9c6321 1
+tests/fixtures/evaluation/replays/candidate-011.json
+  s_a587b5c02ec5ed::t_64030dc92be6c2 1
+tests/fixtures/evaluation/replays/candidate-012.json
+  s_a587b5c02ec5ed::t_137dbe35712c11 1
+tests/fixtures/evaluation/replays/candidate-013.json
+  s_a587b5c02ec5ed::t_b4b44bb6701a1e 1
+tests/fixtures/evaluation/replays/candidate-014.json
+  s_a587b5c02ec5ed::t_17f9d26dd44255 1
+tests/fixtures/evaluation/replays/candidate-015.json
+  s_a587b5c02ec5ed::t_126b7bb7887dab 1
+tests/fixtures/evaluation/replays/candidate-016.json
+  s_a587b5c02ec5ed::t_ecf4777f5071ab 1
+tests/fixtures/evaluation/replays/candidate-017.json
+  s_a587b5c02ec5ed::t_2f040178755106 1
+tests/fixtures/evaluation/replays/candidate-018.json
+  s_a587b5c02ec5ed::t_44201abe785b13 1
+tests/fixtures/evaluation/replays/candidate-019.json
+  s_a587b5c02ec5ed::t_69ba1dc77d0517 1
+tests/fixtures/evaluation/replays/candidate-020.json
+  s_a587b5c02ec5ed::t_4df372e2277687 1
+tests/fixtures/evaluation/replays/candidate-021.json
+  s_a587b5c02ec5ed::t_8621e1ffa3ab16 1
+tests/fixtures/evaluation/replays/candidate-022.json
+  s_a587b5c02ec5ed::t_52b44af7e72b8a 1
+tests/fixtures/evaluation/replays/candidate-023.json
+  s_a587b5c02ec5ed::t_b9abbfb6a243b9 1
+tests/fixtures/evaluation/replays/candidate-024.json
+  s_a587b5c02ec5ed::t_34c6ce10cb37ae 1
+tests/fixtures/evaluation/replays/candidate-025.json
+  s_a587b5c02ec5ed::t_04c74111a3e859 1
+tests/fixtures/evaluation/replays/candidate-026.json
+  s_a587b5c02ec5ed::t_411f8151dc24b2 1
+tests/fixtures/evaluation/replays/candidate-027.json
+  s_a587b5c02ec5ed::t_4ec5f78d9f94b9 1
+tests/fixtures/evaluation/replays/candidate-028.json
+  s_a587b5c02ec5ed::t_d2edf5d01b76d4 1
+tests/fixtures/evaluation/replays/candidate-029.json
+  s_a587b5c02ec5ed::t_5e5c676da1b4cf 1
+tests/fixtures/evaluation/replays/candidate-030.json
+  s_a587b5c02ec5ed::t_1fad7130c6a95f 1
+tests/fixtures/evaluation/replays/candidate-031.json
+  s_a587b5c02ec5ed::t_cde073e5caafbb 1
+tests/fixtures/evaluation/replays/candidate-032.json
+  s_a587b5c02ec5ed::t_d39c297cf39541 1
+tests/fixtures/evaluation/replays/candidate-033.json
+  s_a587b5c02ec5ed::t_3ad681c7345f65 1
+tests/fixtures/evaluation/replays/candidate-034.json
+  s_a587b5c02ec5ed::t_8acf498e90194b 1
+tests/fixtures/evaluation/replays/candidate-035.json
+  s_a587b5c02ec5ed::t_f67d657e25352b 1
+tests/fixtures/evaluation/replays/candidate-036.json
+  s_a587b5c02ec5ed::t_ce6ba00902d183 1
+tests/fixtures/evaluation/replays/candidate-037.json
+  s_a587b5c02ec5ed::t_602c75fde2dbb3 1
+tests/fixtures/evaluation/replays/candidate-038.json
+  s_a587b5c02ec5ed::t_58e9fde801155b 1
+tests/fixtures/evaluation/replays/candidate-039.json
+  s_a587b5c02ec5ed::t_64eaefbc5b793d 1
+tests/fixtures/evaluation/replays/candidate-040.json
+  s_a587b5c02ec5ed::t_db48ce52505fbb 1
+tests/fixtures/evaluation/replays/candidate-041.json
+  s_a587b5c02ec5ed::t_02453191418f07 1
+tests/fixtures/evaluation/replays/candidate-042.json
+  s_a587b5c02ec5ed::t_85a2930fbf080d 1
+tests/fixtures/evaluation/replays/candidate-043.json
+  s_a587b5c02ec5ed::t_48b2bc61aab72a 1
+tests/fixtures/evaluation/replays/candidate-044.json
+  s_a587b5c02ec5ed::t_3724c24c29b3da 1
+tests/fixtures/evaluation/replays/candidate-045.json
+  s_a587b5c02ec5ed::t_cc37f4dd0548f6 1
+tests/fixtures/evaluation/replays/candidate-046.json
+  s_a587b5c02ec5ed::t_a549b7ff672182 1
+tests/fixtures/evaluation/replays/candidate-047.json
+  s_a587b5c02ec5ed::t_b67e89cfde5c09 1
+tests/fixtures/evaluation/replays/candidate-048.json
+  s_a587b5c02ec5ed::t_885cdfd357cc08 1
+tests/fixtures/evaluation/replays/candidate-049.json
+  s_a587b5c02ec5ed::t_c8cf15c9096cc1 1
+tests/fixtures/evaluation/replays/candidate-050.json
+  s_a587b5c02ec5ed::t_0d380f7d17a62e 1
+tests/fixtures/evaluation/replays/candidate-051.json
+  s_a587b5c02ec5ed::t_fb7fd3cc0a0eb1 1
+tests/fixtures/evaluation/replays/candidate-052.json
+  s_a587b5c02ec5ed::t_cbe1867d2c8a77 1
+tests/fixtures/evaluation/replays/candidate-053.json
+  s_a587b5c02ec5ed::t_9387452691ae34 1
+tests/fixtures/evaluation/replays/candidate-054.json
+  s_a587b5c02ec5ed::t_68714386862e3d 1
+tests/fixtures/evaluation/replays/candidate-055.json
+  s_a587b5c02ec5ed::t_b74c02e1d0677d 1
+tests/fixtures/evaluation/replays/candidate-056.json
+  s_a587b5c02ec5ed::t_07487218c5468f 1
+tests/fixtures/evaluation/replays/candidate-057.json
+  s_a587b5c02ec5ed::t_ad9efeba7a002b 1
+tests/fixtures/evaluation/replays/candidate-058.json
+  s_a587b5c02ec5ed::t_5d4b77e8264484 1
+tests/fixtures/evaluation/replays/candidate-059.json
+  s_a587b5c02ec5ed::t_c2a57c1ab6c63f 1
+tests/fixtures/evaluation/replays/candidate-060.json
+  s_a587b5c02ec5ed::t_5da07294fca2bf 1
+tests/fixtures/evaluation/replays/candidate-061.json
+  s_a587b5c02ec5ed::t_18eb53ad7da771 1
+tests/fixtures/evaluation/replays/candidate-062.json
+  s_a587b5c02ec5ed::t_e2851ad9701bfc 1
+tests/fixtures/evaluation/replays/candidate-063.json
+  s_a587b5c02ec5ed::t_29ab39ab20efc7 1
+tests/fixtures/evaluation/replays/candidate-064.json
+  s_a587b5c02ec5ed::t_addfbb662f2326 1
+tests/fixtures/evaluation/replays/candidate-065.json
+  s_a587b5c02ec5ed::t_9ec41f0deac24e 1
+tests/fixtures/evaluation/replays/candidate-066.json
+  s_a587b5c02ec5ed::t_aca742ae619084 1
+tests/fixtures/evaluation/replays/candidate-067.json
+  s_a587b5c02ec5ed::t_c8e8e895706b32 1
+tests/fixtures/evaluation/replays/candidate-068.json
+  s_a587b5c02ec5ed::t_90a33af48d5777 1
+tests/fixtures/evaluation/replays/candidate-069.json
+  s_a587b5c02ec5ed::t_05ac5be4d914a4 1
+tests/fixtures/evaluation/replays/candidate-070.json
+  s_a587b5c02ec5ed::t_4ed0e0567b7eaa 1
+tests/fixtures/evaluation/replays/candidate-071.json
+  s_a587b5c02ec5ed::t_5bc3dca597ea19 1
+tests/fixtures/evaluation/replays/candidate-072.json
+  s_a587b5c02ec5ed::t_80d5d7545042ec 1
+tests/fixtures/evaluation/replays/candidate-073.json
+  s_a587b5c02ec5ed::t_ee39c27be98993 1
+tests/fixtures/evaluation/replays/candidate-074.json
+  s_a587b5c02ec5ed::t_14d329884a9d53 1
+tests/fixtures/evaluation/replays/candidate-075.json
+  s_a587b5c02ec5ed::t_3eac1855f5a6ee 1
+tests/fixtures/evaluation/replays/candidate-076.json
+  s_a587b5c02ec5ed::t_d98ada24693342 1
+tests/fixtures/evaluation/replays/candidate-077.json
+  s_a587b5c02ec5ed::t_eb5094486cca44 1
+tests/fixtures/evaluation/replays/candidate-078.json
+  s_a587b5c02ec5ed::t_1258d02fbddf43 1
+tests/fixtures/evaluation/replays/candidate-079.json
+  s_a587b5c02ec5ed::t_f1e602453bf594 1
+tests/fixtures/evaluation/replays/candidate-080.json
+  s_a587b5c02ec5ed::t_0d9a68501c9da2 1
+tests/fixtures/evaluation/replays/candidate-081.json
+  s_a587b5c02ec5ed::t_d47b85b12382c4 1
+tests/fixtures/evaluation/replays/candidate-082.json
+  s_a587b5c02ec5ed::t_830ff62df8e67d 1
+tests/fixtures/evaluation/replays/candidate-083.json
+  s_a587b5c02ec5ed::t_1efa348522e6e3 1
+tests/fixtures/evaluation/replays/candidate-084.json
+  s_a587b5c02ec5ed::t_3e878416db05e9 1
+tests/fixtures/evaluation/replays/candidate-085.json
+  s_a587b5c02ec5ed::t_da1cc39f239d74 1
+tests/fixtures/evaluation/replays/candidate-086.json
+  s_a587b5c02ec5ed::t_dc8bd02ddabd44 1
+tests/fixtures/evaluation/replays/candidate-087.json
+  s_a587b5c02ec5ed::t_712dcf81969365 1
+tests/fixtures/evaluation/replays/candidate-088.json
+  s_a587b5c02ec5ed::t_b920cc639c8cdd 1
+tests/fixtures/evaluation/replays/candidate-089.json
+  s_a587b5c02ec5ed::t_ef34ca0ecb5754 1
+tests/fixtures/evaluation/replays/candidate-090.json
+  s_a587b5c02ec5ed::t_2ba50eadcdb6a2 1
+tests/fixtures/evaluation/replays/candidate-091.json
+  s_a587b5c02ec5ed::t_90efdce888413e 1
+tests/fixtures/evaluation/replays/candidate-092.json
+  s_a587b5c02ec5ed::t_9b13a849d49acc 1
+tests/fixtures/evaluation/replays/candidate-093.json
+  s_a587b5c02ec5ed::t_38f5803afae555 1
+tests/fixtures/evaluation/replays/candidate-094.json
+  s_a587b5c02ec5ed::t_7a7764dfe47497 1
+tests/fixtures/evaluation/replays/candidate-095.json
+  s_a587b5c02ec5ed::t_8003bd735bb519 1
+tests/fixtures/evaluation/replays/candidate-096.json
+  s_a587b5c02ec5ed::t_afe050b4f88e32 1
+tests/fixtures/evaluation/replays/candidate-097.json
+  s_a587b5c02ec5ed::t_45242481a2a35e 1
+tests/fixtures/evaluation/replays/candidate-098.json
+  s_a587b5c02ec5ed::t_301e2e37485665 1
+tests/fixtures/evaluation/replays/candidate-099.json
+  s_a587b5c02ec5ed::t_c26ccd42f40f16 1
+tests/fixtures/evaluation/replays/candidate-100.json
+  s_a587b5c02ec5ed::t_849d042cc31b56 1
+tests/fixtures/feedback/README.md
+  s_a587b5c02ec5ed::t_9660d66914b013 1-9
+tests/fixtures/feedback/automated-unknown-v1.json
+  s_a587b5c02ec5ed::t_7e36dbabcfc3f4 1-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cdb8bdc2c3cb546fdef91e126e8258d2dcccab73",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_a587b5c02ec5ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dd7f-0605-7542-bbb1-bba326c12fa3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
