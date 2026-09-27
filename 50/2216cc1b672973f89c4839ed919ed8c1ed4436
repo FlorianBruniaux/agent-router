@@ -1,0 +1,19 @@
+crates/router-runtime/tests/runtime.rs
+  s_9bb6202b9f92b0::t_3d4b9ba17cca9a 340-345
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "502216cc1b672973f89c4839ed919ed8c1ed4436",
+  "prompts": {},
+  "sessions": {
+    "s_9bb6202b9f92b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0dd0b-3a45-74b2-bf85-a54bc884e926",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
