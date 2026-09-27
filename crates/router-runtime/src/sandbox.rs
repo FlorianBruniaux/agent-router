@@ -17,6 +17,15 @@ pub struct SandboxPolicy {
 /// every descendant. A declared host capability or receipt is not sufficient.
 pub trait SandboxSupervisor: Send + Sync {
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command>;
+    /// True only for a probe-bound sandbox whose workers enter a PID namespace.
+    fn pid_namespace_isolated(&self) -> bool {
+        false
+    }
+    /// A surviving helper observes parent EOF. Recovery additionally requires a
+    /// durable lease; this flag alone is not proof that descendants have exited.
+    fn parent_lifetime_enforced(&self) -> bool {
+        false
+    }
     fn resource_limits_enforced(&self) -> bool {
         false
     }

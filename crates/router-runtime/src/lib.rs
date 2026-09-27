@@ -1,7 +1,10 @@
 #![forbid(unsafe_code)]
 //! Durable, approval-bound supervision. JSON receipts are never authority.
+mod artifact_storage;
+mod artifacts;
 mod bubblewrap;
 mod error;
+mod leases;
 mod outputs;
 mod process;
 mod resources;
@@ -14,7 +17,7 @@ pub use error::{Result, RuntimeError};
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
-pub use store::{observe, observe_events, request_cancel};
+pub use store::{observe, observe_cleanup, observe_events, request_cancel};
 pub use workspace::source_state;
 
 use router_adapter_api::{
@@ -60,6 +63,7 @@ impl Default for RuntimeLimits {
 pub struct Runtime {
     store: Store,
     output_store: outputs::OutputStorage,
+    artifact_store: artifact_storage::ArtifactStorage,
     limits: RuntimeLimits,
     global: Arc<Semaphore>,
     providers: Mutex<BTreeMap<String, Arc<Semaphore>>>,
@@ -74,10 +78,12 @@ pub struct PendingRun {
     run: RunSummary,
     request: ExecutionRequest,
     context: ValidatedPhaseContext,
+    router: PhaseRouter,
     plan: WorkflowPlan,
     node: WorkflowNode,
     receipt: PhaseReceipt,
     workflow: Option<WorkflowExecutionContract>,
+    artifacts: Option<RunArtifactContract>,
 }
 pub struct ApprovedRun {
     pending: PendingRun,
@@ -118,6 +124,7 @@ impl Runtime {
         Ok(Self {
             store,
             output_store,
+            artifact_store: artifact_storage::ArtifactStorage::open(root)?,
             global: Arc::new(Semaphore::new(limits.global_concurrency)),
             limits,
             providers: Mutex::new(BTreeMap::new()),
@@ -125,8 +132,17 @@ impl Runtime {
             plans: Mutex::new(BTreeMap::new()),
         })
     }
+    pub fn storage_root(&self) -> &Path {
+        &self.store.root
+    }
     pub fn summary(&self, id: &str) -> Result<RunSummary> {
         self.store.get(id)
+    }
+    pub fn verification_record(&self, id: &str) -> Result<Option<VerificationRecord>> {
+        self.store.verification_record(id)
+    }
+    pub fn cleanup_evidence(&self, id: &str) -> Result<ProcessCleanupEvidence> {
+        self.store.cleanup_evidence(id)
     }
     pub fn events(&self) -> Result<Vec<RuntimeEvent>> {
         self.store.events()
@@ -186,7 +202,22 @@ impl Runtime {
         plan: &WorkflowPlan,
         node_id: &str,
         workflow: Option<&WorkflowRunBinding>,
+        artifacts: Option<&RunArtifactContract>,
     ) -> Result<String> {
+        if let Some(artifacts) = artifacts {
+            return digest(
+                "runtime-definition-v4-artifacts",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    workflow,
+                    artifacts,
+                ),
+            );
+        }
         if let Some(binding) = workflow {
             return digest(
                 "runtime-definition-v3-workflow",
@@ -223,6 +254,7 @@ impl Runtime {
                 &pending.plan,
                 &pending.node.id,
                 pending.run.workflow.as_ref(),
+                pending.artifacts.as_ref(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -259,6 +291,24 @@ impl Runtime {
         plan: WorkflowPlan,
         node_id: &str,
         workflow: Option<(&WorkflowExecutionContract, u32)>,
+    ) -> Result<PendingRun> {
+        self.review_with_artifacts(
+            run_id, router, context, selection, request, plan, node_id, workflow, None,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub async fn review_with_artifacts(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        selection: &ValidatedPhaseReceipt,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
     ) -> Result<PendingRun> {
         if run_id.is_empty()
             || run_id.len() > 96
@@ -300,6 +350,14 @@ impl Runtime {
                 .execution_capabilities(context, selected)
                 .map_err(|_| RuntimeError::Route)?,
         )?;
+        self.validate_artifact_contract(
+            artifacts,
+            workflow_binding.as_ref(),
+            &plan,
+            &node,
+            &request,
+            true,
+        )?;
         let root = Path::new(&request.workspace);
         workspace::safe_scope(root, &request.scope)?;
         if source_state(root).await? != request.source_state {
@@ -317,6 +375,7 @@ impl Runtime {
             &plan,
             node_id,
             workflow_binding.as_ref(),
+            artifacts,
         )?;
         let approval_digest = digest(
             "runtime-approval-v1",
@@ -336,6 +395,9 @@ impl Runtime {
             artifact_sha256: None,
             output_retention: self.limits.output_retention,
             workflow: workflow_binding,
+            artifact_contract_sha256: artifacts
+                .map(|a| digest("runtime-artifact-contract-v1", a))
+                .transpose()?,
         };
         let mut run = self.store.register_workflow(
             &summary,
@@ -352,10 +414,12 @@ impl Runtime {
             run,
             request,
             context: context.clone(),
+            router: router.clone(),
             plan,
             node,
             receipt,
             workflow: workflow.map(|(contract, _)| contract.clone()),
+            artifacts: artifacts.cloned(),
         })
     }
     pub fn approve(&self, pending: PendingRun, approved_digest: &str) -> Result<ApprovedRun> {
@@ -422,6 +486,23 @@ impl Runtime {
         node_id: &str,
         workflow: Option<(&WorkflowExecutionContract, u32)>,
     ) -> Result<PendingRun> {
+        self.reopen_with_artifacts(
+            run_id, router, context, selection, request, plan, node_id, workflow, None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn reopen_with_artifacts(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        selection: &ValidatedPhaseReceipt,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
+    ) -> Result<PendingRun> {
         let run = self.store.get(run_id)?;
         router_workflow::validate_plan(&plan)
             .map_err(|_| RuntimeError::Invalid("workflow plan"))?;
@@ -453,8 +534,22 @@ impl Runtime {
                 .execution_capabilities(context, selected)
                 .map_err(|_| RuntimeError::Route)?,
         )?;
-        let definition_hash =
-            self.definition_hash(&request, &receipt, &plan, node_id, binding.as_ref())?;
+        self.validate_artifact_contract(
+            artifacts,
+            binding.as_ref(),
+            &plan,
+            &node,
+            &request,
+            false,
+        )?;
+        let definition_hash = self.definition_hash(
+            &request,
+            &receipt,
+            &plan,
+            node_id,
+            binding.as_ref(),
+            artifacts,
+        )?;
         if definition_hash != run.definition_hash || binding != run.workflow {
             return Err(RuntimeError::Integrity("definition changed"));
         }
@@ -462,10 +557,12 @@ impl Runtime {
             run,
             request,
             context: context.clone(),
+            router: router.clone(),
             plan,
             node,
             receipt,
             workflow: workflow.map(|(contract, _)| contract.clone()),
+            artifacts: artifacts.cloned(),
         })
     }
     /// Retry is explicit, requires a new approval call and never repeats writes.
@@ -498,6 +595,7 @@ impl Runtime {
         cancel: Cancellation,
     ) -> Result<RunCompletion> {
         let pending = approved.pending;
+        self.store.require_cleanup_complete()?;
         self.validate_pending_retention(&pending)?;
         let id = &pending.run.run_id;
         let state = self.store.get(id)?.state;
@@ -528,7 +626,7 @@ impl Runtime {
         self.store
             .transition_queued(id, RunState::Preparing, "capacity_acquired", None)?;
         let prepared = self.prepare(&pending, adapter, supervisor).await;
-        let (run, command) = match prepared {
+        let (run, mut command) = match prepared {
             Ok(v) => v,
             Err(error) => {
                 self.store.transition(
@@ -540,7 +638,13 @@ impl Runtime {
                 return Err(error);
             }
         };
-        self.store.attempt(id, self.limits.max_attempts)?;
+        if let Some(path) = self.store.attempt(
+            id,
+            self.limits.max_attempts,
+            supervisor.parent_lifetime_enforced(),
+        )? {
+            command.env("ROUTER_RUNTIME_LEASE", path);
+        }
         self.store
             .transition(id, RunState::Running, "spawn_requested", None)?;
         let process = process::capture(
@@ -558,6 +662,18 @@ impl Runtime {
                 _=tokio::time::sleep(std::time::Duration::from_millis(20))=>{if self.store.cancel_requested(id)?{cancel.cancel();}}
             }
         };
+        // A watchdog's exit or killpg observation is not a descendant-cleanup
+        // proof. Keep authority quarantined if its durable claim is absent.
+        if let Err(error) = self.store.confirm_attempt_cleanup(id) {
+            self.store.finish_attempt(id, "cleanup_unknown")?;
+            self.store.transition(
+                id,
+                RunState::Failed,
+                "cleanup_unknown_authority_retained",
+                Some(RunFailure::Interrupted),
+            )?;
+            return Err(error);
+        }
         let output = match captured {
             Ok(v) => v,
             Err(error) => {
@@ -633,6 +749,19 @@ impl Runtime {
                     return Err(error);
                 }
             }
+            if let Err(error) =
+                self.capture_declared_artifacts(&pending, &output.stdout, &output.outcome)
+            {
+                self.store
+                    .transition(id, RunState::Verifying, "declared_output_check", None)?;
+                self.store.transition(
+                    id,
+                    RunState::VerificationFailed,
+                    "declared_output_missing_or_invalid",
+                    Some(RunFailure::Verification),
+                )?;
+                return Err(error);
+            }
             self.store.transition(
                 id,
                 RunState::Verifying,
@@ -684,6 +813,14 @@ impl Runtime {
         if source_state(root).await? != pending.request.source_state {
             return Err(RuntimeError::SourceChanged);
         }
+        self.validate_artifact_contract(
+            pending.artifacts.as_ref(),
+            pending.run.workflow.as_ref(),
+            &pending.plan,
+            &pending.node,
+            &pending.request,
+            true,
+        )?;
         let snapshot = self.snapshot(&pending.context)?;
         let mut request = pending.request.clone();
         let id = &pending.run.run_id;
@@ -701,6 +838,15 @@ impl Runtime {
             Some(&auth),
         )?;
         let initial = adapter.prepare(&validated)?;
+        pending
+            .router
+            .validate_execution_assets(
+                &pending.context,
+                &pending.request,
+                initial.stdin.as_bytes(),
+                now()?,
+            )
+            .map_err(|_| RuntimeError::Route)?;
         supervisor.command(
             &initial,
             &SandboxPolicy {
@@ -716,6 +862,34 @@ impl Runtime {
                 .ok_or(RuntimeError::Invalid("utf8 worktree"))?;
             self.store.worktree(id, Some(path))?;
             request.workspace = path.into();
+        }
+        if let Some(artifacts) = &pending.artifacts {
+            let patches: Vec<_> = artifacts
+                .inputs
+                .iter()
+                .filter(|a| a.exposure == ArtifactExposure::ReadOnlyWorkspacePatch)
+                .collect();
+            if !patches.is_empty() {
+                let path =
+                    workspace::create(root, &self.store.root, id, &request.source_state).await?;
+                self.store
+                    .worktree(id, Some(path.to_str().ok_or(RuntimeError::Scope)?))?;
+                for grant in patches {
+                    let bytes = self.read_declared_artifact(&grant.artifact_id)?;
+                    workspace::git(&path, &["apply", "--check", "--binary", "-"], bytes.clone())
+                        .await?;
+                    workspace::git(&path, &["apply", "--binary", "-"], bytes).await?;
+                }
+                let (_, paths) =
+                    workspace::patch(&path, &request.scope, &request.source_state).await?;
+                workspace::safe_scope(&path, &paths)?;
+                request.workspace = path.to_str().ok_or(RuntimeError::Scope)?.into();
+                self.store.event(
+                    id,
+                    "artifacts.readonly_view",
+                    &digest("runtime-artifact-contract-v1", artifacts)?,
+                )?;
+            }
         }
         workspace::safe_scope(Path::new(&request.workspace), &request.scope)?;
         let auth = execution_authorization_digest(
@@ -748,6 +922,22 @@ impl Runtime {
             || run.parent_model_changed
         {
             return Err(RuntimeError::Integrity("prepared run binding"));
+        }
+        // The original request remains the authority for workspace/source/scope.
+        // Only the approved runtime-created view may replace the adapter cwd;
+        // the actual final stdin is revalidated immediately before dispatch.
+        if let Some(gated) = pending
+            .router
+            .validate_execution_assets(
+                &pending.context,
+                &pending.request,
+                run.stdin.as_bytes(),
+                now()?,
+            )
+            .map_err(|_| RuntimeError::Route)?
+        {
+            self.store
+                .event(id, "assets.final_gate", gated.binding_digest())?;
         }
         let command = supervisor.command(
             &run,
@@ -1024,10 +1214,10 @@ fn validate_binding(
         || request.scope != node.scope
         || effective_capabilities != &request.required_capabilities
         || request.timeout_ms > node.budget.max_elapsed_ms
+        || request.timeout_ms > context.request().task.budget.max_elapsed_ms
         || candidate.estimated_cost_microusd > node.budget.max_cost_microusd
         || candidate.estimated_tokens > node.budget.max_tokens
         || candidate.estimated_elapsed_ms > node.budget.max_elapsed_ms
-        || request.timeout_ms > context.request().task.budget.max_elapsed_ms
         || (node.mode == NodeMode::IsolatedWrite) != (sandbox == ExecutionSandbox::WorkspaceWrite)
     {
         return Err(RuntimeError::Route);

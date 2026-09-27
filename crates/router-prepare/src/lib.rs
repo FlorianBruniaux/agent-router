@@ -284,6 +284,23 @@ pub fn prepare_with_receipt(
     let mut skills = Vec::new();
     for id in &candidate.skills {
         let (body, evidence) = loaded(&input, AssetKind::Skill, id.as_str())?;
+        if input.context.has_asset_contracts() {
+            let manifest =
+                input
+                    .context
+                    .asset_skill_manifest(id)
+                    .ok_or(PreparationError::Binding(
+                        "skill manifest absent from v3 authority",
+                    ))?;
+            if manifest.kind != AssetSkillKind::Instruction
+                || manifest.body_sha256 != body.sha256
+                || manifest.trust != evidence.trust
+            {
+                return Err(PreparationError::Binding(
+                    "skill body, trust or kind differs from v3 authority",
+                ));
+            }
+        }
         skills.push(ExecutionSkill {
             id: id.clone(),
             content_sha256: body.sha256,
@@ -356,6 +373,29 @@ pub fn prepare_with_receipt(
     let serialized = json(&request)?;
     if serialized.len() > MAX_EXECUTION_INPUT_BYTES {
         return Err(PreparationError::Limit);
+    }
+    // The complete JSON request includes escaped bodies and their metadata. Add
+    // a conservative allowance for the shared adapter's textual framing. This
+    // is preparation evidence only: runtime must gate its actual prepared stdin
+    // again, including any approved dependency context and fresh availability.
+    if input.context.has_asset_contracts() {
+        let allowance = request.skills.iter().try_fold(128_usize, |size, skill| {
+            size.checked_add(128 + skill.id.as_str().len())
+                .ok_or(PreparationError::Limit)
+        })?;
+        let bound = serialized
+            .len()
+            .checked_add(allowance)
+            .filter(|size| *size <= MAX_EXECUTION_INPUT_BYTES)
+            .ok_or(PreparationError::Limit)?;
+        let mut conservative = serialized.clone();
+        conservative.resize(bound, b' ');
+        input.router.validate_execution_assets(
+            input.context,
+            &request,
+            &conservative,
+            options.now_unix_seconds,
+        )?;
     }
     let preparation_hash = content_digest(&json(&(
         "agent-router:preparation:v1",

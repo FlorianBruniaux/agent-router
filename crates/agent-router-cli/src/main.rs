@@ -1,8 +1,10 @@
 #![forbid(unsafe_code)]
 
+mod assets;
 mod catalogs;
 mod cli;
 mod command;
+mod coordinator;
 mod diagnostics;
 mod evaluation;
 mod execution;
@@ -119,6 +121,15 @@ fn report_error(error: CliError) -> ExitCode {
 
 fn run(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::Coordinate { command, json } => coordinator::run(command, json),
+        Commands::Assets { command } => match command {
+            command::AssetCommand::Review {
+                manifest,
+                inputs,
+                skills,
+                json,
+            } => assets::review(&manifest, &inputs, &skills, json),
+        },
         Commands::Prepare {
             manifest,
             output_directory,

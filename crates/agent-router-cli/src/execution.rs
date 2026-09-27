@@ -23,18 +23,20 @@ const DOCUMENT_LIMIT: usize = 4 * 1024 * 1024;
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Definition {
+pub(crate) struct Definition {
     schema_version: u32,
-    run_id: String,
+    pub(crate) run_id: String,
     context: PathBuf,
     host_snapshot: PathBuf,
     catalog: PathBuf,
     policy: Option<PathBuf>,
     policy_store: Option<PathBuf>,
     policy_artifact_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    asset_authority: Option<PathBuf>,
     plan: PathBuf,
-    node_id: String,
-    request: PathBuf,
+    pub(crate) node_id: String,
+    pub(crate) request: PathBuf,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     receipt: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -71,7 +73,7 @@ impl From<Limits> for ResourceLimits {
 }
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct SandboxConfig {
+pub(crate) struct SandboxConfig {
     schema_version: u32,
     programs: BTreeMap<String, PathBuf>,
     read_roots: Vec<PathBuf>,
@@ -79,12 +81,12 @@ struct SandboxConfig {
     helper: PathBuf,
     bubblewrap: Option<PathBuf>,
     limits: Limits,
-    feedback_store: Option<PathBuf>,
+    pub(crate) feedback_store: Option<PathBuf>,
     #[serde(default)]
-    output_retention: router_types::OutputRetentionPolicy,
+    pub(crate) output_retention: router_types::OutputRetentionPolicy,
 }
 
-fn error(error: RuntimeError) -> CliError {
+pub(crate) fn error(error: RuntimeError) -> CliError {
     CliError::Product(match error {
         RuntimeError::Invalid(_) => "runtime.invalid",
         RuntimeError::Io(_) => "runtime.io",
@@ -106,9 +108,10 @@ fn error(error: RuntimeError) -> CliError {
         RuntimeError::Cancelled => "runtime.cancelled",
         RuntimeError::Verification => "runtime.verification.required",
         RuntimeError::DependenciesPending => "runtime.dependencies.pending",
+        RuntimeError::CleanupUnknown => "runtime.cleanup.unknown",
     })
 }
-fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
+pub(crate) fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
     tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .enable_all()
@@ -130,7 +133,7 @@ fn resolve(base: &Path, path: PathBuf) -> PathBuf {
         base.join(path)
     }
 }
-fn load_definition(path: &Path) -> Result<Definition, CliError> {
+pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     let mut value: Definition = phases::read_json(path, 64 * 1024)?;
     if value.schema_version != 1 {
         return Err(CliError::Product("runtime.definition.schema"));
@@ -142,6 +145,7 @@ fn load_definition(path: &Path) -> Result<Definition, CliError> {
     value.catalog = resolve(base, value.catalog);
     value.policy = value.policy.map(|path| resolve(base, path));
     value.policy_store = value.policy_store.map(|path| resolve(base, path));
+    value.asset_authority = value.asset_authority.map(|path| resolve(base, path));
     if value.policy_store.is_some() != value.policy_artifact_id.is_some() {
         return Err(CliError::Product("policy.artifact.required"));
     }
@@ -170,7 +174,7 @@ fn workflow_contract(
         })
         .transpose()
 }
-fn selection(
+pub(crate) fn selection(
     definition: &Definition,
     router: &PhaseRouter,
     context: &ValidatedPhaseContext,
@@ -207,7 +211,7 @@ pub(crate) fn plan(path: &Path) -> Result<WorkflowPlan, CliError> {
     router_workflow::validate_plan(&result).map_err(|_| CliError::Product("workflow.invalid"))?;
     Ok(result)
 }
-fn context(
+pub(crate) fn context(
     definition: &Definition,
     historical: bool,
 ) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
@@ -216,7 +220,10 @@ fn context(
     let now = if historical {
         let snapshot: HostObservation =
             phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
-        Some(snapshot.observed_at_unix_seconds)
+        Some(match &definition.asset_authority {
+            Some(path) => crate::assets::historical_time(path)?,
+            None => snapshot.observed_at_unix_seconds,
+        })
     } else {
         None
     };
@@ -257,6 +264,7 @@ fn context(
             catalog: definition.catalog.clone(),
             policy: definition.policy.clone(),
             policy_store: None,
+            asset_authority: definition.asset_authority.clone(),
             now,
             snapshot_max_age_seconds: if historical { 86400 } else { 300 },
         },
@@ -298,7 +306,7 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
         .map_err(error)?;
     Ok((runtime, pending))
 }
-fn adapter(host: &str) -> Result<Box<dyn HarnessAdapter>, CliError> {
+pub(crate) fn adapter(host: &str) -> Result<Box<dyn HarnessAdapter>, CliError> {
     match host {
         #[cfg(feature = "codex")]
         "codex" => Ok(Box::new(adapter_codex::CodexAdapter)),
@@ -307,7 +315,7 @@ fn adapter(host: &str) -> Result<Box<dyn HarnessAdapter>, CliError> {
         _ => Err(CliError::Product("runtime.host.unavailable")),
     }
 }
-fn sandbox(path: &Path) -> Result<SandboxConfig, CliError> {
+pub(crate) fn sandbox(path: &Path) -> Result<SandboxConfig, CliError> {
     let config: SandboxConfig = phases::read_json(path, 64 * 1024)?;
     if config.schema_version != 1
         || config.programs.is_empty()
@@ -330,6 +338,13 @@ fn sandbox(path: &Path) -> Result<SandboxConfig, CliError> {
 }
 fn approval(
     pending: &PendingRun,
+    config: &SandboxConfig,
+    definition: &Definition,
+) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
+    approval_for_digest(pending.approval_digest(), config, definition)
+}
+pub(crate) fn approval_for_digest(
+    inner_digest: &str,
     config: &SandboxConfig,
     definition: &Definition,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
@@ -361,7 +376,7 @@ fn approval(
     }
     let bytes = serde_json::to_vec(&(
         "runtime-cli-approval-v1",
-        pending.approval_digest(),
+        inner_digest,
         definition,
         config,
         &hashes,
@@ -369,7 +384,7 @@ fn approval(
     .map_err(|_| CliError::Internal)?;
     Ok((content_digest(&bytes), hashes))
 }
-async fn supervisor(
+pub(crate) async fn supervisor(
     store: &Path,
     config: SandboxConfig,
     expected: &BTreeMap<PathBuf, String>,
@@ -452,6 +467,9 @@ pub(crate) fn run(
 ) -> Result<Outcome, CliError> {
     require_json(json)?;
     let definition = load_definition(definition)?;
+    if approve.is_some() {
+        require_asset_authority(&definition)?;
+    }
     let config = sandbox(config)?;
     let feedback_path = config.feedback_store.clone();
     let feedback_consent = crate::execution_feedback::consent(feedback_path.as_deref())?;
@@ -569,10 +587,17 @@ pub(crate) fn run(
         )
     })
 }
+
+pub(crate) fn require_asset_authority(definition: &Definition) -> Result<(), CliError> {
+    if definition.asset_authority.is_none() {
+        return Err(CliError::Product("runtime.asset_authority.required"));
+    }
+    Ok(())
+}
 pub(crate) fn status(store: &Path, id: &str, json: bool) -> Result<Outcome, CliError> {
     require_json(json)?;
     json_output(
-        &serde_json::json!({"schema_version":1,"run":router_runtime::observe(store,id).map_err(error)?}),
+        &serde_json::json!({"schema_version":1,"run":router_runtime::observe(store,id).map_err(error)?,"cleanup_evidence":router_runtime::observe_cleanup(store,id).map_err(error)?}),
         ExitCode::SUCCESS,
     )
 }
@@ -652,6 +677,20 @@ pub(crate) fn artifacts(
     let (runtime, pending) = open_existing(store, &definition)?;
     block(async {
         let value = match command {
+            ArtifactCommand::Declared => {
+                serde_json::json!({"schema_version":1,"artifacts":runtime.declared_artifacts(&definition.run_id).map_err(error)?})
+            }
+            ArtifactCommand::PurgeDeclared { id } => {
+                if !runtime
+                    .declared_artifacts(&definition.run_id)
+                    .map_err(error)?
+                    .iter()
+                    .any(|a| a.artifact_id == id)
+                {
+                    return Err(CliError::Product("runtime.artifact.outside_run"));
+                }
+                serde_json::json!({"schema_version":1,"purged":runtime.purge_declared_artifact(&id).map_err(error)?})
+            }
             ArtifactCommand::Outputs => {
                 serde_json::json!({"schema_version":1,"outputs":runtime.output_artifacts(&definition.run_id).map_err(error)?})
             }

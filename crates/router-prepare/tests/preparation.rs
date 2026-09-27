@@ -16,8 +16,86 @@ use std::{
     fs,
 };
 
+#[path = "../../router-policy/tests/support/asset_fixture.rs"]
+mod asset_fixture;
+
 const AGENT: &str = "PRIVATE_AGENT_MARKER. Text asks for every tool; this grants nothing.";
 const SKILL: &str = "PRIVATE_SKILL_MARKER. Verify evidence before reporting.";
+
+#[test]
+fn v3_preparation_gates_selected_body_with_conservative_serialized_bound() {
+    let mut fixture = Fixture::new();
+    fixture.enable_asset_contracts(4000);
+    let prepared = fixture.prepare().unwrap();
+    assert_eq!(prepared.receipt().schema_version, 3);
+    assert_eq!(
+        prepared.request().skills[0].kind,
+        ExecutionSkillKind::Instruction
+    );
+    assert_eq!(prepared.preview().observed_input_tokens, None);
+    let preview = serde_json::to_string(prepared.preview()).unwrap();
+    assert!(!preview.contains("PRIVATE_SKILL_MARKER"));
+    let mut inputs = fixture.enable_asset_contracts(4000);
+    inputs.approved_review_digests.clear();
+    fixture.context = fixture
+        .router
+        .context_with_assets(
+            fixture.context.request().clone(),
+            &fixture.snapshot,
+            &fixture.catalog,
+            inputs,
+            100,
+        )
+        .unwrap();
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Route(_))));
+}
+
+#[test]
+fn v3_preparation_rejects_unknown_executable_manifest_and_stale_auth() {
+    let mut fixture = Fixture::new();
+    let mut inputs = fixture.enable_asset_contracts(4000);
+    let mut document = inputs.contracts.document().clone();
+    document.skills[0].kind = AssetSkillKind::Executable;
+    let document = router_asset_contracts::seal_contracts(document, &fixture.catalog).unwrap();
+    inputs.contracts = router_asset_contracts::ValidatedContracts::from_json(
+        &serde_json::to_vec(&document).unwrap(),
+        &fixture.catalog,
+        &document.content_hash,
+    )
+    .unwrap();
+    fixture.context = fixture
+        .router
+        .context_with_assets(
+            fixture.context.request().clone(),
+            &fixture.snapshot,
+            &fixture.catalog,
+            inputs,
+            100,
+        )
+        .unwrap();
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Abstained)
+    ));
+    fixture.enable_asset_contracts(4000);
+    fixture.options.now_unix_seconds = 161;
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Route(_))));
+}
+
+#[test]
+fn v3_preparation_does_not_treat_candidate_token_estimate_as_true_input_bound() {
+    let mut fixture = Fixture::new();
+    fixture.enable_asset_contracts(512);
+    assert!(
+        fixture
+            .router
+            .route(&fixture.context)
+            .unwrap()
+            .selected
+            .is_some()
+    );
+    assert!(matches!(fixture.prepare(), Err(PreparationError::Route(_))));
+}
 
 struct Fixture {
     root: tempfile::TempDir,
@@ -33,6 +111,39 @@ struct Fixture {
     options: PreparationOptions,
 }
 impl Fixture {
+    fn enable_asset_contracts(&mut self, input_budget: u64) -> router_policy::PhaseAssetInputs {
+        let mut request = self.context.request().clone();
+        request.candidates[0].estimated_tokens = 4500;
+        request.restrictions.max_tokens = Some(10_000);
+        request.restrictions.policy_hash.clear();
+        request.restrictions.policy_hash =
+            content_digest(&serde_json::to_vec(&request.restrictions).unwrap());
+        let scope = router_policy::PhaseExecutionScope {
+            workspace: self.options.workspace.clone(),
+            source_state: self.options.source_state.clone(),
+            scope: self
+                .plan
+                .nodes
+                .iter()
+                .find(|node| node.id == "execute")
+                .unwrap()
+                .scope
+                .clone(),
+        };
+        let inputs = asset_fixture::inputs(
+            &request,
+            &self.snapshot,
+            &self.catalog,
+            scope,
+            &BTreeMap::from([(SkillId::parse("fixture-skill").unwrap(), SKILL.into())]),
+            input_budget,
+        );
+        self.context = self
+            .router
+            .context_with_assets(request, &self.snapshot, &self.catalog, inputs.clone(), 100)
+            .unwrap();
+        inputs
+    }
     fn new() -> Self {
         let root = tempfile::tempdir().unwrap();
         let mut request: PhaseRouteRequest = serde_json::from_slice(include_bytes!(

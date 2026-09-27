@@ -1,6 +1,7 @@
 //! Opt-in v2 phase routing. v1 Router behavior and receipts are unchanged.
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::asset_phases::ValidatedPhaseAssets;
 use router_adapter_api::{HostObservation, ValidatedHostObservation};
 use router_catalog::Catalog;
 use router_types::*;
@@ -13,6 +14,8 @@ pub const MAX_PHASE_REQUEST_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PhaseRouteError {
+    #[error("phase.asset_contract: {0}")]
+    AssetContract(#[from] router_asset_contracts::ContractError),
     #[error("phase.invalid: {0}")]
     Invalid(&'static str),
     #[error("phase.limit: {0}")]
@@ -58,6 +61,7 @@ impl ValidatedPhaseReceipt {
 /// are owned snapshots, not references to mutable candidate or catalog data.
 #[derive(Clone, Debug)]
 pub struct ValidatedPhaseContext {
+    pub(crate) assets: Option<ValidatedPhaseAssets>,
     request: PhaseRouteRequest,
     policy: PhasePolicy,
     snapshot: HostObservation,
@@ -90,6 +94,14 @@ impl ValidatedPhaseContext {
     pub fn catalog_hash(&self) -> &str {
         &self.catalog_hash
     }
+    pub fn has_asset_contracts(&self) -> bool {
+        self.assets.is_some()
+    }
+    pub(crate) fn eligible_selection(&self, id: &str) -> Option<&PhaseSelection> {
+        self.eligible
+            .iter()
+            .find(|selection| selection.candidate.id == id)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -111,9 +123,19 @@ impl PhaseRouter {
 
     pub fn context(
         &self,
+        request: PhaseRouteRequest,
+        snapshot: &ValidatedHostObservation,
+        catalog: &Catalog,
+    ) -> Result<ValidatedPhaseContext> {
+        self.context_inner(request, snapshot, catalog, None)
+    }
+
+    pub(crate) fn context_inner(
+        &self,
         mut request: PhaseRouteRequest,
         snapshot: &ValidatedHostObservation,
         catalog: &Catalog,
+        assets: Option<ValidatedPhaseAssets>,
     ) -> Result<ValidatedPhaseContext> {
         validate_request(&request)?;
         router_workflow::validate_task(&request.task)
@@ -133,7 +155,7 @@ impl PhaseRouter {
         let registry_hash = hash("phase-registry-v2", &request.registry)?;
         // The snapshot payload is bound in addition to its digest, and the entire
         // canonical catalog hash is bound rather than its declared version.
-        let context_hash = hash(
+        let legacy_context_hash = hash(
             "phase-context-v2",
             &(
                 &request,
@@ -142,6 +164,13 @@ impl PhaseRouter {
                 &self.policy,
             ),
         )?;
+        let context_hash = match &assets {
+            Some(assets) => hash(
+                "phase-context-v3",
+                &(&legacy_context_hash, assets.binding_digest()),
+            )?,
+            None => legacy_context_hash,
+        };
         let mut eligible = Vec::new();
         let mut execution_capabilities = BTreeMap::new();
         let mut exclusions = Vec::new();
@@ -159,6 +188,7 @@ impl PhaseRouter {
                 catalog,
                 &registry,
                 &self.policy,
+                assets.as_ref(),
             )? {
                 Ok(evaluation) => {
                     execution_capabilities.insert(
@@ -190,6 +220,7 @@ impl PhaseRouter {
         });
         exclusions.dedup();
         Ok(ValidatedPhaseContext {
+            assets,
             request,
             policy: self.policy.clone(),
             snapshot: snapshot.observation().clone(),
@@ -295,7 +326,7 @@ impl PhaseRouter {
             .map(|s| (*s).clone())
             .collect();
         let mut receipt = PhaseReceipt {
-            schema_version: 2,
+            schema_version: if context.assets.is_some() { 3 } else { 2 },
             receipt_id: String::new(),
             phase: context.request.phase,
             context_hash: context.context_hash.clone(),
@@ -310,7 +341,14 @@ impl PhaseRouter {
             abstention,
             unavailable: unavailable.clone(),
         };
-        receipt.receipt_id = hash("phase-receipt-v2", &receipt)?;
+        receipt.receipt_id = hash(
+            if context.assets.is_some() {
+                "phase-receipt-v3"
+            } else {
+                "phase-receipt-v2"
+            },
+            &receipt,
+        )?;
         Ok(receipt)
     }
 
@@ -376,6 +414,7 @@ fn evaluate(
     catalog: &Catalog,
     registry: &BTreeMap<(PhaseAssetKind, &str), &PhaseRegisteredAsset>,
     policy: &PhasePolicy,
+    extended_assets: Option<&ValidatedPhaseAssets>,
 ) -> Result<std::result::Result<EligibleEvaluation, Vec<PhaseExclusion>>> {
     let mut failures = Vec::new();
     let mut reject = |code: &str, evidence: String| {
@@ -642,6 +681,30 @@ fn evaluate(
     }
     let model = model.ok_or(PhaseRouteError::Invalid("eligible model absent"))?;
     // Scoring is reached only after every hard constraint passes.
+    if let Some(extended) = extended_assets {
+        match extended.gate_candidate(request, candidate, &capabilities, &mutations) {
+            Ok(extra) => {
+                capabilities = extra;
+                for asset in &mut assets {
+                    if asset.kind == "skill" {
+                        let id = SkillId::parse(asset.id.clone())
+                            .map_err(|_| PhaseRouteError::Invalid("skill id"))?;
+                        if let Some(manifest) = extended.skill(&id) {
+                            asset.content_sha256 = manifest.body_sha256.clone();
+                            asset.authority = "bound_asset_contracts_v1".into();
+                        }
+                    }
+                }
+            }
+            Err(error) => {
+                return Ok(Err(vec![PhaseExclusion {
+                    candidate_id: candidate.id.clone(),
+                    code: error.code().into(),
+                    evidence: "extended asset gate rejected candidate".into(),
+                }]));
+            }
+        }
+    }
     let score = score(candidate, model, policy)?;
     assets.sort_by(|a, b| (&a.kind, &a.id).cmp(&(&b.kind, &b.id)));
     Ok(Ok(EligibleEvaluation { selection: PhaseSelection { candidate: candidate.clone(), score, assets, reasons: vec![
@@ -693,7 +756,7 @@ fn validate_policy(policy: &PhasePolicy) -> Result<()> {
     Ok(())
 }
 
-fn validate_request(request: &PhaseRouteRequest) -> Result<()> {
+pub(crate) fn validate_request(request: &PhaseRouteRequest) -> Result<()> {
     if request.schema_version != 2
         || request.registry.schema_version != 1
         || !identifier(&request.registry.version)
@@ -780,7 +843,7 @@ fn is_trusted(trust: SkillTrust) -> bool {
         SkillTrust::Builtin | SkillTrust::TrustedLocal | SkillTrust::VerifiedThirdParty
     )
 }
-fn hash(domain: &str, value: &impl Serialize) -> Result<String> {
+pub(crate) fn hash(domain: &str, value: &impl Serialize) -> Result<String> {
     let bytes = serde_json::to_vec(value).map_err(|_| PhaseRouteError::Serialization)?;
     let mut hasher = Sha256::new();
     hasher.update(domain);

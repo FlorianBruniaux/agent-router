@@ -32,6 +32,7 @@ pub(crate) fn error(error: PhaseRouteError) -> CliError {
         PhaseRouteError::Ineligible => "phase.selection.ineligible",
         PhaseRouteError::PolicyMismatch => "phase.policy.mismatch",
         PhaseRouteError::ReceiptMismatch => "phase.receipt.mismatch",
+        PhaseRouteError::AssetContract(error) => error.code(),
     })
 }
 pub(crate) fn load(inputs: &PhaseArgs) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
@@ -75,9 +76,14 @@ pub(crate) fn load_with_policy(
         None => selected_policy(inputs)?,
     };
     let router = PhaseRouter::new(policy).map_err(error)?;
-    let context = router
-        .context(request, &snapshot, &catalog)
-        .map_err(error)?;
+    let context = if let Some(path) = &inputs.asset_authority {
+        let now = inspect::current_time(inputs.now)?;
+        let assets = crate::assets::load(path, &request, &snapshot, &catalog, now)?;
+        router.context_with_assets(request, &snapshot, &catalog, assets, now)
+    } else {
+        router.context(request, &snapshot, &catalog)
+    }
+    .map_err(error)?;
     Ok((router, context))
 }
 pub(crate) fn route(inputs: PhaseArgs, json: bool) -> Result<Outcome, CliError> {

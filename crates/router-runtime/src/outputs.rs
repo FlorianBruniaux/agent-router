@@ -18,14 +18,14 @@ pub(crate) struct FileIdentity {
     pub inode: u64,
 }
 impl FileIdentity {
-    fn from_file(file: &File) -> Result<Self> {
+    pub(crate) fn from_file(file: &File) -> Result<Self> {
         let metadata = file.metadata()?;
         Ok(Self {
             device: metadata.dev(),
             inode: metadata.ino(),
         })
     }
-    fn matches(&self, file: &File) -> Result<bool> {
+    pub(crate) fn matches(&self, file: &File) -> Result<bool> {
         let metadata = file.metadata()?;
         Ok(self.device == metadata.dev() && self.inode == metadata.ino())
     }

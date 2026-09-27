@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 router-adapter-api = { path = "../router-adapter-api" }
+router-asset-contracts = { path = "../router-asset-contracts" }
 router-workflow = { path = "../router-workflow" }
 hex.workspace = true
 router-catalog = { path = "../router-catalog" }

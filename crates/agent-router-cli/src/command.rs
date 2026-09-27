@@ -22,6 +22,9 @@ pub struct PhaseArgs {
     /// Use the explicitly selected store's active offline policy unless --policy overrides it.
     #[arg(long)]
     pub policy_store: Option<PathBuf>,
+    /// Independently pinned model/skill contracts and fresh native availability.
+    #[arg(long)]
+    pub asset_authority: Option<PathBuf>,
     #[arg(long)]
     pub now: Option<u64>,
     #[arg(long, default_value_t = 86400)]
@@ -30,6 +33,16 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    Coordinate {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: CoordinateCommand,
+    },
+    Assets {
+        #[command(subcommand)]
+        command: AssetCommand,
+    },
     Prepare {
         #[arg(long)]
         manifest: PathBuf,
@@ -284,9 +297,98 @@ pub enum Commands {
 }
 
 #[derive(Subcommand)]
+pub enum AssetCommand {
+    Review {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[command(flatten)]
+        inputs: PhaseArgs,
+        #[arg(long = "skill", required = true)]
+        skills: Vec<String>,
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum CoordinateCommand {
+    Seal {
+        #[arg(long)]
+        definition: PathBuf,
+    },
+    Status {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+    },
+    Cancel {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+    },
+    Review {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        source_definition: PathBuf,
+        #[arg(long)]
+        sandbox: PathBuf,
+        #[arg(long)]
+        node_id: String,
+        #[arg(long, default_value_t = 0)]
+        generation: u32,
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        output_directory: PathBuf,
+    },
+    RunWave {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        wave: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+    },
+    Verify {
+        #[arg(long)]
+        bundle: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        evidence: PathBuf,
+        #[arg(long)]
+        approval: String,
+    },
+    Service {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long = "bundle", required = true)]
+        bundles: Vec<PathBuf>,
+        #[arg(long)]
+        store: PathBuf,
+    },
+    Artifacts {
+        #[arg(long)]
+        bundle: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+        #[command(subcommand)]
+        command: ArtifactCommand,
+    },
+}
+
+#[derive(Subcommand)]
 pub enum ArtifactCommand {
     Preview,
     Outputs,
+    Declared,
+    PurgeDeclared {
+        #[arg(long)]
+        id: String,
+    },
     PurgeOutputs {
         #[arg(long)]
         attempt: u32,

@@ -25,11 +25,19 @@ jobs:
         run: cargo test -p router-runtime -p router-sandbox-helper --locked
       - name: Require a real address-space allocation refusal
         run: cargo test -p router-sandbox-helper --test limits address_space_limit_rejects_a_real_allocation --locked -- --exact --nocapture
+      - name: Require descendant termination after supervisor death
+        run: cargo test -p router-sandbox-helper --test lifetime sigkill_bubblewrap_parent_stops_setsid_descendant --locked -- --ignored --exact --nocapture
       - name: Require native Linux read, write and network isolation
         run: cargo test -p router-runtime --test runtime native_bubblewrap_read_write_and_network_canary --locked -- --ignored --exact --nocapture
       - name: Build CLI and native resource helper
         run: cargo build -p agent-router-cli -p router-sandbox-helper --locked
       - name: Require CLI approval, feedback, retention and interruption behavior
         run: cargo test -p agent-router-cli --test native_execution --locked -- --ignored --nocapture --test-threads=1
+      - name: Require native workflow artifact handoff
+        run: cargo test -p router-coordinator --test workflow native_sandbox_plan_execute_verify_handoff --locked -- --ignored --exact --nocapture
+      - name: Require runtime recovery after supervisor SIGKILL
+        run: cargo test -p router-runtime --test runtime native_supervisor_sigkill_recovery_waits_for_cleanup_proof --locked -- --ignored --exact --nocapture
+      - name: Require public coordinator approval and integration lifecycle
+        run: cargo test -p agent-router-cli --test coordinator native_coordinator_cli_run_verify_service_apply_and_purge --locked -- --ignored --exact --nocapture
       - name: Check runtime and helper warnings
         run: cargo clippy -p router-runtime -p router-sandbox-helper --all-targets --locked -- -D warnings

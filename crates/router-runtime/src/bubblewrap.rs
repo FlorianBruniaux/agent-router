@@ -183,6 +183,9 @@ impl BubblewrapSandbox {
     }
 }
 impl SandboxSupervisor for BubblewrapSandbox {
+    fn pid_namespace_isolated(&self) -> bool {
+        cfg!(target_os = "linux")
+    }
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
         if binary_hash(&self.wrapper)? != self.wrapper_hash {
             return Err(RuntimeError::Integrity("bubblewrap changed"));

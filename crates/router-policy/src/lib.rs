@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod asset_phases;
 mod constraint;
 mod phases;
 mod preset;
@@ -7,6 +8,7 @@ mod retrieval;
 mod route;
 mod score;
 
+pub use asset_phases::{PhaseAssetInputs, PhaseExecutionScope, asset_authority_scope_digest};
 pub use constraint::{
     CapabilitiesSatisfied, CapabilityKnowledge, Constraint, ConstraintEngine, ConstraintVerdict,
     EffortSupported, EligibilityContext, ModelAvailable, StageSupported, Support, is_eligible,

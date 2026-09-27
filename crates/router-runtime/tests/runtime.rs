@@ -25,7 +25,9 @@ struct Fixture {
 }
 impl Fixture {
     async fn new(write: bool) -> Self {
-        let temp = tempfile::tempdir().unwrap();
+        Self::new_at(write, tempfile::tempdir().unwrap()).await
+    }
+    async fn new_at(write: bool, temp: tempfile::TempDir) -> Self {
         let root = fs::canonicalize(temp.path()).unwrap().join("repo");
         fs::create_dir(&root).unwrap();
         fs::create_dir(root.join("src")).unwrap();
@@ -1725,4 +1727,153 @@ async fn raw_request_cannot_exceed_the_declared_node_budget() {
             Err(RuntimeError::NotFound)
         ));
     }
+}
+
+#[tokio::test]
+#[ignore = "requires native OS sandbox, built helper and subprocess SIGKILL"]
+async fn native_supervisor_sigkill_recovery_waits_for_cleanup_proof() {
+    const CHILD: &str = "AR_SIGKILL_FIXTURE_ROOT";
+    if let Some(parent) = std::env::var_os(CHILD) {
+        let parent = PathBuf::from(parent);
+        let mut fixture = Fixture::new_at(true, tempfile::tempdir_in(&parent).unwrap()).await;
+        fixture.request.timeout_ms = 2_000;
+        let runtime = fixture.runtime();
+        let pending = fixture.review(&runtime).await;
+        let helper = std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("router-sandbox-helper");
+        let root = fs::canonicalize(fixture.temp.path()).unwrap();
+        #[cfg(target_os = "macos")]
+        let sandbox = SeatbeltSandbox::probe(
+            &root,
+            BTreeMap::from([("/bin/sh".into(), fs::canonicalize("/bin/sh").unwrap())]),
+            vec![],
+            BTreeMap::new(),
+        )
+        .await
+        .unwrap();
+        #[cfg(target_os = "linux")]
+        let sandbox = BubblewrapSandbox::probe(
+            &root,
+            BTreeMap::from([("/bin/sh".into(), fs::canonicalize("/bin/sh").unwrap())]),
+            vec![],
+            BTreeMap::new(),
+        )
+        .await
+        .unwrap();
+        let supervisor = ResourceSupervisor::probe(
+            &helper,
+            ResourceLimits {
+                max_processes: 4_096,
+                address_space_bytes: if cfg!(target_os = "macos") {
+                    None
+                } else {
+                    Some(256 * 1024 * 1024)
+                },
+                ..ResourceLimits::default()
+            },
+            sandbox,
+        )
+        .await
+        .unwrap();
+        fs::write(
+            parent.join("runtime-path"),
+            runtime.storage_root().to_str().unwrap(),
+        )
+        .unwrap();
+        let approved = runtime
+            .approve(pending.clone(), pending.approval_digest())
+            .unwrap();
+        let result = runtime.execute(approved,&FakeAdapter("trap '' TERM; (trap '' TERM; while :; do printf x >> src/heartbeat; done) & wait"),&supervisor,Cancellation::default()).await;
+        panic!("fixture parent must be killed before transport completion: {result:?}");
+    }
+    let temp = tempfile::tempdir().unwrap();
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--ignored",
+            "--exact",
+            "native_supervisor_sigkill_recovery_waits_for_cleanup_proof",
+            "--nocapture",
+        ])
+        .env(CHILD, temp.path())
+        .spawn()
+        .unwrap();
+    let mut ready = None;
+    for _ in 0..1_000 {
+        if let Ok(root) = fs::read_to_string(temp.path().join("runtime-path")) {
+            let root = PathBuf::from(root);
+            if let Ok(summary) = observe(&root, "run-1") {
+                if let Some(worktree) = summary.worktree {
+                    let heartbeat = PathBuf::from(worktree).join("src/heartbeat");
+                    if summary.state == RunState::Running
+                        && fs::metadata(&heartbeat).is_ok_and(|v| v.len() > 0)
+                    {
+                        ready = Some((root, heartbeat));
+                        break;
+                    }
+                }
+            }
+        }
+        if child.try_wait().unwrap().is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+
+    child.kill().ok();
+    let status = child.wait().unwrap();
+    let (root, heartbeat) = ready.expect("subprocess must enter Running with a real heartbeat");
+    use std::os::unix::process::ExitStatusExt;
+    assert_eq!(status.signal(), Some(nix::libc::SIGKILL));
+    let mut proof = None;
+    for _ in 0..500 {
+        let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+        let summary = runtime.summary("run-1").unwrap();
+        assert_eq!(summary.state, RunState::Failed);
+        assert_eq!(summary.failure, Some(RunFailure::Interrupted));
+        assert_eq!(summary.attempts, 1);
+        let evidence = observe_cleanup(&root, "run-1").unwrap();
+        if evidence != ProcessCleanupEvidence::Unknown {
+            proof = Some(evidence);
+            break;
+        }
+        let db = rusqlite::Connection::open(root.join("runtime.sqlite3")).unwrap();
+        let locks: u32 = db
+            .query_row(
+                "SELECT COUNT(*) FROM writer_locks WHERE run_id='run-1'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(locks, 1, "unknown cleanup retains write authority");
+        drop(runtime);
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    let proof = proof.expect("watchdog must publish a lock-protected cleanup proof");
+    #[cfg(target_os = "macos")]
+    assert_eq!(proof, ProcessCleanupEvidence::GroupTerminated);
+    #[cfg(target_os = "linux")]
+    assert_eq!(proof, ProcessCleanupEvidence::NamespaceTerminated);
+    let db = rusqlite::Connection::open(root.join("runtime.sqlite3")).unwrap();
+    let locks: u32 = db
+        .query_row(
+            "SELECT COUNT(*) FROM writer_locks WHERE run_id='run-1'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(locks, 0, "cleanup proof permits release of write authority");
+    let bytes = fs::metadata(&heartbeat).unwrap().len();
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert_eq!(fs::metadata(&heartbeat).unwrap().len(), bytes);
+    assert!(
+        observe_events(&root, "run-1")
+            .unwrap()
+            .iter()
+            .any(|event| event.kind == "recovery.interrupted")
+    );
 }

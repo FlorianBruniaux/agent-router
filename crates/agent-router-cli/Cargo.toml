@@ -26,6 +26,8 @@ router-feedback = { path = "../router-feedback" }
 router-retrieval = { path = "../router-retrieval" }
 router-runtime = { path = "../router-runtime" }
 router-prepare = { path = "../router-prepare" }
+router-asset-contracts = { path = "../router-asset-contracts" }
+router-coordinator = { path = "../router-coordinator" }
 tokio = { version = "=1.45.1", features = ["rt-multi-thread", "time", "signal"] }
 clap.workspace = true
 router-catalog = { path = "../router-catalog" }
