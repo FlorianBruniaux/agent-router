@@ -1,0 +1,189 @@
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_cf68cea0d8256a 1-35
+.harness-generated.json
+  s_86ed8bd547d4f8::t_aad7f41e3c847b 41-42
+AGENTS.md
+  s_86ed8bd547d4f8::t_588b2266eb360c 4-7,13-16,46
+CLAUDE.md
+  s_86ed8bd547d4f8::t_798de9e2ac9b0f 4-7,13-16,46
+Cargo.lock
+  s_86ed8bd547d4f8::t_e35cc3be6164b6 29-43,61,63,69,129,140,164-178,211-216,394,468-473,545-564,592-600,613-618,739-751,788,846-861,876-904,939-944,964,1033-1042,1112,1141-1167,1219-1227,1237-1300
+Cargo.toml
+  s_86ed8bd547d4f8::t_3b952fb5e02daa 3,8-9,12
+README.md
+  s_86ed8bd547d4f8::t_96deb0dbd7ab50 16-19,116-120
+crates/agent-router-cli/Cargo.toml
+  s_86ed8bd547d4f8::t_a5fc551a8a651d 27-29
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_f33aba82139f98 22-24,33-111,232-235,244-253,280-298
+crates/agent-router-cli/src/diagnostics.rs
+  s_86ed8bd547d4f8::t_f9db35765a0844 100-102
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_25ce48f1e361ea 1-581
+crates/agent-router-cli/src/execution_feedback.rs
+  s_86ed8bd547d4f8::t_45d8537f697c2b 1-128
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_3be95c60f515e2 8-9,13,122-170,257-258,263-277,315,317-327
+crates/agent-router-cli/src/phases.rs
+  s_86ed8bd547d4f8::t_d3cf1bbe184249 37-60,72-74,76
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_8a359a5ff07f32 1-176
+crates/agent-router-cli/src/product.rs
+  s_86ed8bd547d4f8::t_7a95f4fa29fc5e 24-26,61-62,77-87,97-114
+crates/agent-router-cli/tests/execution.rs
+  s_86ed8bd547d4f8::t_6eaf289cca5e07 1-459
+crates/agent-router-cli/tests/native_execution.rs
+  s_86ed8bd547d4f8::t_0109c234602970 1-541
+crates/agent-router-cli/tests/product.rs
+  s_86ed8bd547d4f8::t_afc572f2d3145f 36-122
+crates/router-doctor/Cargo.toml
+  s_86ed8bd547d4f8::t_e4bd162d378aa1 18
+crates/router-doctor/src/audit.rs
+  s_86ed8bd547d4f8::t_60ec3200957369 6-11,61,65,70,82,93-97,110,122-127,139-142,145-517
+crates/router-doctor/src/files.rs
+  s_86ed8bd547d4f8::t_76688328bcfede 37,55,68-157,159-163,165-169
+crates/router-doctor/src/lib.rs
+  s_86ed8bd547d4f8::t_45d0e99d891ada 2
+crates/router-doctor/tests/audit.rs
+  s_86ed8bd547d4f8::t_a808c7fab416d3 2-3,6,38-515
+crates/router-eval/examples/candidate_corpus.rs
+  s_86ed8bd547d4f8::t_12768e7a853d6d 27
+crates/router-eval/tests/replay.rs
+  s_86ed8bd547d4f8::t_2416d8f8744f65 22
+crates/router-feedback/tests/common/mod.rs
+  s_86ed8bd547d4f8::t_d1ca7c033af320 22
+crates/router-policy/examples/benchmark_phase.rs
+  s_03ba8b1a919c17::t_a209581d8206e3 1-98
+crates/router-policy/src/phases.rs
+  s_86ed8bd547d4f8::t_ad21b08a7fabfe 47,123,140-146,179,298-313,322-326,334,401-410,602,608
+crates/router-policy/tests/phases.rs
+  s_86ed8bd547d4f8::t_ab73593a2fa716 102,204-244
+crates/router-prepare/Cargo.toml
+  s_86ed8bd547d4f8::t_a0a964a6f2f143 1-20
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_62cbc2330c83ab 1-396
+crates/router-prepare/tests/preparation.rs
+  s_86ed8bd547d4f8::t_20bb68d46c63bc 1-662
+crates/router-retrieval/README.md
+  s_86ed8bd547d4f8::t_35f6bc87562112 21,27-51
+crates/router-retrieval/src/body.rs
+  s_86ed8bd547d4f8::t_2d2f2032d93173 45-62
+crates/router-retrieval/src/index.rs
+  s_86ed8bd547d4f8::t_06058aaebd8f77 36,41,47-59,69,124-143,154,164-179,187-200,207-212,214,382-395,398,499-565,569-578,581
+crates/router-retrieval/src/lib.rs
+  s_86ed8bd547d4f8::t_116444c0332d7f 34-39
+crates/router-retrieval/src/types.rs
+  s_86ed8bd547d4f8::t_c1e5ea43e10a71 67-77,215-217
+crates/router-retrieval/tests/catalog_binding.rs
+  s_86ed8bd547d4f8::t_3ee50c56b42118 1-274
+crates/router-runtime/Cargo.toml
+  s_86ed8bd547d4f8::t_7a19c3f8f901a6 1-25
+crates/router-runtime/src/bubblewrap.rs
+  s_86ed8bd547d4f8::t_d3383f2646f5b9 1-280
+crates/router-runtime/src/error.rs
+  s_86ed8bd547d4f8::t_88e5cd90198729 1-42
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_be1fecb1ccc26e 1-965
+crates/router-runtime/src/outputs.rs
+  s_86ed8bd547d4f8::t_a39a933c918011 1-346
+crates/router-runtime/src/process.rs
+  s_86ed8bd547d4f8::t_8de941f9cc9e30 1-233
+crates/router-runtime/src/resources.rs
+  s_86ed8bd547d4f8::t_72a2593163eef4 1-175
+crates/router-runtime/src/sandbox.rs
+  s_86ed8bd547d4f8::t_447b734d9c3786 1-356
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_f9ca83e2525848 1-855
+crates/router-runtime/src/workspace.rs
+  s_86ed8bd547d4f8::t_93392a90ab4847 1-227
+crates/router-runtime/tests/runtime.rs
+  s_86ed8bd547d4f8::t_e9075d0d62363d 1-1221
+crates/router-sandbox-helper/Cargo.toml
+  s_86ed8bd547d4f8::t_f7b8152106acd8 1-12
+crates/router-sandbox-helper/src/main.rs
+  s_86ed8bd547d4f8::t_4bab50f8029688 1-131
+crates/router-sandbox-helper/tests/limits.rs
+  s_86ed8bd547d4f8::t_5fdc50da26d730 1-164
+crates/router-types/src/doctor.rs
+  s_86ed8bd547d4f8::t_c43f854532913f 131-133,148-389
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_acf881320d1707 26-28
+crates/router-types/src/phases.rs
+  s_86ed8bd547d4f8::t_83e994a05edd3e 34-47,101-102
+crates/router-types/src/runtime.rs
+  s_86ed8bd547d4f8::t_965362ca3a1704 1-183
+docs/cli-execution.md
+  s_86ed8bd547d4f8::t_415b71c565c5d4 1-115
+docs/completion.md
+  s_86ed8bd547d4f8::t_17355a95e5b4d1 12-15,18-21,47-70
+docs/distribution.md
+  s_86ed8bd547d4f8::t_64c3c078726991 1,16-17,23-27,57-58,86-124,132,135-137,170-171
+docs/doctor.md
+  s_86ed8bd547d4f8::t_d1176c1c31d1b6 36-39,48-89,98-108,112-115
+docs/performance.md
+  s_03ba8b1a919c17::t_ae282c86d763ee 1-177
+docs/preparation.md
+  s_86ed8bd547d4f8::t_ebc6e36c00187d 1-114
+docs/reference/json-contracts.md
+  s_86ed8bd547d4f8::t_97947452a608b0 8-35
+docs/retrieval.md
+  s_86ed8bd547d4f8::t_8b03a121cecc3b 1-58
+docs/runtime.md
+  s_86ed8bd547d4f8::t_4fbcacb6d2190c 1-222
+harness/instructions.md
+  s_86ed8bd547d4f8::t_5c18021a913d81 3-6,12-15,45
+integrations/README.md
+  s_86ed8bd547d4f8::t_ad28ff35f2ec5f 1-103
+integrations/additional-hosts.md
+  s_86ed8bd547d4f8::t_5e9a0870630530 1-102
+integrations/bridge-contract/Cargo.toml
+  s_86ed8bd547d4f8::t_296b96a81359fc 1-20
+integrations/bridge-contract/protocol-sources.json
+  s_86ed8bd547d4f8::t_66abe63536cc40 1-20
+integrations/bridge-contract/src/harness.rs
+  s_86ed8bd547d4f8::t_42cceff920eeaf 1-130
+integrations/bridge-contract/src/lib.rs
+  s_86ed8bd547d4f8::t_56746f2013b646 1-122
+integrations/bridge-contract/src/provider.rs
+  s_86ed8bd547d4f8::t_375f5e1f51cafc 1-257
+integrations/bridge-contract/src/stream.rs
+  s_86ed8bd547d4f8::t_ce08b8176e6090 1-283
+integrations/bridge-contract/tests/contracts.rs
+  s_86ed8bd547d4f8::t_1051cfc9ed903a 1-64
+integrations/bridge-contract/tests/native.rs
+  s_86ed8bd547d4f8::t_bd9d1cb50a50c2 1-339
+integrations/claude-code/adapter.json
+  s_86ed8bd547d4f8::t_0fcfd8e67f2582 1-14
+integrations/codex/adapter.json
+  s_86ed8bd547d4f8::t_82e2992b9ec4ae 1-14
+scripts/benchmark-product.py
+  s_03ba8b1a919c17::t_d16f762f73bac1 1-157
+scripts/package-core.py
+  s_86ed8bd547d4f8::t_f9a339305b3f80 27,230-279,499-500,502-503,511-512,578-579,593
+scripts/test-package-core.py
+  s_86ed8bd547d4f8::t_797d46d0f24e8b 12,16,129-176,204-268
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f9f212a1ff2d004f2b82e06d25368f925a295ba3",
+  "prompts": {},
+  "sessions": {
+    "s_03ba8b1a919c17": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0d374-0cc8-7963-b9d1-425a32259a25",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
