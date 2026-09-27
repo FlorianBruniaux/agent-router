@@ -811,8 +811,11 @@ mod adapter_configuration_tests {
     use serde_json::json;
 
     fn config_value() -> serde_json::Value {
-        json!({"schema_version":1,"programs":{"codex":"/bin/sh"},"read_roots":[],
-            "environment_names":[],"helper":"/bin/sh","bubblewrap":null,
+        // Hash-only fixture: the test executable is a regular file on every
+        // runner. /bin/sh is a symlink on Linux and must fail no-follow reads.
+        let executable = std::env::current_exe().unwrap();
+        json!({"schema_version":1,"programs":{"codex":executable},"read_roots":[],
+            "environment_names":[],"helper":executable,"bubblewrap":null,
             "limits":{"cpu_seconds":5,"address_space_bytes":null,"max_open_files":64,
                 "max_processes":64,"max_file_bytes":1048576},"feedback_store":null,
             "output_retention":{"mode":"none"}})
