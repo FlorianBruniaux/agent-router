@@ -101,7 +101,7 @@ post-merge macOS/Linux workflows passed. Demo timing is edited, not a benchmark.
 
 ## Contextual retrieval, risk floors and terminal output
 
-The next delivery adds five-family contextual retrieval, catalog-bound metadata
+PR #20 (`5525b1205d2db2a36d5b8fa6312f66a6756dbc9d`) adds five-family contextual retrieval, catalog-bound metadata
 v3, deterministic reciprocal rank fusion and incremental updates. Semantic
 ranking is an explicit build feature and consumes a supplied ranking; it does
 not install or contact an embedding provider. Human recall evidence remains open.
@@ -119,6 +119,21 @@ Native failure classification uses bounded typed host events, with unsupported,
 conflicting or incomplete evidence falling back to the generic failure. Timeout,
 cancellation and supervisor limits retain priority. Typed validation commands
 and independently observed objective success remain separate from this change.
+
+## Durable escalation
+
+The runtime library now records terminal attempt facts atomically and can propose
+a different eligible model or effort after two separately observed failures.
+Unknown cost/token accounting blocks the proposal unless the parent explicitly
+attests a bound for each attempt. Such attestations remain distinct from measured
+spending. The source evidence can authorize one new attempt, with a new approval,
+the same task/source/scope, and the remaining cumulative budget.
+
+The reviewed version passed 60 runtime/decision tests and four real macOS sandbox
+canaries using synthetic workers. The canaries include the v3 asset gate and a
+regression refusing writing failures even after their worktrees are discarded.
+This library delivery does not yet expose the escalation lifecycle in the CLI;
+the native Linux gate is included for remote validation.
 
 ## Acceptance that automated implementation cannot manufacture
 

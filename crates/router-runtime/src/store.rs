@@ -15,6 +15,9 @@ use std::{
     sync::Mutex,
 };
 
+mod escalation;
+pub(crate) use escalation::EscalationHistory;
+
 pub(crate) struct Store {
     db: Mutex<Connection>,
     pub root: PathBuf,
@@ -48,7 +51,7 @@ impl Store {
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 6 {
+        if version > 7 {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -103,6 +106,11 @@ impl Store {
             tx.execute_batch("CREATE TABLE attempt_leases(run_id TEXT NOT NULL REFERENCES runs(run_id), attempt INTEGER NOT NULL, record TEXT NOT NULL, resolved INTEGER NOT NULL DEFAULT 0 CHECK(resolved IN (0,1)), evidence TEXT, PRIMARY KEY(run_id,attempt)); CREATE TABLE cleanup_blocks(run_id TEXT PRIMARY KEY REFERENCES runs(run_id)); PRAGMA user_version=6;")?;
             tx.commit()?;
         }
+        if version < 7 {
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE workflow_plan_authority(instance_id TEXT PRIMARY KEY REFERENCES workflow_instances(instance_id), pin TEXT NOT NULL); INSERT INTO workflow_plan_authority SELECT instance_id,'legacy' FROM workflow_instances; PRAGMA user_version=7;")?;
+            tx.commit()?;
+        }
         for suffix in ["", "-wal", "-shm"] {
             let path = root.join(format!("runtime.sqlite3{suffix}"));
             if path.exists() {
@@ -119,6 +127,13 @@ impl Store {
         store.recover()?;
         Ok(store)
     }
+    pub(crate) fn verify_plan_pin(
+        &self,
+        workflow: Option<&router_types::WorkflowRunBinding>,
+        generated: Option<&router_types::GeneratedDecisionBinding>,
+    ) -> Result<()> {
+        verify_plan_pin(&*self.lock()?, workflow, generated)
+    }
     fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
         self.db
             .lock()
@@ -126,7 +141,7 @@ impl Store {
     }
     #[cfg(test)]
     pub fn register(&self, summary: &RunSummary) -> Result<RunSummary> {
-        self.register_inner(summary, None, None, 5)
+        self.register_inner(summary, None, None, 5, None)
     }
     pub fn register_workflow(
         &self,
@@ -134,8 +149,9 @@ impl Store {
         contract: Option<&WorkflowExecutionContract>,
         request: &ExecutionRequest,
         max_attempts: u32,
+        generated: Option<&router_types::GeneratedDecisionBinding>,
     ) -> Result<RunSummary> {
-        self.register_inner(summary, contract, Some(request), max_attempts)
+        self.register_inner(summary, contract, Some(request), max_attempts, generated)
     }
     fn register_inner(
         &self,
@@ -143,6 +159,7 @@ impl Store {
         contract: Option<&WorkflowExecutionContract>,
         request: Option<&ExecutionRequest>,
         max_attempts: u32,
+        generated: Option<&router_types::GeneratedDecisionBinding>,
     ) -> Result<RunSummary> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -150,6 +167,7 @@ impl Store {
             if existing.definition_hash != summary.definition_hash {
                 return Err(RuntimeError::Integrity("definition changed"));
             }
+            verify_plan_pin(&tx, summary.workflow.as_ref(), generated)?;
             return Ok(existing);
         }
         if let Some(binding) = &summary.workflow {
@@ -175,6 +193,12 @@ impl Store {
                     serde_json::to_string(contract)?
                 ],
             )?;
+            let pin = plan_pin(generated)?;
+            tx.execute(
+                "INSERT OR IGNORE INTO workflow_plan_authority VALUES(?1,?2)",
+                params![binding.instance_id, pin],
+            )?;
+            verify_plan_pin(&tx, Some(binding), generated)?;
             let previous = workflow_node(&tx, &binding.instance_id, &summary.node_id)?;
             match previous {
                 None if binding.generation == 0 => {}
@@ -204,7 +228,7 @@ impl Store {
                     ));
                 }
             }
-        } else if contract.is_some() {
+        } else if contract.is_some() || generated.is_some() {
             return Err(RuntimeError::Integrity("missing workflow binding"));
         }
         tx.execute(
@@ -686,7 +710,10 @@ impl Store {
         } else {
             false
         };
-        if !retryable(&run) || workflow_attempts(&tx, &run)? >= max || obsolete {
+        let claimed = tx
+            .prepare("SELECT 1 FROM events WHERE run_id=?1 AND kind='escalation.claim.v1'")?
+            .exists([id])?;
+        if !retryable(&run) || workflow_attempts(&tx, &run)? >= max || obsolete || claimed {
             return Err(RuntimeError::Invalid(
                 "retry requires a bounded read-only attempt",
             ));
@@ -889,7 +916,15 @@ fn save(tx: &Transaction<'_>, run: &RunSummary) -> Result<()> {
     Ok(())
 }
 fn append(tx: &Transaction<'_>, run: &RunSummary, kind: &str, detail: &str) -> Result<()> {
-    if detail.len() > 2048 || kind.len() > 128 {
+    let max_detail = if matches!(
+        kind,
+        "attempt.evidence.v1" | "attempt.bound.v1" | "escalation.claim.v1"
+    ) {
+        16_384
+    } else {
+        2048
+    };
+    if detail.len() > max_detail || kind.len() > 128 {
         return Err(RuntimeError::Limit);
     }
     let (sequence, previous_hash): (u64, String) = tx
@@ -1052,7 +1087,7 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2..=6
+        2..=7
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
@@ -1185,7 +1220,7 @@ mod tests {
         drop(store);
         let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
         db.execute_batch("PRAGMA foreign_keys=OFF;
-            DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
+            DROP TABLE workflow_plan_authority; DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
             CREATE TABLE old_runs(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL, UNIQUE(plan_id,node_id));
             INSERT INTO old_runs SELECT * FROM runs; DROP TABLE runs; ALTER TABLE old_runs RENAME TO runs;
             PRAGMA user_version=3;").unwrap();
@@ -1232,6 +1267,45 @@ mod tests {
             "integrity.invalid_transition"
         );
         store.verify_events().unwrap();
+    }
+    #[test]
+    fn pre_evidence_attempts_are_not_backfilled_when_reopened() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("history");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("legacy")).unwrap();
+        for state in [
+            RunState::AwaitingApproval,
+            RunState::Queued,
+            RunState::Preparing,
+        ] {
+            store.transition("legacy", state, "legacy", None).unwrap();
+        }
+        store.attempt("legacy", 2, false).unwrap();
+        store
+            .transition("legacy", RunState::Running, "legacy", None)
+            .unwrap();
+        store.finish_attempt("legacy", "Exited").unwrap();
+        store
+            .transition(
+                "legacy",
+                RunState::Failed,
+                "legacy",
+                Some(RunFailure::Crash),
+            )
+            .unwrap();
+        let original = store.events().unwrap();
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        let history = store.escalation_history("legacy").unwrap();
+        assert_eq!(history.attempts.len(), 1);
+        assert!(
+            !history
+                .events
+                .iter()
+                .any(|e| e.kind == "attempt.evidence.v1")
+        );
+        assert_eq!(store.events().unwrap(), original);
     }
     #[test]
     fn planned_cancellation_is_immediate_idempotent_and_releases_writer_locks() {
@@ -1538,4 +1612,50 @@ mod tests {
             .writer_lock("two", "/fixture/repo", &["tests".into()])
             .unwrap();
     }
+}
+
+fn plan_pin(generated: Option<&router_types::GeneratedDecisionBinding>) -> Result<String> {
+    generated.map_or(Ok("legacy".into()), |g| {
+        digest(
+            "runtime-global-plan-pin-v1",
+            &(
+                g.schema_version,
+                &g.instance_id,
+                &g.workflow_plan_id,
+                &g.execution_contract_sha256,
+                &g.input_hash,
+                &g.proposal_hash,
+            ),
+        )
+    })
+}
+fn verify_plan_pin(
+    db: &Connection,
+    workflow: Option<&router_types::WorkflowRunBinding>,
+    generated: Option<&router_types::GeneratedDecisionBinding>,
+) -> Result<()> {
+    let Some(workflow) = workflow else {
+        return if generated.is_none() {
+            Ok(())
+        } else {
+            Err(RuntimeError::Integrity("generated plan missing instance"))
+        };
+    };
+    if generated.is_some_and(|g| {
+        g.instance_id != workflow.instance_id
+            || g.execution_contract_sha256 != workflow.contract_sha256
+    }) {
+        return Err(RuntimeError::Integrity("generated plan instance"));
+    }
+    let pin: Option<String> = db
+        .query_row(
+            "SELECT pin FROM workflow_plan_authority WHERE instance_id=?1",
+            [&workflow.instance_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
+        return Err(RuntimeError::Integrity("workflow plan authority changed"));
+    }
+    Ok(())
 }

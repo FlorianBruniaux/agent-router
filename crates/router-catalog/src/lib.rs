@@ -2,6 +2,7 @@
 
 mod error;
 mod generated;
+mod signed;
 mod validate;
 
 use std::collections::BTreeMap;
@@ -11,6 +12,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 pub use error::CatalogError;
+pub use signed::*;
 pub use generated::{
     AssetAlias, AssetAvailability, AssetKind, AssetProvenance, AssetRegistry, GeneratedAsset,
     GeneratedCatalog, GenerationConfig, RegistryAsset,

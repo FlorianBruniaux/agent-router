@@ -30,13 +30,6 @@ pub(crate) struct AuthorityBinding {
     expected_head: Option<String>,
     manifest_sha256: String,
 }
-impl LoadedDecision {
-    pub fn authority(&self) -> Option<&dyn ActivationAuthority> {
-        self.authority
-            .as_ref()
-            .map(|store| store as &dyn ActivationAuthority)
-    }
-}
 pub(crate) fn scope_hash(
     workspace: &str,
     source_state: &str,

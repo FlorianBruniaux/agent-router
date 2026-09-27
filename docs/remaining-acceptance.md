@@ -24,7 +24,7 @@ Les évolutions suivantes le complètent :
 - **R14 livré** par la PR #19, merge `2261511e57870fb69dff67a8b8d28df854155294` :
   décision signée consommée par préparation, runtime, coordinator et feedback,
   avec revalidation au dispatch. L'activation réelle reste soumise à P1/P2.
-- **R01 et R03 dans la livraison suivante** : recherche sur cinq familles avec
+- **R01 et R03 livrés par la PR #20** (`5525b1205d2db2a36d5b8fa6312f66a6756dbc9d`) : recherche sur cinq familles avec
   signaux de contexte et plancher de risque déterministe relié à la CLI.
 - **R02 partiel** : mise à jour incrémentale et fusion RRF implémentées ; une
   source sémantique peut être fournie derrière une feature désactivée par défaut.
@@ -34,8 +34,11 @@ Les évolutions suivantes le complètent :
 - **R16 partiel** : rendu humain des commandes produit, avec conservation des
   résultats JSON et digests d'approbation. L'entrée guidée et les formats de
   configuration supplémentaires restent à faire.
-- **R04, R05 et R06 en développement** : leurs modifications locales ne sont
-  pas une livraison et ne ferment aucune acceptation dans ce document.
+- **R05, bibliothèque revue** : journal de tentatives réelles, bornes comptables
+  explicitement approuvées, choix alternatif et réservation unique implémentés.
+  Le raccord CLI et la validation Linux de cette livraison restent à vérifier.
+- **R04 et R06 en développement** : leurs modifications locales ne sont pas
+  une livraison et ne ferment aucune acceptation dans ce document.
 
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 

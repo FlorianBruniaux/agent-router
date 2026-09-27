@@ -21,6 +21,7 @@ struct Manifest {
     policy_store: Option<PathBuf>,
     asset_authority: Option<PathBuf>,
     backend_decision: Option<PathBuf>,
+    generated_plan: Option<PathBuf>,
     plan: PathBuf,
     node_id: String,
     metadata: PathBuf,
@@ -134,7 +135,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             .route(&context)
             .map_err(|_| CliError::Product("prepare.route.invalid"))?
     };
-    if manifest.backend_decision.is_none() {
+    if manifest.backend_decision.is_none() && manifest.generated_plan.is_none() {
         router
             .validate_receipt(&context, &receipt)
             .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
@@ -148,8 +149,14 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         .iter()
         .find(|node| node.id == manifest.node_id)
         .ok_or(CliError::Product("prepare.node.invalid"))?;
-    let loaded = crate::execution_backend::load(
+    let generated_path = manifest
+        .generated_plan
+        .as_ref()
+        .map(|path| resolve(base, path.clone()));
+    let loaded = crate::generation::load_decision(
         backend_path.as_deref(),
+        generated_path.as_deref(),
+        &manifest.node_id,
         &router,
         &context,
         &receipt,
@@ -160,6 +167,16 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         )?,
         false,
     )?;
+    if let Some(proof) = loaded.decision.generated_plan() {
+        proof
+            .validate_workflow(
+                &plan,
+                workflow
+                    .as_ref()
+                    .ok_or(CliError::Product("generation.workflow.required"))?,
+            )
+            .map_err(crate::generation::error)?;
+    }
     let prepared = router_prepare::prepare_with_decision(
         PreparationInput {
             router: &router,
@@ -206,6 +223,10 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         }
         if let Some(path) = &backend_path {
             definition["backend_decision"] =
+                serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
+        }
+        if let Some(path) = &generated_path {
+            definition["generated_plan"] =
                 serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
         }
         let mut files = vec![
