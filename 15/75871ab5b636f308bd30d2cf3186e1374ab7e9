@@ -1,0 +1,108 @@
+docs/completion.md
+  s_86ed8bd547d4f8::t_b16e1430032cc9 17,86,102-121
+  s_86ed8bd547d4f8::t_40ddc8fc912ddd 122
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_b16e1430032cc9 19-39
+README.md
+  s_86ed8bd547d4f8::t_1ec3fb3fbb70e4 56-58
+crates/adapter-claude/src/execution.rs
+  s_86ed8bd547d4f8::t_b0cdd3c335b3ac 63-77
+crates/adapter-claude/tests/native_failures.rs
+  s_86ed8bd547d4f8::t_5b68c95b8117a7 1-85
+crates/adapter-codex/src/execution.rs
+  s_86ed8bd547d4f8::t_781a527888c037 54-68
+crates/adapter-copilot/src/lib.rs
+  s_86ed8bd547d4f8::t_34ed800a48bfb7 205-224
+crates/adapter-copilot/src/stream.rs
+  s_86ed8bd547d4f8::t_58808684914004 93
+crates/adapter-copilot/tests/native_failures.rs
+  s_86ed8bd547d4f8::t_a91ad0e4c90f92 1-170
+crates/adapter-opencode/src/lib.rs
+  s_86ed8bd547d4f8::t_f2a486a1ceab90 187-201
+crates/agent-router-cli/Cargo.toml
+  s_86ed8bd547d4f8::t_3abd3959bf9d49 19
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_f0b2bb43cc41c4 261-271,282-283,290-306,310-312,319-320,612-667
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_3d29722be064cd 214-215,219-229
+crates/agent-router-cli/src/human.rs
+  s_86ed8bd547d4f8::t_25c350e5cac21f 1-125
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_6bed788bfd22f2 15,125-134,294-295,299-301,303-306,309,312-320,323-336,338,341,349
+crates/agent-router-cli/src/product.rs
+  s_86ed8bd547d4f8::t_48f94049d6aa3d 2-4,29-31,64-76,79-117,121,136-139,142,151-163,165-258,270-283,287,290,299,309-310,323
+crates/agent-router-cli/tests/human.rs
+  s_86ed8bd547d4f8::t_d2036b0aad9355 1-226
+crates/agent-router-cli/tests/product.rs
+  s_86ed8bd547d4f8::t_514a083d312020 418-424,426-430,435-436
+crates/agent-router-cli/tests/retrieval_context.rs
+  s_86ed8bd547d4f8::t_3df54c040eef44 1-349
+crates/router-adapter-api/src/execution.rs
+  s_86ed8bd547d4f8::t_b8a69aae6ba330 25-60,107-117,144-448
+crates/router-adapter-api/tests/native_failures.md
+  s_86ed8bd547d4f8::t_bd42bcc111f8c8 1-45
+crates/router-adapter-api/tests/native_failures.rs
+  s_86ed8bd547d4f8::t_69773ece1facd3 1-281
+crates/router-adapter-api/tests/support/native_failures.rs
+  s_86ed8bd547d4f8::t_d71daf14ada812 1-44
+crates/router-doctor/src/deep.rs
+  s_86ed8bd547d4f8::t_a35e27ebca83d0 7,387-392,470
+crates/router-doctor/tests/deep.rs
+  s_86ed8bd547d4f8::t_05811674b9cc97 627-684
+crates/router-retrieval/Cargo.toml
+  s_86ed8bd547d4f8::t_52521c4e28719a 8-12
+crates/router-retrieval/README.md
+  s_86ed8bd547d4f8::t_4fee49cb94c366 3,25,36,116-124
+crates/router-retrieval/src/context.rs
+  s_86ed8bd547d4f8::t_76304d378ff6d3 1-813
+crates/router-retrieval/src/fusion.rs
+  s_86ed8bd547d4f8::t_494fb9449a1e89 1-118
+crates/router-retrieval/src/index.rs
+  s_86ed8bd547d4f8::t_d428aeaa4cc224 8,10,14,20,24,28,30,33,38-39,50,61-64,66,68,73,76-78,81-107,109-171,176-263,269-288,352-356,374-384,416,422,428,438,463,470,485,559-561,603,618,626,664,685-690,697,723,754,768,771,775,784,841-845,871-881
+crates/router-retrieval/src/lib.rs
+  s_86ed8bd547d4f8::t_3e64d1528b870c 6-7,12-13,29,39-44
+crates/router-retrieval/src/types.rs
+  s_86ed8bd547d4f8::t_71cfd6a674a9a2 11
+crates/router-retrieval/tests/contextual.rs
+  s_86ed8bd547d4f8::t_baa3544cc38200 1-619
+crates/router-retrieval/tests/incremental_fusion.rs
+  s_86ed8bd547d4f8::t_d25efa918d0243 1-298
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_9bbca597922397 889-917
+crates/router-runtime/tests/native_failures.rs
+  s_86ed8bd547d4f8::t_24591c605bc6f3 1-442
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_48e04bb6bdcfbe 43-45
+crates/router-types/src/risk.rs
+  s_86ed8bd547d4f8::t_6931c8be0f3ede 1-75
+crates/router-workflow/src/lib.rs
+  s_86ed8bd547d4f8::t_f964683c6ba0fb 8
+crates/router-workflow/src/normalize.rs
+  s_86ed8bd547d4f8::t_ed63c1d8a12582 3-5,7-305
+crates/router-workflow/tests/risk_classification.rs
+  s_86ed8bd547d4f8::t_c4471ad47087d4 1-338
+docs/cli-output.md
+  s_86ed8bd547d4f8::t_277db048af322e 1-34
+docs/reference/json-contracts.md
+  s_86ed8bd547d4f8::t_b1c38d65ff4082 270-276
+docs/retrieval.md
+  s_86ed8bd547d4f8::t_1acbeb92cc6bf0 59-294
+docs/risk-classification.md
+  s_86ed8bd547d4f8::t_285c78ea935104 1-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1575871ab5b636f308bd30d2cf3186e1374ab7e9",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
