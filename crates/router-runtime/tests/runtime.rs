@@ -1759,6 +1759,7 @@ async fn native_supervisor_sigkill_recovery_waits_for_cleanup_proof() {
         #[cfg(target_os = "linux")]
         let sandbox = BubblewrapSandbox::probe(
             &root,
+            Path::new("/usr/bin/bwrap"),
             BTreeMap::from([("/bin/sh".into(), fs::canonicalize("/bin/sh").unwrap())]),
             vec![],
             BTreeMap::new(),
