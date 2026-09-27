@@ -415,13 +415,25 @@ fn normalize_clarifies_missing_authority_then_plan_emits_a_verified_dag() {
             .assert()
             .code(3),
     );
-    assert!(result["task"].is_null());
-    assert!(!result["questions"].as_array().unwrap().is_empty());
+    assert!(result["normalization"]["task"].is_null());
+    assert!(
+        !result["normalization"]["questions"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
     write(&path, &request["task"]);
+    let context = dir.path().join("risk-context.json");
+    write(
+        &context,
+        &json!({"schema_version":1,"environment":"local","reversibility":"reversible","operations":["workspace_change"]}),
+    );
     let result = parsed(
         command()
             .args(["plan", "--task"])
             .arg(&path)
+            .arg("--risk-context")
+            .arg(&context)
             .arg("--json")
             .assert()
             .success(),

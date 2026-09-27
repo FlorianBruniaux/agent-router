@@ -22,6 +22,42 @@ pub const MAX_EXECUTION_INPUT_BYTES: usize = 128 * 1024;
 pub const MAX_TRANSPORT_BYTES: usize = 4 * 1024 * 1024;
 pub const MAX_TRANSPORT_EVENTS: usize = 2048;
 
+/// A cause observed in documented native metadata, never in model/tool text.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NativeFailureKind {
+    Authentication,
+    RateLimit,
+    Network,
+}
+
+/// Redacted evidence. No deserializer or arbitrary constructor can turn a
+/// supplied class label into a validated native observation.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NativeFailureEvidence {
+    kind: NativeFailureKind,
+    code: &'static str,
+    source_sha256: String,
+}
+impl NativeFailureEvidence {
+    pub fn kind(&self) -> NativeFailureKind {
+        self.kind
+    }
+    pub fn code(&self) -> &'static str {
+        self.code
+    }
+    pub fn source_sha256(&self) -> &str {
+        &self.source_sha256
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NativeFailureProtocol {
+    Claude,
+    Codex,
+    OpenCode,
+    Copilot,
+}
+
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum AdapterError {
     #[error("adapter.input.invalid: {0}")]
@@ -68,6 +104,17 @@ impl ValidatedExecutionRequest {
 
 pub trait HarnessAdapter {
     fn host(&self) -> &'static str;
+    /// Classify only a complete, validated native stdout stream after an
+    /// observed nonzero exit. Stderr is deliberately absent from this API.
+    /// None means the runtime must retain its generic crash classification.
+    fn classify_failure(
+        &self,
+        _bytes: &[u8],
+        _outcome: TransportOutcome,
+        _max_bytes: usize,
+    ) -> Result<Option<NativeFailureEvidence>, AdapterError> {
+        Ok(None)
+    }
     fn requires_native_version(&self) -> bool {
         false
     }
@@ -92,6 +139,311 @@ pub trait HarnessAdapter {
         outcome: TransportOutcome,
         max_bytes: usize,
     ) -> Result<RuntimeEvidence, AdapterError>;
+}
+
+/// Shared Copilot root-envelope predicate for decoding and classification.
+/// `agentId` is an optional native string. Explicit null is not root evidence.
+pub fn copilot_root_event(value: &serde_json::Value) -> bool {
+    value.get("agentId").is_none()
+        && ["parent_tool_use_id", "subagent_type"]
+            .iter()
+            .all(|key| value.get(key).is_none_or(|v| v.is_null()))
+        && ["/data/initiator", "/data/parentToolCallId"]
+            .iter()
+            .all(|key| value.pointer(key).is_none())
+        && value
+            .pointer("/data/interactionType")
+            .is_none_or(|v| matches!(v.as_str(), Some("conversation-agent" | "conversation-user")))
+}
+
+/// Conservative failure metadata extraction for the documented native
+/// protocols. Adapters also run their complete transport decoder first.
+///
+/// Provenance and source hashes are recorded in tests/native_failures.md.
+/// This is evidence from an approved native transport, not authentication of a
+/// provider or permission to retry. Unknown/contradictory events remain unknown.
+pub fn classify_native_failure(
+    bytes: &[u8],
+    outcome: TransportOutcome,
+    max_bytes: usize,
+    protocol: NativeFailureProtocol,
+) -> Result<Option<NativeFailureEvidence>, AdapterError> {
+    if max_bytes == 0 || max_bytes > MAX_TRANSPORT_BYTES || bytes.len() > max_bytes {
+        return Err(AdapterError::OutputLimit);
+    }
+    if outcome.termination != TransportTermination::Exited || outcome.exit_code == Some(0) {
+        return Ok(None);
+    }
+    let exit_code = outcome
+        .exit_code
+        .ok_or(AdapterError::Invalid("transport status"))?;
+    let mut observed = None;
+    let mut conflicting = false;
+    let mut terminal = false;
+    let mut session = None::<String>;
+    for (sequence, line) in bytes
+        .split(|b| *b == b'\n')
+        .filter(|l| !l.is_empty())
+        .enumerate()
+    {
+        if sequence >= MAX_TRANSPORT_EVENTS || line.len() > 256 * 1024 {
+            return Err(AdapterError::OutputLimit);
+        }
+        let value = strict_json(line).map_err(|_| AdapterError::Protocol)?;
+        let kind = value
+            .get("type")
+            .and_then(|v| v.as_str())
+            .ok_or(AdapterError::Protocol)?;
+        // Native task/subagent events cannot classify the parent worker.
+        let root = if matches!(protocol, NativeFailureProtocol::Copilot) {
+            copilot_root_event(&value)
+        } else {
+            ["parent_tool_use_id", "agentId", "subagent_type"]
+                .iter()
+                .all(|key| value.get(key).is_none_or(|v| v.is_null()))
+                && ["/data/initiator", "/data/parentToolCallId"]
+                    .iter()
+                    .all(|key| value.pointer(key).is_none())
+                && value.pointer("/data/interactionType").is_none_or(|v| {
+                    matches!(v.as_str(), Some("conversation-agent" | "conversation-user"))
+                })
+        };
+        if !root {
+            continue;
+        }
+        let mut found = None;
+        match protocol {
+            NativeFailureProtocol::Codex => {
+                // ThreadErrorEvent contains only message:String. Never inspect
+                // that text or invented fields such as status/code/retryable.
+            }
+            NativeFailureProtocol::Claude => {
+                if matches!(kind, "assistant" | "result")
+                    || (kind == "system"
+                        && value.get("subtype").and_then(|v| v.as_str()) == Some("init"))
+                {
+                    bind_failure_session(&mut session, value.get("session_id"))?;
+                }
+                match kind {
+                    "assistant" => {
+                        terminal = false;
+                        if value.get("parent_tool_use_id").is_none()
+                            || value.pointer("/message/type").and_then(|v| v.as_str())
+                                != Some("message")
+                            || value.pointer("/message/role").and_then(|v| v.as_str())
+                                != Some("assistant")
+                        {
+                            return Err(AdapterError::Protocol);
+                        }
+                        found = match value.get("error").and_then(|v| v.as_str()) {
+                            Some("authentication_failed" | "oauth_org_not_allowed") => Some((
+                                NativeFailureKind::Authentication,
+                                "claude.assistant.authentication",
+                            )),
+                            Some("rate_limit") => {
+                                Some((NativeFailureKind::RateLimit, "claude.assistant.rate_limit"))
+                            }
+                            _ => None,
+                        };
+                        // A new non-error assistant turn can be recovery. An
+                        // unsupported native error cannot inherit an old class.
+                        if found.is_none() {
+                            observed = None;
+                            conflicting = false;
+                        }
+                    }
+                    "result" => {
+                        terminal = value.get("is_error").and_then(|v| v.as_bool()) == Some(true)
+                            && matches!(
+                                value.get("subtype").and_then(|v| v.as_str()),
+                                Some("success" | "error_during_execution")
+                            );
+                        if !terminal {
+                            observed = None;
+                        }
+                        if terminal
+                            && value.get("subtype").and_then(|v| v.as_str()) == Some("success")
+                        {
+                            found = match value.get("api_error_status").and_then(|v| v.as_u64()) {
+                                Some(401) => Some((
+                                    NativeFailureKind::Authentication,
+                                    "claude.result.http_401",
+                                )),
+                                Some(429) => {
+                                    Some((NativeFailureKind::RateLimit, "claude.result.http_429"))
+                                }
+                                _ => None,
+                            };
+                            // A present unsupported or malformed terminal status
+                            // cannot inherit an older assistant's cause.
+                            if found.is_none() && value.get("api_error_status").is_some() {
+                                observed = None;
+                                conflicting = true;
+                            }
+                        }
+                    }
+                    _ => {
+                        terminal = false;
+                    }
+                }
+            }
+            NativeFailureProtocol::OpenCode => {
+                bind_failure_session(&mut session, value.get("sessionID"))?;
+                if value.get("timestamp").and_then(|v| v.as_u64()).is_none() {
+                    return Err(AdapterError::Protocol);
+                }
+                if kind == "error" {
+                    terminal = true;
+                    let error = value.get("error").ok_or(AdapterError::Protocol)?;
+                    let name = error
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .ok_or(AdapterError::Protocol)?;
+                    let data = error
+                        .get("data")
+                        .and_then(|v| v.as_object())
+                        .ok_or(AdapterError::Protocol)?;
+                    if data.get("message").and_then(|v| v.as_str()).is_none() {
+                        return Err(AdapterError::Protocol);
+                    }
+                    found = match name {
+                        "ProviderAuthError"
+                            if data
+                                .get("providerID")
+                                .and_then(|v| v.as_str())
+                                .is_some_and(safe_identifier) =>
+                        {
+                            Some((NativeFailureKind::Authentication, "opencode.provider_auth"))
+                        }
+                        "APIError"
+                            if data.get("isRetryable").and_then(|v| v.as_bool()).is_some() =>
+                        {
+                            match data.get("statusCode").and_then(|v| v.as_u64()) {
+                                Some(401 | 403) => Some((
+                                    NativeFailureKind::Authentication,
+                                    "opencode.api.authentication",
+                                )),
+                                Some(429) => {
+                                    Some((NativeFailureKind::RateLimit, "opencode.api.http_429"))
+                                }
+                                None if !data.contains_key("statusCode")
+                                    && data.get("isRetryable").and_then(|v| v.as_bool())
+                                        == Some(true)
+                                    && error
+                                        .pointer("/data/metadata/code")
+                                        .and_then(|v| v.as_str())
+                                        == Some("ECONNRESET") =>
+                                {
+                                    Some((
+                                        NativeFailureKind::Network,
+                                        "opencode.api.connection_reset",
+                                    ))
+                                }
+                                _ => None,
+                            }
+                        }
+                        _ => None,
+                    };
+                    if found.is_none() {
+                        conflicting = true;
+                    }
+                } else {
+                    // No classification survives a later successful or new
+                    // step/message/tool event, including unknown future events.
+                    terminal = false;
+                    observed = None;
+                    conflicting = false;
+                }
+            }
+            NativeFailureProtocol::Copilot => {
+                if kind == "result" {
+                    bind_failure_session(&mut session, value.get("sessionId"))?;
+                    terminal = value.get("exitCode").and_then(|v| v.as_i64())
+                        == Some(i64::from(exit_code));
+                    if !terminal {
+                        return Err(AdapterError::Protocol);
+                    }
+                } else {
+                    if value
+                        .get("id")
+                        .and_then(|v| v.as_str())
+                        .is_none_or(|v| !safe_identifier(v))
+                        || value
+                            .get("timestamp")
+                            .and_then(|v| v.as_str())
+                            .is_none_or(|v| v.is_empty() || v.len() > 64)
+                        || !value
+                            .get("parentId")
+                            .is_some_and(|v| v.is_null() || v.as_str().is_some_and(safe_identifier))
+                    {
+                        return Err(AdapterError::Protocol);
+                    }
+                    if kind == "session.start" {
+                        bind_failure_session(&mut session, value.pointer("/data/sessionId"))?;
+                    }
+                    if kind == "session.error" {
+                        if value
+                            .pointer("/data/message")
+                            .and_then(|v| v.as_str())
+                            .is_none()
+                        {
+                            return Err(AdapterError::Protocol);
+                        }
+                        found = match (
+                            value.pointer("/data/errorType").and_then(|v| v.as_str()),
+                            value.pointer("/data/statusCode").and_then(|v| v.as_u64()),
+                        ) {
+                            (Some("authentication" | "authorization"), Some(401 | 403)) => Some((
+                                NativeFailureKind::Authentication,
+                                "copilot.session.authentication",
+                            )),
+                            (Some("rate_limit"), Some(429)) => {
+                                Some((NativeFailureKind::RateLimit, "copilot.session.http_429"))
+                            }
+                            _ => None,
+                        };
+                        if found.is_none() {
+                            conflicting = true;
+                        }
+                    } else {
+                        // Later activity, including deltas and unknown future
+                        // events, cannot carry an older cause into a new result.
+                        observed = None;
+                        conflicting = false;
+                    }
+                    terminal = false;
+                }
+            }
+        }
+        if let Some((kind, code)) = found {
+            if observed.as_ref().is_some_and(|(prior, _)| *prior != kind) {
+                conflicting = true;
+            }
+            observed = Some((kind, code));
+        }
+    }
+    Ok(observed
+        .filter(|_| terminal && !conflicting)
+        .map(|(kind, code)| NativeFailureEvidence {
+            kind,
+            code,
+            source_sha256: content_digest(bytes),
+        }))
+}
+
+fn bind_failure_session(
+    session: &mut Option<String>,
+    value: Option<&serde_json::Value>,
+) -> Result<(), AdapterError> {
+    let current = value
+        .and_then(|v| v.as_str())
+        .filter(|v| safe_identifier(v))
+        .ok_or(AdapterError::Protocol)?;
+    if session.as_ref().is_some_and(|prior| prior != current) {
+        return Err(AdapterError::Protocol);
+    }
+    session.get_or_insert_with(|| current.to_owned());
+    Ok(())
 }
 
 pub fn execution_authorization_digest(

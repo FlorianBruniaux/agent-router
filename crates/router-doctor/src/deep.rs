@@ -4,7 +4,7 @@ use crate::{
 };
 use router_adapter_api::{SnapshotValidation, content_digest, strict_json};
 use router_catalog::{Catalog, GeneratedCatalog};
-use router_retrieval::{Bm25Index, MetadataDocument, MetadataEnvelope};
+use router_retrieval::{Bm25Index, MetadataDocument, MetadataEnvelope, MetadataEnvelopeV3};
 use router_types::*;
 use serde::{Serialize, de::DeserializeOwned};
 use std::{
@@ -384,8 +384,12 @@ fn inspect_binding(
     if index.validate_catalog_hash(&catalog_hash).is_err() {
         return Ok((DeepDoctorCode::CatalogBindingMismatch, None));
     }
-    let envelope: MetadataEnvelope = parse(&index_bytes)?;
-    let metadata: MetadataDocument = envelope.metadata;
+    let source = strict_json(&index_bytes).map_err(|_| DoctorError::Schema)?;
+    let metadata: MetadataDocument = match source.get("schema_version").and_then(|v| v.as_str()) {
+        Some("2") => parse::<MetadataEnvelope>(&index_bytes)?.metadata,
+        Some("3") => parse::<MetadataEnvelopeV3>(&index_bytes)?.metadata,
+        _ => return Err(DoctorError::Schema),
+    };
     if metadata.catalog_version != catalog.version() {
         return Ok((DeepDoctorCode::CatalogBindingMismatch, None));
     }
@@ -463,6 +467,7 @@ fn inspect_binding(
 
 fn catalog_kind(kind: router_retrieval::AssetKind) -> router_catalog::AssetKind {
     match kind {
+        router_retrieval::AssetKind::Model => router_catalog::AssetKind::Model,
         router_retrieval::AssetKind::Agent => router_catalog::AssetKind::Agent,
         router_retrieval::AssetKind::Skill => router_catalog::AssetKind::Skill,
         router_retrieval::AssetKind::Prompt => router_catalog::AssetKind::Prompt,

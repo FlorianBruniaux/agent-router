@@ -53,8 +53,9 @@ model call. Model names in those fixtures are examples, not availability claims.
 | --- | --- | --- |
 | **Explainable routing** | Select a model and effort for plan, execute and verify; inspect exclusions and missing evidence. | `route`, `route-phase`, `explain` |
 | **Host evidence** | Read supported local host evidence and keep unknown capabilities explicit. | `inspect`, [contracts](docs/reference/json-contracts.md) |
-| **Catalogs and search** | Validate versioned catalogs and search asset metadata with bounded BM25 retrieval. | `catalog`, `index`, `search`, [retrieval](docs/retrieval.md) |
-| **Workflow planning** | Normalize task requirements and build one of eight presets with budgets and dependencies. | `normalize`, `plan`, `workflow` |
+| **Catalogs and search** | Search five asset families with BM25, contextual signals, deterministic rank fusion and checked incremental updates. | `catalog`, `index`, `search`, `refresh`, [retrieval](docs/retrieval.md) |
+| **Workflow planning** | Apply an explainable risk floor, clarify missing facts and build one of eight presets with budgets and dependencies. | `normalize`, `plan`, `workflow`, [risk rules](docs/risk-classification.md) |
+| **Human and JSON output** | Read decisions and approvals in the terminal, or preserve full versioned results for scripts with `--json`. | [CLI output](docs/cli-output.md) |
 | **Review before execution** | Prepare a request, bind selected assets and approve the exact execution digest. | `assets`, `prepare`, `run`, [execution](docs/cli-execution.md) |
 | **Durable execution** | Track runs, cancel work, recover interrupted attempts and isolate writes in Git worktrees. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
 | **Coordinated workflows** | Run approved waves, pass declared artifacts and require verification before integration. | `coordinate`, [coordination](docs/coordinator.md) |

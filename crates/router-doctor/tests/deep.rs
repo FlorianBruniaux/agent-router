@@ -624,3 +624,61 @@ fn generated_catalog_registry_hash_must_match_body_metadata_not_only_projection(
     assert!(has(&report, DeepDoctorCode::AssetBodyMismatch));
     assert_eq!(report.examined_body_count, 0);
 }
+
+#[test]
+fn v3_signal_metadata_keeps_catalog_and_body_gates_without_runtime_claims() {
+    use router_retrieval::{AssetSignals, MetadataEnvelopeV3, Signal};
+    let temp = tempfile::tempdir().unwrap();
+    let (input, catalog, metadata) = linked_request(temp.path());
+    let signals = metadata
+        .assets
+        .iter()
+        .map(|asset| AssetSignals {
+            asset: asset.key(),
+            languages: Signal::Unknown,
+            required_tools: Signal::Unknown,
+            history: Signal::Unknown,
+        })
+        .collect();
+    let envelope =
+        MetadataEnvelopeV3::new(metadata, signals, &catalog.content_hash().unwrap()).unwrap();
+    fs::write(
+        temp.path().join("index.json"),
+        envelope.canonical_json().unwrap(),
+    )
+    .unwrap();
+    let report = diagnose_deep(&input, 110).unwrap();
+    assert_pass(&report, DeepDoctorCode::CatalogBindingValidated);
+    assert_pass(&report, DeepDoctorCode::AssetBodyValidated);
+    assert_eq!(report.examined_body_count, 1);
+    assert!(
+        !serde_json::to_string(&report)
+            .unwrap()
+            .contains("BODY_SECRET_CANARY")
+    );
+
+    let mut corrupt = serde_json::to_value(&envelope).unwrap();
+    corrupt["signals"][0]["asset"]["id"] = "invented-asset".into();
+    fs::write(
+        temp.path().join("index.json"),
+        serde_json::to_vec(&corrupt).unwrap(),
+    )
+    .unwrap();
+    let report = diagnose_deep(&input, 110).unwrap();
+    assert_eq!(report.overall, DiagnosticState::Fail);
+    assert_eq!(report.examined_body_count, 0);
+    assert!(!has(&report, DeepDoctorCode::CatalogBindingValidated));
+
+    let mut mismatch = envelope;
+    mismatch.catalog_content_sha256 = "c".repeat(64);
+    fs::write(
+        temp.path().join("index.json"),
+        mismatch.canonical_json().unwrap(),
+    )
+    .unwrap();
+    fs::remove_file(temp.path().join("bodies/skill.txt")).unwrap();
+    let report = diagnose_deep(&input, 110).unwrap();
+    assert!(has(&report, DeepDoctorCode::CatalogBindingMismatch));
+    assert_eq!(report.examined_body_count, 0);
+    assert!(!has(&report, DeepDoctorCode::InputUnavailable));
+}

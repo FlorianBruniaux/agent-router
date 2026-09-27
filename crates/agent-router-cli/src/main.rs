@@ -12,6 +12,7 @@ mod execution;
 mod execution_backend;
 mod execution_feedback;
 mod feedback;
+mod human;
 mod inspect;
 mod phases;
 mod preparation;
@@ -121,7 +122,16 @@ fn report_error(error: CliError) -> ExitCode {
     error.exit_code()
 }
 
-fn run(command: Commands) -> Result<Outcome, CliError> {
+fn run(mut command: Commands) -> Result<Outcome, CliError> {
+    let human_title = command.structured_output();
+    let mut result = run_structured(command)?;
+    if let Some(title) = human_title {
+        result.output = human::render(title, &result.output);
+    }
+    Ok(result)
+}
+
+fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     match command {
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
@@ -281,27 +291,54 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
             catalog,
             now,
             query,
+            context_query,
+            semantic_ranking,
             kind,
             top_k,
             json,
-        } => product::search(
-            &metadata,
-            catalog.as_deref(),
+        } => product::search(product::SearchArgs {
+            metadata: &metadata,
+            catalog: catalog.as_deref(),
             now,
-            &query,
-            kind.as_deref(),
+            text: query.as_deref(),
+            context_query: context_query.as_deref(),
+            semantic_ranking: semantic_ranking.as_deref(),
+            kind: kind.as_deref(),
             top_k,
             json,
-        ),
+        }),
         Commands::Index {
             metadata,
+            signals,
             catalog,
             now,
             json,
-        } => product::index(&metadata, &catalog, now, json),
-        Commands::Normalize { task, json } => product::normalize(&task, json),
+        } => product::index(&metadata, signals.as_deref(), &catalog, now, json),
+        Commands::Refresh {
+            metadata,
+            successor,
+            expected_source_hash,
+            catalog,
+            now,
+            output,
+            json,
+        } => product::refresh(
+            &metadata,
+            &successor,
+            &expected_source_hash,
+            &catalog,
+            now,
+            output.as_deref(),
+            json,
+        ),
+        Commands::Normalize {
+            task,
+            risk_context,
+            json,
+        } => product::normalize(&task, risk_context.as_deref(), json),
         Commands::Plan {
             task,
+            risk_context,
             preset,
             max_width,
             max_depth,
@@ -309,6 +346,7 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
             json,
         } => product::plan(
             &task,
+            risk_context.as_deref(),
             &preset,
             max_width,
             max_depth,

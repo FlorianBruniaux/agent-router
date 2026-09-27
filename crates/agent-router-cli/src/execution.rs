@@ -211,10 +211,22 @@ pub(crate) fn plan(path: &Path) -> Result<WorkflowPlan, CliError> {
             schema_version: u32,
             plan: WorkflowPlan,
             assumptions: Vec<String>,
+            #[serde(default)]
+            risk_assessment: Option<router_types::RiskAssessment>,
         }
         let wrapper: Envelope =
             serde_json::from_value(value).map_err(|_| CliError::RequestJsonInvalid)?;
-        if wrapper.schema_version != 1 || wrapper.assumptions.len() > 128 {
+        let risk_valid = match (wrapper.schema_version, &wrapper.risk_assessment) {
+            (1, None) => true,
+            (2, Some(assessment)) => {
+                assessment.schema_version == 1
+                    && assessment.rules_version == "risk-floor-v1"
+                    && assessment.effective == Some(wrapper.plan.task.risk)
+                    && assessment.floor <= wrapper.plan.task.risk
+            }
+            _ => false,
+        };
+        if !risk_valid || wrapper.assumptions.len() > 128 {
             return Err(CliError::Product("workflow.invalid"));
         }
         wrapper.plan

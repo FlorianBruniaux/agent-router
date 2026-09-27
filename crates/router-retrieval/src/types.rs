@@ -8,6 +8,7 @@ pub enum AssetKind {
     Skill,
     Prompt,
     Tool,
+    Model,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]

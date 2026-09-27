@@ -3,10 +3,14 @@
 
 //! Bounded metadata-only BM25. Retrieval never executes an asset or grants authority.
 mod body;
+mod context;
+mod fusion;
 mod index;
 mod tokenize;
 mod types;
 
+pub use context::*;
+pub use fusion::*;
 pub use index::Bm25Index;
 pub use types::*;
 
@@ -22,6 +26,7 @@ pub const MAX_RESULTS: usize = 50;
 pub const MAX_QUERY_POSTINGS: usize = 2_000_000;
 pub const MAX_BODY_BYTES: usize = 1024 * 1024;
 pub const INDEX_VERSION: &str = "bm25-fields-v1";
+pub const CONTEXT_INDEX_VERSION: &str = "bm25-context-v3:signals-v1:rrf-nanos-v1";
 
 #[derive(Debug, thiserror::Error)]
 pub enum RetrievalError {
@@ -31,6 +36,12 @@ pub enum RetrievalError {
     Limit(&'static str),
     #[error("retrieval.stale: metadata source changed; rebuild the index")]
     Stale,
+    #[error("retrieval.context.required: version 3 requires explicit contextual search")]
+    ContextRequired,
+    #[error("retrieval.semantic.unavailable")]
+    SemanticUnavailable,
+    #[error("retrieval.semantic.invalid")]
+    SemanticInvalid,
     #[error("retrieval.catalog.unbound: legacy metadata has no catalog content binding")]
     UnboundCatalog,
     #[error("retrieval.catalog.required: supply the current catalog digest before selection")]
