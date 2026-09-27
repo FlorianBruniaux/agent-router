@@ -5,6 +5,7 @@ mod definition;
 mod store;
 pub use definition::{seal_definition, validate_definition};
 use router_adapter_api::HarnessAdapter;
+use router_execution_decision::{ActivationAuthority, ExecutionDecision};
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_runtime::{ApprovedRun, Cancellation, PendingRun, Runtime, SandboxSupervisor};
 use router_types::*;
@@ -69,6 +70,9 @@ pub struct PendingStep {
     artifacts: RunArtifactContract,
 }
 impl PendingStep {
+    pub fn decision(&self) -> &ExecutionDecision {
+        self.pending.decision()
+    }
     pub fn summary(&self) -> &RunSummary {
         self.pending.summary()
     }
@@ -90,6 +94,11 @@ pub struct StepExecution<'a> {
     pub step: ApprovedStep,
     pub adapter: &'a dyn HarnessAdapter,
     pub supervisor: &'a dyn SandboxSupervisor,
+}
+/// Each activated decision supplies the current store authority at dispatch.
+pub struct DecisionStepExecution<'a> {
+    pub execution: StepExecution<'a>,
+    pub authority: Option<&'a dyn ActivationAuthority>,
 }
 impl Coordinator {
     pub fn open(root: &Path, runtime: Arc<Runtime>) -> Result<Self> {
@@ -208,6 +217,24 @@ impl Coordinator {
         router: &PhaseRouter,
         context: &ValidatedPhaseContext,
         selection: &ValidatedPhaseReceipt,
+        request: ExecutionRequest,
+    ) -> Result<PendingStep> {
+        let decision = ExecutionDecision::deterministic(router, context, selection)
+            .map_err(router_runtime::RuntimeError::from)?;
+        self.review_step_decision(
+            definition, node, generation, router, context, &decision, request,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub async fn review_step_decision(
+        &self,
+        definition: &WorkflowDefinition,
+        node: &str,
+        generation: u32,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
         mut request: ExecutionRequest,
     ) -> Result<PendingStep> {
         let artifacts = self.inputs(definition, node)?;
@@ -217,11 +244,11 @@ impl Coordinator {
         let run_id = run_id(definition, node, generation)?;
         let pending = self
             .runtime
-            .review_with_artifacts(
+            .review_decision(
                 &run_id,
                 router,
                 context,
-                selection,
+                decision,
                 request.clone(),
                 definition.plan.clone(),
                 node,
@@ -229,7 +256,7 @@ impl Coordinator {
                 Some(&artifacts),
             )
             .await?;
-        let candidate = &selection.selection().candidate;
+        let candidate = &decision.selection().candidate;
         self.store.bind_step(
             definition,
             node,
@@ -268,6 +295,24 @@ impl Coordinator {
         request: ExecutionRequest,
         artifacts: RunArtifactContract,
     ) -> Result<PendingStep> {
+        let decision = ExecutionDecision::deterministic(router, context, selection)
+            .map_err(router_runtime::RuntimeError::from)?;
+        self.reopen_step_decision(
+            definition, node, generation, router, context, &decision, request, artifacts,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn reopen_step_decision(
+        &self,
+        definition: &WorkflowDefinition,
+        node: &str,
+        generation: u32,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
+        request: ExecutionRequest,
+        artifacts: RunArtifactContract,
+    ) -> Result<PendingStep> {
         validate_definition(definition)?;
         self.store.check(definition)?;
         if artifacts.workflow_definition_sha256 != definition.definition_sha256
@@ -289,11 +334,11 @@ impl Coordinator {
         {
             return Err(CoordinatorError::Integrity);
         }
-        let pending = self.runtime.reopen_with_artifacts(
+        let pending = self.runtime.reopen_decision(
             &run_id,
             router,
             context,
-            selection,
+            decision,
             request.clone(),
             definition.plan.clone(),
             node,
@@ -440,17 +485,36 @@ impl Coordinator {
         definition: &WorkflowDefinition,
         jobs: Vec<StepExecution<'a>>,
     ) -> Result<WaveCompletion> {
+        self.run_ready_decisions(
+            definition,
+            jobs.into_iter()
+                .map(|execution| DecisionStepExecution {
+                    execution,
+                    authority: None,
+                })
+                .collect(),
+        )
+        .await
+    }
+    pub async fn run_ready_decisions<'a>(
+        &'a self,
+        definition: &WorkflowDefinition,
+        jobs: Vec<DecisionStepExecution<'a>>,
+    ) -> Result<WaveCompletion> {
         self.check(definition)?;
         if jobs.len() > 64 {
             return Err(CoordinatorError::Limit);
         }
         let mut unique = BTreeSet::new();
         for job in &jobs {
-            self.check_step(definition, &job.step.pending)?;
-            if !unique.insert(job.step.pending.summary().run_id.clone()) {
+            self.check_step(definition, &job.execution.step.pending)?;
+            if !unique.insert(job.execution.step.pending.summary().run_id.clone()) {
                 return Err(CoordinatorError::Invalid("duplicate step"));
             }
-            if !self.runtime.dependencies_ready(&job.step.pending.pending)? {
+            if !self
+                .runtime
+                .dependencies_ready(&job.execution.step.pending.pending)?
+            {
                 return Err(CoordinatorError::DependenciesPending);
             }
         }
@@ -474,7 +538,7 @@ impl Coordinator {
             if stopped {
                 for job in queued.by_ref() {
                     errors.push(StepExecutionError {
-                        run_id: job.step.pending.summary().run_id.clone(),
+                        run_id: job.execution.step.pending.summary().run_id.clone(),
                         code: StepExecutionErrorCode::Cancelled,
                     });
                 }
@@ -486,12 +550,18 @@ impl Coordinator {
                     };
                     let token = cancel.clone();
                     let runtime = &self.runtime;
-                    let id = job.step.pending.summary().run_id.clone();
+                    let id = job.execution.step.pending.summary().run_id.clone();
                     active.push(Box::pin(async move {
                         (
                             id,
                             runtime
-                                .execute(job.step.approved, job.adapter, job.supervisor, token)
+                                .execute_decision(
+                                    job.execution.step.approved,
+                                    job.execution.adapter,
+                                    job.execution.supervisor,
+                                    token,
+                                    job.authority,
+                                )
                                 .await,
                         )
                     }));

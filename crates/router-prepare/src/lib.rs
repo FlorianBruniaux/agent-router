@@ -6,6 +6,7 @@ use router_adapter_api::{
     MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, ValidatedHostObservation,
     authorize_execution, content_digest, strict_json,
 };
+use router_execution_decision::ExecutionDecision;
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_retrieval::{AssetKind, Bm25Index, SelectedBody};
 use router_types::*;
@@ -17,6 +18,8 @@ use std::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum PreparationError {
+    #[error("prepare.decision: {0}")]
+    Decision(#[from] router_execution_decision::DecisionError),
     #[error("prepare.workflow: {0}")]
     Workflow(#[from] router_workflow::WorkflowError),
     #[error("prepare.route: {0}")]
@@ -121,8 +124,12 @@ pub struct PreparedExecution {
     request: ExecutionRequest,
     receipt: PhaseReceipt,
     preview: PreparationPreview,
+    decision: ExecutionDecision,
 }
 impl PreparedExecution {
+    pub fn decision(&self) -> &ExecutionDecision {
+        &self.decision
+    }
     pub fn request(&self) -> &ExecutionRequest {
         &self.request
     }
@@ -190,6 +197,17 @@ pub fn prepare_with_receipt(
     let proof = input
         .router
         .validate_receipt(input.context, proof.receipt())?;
+    let decision = ExecutionDecision::deterministic(input.router, input.context, &proof)?;
+    prepare_with_decision(input, &decision)
+}
+
+/// Assemble the effective selection while preserving its deterministic baseline.
+/// An activation proof remains subject to dispatch-time current authority checks.
+pub fn prepare_with_decision(
+    input: PreparationInput<'_>,
+    decision: &ExecutionDecision,
+) -> Result<PreparedExecution> {
+    decision.validate_identity(input.router, input.context)?;
     let options = input.options;
     if options.schema_version != 1
         || options.max_input_bytes == 0
@@ -222,11 +240,8 @@ pub fn prepare_with_receipt(
     input
         .index
         .validate_catalog_hash(input.context.catalog_hash())?;
-    let receipt = proof.receipt().clone();
-    let selected = receipt
-        .selected
-        .as_ref()
-        .ok_or(PreparationError::Abstained)?;
+    let receipt = decision.baseline().clone();
+    let selected = decision.selection();
     input.router.validate_selection(input.context, selected)?;
     let candidate = &selected.candidate;
     let sandbox = match candidate.sandbox {
@@ -337,7 +352,7 @@ pub fn prepare_with_receipt(
     };
     let request = ExecutionRequest {
         schema_version: 1,
-        receipt_id: receipt.receipt_id.clone(),
+        receipt_id: decision.authorization_id().into(),
         candidate_id: candidate.id.clone(),
         phase: receipt.phase,
         host: snapshot.host().harness.clone(),
@@ -409,11 +424,20 @@ pub fn prepare_with_receipt(
         &input.template.content_sha256,
         options,
     ))?);
+    let preparation_hash = if let Some(binding) = decision.binding() {
+        content_digest(&json(&(
+            "agent-router:preparation:v2-decision",
+            &preparation_hash,
+            binding,
+        ))?)
+    } else {
+        preparation_hash
+    };
     let preview = PreparationPreview {
         schema_version: 1,
         plan_id: input.plan.plan_id.clone(),
         node_id: node.id.clone(),
-        receipt_id: receipt.receipt_id.clone(),
+        receipt_id: decision.authorization_id().into(),
         candidate_id: candidate.id.clone(),
         request_sha256: content_digest(&serialized),
         prompt_sha256: content_digest(request.prompt.as_bytes()),
@@ -449,5 +473,6 @@ pub fn prepare_with_receipt(
         request,
         receipt,
         preview,
+        decision: decision.clone(),
     })
 }

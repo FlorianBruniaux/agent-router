@@ -739,11 +739,12 @@ fn observer_control_child_process() {
     let expected = match std::env::var("ROUTER_RUNTIME_TEST_CONTROL_STATE").as_deref() {
         Ok("awaiting_approval") => RunState::AwaitingApproval,
         Ok("queued") => RunState::Queued,
+        Ok("preparing") => RunState::Preparing,
         _ => RunState::Running,
     };
     assert_eq!(run.state, expected);
     request_cancel(root, "run-1").unwrap();
-    if expected != RunState::Running {
+    if matches!(expected, RunState::AwaitingApproval | RunState::Queued) {
         assert_eq!(observe(root, "run-1").unwrap().state, RunState::Cancelled);
     }
 }
@@ -1881,4 +1882,817 @@ async fn native_supervisor_sigkill_recovery_waits_for_cleanup_proof() {
             .iter()
             .any(|event| event.kind == "recovery.interrupted")
     );
+}
+
+#[path = "../../router-execution-decision/tests/support/synthetic.rs"]
+mod semantic_fixture;
+
+impl Fixture {
+    fn add_secondary(&mut self) {
+        let mut route = self.context.request().clone();
+        let example: PhaseRouteRequest = serde_json::from_str(include_str!(
+            "../../../fixtures/examples/phase-request.json"
+        ))
+        .unwrap();
+        let mut secondary = example.candidates[1].clone();
+        secondary.sandbox = route.candidates[0].sandbox;
+        route.candidates.push(secondary);
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let snapshot = ValidatedHostObservation::from_observation(
+            self.context.snapshot().clone(),
+            SnapshotValidation {
+                now_unix_seconds: now,
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap();
+        self.context = self.router.context(route, &snapshot, &catalog).unwrap();
+    }
+    fn select_decision(&mut self, decision: &router_execution_decision::ExecutionDecision) {
+        let c = &decision.selection().candidate;
+        self.request.receipt_id = decision.authorization_id().into();
+        self.request.candidate_id = c.id.clone();
+        self.request.model = c.model.clone();
+        self.request.effort = c.effort;
+        self.request.required_capabilities = self
+            .router
+            .execution_capabilities(&self.context, decision.selection())
+            .unwrap();
+    }
+    async fn review_decision(
+        &self,
+        runtime: &Runtime,
+        decision: &router_execution_decision::ExecutionDecision,
+    ) -> PendingRun {
+        runtime
+            .review_decision(
+                "run-1",
+                &self.router,
+                &self.context,
+                decision,
+                self.request.clone(),
+                self.plan.clone(),
+                "execute",
+                None,
+                None,
+            )
+            .await
+            .unwrap()
+    }
+}
+
+#[tokio::test]
+async fn activated_secondary_runs_without_fabricating_baseline_and_releases_dispatch_guard() {
+    let mut f = Fixture::new(false).await;
+    f.add_secondary();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let promotion = semantic_fixture::Fixture::new_at(now - 124);
+    let authority =
+        semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+    let decision =
+        semantic_fixture::decision(&promotion, &f.router, &f.context, &authority, now, now + 60);
+    assert_eq!(decision.selection().candidate.id, "secondary");
+    assert_eq!(
+        decision.baseline().selected.as_ref().unwrap().candidate.id,
+        "primary"
+    );
+    f.select_decision(&decision);
+    let rt = f.runtime();
+    let pending = f.review_decision(&rt, &decision).await;
+    let approved = rt
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let result = rt.execute_decision(
+        approved,
+        &FakeAdapter("sleep 0.2; printf secondary"),
+        &FakeSupervisor,
+        Cancellation::default(),
+        Some(&authority),
+    );
+    let (completion, ()) = tokio::join!(result, async {
+        tokio::time::timeout(Duration::from_secs(5), async {
+            loop {
+                if rt.summary("run-1").unwrap().state == RunState::Running {
+                    break;
+                }
+                tokio::time::sleep(Duration::from_millis(5)).await;
+            }
+        })
+        .await
+        .unwrap();
+        // Spawn completed; a long-running worker must not pin promotion state.
+        assert_eq!(
+            authority.guards.load(std::sync::atomic::Ordering::SeqCst),
+            0
+        );
+    });
+    let completion = completion.unwrap();
+    assert_eq!(completion.run.state, RunState::Verifying);
+    assert_eq!(completion.objective, VerificationOutcome::Unknown);
+    assert_eq!(completion.run.receipt_id, decision.authorization_id());
+    let reopened = rt
+        .reopen_decision(
+            "run-1",
+            &f.router,
+            &f.context,
+            &decision,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            None,
+            None,
+        )
+        .unwrap();
+    assert_eq!(reopened.approval_digest(), pending.approval_digest());
+    assert_eq!(reopened.decision().baseline(), decision.baseline());
+    // Serialized baseline alone cannot authorize the secondary request.
+    assert!(matches!(
+        rt.reopen(
+            "run-1",
+            &f.router,
+            &f.context,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute"
+        ),
+        Err(RuntimeError::Route)
+    ));
+}
+
+#[tokio::test]
+async fn queued_activated_decision_rejects_rollback_root_rotation_expiry_or_missing_authority() {
+    use router_backend_policy::ActivationAction;
+    for mutation in ["rollback", "roots", "expired", "missing"] {
+        let mut f = Fixture::new(true).await;
+        f.add_secondary();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let promotion = semantic_fixture::Fixture::new_at(now - 124);
+        let mut authority =
+            semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+        let decision = semantic_fixture::decision(
+            &promotion,
+            &f.router,
+            &f.context,
+            &authority,
+            now,
+            now + if mutation == "expired" { 1 } else { 60 },
+        );
+        f.select_decision(&decision);
+        let rt = f.runtime();
+        let pending = f.review_decision(&rt, &decision).await;
+        let approved = rt
+            .approve(pending.clone(), pending.approval_digest())
+            .unwrap();
+        match mutation {
+            "rollback" => {
+                let approval = promotion.approval(
+                    &authority.state,
+                    ActivationAction::Rollback,
+                    f.context.policy_hash(),
+                    now,
+                    "2",
+                );
+                authority
+                    .state
+                    .apply(&approval, None, &authority.roots, now)
+                    .unwrap();
+            }
+            "roots" => {
+                let mut keys = semantic_fixture::Keys::new();
+                keys.gate = ed25519_dalek::SigningKey::from_bytes(&[8; 32]);
+                authority.roots = keys.authorities();
+            }
+            "expired" => tokio::time::sleep(Duration::from_millis(1100)).await,
+            _ => {}
+        }
+        let result = rt
+            .execute_decision(
+                approved,
+                &FakeAdapter("printf UNAUTHORIZED > src/marker"),
+                &FakeSupervisor,
+                Cancellation::default(),
+                if mutation == "missing" {
+                    None
+                } else {
+                    Some(&authority)
+                },
+            )
+            .await;
+        assert!(
+            matches!(result, Err(RuntimeError::Decision(_))),
+            "{mutation}: {result:?}"
+        );
+        assert_eq!(rt.summary("run-1").unwrap().state, RunState::Blocked);
+        assert_eq!(rt.summary("run-1").unwrap().attempts, 0);
+        assert!(!rt.storage_root().join("worktrees").exists());
+        assert!(!f.root.join("src/marker").exists());
+        rt.reopen_decision(
+            "run-1",
+            &f.router,
+            &f.context,
+            &decision,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            None,
+            None,
+        )
+        .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn activated_secondary_cannot_bypass_sandbox_or_request_permissions() {
+    let mut f = Fixture::new(false).await;
+    f.add_secondary();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let promotion = semantic_fixture::Fixture::new_at(now - 124);
+    let authority =
+        semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+    let decision =
+        semantic_fixture::decision(&promotion, &f.router, &f.context, &authority, now, now + 60);
+    f.select_decision(&decision);
+    let rt = f.runtime();
+    let mut escalated = f.request.clone();
+    escalated.required_capabilities.insert(Capability::Network);
+    assert!(matches!(
+        rt.review_decision(
+            "evil",
+            &f.router,
+            &f.context,
+            &decision,
+            escalated,
+            f.plan.clone(),
+            "execute",
+            None,
+            None
+        )
+        .await,
+        Err(RuntimeError::Route)
+    ));
+    let pending = f.review_decision(&rt, &decision).await;
+    let approved = rt
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    assert!(matches!(
+        rt.execute_decision(
+            approved,
+            &FakeAdapter("exit 0"),
+            &DenySandbox,
+            Cancellation::default(),
+            Some(&authority)
+        )
+        .await,
+        Err(RuntimeError::Sandbox)
+    ));
+    assert_eq!(rt.summary("run-1").unwrap().attempts, 0);
+}
+
+#[path = "../../router-execution-decision/tests/support/assets.rs"]
+mod semantic_assets;
+impl Fixture {
+    fn enable_semantic_assets(&mut self) {
+        let mut route = self.context.request().clone();
+        for c in &mut route.candidates {
+            c.estimated_tokens = 800;
+        }
+        route.task.budget.max_tokens = 10_000;
+        self.plan = build_plan(
+            &route.task,
+            WorkflowPreset::DirectSafe,
+            PlanLimits {
+                reserve_elapsed_ms: 1000,
+                ..PlanLimits::default()
+            },
+        )
+        .unwrap();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let snapshot = ValidatedHostObservation::from_observation(
+            self.context.snapshot().clone(),
+            SnapshotValidation {
+                now_unix_seconds: now,
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap();
+        let inputs = semantic_assets::inputs(
+            &route,
+            &snapshot,
+            &catalog,
+            router_policy::PhaseExecutionScope {
+                workspace: self.request.workspace.clone(),
+                source_state: self.request.source_state.clone(),
+                scope: self.request.scope.clone(),
+            },
+            &BTreeMap::new(),
+            512,
+        );
+        self.context = self
+            .router
+            .context_with_assets(route, &snapshot, &catalog, inputs, now)
+            .unwrap();
+    }
+}
+
+#[tokio::test]
+async fn activated_secondary_obeys_final_asset_gate_and_actual_input_budget() {
+    for oversized in [false, true] {
+        let mut f = Fixture::new(false).await;
+        f.add_secondary();
+        f.enable_semantic_assets();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let promotion = semantic_fixture::Fixture::new_at(now - 124);
+        let authority =
+            semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+        let decision = semantic_fixture::decision(
+            &promotion,
+            &f.router,
+            &f.context,
+            &authority,
+            now,
+            now + 60,
+        );
+        assert_eq!(decision.baseline().schema_version, 3);
+        f.select_decision(&decision);
+        if oversized {
+            f.request.prompt = "x".repeat(513);
+        }
+        let rt = f.runtime();
+        let pending = f.review_decision(&rt, &decision).await;
+        let approved = rt
+            .approve(pending.clone(), pending.approval_digest())
+            .unwrap();
+        let result = rt
+            .execute_decision(
+                approved,
+                &FakeAdapter("true"),
+                &FakeSupervisor,
+                Cancellation::default(),
+                Some(&authority),
+            )
+            .await;
+        if oversized {
+            assert!(matches!(result, Err(RuntimeError::Route)));
+            assert_eq!(rt.summary("run-1").unwrap().attempts, 0);
+        } else {
+            assert_eq!(result.unwrap().run.state, RunState::Verifying);
+            assert!(
+                rt.events()
+                    .unwrap()
+                    .iter()
+                    .any(|e| e.kind == "assets.final_gate")
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
+    let mut first = Fixture::new(false).await;
+    first.enable_semantic_assets();
+    let mut second = Fixture::new(false).await;
+    let mut route = second.context.request().clone();
+    route.task.objective = "Second host using the same provider".into();
+    second.plan = build_plan(
+        &route.task,
+        WorkflowPreset::DirectSafe,
+        PlanLimits {
+            reserve_elapsed_ms: 1000,
+            ..PlanLimits::default()
+        },
+    )
+    .unwrap();
+    let mut observation = second.context.snapshot().clone();
+    observation.host.harness = HarnessId::parse("claude-code").unwrap();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let snapshot = ValidatedHostObservation::from_observation(
+        observation.seal().unwrap(),
+        SnapshotValidation {
+            now_unix_seconds: now,
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(include_bytes!(
+        "../../../fixtures/examples/phase-catalog.json"
+    ))
+    .unwrap();
+    second.context = second.router.context(route, &snapshot, &catalog).unwrap();
+    second.request.host = snapshot.host().harness.clone();
+    second.enable_semantic_assets();
+    assert_ne!(first.request.host, second.request.host);
+    assert_ne!(first.plan.plan_id, second.plan.plan_id);
+    assert_eq!(
+        first
+            .context
+            .asset_requirements("primary")
+            .unwrap()
+            .provider,
+        second
+            .context
+            .asset_requirements("primary")
+            .unwrap()
+            .provider
+    );
+    let rt = Runtime::open(
+        &first.temp.path().join("provider-runtime"),
+        RuntimeLimits {
+            provider_concurrency: 1,
+            agent_concurrency: 2,
+            ..RuntimeLimits::default()
+        },
+    )
+    .unwrap();
+    let mut runs = Vec::new();
+    for (id, f) in [("host-a", &mut first), ("host-b", &mut second)] {
+        let receipt = f.router.route(&f.context).unwrap();
+        f.request.receipt_id = receipt.receipt_id;
+        let pending = rt
+            .review(
+                id,
+                &f.router,
+                &f.context,
+                f.request.clone(),
+                f.plan.clone(),
+                "execute",
+            )
+            .await
+            .unwrap();
+        runs.push(
+            rt.approve(pending.clone(), pending.approval_digest())
+                .unwrap(),
+        );
+    }
+    let b = runs.pop().unwrap();
+    let a = runs.pop().unwrap();
+    let (a, b) = tokio::join!(
+        rt.execute(
+            a,
+            &FakeAdapter("sleep 0.25"),
+            &FakeSupervisor,
+            Cancellation::default()
+        ),
+        async {
+            tokio::time::timeout(Duration::from_secs(5), async {
+                while rt.summary("host-a").unwrap().state != RunState::Running {
+                    tokio::time::sleep(Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .unwrap();
+            let (outcome, ()) = tokio::join!(
+                rt.execute(
+                    b,
+                    &FakeAdapter("true"),
+                    &FakeSupervisor,
+                    Cancellation::default()
+                ),
+                async {
+                    tokio::time::sleep(Duration::from_millis(40)).await;
+                    assert_eq!(rt.summary("host-b").unwrap().state, RunState::Queued);
+                }
+            );
+            outcome
+        }
+    );
+    assert_eq!(a.unwrap().run.state, RunState::Verifying);
+    assert_eq!(b.unwrap().run.state, RunState::Verifying);
+}
+
+#[tokio::test]
+#[ignore = "requires built helper and native OS sandbox; fake host only"]
+async fn native_activated_secondary_with_asset_gate_executes_under_real_sandbox() {
+    let mut f = Fixture::new(false).await;
+    f.add_secondary();
+    f.enable_semantic_assets();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let promotion = semantic_fixture::Fixture::new_at(now - 124);
+    let authority =
+        semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+    let decision =
+        semantic_fixture::decision(&promotion, &f.router, &f.context, &authority, now, now + 60);
+    f.select_decision(&decision);
+    let runtime = f.runtime();
+    let pending = f.review_decision(&runtime, &decision).await;
+    let root = fs::canonicalize(f.temp.path()).unwrap();
+    let helper = std::env::current_exe()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("router-sandbox-helper");
+    let program = fs::canonicalize("/bin/sh").unwrap();
+    #[cfg(target_os = "macos")]
+    let wrapper = Path::new("/usr/bin/sandbox-exec");
+    #[cfg(target_os = "linux")]
+    let wrapper = Path::new("/usr/bin/bwrap");
+    let hashes = expected_hashes(&[&helper, &program, wrapper]);
+    #[cfg(target_os = "macos")]
+    let sandbox = SeatbeltSandbox::probe_expected(
+        &root,
+        BTreeMap::from([("/bin/sh".into(), program)]),
+        vec![],
+        BTreeMap::new(),
+        &hashes,
+    )
+    .await
+    .unwrap();
+    #[cfg(target_os = "linux")]
+    let sandbox = BubblewrapSandbox::probe_expected(
+        &root,
+        wrapper,
+        BTreeMap::from([("/bin/sh".into(), program)]),
+        vec![],
+        BTreeMap::new(),
+        &hashes,
+    )
+    .await
+    .unwrap();
+    let supervisor = ResourceSupervisor::probe_expected(
+        &helper,
+        ResourceLimits {
+            address_space_bytes: None,
+            max_processes: 4096,
+            ..ResourceLimits::default()
+        },
+        sandbox,
+        &hashes,
+    )
+    .await
+    .unwrap();
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let result = runtime
+        .execute_decision(
+            approved,
+            &FakeAdapter("cat >/dev/null; printf native-secondary"),
+            &supervisor,
+            Cancellation::default(),
+            Some(&authority),
+        )
+        .await
+        .unwrap();
+    assert_eq!(result.run.state, RunState::Verifying);
+    assert_eq!(result.objective, VerificationOutcome::Unknown);
+    assert_eq!(
+        result.stdout_sha256,
+        router_adapter_api::content_digest(b"native-secondary")
+    );
+    assert!(!f.root.join("src/native.txt").exists());
+    assert_eq!(
+        authority.guards.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+    assert!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "assets.final_gate")
+    );
+}
+
+struct CancelDuringPreparation<'a>(&'a Path);
+impl SandboxSupervisor for CancelDuringPreparation<'_> {
+    fn resource_limits_enforced(&self) -> bool {
+        true
+    }
+    fn command(
+        &self,
+        run: &PreparedRun,
+        policy: &SandboxPolicy,
+    ) -> Result<tokio::process::Command> {
+        assert_eq!(observe(self.0, "run-1")?.state, RunState::Preparing);
+        request_cancel(self.0, "run-1")?;
+        FakeSupervisor.command(run, policy)
+    }
+}
+#[tokio::test]
+async fn durable_cancel_at_end_of_preparation_prevents_attempt_and_spawn() {
+    let f = Fixture::new(false).await;
+    let runtime = f.runtime();
+    let pending = f.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let result = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf unexpected-worker"),
+            &CancelDuringPreparation(runtime.storage_root()),
+            Cancellation::default(),
+        )
+        .await;
+    assert!(matches!(result, Err(RuntimeError::Cancelled)));
+    let summary = runtime.summary("run-1").unwrap();
+    assert_eq!(summary.state, RunState::Cancelled);
+    assert_eq!(summary.failure, None);
+    assert_eq!(summary.attempts, 0);
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.detail == "spawn_requested")
+    );
+}
+
+struct NativeVersionAdapter;
+impl HarnessAdapter for NativeVersionAdapter {
+    fn host(&self) -> &'static str {
+        "codex"
+    }
+    fn requires_native_version(&self) -> bool {
+        true
+    }
+    fn validate_native_version(&self, bytes: &[u8]) -> std::result::Result<(), AdapterError> {
+        if bytes == b"fixture-version\n" {
+            Ok(())
+        } else {
+            Err(AdapterError::Protocol)
+        }
+    }
+    fn prepare(
+        &self,
+        request: &ValidatedExecutionRequest,
+    ) -> std::result::Result<PreparedRun, AdapterError> {
+        prepared_run(
+            request,
+            "fixture-native-version",
+            vec!["run".into()],
+            vec![],
+        )
+    }
+    fn decode_stream(
+        &self,
+        _: &[u8],
+        _: TransportOutcome,
+        _: usize,
+    ) -> std::result::Result<RuntimeEvidence, AdapterError> {
+        Err(AdapterError::Protocol)
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires native OS sandbox and helper; fake version probe plus a separate cancellation process"]
+async fn native_durable_cancel_during_version_probe_waits_for_cleanup_and_never_starts_worker() {
+    use std::os::unix::fs::PermissionsExt;
+    let f = Fixture::new(true).await;
+    let runtime = f.runtime();
+    let pending = f.review(&runtime).await;
+    let root = fs::canonicalize(f.temp.path()).unwrap();
+    let program = root.join("fixture-native-version");
+    fs::write(&program,b"#!/bin/sh\nif [ \"$#\" -eq 1 ] && [ \"$1\" = --version ]; then exec /bin/sleep 20; fi\nprintf 'UNEXPECTED_WORKER' > src/worker-started\n").unwrap();
+    fs::set_permissions(&program, fs::Permissions::from_mode(0o700)).unwrap();
+    let helper = std::env::current_exe()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("router-sandbox-helper");
+    #[cfg(target_os = "macos")]
+    let wrapper = Path::new("/usr/bin/sandbox-exec");
+    #[cfg(target_os = "linux")]
+    let wrapper = Path::new("/usr/bin/bwrap");
+    let hashes = expected_hashes(&[&helper, &program, wrapper]);
+    #[cfg(target_os = "macos")]
+    let sandbox = SeatbeltSandbox::probe_expected(
+        &root,
+        BTreeMap::from([("fixture-native-version".into(), program)]),
+        vec![],
+        BTreeMap::new(),
+        &hashes,
+    )
+    .await
+    .unwrap();
+    #[cfg(target_os = "linux")]
+    let sandbox = BubblewrapSandbox::probe_expected(
+        &root,
+        wrapper,
+        BTreeMap::from([("fixture-native-version".into(), program)]),
+        vec![],
+        BTreeMap::new(),
+        &hashes,
+    )
+    .await
+    .unwrap();
+    let supervisor = ResourceSupervisor::probe_expected(
+        &helper,
+        ResourceLimits {
+            address_space_bytes: None,
+            max_processes: 4096,
+            ..ResourceLimits::default()
+        },
+        sandbox,
+        &hashes,
+    )
+    .await
+    .unwrap();
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let cancel = Cancellation::default();
+    let started = std::time::Instant::now();
+    let (result, ()) = tokio::join!(
+        runtime.execute(approved, &NativeVersionAdapter, &supervisor, cancel.clone()),
+        async {
+            tokio::time::timeout(Duration::from_secs(5), async {
+                loop {
+                    let active = fs::read_dir(runtime.storage_root().join("leases"))
+                        .map(|files| {
+                            files.filter_map(|f| f.ok()).any(|f| {
+                                fs::read(f.path())
+                                    .is_ok_and(|b| b == b"router-runtime-lease-v1:active\n")
+                            })
+                        })
+                        .unwrap_or(false);
+                    if runtime.summary("run-1").unwrap().state == RunState::Preparing && active {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(5)).await;
+                }
+            })
+            .await
+            .unwrap();
+            let output = tokio::process::Command::new(std::env::current_exe().unwrap())
+                .arg("--exact")
+                .arg("observer_control_child_process")
+                .env("ROUTER_RUNTIME_TEST_CONTROL_ROOT", runtime.storage_root())
+                .env("ROUTER_RUNTIME_TEST_CONTROL_STATE", "preparing")
+                .output()
+                .await
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    );
+    assert!(matches!(result, Err(RuntimeError::Cancelled)), "{result:?}");
+    assert!(
+        started.elapsed() < Duration::from_secs(4),
+        "durable cancel was not serviced before the probe timeout"
+    );
+    assert!(cancel.is_cancelled());
+    let summary = runtime.summary("run-1").unwrap();
+    assert_eq!(summary.state, RunState::Cancelled);
+    assert_eq!(summary.failure, None);
+    assert_eq!(summary.attempts, 0);
+    assert!(!runtime.storage_root().join("worktrees").exists());
+    assert!(!f.root.join("src/worker-started").exists());
+    let events = runtime.events().unwrap();
+    assert!(
+        events
+            .iter()
+            .any(|e| e.detail == "cancelled_while_preparing")
+    );
+    assert!(
+        !events
+            .iter()
+            .any(|e| e.kind == "attempt.started" || e.detail == "spawn_requested")
+    );
+    for lease in fs::read_dir(runtime.storage_root().join("leases")).unwrap() {
+        let status = fs::read(lease.unwrap().path()).unwrap();
+        assert!(
+            status == b"router-runtime-lease-v1:group-clean\n"
+                || status == b"router-runtime-lease-v1:namespace-clean\n"
+        );
+    }
+    runtime.verify_integrity().unwrap();
 }

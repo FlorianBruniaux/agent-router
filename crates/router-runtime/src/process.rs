@@ -75,12 +75,28 @@ impl Drop for InputGuard {
 }
 
 pub(crate) async fn capture(
+    command: Command,
+    input: Vec<u8>,
+    timeout_ms: u64,
+    max_bytes: usize,
+    grace_ms: u64,
+    cancel: &Cancellation,
+) -> Result<Capture> {
+    capture_guarded(
+        command, input, timeout_ms, max_bytes, grace_ms, cancel, None,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn capture_guarded(
     mut command: Command,
     input: Vec<u8>,
     timeout_ms: u64,
     max_bytes: usize,
     grace_ms: u64,
     cancel: &Cancellation,
+    dispatch: Option<router_execution_decision::DispatchGuard<'_>>,
 ) -> Result<Capture> {
     if timeout_ms == 0
         || timeout_ms > 86_400_000
@@ -106,7 +122,12 @@ pub(crate) async fn capture(
         .kill_on_drop(!supervised);
     command.process_group(0);
     let start = Instant::now();
-    let mut child = command.spawn()?;
+    if let Some(guard) = &dispatch {
+        guard.validate_at(crate::now()?)?;
+    }
+    let spawned = command.spawn();
+    drop(dispatch); // Release activation lock immediately after the spawn attempt.
+    let mut child = spawned?;
     let child_id = child.id().ok_or(RuntimeError::Process)?;
     let mut guard = GroupGuard((!supervised).then_some(child_id));
     let mut stdin = child.stdin.take().ok_or(RuntimeError::Process)?;

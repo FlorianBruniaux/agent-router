@@ -27,6 +27,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "adapter-copilot"
+version = "0.1.0"
+dependencies = [
+ "adapter-opencode",
+ "router-adapter-api",
+ "router-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "adapter-opencode"
+version = "0.1.0"
+dependencies = [
+ "router-adapter-api",
+ "router-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -47,17 +68,24 @@ version = "0.1.0"
 dependencies = [
  "adapter-claude",
  "adapter-codex",
+ "adapter-copilot",
+ "adapter-opencode",
  "assert_cmd",
  "clap",
+ "ed25519-dalek",
+ "hex",
  "libc",
  "predicates",
  "router-adapter-api",
  "router-asset-contracts",
+ "router-backend-policy",
+ "router-backend-store",
  "router-catalog",
  "router-coordinator",
  "router-decision",
  "router-doctor",
  "router-eval",
+ "router-execution-decision",
  "router-feedback",
  "router-policy",
  "router-prepare",
@@ -753,6 +781,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-backend-policy"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "router-adapter-api",
+ "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-policy",
+ "router-types",
+ "router-workflow",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+]
+
+[[package]]
+name = "router-backend-store"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "router-adapter-api",
+ "router-backend-policy",
+ "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-execution-decision",
+ "router-policy",
+ "router-types",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "router-bridge-contract"
 version = "0.1.0"
 dependencies = [
@@ -782,11 +851,16 @@ dependencies = [
 name = "router-coordinator"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
  "hex",
  "nix",
  "router-adapter-api",
  "router-asset-contracts",
+ "router-backend-policy",
  "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-execution-decision",
  "router-policy",
  "router-runtime",
  "router-types",
@@ -850,6 +924,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-execution-decision"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "router-adapter-api",
+ "router-backend-policy",
+ "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-policy",
+ "router-types",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+]
+
+[[package]]
 name = "router-feedback"
 version = "0.1.0"
 dependencies = [
@@ -889,9 +982,14 @@ dependencies = [
 name = "router-prepare"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
  "router-adapter-api",
  "router-asset-contracts",
+ "router-backend-policy",
  "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-execution-decision",
  "router-policy",
  "router-retrieval",
  "router-types",
@@ -920,10 +1018,16 @@ dependencies = [
 name = "router-runtime"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
  "hex",
  "nix",
  "router-adapter-api",
+ "router-asset-contracts",
+ "router-backend-policy",
  "router-catalog",
+ "router-decision",
+ "router-eval",
+ "router-execution-decision",
  "router-policy",
  "router-types",
  "router-workflow",

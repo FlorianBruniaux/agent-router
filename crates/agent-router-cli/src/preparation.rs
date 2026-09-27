@@ -20,6 +20,7 @@ struct Manifest {
     policy: Option<PathBuf>,
     policy_store: Option<PathBuf>,
     asset_authority: Option<PathBuf>,
+    backend_decision: Option<PathBuf>,
     plan: PathBuf,
     node_id: String,
     metadata: PathBuf,
@@ -133,10 +134,33 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             .route(&context)
             .map_err(|_| CliError::Product("prepare.route.invalid"))?
     };
-    let proof = router
-        .validate_receipt(&context, &receipt)
-        .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
-    let prepared = router_prepare::prepare_with_receipt(
+    if manifest.backend_decision.is_none() {
+        router
+            .validate_receipt(&context, &receipt)
+            .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
+    }
+    let backend_path = manifest
+        .backend_decision
+        .as_ref()
+        .map(|p| resolve(base, p.clone()));
+    let node = plan
+        .nodes
+        .iter()
+        .find(|node| node.id == manifest.node_id)
+        .ok_or(CliError::Product("prepare.node.invalid"))?;
+    let loaded = crate::execution_backend::load(
+        backend_path.as_deref(),
+        &router,
+        &context,
+        &receipt,
+        &crate::execution_backend::scope_hash(
+            &options.workspace,
+            &options.source_state,
+            &node.scope,
+        )?,
+        false,
+    )?;
+    let prepared = router_prepare::prepare_with_decision(
         PreparationInput {
             router: &router,
             context: &context,
@@ -148,7 +172,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             variables: &variables,
             options: &options,
         },
-        &proof,
+        &loaded.decision,
     )
     .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
     if let Some(directory) = output {
@@ -176,8 +200,13 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
                 serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
         }
         if workflow.is_some() {
+            // Workflow contract and backend decision are separate authorities.
             definition["workflow_contract"] = serde_json::json!("workflow-contract.json");
             definition["generation"] = serde_json::json!(manifest.generation);
+        }
+        if let Some(path) = &backend_path {
+            definition["backend_decision"] =
+                serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
         }
         let mut files = vec![
             ("context.json", serialized(context.request())?),

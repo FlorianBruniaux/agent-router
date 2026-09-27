@@ -810,3 +810,64 @@ fn fallback_preparation_keeps_the_proved_candidate_and_context() {
         ))
     ));
 }
+
+#[path = "../../router-execution-decision/tests/support/synthetic.rs"]
+mod semantic_fixture;
+
+#[test]
+fn activated_preparation_uses_secondary_and_keeps_baseline_unavailable_unchanged() {
+    let mut f = Fixture::new();
+    let mut request = f.context.request().clone();
+    let mut secondary = request.candidates[0].clone();
+    secondary.id = "secondary".into();
+    secondary.model = ModelId::parse("fixture-second").unwrap();
+    secondary.estimated_tokens = 4500;
+    request.candidates.push(secondary);
+    f.reroute(request);
+    f.enable_asset_contracts(4000);
+    f.options.now_unix_seconds = 124;
+    f.template
+        .compatible_models
+        .insert(ModelId::parse("fixture-second").unwrap());
+    f.template = seal_prompt(f.template).unwrap();
+    let body = serde_json::to_vec(&f.template).unwrap();
+    let entry = f
+        .metadata
+        .assets
+        .iter_mut()
+        .find(|a| a.kind == AssetKind::Prompt)
+        .unwrap();
+    let reference = entry.body.as_mut().unwrap();
+    reference.sha256 = content_digest(&body);
+    fs::write(f.root.path().join(&reference.path), &body).unwrap();
+    f.reindex();
+    let promotion = semantic_fixture::Fixture::new();
+    let authority =
+        semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+    let decision =
+        semantic_fixture::decision(&promotion, &f.router, &f.context, &authority, 124, 150);
+    let prepared = router_prepare::prepare_with_decision(f.input(), &decision).unwrap();
+    assert_eq!(prepared.request().model.as_str(), "fixture-second");
+    assert_eq!(prepared.request().receipt_id, decision.authorization_id());
+    assert_eq!(prepared.receipt(), decision.baseline());
+    assert_eq!(
+        prepared.receipt().selected.as_ref().unwrap().candidate.id,
+        "primary"
+    );
+    assert!(prepared.receipt().unavailable.is_empty());
+    assert_eq!(prepared.request().skills.len(), 1);
+    assert_eq!(prepared.request().tools, ToolSelection::Disabled);
+    // The secondary uses the same body-integrity gate as deterministic preparation.
+    let skill = f
+        .metadata
+        .assets
+        .iter()
+        .find(|a| a.kind == AssetKind::Skill)
+        .unwrap();
+    fs::write(
+        f.root.path().join(&skill.body.as_ref().unwrap().path),
+        "changed body",
+    )
+    .unwrap();
+    assert!(router_prepare::prepare_with_decision(f.input(), &decision).is_err());
+}

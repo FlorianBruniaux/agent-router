@@ -1102,3 +1102,98 @@ async fn fail_fast_reports_jobs_cancelled_before_they_start() {
         0
     );
 }
+
+#[path = "../../router-execution-decision/tests/support/synthetic.rs"]
+mod semantic_fixture;
+
+#[tokio::test]
+async fn semantic_step_binds_secondary_and_reopens_without_rerouting_baseline() {
+    let f = Fixture::new().await;
+    let (baseline_context, mut request) = f.material("plan");
+    let mut route = baseline_context.request().clone();
+    let mut secondary = route.candidates[0].clone();
+    secondary.id = "secondary".into();
+    secondary.model = ModelId::parse("fixture-second").unwrap();
+    route.candidates.push(secondary);
+    let context = f.router.context(route, &f.snapshot, &f.catalog).unwrap();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let promotion = semantic_fixture::Fixture::new_at(now - 124);
+    let authority =
+        semantic_fixture::TestAuthority::new(promotion.active(), promotion.keys.authorities());
+    let decision =
+        semantic_fixture::decision(&promotion, &f.router, &context, &authority, now, now + 60);
+    request.receipt_id = decision.authorization_id().into();
+    request.candidate_id = decision.selection().candidate.id.clone();
+    request.model = decision.selection().candidate.model.clone();
+    request.effort = decision.selection().candidate.effort;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = coordinator
+        .review_step_decision(
+            &f.definition,
+            "plan",
+            0,
+            &f.router,
+            &context,
+            &decision,
+            request,
+        )
+        .await
+        .unwrap();
+    assert_eq!(pending.decision().baseline(), decision.baseline());
+    let approved = coordinator
+        .approve_step(&f.definition, pending.clone(), pending.approval_digest())
+        .unwrap();
+    let completion = coordinator
+        .run_ready_decisions(
+            &f.definition,
+            vec![DecisionStepExecution {
+                execution: StepExecution {
+                    step: approved,
+                    adapter: &FakeAdapter(PLAN),
+                    supervisor: &FakeSupervisor,
+                },
+                authority: Some(&authority),
+            }],
+        )
+        .await
+        .unwrap();
+    assert!(completion.errors.is_empty());
+    assert_eq!(completion.completions.len(), 1);
+    assert_eq!(completion.completions[0].run.state, RunState::Verifying);
+    let reopened = coordinator
+        .reopen_step_decision(
+            &f.definition,
+            "plan",
+            0,
+            &f.router,
+            &context,
+            &decision,
+            pending.final_request().clone(),
+            pending.artifact_contract().clone(),
+        )
+        .unwrap();
+    assert_eq!(reopened.approval_digest(), pending.approval_digest());
+    assert_eq!(reopened.final_request().candidate_id, "secondary");
+    assert_eq!(
+        reopened
+            .decision()
+            .baseline()
+            .selected
+            .as_ref()
+            .unwrap()
+            .candidate
+            .id,
+        "primary"
+    );
+    assert!(
+        !runtime
+            .declared_artifacts(&pending.summary().run_id)
+            .unwrap()
+            .is_empty()
+    );
+}

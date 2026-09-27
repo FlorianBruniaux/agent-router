@@ -68,6 +68,23 @@ impl ValidatedExecutionRequest {
 
 pub trait HarnessAdapter {
     fn host(&self) -> &'static str;
+    fn requires_native_version(&self) -> bool {
+        false
+    }
+    /// Compare a freshly supervised --version response to the approved pin.
+    fn validate_native_version(&self, _stdout: &[u8]) -> Result<(), AdapterError> {
+        Err(AdapterError::Unsupported("native-version"))
+    }
+    /// Complete native answer text for an explicitly declared private artifact.
+    /// Implementations must exclude tools, reasoning and incomplete streams.
+    fn final_text(
+        &self,
+        _bytes: &[u8],
+        _outcome: TransportOutcome,
+        _max_bytes: usize,
+    ) -> Result<Option<String>, AdapterError> {
+        Err(AdapterError::Unsupported("native-final-text"))
+    }
     fn prepare(&self, request: &ValidatedExecutionRequest) -> Result<PreparedRun, AdapterError>;
     fn decode_stream(
         &self,
