@@ -33,6 +33,13 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Manage signed, explicitly approved semantic backend activation.
+    BackendActivation {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: crate::backend_activation::Command,
+    },
     Coordinate {
         #[arg(long, global = true)]
         json: bool,

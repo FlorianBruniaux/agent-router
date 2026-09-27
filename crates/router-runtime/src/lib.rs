@@ -5,6 +5,7 @@ mod artifacts;
 mod bubblewrap;
 mod error;
 mod leases;
+mod native_version;
 mod outputs;
 mod process;
 mod resources;
@@ -14,6 +15,7 @@ mod workflow;
 mod workspace;
 pub use bubblewrap::BubblewrapSandbox;
 pub use error::{Result, RuntimeError};
+pub use native_version::{NativeVersionProbe, probe_native_version};
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
@@ -24,6 +26,7 @@ use router_adapter_api::{
     HarnessAdapter, SnapshotValidation, ValidatedHostObservation, authorize_execution,
     content_digest, execution_authorization_digest, is_digest,
 };
+use router_execution_decision::{ActivationAuthority, ExecutionDecision};
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_types::*;
 use serde::Serialize;
@@ -82,6 +85,7 @@ pub struct PendingRun {
     plan: WorkflowPlan,
     node: WorkflowNode,
     receipt: PhaseReceipt,
+    decision: ExecutionDecision,
     workflow: Option<WorkflowExecutionContract>,
     artifacts: Option<RunArtifactContract>,
 }
@@ -89,6 +93,9 @@ pub struct ApprovedRun {
     pending: PendingRun,
 }
 impl PendingRun {
+    pub fn decision(&self) -> &ExecutionDecision {
+        &self.decision
+    }
     pub fn summary(&self) -> &RunSummary {
         &self.run
     }
@@ -195,6 +202,7 @@ impl Runtime {
         }
         Ok(records.len())
     }
+    #[allow(clippy::too_many_arguments)]
     fn definition_hash(
         &self,
         request: &ExecutionRequest,
@@ -203,7 +211,23 @@ impl Runtime {
         node_id: &str,
         workflow: Option<&WorkflowRunBinding>,
         artifacts: Option<&RunArtifactContract>,
+        decision: Option<&ExecutionDecisionBinding>,
     ) -> Result<String> {
+        if let Some(binding) = decision {
+            return digest(
+                "runtime-definition-v5-decision",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    workflow,
+                    artifacts,
+                    binding,
+                ),
+            );
+        }
         if let Some(artifacts) = artifacts {
             return digest(
                 "runtime-definition-v4-artifacts",
@@ -255,6 +279,7 @@ impl Runtime {
                 &pending.node.id,
                 pending.run.workflow.as_ref(),
                 pending.artifacts.as_ref(),
+                pending.decision.binding(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -310,6 +335,26 @@ impl Runtime {
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
     ) -> Result<PendingRun> {
+        let decision = ExecutionDecision::deterministic(router, context, selection)
+            .map_err(|_| RuntimeError::Route)?;
+        self.review_decision(
+            run_id, router, context, &decision, request, plan, node_id, workflow, artifacts,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub async fn review_decision(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
+    ) -> Result<PendingRun> {
         if run_id.is_empty()
             || run_id.len() > 96
             || !run_id
@@ -330,13 +375,17 @@ impl Runtime {
             .find(|n| n.id == node_id)
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
-        if selection.context_hash() != context.context_hash() {
-            return Err(RuntimeError::Route);
-        }
-        let receipt = selection.receipt().clone();
-        let workflow_binding =
-            workflow::validate(workflow, &plan, &node, &request, context, &receipt)?;
-        let selected = receipt.selected.as_ref().ok_or(RuntimeError::Route)?;
+        decision.validate_identity(router, context)?;
+        let receipt = decision.baseline().clone();
+        let workflow_binding = workflow::validate(
+            workflow,
+            &plan,
+            &node,
+            &request,
+            context,
+            decision.selection(),
+        )?;
+        let selected = decision.selection();
         router
             .validate_selection(context, selected)
             .map_err(|_| RuntimeError::Route)?;
@@ -344,6 +393,7 @@ impl Runtime {
             &request,
             &selected.candidate,
             &receipt,
+            decision.authorization_id(),
             &node,
             context,
             &router
@@ -376,6 +426,7 @@ impl Runtime {
             node_id,
             workflow_binding.as_ref(),
             artifacts,
+            decision.binding(),
         )?;
         let approval_digest = digest(
             "runtime-approval-v1",
@@ -385,7 +436,7 @@ impl Runtime {
             run_id: run_id.into(),
             definition_hash,
             approval_digest,
-            receipt_id: receipt.receipt_id.clone(),
+            receipt_id: decision.authorization_id().into(),
             plan_id: plan.plan_id.clone(),
             node_id: node_id.into(),
             state: RunState::Planned,
@@ -418,6 +469,7 @@ impl Runtime {
             plan,
             node,
             receipt,
+            decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
         })
@@ -503,6 +555,25 @@ impl Runtime {
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
     ) -> Result<PendingRun> {
+        let decision = ExecutionDecision::deterministic(router, context, selection)
+            .map_err(|_| RuntimeError::Route)?;
+        self.reopen_decision(
+            run_id, router, context, &decision, request, plan, node_id, workflow, artifacts,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn reopen_decision(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
+    ) -> Result<PendingRun> {
         let run = self.store.get(run_id)?;
         router_workflow::validate_plan(&plan)
             .map_err(|_| RuntimeError::Invalid("workflow plan"))?;
@@ -515,12 +586,17 @@ impl Runtime {
             .find(|n| n.id == node_id)
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
-        if selection.context_hash() != context.context_hash() {
-            return Err(RuntimeError::Route);
-        }
-        let receipt = selection.receipt().clone();
-        let binding = workflow::validate(workflow, &plan, &node, &request, context, &receipt)?;
-        let selected = receipt.selected.as_ref().ok_or(RuntimeError::Route)?;
+        decision.validate_identity(router, context)?;
+        let receipt = decision.baseline().clone();
+        let binding = workflow::validate(
+            workflow,
+            &plan,
+            &node,
+            &request,
+            context,
+            decision.selection(),
+        )?;
+        let selected = decision.selection();
         router
             .validate_selection(context, selected)
             .map_err(|_| RuntimeError::Route)?;
@@ -528,6 +604,7 @@ impl Runtime {
             &request,
             &selected.candidate,
             &receipt,
+            decision.authorization_id(),
             &node,
             context,
             &router
@@ -549,6 +626,7 @@ impl Runtime {
             node_id,
             binding.as_ref(),
             artifacts,
+            decision.binding(),
         )?;
         if definition_hash != run.definition_hash || binding != run.workflow {
             return Err(RuntimeError::Integrity("definition changed"));
@@ -561,6 +639,7 @@ impl Runtime {
             plan,
             node,
             receipt,
+            decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
         })
@@ -594,6 +673,17 @@ impl Runtime {
         supervisor: &dyn SandboxSupervisor,
         cancel: Cancellation,
     ) -> Result<RunCompletion> {
+        self.execute_decision(approved, adapter, supervisor, cancel, None)
+            .await
+    }
+    pub async fn execute_decision(
+        &self,
+        approved: ApprovedRun,
+        adapter: &dyn HarnessAdapter,
+        supervisor: &dyn SandboxSupervisor,
+        cancel: Cancellation,
+        authority: Option<&dyn ActivationAuthority>,
+    ) -> Result<RunCompletion> {
         let pending = approved.pending;
         self.store.require_cleanup_complete()?;
         self.validate_pending_retention(&pending)?;
@@ -625,9 +715,59 @@ impl Runtime {
         }
         self.store
             .transition_queued(id, RunState::Preparing, "capacity_acquired", None)?;
-        let prepared = self.prepare(&pending, adapter, supervisor).await;
+        // Keep polling durable controls while preparation runs. In particular,
+        // never drop a version probe future before its helper proves cleanup.
+        let preparing = async {
+            drop(pending.decision.acquire_dispatch(
+                &pending.router,
+                &pending.context,
+                authority,
+                now()?,
+            )?);
+            self.prepare(&pending, adapter, supervisor, &cancel).await
+        };
+        tokio::pin!(preparing);
+        let mut control_error = None;
+        let prepared = loop {
+            tokio::select! {
+                result = &mut preparing => break result,
+                _ = tokio::time::sleep(std::time::Duration::from_millis(20)) => {
+                    match self.store.cancel_requested(id) {
+                        Ok(true) => cancel.cancel(),
+                        Ok(false) => {},
+                        Err(error) => {
+                            cancel.cancel();
+                            control_error.get_or_insert(error);
+                        }
+                    }
+                }
+            }
+        };
+        let prepared = match control_error {
+            _ if matches!(prepared, Err(RuntimeError::CleanupUnknown)) => prepared,
+            Some(error) => Err(error),
+            None => {
+                if self.store.cancel_requested(id)? {
+                    cancel.cancel();
+                }
+                if cancel.is_cancelled() {
+                    Err(RuntimeError::Cancelled)
+                } else {
+                    prepared
+                }
+            }
+        };
         let (run, mut command) = match prepared {
             Ok(v) => v,
+            Err(RuntimeError::Cancelled) => {
+                self.store.transition(
+                    id,
+                    RunState::Cancelled,
+                    "cancelled_while_preparing",
+                    None,
+                )?;
+                return Err(RuntimeError::Cancelled);
+            }
             Err(error) => {
                 self.store.transition(
                     id,
@@ -638,6 +778,33 @@ impl Runtime {
                 return Err(error);
             }
         };
+        let dispatch = match pending.decision.acquire_dispatch(
+            &pending.router,
+            &pending.context,
+            authority,
+            now()?,
+        ) {
+            Ok(guard) => guard,
+            Err(error) => {
+                self.store.transition(
+                    id,
+                    RunState::Blocked,
+                    "decision_changed_before_dispatch",
+                    Some(RunFailure::Policy),
+                )?;
+                return Err(error.into());
+            }
+        };
+        // Acquiring current backend authority may take time. Recheck controls
+        // after it, before reserving an attempt or starting a helper.
+        if self.store.cancel_requested(id)? {
+            cancel.cancel();
+        }
+        if cancel.is_cancelled() {
+            self.store
+                .transition(id, RunState::Cancelled, "cancelled_before_attempt", None)?;
+            return Err(RuntimeError::Cancelled);
+        }
         if let Some(path) = self.store.attempt(
             id,
             self.limits.max_attempts,
@@ -645,15 +812,29 @@ impl Runtime {
         )? {
             command.env("ROUTER_RUNTIME_LEASE", path);
         }
+        if self.store.cancel_requested(id)? {
+            cancel.cancel();
+        }
+        if cancel.is_cancelled() {
+            self.store.confirm_attempt_cleanup(id)?;
+            self.store.finish_attempt(id, "cancelled_before_spawn")?;
+            self.store
+                .transition(id, RunState::Cancelled, "cancelled_before_spawn", None)?;
+            return Err(RuntimeError::Cancelled);
+        }
         self.store
             .transition(id, RunState::Running, "spawn_requested", None)?;
-        let process = process::capture(
+        if self.store.cancel_requested(id)? {
+            cancel.cancel();
+        }
+        let process = process::capture_guarded(
             command,
             run.stdin.as_bytes().to_vec(),
             run.timeout_ms,
             run.max_output_bytes,
             self.limits.termination_grace_ms,
             &cancel,
+            dispatch,
         );
         tokio::pin!(process);
         let captured = loop {
@@ -676,15 +857,23 @@ impl Runtime {
         }
         let output = match captured {
             Ok(v) => v,
-            Err(error) => {
+            Err(RuntimeError::Cancelled) => {
+                self.store.finish_attempt(id, "cancelled_before_spawn")?;
                 self.store
-                    .finish_attempt(id, "spawn_or_supervision_failed")?;
-                self.store.transition(
-                    id,
-                    RunState::Failed,
-                    "spawn_or_supervision_failed",
-                    Some(RunFailure::Spawn),
-                )?;
+                    .transition(id, RunState::Cancelled, "cancelled_before_spawn", None)?;
+                return Err(RuntimeError::Cancelled);
+            }
+            Err(error) => {
+                // Expiry can cross its exclusive boundary between lease creation
+                // and the final synchronous spawn gate. No process was started.
+                let (reason, failure) = if matches!(error, RuntimeError::Decision(_)) {
+                    ("decision_rejected_at_dispatch", RunFailure::Policy)
+                } else {
+                    ("spawn_or_supervision_failed", RunFailure::Spawn)
+                };
+                self.store.finish_attempt(id, reason)?;
+                self.store
+                    .transition(id, RunState::Failed, reason, Some(failure))?;
                 return Err(error);
             }
         };
@@ -750,7 +939,7 @@ impl Runtime {
                 }
             }
             if let Err(error) =
-                self.capture_declared_artifacts(&pending, &output.stdout, &output.outcome)
+                self.capture_declared_artifacts(&pending, &output.stdout, &output.outcome, adapter)
             {
                 self.store
                     .transition(id, RunState::Verifying, "declared_output_check", None)?;
@@ -805,13 +994,20 @@ impl Runtime {
         pending: &PendingRun,
         adapter: &dyn HarnessAdapter,
         supervisor: &dyn SandboxSupervisor,
+        cancel: &Cancellation,
     ) -> Result<(PreparedRun, tokio::process::Command)> {
         if !supervisor.resource_limits_enforced() {
             return Err(RuntimeError::Sandbox);
         }
+        if cancel.is_cancelled() {
+            return Err(RuntimeError::Cancelled);
+        }
         let root = Path::new(&pending.request.workspace);
         if source_state(root).await? != pending.request.source_state {
             return Err(RuntimeError::SourceChanged);
+        }
+        if cancel.is_cancelled() {
+            return Err(RuntimeError::Cancelled);
         }
         self.validate_artifact_contract(
             pending.artifacts.as_ref(),
@@ -847,6 +1043,16 @@ impl Runtime {
                 now()?,
             )
             .map_err(|_| RuntimeError::Route)?;
+        if adapter.requires_native_version() {
+            let probe =
+                probe_native_version(supervisor, &initial, &self.store.root, cancel).await?;
+            adapter.validate_native_version(probe.stdout())?;
+            self.store
+                .event(id, "native.version_validated", &probe.output_sha256)?;
+        }
+        if cancel.is_cancelled() {
+            return Err(RuntimeError::Cancelled);
+        }
         supervisor.command(
             &initial,
             &SandboxPolicy {
@@ -890,6 +1096,9 @@ impl Runtime {
                     &digest("runtime-artifact-contract-v1", artifacts)?,
                 )?;
             }
+        }
+        if cancel.is_cancelled() {
+            return Err(RuntimeError::Cancelled);
         }
         workspace::safe_scope(Path::new(&request.workspace), &request.scope)?;
         let auth = execution_authorization_digest(
@@ -966,7 +1175,7 @@ impl Runtime {
         )?;
         let provider = semaphore(
             &self.providers,
-            pending.request.host.as_str(),
+            &provider_key(&pending.context, &pending.request.candidate_id),
             self.limits.provider_concurrency,
         )?;
         let mut result = Vec::new();
@@ -1026,11 +1235,7 @@ impl Runtime {
         {
             return Err(RuntimeError::Verification);
         }
-        if pending
-            .receipt
-            .selected
-            .as_ref()
-            .is_some_and(|s| s.candidate.verification == PhaseVerification::Independent)
+        if pending.decision.selection().candidate.verification == PhaseVerification::Independent
             && record.verifier == pending.node.owner
         {
             return Err(RuntimeError::Verification);
@@ -1184,6 +1389,7 @@ fn validate_binding(
     request: &ExecutionRequest,
     candidate: &PhaseCandidate,
     receipt: &PhaseReceipt,
+    authorization_id: &str,
     node: &WorkflowNode,
     context: &ValidatedPhaseContext,
     effective_capabilities: &BTreeSet<Capability>,
@@ -1202,7 +1408,7 @@ fn validate_binding(
     };
     let skills: BTreeSet<_> = request.skills.iter().map(|s| s.id.clone()).collect();
     if request.mode != ExecutionMode::Execute
-        || request.receipt_id != receipt.receipt_id
+        || request.receipt_id != authorization_id
         || request.candidate_id != candidate.id
         || request.phase != receipt.phase
         || request.model != candidate.model
@@ -1223,6 +1429,14 @@ fn validate_binding(
         return Err(RuntimeError::Route);
     }
     Ok(())
+}
+// Provider identity comes from the bound asset contract, never the host name.
+// All legacy/unknown providers share one conservative quota bucket.
+fn provider_key(context: &ValidatedPhaseContext, candidate_id: &str) -> String {
+    context.asset_requirements(candidate_id).map_or_else(
+        || "unknown-provider".into(),
+        |request| format!("known-provider:{}", request.provider),
+    )
 }
 fn semaphore(
     map: &Mutex<BTreeMap<String, Arc<Semaphore>>>,

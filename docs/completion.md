@@ -14,11 +14,11 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #3 | Local BM25 metadata retrieval | Complete | PR #14 merged at `363857d0010640ccd9fa8471a01123f0752bf8b3`; 249 local tests and six CI jobs passed |
 | #4 | Immutable phase routing and receipts | Complete | PR #14 merged at `363857d0010640ccd9fa8471a01123f0752bf8b3`; 249 local tests and six CI jobs passed |
 | #5 | Replay, golden corpus, shadow evaluations | Software implemented; human gate open | 100 complete candidate replays, 200 traces, 60/20/20 split; all human labels false |
-| #2 | Bounded optional semantic backends | Implemented in shadow only | Loopback timeout/schema/pool/confidence/fallback tests; no semantic production promotion |
+| #2 | Bounded optional semantic backends | Shadow and explicitly signed execution implemented; delivery in progress | Loopback timeout/schema/pool/confidence/fallback tests; durable activation proof rechecked at dispatch; human evidence gate remains closed for production |
 | #7 | Thin Codex and Claude adapters | Complete within the issue scope | PR #15 merged at `8b36b07aff508410a764f8feeefc62eaa0512935`; native canaries use a fake host under real macOS/Linux isolation; actual model behavior remains UNKNOWN |
-| #1 | Durable isolated execution | PR #15 merged; follow-up coordination and crash fix under validation | A real supervisor SIGKILL exposed missing process lifetime proof; issue reopened. Watchdog, durable leases and explicit group/namespace evidence now have targeted tests, including native macOS SIGKILL |
+| #1 | Durable isolated execution | Complete within the issue scope | PR #16 merged at `dfe7d9346093bf3b6bec4d423706301d1b7f1825` after 411 local tests and eight PR checks; watchdog, durable leases, coordination and native macOS/Linux SIGKILL recovery covered. PR #17 stabilizes the historical-expiry test |
 | #6 | Offline feedback and reversible policy | Complete within the issue scope | PR #15 merged with eight passing CI checks; consent-bound runtime recording, signed offline promotion and rollback tested; objective validation remains separate |
-| #8 | Distribution, licenses, notices, SBOM | Packaging validated; final snapshot pending | Strict license inventory and Gitleaks pass; extracted integrations: 41 tests; extracted core CLI without default adapters: 30 tests |
+| #8 | Distribution, licenses, notices, SBOM | Packaging validated; final snapshot pending | Strict license inventory and Gitleaks pass on the PR #16 snapshot; extracted integrations: 41 tests; extracted core CLI without default adapters: 39 tests. Rebuild required for subsequent changes |
 | #11 | Roadmap acceptance | Pending | All dependencies and the gaps below have evidence/disposition |
 
 ## Specification coverage beyond issue titles
@@ -49,8 +49,8 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 - Workflow instances isolate dependency satisfaction. The follow-up coordinator
   implements explicit waves, private declared outputs, immutable patch views for
   independent verification, generation budgets, durable controls and restart.
-  Its library pipeline and public CLI lifecycle passed native macOS tests with
-  fake hosts. Full snapshot and native Linux verification remain delivery gates.
+  Its library pipeline and public CLI lifecycle passed native macOS/Linux tests
+  with fake hosts in PR #16. Subsequent changes require their own delivery checks.
 - V3 model/provider/auth/context/format contracts and skill review manifests are
   implemented. CLI approval now requires this authority; the runtime rechecks the
   actual prepared bytes. Historical v1/v2 inputs remain readable. Evidence links
@@ -75,9 +75,29 @@ Closing an issue is a result of evidence, not a substitute for delivery.
   execution. A real native model's identity, effort and objective outcome still
   require observed evidence.
 
-Optional later vision: embeddings, daemon/API, graphical/TUI client, marketplace,
-complex learned model and Windows runtime. Their absence does not block the
-specified MVP, but is not evidence that every possible future feature exists.
+The user's full-project scope also includes the later phases: optional semantic
+retrieval, daemon/API, a local graphical or terminal client, signed packs,
+advanced learning and Windows runtime. These remain tracked in the exhaustive
+[remaining acceptance inventory](remaining-acceptance.md); MVP completion alone
+does not close the project.
+
+## Signed execution and optional hosts
+
+The current delivery adds durable signed backend activation, externally pinned
+trust roots and current-state locking through dispatch. Preparation, standalone
+runs, workflow coordination and feedback share the selected decision while
+preserving the original deterministic receipt. Historical verification remains
+possible after rollback; new dispatch fails. Changing the store locator or its
+pinned authority requires new approval, even for a byte-identical store copy.
+
+OpenCode and Copilot are explicit optional build features. Their approved binary
+receives a bounded, offline, read-only version probe before any worker/worktree.
+Native canaries use synthetic executable protocols under real OS containment;
+they establish neither vendor authentication nor observed model identity.
+
+PR #18 (`a5b0709ebeae0c3c871e2bd6309c2dd1de6ccde2`) delivered the repository
+presentation, feature table, author block and an offline routing GIF/MP4. Its
+post-merge macOS/Linux workflows passed. Demo timing is edited, not a benchmark.
 
 ## Acceptance that automated implementation cannot manufacture
 

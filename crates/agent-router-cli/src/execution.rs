@@ -5,7 +5,7 @@ use crate::{
     product::json_output,
 };
 use router_adapter_api::{HarnessAdapter, HostObservation, content_digest};
-use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
+use router_policy::{PhaseRouter, ValidatedPhaseContext};
 use router_runtime::{
     Cancellation, PendingRun, ResourceLimits, ResourceSupervisor, Runtime, RuntimeError,
     RuntimeLimits, SandboxSupervisor,
@@ -34,6 +34,8 @@ pub(crate) struct Definition {
     policy_artifact_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     asset_authority: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) backend_decision: Option<PathBuf>,
     plan: PathBuf,
     pub(crate) node_id: String,
     pub(crate) request: PathBuf,
@@ -84,6 +86,12 @@ pub(crate) struct SandboxConfig {
     pub(crate) feedback_store: Option<PathBuf>,
     #[serde(default)]
     pub(crate) output_retention: router_types::OutputRetentionPolicy,
+    #[cfg(feature = "opencode")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    opencode: Option<adapter_opencode::OpenCodeConfig>,
+    #[cfg(feature = "copilot")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    copilot: Option<adapter_copilot::CopilotConfig>,
 }
 
 pub(crate) fn error(error: RuntimeError) -> CliError {
@@ -109,6 +117,7 @@ pub(crate) fn error(error: RuntimeError) -> CliError {
         RuntimeError::Verification => "runtime.verification.required",
         RuntimeError::DependenciesPending => "runtime.dependencies.pending",
         RuntimeError::CleanupUnknown => "runtime.cleanup.unknown",
+        RuntimeError::Decision(_) => "runtime.decision.invalid_or_changed",
     })
 }
 pub(crate) fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
@@ -146,6 +155,7 @@ pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     value.policy = value.policy.map(|path| resolve(base, path));
     value.policy_store = value.policy_store.map(|path| resolve(base, path));
     value.asset_authority = value.asset_authority.map(|path| resolve(base, path));
+    value.backend_decision = value.backend_decision.map(|path| resolve(base, path));
     if value.policy_store.is_some() != value.policy_artifact_id.is_some() {
         return Err(CliError::Product("policy.artifact.required"));
     }
@@ -178,16 +188,19 @@ pub(crate) fn selection(
     definition: &Definition,
     router: &PhaseRouter,
     context: &ValidatedPhaseContext,
-) -> Result<ValidatedPhaseReceipt, CliError> {
+) -> Result<router_types::PhaseReceipt, CliError> {
     let receipt = match &definition.receipt {
         Some(path) => phases::read_json(path, DOCUMENT_LIMIT)?,
         None => router
             .route(context)
             .map_err(|_| CliError::Product("runtime.route.invalid"))?,
     };
-    router
-        .validate_receipt(context, &receipt)
-        .map_err(|_| CliError::Product("runtime.receipt.invalid"))
+    if definition.backend_decision.is_none() {
+        router
+            .validate_receipt(context, &receipt)
+            .map_err(|_| CliError::Product("runtime.receipt.invalid"))?;
+    }
+    Ok(receipt)
 }
 pub(crate) fn plan(path: &Path) -> Result<WorkflowPlan, CliError> {
     let value: serde_json::Value = phases::read_json(path, DOCUMENT_LIMIT)?;
@@ -276,9 +289,21 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     let existing = router_runtime::observe(store, &definition.run_id).map_err(error)?;
     let (router, context) = context(definition, true)?;
     let proof = selection(definition, &router, &context)?;
-    let request = phases::read_json(
+    let request: ExecutionRequest = phases::read_json(
         &definition.request,
         router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+    )?;
+    let loaded = crate::execution_backend::load(
+        definition.backend_decision.as_deref(),
+        &router,
+        &context,
+        &proof,
+        &crate::execution_backend::scope_hash(
+            &request.workspace,
+            &request.source_state,
+            &request.scope,
+        )?,
+        true,
     )?;
     let plan = plan(&definition.plan)?;
     let workflow = workflow_contract(definition)?;
@@ -291,29 +316,61 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     )
     .map_err(error)?;
     let pending = runtime
-        .reopen_selected(
+        .reopen_decision(
             &definition.run_id,
             &router,
             &context,
-            &proof,
+            &loaded.decision,
             request,
             plan,
             &definition.node_id,
             workflow
                 .as_ref()
                 .map(|(contract, generation)| (contract, *generation)),
+            None,
         )
         .map_err(error)?;
     Ok((runtime, pending))
 }
-pub(crate) fn adapter(host: &str) -> Result<Box<dyn HarnessAdapter>, CliError> {
+pub(crate) fn adapter(
+    host: &str,
+    _config: &SandboxConfig,
+) -> Result<Box<dyn HarnessAdapter>, CliError> {
     match host {
         #[cfg(feature = "codex")]
         "codex" => Ok(Box::new(adapter_codex::CodexAdapter)),
         #[cfg(feature = "claude")]
         "claude-code" => Ok(Box::new(adapter_claude::ClaudeAdapter)),
+        #[cfg(feature = "opencode")]
+        "opencode" => Ok(Box::new(
+            adapter_opencode::OpenCodeAdapter::new(
+                _config
+                    .opencode
+                    .clone()
+                    .ok_or(CliError::Product("runtime.opencode.configuration_required"))?,
+            )
+            .map_err(|_| CliError::Product("runtime.opencode.configuration"))?,
+        )),
+        #[cfg(feature = "copilot")]
+        "copilot" => Ok(Box::new(
+            adapter_copilot::CopilotAdapter::new(
+                _config
+                    .copilot
+                    .clone()
+                    .ok_or(CliError::Product("runtime.copilot.configuration_required"))?,
+            )
+            .map_err(|_| CliError::Product("runtime.copilot.configuration"))?,
+        )),
         _ => Err(CliError::Product("runtime.host.unavailable")),
     }
+}
+pub(crate) fn validate_adapter_config(host: &str, config: &SandboxConfig) -> Result<(), CliError> {
+    // Preserve legacy/core-only review without optional host features. New
+    // transports require their version/protocol pin even for a review.
+    if matches!(host, "opencode" | "copilot") {
+        adapter(host, config)?;
+    }
+    Ok(())
 }
 pub(crate) fn sandbox(path: &Path) -> Result<SandboxConfig, CliError> {
     let config: SandboxConfig = phases::read_json(path, 64 * 1024)?;
@@ -340,13 +397,15 @@ fn approval(
     pending: &PendingRun,
     config: &SandboxConfig,
     definition: &Definition,
+    backend: Option<&crate::execution_backend::AuthorityBinding>,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
-    approval_for_digest(pending.approval_digest(), config, definition)
+    approval_for_digest(pending.approval_digest(), config, definition, backend)
 }
 pub(crate) fn approval_for_digest(
     inner_digest: &str,
     config: &SandboxConfig,
     definition: &Definition,
+    backend: Option<&crate::execution_backend::AuthorityBinding>,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
     let mut hashes = BTreeMap::new();
     for path in config
@@ -374,13 +433,24 @@ pub(crate) fn approval_for_digest(
         )?;
         hashes.insert(wrapper, content_digest(&bytes));
     }
-    let bytes = serde_json::to_vec(&(
-        "runtime-cli-approval-v1",
-        inner_digest,
-        definition,
-        config,
-        &hashes,
-    ))
+    let bytes = if let Some(backend) = backend {
+        serde_json::to_vec(&(
+            "runtime-cli-approval-v2-backend",
+            inner_digest,
+            definition,
+            config,
+            &hashes,
+            backend,
+        ))
+    } else {
+        serde_json::to_vec(&(
+            "runtime-cli-approval-v1",
+            inner_digest,
+            definition,
+            config,
+            &hashes,
+        ))
+    }
     .map_err(|_| CliError::Internal)?;
     Ok((content_digest(&bytes), hashes))
 }
@@ -481,7 +551,20 @@ pub(crate) fn run(
             &definition.request,
             router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
         )?;
+        let loaded = crate::execution_backend::load(
+            definition.backend_decision.as_deref(),
+            &router,
+            &context,
+            &proof,
+            &crate::execution_backend::scope_hash(
+                &request.workspace,
+                &request.source_state,
+                &request.scope,
+            )?,
+            false,
+        )?;
         let host = request.host.as_str().to_owned();
+        validate_adapter_config(&host, &config)?;
         let display = serde_json::json!({"host": request.host, "model": request.model, "effort": request.effort,
             "scope": request.scope, "sandbox": request.sandbox, "tools": request.tools,
             "prompt_sha256": content_digest(request.prompt.as_bytes()), "resource_limits": config.limits});
@@ -494,17 +577,18 @@ pub(crate) fn run(
         )
         .map_err(error)?;
         let pending = runtime
-            .review_selected(
+            .review_decision(
                 &definition.run_id,
                 &router,
                 &context,
-                &proof,
+                &loaded.decision,
                 request,
                 plan(&definition.plan)?,
                 &definition.node_id,
                 workflow
                     .as_ref()
                     .map(|(contract, generation)| (contract, *generation)),
+                None,
             )
             .await
             .map_err(error)?;
@@ -513,11 +597,11 @@ pub(crate) fn run(
         } else {
             pending
         };
-        let (digest, binaries) = approval(&pending, &config, &definition)?;
+        let (digest, binaries) = approval(&pending, &config, &definition, loaded.binding.as_ref())?;
         let Some(approved) = approve else {
             return json_output(
                 &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":digest,
-                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"executed":false}),
+                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"execution_decision":loaded.decision.binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"executed":false}),
                 ExitCode::SUCCESS,
             );
         };
@@ -540,7 +624,7 @@ pub(crate) fn run(
                 ExitCode::from(3),
             );
         }
-        let adapter = adapter(&host)?;
+        let adapter = adapter(&host, &config)?;
         let supervisor = supervisor(store, config, &binaries).await?;
         let inner_digest = pending.approval_digest().to_owned();
         let approved = if pending.summary().state == router_types::RunState::Queued {
@@ -558,14 +642,20 @@ pub(crate) fn run(
             }
         });
         let completed = runtime
-            .execute(approved, adapter.as_ref(), supervisor.as_ref(), cancel)
+            .execute_decision(
+                approved,
+                adapter.as_ref(),
+                supervisor.as_ref(),
+                cancel,
+                loaded.authority(),
+            )
             .await;
         listener.abort();
         let completed = completed.map_err(error)?;
         let feedback = crate::execution_feedback::record(
             feedback_path.as_deref(),
             feedback_consent.as_ref(),
-            &proof,
+            &loaded.decision,
             &context,
             &completed,
         );
@@ -713,4 +803,79 @@ pub(crate) fn artifacts(
         };
         json_output(&value, ExitCode::SUCCESS)
     })
+}
+
+#[cfg(test)]
+mod adapter_configuration_tests {
+    use super::*;
+    use serde_json::json;
+
+    fn config_value() -> serde_json::Value {
+        json!({"schema_version":1,"programs":{"codex":"/bin/sh"},"read_roots":[],
+            "environment_names":[],"helper":"/bin/sh","bubblewrap":null,
+            "limits":{"cpu_seconds":5,"address_space_bytes":null,"max_open_files":64,
+                "max_processes":64,"max_file_bytes":1048576},"feedback_store":null,
+            "output_retention":{"mode":"none"}})
+    }
+    #[cfg(any(feature = "opencode", feature = "copilot"))]
+    fn definition() -> Definition {
+        serde_json::from_value(
+            json!({"schema_version":1,"run_id":"run-1","context":"context.json",
+            "host_snapshot":"host.json","catalog":"catalog.json","plan":"plan.json",
+            "node_id":"execute","request":"request.json"}),
+        )
+        .unwrap()
+    }
+    #[test]
+    fn absent_optional_host_config_keeps_legacy_approval_serialization() {
+        // Start from the actual serde default for retention, whose wire shape
+        // is owned by router-types rather than duplicated by this test.
+        let mut value = config_value();
+        value["output_retention"] =
+            serde_json::to_value(router_types::OutputRetentionPolicy::default()).unwrap();
+        let config: SandboxConfig = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(serde_json::to_value(config).unwrap(), value);
+    }
+    #[cfg(any(feature = "opencode", feature = "copilot"))]
+    #[test]
+    fn protocol_and_version_configuration_are_bound_to_execution_approval() {
+        let mut value = config_value();
+        value["output_retention"] =
+            serde_json::to_value(router_types::OutputRetentionPolicy::default()).unwrap();
+        #[cfg(feature = "opencode")]
+        let (host, extension) = (
+            "opencode",
+            json!({"schema_version":1,"expected_cli_version":"1.0.0-fixture",
+            "protocol":"run_v1","model_variants":{"synthetic/model-v1":{"high":"provider-high"}}}),
+        );
+        #[cfg(all(not(feature = "opencode"), feature = "copilot"))]
+        let (host, extension) = (
+            "copilot",
+            json!({"schema_version":1,"expected_cli_version":"1.0.0-fixture",
+            "protocol":"cli_jsonl_v1"}),
+        );
+        let absent: SandboxConfig = serde_json::from_value(value.clone()).unwrap();
+        assert!(adapter(host, &absent).is_err());
+        value[host] = extension;
+        let original: SandboxConfig = serde_json::from_value(value.clone()).unwrap();
+        assert!(
+            adapter(host, &original)
+                .unwrap_or_else(|_| panic!("valid adapter config"))
+                .requires_native_version()
+        );
+        let before = approval_for_digest(&"a".repeat(64), &original, &definition(), None)
+            .unwrap_or_else(|_| panic!("valid approval fixture"));
+        value[host]["expected_cli_version"] = json!("1.0.1-fixture");
+        let changed: SandboxConfig = serde_json::from_value(value).unwrap();
+        let after = approval_for_digest(&"a".repeat(64), &changed, &definition(), None)
+            .unwrap_or_else(|_| panic!("valid changed fixture"));
+        assert_eq!(
+            before.1, after.1,
+            "binary identity unchanged by version requirement"
+        );
+        assert_ne!(
+            before.0, after.0,
+            "configuration change requires fresh approval"
+        );
+    }
 }

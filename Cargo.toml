@@ -3,6 +3,9 @@ members = [
     "crates/router-prepare",
     "crates/router-asset-contracts",
     "crates/router-coordinator",
+    "crates/router-backend-policy",
+    "crates/router-execution-decision",
+    "crates/router-backend-store",
     "crates/router-types",
     "crates/router-workflow",
     "crates/router-eval",
@@ -18,6 +21,8 @@ members = [
     "crates/router-adapter-api",
     "crates/adapter-codex",
     "crates/adapter-claude",
+    "crates/adapter-opencode",
+    "crates/adapter-copilot",
     "crates/router-retrieval",
     "xtask",
 ]

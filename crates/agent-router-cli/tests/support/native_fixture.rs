@@ -113,7 +113,13 @@ pub(crate) fn asset_inputs(
     availability.observed_at_unix_seconds = now;
     availability.expires_at_unix_seconds = now + 300;
     for evidence in &mut availability.evidence {
-        evidence.observed_at_unix_seconds = now;
+        evidence.observed_at_unix_seconds = snapshot
+            .observation()
+            .evidence
+            .iter()
+            .find(|source| source.content_sha256 == evidence.source_sha256)
+            .expect("fixture evidence is bound to an existing native observation")
+            .observed_at_unix_seconds;
     }
     let availability = router_asset_contracts::seal_availability(availability, snapshot).unwrap();
     inputs.availability = router_asset_contracts::ValidatedAvailability::from_json(

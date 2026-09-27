@@ -39,5 +39,15 @@ jobs:
         run: cargo test -p router-runtime --test runtime native_supervisor_sigkill_recovery_waits_for_cleanup_proof --locked -- --ignored --exact --nocapture
       - name: Require public coordinator approval and integration lifecycle
         run: cargo test -p agent-router-cli --test coordinator native_coordinator_cli_run_verify_service_apply_and_purge --locked -- --ignored --exact --nocapture
+      - name: Require signed semantic selection under the native sandbox
+        run: cargo test -p router-runtime --test runtime native_activated_secondary_with_asset_gate_executes_under_real_sandbox --locked -- --ignored --exact --nocapture
+      - name: Require isolated native version probes
+        run: cargo test -p router-runtime --test native_version --locked -- --ignored --nocapture --test-threads=1
+      - name: Require durable cancellation during version probing
+        run: cargo test -p router-runtime --test runtime native_durable_cancel_during_version_probe_waits_for_cleanup_and_never_starts_worker --locked -- --ignored --exact --nocapture
+      - name: Require signed CLI execution and historical verification after rollback
+        run: cargo test -p agent-router-cli --test backend_execution native_alternate_feedback_and_historical_verification_after_rollback --locked -- --ignored --exact --nocapture
+      - name: Require pinned OpenCode and Copilot protocols under the native sandbox
+        run: cargo test -p agent-router-cli --all-features --test native_hosts --locked -- --ignored --nocapture --test-threads=1
       - name: Check runtime and helper warnings
         run: cargo clippy -p router-runtime -p router-sandbox-helper --all-targets --locked -- -D warnings

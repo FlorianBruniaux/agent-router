@@ -206,6 +206,7 @@ impl Runtime {
         pending: &PendingRun,
         stdout: &[u8],
         outcome: &TransportOutcome,
+        adapter: &dyn router_adapter_api::HarnessAdapter,
     ) -> Result<()> {
         let Some(contract) = &pending.artifacts else {
             return Ok(());
@@ -217,12 +218,31 @@ impl Runtime {
             .ok_or(RuntimeError::Integrity("missing instance"))?;
         for declaration in &contract.outputs {
             let bytes = match declaration.source {
-                DeclaredOutputSource::NativeFinalText => final_text(
-                    pending.request.host.as_str(),
-                    stdout,
-                    outcome,
-                    declaration.max_bytes,
-                )?,
+                DeclaredOutputSource::NativeFinalText => {
+                    if matches!(pending.request.host.as_str(), "codex" | "claude-code") {
+                        final_text(
+                            pending.request.host.as_str(),
+                            stdout,
+                            outcome,
+                            declaration.max_bytes,
+                        )?
+                    } else {
+                        if adapter.host() != pending.request.host.as_str() {
+                            return Err(RuntimeError::Adapter(
+                                router_adapter_api::AdapterError::HostMismatch,
+                            ));
+                        }
+                        let text = adapter
+                            .final_text(
+                                stdout,
+                                outcome.clone(),
+                                router_adapter_api::MAX_TRANSPORT_BYTES,
+                            )?
+                            .filter(|text| !text.trim().is_empty())
+                            .ok_or(RuntimeError::Verification)?;
+                        text.into_bytes()
+                    }
+                }
                 DeclaredOutputSource::Patch => workspace::read_artifact(
                     &self.store.root,
                     &run.run_id,

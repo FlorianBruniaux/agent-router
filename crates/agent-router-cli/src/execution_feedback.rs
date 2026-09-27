@@ -21,7 +21,7 @@ pub(crate) fn consent(path: Option<&Path>) -> Result<Option<FeedbackConsent>, Cl
 pub(crate) fn record(
     path: Option<&Path>,
     consent: Option<&FeedbackConsent>,
-    selection: &router_policy::ValidatedPhaseReceipt,
+    selection: &router_execution_decision::ExecutionDecision,
     context: &ValidatedPhaseContext,
     completion: &RunCompletion,
 ) -> serde_json::Value {
@@ -33,14 +33,18 @@ pub(crate) fn record(
     }
     let result = (|| {
         let now = crate::inspect::current_time(None).map_err(|_| ())?;
-        let receipt = selection.receipt();
-        if selection.context_hash() != context.context_hash()
-            || completion.run.receipt_id != receipt.receipt_id
+        let receipt = selection.baseline();
+        if receipt.context_hash != context.context_hash()
+            || completion.run.receipt_id != selection.authorization_id()
         {
             return Err(());
         }
         let selected = &selection.selection().candidate;
-        let input = feedback_input(context, completion, receipt, selected, now)?;
+        let mut input = feedback_input(context, completion, receipt, selected, now)?;
+        input.binding.receipt_hash = selection.authorization_id().into();
+        if let Some(binding) = selection.binding() {
+            input.binding.provenance_sha256 = digest(&(completion, receipt, binding))?;
+        }
         let store = FeedbackStore::open(path).map_err(|_| ())?;
         if store.consent().map_err(|_| ())? != *consent {
             return Err(());

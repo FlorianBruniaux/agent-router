@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod assets;
+mod backend_activation;
 mod catalogs;
 mod cli;
 mod command;
@@ -8,6 +9,7 @@ mod coordinator;
 mod diagnostics;
 mod evaluation;
 mod execution;
+mod execution_backend;
 mod execution_feedback;
 mod feedback;
 mod inspect;
@@ -121,6 +123,7 @@ fn report_error(error: CliError) -> ExitCode {
 
 fn run(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
         Commands::Assets { command } => match command {
             command::AssetCommand::Review {

@@ -60,7 +60,7 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Coordinated workflows** | Run approved waves, pass declared artifacts and require verification before integration. | `coordinate`, [coordination](docs/coordinator.md) |
 | **Explicit integration** | Preview, apply or discard a verified patch; control output retention and purge. | `artifacts`, [controls](docs/cli-execution.md) |
 | **Evaluation and feedback** | Replay decisions, compare policies offline and store consented, redacted feedback locally. | `replay`, `eval`, `feedback`, `policy` |
-| **Optional semantic proposals** | Compare a bounded local backend against the deterministic baseline in shadow mode. | `backend`, [boundaries](docs/backends.md) |
+| **Optional semantic decisions** | Compare proposals in shadow, then review signed evidence, activate explicitly and revoke before dispatch. | `backend`, `backend-activation`, [execution binding](docs/backend-execution.md) |
 | **Diagnostics and audit** | Inspect configuration, storage and evidence; export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
 | **Separate distributions** | Export core and integration workspaces with integrity manifests and license inventory. | [Distribution](docs/distribution.md) |
 
@@ -164,6 +164,7 @@ Later workflow steps receive only declared, bounded artifacts.
 | --- | --- |
 | **Codex** | CLI adapter, passive model-cache inspection and native stream decoding. Requested model identity remains separate from observed identity. |
 | **Claude Code** | CLI adapter and explicit native-stream inspection. Missing model or effort evidence remains unknown. |
+| **OpenCode / Copilot** | Optional CLI adapters with approved configuration and isolated version probes. Protocol fixtures and fake-host sandbox canaries are tested; native installations and providers remain unverified. [Setup and limits](docs/other-hosts.md). |
 | **Other hosts** | Integration descriptors and synthetic conformance fixtures are available. [Integration status](integrations/additional-hosts.md) records remaining native proof. |
 | **macOS** | Seatbelt supervisor and real local sandbox/recovery canaries. Process-group cleanup does not establish containment of detached descendants. |
 | **Linux** | Bubblewrap supervisor with PID namespace cleanup, exercised by [native runtime CI](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
@@ -182,6 +183,7 @@ an existing parent conversation.
 | [Coordinate a workflow](docs/coordinator.md) | [JSON contracts](docs/reference/json-contracts.md) |
 | [Search catalogs](docs/retrieval.md) | [Routing architecture](docs/adr/0002-bounded-routing-pipeline.md) |
 | [Evaluate decisions](docs/evaluation.md) | [Private feedback and offline policy](docs/feedback.md) |
+| [Execute signed backend decisions](docs/backend-execution.md) | [Activation and rollback](docs/backend-store.md) |
 | [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |
 | [Build source distributions](docs/distribution.md) | [Development harness](docs/harness.md) |
 

@@ -1,5 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
+    #[error("runtime.decision: {0}")]
+    Decision(#[from] router_execution_decision::DecisionError),
     #[error("runtime.invalid: {0}")]
     Invalid(&'static str),
     #[error("runtime.io: {0}")]

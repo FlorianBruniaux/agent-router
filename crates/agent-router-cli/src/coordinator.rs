@@ -3,7 +3,9 @@
 use crate::{
     CliError, Outcome, command::CoordinateCommand, execution, phases, product::json_output,
 };
-use router_coordinator::{Coordinator, CoordinatorError, PendingStep, StepExecution};
+use router_coordinator::{
+    Coordinator, CoordinatorError, DecisionStepExecution, PendingStep, StepExecution,
+};
 use router_runtime::{Runtime, RuntimeLimits};
 use router_types::*;
 use serde::{Deserialize, Serialize};
@@ -137,7 +139,7 @@ fn reopen(
         execution::Definition,
         router_policy::PhaseRouter,
         router_policy::ValidatedPhaseContext,
-        router_policy::ValidatedPhaseReceipt,
+        crate::execution_backend::LoadedDecision,
     ),
     CliError,
 > {
@@ -149,19 +151,31 @@ fn reopen(
     source.request = bundle.final_request.clone();
     let (router, context) = execution::context(&source, historical)?;
     let selection = execution::selection(&source, &router, &context)?;
-    let request = phases::read_json(
+    let request: ExecutionRequest = phases::read_json(
         &bundle.final_request,
         router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
     )?;
+    let loaded = crate::execution_backend::load(
+        source.backend_decision.as_deref(),
+        &router,
+        &context,
+        &selection,
+        &crate::execution_backend::scope_hash(
+            &request.workspace,
+            &request.source_state,
+            &request.scope,
+        )?,
+        historical,
+    )?;
     let artifacts = phases::read_json(&bundle.artifact_contract, LIMIT)?;
     let pending = coordinator
-        .reopen_step(
+        .reopen_step_decision(
             workflow,
             &bundle.node_id,
             bundle.generation,
             &router,
             &context,
-            &selection,
+            &loaded.decision,
             request,
             artifacts,
         )
@@ -169,7 +183,7 @@ fn reopen(
     if pending.summary().run_id != bundle.run_id {
         return Err(CliError::Product("coordinator.run.mismatch"));
     }
-    Ok((pending, source, router, context, selection))
+    Ok((pending, source, router, context, loaded))
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -240,11 +254,24 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             }
             let (router, context) = execution::context(&source, false)?;
             let selection = execution::selection(&source, &router, &context)?;
-            let request = phases::read_json(
+            let request: router_types::ExecutionRequest = phases::read_json(
                 &source.request,
                 router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
             )?;
             let config = execution::sandbox(&sandbox)?;
+            execution::validate_adapter_config(request.host.as_str(), &config)?;
+            let loaded = crate::execution_backend::load(
+                source.backend_decision.as_deref(),
+                &router,
+                &context,
+                &selection,
+                &crate::execution_backend::scope_hash(
+                    &request.workspace,
+                    &request.source_state,
+                    &request.scope,
+                )?,
+                false,
+            )?;
             // Refuse an existing bundle before registering anything in the store.
             if output_directory.exists() {
                 return Err(CliError::Product("coordinator.bundle.exists"));
@@ -254,8 +281,14 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let coordinator = owner(&store, runtime)?;
             coordinator.register(&workflow).map_err(error)?;
             let pending = coordinator
-                .review_step(
-                    &workflow, &node_id, generation, &router, &context, &selection, request,
+                .review_step_decision(
+                    &workflow,
+                    &node_id,
+                    generation,
+                    &router,
+                    &context,
+                    &loaded.decision,
+                    request,
                 )
                 .await
                 .map_err(error)?;
@@ -271,8 +304,12 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let directory = parent.join(name);
             source.run_id = pending.summary().run_id.clone();
             source.request = directory.join("request.json");
-            let (approval, binaries) =
-                execution::approval_for_digest(pending.approval_digest(), &config, &source)?;
+            let (approval, binaries) = execution::approval_for_digest(
+                pending.approval_digest(),
+                &config,
+                &source,
+                loaded.binding.as_ref(),
+            )?;
             let bundle = Bundle {
                 schema_version: 1,
                 workflow: absolute(&path)?,
@@ -298,7 +335,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 write_private(&directory.join(name), &content)?;
             }
             json_output(
-                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
+                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"execution_decision":loaded.decision.binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
                 ExitCode::SUCCESS,
             )
         }),
@@ -342,12 +379,17 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let mut adapters = Vec::new();
             let mut supervisors = Vec::new();
             let mut feedback = Vec::new();
+            let mut authorities = Vec::new();
             for (bundle, config, approval) in entries {
-                let (pending, source, _router, context, selection) =
+                let (pending, source, _router, context, loaded) =
                     reopen(&coordinator, &workflow, &bundle, false)?;
                 execution::require_asset_authority(&source)?;
-                let (digest, binaries) =
-                    execution::approval_for_digest(pending.approval_digest(), &config, &source)?;
+                let (digest, binaries) = execution::approval_for_digest(
+                    pending.approval_digest(),
+                    &config,
+                    &source,
+                    loaded.binding.as_ref(),
+                )?;
                 if approval != digest {
                     return Err(CliError::Product(
                         "coordinator.approval.required_or_changed",
@@ -355,7 +397,10 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 }
                 let feedback_path = config.feedback_store.clone();
                 let consent = crate::execution_feedback::consent(feedback_path.as_deref())?;
-                adapters.push(execution::adapter(pending.final_request().host.as_str())?);
+                adapters.push(execution::adapter(
+                    pending.final_request().host.as_str(),
+                    &config,
+                )?);
                 supervisors
                     .push(execution::supervisor(&store.join("runtime"), config, &binaries).await?);
                 feedback.push((
@@ -363,22 +408,31 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     feedback_path,
                     consent,
                     context,
-                    selection,
+                    loaded.decision,
                 ));
+                authorities.push(loaded.authority);
                 pending_steps.push(pending);
             }
             let mut jobs = Vec::new();
-            for ((pending, adapter), supervisor) in
-                pending_steps.into_iter().zip(&adapters).zip(&supervisors)
+            for (((pending, adapter), supervisor), authority) in pending_steps
+                .into_iter()
+                .zip(&adapters)
+                .zip(&supervisors)
+                .zip(&authorities)
             {
                 let digest = pending.approval_digest().to_owned();
                 let approved = coordinator
                     .approve_step(&workflow, pending, &digest)
                     .map_err(error)?;
-                jobs.push(StepExecution {
-                    step: approved,
-                    adapter: adapter.as_ref(),
-                    supervisor: supervisor.as_ref(),
+                jobs.push(DecisionStepExecution {
+                    execution: StepExecution {
+                        step: approved,
+                        adapter: adapter.as_ref(),
+                        supervisor: supervisor.as_ref(),
+                    },
+                    authority: authority
+                        .as_ref()
+                        .map(|store| store as &dyn router_execution_decision::ActivationAuthority),
                 });
             }
             let control = store.join("coordinator");
@@ -388,7 +442,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     let _ = router_coordinator::request_cancel(&control, &instance);
                 }
             });
-            let result = coordinator.run_ready(&workflow, jobs).await;
+            let result = coordinator.run_ready_decisions(&workflow, jobs).await;
             listener.abort();
             let result = result.map_err(error)?;
             let recorded:Vec<_>=result.completions.iter().filter_map(|completion|feedback.iter().find(|f|f.0==completion.run.run_id).map(|(_,path,consent,context,selection)|serde_json::json!({"run_id":completion.run.run_id,"feedback":crate::execution_feedback::record(path.as_deref(),consent.as_ref(),selection,context,completion)}))).collect();
@@ -424,8 +478,30 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let config = execution::sandbox(&bundle.sandbox)?;
             let summary = router_runtime::observe(&store.join("runtime"), &bundle.run_id)
                 .map_err(execution::error)?;
-            let (digest, _) =
-                execution::approval_for_digest(&summary.approval_digest, &config, &source)?;
+            let (router, context) = execution::context(&source, true)?;
+            let baseline = execution::selection(&source, &router, &context)?;
+            let request: ExecutionRequest = phases::read_json(
+                &source.request,
+                router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+            )?;
+            let loaded = crate::execution_backend::load(
+                source.backend_decision.as_deref(),
+                &router,
+                &context,
+                &baseline,
+                &crate::execution_backend::scope_hash(
+                    &request.workspace,
+                    &request.source_state,
+                    &request.scope,
+                )?,
+                true,
+            )?;
+            let (digest, _) = execution::approval_for_digest(
+                &summary.approval_digest,
+                &config,
+                &source,
+                loaded.binding.as_ref(),
+            )?;
             if approval != digest {
                 return Err(CliError::Product(
                     "coordinator.approval.required_or_changed",

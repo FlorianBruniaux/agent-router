@@ -8,14 +8,11 @@ pub(crate) fn validate(
     node: &WorkflowNode,
     request: &ExecutionRequest,
     context: &ValidatedPhaseContext,
-    receipt: &PhaseReceipt,
+    selected: &PhaseSelection,
 ) -> Result<Option<WorkflowRunBinding>> {
     if node.independent_verifier
         && (request.phase != StageKind::Verify
-            || receipt
-                .selected
-                .as_ref()
-                .is_none_or(|s| s.candidate.verification != PhaseVerification::Independent))
+            || selected.candidate.verification != PhaseVerification::Independent)
     {
         return Err(RuntimeError::Verification);
     }

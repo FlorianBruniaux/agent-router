@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+router-execution-decision = { path = "../router-execution-decision" }
 router-types = { path = "../router-types" }
 router-policy = { path = "../router-policy" }
 router-workflow = { path = "../router-workflow" }
@@ -19,3 +20,7 @@ thiserror.workspace = true
 router-asset-contracts = { path = "../router-asset-contracts" }
 router-catalog = { path = "../router-catalog" }
 tempfile.workspace = true
+router-backend-policy = { path = "../router-backend-policy" }
+router-decision = { path = "../router-decision" }
+router-eval = { path = "../router-eval" }
+ed25519-dalek = "=2.2.0"
