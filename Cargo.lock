@@ -52,7 +52,9 @@ dependencies = [
  "libc",
  "predicates",
  "router-adapter-api",
+ "router-asset-contracts",
  "router-catalog",
+ "router-coordinator",
  "router-decision",
  "router-doctor",
  "router-eval",
@@ -737,6 +739,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-asset-contracts"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "router-adapter-api",
+ "router-catalog",
+ "router-types",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror",
+]
+
+[[package]]
 name = "router-bridge-contract"
 version = "0.1.0"
 dependencies = [
@@ -760,6 +776,28 @@ dependencies = [
  "serde_json",
  "sha2",
  "thiserror",
+]
+
+[[package]]
+name = "router-coordinator"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "nix",
+ "router-adapter-api",
+ "router-asset-contracts",
+ "router-catalog",
+ "router-policy",
+ "router-runtime",
+ "router-types",
+ "router-workflow",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -837,6 +875,7 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "router-adapter-api",
+ "router-asset-contracts",
  "router-catalog",
  "router-types",
  "router-workflow",
@@ -851,6 +890,7 @@ name = "router-prepare"
 version = "0.1.0"
 dependencies = [
  "router-adapter-api",
+ "router-asset-contracts",
  "router-catalog",
  "router-policy",
  "router-retrieval",

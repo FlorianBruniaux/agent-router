@@ -135,6 +135,29 @@ impl BoundedDecisionContext {
     pub fn baseline(&self) -> &PhaseReceipt {
         &self.baseline
     }
+
+    /// Resolve a structurally valid proposal into this context's already
+    /// constrained selection. This read-only lookup is not activation authority.
+    /// Explicit backend abstention returns None; low confidence remains an error.
+    pub fn selection_for(
+        &self,
+        proposal: &BackendProposal,
+        minimum_confidence: u32,
+    ) -> Result<Option<&PhaseSelection>> {
+        match validate_proposal(&self.request, proposal, minimum_confidence) {
+            Ok(()) => {}
+            Err(BackendError::Abstained) => return Ok(None),
+            Err(error) => return Err(error),
+        }
+        let id = proposal
+            .candidate_id
+            .as_ref()
+            .ok_or(BackendError::Abstained)?;
+        self.selections
+            .get(id)
+            .map(Some)
+            .ok_or(BackendError::OutOfPool)
+    }
 }
 
 pub struct DeterministicBackend;

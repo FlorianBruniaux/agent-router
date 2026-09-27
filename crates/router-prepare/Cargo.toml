@@ -16,5 +16,6 @@ serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+router-asset-contracts = { path = "../router-asset-contracts" }
 router-catalog = { path = "../router-catalog" }
 tempfile.workspace = true

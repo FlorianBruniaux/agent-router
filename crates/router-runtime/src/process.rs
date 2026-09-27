@@ -51,10 +51,10 @@ pub(crate) struct Capture {
     pub outcome: TransportOutcome,
     pub output_limited: bool,
 }
-struct GroupGuard(u32);
+struct GroupGuard(Option<u32>);
 impl GroupGuard {
     fn signal(&self, signal: Signal) {
-        if let Ok(pid) = i32::try_from(self.0) {
+        if let Some(pid) = self.0.and_then(|id| i32::try_from(id).ok()) {
             let _ = killpg(Pid::from_raw(pid), signal);
         }
     }
@@ -62,6 +62,15 @@ impl GroupGuard {
 impl Drop for GroupGuard {
     fn drop(&mut self) {
         self.signal(Signal::SIGKILL);
+    }
+}
+
+// A detached Tokio task would retain the pipe after cancellation of capture.
+// Abort and drop it even when the surrounding future is dropped abruptly.
+struct InputGuard(tokio::task::JoinHandle<std::io::Result<Option<tokio::process::ChildStdin>>>);
+impl Drop for InputGuard {
+    fn drop(&mut self) {
+        self.0.abort();
     }
 }
 
@@ -84,23 +93,39 @@ pub(crate) async fn capture(
     if cancel.is_cancelled() {
         return Err(RuntimeError::Cancelled);
     }
+    let supervised = command.as_std().get_envs().any(|(key, value)| {
+        key == "ROUTER_RUNTIME_SUPERVISION" && value == Some(std::ffi::OsStr::new("framed-v1"))
+    });
+    if supervised && input.len() > 16 * 1024 * 1024 {
+        return Err(RuntimeError::Limit);
+    }
     command
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true);
+        .kill_on_drop(!supervised);
     command.process_group(0);
     let start = Instant::now();
     let mut child = command.spawn()?;
-    let guard = GroupGuard(child.id().ok_or(RuntimeError::Process)?);
+    let child_id = child.id().ok_or(RuntimeError::Process)?;
+    let mut guard = GroupGuard((!supervised).then_some(child_id));
     let mut stdin = child.stdin.take().ok_or(RuntimeError::Process)?;
     let stdout = child.stdout.take().ok_or(RuntimeError::Process)?;
     let stderr = child.stderr.take().ok_or(RuntimeError::Process)?;
-    let write = tokio::spawn(async move {
-        let result = stdin.write_all(&input).await;
-        drop(stdin);
-        result
-    });
+    let write = InputGuard(tokio::spawn(async move {
+        if supervised {
+            stdin.write_all(b"ARLIFE01").await?;
+            stdin.write_all(&(input.len() as u64).to_be_bytes()).await?;
+            stdin.write_all(&timeout_ms.to_be_bytes()).await?;
+            stdin.write_all(&grace_ms.to_be_bytes()).await?;
+        }
+        stdin.write_all(&input).await?;
+        if supervised {
+            Ok(Some(stdin))
+        } else {
+            Ok(None)
+        }
+    }));
     let count = Arc::new(AtomicUsize::new(0));
     let overflow = Cancellation::default();
     let out_task = tokio::spawn(read_bounded(
@@ -110,36 +135,26 @@ pub(crate) async fn capture(
         overflow.clone(),
     ));
     let err_task = tokio::spawn(read_bounded(stderr, count, max_bytes, overflow.clone()));
-    let (termination, status) = tokio::select! {
-        status=child.wait()=> (TransportTermination::Exited,Some(status?)),
-        _=tokio::time::sleep(Duration::from_millis(timeout_ms))=>(TransportTermination::TimedOut,None),
-        _=cancel.cancelled()=>(TransportTermination::Cancelled,None),
-        _=overflow.cancelled()=>(TransportTermination::Killed,None),
+    let termination = tokio::select! {
+        status=wait_without_reaping(child_id)=> {status?; TransportTermination::Exited},
+        _=tokio::time::sleep(Duration::from_millis(timeout_ms))=>TransportTermination::TimedOut,
+        _=cancel.cancelled()=>TransportTermination::Cancelled,
+        _=overflow.cancelled()=>TransportTermination::Killed,
     };
-    // Always clean the process group, including descendants that keep pipes open
-    // after their leader exits. The guard also kills it on future cancellation.
+    // Closing this pipe asks the surviving watchdog to clean its worker group.
+    // Never signal the watchdog first: SIGKILL would bypass its own cleanup.
+    drop(write);
+    // Raw probes retain group cleanup. The leader is still unreaped, so the
+    // identifier cannot refer to an unrelated newly allocated process group.
     guard.signal(Signal::SIGTERM);
-    let status = if let Some(status) = status {
-        Some(status)
-    } else {
-        tokio::time::timeout(Duration::from_millis(grace_ms), child.wait())
-            .await
-            .ok()
-            .transpose()?
-    };
-    if grace_ms > 0 {
+    if !supervised && grace_ms > 0 {
         tokio::time::sleep(Duration::from_millis(grace_ms)).await;
     }
     guard.signal(Signal::SIGKILL);
-    let status = match status {
-        Some(status) => Some(status),
-        None => Some(
-            tokio::time::timeout(Duration::from_secs(2), child.wait())
-                .await
-                .map_err(|_| RuntimeError::Process)??,
-        ),
-    };
-    write.abort();
+    guard.0 = None; // No signal, including Drop, is legal after reaping.
+    let status = tokio::time::timeout(Duration::from_millis(grace_ms + 3_000), child.wait())
+        .await
+        .map_err(|_| RuntimeError::Process)??;
     let stdout = tokio::time::timeout(Duration::from_secs(2), out_task)
         .await
         .map_err(|_| RuntimeError::Process)?
@@ -153,12 +168,29 @@ pub(crate) async fn capture(
         stderr,
         outcome: TransportOutcome {
             termination,
-            exit_code: status.and_then(|s| s.code()),
+            exit_code: status.code(),
             elapsed_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
         },
         output_limited: overflow.is_cancelled(),
     })
 }
+async fn wait_without_reaping(id: u32) -> Result<()> {
+    use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
+    let pid = Pid::from_raw(i32::try_from(id).map_err(|_| RuntimeError::Process)?)
+        .ok_or(RuntimeError::Process)?;
+    loop {
+        match waitid(
+            WaitId::Pid(pid),
+            WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
+        ) {
+            Ok(Some(_)) => return Ok(()),
+            Ok(None) | Err(rustix::io::Errno::INTR) => {}
+            Err(_) => return Err(RuntimeError::Process),
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+}
+
 async fn read_bounded(
     mut read: impl AsyncRead + Unpin,
     count: Arc<AtomicUsize>,

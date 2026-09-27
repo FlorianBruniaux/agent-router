@@ -1,6 +1,8 @@
 [workspace]
 members = [
-  "crates/router-prepare",
+    "crates/router-prepare",
+    "crates/router-asset-contracts",
+    "crates/router-coordinator",
     "crates/router-types",
     "crates/router-workflow",
     "crates/router-eval",

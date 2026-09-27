@@ -1,4 +1,7 @@
-use crate::{Result, RuntimeError, digest};
+use crate::{
+    Result, RuntimeError, digest,
+    leases::{LeaseRecord, LeaseStorage},
+};
 use nix::fcntl::{Flock, FlockArg};
 use router_types::{
     ExecutionRequest, ModelId, OutputArtifacts, OutputArtifactsState, OutputRetentionPolicy,
@@ -15,6 +18,7 @@ use std::{
 pub(crate) struct Store {
     db: Mutex<Connection>,
     pub root: PathBuf,
+    leases: LeaseStorage,
     _lock: Flock<File>,
 }
 
@@ -44,7 +48,7 @@ impl Store {
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 4 {
+        if version > 6 {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -89,6 +93,16 @@ impl Store {
             tx.commit()?;
             db.pragma_update(None, "foreign_keys", "ON")?;
         }
+        if version < 5 {
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE declared_artifacts(artifact_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(run_id), attempt INTEGER NOT NULL, label TEXT NOT NULL, record TEXT NOT NULL, identity TEXT, UNIQUE(run_id,attempt,label)); PRAGMA user_version=5;")?;
+            tx.commit()?;
+        }
+        if version < 6 {
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE attempt_leases(run_id TEXT NOT NULL REFERENCES runs(run_id), attempt INTEGER NOT NULL, record TEXT NOT NULL, resolved INTEGER NOT NULL DEFAULT 0 CHECK(resolved IN (0,1)), evidence TEXT, PRIMARY KEY(run_id,attempt)); CREATE TABLE cleanup_blocks(run_id TEXT PRIMARY KEY REFERENCES runs(run_id)); PRAGMA user_version=6;")?;
+            tx.commit()?;
+        }
         for suffix in ["", "-wal", "-shm"] {
             let path = root.join(format!("runtime.sqlite3{suffix}"));
             if path.exists() {
@@ -97,6 +111,7 @@ impl Store {
         }
         let store = Self {
             db: Mutex::new(db),
+            leases: LeaseStorage::open(&root)?,
             root,
             _lock: lock,
         };
@@ -221,6 +236,120 @@ impl Store {
     }
     pub fn get(&self, id: &str) -> Result<RunSummary> {
         load_opt(&*self.lock()?, id)?.ok_or(RuntimeError::NotFound)
+    }
+    pub fn reserve_declared_artifact(
+        &self,
+        metadata: &router_types::DeclaredArtifact,
+    ) -> Result<()> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let run = load_opt(&tx, &metadata.run_id)?.ok_or(RuntimeError::NotFound)?;
+        if run.state != RunState::SucceededTransport
+            || run.workflow.as_ref() != Some(&metadata.workflow)
+            || run.node_id != metadata.node_id
+            || run.attempts != metadata.attempt
+            || run.artifact_contract_sha256.is_none()
+            || metadata.state != router_types::DeclaredArtifactState::Pending
+        {
+            return Err(RuntimeError::Integrity("declared output authority"));
+        }
+        tx.execute(
+            "INSERT INTO declared_artifacts VALUES(?1,?2,?3,?4,?5,NULL)",
+            params![
+                metadata.artifact_id,
+                metadata.run_id,
+                metadata.attempt,
+                metadata.label,
+                serde_json::to_string(metadata)?
+            ],
+        )?;
+        append(&tx, &run, "artifact.declared", &metadata.artifact_id)?;
+        tx.commit()?;
+        Ok(())
+    }
+    pub fn declared_artifact_identity(
+        &self,
+        id: &str,
+        identity: &crate::outputs::FileIdentity,
+    ) -> Result<()> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        if tx.execute(
+            "UPDATE declared_artifacts SET identity=?2 WHERE artifact_id=?1 AND identity IS NULL",
+            params![id, serde_json::to_string(identity)?],
+        )? != 1
+        {
+            return Err(RuntimeError::Integrity("result identity registration"));
+        }
+        tx.commit()?;
+        Ok(())
+    }
+    pub fn declared_artifact(
+        &self,
+        id: &str,
+    ) -> Result<(
+        router_types::DeclaredArtifact,
+        Option<crate::outputs::FileIdentity>,
+    )> {
+        let value: Option<(String, Option<String>)> = self
+            .lock()?
+            .query_row(
+                "SELECT record,identity FROM declared_artifacts WHERE artifact_id=?1",
+                [id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?;
+        let (record, identity) = value.ok_or(RuntimeError::NotFound)?;
+        Ok((
+            serde_json::from_str(&record)?,
+            identity.map(|v| serde_json::from_str(&v)).transpose()?,
+        ))
+    }
+    pub fn declared_artifacts(&self, run: &str) -> Result<Vec<router_types::DeclaredArtifact>> {
+        let db = self.lock()?;
+        load_opt(&db, run)?.ok_or(RuntimeError::NotFound)?;
+        let mut query = db.prepare(
+            "SELECT record FROM declared_artifacts WHERE run_id=?1 ORDER BY attempt,label",
+        )?;
+        let records = query.query_map([run], |r| r.get::<_, String>(0))?;
+        records.map(|v| Ok(serde_json::from_str(&v?)?)).collect()
+    }
+    pub fn declared_artifact_state(
+        &self,
+        id: &str,
+        next: router_types::DeclaredArtifactState,
+    ) -> Result<router_types::DeclaredArtifact> {
+        use router_types::DeclaredArtifactState::*;
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let record: String = tx.query_row(
+            "SELECT record FROM declared_artifacts WHERE artifact_id=?1",
+            [id],
+            |r| r.get(0),
+        )?;
+        let mut metadata: router_types::DeclaredArtifact = serde_json::from_str(&record)?;
+        if metadata.state != next
+            && !matches!(
+                (metadata.state, next),
+                (Pending, Retained | Purging) | (Retained, Purging) | (Purging, Purged)
+            )
+        {
+            return Err(RuntimeError::Transition);
+        }
+        metadata.state = next;
+        tx.execute(
+            "UPDATE declared_artifacts SET record=?2 WHERE artifact_id=?1",
+            params![id, serde_json::to_string(&metadata)?],
+        )?;
+        let run = load_opt(&tx, &metadata.run_id)?.ok_or(RuntimeError::NotFound)?;
+        append(
+            &tx,
+            &run,
+            "artifact.state",
+            &digest("runtime-declared-artifact-v1", &metadata)?,
+        )?;
+        tx.commit()?;
+        Ok(metadata)
     }
     pub fn reserve_output_artifacts(&self, metadata: &OutputArtifacts) -> Result<()> {
         let mut db = self.lock()?;
@@ -439,7 +568,14 @@ impl Store {
         run.failure = failure;
         save(&tx, &run)?;
         append(&tx, &run, "transition", detail)?;
-        if next.terminal() {
+        if next.terminal()
+            && tx
+                .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
+                .exists([id])?
+        {
+            tx.execute("INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)", [id])?;
+        }
+        if next.terminal() && !cleanup_blocked(&tx, Some(id))? {
             tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [id])?;
         }
         tx.commit()?;
@@ -453,14 +589,36 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
-    pub fn attempt(&self, id: &str, max: u32) -> Result<u32> {
+    pub fn require_cleanup_complete(&self) -> Result<()> {
+        if cleanup_blocked(&*self.lock()?, None)? {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        Ok(())
+    }
+    pub fn cleanup_evidence(&self, id: &str) -> Result<router_types::ProcessCleanupEvidence> {
+        cleanup_evidence(&*self.lock()?, id)
+    }
+    pub fn attempt(&self, id: &str, max: u32, supervised: bool) -> Result<Option<PathBuf>> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
         if run.state != RunState::Preparing || workflow_attempts(&tx, &run)? >= max {
             return Err(RuntimeError::Limit);
         }
+        if cleanup_blocked(&tx, None)? {
+            return Err(RuntimeError::CleanupUnknown);
+        }
         run.attempts += 1;
+        let lease = if supervised {
+            let (record, path) = self.leases.create(id, run.attempts)?;
+            tx.execute(
+                "INSERT INTO attempt_leases(run_id,attempt,record) VALUES(?1,?2,?3)",
+                params![id, run.attempts, serde_json::to_string(&record)?],
+            )?;
+            Some(path)
+        } else {
+            None
+        };
         tx.execute(
             "INSERT INTO run_attempts VALUES(?1,?2,'started')",
             params![id, run.attempts],
@@ -468,7 +626,40 @@ impl Store {
         save(&tx, &run)?;
         append(&tx, &run, "attempt.started", "")?;
         tx.commit()?;
-        Ok(run.attempts)
+        Ok(lease)
+    }
+    pub fn confirm_attempt_cleanup(&self, id: &str) -> Result<()> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        let record: Option<String> = tx
+            .query_row(
+                "SELECT record FROM attempt_leases WHERE run_id=?1 AND attempt=?2",
+                params![id, run.attempts],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let Some(record) = record else {
+            return Ok(());
+        };
+        let proof = serde_json::from_str::<LeaseRecord>(&record)
+            .map_err(|_| RuntimeError::CleanupUnknown)
+            .and_then(|record| self.leases.cleanup_proof(id, run.attempts, &record));
+        match proof {
+            Ok(proof) => {
+                let evidence = serde_json::to_string(&proof.evidence)?;
+                tx.execute("UPDATE attempt_leases SET resolved=1,evidence=?3 WHERE run_id=?1 AND attempt=?2",params![id,run.attempts,evidence])?;
+                append(&tx, &run, "process.cleanup_confirmed", &evidence)?;
+                tx.commit()?;
+                Ok(())
+            }
+            Err(_) => {
+                tx.execute("INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)", [id])?;
+                append(&tx, &run, "process.cleanup_unknown", "authority_retained")?;
+                tx.commit()?;
+                Err(RuntimeError::CleanupUnknown)
+            }
+        }
     }
     pub fn finish_attempt(&self, id: &str, status: &str) -> Result<()> {
         let mut db = self.lock()?;
@@ -485,6 +676,9 @@ impl Store {
     pub fn retry(&self, id: &str, max: u32) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        if cleanup_blocked(&tx, None)? {
+            return Err(RuntimeError::CleanupUnknown);
+        }
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
         let obsolete = if let Some(binding) = &run.workflow {
             workflow_node(&tx, &binding.instance_id, &run.node_id)?
@@ -550,6 +744,21 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
+    pub fn verification_record(
+        &self,
+        id: &str,
+    ) -> Result<Option<router_types::VerificationRecord>> {
+        let db = self.lock()?;
+        load_opt(&db, id)?.ok_or(RuntimeError::NotFound)?;
+        let value: Option<String> = db
+            .query_row(
+                "SELECT record FROM verifications WHERE run_id=?1",
+                [id],
+                |row| row.get(0),
+            )
+            .optional()?;
+        value.map(|v| Ok(serde_json::from_str(&v)?)).transpose()
+    }
     pub fn verification(&self, id: &str, record: &router_types::VerificationRecord) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -586,9 +795,41 @@ impl Store {
             q.query_map([], |r| r.get::<_, String>(0))?
                 .collect::<std::result::Result<Vec<_>, _>>()?
         };
+        let mut cleanup_locks = Vec::new();
         for value in values {
             let mut run: RunSummary = serde_json::from_str(&value)?;
-            if matches!(run.state, RunState::Preparing | RunState::Running) {
+            if matches!(run.state, RunState::Preparing | RunState::Running)
+                || cleanup_blocked(&tx, Some(&run.run_id))?
+            {
+                let lease: Option<(String, bool)> = tx
+                    .query_row(
+                        "SELECT record,resolved FROM attempt_leases WHERE run_id=?1 AND attempt=?2",
+                        params![run.run_id, run.attempts],
+                        |r| Ok((r.get(0)?, r.get(1)?)),
+                    )
+                    .optional()?;
+                let safe = if let Some((record, resolved)) = lease {
+                    if resolved {
+                        true
+                    } else {
+                        match serde_json::from_str::<LeaseRecord>(&record)
+                            .ok()
+                            .and_then(|record| {
+                                self.leases
+                                    .cleanup_proof(&run.run_id, run.attempts, &record)
+                                    .ok()
+                            }) {
+                            Some(lock) => {
+                                tx.execute("UPDATE attempt_leases SET resolved=1,evidence=?3 WHERE run_id=?1 AND attempt=?2",params![run.run_id,run.attempts,serde_json::to_string(&lock.evidence)?])?;
+                                cleanup_locks.push(lock);
+                                true
+                            }
+                            None => false,
+                        }
+                    }
+                } else {
+                    run.state == RunState::Preparing
+                };
                 run.state = RunState::Failed;
                 run.failure = Some(RunFailure::Interrupted);
                 save(&tx, &run)?;
@@ -596,9 +837,21 @@ impl Store {
                     &tx,
                     &run,
                     "recovery.interrupted",
-                    "process_liveness_unknown_no_replay",
+                    if safe {
+                        "cleanup_confirmed_no_replay"
+                    } else {
+                        "cleanup_unknown_authority_retained"
+                    },
                 )?;
-                tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [&run.run_id])?;
+                if safe {
+                    tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [&run.run_id])?;
+                    tx.execute("DELETE FROM cleanup_blocks WHERE run_id=?1", [&run.run_id])?;
+                } else {
+                    tx.execute(
+                        "INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)",
+                        [&run.run_id],
+                    )?;
+                }
             } else if run.state == RunState::SucceededTransport {
                 run.state = RunState::Verifying;
                 save(&tx, &run)?;
@@ -606,8 +859,19 @@ impl Store {
             }
         }
         tx.commit()?;
+        drop(cleanup_locks);
         Ok(())
     }
+}
+fn cleanup_blocked(db: &Connection, id: Option<&str>) -> Result<bool> {
+    Ok(match id {
+        Some(id) => db
+            .prepare("SELECT 1 FROM cleanup_blocks WHERE run_id=?1")?
+            .exists([id])?,
+        None => db
+            .prepare("SELECT 1 FROM cleanup_blocks LIMIT 1")?
+            .exists([])?,
+    })
 }
 fn load_opt(db: &Connection, id: &str) -> Result<Option<RunSummary>> {
     let text: Option<String> = db
@@ -700,6 +964,29 @@ pub fn observe(root: &Path, id: &str) -> Result<RunSummary> {
     verify_events(&db)?;
     load_opt(&db, id)?.ok_or(RuntimeError::NotFound)
 }
+/// Read-only evidence inspection is available while the supervision owner runs.
+pub fn observe_cleanup(root: &Path, id: &str) -> Result<router_types::ProcessCleanupEvidence> {
+    let db = control_connection(root, false)?;
+    verify_events(&db)?;
+    cleanup_evidence(&db, id)
+}
+fn cleanup_evidence(db: &Connection, id: &str) -> Result<router_types::ProcessCleanupEvidence> {
+    let run = load_opt(db, id)?.ok_or(RuntimeError::NotFound)?;
+    if db.pragma_query_value(None, "user_version", |row| row.get::<_, u32>(0))? < 6 {
+        return Ok(router_types::ProcessCleanupEvidence::Unknown);
+    }
+    let evidence: Option<Option<String>> = db
+        .query_row(
+            "SELECT evidence FROM attempt_leases WHERE run_id=?1 AND attempt=?2",
+            params![id, run.attempts],
+            |r| r.get(0),
+        )
+        .optional()?;
+    Ok(match evidence.flatten() {
+        Some(value) => serde_json::from_str(&value)?,
+        None => router_types::ProcessCleanupEvidence::Unknown,
+    })
+}
 pub fn observe_events(root: &Path, id: &str) -> Result<Vec<RuntimeEvent>> {
     let db = control_connection(root, false)?;
     verify_events(&db)?;
@@ -765,7 +1052,7 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2..=4
+        2..=6
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
@@ -885,6 +1172,7 @@ mod tests {
             artifact_sha256: None,
             output_retention: OutputRetentionPolicy::Disabled,
             workflow: None,
+            artifact_contract_sha256: None,
         }
     }
     #[test]
@@ -897,7 +1185,7 @@ mod tests {
         drop(store);
         let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
         db.execute_batch("PRAGMA foreign_keys=OFF;
-            DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
+            DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
             CREATE TABLE old_runs(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL, UNIQUE(plan_id,node_id));
             INSERT INTO old_runs SELECT * FROM runs; DROP TABLE runs; ALTER TABLE old_runs RENAME TO runs;
             PRAGMA user_version=3;").unwrap();
@@ -992,7 +1280,209 @@ mod tests {
             Some(RunFailure::Interrupted)
         );
         assert_eq!(store.get("run").unwrap().state, RunState::Failed);
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
         store.verify_events().unwrap();
+    }
+    #[test]
+    fn recovery_requires_private_lease_proof_before_releasing_writer_authority() {
+        for status in [
+            "pending",
+            "group-clean",
+            "namespace-clean",
+            "active",
+            "corrupt",
+            "absent",
+            "symlink",
+            "held",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = temp.path().join("data");
+            let store = Store::open(&root).unwrap();
+            store.register(&summary("run")).unwrap();
+            store.register(&summary("next")).unwrap();
+            for state in [
+                RunState::AwaitingApproval,
+                RunState::Queued,
+                RunState::Preparing,
+            ] {
+                store.transition("run", state, "", None).unwrap();
+            }
+            store
+                .writer_lock("run", "/fixture/repo", &["src".into()])
+                .unwrap();
+            let path = store.attempt("run", 2, true).unwrap().unwrap();
+            assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o077, 0);
+            store
+                .transition("run", RunState::Running, "", None)
+                .unwrap();
+            let held = match status {
+                "absent" => {
+                    fs::remove_file(&path).unwrap();
+                    None
+                }
+                "symlink" => {
+                    fs::remove_file(&path).unwrap();
+                    std::os::unix::fs::symlink(temp.path().join("unowned"), &path).unwrap();
+                    None
+                }
+                "held" => Some(
+                    Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock)
+                        .unwrap(),
+                ),
+                _ => {
+                    fs::write(&path, format!("router-runtime-lease-v1:{status}\n")).unwrap();
+                    None
+                }
+            };
+            drop(store);
+            let store = Store::open(&root).unwrap();
+            assert_eq!(
+                store.get("run").unwrap().failure,
+                Some(RunFailure::Interrupted)
+            );
+            let expected = match status {
+                "pending" => Some(router_types::ProcessCleanupEvidence::NotStarted),
+                "group-clean" => Some(router_types::ProcessCleanupEvidence::GroupTerminated),
+                "namespace-clean" => {
+                    Some(router_types::ProcessCleanupEvidence::NamespaceTerminated)
+                }
+                _ => None,
+            };
+            if let Some(expected) = expected {
+                store.require_cleanup_complete().unwrap();
+                assert_eq!(store.cleanup_evidence("run").unwrap(), expected);
+                store
+                    .writer_lock("next", "/fixture/repo", &["src".into()])
+                    .unwrap();
+                if status == "pending" {
+                    assert_eq!(
+                        fs::read(&path).unwrap(),
+                        b"router-runtime-lease-v1:recovered\n"
+                    );
+                }
+            } else {
+                assert!(
+                    matches!(
+                        store.require_cleanup_complete(),
+                        Err(RuntimeError::CleanupUnknown)
+                    ),
+                    "{status}"
+                );
+                assert!(
+                    matches!(
+                        store.writer_lock("next", "/fixture/repo", &["src".into()]),
+                        Err(RuntimeError::Scope)
+                    ),
+                    "{status}"
+                );
+                assert!(
+                    matches!(store.retry("run", 2), Err(RuntimeError::CleanupUnknown)),
+                    "{status}"
+                );
+            }
+            assert!(!temp.path().join("unowned").exists());
+            drop(held);
+        }
+    }
+    #[test]
+    fn unsafe_normal_completion_retains_writer_lock_and_later_proof_reconciles() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        store.register(&summary("next")).unwrap();
+        for state in [
+            RunState::AwaitingApproval,
+            RunState::Queued,
+            RunState::Preparing,
+        ] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        store
+            .writer_lock("run", "/fixture/repo", &["src".into()])
+            .unwrap();
+        let path = store.attempt("run", 2, true).unwrap().unwrap();
+        fs::write(&path, b"router-runtime-lease-v1:active\n").unwrap();
+        store
+            .transition("run", RunState::Running, "", None)
+            .unwrap();
+        assert!(matches!(
+            store.confirm_attempt_cleanup("run"),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        store
+            .transition(
+                "run",
+                RunState::Failed,
+                "cleanup_unknown",
+                Some(RunFailure::Interrupted),
+            )
+            .unwrap();
+        assert!(matches!(
+            store.writer_lock("next", "/fixture/repo", &["src".into()]),
+            Err(RuntimeError::Scope)
+        ));
+        fs::write(&path, b"router-runtime-lease-v1:group-clean\n").unwrap();
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        store.require_cleanup_complete().unwrap();
+        store
+            .writer_lock("next", "/fixture/repo", &["src".into()])
+            .unwrap();
+        assert_eq!(store.get("run").unwrap().attempts, 1);
+    }
+    #[test]
+    fn corrupt_lease_record_cannot_release_a_writer_on_error_transition() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("data")).unwrap();
+        store.register(&summary("run")).unwrap();
+        store.register(&summary("next")).unwrap();
+        for state in [
+            RunState::AwaitingApproval,
+            RunState::Queued,
+            RunState::Preparing,
+        ] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        store
+            .writer_lock("run", "/fixture/repo", &["src".into()])
+            .unwrap();
+        store.attempt("run", 2, true).unwrap();
+        store
+            .transition("run", RunState::Running, "", None)
+            .unwrap();
+        store
+            .lock()
+            .unwrap()
+            .execute("UPDATE attempt_leases SET record='invalid-json'", [])
+            .unwrap();
+        assert!(matches!(
+            store.confirm_attempt_cleanup("run"),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        store
+            .transition(
+                "run",
+                RunState::Failed,
+                "cleanup_unknown",
+                Some(RunFailure::Interrupted),
+            )
+            .unwrap();
+        assert!(matches!(
+            store.writer_lock("next", "/fixture/repo", &["src".into()]),
+            Err(RuntimeError::Scope)
+        ));
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert_eq!(
+            observe_cleanup(&store.root, "run").unwrap(),
+            router_types::ProcessCleanupEvidence::Unknown
+        );
     }
     #[test]
     fn exclusive_lock_private_files_append_only_and_tamper_detection() {

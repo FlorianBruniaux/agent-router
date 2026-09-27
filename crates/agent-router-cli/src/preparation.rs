@@ -19,6 +19,7 @@ struct Manifest {
     catalog: PathBuf,
     policy: Option<PathBuf>,
     policy_store: Option<PathBuf>,
+    asset_authority: Option<PathBuf>,
     plan: PathBuf,
     node_id: String,
     metadata: PathBuf,
@@ -84,6 +85,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         catalog: resolve(base, manifest.catalog),
         policy: manifest.policy.map(|p| resolve(base, p)),
         policy_store: manifest.policy_store.map(|p| resolve(base, p)),
+        asset_authority: manifest.asset_authority.map(|p| resolve(base, p)),
         now: Some(options.now_unix_seconds),
         snapshot_max_age_seconds: options.max_snapshot_age_seconds,
     };
@@ -169,6 +171,10 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
                 (Some("policy.json"), None, None)
             };
         let mut definition = serde_json::json!({"schema_version":1,"run_id":manifest.run_id,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":policy_file,"policy_store":policy_store,"policy_artifact_id":policy_artifact_id,"plan":"plan.json","node_id":manifest.node_id,"request":"request.json","receipt":"receipt.json"});
+        if let Some(path) = &inputs.asset_authority {
+            definition["asset_authority"] =
+                serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
+        }
         if workflow.is_some() {
             definition["workflow_contract"] = serde_json::json!("workflow-contract.json");
             definition["generation"] = serde_json::json!(manifest.generation);

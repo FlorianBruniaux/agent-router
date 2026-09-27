@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 //! Dedicated child: resource limits never modify the router parent.
+mod watchdog;
 use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
 use std::{
     ffi::{OsStr, OsString},
@@ -14,7 +15,8 @@ fn main() {
     }
 }
 fn run() -> Result<(), &'static str> {
-    let mut args = std::env::args_os().skip(1);
+    let all_args: Vec<OsString> = std::env::args_os().skip(1).collect();
+    let mut args = all_args.clone().into_iter();
     let mut values = Vec::new();
     for (index, name) in [
         "--cpu-seconds",
@@ -54,6 +56,11 @@ fn run() -> Result<(), &'static str> {
             return Err("bounds");
         }
     }
+    let next = args.next().ok_or("arguments")?;
+    if next == "--supervise-v1" {
+        let code = watchdog::supervise(all_args[..10].to_vec(), args.collect())?;
+        std::process::exit(code);
+    }
     let resources = [
         Resource::Cpu,
         Resource::As,
@@ -90,7 +97,6 @@ fn run() -> Result<(), &'static str> {
         },
     )
     .map_err(|_| "core_limit")?;
-    let next = args.next().ok_or("arguments")?;
     if next == "--probe" {
         if args.next().is_some() {
             return Err("arguments");

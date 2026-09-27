@@ -31,3 +31,9 @@ pub use feedback::*;
 
 mod doctor;
 pub use doctor::*;
+
+mod asset_contracts;
+pub use asset_contracts::*;
+
+mod coordinator;
+pub use coordinator::*;

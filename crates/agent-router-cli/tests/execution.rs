@@ -21,6 +21,98 @@ fn output(assert: assert_cmd::assert::Assert) -> Value {
     serde_json::from_slice(&assert.get_output().stdout).unwrap()
 }
 
+// Synthetic test contracts only. Native tests below establish OS containment,
+// not provider authentication, model limits or live model availability.
+#[path = "../../router-policy/tests/support/asset_fixture.rs"]
+mod asset_fixture;
+
+fn asset_inputs(
+    request: &PhaseRouteRequest,
+    snapshot: &ValidatedHostObservation,
+    catalog: &Catalog,
+    workspace: &Path,
+    source_state: &str,
+    now: u64,
+) -> router_policy::PhaseAssetInputs {
+    let mut historical = snapshot.observation().clone();
+    historical.observed_at_unix_seconds = 100;
+    for evidence in &mut historical.evidence {
+        evidence.observed_at_unix_seconds = 100;
+    }
+    let historical = ValidatedHostObservation::from_observation(
+        historical.seal().unwrap(),
+        SnapshotValidation {
+            now_unix_seconds: 100,
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    let mut inputs = asset_fixture::inputs(
+        request,
+        &historical,
+        catalog,
+        router_policy::PhaseExecutionScope {
+            workspace: workspace.to_str().unwrap().into(),
+            source_state: source_state.into(),
+            scope: vec!["src".into()],
+        },
+        &std::collections::BTreeMap::new(),
+        4000,
+    );
+    let mut availability = inputs.availability.document().clone();
+    availability.snapshot_hash = snapshot.hash().into();
+    availability.observed_at_unix_seconds = now;
+    availability.expires_at_unix_seconds = now + 300;
+    for evidence in &mut availability.evidence {
+        evidence.observed_at_unix_seconds = now;
+    }
+    let availability = router_asset_contracts::seal_availability(availability, snapshot).unwrap();
+    inputs.availability = router_asset_contracts::ValidatedAvailability::from_json(
+        &serde_json::to_vec(&availability).unwrap(),
+        snapshot,
+        &availability.content_hash,
+        now,
+    )
+    .unwrap();
+    inputs.policy.maximum_evidence_age_seconds = 300;
+    for candidate in &request.candidates {
+        let extension = inputs.requests.get_mut(&candidate.id).unwrap();
+        extension
+            .required_capabilities
+            .extend(&request.task.required_capabilities);
+        if candidate.sandbox == PhaseSandbox::WorkspaceWrite {
+            extension
+                .required_capabilities
+                .insert(Capability::WorkspaceWrite);
+            extension
+                .required_mutations
+                .insert(Mutation::WorkspaceWrite);
+        }
+    }
+    inputs
+}
+
+fn write_asset_authority(root: &Path, inputs: &router_policy::PhaseAssetInputs) {
+    write(
+        &root.join("asset-contracts.json"),
+        inputs.contracts.document(),
+    );
+    write(
+        &root.join("asset-availability.json"),
+        inputs.availability.document(),
+    );
+    write(&root.join("asset-policy.json"), &inputs.policy);
+    write(&root.join("asset-requests.json"), &inputs.requests);
+    write(
+        &root.join("asset-authority.json"),
+        &json!({"schema_version":1,
+        "contracts":{"path":"asset-contracts.json","expected_hash":inputs.contracts.hash()},
+        "availability":{"path":"asset-availability.json","expected_hash":inputs.availability.hash()},
+        "policy":"asset-policy.json","requests":"asset-requests.json","execution_scope":inputs.execution_scope,
+        "approved_review_digests":inputs.approved_review_digests,"metadata":null,"body_root":null}),
+    );
+}
+
 struct Fixture {
     _temp: tempfile::TempDir,
     root: PathBuf,
@@ -71,6 +163,12 @@ impl Fixture {
         ))
         .unwrap();
         request.phase = StageKind::Execute;
+        request.task.budget.max_tokens = 30_000;
+        request.restrictions.max_tokens = Some(30_000);
+        request.restrictions.policy_hash.clear();
+        request.restrictions.policy_hash =
+            router_adapter_api::content_digest(&serde_json::to_vec(&request.restrictions).unwrap());
+        request.candidates[0].estimated_tokens = 4500;
         request
             .task
             .allowed_mutations
@@ -107,9 +205,18 @@ impl Fixture {
         let catalog_bytes = include_bytes!("../../../fixtures/examples/phase-catalog.json");
         let catalog = Catalog::from_json(catalog_bytes).unwrap();
         let router = PhaseRouter::stable_v2();
+        let assets = asset_inputs(
+            &request,
+            &validated,
+            &catalog,
+            &repo,
+            source["source_state"].as_str().unwrap(),
+            now,
+        );
         let context = router
-            .context(request.clone(), &validated, &catalog)
+            .context_with_assets(request.clone(), &validated, &catalog, assets.clone(), now)
             .unwrap();
+        write_asset_authority(&root, &assets);
         let receipt = router.route(&context).unwrap();
         let selected = &receipt.selected.as_ref().unwrap().candidate;
         let execution = ExecutionRequest {
@@ -147,7 +254,7 @@ impl Fixture {
         fs::write(root.join("catalog.json"), catalog_bytes).unwrap();
         write(
             &root.join("definition.json"),
-            &json!({"schema_version":1,"run_id":"cli-run","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"plan":"plan.json","node_id":"execute","request":"request.json"}),
+            &json!({"schema_version":1,"run_id":"cli-run","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"asset_authority":"asset-authority.json","plan":"plan.json","node_id":"execute","request":"request.json"}),
         );
         write(
             &root.join("sandbox.json"),
@@ -170,6 +277,59 @@ impl Fixture {
             .arg("--json");
         c
     }
+}
+
+#[test]
+fn legacy_review_is_readable_but_execution_requires_asset_authority_before_launch() {
+    let f = Fixture::new();
+    let phase: PhaseRouteRequest =
+        serde_json::from_slice(&fs::read(f.root.join("context.json")).unwrap()).unwrap();
+    let observation: HostObservation =
+        serde_json::from_slice(&fs::read(f.root.join("snapshot.json")).unwrap()).unwrap();
+    let snapshot = ValidatedHostObservation::from_observation(
+        observation.clone(),
+        SnapshotValidation {
+            now_unix_seconds: observation.observed_at_unix_seconds,
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(&fs::read(f.root.join("catalog.json")).unwrap()).unwrap();
+    let router = PhaseRouter::stable_v2();
+    let context = router.context(phase, &snapshot, &catalog).unwrap();
+    let receipt = router.route(&context).unwrap();
+    assert_eq!(receipt.schema_version, 2);
+    let mut request: ExecutionRequest =
+        serde_json::from_slice(&fs::read(f.root.join("request.json")).unwrap()).unwrap();
+    request.receipt_id = receipt.receipt_id;
+    write(&f.root.join("request.json"), &request);
+    let mut definition: Value =
+        serde_json::from_slice(&fs::read(f.root.join("definition.json")).unwrap()).unwrap();
+    definition
+        .as_object_mut()
+        .unwrap()
+        .remove("asset_authority");
+    write(&f.root.join("definition.json"), &definition);
+    let review = output(f.run().assert().success());
+    assert_eq!(review["executed"], false);
+    assert_eq!(review["run"]["state"], "awaiting_approval");
+    f.run()
+        .args(["--approve", review["approval_digest"].as_str().unwrap()])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "runtime.asset_authority.required",
+        ));
+    assert!(!f.store.join("worktrees").exists());
+    let status = output(
+        command()
+            .args(["status", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"])
+            .assert()
+            .success(),
+    );
+    assert_eq!(status["run"]["state"], "awaiting_approval");
 }
 
 #[test]
@@ -253,11 +413,28 @@ fn explicit_fallback_receipt_survives_review_and_cannot_be_removed() {
     .unwrap();
     let catalog = Catalog::from_json(&fs::read(f.root.join("catalog.json")).unwrap()).unwrap();
     let router = PhaseRouter::stable_v2();
-    let context = router.context(phase.clone(), &validated, &catalog).unwrap();
-    assert!(router.route(&context).unwrap().selected.is_none());
-    let receipt = router.fallback(&context, &unavailable).unwrap();
     let mut request: ExecutionRequest =
         serde_json::from_slice(&fs::read(f.root.join("request.json")).unwrap()).unwrap();
+    let assets = asset_inputs(
+        &phase,
+        &validated,
+        &catalog,
+        Path::new(&request.workspace),
+        &request.source_state,
+        snapshot.observed_at_unix_seconds,
+    );
+    let context = router
+        .context_with_assets(
+            phase.clone(),
+            &validated,
+            &catalog,
+            assets.clone(),
+            snapshot.observed_at_unix_seconds,
+        )
+        .unwrap();
+    write_asset_authority(&f.root, &assets);
+    assert!(router.route(&context).unwrap().selected.is_none());
+    let receipt = router.fallback(&context, &unavailable).unwrap();
     request.candidate_id = "explicit-fallback".into();
     request.receipt_id = receipt.receipt_id.clone();
     write(&f.root.join("context.json"), &phase);
@@ -502,7 +679,7 @@ fn prepare_assembles_private_request_bundle_without_running_or_overwriting() {
     );
     write(
         &f.root.join("prepare.json"),
-        &json!({"schema_version":1,"run_id":"prepared-run","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"policy_store":null,"plan":"plan.json","node_id":"execute","metadata":"index.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json"}),
+        &json!({"schema_version":1,"run_id":"prepared-run","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"policy_store":null,"asset_authority":"asset-authority.json","plan":"plan.json","node_id":"execute","metadata":"index.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json"}),
     );
     let directory = f.root.join("prepared");
     let preview = output(
@@ -521,6 +698,12 @@ fn prepare_assembles_private_request_bundle_without_running_or_overwriting() {
     let prepared: ExecutionRequest =
         serde_json::from_slice(&fs::read(directory.join("request.json")).unwrap()).unwrap();
     assert!(prepared.prompt.contains("private input marker"));
+    let receipt: PhaseReceipt =
+        serde_json::from_slice(&fs::read(directory.join("receipt.json")).unwrap()).unwrap();
+    assert_eq!(receipt.schema_version, 3);
+    let prepared_definition: Value =
+        serde_json::from_slice(&fs::read(directory.join("definition.json")).unwrap()).unwrap();
+    assert!(prepared_definition["asset_authority"].is_string());
     use std::os::unix::fs::PermissionsExt;
     assert_eq!(
         fs::metadata(&directory).unwrap().permissions().mode() & 0o777,

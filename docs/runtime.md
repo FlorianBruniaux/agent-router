@@ -63,9 +63,35 @@ bounded, restricted to read-only work and require a fresh approval digest.
 Execution uses `tokio::process::Command` with argv. The runtime does not insert
 a shell. Test fixtures explicitly use a shell to exercise process behavior.
 Each run starts a Unix process group. Cancellation, timeout and output overflow
-trigger TERM followed by bounded KILL; dropping supervision also kills the
-group. stdout and stderr share a byte budget. Their hashes and counts survive;
+trigger TERM followed by bounded KILL. The resource helper supervises the worker
+outside the worker's resource limits and watches a private parent-lifetime pipe.
+Dropping supervision or killing the parent closes that pipe. The helper keeps the
+leader unreaped until its final group signals, then checks group disappearance;
+it never sends a signal using an already reaped leader's PID.
+stdout and stderr share a byte budget. Their hashes and counts survive;
 their full payloads and prompts are not retained by default.
+
+Schema 6 adds per-attempt cleanup leases and persistent cleanup quarantine.
+Before spawn, the runtime creates a private, never-overwritten lease, binds its
+inode to the attempt transaction, and passes its path only to the trusted helper.
+The helper holds an exclusive lock from before spawn through cleanup. Recovery
+must acquire that lock and validate the original inode and exact status. A
+pending lease is changed to recovered while still locked, preventing a delayed
+helper from spawning after recovery. Missing, active, corrupt or replaced leases
+preserve writer locks and block new execution and retries. Observation remains
+available. Historical interrupted runs without leases are not assumed safe.
+
+`Runtime::cleanup_evidence` distinguishes `Unknown`, `NotStarted`,
+`GroupTerminated` and `NamespaceTerminated`. The macOS contract proves termination
+of the process group, not hostile descendants that detached with `setsid`.
+Linux namespace evidence additionally requires the probed bubblewrap PID
+namespace. A transport exit code never substitutes for these cleanup claims.
+The runtime records only the bounded evidence kind, not process payloads.
+The native macOS SIGKILL regression runs a separate supervisor, kills it while a
+TERM-resistant fake worker writes in its isolated worktree, reopens storage and
+checks both the cleanup evidence and writer-lock release. It also checks that the
+worker's heartbeat remains unchanged after recovery. Linux CI requires the same
+runtime test and the helper's detached-descendant namespace regression.
 
 FIFO semaphores bound global, host and logical-agent concurrency, plus the plan
 width and effective restriction limit. Host identifiers currently serve as the
@@ -251,9 +277,9 @@ node after an Execute writer has produced a private, hash-checked patch and ente
 `Verifying`. The verifier must use a different declared owner, requested model,
 and, when present on the producer, agent. Its `previous_model` must match the
 producer's persisted requested model. These checks do not prove an observed model
-identity, successful verification, or access to the producer's patch. Artifact
-handoff and a durable multi-node coordinator are still separate work; readiness
-alone must not be reported as complete DAG execution.
+identity or successful verification. Opt-in declared artifact handoff and the
+durable coordinator are described in [coordinator.md](coordinator.md); readiness
+alone does not transmit a producer's patch.
 
 An explicit new node generation can use a separately approved fallback only after
 a retryable, read-only predecessor failure. Attempt limits are cumulative across

@@ -19,6 +19,7 @@ the current time and refuses a snapshot age allowance above 300 seconds.
   "catalog": "catalog.json",
   "policy": null,
   "policy_store": null,
+  "asset_authority": "asset-authority.json",
   "plan": "plan.json",
   "node_id": "execute",
   "metadata": "bound-metadata.json",
@@ -64,6 +65,89 @@ typed dependencies. Its hash is part of every approval. Generations start at 0;
 a new generation is an explicit replacement, subject to retry and budget gates.
 Without a contract, the legacy path is limited to a node without dependencies.
 
+## Asset authority
+
+New execution approval requires `asset_authority` in the definition and a v3
+receipt. Historical v2 review and inspection remain available. The authority
+manifest is parent-owned configuration with independently pinned contract and
+availability hashes; a child's self-reported hash cannot establish authority.
+The same optional path is accepted by `prepare` and `route-phase
+--asset-authority`. Preparation preserves its absolute reference, so retain the
+manifest and its exact referenced inputs with the private bundle.
+
+```json
+{
+  "schema_version": 1,
+  "contracts": {"path": "contracts.json", "expected_hash": "PINNED_CONTRACT_HASH"},
+  "availability": {"path": "availability.json", "expected_hash": "PINNED_AVAILABILITY_HASH"},
+  "policy": "asset-policy.json",
+  "requests": "candidate-asset-requests.json",
+  "execution_scope": {"workspace": "/absolute/repository", "source_state": "COMMIT_HASH", "scope": ["src"]},
+  "approved_review_digests": {},
+  "metadata": "bound-metadata.json",
+  "body_root": "assets"
+}
+```
+
+The placeholders must be replaced with independently established values. Asset
+requests map every candidate ID to its exact typed provider, model, host,
+capabilities and context requirements. Routing reads metadata only. To inspect
+selected skill bodies explicitly, use `assets review --manifest
+asset-authority.json --context phase-context.json --host-snapshot snapshot.json
+--catalog catalog.json --skill SKILL_ID --json`. Repeat `--skill` for up to 16
+IDs. The result contains review projections and digests, never raw bodies, and
+does not add approvals or execute skills. Put an authorized review digest in
+`approved_review_digests` only after that review. The runtime checks the actual
+prepared bytes and fresh evidence again before dispatch. See
+[asset-contracts.md](asset-contracts.md) for evidence and tokenizer limits.
+
+## Workflow coordination commands
+
+`coordinate` adds declared result handoff and explicit waves over the one-node
+runtime. A version 1 workflow definition contains `plan`, `execution`, one
+`artifacts` declaration per node, `failure_policy`, `max_input_bytes`, and
+`definition_sha256`. The execution contract must already be sealed. Every
+declared dependency input references an actual producer output; a patch can
+only be exposed as a read-only workspace to an independent Verify node.
+
+```sh
+agent-router coordinate seal --definition proposed-workflow.json --json
+agent-router coordinate review --definition workflow.json \
+  --source-definition prepared/definition.json --sandbox sandbox.json \
+  --node-id execute --generation 0 --store /absolute/private-workflow \
+  --output-directory reviewed-step --json
+agent-router coordinate run-wave --definition workflow.json --wave wave.json \
+  --store /absolute/private-workflow --json
+agent-router coordinate status --definition workflow.json --store /absolute/private-workflow --json
+agent-router coordinate cancel --definition workflow.json --store /absolute/private-workflow --json
+```
+
+Save the `definition` returned by `seal` as `workflow.json`. Sealing grants no
+approval. Review creates a new private directory containing the final request,
+its exact artifact grants and `bundle.json`. It includes dependency data before
+computing the approval. The wave manifest is `{"schema_version":1,"steps":[{
+"bundle":"reviewed-step/bundle.json","approval":"DIGEST_FROM_REVIEW"}]}`.
+Paths in the wave are relative to that manifest. Each step has its own explicit
+approval; the bounded wave cannot select new models, invent later approvals or
+turn model output into workflow authority. Every submitted run appears in the
+wave completions or typed errors. A mixed or cancelled wave exits unsuccessfully.
+
+`coordinate verify --bundle reviewed-step/bundle.json --store ... --evidence
+verification.json --approval DIGEST_FROM_REVIEW --json` queues an explicit
+verification control, including while a wave is running. `queued: true` is not
+a verification verdict. After a restart, run `coordinate service --definition
+workflow.json --bundle reviewed-step/bundle.json --store ... --json` to restore
+the exact private material and process queued controls. Repeat `--bundle` for
+the steps whose material is needed. No confidential prompt is reconstructed
+from logs or model output.
+
+`coordinate artifacts --bundle reviewed-step/bundle.json --store ... --json
+preview` returns the integration approval digest. `apply --approve DIGEST` and
+`discard --approve DIGEST` require that exact digest. `declared` lists result
+metadata, and `purge-declared --id ARTIFACT_ID` explicitly removes an owned
+result. Diagnostic `outputs` and `purge-outputs --attempt N` remain separate.
+Original source files change only through explicitly approved integration.
+
 `workflow --plan plan.json --execution-contract contract.json --seal-contract
 --json` validates and hashes a proposed contract; it grants no approval. Omit
 `--seal-contract` to verify an existing hash. Nodes must match the complete plan.
@@ -106,6 +190,11 @@ agent-router events --store /absolute/private-runtime --run-id review-001 --json
 Approval includes the immutable request, plan, authority source, sandbox
 configuration and executable hashes. A changed input requires a new review.
 Retries are explicit with `run --retry` and require a new approval digest.
+Status separately reports `cleanup_evidence`: `not_started`,
+`group_terminated`, `namespace_terminated`, or `unknown`. Group termination
+does not prove termination of a descendant that created a separate session.
+An unresolved attempt lease prevents recovery from releasing writer locks;
+the CLI reports `runtime.cleanup.unknown` instead of authorizing a new run.
 The runtime isolates dependencies by workflow instance and contract. A premature
 step stays queued and can be cancelled or resumed with its existing exact
 approval. Normal edges require `verified`; an explicitly independent verifier

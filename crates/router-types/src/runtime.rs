@@ -84,6 +84,8 @@ pub struct RunSummary {
     pub output_retention: OutputRetentionPolicy,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workflow: Option<WorkflowRunBinding>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub artifact_contract_sha256: Option<String>,
 }
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -189,4 +191,13 @@ pub struct IntegrationPreview {
     pub artifact_sha256: String,
     pub approval_digest: String,
     pub changed_paths: Vec<String>,
+}
+/// Evidence scope matters: a process group excludes descendants that detached.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProcessCleanupEvidence {
+    Unknown,
+    NotStarted,
+    GroupTerminated,
+    NamespaceTerminated,
 }
