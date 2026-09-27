@@ -258,9 +258,17 @@ pub enum Commands {
         catalog: Option<PathBuf>,
         #[arg(long)]
         now: Option<u64>,
-        #[arg(long)]
-        query: String,
-        #[arg(long, value_parser = ["agent", "skill", "prompt", "tool"])]
+        #[arg(
+            long,
+            required_unless_present = "context_query",
+            conflicts_with = "context_query"
+        )]
+        query: Option<String>,
+        #[arg(long, conflicts_with_all = ["query", "kind", "top_k"], requires = "catalog")]
+        context_query: Option<PathBuf>,
+        #[arg(long, requires = "context_query")]
+        semantic_ranking: Option<PathBuf>,
+        #[arg(long, value_parser = ["agent", "skill", "prompt", "tool", "model"])]
         kind: Option<String>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
@@ -271,21 +279,45 @@ pub enum Commands {
         #[arg(long)]
         metadata: PathBuf,
         #[arg(long)]
+        signals: Option<PathBuf>,
+        #[arg(long)]
         catalog: PathBuf,
         #[arg(long)]
         now: Option<u64>,
         #[arg(long)]
         json: bool,
     },
+    /// Apply a checked metadata diff; optional output is a new file, never an overwrite.
+    Refresh {
+        #[arg(long)]
+        metadata: PathBuf,
+        #[arg(long)]
+        successor: PathBuf,
+        #[arg(long)]
+        expected_source_hash: String,
+        #[arg(long)]
+        catalog: PathBuf,
+        #[arg(long)]
+        now: Option<u64>,
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     Normalize {
         #[arg(long)]
         task: PathBuf,
+        /// Explicit parent facts about environment, reversibility and operations.
+        #[arg(long)]
+        risk_context: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
     Plan {
         #[arg(long)]
         task: PathBuf,
+        #[arg(long)]
+        risk_context: Option<PathBuf>,
         #[arg(long, default_value = "plan-execute-verify", value_parser = ["direct-safe", "plan-execute-verify", "explore-then-build", "fanout-review", "incident", "migration", "security-readonly", "bulk-mechanical"])]
         preset: String,
         #[arg(long, default_value_t = 8)]
@@ -576,4 +608,60 @@ pub enum CatalogCommand {
         #[arg(long)]
         json: bool,
     },
+}
+
+impl Commands {
+    /// Ask the command for its canonical JSON result, then render that same
+    /// result for humans. Existing machine flags and exit statuses are preserved.
+    pub(crate) fn structured_output(&mut self) -> Option<&'static str> {
+        let (json, title) = match self {
+            Self::BackendActivation { json, .. } => (json, "Backend activation"),
+            Self::Coordinate { json, .. } => (json, "Workflow coordination"),
+            Self::Prepare { json, .. } => (json, "Prepared execution"),
+            Self::Run { json, .. } => (json, "Run"),
+            Self::Status { json, .. } => (json, "Run status"),
+            Self::Cancel { json, .. } => (json, "Cancellation"),
+            Self::Events { json, .. } => (json, "Run events"),
+            Self::SourceState { json, .. } => (json, "Workspace source state"),
+            Self::Workflow { json, .. } => (json, "Workflow"),
+            Self::Verify { json, .. } => (json, "Verification"),
+            Self::Artifacts { json, .. } => (json, "Artifacts"),
+            Self::Feedback { json, .. } => (json, "Feedback"),
+            Self::Policy { json, .. } => (json, "Policy"),
+            Self::Doctor { json, .. } => (json, "Diagnostics"),
+            Self::Config { json, .. } => (json, "Effective configuration"),
+            Self::RoutePhase { json, .. } => (json, "Routing decision"),
+            Self::Backend { json, .. } => (json, "Backend decision"),
+            Self::Replay { json, .. } => (json, "Replay"),
+            Self::Inspect { json, .. } => (json, "Host observations"),
+            Self::Search { json, .. } => (json, "Search results"),
+            Self::Index { json, .. } => (json, "Metadata index"),
+            Self::Refresh { json, .. } => (json, "Index update"),
+            Self::Normalize { json, .. } => (json, "Task normalization"),
+            Self::Plan { json, .. } => (json, "Workflow plan"),
+            Self::Assets {
+                command: AssetCommand::Review { json, .. },
+            } => (json, "Asset review"),
+            Self::Audit { command } => match command {
+                AuditCommand::Export { json, .. } | AuditCommand::Verify { json, .. } => {
+                    (json, "Audit")
+                }
+            },
+            Self::Eval { command } => match command {
+                EvalCommand::Seal { json, .. }
+                | EvalCommand::Compare { json, .. }
+                | EvalCommand::Corpus { json, .. } => (json, "Evaluation"),
+            },
+            Self::Catalog { command } => match command {
+                CatalogCommand::Validate { json, .. }
+                | CatalogCommand::List { json, .. }
+                | CatalogCommand::Show { json, .. }
+                | CatalogCommand::Refresh { json, .. } => (json, "Catalog"),
+            },
+            Self::Route { .. } | Self::Explain { .. } => return None,
+        };
+        let human = !*json;
+        *json = true;
+        human.then_some(title)
+    }
 }

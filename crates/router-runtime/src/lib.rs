@@ -886,6 +886,35 @@ impl Runtime {
                 TransportTermination::Exited if output.outcome.exit_code == Some(0) => {
                     (RunState::SucceededTransport, None)
                 }
+                TransportTermination::Exited if output.outcome.exit_code.is_some() => {
+                    let native = adapter
+                        .classify_failure(
+                            &output.stdout,
+                            output.outcome.clone(),
+                            run.max_output_bytes,
+                        )
+                        .ok()
+                        .flatten();
+                    let failure = if let Some(evidence) = native {
+                        self.store.event(
+                            id,
+                            "failure.native_classified",
+                            &format!("{}:{}", evidence.code(), evidence.source_sha256()),
+                        )?;
+                        match evidence.kind() {
+                            router_adapter_api::NativeFailureKind::Authentication => {
+                                RunFailure::Authentication
+                            }
+                            router_adapter_api::NativeFailureKind::RateLimit => {
+                                RunFailure::RateLimit
+                            }
+                            router_adapter_api::NativeFailureKind::Network => RunFailure::Network,
+                        }
+                    } else {
+                        RunFailure::Crash
+                    };
+                    (RunState::Failed, Some(failure))
+                }
                 _ => (RunState::Failed, Some(RunFailure::Crash)),
             }
         };

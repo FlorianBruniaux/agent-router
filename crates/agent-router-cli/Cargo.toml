@@ -16,6 +16,7 @@ claude = ["dep:adapter-claude"]
 opencode = ["dep:adapter-opencode"]
 copilot = ["dep:adapter-copilot"]
 local-sidecar = ["router-decision/local-sidecar"]
+semantic-retrieval = ["router-retrieval/semantic-ranking"]
 
 [dependencies]
 router-adapter-api = { path = "../router-adapter-api" }

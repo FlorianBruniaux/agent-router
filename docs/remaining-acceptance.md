@@ -16,6 +16,27 @@ Les lots Copilot/OpenCode déjà attribués ne sont pas réaudités ici et reste
 
 ## Lots encore implémentables
 
+### Avancement après l'audit initial
+
+La table ci-dessous conserve le constat initial pour ne pas perdre le périmètre.
+Les évolutions suivantes le complètent :
+
+- **R14 livré** par la PR #19, merge `2261511e57870fb69dff67a8b8d28df854155294` :
+  décision signée consommée par préparation, runtime, coordinator et feedback,
+  avec revalidation au dispatch. L'activation réelle reste soumise à P1/P2.
+- **R01 et R03 dans la livraison suivante** : recherche sur cinq familles avec
+  signaux de contexte et plancher de risque déterministe relié à la CLI.
+- **R02 partiel** : mise à jour incrémentale et fusion RRF implémentées ; une
+  source sémantique peut être fournie derrière une feature désactivée par défaut.
+  Aucun fournisseur d'embeddings n'est encore exécuté, et P1 reste ouvert.
+- **R13 partiel** : classification native des pannes implémentée et soumise à
+  revue ; l'exécution de validations structurées reste à faire.
+- **R16 partiel** : rendu humain des commandes produit, avec conservation des
+  résultats JSON et digests d'approbation. L'entrée guidée et les formats de
+  configuration supplémentaires restent à faire.
+- **R04, R05 et R06 en développement** : leurs modifications locales ne sont
+  pas une livraison et ne ferment aucune acceptation dans ce document.
+
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
 | Lot | Périmètre et exigence | Écart concret et preuve de code | Acceptation observable |

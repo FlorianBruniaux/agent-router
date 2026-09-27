@@ -202,6 +202,26 @@ impl HarnessAdapter for CopilotAdapter {
         ]);
         Ok(run)
     }
+    fn classify_failure(
+        &self,
+        bytes: &[u8],
+        outcome: TransportOutcome,
+        max_bytes: usize,
+    ) -> Result<Option<router_adapter_api::NativeFailureEvidence>, AdapterError> {
+        if !self
+            .decode_stream(bytes, outcome.clone(), max_bytes)?
+            .stream_complete
+        {
+            return Ok(None);
+        }
+        router_adapter_api::classify_native_failure(
+            bytes,
+            outcome,
+            max_bytes,
+            router_adapter_api::NativeFailureProtocol::Copilot,
+        )
+    }
+
     fn decode_stream(
         &self,
         bytes: &[u8],

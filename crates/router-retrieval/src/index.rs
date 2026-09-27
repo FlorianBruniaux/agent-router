@@ -5,35 +5,38 @@ use std::collections::{BTreeMap, BTreeSet};
 type TermKey = (AssetKind, bool, Field, String);
 type GroupKey = (AssetKind, bool, Field);
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Posting {
-    asset: usize,
+    asset: AssetKey,
     frequency: u32,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 struct Statistics {
     documents: u32,
     total_length: u64,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct IndexedAsset {
     metadata: AssetMetadata,
     lengths: BTreeMap<Field, u32>,
+    terms: BTreeMap<Field, BTreeMap<String, u32>>,
 }
 
 /// Rebuildable metadata index. No corpus body is retained or read while building.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Bm25Index {
-    assets: Vec<IndexedAsset>,
+    assets: BTreeMap<AssetKey, IndexedAsset>,
     postings: BTreeMap<TermKey, Vec<Posting>>,
     stats: BTreeMap<GroupKey, Statistics>,
-    anti_triggers: BTreeMap<String, BTreeSet<usize>>,
+    anti_triggers: BTreeMap<String, BTreeSet<AssetKey>>,
     source_hash: String,
     index_hash: String,
     catalog_version: String,
     catalog_hash: Option<String>,
+    pub(crate) signals: Option<BTreeMap<AssetKey, AssetSignals>>,
+    total_terms: usize,
 }
 
 impl Bm25Index {
@@ -44,7 +47,7 @@ impl Bm25Index {
     pub fn build(document: MetadataDocument) -> Result<Self> {
         let document = canonical(document)?;
         let source_hash = hash_document(&document)?;
-        Self::build_source((document, source_hash, None))
+        Self::build_source((document, source_hash, None, None))
     }
 
     pub fn build_bound(document: MetadataDocument, catalog_hash: &str) -> Result<Self> {
@@ -55,65 +58,233 @@ impl Bm25Index {
         Self::build_source(bound_source(envelope)?)
     }
 
+    pub fn build_v3(envelope: MetadataEnvelopeV3) -> Result<Self> {
+        Self::build_source(context_source(envelope)?)
+    }
+
     fn build_source(source: CanonicalSource) -> Result<Self> {
-        let (document, source_hash, catalog_hash) = source;
-        let index_hash = digest(format!("{INDEX_VERSION}\0{source_hash}\0k1=1.2;b=0.75;positive-idf;boosts=8000,6000,5000,3000,2500,2000,2000").as_bytes());
+        let (document, source_hash, catalog_hash, signals) = source;
         let mut index = Self {
-            assets: Vec::new(),
+            assets: BTreeMap::new(),
             postings: BTreeMap::new(),
             stats: BTreeMap::new(),
             anti_triggers: BTreeMap::new(),
             source_hash,
-            index_hash,
+            index_hash: String::new(),
             catalog_version: document.catalog_version,
             catalog_hash,
+            signals: signals
+                .map(|values| values.into_iter().map(|v| (v.asset.clone(), v)).collect()),
+            total_terms: 0,
         };
-        let mut total_terms = 0usize;
         for metadata in document.assets {
-            let asset_id = index.assets.len();
-            let mut lengths = BTreeMap::new();
-            if metadata.trust != SkillTrust::Blocked {
-                let group = (metadata.kind, trusted(metadata.trust));
-                for (field, text) in fields(&metadata)? {
-                    let terms = tokenize::terms(&text);
-                    let length: u32 = terms.values().sum();
-                    total_terms += length as usize;
-                    if total_terms > MAX_INDEX_TERMS {
-                        return Err(RetrievalError::Limit("index terms"));
-                    }
-                    lengths.insert(field, length);
-                    let stat = index.stats.entry((group.0, group.1, field)).or_default();
-                    stat.documents += 1;
-                    stat.total_length += u64::from(length);
-                    for (term, frequency) in terms {
-                        index
-                            .postings
-                            .entry((group.0, group.1, field, term))
-                            .or_default()
-                            .push(Posting {
-                                asset: asset_id,
-                                frequency,
-                            });
-                    }
+            index.insert_asset(metadata)?;
+        }
+        index.update_hash();
+        Ok(index)
+    }
+
+    fn update_hash(&mut self) {
+        let version = if self.signals.is_some() {
+            CONTEXT_INDEX_VERSION
+        } else {
+            INDEX_VERSION
+        };
+        self.index_hash = digest(format!("{version}\0{}\0k1=1.2;b=0.75;positive-idf;boosts=8000,6000,5000,3000,2500,2000,2000", self.source_hash).as_bytes());
+    }
+
+    fn insert_asset(&mut self, metadata: AssetMetadata) -> Result<()> {
+        let key = metadata.key();
+        let mut lengths = BTreeMap::new();
+        let mut cached = BTreeMap::new();
+        if metadata.trust != SkillTrust::Blocked {
+            let group = (metadata.kind, trusted(metadata.trust));
+            for (field, text) in fields(&metadata)? {
+                let terms = tokenize::terms(&text);
+                let length: u32 = terms.values().sum();
+                self.total_terms += length as usize;
+                if self.total_terms > MAX_INDEX_TERMS {
+                    return Err(RetrievalError::Limit("index terms"));
                 }
-                for trigger in &metadata.anti_triggers {
-                    let phrase = tokenize::phrase(trigger);
-                    if !phrase.is_empty() {
-                        index
-                            .anti_triggers
-                            .entry(phrase)
-                            .or_default()
-                            .insert(asset_id);
+                lengths.insert(field, length);
+                let stat = self.stats.entry((group.0, group.1, field)).or_default();
+                stat.documents += 1;
+                stat.total_length += u64::from(length);
+                for (term, frequency) in &terms {
+                    let postings = self
+                        .postings
+                        .entry((group.0, group.1, field, term.clone()))
+                        .or_default();
+                    let position = postings.partition_point(|posting| posting.asset < key);
+                    postings.insert(
+                        position,
+                        Posting {
+                            asset: key.clone(),
+                            frequency: *frequency,
+                        },
+                    );
+                }
+                cached.insert(field, terms);
+            }
+            for trigger in &metadata.anti_triggers {
+                let phrase = tokenize::phrase(trigger);
+                if !phrase.is_empty() {
+                    self.anti_triggers
+                        .entry(phrase)
+                        .or_default()
+                        .insert(key.clone());
+                }
+            }
+        }
+        self.assets.insert(
+            key,
+            IndexedAsset {
+                metadata,
+                lengths,
+                terms: cached,
+            },
+        );
+        Ok(())
+    }
+
+    fn remove_asset(&mut self, key: &AssetKey) {
+        let Some(asset) = self.assets.remove(key) else {
+            return;
+        };
+        let group = (key.kind, trusted(asset.metadata.trust));
+        for (field, terms) in asset.terms {
+            let length = asset.lengths[&field];
+            self.total_terms -= length as usize;
+            let stat_key = (group.0, group.1, field);
+            if let Some(stat) = self.stats.get_mut(&stat_key) {
+                stat.documents -= 1;
+                stat.total_length -= u64::from(length);
+                if stat.documents == 0 {
+                    self.stats.remove(&stat_key);
+                }
+            }
+            for term in terms.keys() {
+                let term_key = (group.0, group.1, field, term.clone());
+                if let Some(postings) = self.postings.get_mut(&term_key) {
+                    postings.retain(|posting| &posting.asset != key);
+                    if postings.is_empty() {
+                        self.postings.remove(&term_key);
                     }
                 }
             }
-            index.assets.push(IndexedAsset { metadata, lengths });
         }
-        Ok(index)
+        for trigger in asset.metadata.anti_triggers {
+            let phrase = tokenize::phrase(&trigger);
+            if let Some(keys) = self.anti_triggers.get_mut(&phrase) {
+                keys.remove(key);
+                if keys.is_empty() {
+                    self.anti_triggers.remove(&phrase);
+                }
+            }
+        }
+    }
+
+    /// Atomic metadata diff. Retains unaffected postings/statistics; hashes use
+    /// the complete canonical successor. Does not read asset bodies.
+    pub fn refresh_from_json(
+        &mut self,
+        source: &[u8],
+        expected_source_hash: &str,
+    ) -> Result<IndexUpdateReport> {
+        if expected_source_hash != self.source_hash {
+            return Err(RetrievalError::Stale);
+        }
+        let (document, source_hash, catalog_hash, signals) = parse_source(source)?;
+        if self.catalog_hash.is_some() != catalog_hash.is_some()
+            || self.signals.is_some() != signals.is_some()
+        {
+            return Err(RetrievalError::Invalid(
+                "incremental schema change requires explicit rebuild",
+            ));
+        }
+        let assets: BTreeMap<_, _> = document.assets.into_iter().map(|a| (a.key(), a)).collect();
+        let mut next = self.clone();
+        let mut report = IndexUpdateReport {
+            inserted: 0,
+            updated: 0,
+            removed: 0,
+            retokenized_assets: 0,
+            source_hash: source_hash.clone(),
+            index_hash: String::new(),
+        };
+        // Remove all changed entries first so valid replacement at the term
+        // limit does not transiently exceed that limit.
+        for (key, old) in &self.assets {
+            match assets.get(key) {
+                None => {
+                    next.remove_asset(key);
+                    report.removed += 1;
+                }
+                Some(new) if new != &old.metadata => {
+                    next.remove_asset(key);
+                    report.updated += 1;
+                }
+                _ => {}
+            }
+        }
+        for (key, metadata) in assets {
+            if !next.assets.contains_key(&key) {
+                if !self.assets.contains_key(&key) {
+                    report.inserted += 1;
+                }
+                let tokenizes = metadata.trust != SkillTrust::Blocked;
+                next.insert_asset(metadata)?;
+                if tokenizes {
+                    report.retokenized_assets += 1;
+                }
+            }
+        }
+        next.source_hash = source_hash;
+        next.catalog_hash = catalog_hash;
+        next.catalog_version = document.catalog_version;
+        next.signals =
+            signals.map(|values| values.into_iter().map(|v| (v.asset.clone(), v)).collect());
+        if let (Some(previous), Some(current)) = (&self.signals, &next.signals) {
+            for (key, signal) in current {
+                if previous.get(key).is_some_and(|old| old != signal)
+                    && self
+                        .assets
+                        .get(key)
+                        .zip(next.assets.get(key))
+                        .is_some_and(|(a, b)| a.metadata == b.metadata)
+                {
+                    report.updated += 1;
+                }
+            }
+        }
+        next.update_hash();
+        report.index_hash = next.index_hash.clone();
+        *self = next;
+        Ok(report)
     }
 
     pub fn source_hash(&self) -> &str {
         &self.source_hash
+    }
+    /// Canonical source document for explicit persistence. No postings, body
+    /// contents or derived authority are serialized.
+    pub fn canonical_source_json(&self) -> Result<Vec<u8>> {
+        let metadata = MetadataDocument {
+            schema_version: "1".into(),
+            catalog_version: self.catalog_version.clone(),
+            assets: self.assets.values().map(|a| a.metadata.clone()).collect(),
+        };
+        match (&self.catalog_hash, &self.signals) {
+            (Some(hash), Some(signals)) => {
+                MetadataEnvelopeV3::new(metadata, signals.values().cloned().collect(), hash)?
+                    .canonical_json()
+            }
+            (Some(hash), None) => MetadataEnvelope::new(metadata, hash)?.canonical_json(),
+            (None, None) => {
+                serde_json::to_vec(&metadata).map_err(|_| RetrievalError::Invalid("metadata JSON"))
+            }
+            (None, Some(_)) => Err(RetrievalError::UnboundCatalog),
+        }
     }
     pub fn index_hash(&self) -> &str {
         &self.index_hash
@@ -178,9 +349,11 @@ impl Bm25Index {
     /// grants no authority; execution preparation must validate_catalog_hash.
     pub fn asset(&self, kind: AssetKind, id: &str) -> Option<&AssetMetadata> {
         self.assets
-            .binary_search_by(|a| (a.metadata.kind, a.metadata.id.as_str()).cmp(&(kind, id)))
-            .ok()
-            .map(|index| &self.assets[index].metadata)
+            .get(&AssetKey {
+                kind,
+                id: id.into(),
+            })
+            .map(|a| &a.metadata)
     }
 
     pub fn search(&self, query: &SearchQuery) -> Result<SearchResult> {
@@ -198,6 +371,17 @@ impl Bm25Index {
     }
 
     fn search_validated(&self, query: &SearchQuery) -> Result<SearchResult> {
+        if self.signals.is_some() {
+            return Err(RetrievalError::ContextRequired);
+        }
+        self.search_metadata(query, true)
+    }
+
+    pub(crate) fn search_metadata(
+        &self,
+        query: &SearchQuery,
+        truncate: bool,
+    ) -> Result<SearchResult> {
         validate_query(query)?;
         let terms = tokenize::terms(&query.text);
         if terms.len() > MAX_QUERY_TERMS {
@@ -229,19 +413,19 @@ impl Bm25Index {
         let anti = self.excluded_by_trigger(&query.text)?;
         let required_phrases = tokenize::quoted_phrases(&query.text);
         let mut excluded = BTreeSet::new();
-        for (i, asset) in self.assets.iter().enumerate() {
+        for (i, asset) in self.assets.iter() {
             if query.kind.is_some_and(|kind| kind != asset.metadata.kind) {
                 continue;
             }
             let reason = if asset.metadata.trust == SkillTrust::Blocked {
                 Some(ExclusionReason::Blocked)
-            } else if anti.contains(&i) {
+            } else if anti.contains(i) {
                 Some(ExclusionReason::AntiTrigger)
             } else {
                 None
             };
             if let Some(reason) = reason {
-                excluded.insert(i);
+                excluded.insert(i.clone());
                 result.excluded_count += 1;
                 if result.exclusions.len() < MAX_RESULTS {
                     result.exclusions.push(Exclusion {
@@ -251,7 +435,7 @@ impl Bm25Index {
                 }
             }
         }
-        let mut matches: BTreeMap<usize, Vec<MatchEvidence>> = BTreeMap::new();
+        let mut matches: BTreeMap<AssetKey, Vec<MatchEvidence>> = BTreeMap::new();
         for (&(kind, is_trusted, field), stat) in &self.stats {
             if query.kind.is_some_and(|requested| requested != kind) {
                 continue;
@@ -276,14 +460,14 @@ impl Bm25Index {
                     if excluded.contains(&posting.asset) {
                         continue;
                     }
-                    let length = self.assets[posting.asset].lengths[&field];
+                    let length = self.assets[&posting.asset].lengths[&field];
                     let tf = f64::from(posting.frequency);
                     let score = idf * tf * 2.2
                         / (tf + 1.2 * (0.25 + 0.75 * f64::from(length) / avg_length));
                     let contribution =
                         (score * f64::from(field.boost_millis()) * 1000.0).round() as u64;
                     matches
-                        .entry(posting.asset)
+                        .entry(posting.asset.clone())
                         .or_default()
                         .push(MatchEvidence {
                             field,
@@ -298,7 +482,7 @@ impl Bm25Index {
             }
         }
         for (i, evidence) in matches {
-            let asset = &self.assets[i].metadata;
+            let asset = &self.assets[&i].metadata;
             let mut phrase_evidence = Vec::new();
             if !required_phrases.is_empty() {
                 let texts = fields(asset)?;
@@ -372,7 +556,9 @@ impl Bm25Index {
             result.selected = result.candidates.first().map(|c| c.asset.clone());
         }
         // Decide before truncating, including top_k=1, so ambiguity stays visible.
-        result.candidates.truncate(query.top_k);
+        if truncate {
+            result.candidates.truncate(query.top_k);
+        }
         Ok(result)
     }
 
@@ -414,7 +600,7 @@ impl Bm25Index {
             .collect()
     }
 
-    fn excluded_by_trigger(&self, text: &str) -> Result<BTreeSet<usize>> {
+    pub(crate) fn excluded_by_trigger(&self, text: &str) -> Result<BTreeSet<AssetKey>> {
         let normalized = tokenize::phrase(text);
         let words: Vec<_> = normalized.split_whitespace().collect();
         if words.len() > MAX_QUERY_TERMS {
@@ -429,7 +615,7 @@ impl Bm25Index {
                 }
                 phrase.push_str(word);
                 if let Some(ids) = self.anti_triggers.get(&phrase) {
-                    excluded.extend(ids);
+                    excluded.extend(ids.iter().cloned());
                 }
             }
         }
@@ -437,7 +623,7 @@ impl Bm25Index {
     }
 }
 
-fn validate_query(query: &SearchQuery) -> Result<()> {
+pub(crate) fn validate_query(query: &SearchQuery) -> Result<()> {
     if query.text.len() > MAX_QUERY_BYTES {
         return Err(RetrievalError::Limit("query bytes"));
     }
@@ -475,7 +661,7 @@ fn abstention(candidates: &[SearchCandidate], policy: SearchPolicy) -> Option<Ab
     None
 }
 
-fn fields(asset: &AssetMetadata) -> Result<Vec<(Field, String)>> {
+pub(crate) fn fields(asset: &AssetMetadata) -> Result<Vec<(Field, String)>> {
     let kinds = serde_json::to_value(&asset.task_kinds)
         .map_err(|_| RetrievalError::Invalid("task kinds"))?;
     let kind_text = kinds
@@ -496,13 +682,19 @@ fn fields(asset: &AssetMetadata) -> Result<Vec<(Field, String)>> {
     ])
 }
 
-type CanonicalSource = (MetadataDocument, String, Option<String>);
+type CanonicalSource = (
+    MetadataDocument,
+    String,
+    Option<String>,
+    Option<Vec<AssetSignals>>,
+);
 
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
 enum MetadataInput {
     Unbound(MetadataDocument),
     Bound(MetadataEnvelope),
+    Contextual(MetadataEnvelopeV3),
 }
 
 impl MetadataEnvelope {
@@ -528,7 +720,7 @@ impl MetadataEnvelope {
     }
 }
 
-fn validate_digest(value: &str) -> Result<()> {
+pub(crate) fn validate_digest(value: &str) -> Result<()> {
     if value.len() != 64
         || !value
             .bytes()
@@ -559,6 +751,7 @@ fn bound_source(envelope: MetadataEnvelope) -> Result<CanonicalSource> {
         envelope.metadata,
         source_hash,
         Some(envelope.catalog_content_sha256),
+        None,
     ))
 }
 
@@ -572,13 +765,14 @@ fn parse_source(bytes: &[u8]) -> Result<CanonicalSource> {
         MetadataInput::Unbound(document) => {
             let document = canonical(document)?;
             let source_hash = hash_document(&document)?;
-            Ok((document, source_hash, None))
+            Ok((document, source_hash, None, None))
         }
         MetadataInput::Bound(envelope) => bound_source(envelope),
+        MetadataInput::Contextual(envelope) => context_source(envelope),
     }
 }
 
-fn hash_document(document: &impl serde::Serialize) -> Result<String> {
+pub(crate) fn hash_document(document: &impl serde::Serialize) -> Result<String> {
     let bytes = serde_json::to_vec(document)
         .map_err(|_| RetrievalError::Invalid("metadata serialization"))?;
     if bytes.len() > MAX_DOCUMENT_BYTES {
@@ -587,7 +781,7 @@ fn hash_document(document: &impl serde::Serialize) -> Result<String> {
     Ok(digest(&bytes))
 }
 
-fn canonical(mut document: MetadataDocument) -> Result<MetadataDocument> {
+pub(crate) fn canonical(mut document: MetadataDocument) -> Result<MetadataDocument> {
     if document.schema_version != "1"
         || document.catalog_version.trim().is_empty()
         || document.catalog_version.len() > 128
@@ -644,6 +838,11 @@ fn canonical(mut document: MetadataDocument) -> Result<MetadataDocument> {
         }
         asset.task_kinds.sort();
         asset.task_kinds.dedup();
+        if asset.kind == AssetKind::Model && asset.body.is_some() {
+            return Err(RetrievalError::Invalid(
+                "model metadata has no executable body",
+            ));
+        }
         if let Some(body) = &asset.body {
             body::validate_relative(&body.path)?;
             if body.sha256.len() != 64
@@ -668,4 +867,15 @@ fn canonical(mut document: MetadataDocument) -> Result<MetadataDocument> {
         .assets
         .sort_by(|a, b| (a.kind, &a.id).cmp(&(b.kind, &b.id)));
     Ok(document)
+}
+
+fn context_source(envelope: MetadataEnvelopeV3) -> Result<CanonicalSource> {
+    let envelope = envelope.validated()?;
+    let hash = hash_document(&envelope)?;
+    Ok((
+        envelope.metadata,
+        hash,
+        Some(envelope.catalog_content_sha256),
+        Some(envelope.signals),
+    ))
 }

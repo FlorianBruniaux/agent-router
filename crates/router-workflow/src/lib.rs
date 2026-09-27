@@ -5,7 +5,7 @@ mod plan;
 mod policy;
 mod prompt;
 pub use execution::{seal_execution_contract, validate_execution_contract};
-pub use normalize::{normalize, validate_task};
+pub use normalize::{normalize, normalize_with_risk, validate_task};
 pub use plan::{PlanLimits, build_plan, validate_plan};
 pub use policy::{merge_restrictions, resolve_configuration, validate_restrictions};
 pub use prompt::{render_prompt, seal_prompt};

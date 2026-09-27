@@ -1,6 +1,6 @@
 # Bounded metadata retrieval
 
-`Bm25Index` indexes versioned metadata for agents, skills, prompts and tools.
+`Bm25Index` indexes versioned metadata for agents, skills, prompts, tools and models.
 The index is in memory and rebuildable from `MetadataDocument`; it performs no
 network, provider, agent, hook or model execution. Body contents are never read
 by index construction or queries. This implementation uses the workspace's
@@ -22,7 +22,7 @@ The legacy JSON document uses `schema_version: "1"`, a nonempty `catalog_version
 an `assets` array. Each asset has `id`, `kind`, `trust` and `description`, plus
 optional `task_kinds`, `triggers`, `examples`, `tags`, `paths`, `anti_triggers`,
 and `body: { "path": "relative/path.md", "sha256": "<64 lowercase hex digits>" }`.
-Kinds are `agent`, `skill`, `prompt`, and `tool`. Trust uses the existing
+Kinds are `agent`, `skill`, `prompt`, `tool` and `model`. Models cannot have a body. Trust uses the existing
 `router_types::SkillTrust` contract. Unknown envelope/metadata fields are rejected.
 Version 1 is explicitly **unbound**: the version label does not identify current
 catalog contents, and `validate_catalog_hash` refuses it. Its existing search
@@ -33,7 +33,7 @@ Version 2 is a `MetadataEnvelope` containing `schema_version: "2"`,
 document. Construct it with `MetadataEnvelope::new(metadata, catalog_hash)` and
 serialize with `canonical_json()`. Both digests must be 64 lowercase hex digits;
 the metadata digest is recomputed from canonical metadata. `Bm25Index::from_json`
-accepts either version, and `build_bound(metadata, catalog_hash)` constructs a
+accepts these versions, and `build_bound(metadata, catalog_hash)` constructs a
 v2 index directly. Source and index hashes include the catalog binding.
 
 For v2, every ranking or body-read operation requires the independently loaded
@@ -113,3 +113,12 @@ cargo run -p router-retrieval --release --locked --example benchmark -- 10000
 The benchmark prints measured build and selective/broad p50/p95 query times,
 metadata bytes and postings visited. Its synthetic data measures capacity only;
 it cannot establish retrieval recall or a human-validated acceptance threshold.
+
+Schema 3 adds typed language, required-tool and outcome-history signals with
+provenance, time bounds and explicit UNKNOWN states. Its contextual search checks
+tools before ranking, preserves per-source evidence and supports deterministic
+RRF. Incremental refresh mutates only changed postings on an atomic candidate
+index. The optional `semantic-ranking` feature accepts an explicitly supplied
+bounded ranking; it does not run embeddings or contact a provider.
+See [the v3 retrieval contract](../../docs/retrieval.md#version-3-five-families-and-contextual-evidence)
+for APIs, migration, limits and the separate human-evaluation requirement.

@@ -14,7 +14,7 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #3 | Local BM25 metadata retrieval | Complete | PR #14 merged at `363857d0010640ccd9fa8471a01123f0752bf8b3`; 249 local tests and six CI jobs passed |
 | #4 | Immutable phase routing and receipts | Complete | PR #14 merged at `363857d0010640ccd9fa8471a01123f0752bf8b3`; 249 local tests and six CI jobs passed |
 | #5 | Replay, golden corpus, shadow evaluations | Software implemented; human gate open | 100 complete candidate replays, 200 traces, 60/20/20 split; all human labels false |
-| #2 | Bounded optional semantic backends | Shadow and explicitly signed execution implemented; delivery in progress | Loopback timeout/schema/pool/confidence/fallback tests; durable activation proof rechecked at dispatch; human evidence gate remains closed for production |
+| #2 | Bounded optional semantic backends | Complete within the issue scope | PR #19 merged at `2261511e57870fb69dff67a8b8d28df854155294`; 495 local tests, 17 native macOS canaries and eight PR checks passed. Human evidence gate remains closed for production |
 | #7 | Thin Codex and Claude adapters | Complete within the issue scope | PR #15 merged at `8b36b07aff508410a764f8feeefc62eaa0512935`; native canaries use a fake host under real macOS/Linux isolation; actual model behavior remains UNKNOWN |
 | #1 | Durable isolated execution | Complete within the issue scope | PR #16 merged at `dfe7d9346093bf3b6bec4d423706301d1b7f1825` after 411 local tests and eight PR checks; watchdog, durable leases, coordination and native macOS/Linux SIGKILL recovery covered. PR #17 stabilizes the historical-expiry test |
 | #6 | Offline feedback and reversible policy | Complete within the issue scope | PR #15 merged with eight passing CI checks; consent-bound runtime recording, signed offline promotion and rollback tested; objective validation remains separate |
@@ -83,7 +83,7 @@ does not close the project.
 
 ## Signed execution and optional hosts
 
-The current delivery adds durable signed backend activation, externally pinned
+PR #19 adds durable signed backend activation, externally pinned
 trust roots and current-state locking through dispatch. Preparation, standalone
 runs, workflow coordination and feedback share the selected decision while
 preserving the original deterministic receipt. Historical verification remains
@@ -98,6 +98,27 @@ they establish neither vendor authentication nor observed model identity.
 PR #18 (`a5b0709ebeae0c3c871e2bd6309c2dd1de6ccde2`) delivered the repository
 presentation, feature table, author block and an offline routing GIF/MP4. Its
 post-merge macOS/Linux workflows passed. Demo timing is edited, not a benchmark.
+
+## Contextual retrieval, risk floors and terminal output
+
+The next delivery adds five-family contextual retrieval, catalog-bound metadata
+v3, deterministic reciprocal rank fusion and incremental updates. Semantic
+ranking is an explicit build feature and consumes a supplied ranking; it does
+not install or contact an embedding provider. Human recall evidence remains open.
+
+Normalization and planning now apply versioned risk floors. Sensitive operations
+cannot be made low risk through a weaker declared value. Missing authority facts
+still require clarification, and classification grants no permissions.
+
+Product commands expose a bounded human rendering of the same versioned result
+as `--json`. Approval digests and operation exit codes are preserved, including
+when an oversized display is shortened. Guided task input and additional
+configuration formats remain separate work.
+
+Native failure classification uses bounded typed host events, with unsupported,
+conflicting or incomplete evidence falling back to the generic failure. Timeout,
+cancellation and supervisor limits retain priority. Typed validation commands
+and independently observed objective success remain separate from this change.
 
 ## Acceptance that automated implementation cannot manufacture
 

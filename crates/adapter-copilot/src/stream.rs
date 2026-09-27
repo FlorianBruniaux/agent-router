@@ -90,12 +90,7 @@ fn parse(
             return Err(AdapterError::Protocol);
         }
         // Subagent and sampling usage is never attributed to the main worker.
-        let root = value.get("agentId").is_none()
-            && value.pointer("/data/initiator").is_none()
-            && value.pointer("/data/parentToolCallId").is_none()
-            && value.pointer("/data/interactionType").is_none_or(|v| {
-                matches!(v.as_str(), Some("conversation-agent" | "conversation-user"))
-            });
+        let root = router_adapter_api::copilot_root_event(&value);
         let event = match kind {
             "session.start" if root => {
                 if let Some(id) = value.pointer("/data/sessionId") {

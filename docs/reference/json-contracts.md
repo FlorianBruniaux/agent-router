@@ -267,6 +267,13 @@ files fail with `request.too_large`, `catalog.too_large`, or
 
 ## CLI exit codes
 
+These codes apply to both human and JSON output. Product commands use `0` for
+a successful operation and `3` for a valid request requiring clarification or
+abstaining. A display limit never changes a completed operation's exit status.
+See [CLI output](../cli-output.md) for bounded human views, schema 2 task
+normalization/plan envelopes and historical compatibility, and
+[retrieval](../retrieval.md) for the contextual metadata schema 3.
+
 | Code | Meaning |
 | --- | --- |
 | `0` | A compatible route was selected. |
