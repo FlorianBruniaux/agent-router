@@ -1,9 +1,18 @@
 [workspace]
 members = [
     "crates/router-types",
+    "crates/router-workflow",
+    "crates/router-eval",
+    "crates/router-decision",
+    "crates/router-doctor",
+    "crates/router-feedback",
     "crates/router-catalog",
     "crates/router-policy",
     "crates/agent-router-cli",
+    "crates/router-adapter-api",
+    "crates/adapter-codex",
+    "crates/adapter-claude",
+    "crates/router-retrieval",
     "xtask",
 ]
 resolver = "2"

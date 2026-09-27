@@ -52,6 +52,8 @@ pub enum RouteDecision {
 pub struct DecisionEnvelope {
     pub schema_version: String,
     pub decision_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host_snapshot_hash: Option<String>,
     pub catalog_version: String,
     pub policy_version: String,
     pub decision: RouteDecision,

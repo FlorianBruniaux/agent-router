@@ -1,10 +1,17 @@
 #![forbid(unsafe_code)]
 
+mod catalogs;
 mod cli;
 mod command;
+mod diagnostics;
+mod evaluation;
+mod feedback;
+mod inspect;
+mod phases;
+mod product;
 mod render;
 
-use std::{fs::File, io::Read, path::Path, process::ExitCode};
+use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
 
 use clap::{Parser, error::ErrorKind};
 use cli::Cli;
@@ -60,6 +67,12 @@ enum CliError {
     DecisionTooLarge,
     DecisionJsonInvalid,
     DecisionRender,
+    SnapshotRead,
+    SnapshotTooLarge,
+    Snapshot(&'static str),
+    HostUnknown,
+    Probe(&'static str),
+    Product(&'static str),
     Internal,
 }
 
@@ -79,6 +92,11 @@ impl CliError {
             Self::DecisionTooLarge => "decision.too_large",
             Self::DecisionJsonInvalid => "decision.json.invalid",
             Self::DecisionRender => "decision.render",
+            Self::SnapshotRead => "snapshot.read",
+            Self::SnapshotTooLarge => "snapshot.too_large",
+            Self::Snapshot(code) => code,
+            Self::HostUnknown => "host.unknown",
+            Self::Probe(code) | Self::Product(code) => code,
             Self::Internal => "route.internal",
         }
     }
@@ -98,31 +116,163 @@ fn report_error(error: CliError) -> ExitCode {
 
 fn run(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::Catalog { command } => catalogs::run(command),
+        Commands::Feedback {
+            store,
+            now,
+            json,
+            command,
+        } => feedback::feedback(&store, now, json, command),
+        Commands::Policy {
+            store,
+            now,
+            json,
+            command,
+        } => feedback::policy(&store, now, json, command),
+        Commands::Doctor { request, now, json } => diagnostics::doctor(&request, now, json),
+        Commands::Audit { command } => diagnostics::audit(command),
+        Commands::Config { layers, json } => product::configuration(&layers, json),
+        Commands::RoutePhase { inputs, json } => phases::route(inputs, json),
+        Commands::Backend {
+            inputs,
+            backend,
+            endpoint,
+            bearer_env,
+            allow_redacted_metadata,
+            on_error,
+            timeout_ms,
+            minimum_confidence_micros,
+            json,
+        } => phases::backend(
+            inputs,
+            phases::BackendArgs {
+                backend,
+                endpoint,
+                bearer_env,
+                allow_redacted_metadata,
+                on_error,
+                timeout_ms,
+                minimum_confidence_micros,
+            },
+            json,
+        ),
+        Commands::Replay {
+            record,
+            policy,
+            now,
+            snapshot_max_age_seconds,
+            json,
+        } => evaluation::replay(&record, &policy, now, snapshot_max_age_seconds, json),
+        Commands::Eval { command } => evaluation::run(command),
         Commands::Route {
             request,
             catalog,
             json,
-        } => route(&request, &catalog, json),
+            host_snapshot,
+            retrieval,
+            snapshot_max_age_seconds,
+            now,
+        } => route(
+            &request,
+            &catalog,
+            json,
+            host_snapshot.as_deref(),
+            snapshot_max_age_seconds,
+            now,
+            retrieval.as_deref(),
+        ),
+        Commands::Inspect {
+            host,
+            model_cache,
+            native_stream,
+            observed_at,
+            observed_version,
+            now,
+            json,
+        } => inspect::inspect(
+            inspect::InspectArgs {
+                host,
+                model_cache,
+                native_stream,
+                observed_at,
+                observed_version,
+                now,
+            },
+            json,
+        ),
+        Commands::Search {
+            metadata,
+            query,
+            kind,
+            top_k,
+            json,
+        } => product::search(&metadata, &query, kind.as_deref(), top_k, json),
+        Commands::Normalize { task, json } => product::normalize(&task, json),
+        Commands::Plan {
+            task,
+            preset,
+            max_width,
+            max_depth,
+            reserve_cost_microusd,
+            json,
+        } => product::plan(
+            &task,
+            &preset,
+            max_width,
+            max_depth,
+            reserve_cost_microusd,
+            json,
+        ),
         Commands::Explain { decision } => explain(&decision),
     }
 }
 
-fn route(request_path: &Path, catalog_path: &Path, json: bool) -> Result<Outcome, CliError> {
+fn route(
+    request_path: &Path,
+    catalog_path: &Path,
+    json: bool,
+    snapshot_path: Option<&Path>,
+    snapshot_max_age: u64,
+    now: Option<u64>,
+    retrieval: Option<&Path>,
+) -> Result<Outcome, CliError> {
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
 
-    let request = read_request(request_path)?;
-    let catalog = read_catalog(catalog_path)?;
-    let decision = Router::stable_v1()
-        .route(&request, &catalog)
-        .map_err(|error| {
-            if error.is_invalid_request() {
-                CliError::RequestInvalid
-            } else {
-                CliError::Internal
-            }
-        })?;
+    let mut request = read_request(request_path)?;
+    let snapshot = snapshot_path
+        .map(|path| inspect::read_snapshot(path, now, snapshot_max_age))
+        .transpose()?;
+    if let Some(path) = retrieval {
+        request.skill_candidates = product::read_index(path)?
+            .skill_candidates(&router_retrieval::SearchQuery::new(&request.task.objective))
+            .map_err(product::retrieval_error)?;
+    }
+    let (catalog, embedded_snapshot) = catalogs::load(catalog_path, now, snapshot_max_age)?;
+    let snapshot = match (snapshot, embedded_snapshot) {
+        (Some(explicit), Some(embedded)) if explicit.hash() != embedded.hash() => {
+            return Err(CliError::Product("catalog.snapshot.mismatch"));
+        }
+        (Some(explicit), _) => Some(explicit),
+        (None, embedded) => embedded,
+    };
+    if let Some(snapshot) = &snapshot {
+        request.host = snapshot.host().clone();
+        request.capability_knowledge = snapshot.capabilities();
+    }
+    let router = Router::stable_v1();
+    let decision = match &snapshot {
+        Some(snapshot) => router.route_with_snapshot_hash(&request, &catalog, snapshot.hash()),
+        None => router.route(&request, &catalog),
+    }
+    .map_err(|error| {
+        if error.is_invalid_request() {
+            CliError::RequestInvalid
+        } else {
+            CliError::Internal
+        }
+    })?;
     let exit_code = match decision.decision {
         RouteDecision::Selected { .. } => ExitCode::SUCCESS,
         RouteDecision::NoRoute { .. } => ExitCode::from(3),
@@ -175,7 +325,17 @@ fn read_bounded(
     read_error: CliError,
     too_large: CliError,
 ) -> Result<Vec<u8>, CliError> {
-    let file = File::open(path).map_err(|_| read_error)?;
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK);
+    }
+    let file = options.open(path).map_err(|_| read_error)?;
+    if !file.metadata().map_err(|_| read_error)?.is_file() {
+        return Err(read_error);
+    }
     let mut bytes = Vec::new();
     file.take(max_bytes as u64 + 1)
         .read_to_end(&mut bytes)

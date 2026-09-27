@@ -1,0 +1,2007 @@
+{
+  "cases": [
+    {
+      "case_id": "candidate-001",
+      "content_hash": "17dc0db3bcebe823e4160de5c1c93a19637c0c2295eae723a9135d11c2ba7180",
+      "expected_trace_hashes": {
+        "baseline": "08b32335725647c77ba1d1d4e9148906edd3a5030c46199e7dc0f5cc7e993724",
+        "shadow_candidate": "106df2f2754a7459f80f9d012f470a9a18f6167cc9411750a6108f5873e5bfc3"
+      },
+      "family_id": "contract-parser",
+      "input_hash": "2b98ba492da10c8ff423230be9b7c931e6716a0f6bd0b110728b9c7278ba8875",
+      "out_of_domain": false,
+      "path": "replays/candidate-001.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The highest policy prior remains eligible for a bounded read-only implementation proposal."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-002",
+      "content_hash": "7d98697306942ae378956988c9a7877cb874fd39f2c41a6c22b78616d0598815",
+      "expected_trace_hashes": {
+        "baseline": "e85189a060441749bd52a4c580ce56a468e6dbd32ec25d8a4626a4b534bb5553",
+        "shadow_candidate": "a9a317bd7a6eafaa3b4a235bced81e5feaef2c3601ffa4e58f182912f4936def"
+      },
+      "family_id": "contract-parser",
+      "input_hash": "736ced29c2f9292997642969d741e813edf7b952f2eb6008b92c22e34ae53df5",
+      "out_of_domain": false,
+      "path": "replays/candidate-002.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The highest policy prior remains eligible for a bounded read-only implementation proposal."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-003",
+      "content_hash": "5844480b987b17218fd7d8d82415435021db853045dd13d129f0045ad90037df",
+      "expected_trace_hashes": {
+        "baseline": "cd4775cacc13efa0cae6b517985949b94adf5aed83d6dbe845d13a21f005652e",
+        "shadow_candidate": "f15f300e6061c1c8be7aa703e193e1bd5a553caba1af24f6c946330226d5db07"
+      },
+      "family_id": "contract-parser",
+      "input_hash": "d30ef962d80cf517bf10802d80d04d48282ead94f5f2663874f45022e54bbdda",
+      "out_of_domain": false,
+      "path": "replays/candidate-003.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The highest policy prior remains eligible for a bounded read-only implementation proposal."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-004",
+      "content_hash": "15218954745fe61c22e02905c7a63b2046a75681066b41c5d58c7d5ec2be493e",
+      "expected_trace_hashes": {
+        "baseline": "a49a16c799c782980a2c912328c38a4a7f2329b840b08c415fe4e9bcf7431236",
+        "shadow_candidate": "abafcf92cb5698df288e19c3c3fa3b7b9049d0efdab99f2c5e4afae06732bd5d"
+      },
+      "family_id": "contract-parser",
+      "input_hash": "936bdc564dcbf9b68a4e98356119dd968b8189067947a02579e8b9fb9cdae00d",
+      "out_of_domain": false,
+      "path": "replays/candidate-004.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The highest policy prior remains eligible for a bounded read-only implementation proposal."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-005",
+      "content_hash": "45f8fa027fe90d16b95bffb40852db3034288564b7ba1dd01a6436638a7f3916",
+      "expected_trace_hashes": {
+        "baseline": "f99960f3393e94264da8ed1e1578ff5ebea13c4d754116a747e4c585e2e58a8c",
+        "shadow_candidate": "66901bcaf913e44bdc7dcfb272648127ee0d56737f4d9ded732525bff3ea1ff1"
+      },
+      "family_id": "contract-parser",
+      "input_hash": "a1c8b1d95169c826a5a50bb0f49802a334a7b133e27fe8c8f6a1dd75f81e665c",
+      "out_of_domain": false,
+      "path": "replays/candidate-005.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The highest policy prior remains eligible for a bounded read-only implementation proposal."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-006",
+      "content_hash": "8239d215bc897746c5279ec9bfd37e1525a23b9fd86fd976411034db8118129d",
+      "expected_trace_hashes": {
+        "baseline": "eb932cb2439319cf82de7333331c3a7a4b91b771a128378682cb98cb77f796f9",
+        "shadow_candidate": "938a28ddccc2a8c2ee532c0a02b4fe60cf469cd9413d738e2829534c4da8fc32"
+      },
+      "family_id": "host-unknown",
+      "input_hash": "938b665cacea2d9ebb9ce0aa3677604a70770adcedd199fb50c545b66bd69790",
+      "out_of_domain": false,
+      "path": "replays/candidate-006.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN network evidence excludes the network-dependent primary; a read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-007",
+      "content_hash": "3656c56543759abece458da41cbfd8d43a63a000d7c7c41c0bad097408216caf",
+      "expected_trace_hashes": {
+        "baseline": "4d92ad71d8f2884b772aac78cfb8ea3b9a1affeaa761591f8541c12ed3c8611c",
+        "shadow_candidate": "809f87f625150a2742c8cafcd51d371ac8e5df0e429d0574d2ccacaf0fcd9993"
+      },
+      "family_id": "host-unknown",
+      "input_hash": "ac78b002f30a49c84cb6cc87fe42e7a7352fe518059f4c3c6655e4306868b942",
+      "out_of_domain": false,
+      "path": "replays/candidate-007.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN network evidence excludes the network-dependent primary; a read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-008",
+      "content_hash": "759f6895834947ed5f79a06c3933dd2c98e48d27410472b312ac284973967878",
+      "expected_trace_hashes": {
+        "baseline": "5db4207e1fc8dbe221c5c355fe957ed74d9b05649b7da2f9eab9ee2c75440579",
+        "shadow_candidate": "a56c5261ab6201c42fd35a84b0d6b94b30904f7dfff99433319c784d526fb835"
+      },
+      "family_id": "host-unknown",
+      "input_hash": "0f729c527512254713451ad36b9878256bfa0b4035171a109d42b2bc1d23dc62",
+      "out_of_domain": false,
+      "path": "replays/candidate-008.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN network evidence excludes the network-dependent primary; a read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-009",
+      "content_hash": "5c35095dac28ca74f8b66516eb762d0e5afff8fc3d95ce30b5086a561b67b201",
+      "expected_trace_hashes": {
+        "baseline": "b8c76b8ad72dd14e5cbe7725a24601c9b88266259e207e3adec41b157c7af96f",
+        "shadow_candidate": "cd9ecae117f78b3a04a004204a87208d86b8c820933acbff5d3d2baa915927fa"
+      },
+      "family_id": "host-unknown",
+      "input_hash": "ba4df88b3eb393d7104e727195942c170236229d7bba608b4ef1ec9ac0493528",
+      "out_of_domain": false,
+      "path": "replays/candidate-009.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN network evidence excludes the network-dependent primary; a read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-010",
+      "content_hash": "91dc2e9fd3e58bb34670c345f0194e8bb4fb7c06456e02637104f0f7534ea595",
+      "expected_trace_hashes": {
+        "baseline": "615bd48538a6603265dbbea76e3bdbea1ee74b2990e0766bf48394049524a925",
+        "shadow_candidate": "d91e27e916b761fb5d0acb06b83ea0f6cfd3691930b10b92a8e322c2066e0252"
+      },
+      "family_id": "host-unknown",
+      "input_hash": "1ac88e76958be41d4de0d550049d187c7abad7d75e2167ffcf26a8b68c105630",
+      "out_of_domain": false,
+      "path": "replays/candidate-010.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN network evidence excludes the network-dependent primary; a read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-011",
+      "content_hash": "4159f02724e78c827d4fa43bd52491a2c8a8fab4cbfee558de5544171004e50d",
+      "expected_trace_hashes": {
+        "baseline": "869dc1894e605cdaa351f423fc5f58d16a3f6404ea06a3e4b83aae00851192fd",
+        "shadow_candidate": "05226622cb8549d67fc57813d4f47f164b8cd9581aafb3559ae21e623fc30881"
+      },
+      "family_id": "catalog-provenance",
+      "input_hash": "aebbfda985d9593ad07056cdf6ed5ad882260d70c626ef4307588b24aa52665b",
+      "out_of_domain": false,
+      "path": "replays/candidate-011.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The selected model's canonical catalog content and observed snapshot are both bound to the receipt."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-012",
+      "content_hash": "10a1f965ff4d8a82e3e84b4bbea6e90e802e3e996179b11913b31d5c3b679b70",
+      "expected_trace_hashes": {
+        "baseline": "20b235f33afcd131104fe4c2cd149e4547505dee096bd041a9953adc957b6401",
+        "shadow_candidate": "6ec9947ba2ad5a08f6b971ae2e2030af94c5345f0ddd63c8d177a2277c32bfe9"
+      },
+      "family_id": "catalog-provenance",
+      "input_hash": "e3904fa26caa31028f39940b68cca53f17b5fd137f8d50385232cb9895012a14",
+      "out_of_domain": false,
+      "path": "replays/candidate-012.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The selected model's canonical catalog content and observed snapshot are both bound to the receipt."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-013",
+      "content_hash": "1592b067a36c04278bc26be05803fafe8b2b5f43953d909d0c6fec50f86deaf7",
+      "expected_trace_hashes": {
+        "baseline": "a1be5301684d117ad8276b424fd01b96af5320be0d2eedc699a45e02ff153a49",
+        "shadow_candidate": "e87fe26b31034d546aeaeb9dfeab8ab17c376322936bf8f5ea5244f2091640c3"
+      },
+      "family_id": "catalog-provenance",
+      "input_hash": "1368a93f7ca446d923e983468cff69ec571767af44f99329f04de04aaa830d32",
+      "out_of_domain": false,
+      "path": "replays/candidate-013.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The selected model's canonical catalog content and observed snapshot are both bound to the receipt."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-014",
+      "content_hash": "4e7d749a02c26c8effa5d6dd4a66dfac55bc1f5a6fbbca3d0a82210261a6cd47",
+      "expected_trace_hashes": {
+        "baseline": "800a98c03e99992dee3383530bc04517a6f24fa4efe1988220c13bf90be833f5",
+        "shadow_candidate": "6cc12e4d95e56099bbc9b9a9c97f0497fde2bc72e231142f09947d54c6ee6235"
+      },
+      "family_id": "catalog-provenance",
+      "input_hash": "3ca063865b8aca318ab3a5fe9242c86aa1c71fd38e3c3a119a41452b1b219e6d",
+      "out_of_domain": false,
+      "path": "replays/candidate-014.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The selected model's canonical catalog content and observed snapshot are both bound to the receipt."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-015",
+      "content_hash": "74e0095b272152eba72d97466ccc972b4eb58d80519313d9cc473b6352ff7cb1",
+      "expected_trace_hashes": {
+        "baseline": "7c6858fa7b9326a859529f8e2cdf0a1da51c2c8ecdc9a33251048ca66190eaf3",
+        "shadow_candidate": "4c09696be8387152c2f596264588fab5b581c2ddb68152e4b83658631148b7b4"
+      },
+      "family_id": "catalog-provenance",
+      "input_hash": "97c66a65156c5636ae874f229c2dfd505711f8426eb5ecd2a2ca093c514cc136",
+      "out_of_domain": false,
+      "path": "replays/candidate-015.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The selected model's canonical catalog content and observed snapshot are both bound to the receipt."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-016",
+      "content_hash": "0b67312648c640e19fa50e0163c0991eb00a1906e1266fdde6ec31ef2339363b",
+      "expected_trace_hashes": {
+        "baseline": "59db108cfa556cfc7835a730767208ec4af0a698bf4c38a1086874edb2d77088",
+        "shadow_candidate": "2f77bb9760606b73ca3f61eaf96b7e5c6100863704e8379e332aa8d6ccadf449"
+      },
+      "family_id": "retrieval-exact",
+      "input_hash": "bfddf7c7c6c2aca7cca19885c798c3d53b06bc3bb903b4906865277f31c1c18b",
+      "out_of_domain": false,
+      "path": "replays/candidate-016.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The candidate using the explicitly declared trusted Rust skill is eligible; an untrusted helper is excluded. This is phase routing, not a BM25 recall measurement."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-017",
+      "content_hash": "24e83289acd8f9c9ff8d8ddfaba4a7b3d34fb49d697056c5d214757786d7483a",
+      "expected_trace_hashes": {
+        "baseline": "1bf5dffc00519da4022437a22e066b2333f2283149087cf21d28102d61f7ee4d",
+        "shadow_candidate": "06b43d075c7f7d291afe32c7939ee036deb54431609e83ff051496be9cac17be"
+      },
+      "family_id": "retrieval-exact",
+      "input_hash": "27df0a04dcfc6f63108bd5ba36977e6ecc3fc14f3c6e8f0241899974544925eb",
+      "out_of_domain": false,
+      "path": "replays/candidate-017.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The candidate using the explicitly declared trusted Rust skill is eligible; an untrusted helper is excluded. This is phase routing, not a BM25 recall measurement."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-018",
+      "content_hash": "6cef25bf18da9a85120f86415edf27fc388c9bf56f6f29c794b28af253bab9da",
+      "expected_trace_hashes": {
+        "baseline": "8877a8a08e3dd3ecc727d872e5f2ebbdc36e82d22c279f5f6a6eea9e8ffacc4e",
+        "shadow_candidate": "25746de92df6b3468f90a7feeedca32c048057a68a1bd1d6a16092cc65b20a37"
+      },
+      "family_id": "retrieval-exact",
+      "input_hash": "f7e89d0967f4ac94daf41148ee5859b9d3adb0eabfca3a58a5710c340236670e",
+      "out_of_domain": false,
+      "path": "replays/candidate-018.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The candidate using the explicitly declared trusted Rust skill is eligible; an untrusted helper is excluded. This is phase routing, not a BM25 recall measurement."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-019",
+      "content_hash": "6f62935b87c64502790e6c4a1f2ed97a0c8fdee7e9ab1a9da3691ed52b1b48b1",
+      "expected_trace_hashes": {
+        "baseline": "4abf3fbce231005ea985ceac5a4aacd2609882236e4cd41dc46d8338eccd6765",
+        "shadow_candidate": "69f187bc3a09a2738f6e2cb55b282dc9fd17807d06c8a4def744dc1691e5d4fd"
+      },
+      "family_id": "retrieval-exact",
+      "input_hash": "d35b1abea3c02008760239025dccafa0999d189a186f906480c0465d31f3f961",
+      "out_of_domain": false,
+      "path": "replays/candidate-019.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The candidate using the explicitly declared trusted Rust skill is eligible; an untrusted helper is excluded. This is phase routing, not a BM25 recall measurement."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-020",
+      "content_hash": "bd9194e566deeeba139e85e78422c0362d5933b46b74284c47ff421622d50af8",
+      "expected_trace_hashes": {
+        "baseline": "34d5ec8dfb7b26784f357b6dbffa0252307a05cedf6e3c1b737d6167ceeedbaf",
+        "shadow_candidate": "0273945694b539b792e84e173d5a8104f1822cebddaaae9b234b6c2f6f088bd5"
+      },
+      "family_id": "retrieval-exact",
+      "input_hash": "cd1395b09cb3262f60c90bc792f6321669719b3fdf73fcfb2059abefad31b5c4",
+      "out_of_domain": false,
+      "path": "replays/candidate-020.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The candidate using the explicitly declared trusted Rust skill is eligible; an untrusted helper is excluded. This is phase routing, not a BM25 recall measurement."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-021",
+      "content_hash": "44dc768d9767c488db21755dd5f53e92de2a847613e9a72c7f7feb3933e33123",
+      "expected_trace_hashes": {
+        "baseline": "abd7f0864f28eca7fdf20246df820e53a1d8af49cb6ada171f22aee656b62170",
+        "shadow_candidate": "56e841e4f0271b68dfb9ccc7eef2eb96ae216a5093390faba1ddfbec77225f5c"
+      },
+      "family_id": "retrieval-abstain",
+      "input_hash": "19f84871320a91ff810b751265ee6058575b34705f7e03fb9388575298d5fdc6",
+      "out_of_domain": false,
+      "path": "replays/candidate-021.json",
+      "proposed_decision": {
+        "abstention": "ambiguous",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Equal eligible scores must abstain; identifier ordering is not evidence of a better selection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-022",
+      "content_hash": "5c92d37556cbd1d11c460624bb08bb06846c86e456f0c4487f8e2dbcf78eaaf8",
+      "expected_trace_hashes": {
+        "baseline": "69fadf696e36be084a50c6eaa05c31dce0e917aa4892e6f30b96982b94cab605",
+        "shadow_candidate": "71ead3f5e19c46593568b702ab7049bc6177519342ce42ca816e1aeffe4e93d0"
+      },
+      "family_id": "retrieval-abstain",
+      "input_hash": "2b2348085931790731bc6dff6e7082b8030661e9f936c20e26be6bbd12d74a7f",
+      "out_of_domain": false,
+      "path": "replays/candidate-022.json",
+      "proposed_decision": {
+        "abstention": "ambiguous",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Equal eligible scores must abstain; identifier ordering is not evidence of a better selection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-023",
+      "content_hash": "2d40543f6ea25f2ba37d5ee14a134e40ebeb07269c0baeef08519a7f6d898e53",
+      "expected_trace_hashes": {
+        "baseline": "d96e9bdd8b25143697f41fa314ee9112abf3d454dbda68ed9b52a96e67936ed9",
+        "shadow_candidate": "b70c9a3edc5041f317f48bab714ee041fc3510fd203f9b1678a48fd14f40489d"
+      },
+      "family_id": "retrieval-abstain",
+      "input_hash": "ce5c03903db8c56659009c6bba216e5936b78aa682720d6caee180f446cd0286",
+      "out_of_domain": false,
+      "path": "replays/candidate-023.json",
+      "proposed_decision": {
+        "abstention": "ambiguous",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Equal eligible scores must abstain; identifier ordering is not evidence of a better selection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-024",
+      "content_hash": "d1abc296909e7fb99ba008e478cf60558d6b8677f602ffd3f3f3cba9257cee51",
+      "expected_trace_hashes": {
+        "baseline": "6ff286091ea581966220ee0f0a45e6fe244dfc9e6df8ce63c1797fab322f50eb",
+        "shadow_candidate": "bca0e7b8bd3483a8dd06e44ddb234012ea3b0801df2bb1eecc02a8bcb90168c8"
+      },
+      "family_id": "retrieval-abstain",
+      "input_hash": "0b9455aba2851b64f483c6bc69a73c7ac5cec021755509ffa805f038fdc26ff1",
+      "out_of_domain": false,
+      "path": "replays/candidate-024.json",
+      "proposed_decision": {
+        "abstention": "ambiguous",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Equal eligible scores must abstain; identifier ordering is not evidence of a better selection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-025",
+      "content_hash": "e4d5da9c302548e17a4514548a0817fc2ade232bb1f790177e64dfaa3b05e1f4",
+      "expected_trace_hashes": {
+        "baseline": "204fa3649c7eebe5b810608f941368178c70e3e77c42dbb52073730c160203dc",
+        "shadow_candidate": "d6fbc3192fc2e758ae511b5722688072652661dfb64530c4fa437e1771cf288b"
+      },
+      "family_id": "retrieval-abstain",
+      "input_hash": "f75a2c805f3375d1f20c19a1e7653c3ff9266a995ccfa766f5023aa470988b23",
+      "out_of_domain": false,
+      "path": "replays/candidate-025.json",
+      "proposed_decision": {
+        "abstention": "ambiguous",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Equal eligible scores must abstain; identifier ordering is not evidence of a better selection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-026",
+      "content_hash": "de9ca90fc32eabbad61d3e435a042534b6af686cdace764e99842bac3b41e76d",
+      "expected_trace_hashes": {
+        "baseline": "61bca13eb4a60c922777265e937d050bbb45b7de9ef1a0723f2676e6cdb882f8",
+        "shadow_candidate": "4faa1c1975a0321459ddc8c801d69ef335e58c7aa1bfdd5ae5cc999459420051"
+      },
+      "family_id": "phase-budget",
+      "input_hash": "9d8ebb050581754ae4f6bd02492ed07d82557e338675e9097fb51a516041e508",
+      "out_of_domain": false,
+      "path": "replays/candidate-026.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Candidates requiring 100, 60 and 30 tokens are filtered against the explicitly declared budget. Select the highest eligible prior, or abstain when every estimate exceeds the bound."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-027",
+      "content_hash": "868a332c45f434006c150bf5f181ce68e458b5a7c5b12a425badaa2161ed6239",
+      "expected_trace_hashes": {
+        "baseline": "5451909ef01218e09cfa881f5383d7c79a1ae9c68fbfb266820bdf7b5f90be9e",
+        "shadow_candidate": "6208a5204b7d42f588f305fd12ba91c78c80bbd432cd4953e7a9296dd64782cd"
+      },
+      "family_id": "phase-budget",
+      "input_hash": "6a44fc5d69e1ebf1add1063c6e75b46a17f4618db62e938df513d679e79db551",
+      "out_of_domain": false,
+      "path": "replays/candidate-027.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "economy",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Candidates requiring 100, 60 and 30 tokens are filtered against the explicitly declared budget. Select the highest eligible prior, or abstain when every estimate exceeds the bound."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-028",
+      "content_hash": "effd79f5fa987c5f82a85301faaaf6f89482e8a289fc6a197157f24bc2e52edf",
+      "expected_trace_hashes": {
+        "baseline": "a51a7ae619ba55c2fcd050e16141fa32a0c19ea239601ede83677df9fcdcf32e",
+        "shadow_candidate": "9919e97a3f5c5ab0db8dee300a458e65a41dc89d02714a71c23564dbadbe528c"
+      },
+      "family_id": "phase-budget",
+      "input_hash": "ba64c91d05ff9137e7b4a795fa19699bdbab087f9e197328cc700f0afa5d67ea",
+      "out_of_domain": false,
+      "path": "replays/candidate-028.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Candidates requiring 100, 60 and 30 tokens are filtered against the explicitly declared budget. Select the highest eligible prior, or abstain when every estimate exceeds the bound."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-029",
+      "content_hash": "48cef186edda0a2e39c2e7e933212c2a58109790d04aef9dd7c95f59bf3bf656",
+      "expected_trace_hashes": {
+        "baseline": "8fe340f69ac44992227e49656b3c980594f1ec9857c95ace85341a08e8ea1ef0",
+        "shadow_candidate": "115fdd3158192c7686f2490feb8e1fb7d0760ae0fc644fb845944d33c7163c8f"
+      },
+      "family_id": "phase-budget",
+      "input_hash": "4ad1f72d2e0a32280aaed212e7527eae572258083b7531caba8579e5360ff6d2",
+      "out_of_domain": false,
+      "path": "replays/candidate-029.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Candidates requiring 100, 60 and 30 tokens are filtered against the explicitly declared budget. Select the highest eligible prior, or abstain when every estimate exceeds the bound."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-030",
+      "content_hash": "ae9dc29bf6e5d742b99547f85cfd1c80737e71d570a19aabc3de8ce45697d90a",
+      "expected_trace_hashes": {
+        "baseline": "0cb8eb6100e7555b86a92e692687a0bab9ec1bab9f98ab8a6900472efa112196",
+        "shadow_candidate": "8c64a2938439b9dc4de2ce63b098dfb508e4665b91198a1f784a32c35f72b03b"
+      },
+      "family_id": "phase-budget",
+      "input_hash": "d1a44bfd4e4d88a63088c7ae6a28ea38124ee230098dda62ef2006855990acb7",
+      "out_of_domain": false,
+      "path": "replays/candidate-030.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "economy",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Candidates requiring 100, 60 and 30 tokens are filtered against the explicitly declared budget. Select the highest eligible prior, or abstain when every estimate exceeds the bound."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-031",
+      "content_hash": "1d68be8d2d27ba2d767b1cc039d2bb5cbf3f3b870a662b167c6b9e45ecee7b25",
+      "expected_trace_hashes": {
+        "baseline": "f07ea4e2a362148ed41ebe64b308d3185e7d2057602d635a51ec3da459c1aa31",
+        "shadow_candidate": "5e1e46e9115c996c21697f6a0811a6e9448f5c9ba6dde0fb9126b49127d51361"
+      },
+      "family_id": "phase-fallback",
+      "input_hash": "4633113f31177a510266ca1073857ee4b8dc61d625c528321ab3b12a3dcc900b",
+      "out_of_domain": false,
+      "path": "replays/candidate-031.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Explicit unavailable candidates are excluded from the same frozen pool; select the next eligible candidate or abstain when all are unavailable."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-032",
+      "content_hash": "5b1d233cad92e8beb6caccd3b43bc144d12405112ae695a07da693734946f5b6",
+      "expected_trace_hashes": {
+        "baseline": "4468e32372885b1ea240066b698b4e6be53e40a1757cbce5702fc586fb80ca12",
+        "shadow_candidate": "41340c43553fe0733c6a60449babd9715bc311df0dddd3d032423f7ac72c10a5"
+      },
+      "family_id": "phase-fallback",
+      "input_hash": "3508c4903757e834ce27f52d4c08bbb2de34a588fee6dadac061c0d9b9d5d03a",
+      "out_of_domain": false,
+      "path": "replays/candidate-032.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "economy",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Explicit unavailable candidates are excluded from the same frozen pool; select the next eligible candidate or abstain when all are unavailable."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-033",
+      "content_hash": "92fff46dba2710a34aea789978464b5138fdda638cf66c7c9d9538401567ebd3",
+      "expected_trace_hashes": {
+        "baseline": "9aa16bc9866e95e6cbf171f889999c555136ceb4589879ab0c330464ad8f93f0",
+        "shadow_candidate": "85f7892354bad8fd8e390951ea0e053118e9f693386fd5cbf8697465b0db6f2a"
+      },
+      "family_id": "phase-fallback",
+      "input_hash": "8b71dda44b061dc14b3a780b00641ad4b334c178d1b33ef5e2988687ce619e0c",
+      "out_of_domain": false,
+      "path": "replays/candidate-033.json",
+      "proposed_decision": {
+        "abstention": "all_unavailable",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Explicit unavailable candidates are excluded from the same frozen pool; select the next eligible candidate or abstain when all are unavailable."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-034",
+      "content_hash": "bb3ed6b2b21c26e3b1290307ffb76c5e958470100a95759b18f79052f2a6335c",
+      "expected_trace_hashes": {
+        "baseline": "a4affe929cc69237eeca7b61b0e21075b9f4f75795fab1a8361a608a1a802ca4",
+        "shadow_candidate": "6717bf4b8da6958b2c0197df8aceed22ba1a693c2ddf305c6bffa6909106123e"
+      },
+      "family_id": "phase-fallback",
+      "input_hash": "58b2cfe690df9377aa706253ab956ab1bd9b591757078318490c242b09f38aa7",
+      "out_of_domain": false,
+      "path": "replays/candidate-034.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Explicit unavailable candidates are excluded from the same frozen pool; select the next eligible candidate or abstain when all are unavailable."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-035",
+      "content_hash": "8dec4dd85563daadb58f51686118623baec4735058238fc24b94f814624c9a9d",
+      "expected_trace_hashes": {
+        "baseline": "674a834df15b1fb541a1fdf25de77efe3a03c7f78bd884df11b4045a408479bb",
+        "shadow_candidate": "171f4eda97c12d2d153d67eae1c3210be848fae20b5386d7964a013b752e945e"
+      },
+      "family_id": "phase-fallback",
+      "input_hash": "83338f0524b93b363d9686dad45cbd6c92637574dc9551bf6746fb3c8f870d0d",
+      "out_of_domain": false,
+      "path": "replays/candidate-035.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Explicit unavailable candidates are excluded from the same frozen pool; select the next eligible candidate or abstain when all are unavailable."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-036",
+      "content_hash": "25a978ec4d1db060d84df47a95b45e3e165b4f6724baa11da60ef3afc892d754",
+      "expected_trace_hashes": {
+        "baseline": "6d49f891eb6befcdf9693280c7fdae315943e57e373f3c0916c1c2ddf7bc51b1",
+        "shadow_candidate": "119ad223be1ac39edd2082d1a45e53bebc66cbae79a853fbaa53bc2eba4802df"
+      },
+      "family_id": "workflow-dag",
+      "input_hash": "46bf132073e0ebc9119592f803c8326e0f38ff3b6956b5fc98dddfff9163c9d7",
+      "out_of_domain": false,
+      "path": "replays/candidate-036.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Plan-phase routing is separated from execution and verification; this fixture does not itself prove the entire DAG runtime."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-037",
+      "content_hash": "58318ce48e175ac8d14546a56902c0d7b05828355297637d7695028f836a5da4",
+      "expected_trace_hashes": {
+        "baseline": "71516ba95162321d78c0af4053fbc70af0576004fc16b7df284e5d1b6b8e3ba9",
+        "shadow_candidate": "98fa41ae2eb5b4045f8f29b2e4ca5c863082c4eff71578a07003458a93829cee"
+      },
+      "family_id": "workflow-dag",
+      "input_hash": "b8e4c3d4929a19e107c6a3493842992f3e5f1a2391790f0c03474d37b3a9a812",
+      "out_of_domain": false,
+      "path": "replays/candidate-037.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Plan-phase routing is separated from execution and verification; this fixture does not itself prove the entire DAG runtime."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-038",
+      "content_hash": "a5f071eaed5c3cf96b7056a3fdf4a4960ca2ba8ef54de8e25e4a51ac483419ee",
+      "expected_trace_hashes": {
+        "baseline": "f147b9f9e8a99e0529510ca590a04229acfd125ee04c607b55372b758f3da907",
+        "shadow_candidate": "367719fcbba668534673eccb3cd687680b9033e6e1dd6d491f7ea838ce465136"
+      },
+      "family_id": "workflow-dag",
+      "input_hash": "55df24f983b0dd869f8ef012dad8a2ef5ea157681a0e4b41c87b8bd5a95afb3b",
+      "out_of_domain": false,
+      "path": "replays/candidate-038.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Plan-phase routing is separated from execution and verification; this fixture does not itself prove the entire DAG runtime."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-039",
+      "content_hash": "7db32a973444713d08d74aae2be32480b262b26d51c7bb844fb4a0ce6fd8e1bd",
+      "expected_trace_hashes": {
+        "baseline": "4e39896fb1fdef285851b92c626db40f9dfc3f202c55ee86ca45944460586686",
+        "shadow_candidate": "22b499a1878d19e95d705dc3a1e538d1ebf9aa29956685ab23fe9f1facc22fe6"
+      },
+      "family_id": "workflow-dag",
+      "input_hash": "badb3708f7e26c120a7ef588c0a69af5a60dc017bce1a590367e34273613d2ac",
+      "out_of_domain": false,
+      "path": "replays/candidate-039.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Plan-phase routing is separated from execution and verification; this fixture does not itself prove the entire DAG runtime."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-040",
+      "content_hash": "56c1cb5b739d34462a8b45a27993a04c470438957b7f226669504c11cc6b2f7b",
+      "expected_trace_hashes": {
+        "baseline": "eee8bf560aba2b156857d103e344e31773bea55d2a55d2075373586b18327b75",
+        "shadow_candidate": "c7bfcc3a8e9b4f89d7685998468a3abd4b25485479ad1be0b6fb754ed5f94f11"
+      },
+      "family_id": "workflow-dag",
+      "input_hash": "f632f5451e0fe91ca69395696578956cabfdade7a382865eb002d17eeb87174e",
+      "out_of_domain": false,
+      "path": "replays/candidate-040.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Plan-phase routing is separated from execution and verification; this fixture does not itself prove the entire DAG runtime."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-041",
+      "content_hash": "568def1d9aebbb38201b3d2e58a7c303108b962d23000ebc78756fdd84c6a472",
+      "expected_trace_hashes": {
+        "baseline": "7fcf16142dca31b6ab5fa38d48cea9f8ec87cf886d6bed0e497f76dabd32f433",
+        "shadow_candidate": "8dadcf0a1796f4691e5d3da060bc478a1d0170e832dbe54672a1789228f81f56"
+      },
+      "family_id": "permissions",
+      "input_hash": "a94b49f08d6d3264e0c62ed58530a6ee31c498212e8d7aa47e6b5a545317935f",
+      "out_of_domain": false,
+      "path": "replays/candidate-041.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN model-inference permission excludes every candidate, including during a high-risk review."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-042",
+      "content_hash": "8c0901edbbd641b234f98b304feeba0784828085a54ac86de398976f868808a0",
+      "expected_trace_hashes": {
+        "baseline": "7b955a9fd9dd0df9a7ca509b9d8d6c4db55271fe14eb3c9cbe3e6a61ced6561c",
+        "shadow_candidate": "ee07ab1b34d9d3aefb11ed3962d8e14317630f6db3f09e2b5f9c2990cad3839f"
+      },
+      "family_id": "permissions",
+      "input_hash": "1ba6abaa22dfd40a1e18929bcd4494a36b904eb547dfb21ffd5cd37620344894",
+      "out_of_domain": false,
+      "path": "replays/candidate-042.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN model-inference permission excludes every candidate, including during a high-risk review."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-043",
+      "content_hash": "e849df620a1fb15fe5cf9cb693018e7608d46610ba1f7fb91b99c0d976c2b8b7",
+      "expected_trace_hashes": {
+        "baseline": "cfcbfae399cbd37920043ad415faef8e112120f7803345dabd81c2fd773aa4bc",
+        "shadow_candidate": "69f75cba9e277769cf0cb07ceb2dbce245485f20d085e570c5a5ef06cbabb71f"
+      },
+      "family_id": "permissions",
+      "input_hash": "819f304b272c0f874dffaa09a158aedc599cc56eed17f3fe86e09d3b3f325ec3",
+      "out_of_domain": false,
+      "path": "replays/candidate-043.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN model-inference permission excludes every candidate, including during a high-risk review."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-044",
+      "content_hash": "da54c299cbaaad196e543793f91e479b7ea4799c38c20c7443e8a20af6a8f879",
+      "expected_trace_hashes": {
+        "baseline": "c70a34014352e17c8e33da6913c87255fe334668592d9fa7cb1256f5805fcb4d",
+        "shadow_candidate": "875840f0038b0f0f213259ef62fc902eacd0530f14823fea379177a36694d4e5"
+      },
+      "family_id": "permissions",
+      "input_hash": "d7dbf88f949970557809e249ba5bf88c5d960c91d6bdd32e10f60cbd4482f650",
+      "out_of_domain": false,
+      "path": "replays/candidate-044.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN model-inference permission excludes every candidate, including during a high-risk review."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-045",
+      "content_hash": "d4c2c191df58539c211968c173d3d069559cf63943eecf19d0301375c8d3e9a0",
+      "expected_trace_hashes": {
+        "baseline": "14719506535061141f99da541afc0eb30403115a4fc3b8bf124abfd1de4ae1b4",
+        "shadow_candidate": "2bdf9958ee60b2caab74e13e757be8e724df315cc2ba0442f162d61c0c34e3ad"
+      },
+      "family_id": "permissions",
+      "input_hash": "9f43ae761310f471f81ed46f8c61f6917b442f17b696f5e11376a0be3d53a091",
+      "out_of_domain": false,
+      "path": "replays/candidate-045.json",
+      "proposed_decision": {
+        "abstention": "no_eligible_candidate",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "UNKNOWN model-inference permission excludes every candidate, including during a high-risk review."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-046",
+      "content_hash": "ee0b856268409e1f7397070060a17e43e4735c680da4ee8839bb5fa3f6e9aff0",
+      "expected_trace_hashes": {
+        "baseline": "1316e4866379e5a001541b02bc04672b9f6c9a05a1d7471a1e8c1879e9325f3f",
+        "shadow_candidate": "0f34d546813ea9c6fbf632d0c09baf7be92cfdead4db272a14626b91ddf41c20"
+      },
+      "family_id": "prompt-template",
+      "input_hash": "0b83a5a12524c96ad33a9f6060619ba305b0c719b740859da7eb384c856e7314",
+      "out_of_domain": false,
+      "path": "replays/candidate-046.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An eligible planning candidate is selected without loading prompt bodies; typed prompt rendering has separate contract tests."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-047",
+      "content_hash": "b7ee45e9ff228c350eee9ba74bb1311185e2dc2c03edf4c71cb9ac8b8abc57e1",
+      "expected_trace_hashes": {
+        "baseline": "15909a756e0ddf1af6f512738621ddb07a67282316f762935ecc78ab5661f746",
+        "shadow_candidate": "0b27bd01ad0f71da97c73efee97e67bb19cbcf5c4ba10f391f813ddba925723d"
+      },
+      "family_id": "prompt-template",
+      "input_hash": "d822483cd21b6dbcff91aa14392cb7953ea9987a68d90c3cd866c98859500f69",
+      "out_of_domain": false,
+      "path": "replays/candidate-047.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An eligible planning candidate is selected without loading prompt bodies; typed prompt rendering has separate contract tests."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-048",
+      "content_hash": "b24c7d258e8184b82f628742be1d228ef93f51b15a920b19e78bfd24c90a71dd",
+      "expected_trace_hashes": {
+        "baseline": "8105f8bc90bbbca883135b26309b9e7af250c6cf249430b28d0cba1182aa32fe",
+        "shadow_candidate": "3d546d860123a4a966170191c69b291cf6f124c795ff9916917a90d379472ba6"
+      },
+      "family_id": "prompt-template",
+      "input_hash": "9ad29973fa3691c807a865b069e72ec3cf3521c4c046aeaa77ca1781eb629e24",
+      "out_of_domain": false,
+      "path": "replays/candidate-048.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An eligible planning candidate is selected without loading prompt bodies; typed prompt rendering has separate contract tests."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-049",
+      "content_hash": "a595dd515eadbbb199a6955e417e9085756444157375dc2462a377af216d1a98",
+      "expected_trace_hashes": {
+        "baseline": "2cbfbb27ef8afbf832c38cda25d92788952fd69b640a294e3efa1659778a8101",
+        "shadow_candidate": "0f9dc540cd11d9eb892e33b5bdc4cd9a55ecec6083cf2f2b98230687bc17b73d"
+      },
+      "family_id": "prompt-template",
+      "input_hash": "1a4e62f829bbaa331330dd45cbb98aded197e536de7ed944c36944d93d88ccef",
+      "out_of_domain": false,
+      "path": "replays/candidate-049.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An eligible planning candidate is selected without loading prompt bodies; typed prompt rendering has separate contract tests."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-050",
+      "content_hash": "8f388e09116cdacaeaf7ad46e806fe49be6b1c6cffa10272147f845c0f64c577",
+      "expected_trace_hashes": {
+        "baseline": "28c3673ad76b1f2fd1324b95d520e71de9e92dcfef00bbef7e423873754832c5",
+        "shadow_candidate": "cdbeaa4b1eb2db2f63ed1ff9d4015246dddf539ec259b0f1b733b93386afdb31"
+      },
+      "family_id": "prompt-template",
+      "input_hash": "aa6964a18a866368cd4d36f44739588ff835eb74b037e7fa2166c9795c18b37a",
+      "out_of_domain": false,
+      "path": "replays/candidate-050.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An eligible planning candidate is selected without loading prompt bodies; typed prompt rendering has separate contract tests."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-051",
+      "content_hash": "e413d5fb457032b46b2d3ec991059549d7e167960f5406a421f3e126f3e3726c",
+      "expected_trace_hashes": {
+        "baseline": "5b5b35274ae06117e3af4947a50d18396a40c351a326c44b6722ee11ba941610",
+        "shadow_candidate": "10cb534b403c22559aeb9cbefdea48422972e4b16d4df18f4a03a9a561e108c8"
+      },
+      "family_id": "replay-integrity",
+      "input_hash": "532c615ea721edd16b00f9ec0366fab454d4c384f2eb6eb0c3a6c3267b018764",
+      "out_of_domain": false,
+      "path": "replays/candidate-051.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Complete request, catalog, snapshot and policy identities are frozen in the replay; byte tampering is tested separately."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-052",
+      "content_hash": "86a51c9b313bc8d5549455ed45a78b7fbd34780203e495a54c8da6a44465d673",
+      "expected_trace_hashes": {
+        "baseline": "c9905f547cf595ba479d0941af11e3781e6bd07587535d54c6a80dc5a55fe373",
+        "shadow_candidate": "bcc749134d6fcc54b6a2c7f0ef983b8103e633558706ffdb94501dd93906c9a9"
+      },
+      "family_id": "replay-integrity",
+      "input_hash": "b033262adafae30192dd766a467b57e36b2417d0221790a7241141f0ddcc23c2",
+      "out_of_domain": false,
+      "path": "replays/candidate-052.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Complete request, catalog, snapshot and policy identities are frozen in the replay; byte tampering is tested separately."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-053",
+      "content_hash": "45ad056e142e600c3b42d37eb79df5ee9e41e1f39e5ec83d674b879f3390c9b3",
+      "expected_trace_hashes": {
+        "baseline": "0466625c5f9d35b4ba62263467ff864fad0cd1b62c6839810b536a707aca20c9",
+        "shadow_candidate": "8ab40d1957f139ea8081ddb233ec22ef3244cf78806c1cfbf900b500ec2ace32"
+      },
+      "family_id": "replay-integrity",
+      "input_hash": "fd5e8ab3f4da13f9244d3447ae84d905c23a970e1dd138ff681d76fc9d4c6b8a",
+      "out_of_domain": false,
+      "path": "replays/candidate-053.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Complete request, catalog, snapshot and policy identities are frozen in the replay; byte tampering is tested separately."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-054",
+      "content_hash": "77bf1bce79293767f8f0b61c19f347fc4e2f6a02e28a3483249d560951044390",
+      "expected_trace_hashes": {
+        "baseline": "31b943dd9d42fd54044ca008bd79e4c9908f57d64c7e8c2b7cdb4dce8e14cdd2",
+        "shadow_candidate": "1a6aeba809f1e0c749cc0d52de68b85423d25476f0204ef0e78c3e9e973acd34"
+      },
+      "family_id": "replay-integrity",
+      "input_hash": "374c9d9052c2486a22167c2fec0f994d40ac574dcb3a8e707eda1d80d5f339dd",
+      "out_of_domain": false,
+      "path": "replays/candidate-054.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Complete request, catalog, snapshot and policy identities are frozen in the replay; byte tampering is tested separately."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-055",
+      "content_hash": "5ad451bc5a2094ecec02b20b56a3e54a2de5baeb982b37cc21206f12da24a018",
+      "expected_trace_hashes": {
+        "baseline": "87fe86dd0e47763f372e7e82516892d016002371229c9d28f0f79cd8d95b38de",
+        "shadow_candidate": "684910bdd8ef13321cef10f198a9b336b015b67239da57fbdd8729651d8a3095"
+      },
+      "family_id": "replay-integrity",
+      "input_hash": "43a996bd768f12e6c454552cf133e41f32feaa0ee68562724e15699600dbf120",
+      "out_of_domain": false,
+      "path": "replays/candidate-055.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Complete request, catalog, snapshot and policy identities are frozen in the replay; byte tampering is tested separately."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-056",
+      "content_hash": "b6dc467656f492d0154c97de3c9450a8185919b50a4b228ed59d2dc901cb823e",
+      "expected_trace_hashes": {
+        "baseline": "c2e7377ed515c82713d8eb9b415487659560c78ffd590b4bcd140c0b04c2d8a1",
+        "shadow_candidate": "cd99761eb5537065ef41cf671c8e2b37422750a2249ecef4d60f42d8c17eb6ef"
+      },
+      "family_id": "shadow-gate",
+      "input_hash": "165162a32994ce23542d1525138b455b1974cfe7b8ae7231862e663e5ff67f53",
+      "out_of_domain": false,
+      "path": "replays/candidate-056.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An independent high-risk candidate can be proposed, but unvalidated corpus labels cannot enable any semantic promotion."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-057",
+      "content_hash": "06c026b84e1c8512eac60ee94d132641c9349ee5fad3e88f890c9f4768cf6082",
+      "expected_trace_hashes": {
+        "baseline": "0b4fe8be5e931b61484cc322e308956a7d459fe252afe7ab3b24459c378be928",
+        "shadow_candidate": "45c442be22f8a6579b0450da07434a3400887e92b4c3f7031aea451ad1864891"
+      },
+      "family_id": "shadow-gate",
+      "input_hash": "679502280e361436ee40177db4849350fd69ed2ea113536d2d6f83adfb2ee7ff",
+      "out_of_domain": false,
+      "path": "replays/candidate-057.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An independent high-risk candidate can be proposed, but unvalidated corpus labels cannot enable any semantic promotion."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-058",
+      "content_hash": "48001e2a30fcd426c1f4666522dbf26b5d4fb2a8253e09695e98444fd6589cc0",
+      "expected_trace_hashes": {
+        "baseline": "14972db367401cc40b49a4be4458908cf33405edf51f7ebd1d5a502f5fcd731f",
+        "shadow_candidate": "5a81411392d6a8d847d0b70f56f6b94ec0529f594d8871a06ba043f59788029e"
+      },
+      "family_id": "shadow-gate",
+      "input_hash": "a5445680bfc1a118758679241b27f331e1eb77419dc7f3ea1a73982e09b699f4",
+      "out_of_domain": false,
+      "path": "replays/candidate-058.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An independent high-risk candidate can be proposed, but unvalidated corpus labels cannot enable any semantic promotion."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-059",
+      "content_hash": "5b8c8f9677fb6720419a13b4592c93e65be8d7c81bb5584bd22933a44bf19838",
+      "expected_trace_hashes": {
+        "baseline": "bab92cf26c522edc30e0bd83d7116ec295546283c1896d0ae7523b12e915a509",
+        "shadow_candidate": "d816df621aadde87d83b288e105fb63ddff2cecb1cfd3888f92a072c7b2eef86"
+      },
+      "family_id": "shadow-gate",
+      "input_hash": "d3e99dd55a819df7eec3ea23ce5a9253ee754cb594c74bf58cf808a4fccb839f",
+      "out_of_domain": false,
+      "path": "replays/candidate-059.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An independent high-risk candidate can be proposed, but unvalidated corpus labels cannot enable any semantic promotion."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-060",
+      "content_hash": "e75c4766bbbc3b322ac3ff5ba7a533d8004fa2df4129317e84909de973774141",
+      "expected_trace_hashes": {
+        "baseline": "99be9131c5b128b104e2a47a859ad8a036926794f04f43dafdd37308e1a5eeeb",
+        "shadow_candidate": "eecabf22d08209760e0233324993b954a081c4906592646dea83decd235e29d1"
+      },
+      "family_id": "shadow-gate",
+      "input_hash": "8c60bc860008ea8a084589d69f223fb6b6f3102c360600f5fdae8b693748f7d5",
+      "out_of_domain": false,
+      "path": "replays/candidate-060.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "An independent high-risk candidate can be proposed, but unvalidated corpus labels cannot enable any semantic promotion."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-061",
+      "content_hash": "b720c74f77eb4736d6f81782ac009dcc4fae5ad080934fe25ec263032652d114",
+      "expected_trace_hashes": {
+        "baseline": "e4dea6e28e3e32e80e97c93d0affa5806a3279552393099aa1fdfe471ea1e38e",
+        "shadow_candidate": "c9d89f14b93e619380c6231e5d611eb2a112f3b0a146727e84f147fafad7878b"
+      },
+      "family_id": "rust-refactor",
+      "input_hash": "aab0862f58b79b63518d30237e5e36e021f0f546cba75ed9f4e401ad2eefd06e",
+      "out_of_domain": false,
+      "path": "replays/candidate-061.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Workspace write is explicitly permitted by task, restrictions, host evidence and permission map; the proposed candidate stays inside that scope."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-062",
+      "content_hash": "59fd66e22494e1ae721a542e0b9df13ed4f4af49cda388cf9af33fcd72e993b0",
+      "expected_trace_hashes": {
+        "baseline": "77d19fb867cd4f2d5a6dd68bae413170c1aa6d283c928d967c1654e70d3b59bd",
+        "shadow_candidate": "534cc291fced69e700cace3081e50050d9cec8ebd916a5cf7397dc53fd579874"
+      },
+      "family_id": "rust-refactor",
+      "input_hash": "365656d73f36da6ad172dc53113be6fb3b9cc0fe5c54a2e273a051001ddfae68",
+      "out_of_domain": false,
+      "path": "replays/candidate-062.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Workspace write is explicitly permitted by task, restrictions, host evidence and permission map; the proposed candidate stays inside that scope."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-063",
+      "content_hash": "f502a669e5f958401ae5941f76d0225931a500e8df0a318655e81c97dfa37e9b",
+      "expected_trace_hashes": {
+        "baseline": "40a837641459b0c99cca2fe536a9e5ecbdf8d3fcae256777b2167e9b7712f4df",
+        "shadow_candidate": "480341234eff3b32c813764b9be612a8021de8b882d44dc5eb32d213f9a5d99d"
+      },
+      "family_id": "rust-refactor",
+      "input_hash": "c10632e88bb99a15f02167361c6e7ac43f162d93efc6fb31bc22dcdca4add90f",
+      "out_of_domain": false,
+      "path": "replays/candidate-063.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Workspace write is explicitly permitted by task, restrictions, host evidence and permission map; the proposed candidate stays inside that scope."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-064",
+      "content_hash": "7cbfaeaa29b35b5a0fd0c1363f5c188a463401eb712d1e9bd26404e7f67b68ee",
+      "expected_trace_hashes": {
+        "baseline": "f11b68394c3e8d5b8340f42f2910bd1a6bbd26aff9e0589d41a708011de84f38",
+        "shadow_candidate": "357644edcf448c55e775a317c7724f78d9a04736e63ce5cc699ff9b6db492849"
+      },
+      "family_id": "rust-refactor",
+      "input_hash": "3250cd5ace4eeb30508f92f03148009ca07ba87f48b21f4aa7ad235453a5b31a",
+      "out_of_domain": false,
+      "path": "replays/candidate-064.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Workspace write is explicitly permitted by task, restrictions, host evidence and permission map; the proposed candidate stays inside that scope."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-065",
+      "content_hash": "db88a6d3727f6d0f99d00deebf04ebb1c6bfd45f37a44284c26ebcfb4a53a30a",
+      "expected_trace_hashes": {
+        "baseline": "55bff0f3913a6803b3569011cb4e7f409a370704f6d84a2dd7c47a565ddfab37",
+        "shadow_candidate": "da424e08dd6af2bb45fbc9ee5ab99250fff4e1628ded6e35259466d5b4a24fa5"
+      },
+      "family_id": "rust-refactor",
+      "input_hash": "eb9254967839e1b1802704c1e6130d14cf1c4ccb6de0e13f255297dca7fdbfb8",
+      "out_of_domain": false,
+      "path": "replays/candidate-065.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "primary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Workspace write is explicitly permitted by task, restrictions, host evidence and permission map; the proposed candidate stays inside that scope."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-066",
+      "content_hash": "c4694d8a62f22eb7714c557af9a0b35d779ca9d4cb5c3178e12ccb4a2a7087e4",
+      "expected_trace_hashes": {
+        "baseline": "e600b367e6f554f5bc261b91bc261d98d0f0045e71efd60916379e41c0256aed",
+        "shadow_candidate": "a065a462f4ee0b529f8f6ad8b9a9d525fa5f5a6a97d3b2977f1149bb282dc641"
+      },
+      "family_id": "migration-review",
+      "input_hash": "db8b21940b1b56e657c90eda877dfe579a3c0a50944973d4f5b4860cb238e888",
+      "out_of_domain": false,
+      "path": "replays/candidate-066.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The previous execution model cannot independently verify itself; the next eligible model provides model-level independence."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-067",
+      "content_hash": "e75f0ada31f80b8194eb87fbca47f046e1edc713c203aff66815fbdc9814aef2",
+      "expected_trace_hashes": {
+        "baseline": "b9c79e9f44b4e94601636732c86042ab1d78f21923ed29b2b7c52ea72909476f",
+        "shadow_candidate": "515dc2aadae4174410d0b117dff441eef2c697ddcb97103edc9dca577dd0e4a4"
+      },
+      "family_id": "migration-review",
+      "input_hash": "a111845360941e672ffbe283fa3a91812191ea90e71edf6ee3e037a05e837d35",
+      "out_of_domain": false,
+      "path": "replays/candidate-067.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The previous execution model cannot independently verify itself; the next eligible model provides model-level independence."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-068",
+      "content_hash": "b404a8b3b3f5bb8b69c274d558125fa2eff92b80e902c66d14c77b3ce6954c80",
+      "expected_trace_hashes": {
+        "baseline": "415562db9e01508dadfd8e9b8c3456cd2e6fa026b0df0d0e0822c5f9843fd454",
+        "shadow_candidate": "54a358fb1b2dc715ce90109a9e0d989c5b8a8a0692063857a614eb97721dca24"
+      },
+      "family_id": "migration-review",
+      "input_hash": "b12905d193a9d087ec267eb708bd8c27d4a43b5b0ffab1757f975edb7e741b73",
+      "out_of_domain": false,
+      "path": "replays/candidate-068.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The previous execution model cannot independently verify itself; the next eligible model provides model-level independence."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-069",
+      "content_hash": "30518e1a3bfbb6cf1d9b94bcd0d69573559ff4df60da107099ba031bb59a50a5",
+      "expected_trace_hashes": {
+        "baseline": "43ca2b1e125930e7a785379d20f87b0dfe11054e3bddb4745befcdb9c159ef02",
+        "shadow_candidate": "37276f9bedc0c0c20907e092e5b8cc26c1ff0695bd1487e854cae445ab86d0ce"
+      },
+      "family_id": "migration-review",
+      "input_hash": "2364c12d3dfb1ee713d77b10c6ccc45bc27bbac603ffd847529f50934fad9969",
+      "out_of_domain": false,
+      "path": "replays/candidate-069.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The previous execution model cannot independently verify itself; the next eligible model provides model-level independence."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-070",
+      "content_hash": "0975bbaaba90fd7f319a90be3a825c02986e6b3eef04de44964e1b9c98f58704",
+      "expected_trace_hashes": {
+        "baseline": "ff138f71297447450a5849b3917de918734f36a33ef1364ea14baf75f9237a28",
+        "shadow_candidate": "5a5389c628a059201d7eca59e9ff49c27384e98ae08d470d6e5afd7927eb4555"
+      },
+      "family_id": "migration-review",
+      "input_hash": "875000a9c38e44c5824aee2687fe363c5cb5436dd23028a1a0cc11ead3800647",
+      "out_of_domain": false,
+      "path": "replays/candidate-070.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The previous execution model cannot independently verify itself; the next eligible model provides model-level independence."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-071",
+      "content_hash": "3ace847dcbc65f44c03f3b9c6c50adbeabaf40b80849bfab77dc25bd62becad0",
+      "expected_trace_hashes": {
+        "baseline": "377c2ff7b671ae161160a4e41727d468d4f4ab1d8046712aa3595151da50b9fe",
+        "shadow_candidate": "7d50505784d3695ab1c157baa8ad1fc434e89a2ed6c36854db6213b1ef7c4baf"
+      },
+      "family_id": "incident-readonly",
+      "input_hash": "236eac337d1df0a6f6663fecc6152cc3283b22b52fea255d2bf3bd73b2a391c8",
+      "out_of_domain": false,
+      "path": "replays/candidate-071.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Critical incident review remains read-only; the write-capable candidate is forbidden and the independent read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-072",
+      "content_hash": "65392d2c2a6a329e61ac4de25fe7c1ee30611842d18a84a3be594483be7c0089",
+      "expected_trace_hashes": {
+        "baseline": "b69f204a14a03f24f904d171eaae7db12c0bce60067cdf7b28ab04cbf44f35f6",
+        "shadow_candidate": "f7cfcc7b97dfabdf0be5834b136f182111a1513ed08cd9feb8d4159aad147ce0"
+      },
+      "family_id": "incident-readonly",
+      "input_hash": "a85d5d589865f5695a70ad98dc86bf6e494ec22846f82e9d07782f92470e55bd",
+      "out_of_domain": false,
+      "path": "replays/candidate-072.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Critical incident review remains read-only; the write-capable candidate is forbidden and the independent read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-073",
+      "content_hash": "58611795fae5206b827b79b0755e9f15a998f79fbd81742056707c7d8e7f7a3b",
+      "expected_trace_hashes": {
+        "baseline": "65bdb5b2c8e5eb811a7ef1fb70056fde3887b69b699b7a097f883ef96789d5e6",
+        "shadow_candidate": "d05ba3e1e1ab9133f9e5a8be8aa96e399f30ab47dc7ef4aa924d836acb081e71"
+      },
+      "family_id": "incident-readonly",
+      "input_hash": "eb488bed7ed68dbdab12dcd02e82c42e21ed7851c12759b6f2b1e9d5503c7fc5",
+      "out_of_domain": false,
+      "path": "replays/candidate-073.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Critical incident review remains read-only; the write-capable candidate is forbidden and the independent read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-074",
+      "content_hash": "1b5cb46e950eb42775fc6ffc98c7037b0dbf420a749a0bf5d3e6719821cab6ab",
+      "expected_trace_hashes": {
+        "baseline": "8e0142f4e5885118bdd73caa95e45958aa4a184dadefc749492d15aa582121a2",
+        "shadow_candidate": "379d2500581ef038a79e5731f0fcf1912e039dd9b1d30ad614cbfdd2ce59f4cb"
+      },
+      "family_id": "incident-readonly",
+      "input_hash": "9eea4a87d86ec6c9d0cde356d48ea8cc2d3d248884ef31690b53b8ea851804e9",
+      "out_of_domain": false,
+      "path": "replays/candidate-074.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Critical incident review remains read-only; the write-capable candidate is forbidden and the independent read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-075",
+      "content_hash": "5d0a054f5f7e1a8c70c816af3ead55c90ba6ba64dd8bfb743dbe7baf76a06da5",
+      "expected_trace_hashes": {
+        "baseline": "2e615d4d76cec75c01c6ff2810439691dc1d7bb6bb3c5690749b1dd734174e9b",
+        "shadow_candidate": "c323f9ec0f6562e6b3cb9f38ce5633b49470712dad35bc82a944ede29175871f"
+      },
+      "family_id": "incident-readonly",
+      "input_hash": "de4e556b7adf4bc69aeff99b006dc60e6bc284e88476b102080a308d36109662",
+      "out_of_domain": false,
+      "path": "replays/candidate-075.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "Critical incident review remains read-only; the write-capable candidate is forbidden and the independent read-only alternative remains eligible."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-076",
+      "content_hash": "d2462c493cd8baa680cc2de1d0fd1b690db9d9ef9de782db96447f241060ccc9",
+      "expected_trace_hashes": {
+        "baseline": "6cb5a25b5a1be164222cd68ffd7d6321a507143d77db1679acaff3a464e0ac30",
+        "shadow_candidate": "963bf94f37a76f7bd9c73c0157ab50fe3a35bba62fee9924058178661e43a915"
+      },
+      "family_id": "release-gate",
+      "input_hash": "0c082d054173d57c9be69c1fd027c27ce2f9197458fea12acdf23b5359cec279",
+      "out_of_domain": false,
+      "path": "replays/candidate-076.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The requested primary effort is absent from this host snapshot; a supported model/effort pair is selected."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-077",
+      "content_hash": "ff7435a5e339a9fd681e081a8a1cc9f5fc527ec6dd353fefbdd5f7d06ceff4ff",
+      "expected_trace_hashes": {
+        "baseline": "b079d651b276439d53b0ba22d7d8a7c7b08150ed6cd62d1a70a330467cf9f084",
+        "shadow_candidate": "6431e6aa5bc79e1d5072f9e94d2061af17527adf36c47422e5021a67e69034ae"
+      },
+      "family_id": "release-gate",
+      "input_hash": "7fee04d16c83627b6f6d4d1ee766fa154560da1186bd4d0dbbb23a6b5181cbd7",
+      "out_of_domain": false,
+      "path": "replays/candidate-077.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The requested primary effort is absent from this host snapshot; a supported model/effort pair is selected."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-078",
+      "content_hash": "b594090af28adf48ac9a73e0bee33383170e67d554d2e3e258b17ec428bc364e",
+      "expected_trace_hashes": {
+        "baseline": "26004bc82f287b9166f65ab4553422a9ed326c1667023198def7d336c9aef73b",
+        "shadow_candidate": "c87a694ae459a421b27446c75a53d43fa8895e99bf380f2140d39282375bede5"
+      },
+      "family_id": "release-gate",
+      "input_hash": "7c1f320ecfd47da96258593d26c6c7fb0b7d18a4ee23abc7f2429627a358b3ca",
+      "out_of_domain": false,
+      "path": "replays/candidate-078.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The requested primary effort is absent from this host snapshot; a supported model/effort pair is selected."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-079",
+      "content_hash": "bff4efe32749335e2ec55aa71e1c34ae5d1c8d9314e48929d044757c73292835",
+      "expected_trace_hashes": {
+        "baseline": "8ab1bde6d850b75920771afca5006821bc985b0bbfebc129831173c94490e5f3",
+        "shadow_candidate": "c4e2ea9cb8554ab407c872aedead05c5033ae7ae1db3c7647b2e7aa327960363"
+      },
+      "family_id": "release-gate",
+      "input_hash": "6d9a680b679759b7b7b352bff4c0605fc9bb6ec3a03914428c5df781e7d3f322",
+      "out_of_domain": false,
+      "path": "replays/candidate-079.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The requested primary effort is absent from this host snapshot; a supported model/effort pair is selected."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-080",
+      "content_hash": "b7e7348c39ac111d7224b27d0aa0b2a8cf122c1e687aa4344c1e2cf80368c04f",
+      "expected_trace_hashes": {
+        "baseline": "daf884d67b0317a29d6000ac3d94fc17a466fd205348cd803bbc7705b728f9e4",
+        "shadow_candidate": "132beaa00345edddf10a4dfcb5acc0c709976a9d09e56ba95bc11c7fc3a5ab83"
+      },
+      "family_id": "release-gate",
+      "input_hash": "e75172c8fd9009c7a2cd194bb9e0f746268bb112e69a212ab6a1ab2079db9712",
+      "out_of_domain": false,
+      "path": "replays/candidate-080.json",
+      "proposed_decision": {
+        "abstention": null,
+        "candidate_id": "secondary",
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The requested primary effort is absent from this host snapshot; a supported model/effort pair is selected."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-081",
+      "content_hash": "9a941a4b48dcf5a560c9fad4ca23edbab7e0eb134a9b98b9d25a639d63840192",
+      "expected_trace_hashes": {
+        "baseline": "7ac2b19f092c852a67328164aaf33cd6c3720ac3e06fc975b3c30eacc7d1d033",
+        "shadow_candidate": "7333eb6c4a623c5c0c658da78fe7a20a876677bad1fc033b90d70bf6d2b9138e"
+      },
+      "family_id": "ood-cooking",
+      "input_hash": "ab5e386d7676961ceeb51ae4055b1ca1e5d4cd70b6416e534a7437d1fe5f740b",
+      "out_of_domain": true,
+      "path": "replays/candidate-081.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-082",
+      "content_hash": "789489ad3814d680208efd5b23b4ad09c3e3cc2a69c3efbb6f6dd57e9cf25db3",
+      "expected_trace_hashes": {
+        "baseline": "3d2d1a480078e9390c620d69946f8ece93fb3b1990d43e67a65c154c2e193193",
+        "shadow_candidate": "36be1a0f7771587b4203a91a7cfdaed80006db4e3a4655d19dc659bdc00a38e7"
+      },
+      "family_id": "ood-cooking",
+      "input_hash": "e00e07be13eb996404b68f482e861a11a583a81e5acbfc69c0ed6bb04266f794",
+      "out_of_domain": true,
+      "path": "replays/candidate-082.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-083",
+      "content_hash": "6a3604a566a048c418f3432ed7888e63a8da6125f2f180d0b44a3c1e7b824090",
+      "expected_trace_hashes": {
+        "baseline": "5c3841946676a87ce2f9ed0af277559ec07a10e8f67f656d80893b542b17705d",
+        "shadow_candidate": "5a6d4b7321dce62bc40af3ec0b14b90c76d1fead3b97dd20c48126edca152765"
+      },
+      "family_id": "ood-cooking",
+      "input_hash": "6579371e661f271fe9a5da73069f7ad8c8173603b090efea6109e05e4b914d5e",
+      "out_of_domain": true,
+      "path": "replays/candidate-083.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-084",
+      "content_hash": "35a6e225b8c1f9325756317f186008c47762b172a7f6726dacbfd0a4a438bd8d",
+      "expected_trace_hashes": {
+        "baseline": "e97ae457aa502d92e7104bfd0614dc14a3caac3338616d74a01b4ff7e8eac32e",
+        "shadow_candidate": "ae642b7488a10d72af8efccb0127eb2fb8ad52cf76f9b457a0f0d1c8810c4921"
+      },
+      "family_id": "ood-cooking",
+      "input_hash": "88b988e5cc3a62605df2dd0b60a1394c464feeb5f16441c0b8b5e68e811253fe",
+      "out_of_domain": true,
+      "path": "replays/candidate-084.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-085",
+      "content_hash": "07949942f135c03ae77137bad219a3d91b3ca9dd76a6332554872a90227ea1b6",
+      "expected_trace_hashes": {
+        "baseline": "e7710fe8c5bb0abcc4dc77eb3f300a12277139cb6d8f183e5e49affb7fde1f18",
+        "shadow_candidate": "85b6a4efbd5748a8d5efb3fa3a8e07742d8be36a288447788c839e170b71fc2f"
+      },
+      "family_id": "ood-cooking",
+      "input_hash": "d5a8ad3fd93a0c620e4f6a9f6cc4b6fa865ef650f4a01f9d75db14a70cdcea6c",
+      "out_of_domain": true,
+      "path": "replays/candidate-085.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-086",
+      "content_hash": "85bc3bb0f5681f7bce84c0e9eaf2bfb0b040d475f041f4d0da01a2d75b6fa801",
+      "expected_trace_hashes": {
+        "baseline": "a686ffd29ab3742a35c4ad32223e3bb0a16f2c8f453d8cc1e2bdd43f2e7bd2eb",
+        "shadow_candidate": "b31e4e7657a27e3720f3b8259669cf5a56fed1aafa6cb7e2faae021d7031409e"
+      },
+      "family_id": "ood-travel",
+      "input_hash": "6d6cd6cc53a588211de80b80bd985b60cf9edefd2c2c146881b726f2044c4fa8",
+      "out_of_domain": true,
+      "path": "replays/candidate-086.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-087",
+      "content_hash": "d02e2dc5d1d8c32f8cb8706b64406e7bb3348c43eff6acbaeb97d95d885d6fdd",
+      "expected_trace_hashes": {
+        "baseline": "31f4a5ee388909a34d6f55f304609493ae6e805d2c6095f2b566a0c17a391423",
+        "shadow_candidate": "de39eef62b75c8335e4cf19403c3ff2f74db056b10084c12f4189c64c4e89efe"
+      },
+      "family_id": "ood-travel",
+      "input_hash": "b9985ba051523365401a2fcd11a85267e3e859c966c3a29b79f2dd5d660353b0",
+      "out_of_domain": true,
+      "path": "replays/candidate-087.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-088",
+      "content_hash": "dcfa90deaac090d5f2c78d51626d7b95dc1ac7cfb8e1c213e04f2a4fa1064f4e",
+      "expected_trace_hashes": {
+        "baseline": "d068b72b03a5c5f93d161be672f23590783799e3b7642cf726981a44021e8306",
+        "shadow_candidate": "cdbf1f6bb2315364b01ff63165efcfab9689cf99093fa1950865986a82879c56"
+      },
+      "family_id": "ood-travel",
+      "input_hash": "adf8b0e8c12bf109bcad1b37cef31fd959508fc862711f5501d2a90a45e04d0f",
+      "out_of_domain": true,
+      "path": "replays/candidate-088.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-089",
+      "content_hash": "69055789c7d08ad8e336de6c9010c9a685e895928d730d541c0bf6baf6c5038a",
+      "expected_trace_hashes": {
+        "baseline": "09c2032310f49d14ffd6000753e66e5f97310da8f09901cdb596d9b0f1c7461a",
+        "shadow_candidate": "aab0a33dd184feba4b0647a8971d210a48930654bc7d9efda1e60e6571f3bf08"
+      },
+      "family_id": "ood-travel",
+      "input_hash": "a47e7930c3c879c1bf801a56b321b856b34f83e025645d15c738c9b5cafc0490",
+      "out_of_domain": true,
+      "path": "replays/candidate-089.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-090",
+      "content_hash": "c4d4d0ce14b45b0f859a12cd9b3f65734febe8e5c3b47d190f4163b4a1a59406",
+      "expected_trace_hashes": {
+        "baseline": "465259a132e56cbd3723db54498f271d2b1f4ed4fc9abcfd33183176c006d979",
+        "shadow_candidate": "1ede3849cc3092a0782f64d884a502afca887f9915cbb2c373e2236ccc48f0da"
+      },
+      "family_id": "ood-travel",
+      "input_hash": "09e415e3eeaf574467ea684f849d9a7049ff07a7234fd785707cedbe1cde174d",
+      "out_of_domain": true,
+      "path": "replays/candidate-090.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "training"
+    },
+    {
+      "case_id": "candidate-091",
+      "content_hash": "b70e43df25c9776bca2649f917a67266111dd473384e1c6c9106b8257eac8a37",
+      "expected_trace_hashes": {
+        "baseline": "c8c30610358e806b0d8a3a8bad7406a530b217759474f6c457d70e681d37b282",
+        "shadow_candidate": "a81d290888c1bf20ee8dbe63396afecf3e65e0e83cc7cd203c94f789920efe46"
+      },
+      "family_id": "ood-personal",
+      "input_hash": "338e93529c503f5f4403c4fc9f097aede923dca768bda7a209eb48c9467382b9",
+      "out_of_domain": true,
+      "path": "replays/candidate-091.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-092",
+      "content_hash": "01120d8c21944c6e211a2dc2926fbe36f79d44dbd8dd6b8ae2147b1aa6f1ba26",
+      "expected_trace_hashes": {
+        "baseline": "9497253529f561837c76eb82c6dd88d33bfabaf4c8a0d42e93ea54e898849abe",
+        "shadow_candidate": "beb0ea211a614d1418526fcb4ea1f86213108b5dd341710d97a06c0321019d24"
+      },
+      "family_id": "ood-personal",
+      "input_hash": "9fd279f9ca1e133d1f8a05a7f9b13e5f01678bf5bbe0ba896833667cc69a6bad",
+      "out_of_domain": true,
+      "path": "replays/candidate-092.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-093",
+      "content_hash": "504f12dfbf13462e88c1ecff7d8db79be81e867a6bd7c4ebeaa002db7ae988de",
+      "expected_trace_hashes": {
+        "baseline": "4446857eb05fefc18600fa5836c17561c6edfe4aae50331ac0fdbaedfbc62b58",
+        "shadow_candidate": "fd7f3538c8ab5f94a92b02cc916a3f4fd7cce805115183b0438990d7c2c42b96"
+      },
+      "family_id": "ood-personal",
+      "input_hash": "164c153c8569c5ec465d8c42dadbb7f51fb27430e3655a5f7aaea7822aef4bc6",
+      "out_of_domain": true,
+      "path": "replays/candidate-093.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-094",
+      "content_hash": "7ef0a6ab8afd11fe79bdf8dd27e7e38662f55ccec5c4e0e7166d5221a144e85c",
+      "expected_trace_hashes": {
+        "baseline": "6692b28ab27eadf26ab21ffecfd74eb59a6ead257c18c723a567a3ef791f525f",
+        "shadow_candidate": "2ac8374eadf820869eda7dfcd26b718ffcc73f032facc83a66e2bf39db22b1b7"
+      },
+      "family_id": "ood-personal",
+      "input_hash": "ac8bfbd3fa9db93c4f9b8c67f16dc01a885373d5e386d6cc43ca984ab185dc2f",
+      "out_of_domain": true,
+      "path": "replays/candidate-094.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-095",
+      "content_hash": "140be5f80ee80ec7924b6de2b3e2a8ea5f9017c73a390b4ef3007123b831ba51",
+      "expected_trace_hashes": {
+        "baseline": "8754c700814582cd4b4ebf962e167ee3cb9157accd569bcf7d717e1bb536de1e",
+        "shadow_candidate": "ef364244ebef838449e4418ae315b7592c74b6c2bd075bb25c7fc26d910aa2a8"
+      },
+      "family_id": "ood-personal",
+      "input_hash": "05cff4a551c3a1eaa40498343b1538ecfef3f2ce90326d1daeb48619c11b5a95",
+      "out_of_domain": true,
+      "path": "replays/candidate-095.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "validation"
+    },
+    {
+      "case_id": "candidate-096",
+      "content_hash": "0bb15c7a06a077d698081de47f0b5c15247dc1d6c64247d75fbba5aaff1944f1",
+      "expected_trace_hashes": {
+        "baseline": "77112a40a0ba3e1b14c4434d3ae3c75ee1995544eb583774058730d67308103f",
+        "shadow_candidate": "e2dc50cbf58c453ea8e6d1b4a3afb87beb7a7bf18a332476bf083bcaf9b2d8ce"
+      },
+      "family_id": "ood-finance",
+      "input_hash": "7dba62b3ba954d646417b1c58b28692a65e1182751300446e01ee06b31cee114",
+      "out_of_domain": true,
+      "path": "replays/candidate-096.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-097",
+      "content_hash": "576f6ae5605b7354086fcee83222a545b59eb5f9ab692ac092e944363f414ae4",
+      "expected_trace_hashes": {
+        "baseline": "b369f6cc98d423270a6d65b984fcdb33a1b942debdaf61d96448bda31d87e52c",
+        "shadow_candidate": "730582755157661bf9480714c3d475cda38099547a02e53db4183de468ba1263"
+      },
+      "family_id": "ood-finance",
+      "input_hash": "2cb969d35a0f2d7ab980f8a1adfa339abefc29bd4382814c7f2b564e54444cf8",
+      "out_of_domain": true,
+      "path": "replays/candidate-097.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-098",
+      "content_hash": "be850be47e2c661469bb55413a6b8779d6ec95e98a66e6a3c1b9be5dc547ab16",
+      "expected_trace_hashes": {
+        "baseline": "efa967edd2330142878a6bbd4b92f74438e425ab5096ffb3d71d4d77602fad78",
+        "shadow_candidate": "1e5443024793bc92014b3a7ae06110b592c53ab3e7bbefda4df3367d69ea5833"
+      },
+      "family_id": "ood-finance",
+      "input_hash": "500ad4718c1ffe2b63ca8e8645dc7cd11ccd6a73b161033607c5b9cee10c6098",
+      "out_of_domain": true,
+      "path": "replays/candidate-098.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-099",
+      "content_hash": "47e4b5b8ac60d6569bbdb10b161e35eaf2e5916461a3ca469199d7b6e1773aff",
+      "expected_trace_hashes": {
+        "baseline": "ff898c950b554bb9407a93adfc5864c93fd43b61d308afcdaee225710c31b33a",
+        "shadow_candidate": "f5045bce79734f0f66605d1dc3e00c4d2b0ee100ed3fd3cef08d3c3824cdf187"
+      },
+      "family_id": "ood-finance",
+      "input_hash": "71a6dea28518c10d3af2a41aea89517c1f6cd6252bc3b96c86b68a09727e5d85",
+      "out_of_domain": true,
+      "path": "replays/candidate-099.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "held_out"
+    },
+    {
+      "case_id": "candidate-100",
+      "content_hash": "2eb10387496c474ad9808115bdc0182380e57295b0e890406832f97598923ffb",
+      "expected_trace_hashes": {
+        "baseline": "8f28e06a02a5518b91525221f51ff180d9e1936703f37b9455721a6811e6cfe4",
+        "shadow_candidate": "28bbf5ed44073c793ab3c7bf141c8036fc0d8a1bb9d939e14565d0fa77c0edcb"
+      },
+      "family_id": "ood-finance",
+      "input_hash": "5b87dd3393a29de023aa0a024ccb4eaec4b13d5ae314ab0c3c0d8b6bed85c8f5",
+      "out_of_domain": true,
+      "path": "replays/candidate-100.json",
+      "proposed_decision": {
+        "abstention": "empty_pool",
+        "candidate_id": null,
+        "human_validated": false,
+        "policy_id": "baseline",
+        "rationale": "The fixture explicitly supplies an empty engineering candidate pool for this out-of-domain request. Abstention follows that pool; this is not evidence of automatic domain detection."
+      },
+      "split": "held_out"
+    }
+  ],
+  "fixture_only": true,
+  "schema_version": 1,
+  "status": "candidate_requires_independent_human_review"
+}
