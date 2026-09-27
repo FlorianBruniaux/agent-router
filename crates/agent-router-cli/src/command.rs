@@ -19,6 +19,9 @@ pub struct PhaseArgs {
     pub catalog: PathBuf,
     #[arg(long)]
     pub policy: Option<PathBuf>,
+    /// Use the explicitly selected store's active offline policy unless --policy overrides it.
+    #[arg(long)]
+    pub policy_store: Option<PathBuf>,
     #[arg(long)]
     pub now: Option<u64>,
     #[arg(long, default_value_t = 86400)]
@@ -27,6 +30,89 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    Prepare {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        output_directory: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Review or execute one immutable workflow node.
+    Run {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        sandbox: PathBuf,
+        #[arg(long)]
+        approve: Option<String>,
+        #[arg(long, conflicts_with = "approve")]
+        retry: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    Status {
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        run_id: String,
+        #[arg(long)]
+        json: bool,
+    },
+    Cancel {
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        run_id: String,
+        #[arg(long)]
+        json: bool,
+    },
+    Events {
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        run_id: String,
+        #[arg(long)]
+        json: bool,
+    },
+    SourceState {
+        #[arg(long)]
+        workspace: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    Workflow {
+        #[arg(long)]
+        plan: PathBuf,
+        #[arg(long)]
+        execution_contract: Option<PathBuf>,
+        #[arg(long, requires = "execution_contract")]
+        seal_contract: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    Verify {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long)]
+        evidence: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    Artifacts {
+        #[arg(long)]
+        definition: PathBuf,
+        #[arg(long)]
+        store: PathBuf,
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: ArtifactCommand,
+    },
     Feedback {
         #[arg(long)]
         store: PathBuf,
@@ -52,6 +138,8 @@ pub enum Commands {
         request: PathBuf,
         #[arg(long)]
         now: Option<u64>,
+        #[arg(long)]
+        deep: bool,
         #[arg(long)]
         json: bool,
     },
@@ -147,11 +235,25 @@ pub enum Commands {
         #[arg(long)]
         metadata: PathBuf,
         #[arg(long)]
+        catalog: Option<PathBuf>,
+        #[arg(long)]
+        now: Option<u64>,
+        #[arg(long)]
         query: String,
         #[arg(long, value_parser = ["agent", "skill", "prompt", "tool"])]
         kind: Option<String>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
+        #[arg(long)]
+        json: bool,
+    },
+    Index {
+        #[arg(long)]
+        metadata: PathBuf,
+        #[arg(long)]
+        catalog: PathBuf,
+        #[arg(long)]
+        now: Option<u64>,
         #[arg(long)]
         json: bool,
     },
@@ -179,6 +281,25 @@ pub enum Commands {
         #[arg(long)]
         decision: PathBuf,
     },
+}
+
+#[derive(Subcommand)]
+pub enum ArtifactCommand {
+    Preview,
+    Outputs,
+    PurgeOutputs {
+        #[arg(long)]
+        attempt: u32,
+    },
+    Apply {
+        #[arg(long)]
+        approve: String,
+    },
+    Discard {
+        #[arg(long)]
+        approve: String,
+    },
+    Keep,
 }
 
 #[derive(Subcommand)]

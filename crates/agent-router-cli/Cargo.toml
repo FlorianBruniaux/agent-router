@@ -24,6 +24,9 @@ router-eval = { path = "../router-eval" }
 router-doctor = { path = "../router-doctor" }
 router-feedback = { path = "../router-feedback" }
 router-retrieval = { path = "../router-retrieval" }
+router-runtime = { path = "../router-runtime" }
+router-prepare = { path = "../router-prepare" }
+tokio = { version = "=1.45.1", features = ["rt-multi-thread", "time", "signal"] }
 clap.workspace = true
 router-catalog = { path = "../router-catalog" }
 router-policy = { path = "../router-policy" }

@@ -27,9 +27,32 @@ pub enum PhaseRouteError {
     Ineligible,
     #[error("phase.policy.mismatch")]
     PolicyMismatch,
+    #[error("phase.receipt.mismatch")]
+    ReceiptMismatch,
 }
 
 type Result<T> = std::result::Result<T, PhaseRouteError>;
+
+/// A deterministic receipt reproduced against an immutable context. This does
+/// not attest a provider failure or authorize execution; downstream approval
+/// still covers the complete receipt, including caller-declared unavailable IDs.
+#[derive(Clone, Debug)]
+pub struct ValidatedPhaseReceipt {
+    receipt: PhaseReceipt,
+    selection: PhaseSelection,
+}
+
+impl ValidatedPhaseReceipt {
+    pub fn receipt(&self) -> &PhaseReceipt {
+        &self.receipt
+    }
+    pub fn selection(&self) -> &PhaseSelection {
+        &self.selection
+    }
+    pub fn context_hash(&self) -> &str {
+        &self.receipt.context_hash
+    }
+}
 
 /// Immutable after construction: all eligibility evidence and full input hashes
 /// are owned snapshots, not references to mutable candidate or catalog data.
@@ -44,6 +67,7 @@ pub struct ValidatedPhaseContext {
     pool_hash: String,
     registry_hash: String,
     eligible: Vec<PhaseSelection>,
+    execution_capabilities: BTreeMap<String, BTreeSet<Capability>>,
     exclusions: Vec<PhaseExclusion>,
 }
 
@@ -119,6 +143,7 @@ impl PhaseRouter {
             ),
         )?;
         let mut eligible = Vec::new();
+        let mut execution_capabilities = BTreeMap::new();
         let mut exclusions = Vec::new();
         let registry: BTreeMap<_, _> = request
             .registry
@@ -135,7 +160,13 @@ impl PhaseRouter {
                 &registry,
                 &self.policy,
             )? {
-                Ok(selection) => eligible.push(selection),
+                Ok(evaluation) => {
+                    execution_capabilities.insert(
+                        evaluation.selection.candidate.id.clone(),
+                        evaluation.capabilities,
+                    );
+                    eligible.push(evaluation.selection);
+                }
                 Err(mut failures) => exclusions.append(&mut failures),
             }
         }
@@ -168,12 +199,35 @@ impl PhaseRouter {
             pool_hash,
             registry_hash,
             eligible,
+            execution_capabilities,
             exclusions,
         })
     }
 
     pub fn route(&self, context: &ValidatedPhaseContext) -> Result<PhaseReceipt> {
         self.fallback(context, &BTreeSet::new())
+    }
+
+    /// Reproduce the entire normal or fallback decision, including score,
+    /// exclusions, hashes and order. A valid candidate ID alone is insufficient.
+    pub fn validate_receipt(
+        &self,
+        context: &ValidatedPhaseContext,
+        receipt: &PhaseReceipt,
+    ) -> Result<ValidatedPhaseReceipt> {
+        let expected = self.fallback(context, &receipt.unavailable)?;
+        if expected != *receipt {
+            return Err(PhaseRouteError::ReceiptMismatch);
+        }
+        let selection = expected
+            .selected
+            .clone()
+            .ok_or(PhaseRouteError::Ineligible)?;
+        self.validate_selection(context, &selection)?;
+        Ok(ValidatedPhaseReceipt {
+            receipt: expected,
+            selection,
+        })
     }
 
     /// Explicitly unavailable candidate IDs are removed from the immutable pool.
@@ -286,12 +340,33 @@ impl PhaseRouter {
         Ok(())
     }
 
+    /// Exact capability union checked during eligibility, including selected
+    /// registry/skill requirements, tools, sandbox and mutation effects. This
+    /// immutable evidence is not inferred from caller-provided asset text.
+    pub fn execution_capabilities(
+        &self,
+        context: &ValidatedPhaseContext,
+        selection: &PhaseSelection,
+    ) -> Result<BTreeSet<Capability>> {
+        self.validate_selection(context, selection)?;
+        context
+            .execution_capabilities
+            .get(&selection.candidate.id)
+            .cloned()
+            .ok_or(PhaseRouteError::Ineligible)
+    }
+
     fn check_policy(&self, context: &ValidatedPhaseContext) -> Result<()> {
         if self.policy != context.policy {
             return Err(PhaseRouteError::PolicyMismatch);
         }
         Ok(())
     }
+}
+
+struct EligibleEvaluation {
+    selection: PhaseSelection,
+    capabilities: BTreeSet<Capability>,
 }
 
 fn evaluate(
@@ -301,7 +376,7 @@ fn evaluate(
     catalog: &Catalog,
     registry: &BTreeMap<(PhaseAssetKind, &str), &PhaseRegisteredAsset>,
     policy: &PhasePolicy,
-) -> Result<std::result::Result<PhaseSelection, Vec<PhaseExclusion>>> {
+) -> Result<std::result::Result<EligibleEvaluation, Vec<PhaseExclusion>>> {
     let mut failures = Vec::new();
     let mut reject = |code: &str, evidence: String| {
         failures.push(PhaseExclusion {
@@ -367,6 +442,16 @@ fn evaluate(
     }
     if !candidate.tools.is_empty() {
         capabilities.insert(Capability::Tools);
+    }
+    if candidate.tool_policy == PhaseToolPolicy::NativeHost {
+        capabilities.insert(Capability::Tools);
+        permissions.insert(PhasePermission::NativeHostTools);
+        if !candidate.tools.is_empty() {
+            reject(
+                "tools.policy.conflict",
+                "native host tools cannot represent a tool allowlist".into(),
+            );
+        }
     }
     for (kind, id) in candidate
         .agent
@@ -559,13 +644,13 @@ fn evaluate(
     // Scoring is reached only after every hard constraint passes.
     let score = score(candidate, model, policy)?;
     assets.sort_by(|a, b| (&a.kind, &a.id).cmp(&(&b.kind, &b.id)));
-    Ok(Ok(PhaseSelection { candidate: candidate.clone(), score, assets, reasons: vec![
+    Ok(Ok(EligibleEvaluation { selection: PhaseSelection { candidate: candidate.clone(), score, assets, reasons: vec![
         "advertised candidate and exact model/effort are available in the validated snapshot and catalog".into(),
         "all required capabilities and permissions are explicitly supported".into(),
         "every asset passed authoritative trust, compatibility and sandbox checks".into(),
         "declared resource estimates fit task and effective policy limits; no runtime cost is asserted".into(),
         "utility records catalog quality, retrieval relevance, declared cost and latency contributions".into(),
-    ] }))
+    ] }, capabilities }))
 }
 
 fn score(

@@ -5,9 +5,12 @@ mod cli;
 mod command;
 mod diagnostics;
 mod evaluation;
+mod execution;
+mod execution_feedback;
 mod feedback;
 mod inspect;
 mod phases;
+mod preparation;
 mod product;
 mod render;
 
@@ -116,6 +119,60 @@ fn report_error(error: CliError) -> ExitCode {
 
 fn run(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::Prepare {
+            manifest,
+            output_directory,
+            json,
+        } => preparation::run(&manifest, output_directory.as_deref(), json),
+        Commands::Run {
+            definition,
+            store,
+            sandbox,
+            approve,
+            retry,
+            json,
+        } => execution::run(
+            &definition,
+            &store,
+            &sandbox,
+            approve.as_deref(),
+            retry,
+            json,
+        ),
+        Commands::Status {
+            store,
+            run_id,
+            json,
+        } => execution::status(&store, &run_id, json),
+        Commands::Cancel {
+            store,
+            run_id,
+            json,
+        } => execution::cancel(&store, &run_id, json),
+        Commands::Events {
+            store,
+            run_id,
+            json,
+        } => execution::events(&store, &run_id, json),
+        Commands::SourceState { workspace, json } => execution::source_state(&workspace, json),
+        Commands::Workflow {
+            plan,
+            execution_contract,
+            seal_contract,
+            json,
+        } => execution::workflow(&plan, execution_contract.as_deref(), seal_contract, json),
+        Commands::Verify {
+            definition,
+            store,
+            evidence,
+            json,
+        } => execution::verify(&definition, &store, &evidence, json),
+        Commands::Artifacts {
+            definition,
+            store,
+            command,
+            json,
+        } => execution::artifacts(&definition, &store, command, json),
         Commands::Catalog { command } => catalogs::run(command),
         Commands::Feedback {
             store,
@@ -129,7 +186,12 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
             json,
             command,
         } => feedback::policy(&store, now, json, command),
-        Commands::Doctor { request, now, json } => diagnostics::doctor(&request, now, json),
+        Commands::Doctor {
+            request,
+            now,
+            deep,
+            json,
+        } => diagnostics::doctor(&request, now, deep, json),
         Commands::Audit { command } => diagnostics::audit(command),
         Commands::Config { layers, json } => product::configuration(&layers, json),
         Commands::RoutePhase { inputs, json } => phases::route(inputs, json),
@@ -202,11 +264,27 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
         ),
         Commands::Search {
             metadata,
+            catalog,
+            now,
             query,
             kind,
             top_k,
             json,
-        } => product::search(&metadata, &query, kind.as_deref(), top_k, json),
+        } => product::search(
+            &metadata,
+            catalog.as_deref(),
+            now,
+            &query,
+            kind.as_deref(),
+            top_k,
+            json,
+        ),
+        Commands::Index {
+            metadata,
+            catalog,
+            now,
+            json,
+        } => product::index(&metadata, &catalog, now, json),
         Commands::Normalize { task, json } => product::normalize(&task, json),
         Commands::Plan {
             task,
@@ -244,12 +322,20 @@ fn route(
     let snapshot = snapshot_path
         .map(|path| inspect::read_snapshot(path, now, snapshot_max_age))
         .transpose()?;
-    if let Some(path) = retrieval {
-        request.skill_candidates = product::read_index(path)?
-            .skill_candidates(&router_retrieval::SearchQuery::new(&request.task.objective))
-            .map_err(product::retrieval_error)?;
-    }
     let (catalog, embedded_snapshot) = catalogs::load(catalog_path, now, snapshot_max_age)?;
+    if let Some(path) = retrieval {
+        let index = product::read_index(path)?;
+        let query = router_retrieval::SearchQuery::new(&request.task.objective);
+        request.skill_candidates = if index.catalog_hash().is_some() {
+            let hash = catalog
+                .content_hash()
+                .map_err(|_| CliError::CatalogInvalid)?;
+            index.skill_candidates_with_catalog(&query, &hash)
+        } else {
+            index.skill_candidates(&query)
+        }
+        .map_err(product::retrieval_error)?;
+    }
     let snapshot = match (snapshot, embedded_snapshot) {
         (Some(explicit), Some(embedded)) if explicit.hash() != embedded.hash() => {
             return Err(CliError::Product("catalog.snapshot.mismatch"));

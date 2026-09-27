@@ -5,6 +5,34 @@ It does not execute a model, call a host API, create a worktree, or install
 anything. A catalog or host configuration proves routing intent and declared
 capabilities, not actual model execution.
 
+## Additional versioned contracts
+
+The v1 examples below remain supported. New commands use separate contracts:
+
+| Surface | Contract and validation |
+| --- | --- |
+| Host observation | v1, full content digest, source provenance, observation time and tri-state capabilities |
+| Generated catalog | v2 envelope, source snapshot/prior/registry hashes, validated aliases and deprecation |
+| Phase route | v2 request and receipt, full context/catalog/policy/pool/registry hashes; missing permission fails closed |
+| Retrieval | v1 unbound metadata or v2 envelope bound to exact catalog content; v2 operations require the matching digest |
+| Workflow | v1 normalized task and hashed acyclic plan, scope and downstream independent verification checks |
+| Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
+| Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
+| Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
+| Feedback | v1 private consent/events, signed policy changes with externally trusted keys; no online exploration |
+
+`PhaseCandidate.tool_policy` defaults to `restricted` and is omitted when
+serialized at that default, preserving existing v2 identities. `native_host`
+requires the explicit `native_host_tools` permission and observed Tools support,
+and cannot be combined with a per-tool allowlist. It never removes OS sandbox
+or native permission enforcement.
+
+Commands taking an active policy store bind the selected policy content.
+Generated execution bundles preserve the store and artifact identity so a later
+quarantine, rollback or activation is detected before fresh execution. Explicit
+policy files override store selection. A change of authority source also changes
+the CLI approval digest.
+
 ## Catalog
 
 Catalog files use a numeric `schema_version` and exact model identifiers. The

@@ -99,6 +99,7 @@ fn restrictions() -> EffectiveRestrictions {
 
 fn candidate(id: &str, model_id: &str) -> PhaseCandidate {
     PhaseCandidate {
+        tool_policy: router_types::PhaseToolPolicy::Restricted,
         id: id.into(),
         model: model(model_id),
         effort: EffortLevel::Medium,
@@ -198,6 +199,47 @@ fn prefer(request: &mut PhaseRouteRequest, preferred: &str) {
     request.restrictions.policy_hash = hex::encode(Sha256::digest(
         serde_json::to_vec(&request.restrictions).unwrap(),
     ));
+}
+
+#[test]
+fn native_host_tools_require_explicit_permission_and_cannot_hide_an_allowlist() {
+    let mut input = request();
+    input.candidates.truncate(1);
+    input.candidates[0].tool_policy = PhaseToolPolicy::NativeHost;
+    let denied = route(input.clone());
+    assert!(denied.selected.is_none());
+    assert!(
+        denied
+            .exclusions
+            .iter()
+            .any(|e| e.code == "permission.unknown_or_denied")
+    );
+    input.permissions.insert(
+        PhasePermission::NativeHostTools,
+        CapabilitySupport::Supported,
+    );
+    let accepted = route(input.clone());
+    assert_eq!(
+        accepted.selected.as_ref().unwrap().candidate.tool_policy,
+        PhaseToolPolicy::NativeHost
+    );
+    input.candidates[0].tools.insert("shell".into());
+    let conflict = route(input);
+    assert!(conflict.selected.is_none());
+    assert!(
+        conflict
+            .exclusions
+            .iter()
+            .any(|e| e.code == "tools.policy.conflict")
+    );
+}
+
+#[test]
+fn restricted_default_preserves_the_original_candidate_wire_bytes() {
+    let value = serde_json::to_value(candidate("test", "fixture-primary")).unwrap();
+    assert!(value.get("tool_policy").is_none());
+    let decoded: PhaseCandidate = serde_json::from_value(value).unwrap();
+    assert_eq!(decoded.tool_policy, PhaseToolPolicy::Restricted);
 }
 
 #[test]
@@ -614,6 +656,59 @@ fn full_content_changes_receipt_even_when_versions_are_identical() {
     let registry_original = route(input.clone());
     input.registry.assets[0].content_sha256 = "d".repeat(64);
     assert_ne!(registry_original.registry_hash, route(input).registry_hash);
+}
+
+#[test]
+fn receipt_proof_accepts_exact_fallback_and_rejects_tampering_or_abstention() {
+    let router = PhaseRouter::stable_v2();
+    let context = router
+        .context(
+            request(),
+            &snapshot(observation()),
+            &catalog(catalog_json()),
+        )
+        .unwrap();
+    let original = router.route(&context).unwrap();
+    let proof = router.validate_receipt(&context, &original).unwrap();
+    assert_eq!(proof.selection().candidate.id, "primary");
+    let fallback = router
+        .fallback(&context, &BTreeSet::from(["primary".into()]))
+        .unwrap();
+    let proof = router.validate_receipt(&context, &fallback).unwrap();
+    assert_eq!(proof.selection().candidate.id, "secondary");
+    assert_eq!(proof.context_hash(), context.context_hash());
+    assert_eq!(proof.receipt(), &fallback);
+    let mut forged = fallback.clone();
+    forged.unavailable.clear();
+    assert!(matches!(
+        router.validate_receipt(&context, &forged),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let mut forged = fallback.clone();
+    forged.selected.as_mut().unwrap().candidate.model = model("fixture-best");
+    assert!(matches!(
+        router.validate_receipt(&context, &forged),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let mut changed = request();
+    changed.task.objective.push_str(" changed");
+    let changed = router
+        .context(changed, &snapshot(observation()), &catalog(catalog_json()))
+        .unwrap();
+    assert!(matches!(
+        router.validate_receipt(&changed, &fallback),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let abstained = router
+        .fallback(
+            &context,
+            &BTreeSet::from(["primary".into(), "secondary".into()]),
+        )
+        .unwrap();
+    assert!(matches!(
+        router.validate_receipt(&context, &abstained),
+        Err(PhaseRouteError::Ineligible)
+    ));
 }
 
 #[test]

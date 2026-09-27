@@ -21,18 +21,31 @@ fn error(error: DoctorError) -> CliError {
         DoctorError::Unsupported => "doctor.platform.unsupported",
     })
 }
-pub(crate) fn doctor(path: &Path, now: Option<u64>, json: bool) -> Result<Outcome, CliError> {
+pub(crate) fn doctor(
+    path: &Path,
+    now: Option<u64>,
+    deep: bool,
+    json: bool,
+) -> Result<Outcome, CliError> {
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
+    if deep {
+        let request = read_json(path, 256 * 1024)?;
+        let result =
+            router_doctor::diagnose_deep(&request, inspect::current_time(now)?).map_err(error)?;
+        return json_output(&result, diagnostic_exit(result.overall));
+    }
     let request = read_json(path, 256 * 1024)?;
     let result = router_doctor::diagnose(&request, inspect::current_time(now)?).map_err(error)?;
-    let code = match result.overall {
+    json_output(&result, diagnostic_exit(result.overall))
+}
+fn diagnostic_exit(state: DiagnosticState) -> ExitCode {
+    match state {
         DiagnosticState::Pass => ExitCode::SUCCESS,
         DiagnosticState::Fail => ExitCode::from(2),
         _ => ExitCode::from(3),
-    };
-    json_output(&result, code)
+    }
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -97,7 +110,9 @@ pub(crate) fn audit(command: AuditCommand) -> Result<Outcome, CliError> {
             if !json {
                 return Err(CliError::JsonOutputRequired);
             }
-            let bundle: router_types::AuditBundle = read_json(&bundle, MAX_FILE_BYTES)?;
+            // Allowlist projections and per-record hashes can expand a valid
+            // bounded input set. Keep bundle transport separately bounded.
+            let bundle: router_types::AuditBundle = read_json(&bundle, 32 * 1024 * 1024)?;
             router_doctor::verify_audit_bundle(&bundle, expected_root.as_deref()).map_err(error)?;
             json_output(
                 &serde_json::json!({"schema_version":1,"valid":true,"root_hash":bundle.root_hash,"trusted_root_matched":expected_root.is_some(),"signature_verified":false}),

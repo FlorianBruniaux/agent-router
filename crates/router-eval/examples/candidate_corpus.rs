@@ -24,6 +24,7 @@ fn model(id: &str) -> ModelId {
 }
 fn candidate(id: &str, model_id: &str, cost: u64, tokens: u64, latency: u64) -> PhaseCandidate {
     PhaseCandidate {
+        tool_policy: router_types::PhaseToolPolicy::Restricted,
         id: id.into(),
         model: model(model_id),
         effort: EffortLevel::Medium,

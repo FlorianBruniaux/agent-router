@@ -13,7 +13,7 @@ pub use constraint::{
 };
 pub use phases::{
     MAX_PHASE_ASSETS, MAX_PHASE_CANDIDATES, MAX_PHASE_REQUEST_BYTES, PhaseRouteError, PhaseRouter,
-    ValidatedPhaseContext,
+    ValidatedPhaseContext, ValidatedPhaseReceipt,
 };
 pub use retrieval::{
     RetrievalError, SkillRetriever, StaticSkillRetriever, parse_candidate_document,

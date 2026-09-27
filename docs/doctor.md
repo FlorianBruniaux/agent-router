@@ -33,6 +33,10 @@ rule. Symlinks, traversal and nonregular files are rejected; concurrent parent
 renames cannot redirect the descriptor traversal. Other platforms return an
 explicit unsupported error. Pass a canonical root such as `/private/tmp` on
 macOS; `/tmp` itself is a symlink and is rejected.
+The crate forbids unsafe code and uses rustix's safe `openat`/owned descriptor
+APIs. Reads retain `O_CLOEXEC` and `O_NONBLOCK`; a FIFO is rejected without waiting
+for a writer. Descriptor tests replace already-open roots and intermediate
+directories with symlinks and verify that reads retain the original directory.
 
 Sensitive-key and token-pattern detection is heuristic. A match produces a
 warning without the matched value. No match does not establish that a file is
@@ -40,12 +44,141 @@ free of secrets. Authorization-marker contents bypass this scanner because
 they are never read. File mode checks are metadata evidence, not proof of an
 effective sandbox or credential validity.
 
+## Explicit deep diagnostics
+
+`diagnose_deep(&DeepDoctorRequest, now)` adds local checks to the existing
+read-only pass. `agent-router doctor --deep --manifest deep.json` selects this
+contract explicitly. Its schema version is 1 and its fields are `base` (the
+unchanged `DoctorRequest`), `schemas` and `retrieval_bindings`. The result has
+`base`, additional `checks`, `overall`, `examined_body_count` and
+`database_queries`. Existing doctor manifests and audit bundles keep their
+formats. All host runtime states remain `unknown`; local SQLite integrity is a
+configuration result, not evidence of a running service.
+
+Each schema binding names an existing JSON configuration or managed-file
+artifact by `artifact_id`. `schema` selects the real component validator:
+`configuration_layers`, `effective_restrictions`, `phase_policy`,
+`normalized_task`, `workflow_plan` or `prompt_template`. Validation checks
+restriction hashes, policy bounds, task contracts, DAG invariants and prompt
+seals as applicable. It never renders a prompt or applies permissions.
+Unknown and duplicate fields are rejected, including fields tolerated by an
+older component DTO. A generic configuration without an explicit schema gets
+`component_schema_required`, not a semantic validation claim. Authentication
+markers cannot be reclassified as configuration and their contents remain
+unread.
+
+Each retrieval binding names `index_artifact_id` and `catalog_artifact_id`.
+The current validated catalog's policy projection supplies the expected
+content hash, exactly as phase routing and preparation do. The metadata must
+use the bound v2 envelope and agree on both content hash and catalog version.
+A generated catalog also supplies the explicit registry: declared assets and
+body hashes must match it. Skill trust must agree with the policy catalog;
+metadata cannot raise that trust. A legacy v1 catalog has no agent, prompt or
+tool registry, so those assets yield `catalog_asset_registry_unavailable`.
+An unbound legacy index yields `catalog_binding_required`.
+
+With `body_root: null`, no body is read. A supplied `body_root` is a relative
+directory beneath `base.root`, without traversal or symlinks. It requests all
+bodies declared by that index, not a sample. Each must exist, be trusted and
+match its declared hash. Missing bodies, blocked/untrusted assets, registry
+mismatches and excessive counts are explicit failures. Reads use the same
+descriptor-relative traversal as ordinary doctor checks; they do not use the
+retrieval loader's pathname traversal. Bodies never confer executable/tool
+authority, and neither bodies nor metadata labels appear in the report.
+
+Deep checking adds at most 16 MiB of reads to the base pass's 16 MiB budget,
+including repeated preimage comparisons. Files remain limited to 4 MiB,
+bodies to 1 MiB, body reads to 128 and retrieval bindings to 16. A limit is a
+failed check, never a silently truncated success. Between-pass hash changes
+are reported as `input_changed`.
+
+Database artifacts additionally receive SQLite `integrity_check(1)` and
+`foreign_key_check`. Opening uses an already validated descriptor with
+`mode=ro`, `immutable=1`, `SQLITE_OPEN_READ_ONLY` and `SQLITE_OPEN_NOFOLLOW`.
+The connection confirms its read-only state; it has no create flag, extension
+loading, migrations, writes or checkpoint step. Trusted schema, views and
+triggers are disabled; temporary storage is memory-only. The report counts
+three connection-local PRAGMAs and up to two integrity queries. No SQL error
+text, table name, row content or database version is exported.
+
+This descriptor technique is verified on macOS fdescfs, including replacement
+of the original pathname after opening. On platforms where `/dev/fd` resolves
+through symlinks, including ordinary Linux procfs layouts, it returns
+`database_read_only_unsupported` and does not reopen the original pathname.
+That boundary preserves the no-follow guarantee rather than claiming portable
+SQLite proof. SQL length, column count, expression depth, compiled operations,
+attached databases and worker counts are bounded. A progress callback stops
+after approximately one million VM operations or 250 ms, checked each 1,000
+operations. This is cooperative work control, not an OS deadline or memory
+sandbox.
+
+WAL-mode headers or any `-wal`, `-shm` or `-journal` sidecar yield
+`database_snapshot_required` before SQLite opens. A clean, externally produced
+consistent export is required for those databases; doctor does not make that
+export itself. Descriptor bytes, the named file and sidecar presence are checked
+again after inspection. This detects observed changes but cannot establish an
+atomic snapshot against an adversarial concurrent writer. A passing local
+result is not a migration compatibility, lock availability, liveness or future
+health claim.
+
+Deep mode launches no `--version`, authentication or status commands. Supplied
+host snapshots retain their own source/freshness checks. An executable's name or
+an argument such as `status` does not prove absence of network or disk effects.
+Any future active diagnostic must use a separate supervised execution request
+and approval bound to its exact binary, arguments, environment, permissions and
+effects. `--deep` alone is not such authorization. Hook trust/invocation,
+authentication, host sandbox enforcement and process ownership remain unknown
+without separately observed evidence. No model call or active hook is used.
+
+Tests cover all component validators, generated and legacy catalog bindings,
+trust escalation, same-version content drift, changed bodies, absent databases,
+foreign-key violations, WAL/journal refusal, descriptor replacement, symlinks,
+bounds, redaction and unchanged database files. Existing audit v2 tests remain
+part of the same package gate.
+
 `build_audit_bundle` accepts transient JSON artifacts classified as effective
-config, catalog, decision, events, evidence or versions. It projects only fixed
-metadata: schema version, entry count, input size, secret-pattern indicator and
-content digest. All arbitrary strings and raw content are omitted by default,
-including prompts, credentials, private paths and provider output. This is a
-redacted inventory of those artifacts, not a recoverable copy of them.
+config, catalog, decision, events, evidence or versions. New exports use audit
+schema version 2. Every record retains schema version, entry count, input size,
+secret-pattern indicator and the SHA256 of the original bytes, plus a typed
+projection with a fixed field allowlist:
+
+| Input kind | Retained projection |
+| --- | --- |
+| Effective configuration | Hashed source and model identities, capability and mutation restrictions, preferred model hash, cost/token/time/concurrency bounds |
+| Phase receipt, optionally wrapped in `receipt` | Selected/abstained/unknown verdict, phase, effort, sandbox and verification enums, required capabilities/mutations, utility and estimated budgets, counts of assets/alternatives/exclusions/unavailable candidates |
+| Runtime events or completion | Run/event identity hashes, recognized run and transport event kinds, state, failure, attempts, supplied timestamp, transport termination/exit code/elapsed time, output byte counts and digest references, separate validation and objective outcomes |
+| Runtime evidence, optionally wrapped in `runtime_evidence` | Transport outcome, transport success and stream completeness, separate validation and objective outcomes, hashes of executed models and their source evidence, observed effort, event count |
+| Versions | Policy/backend/producer version identity hashes; numeric version components for strict one-to-three-part numeric versions; deterministic/Laya/JEV/unknown backend kind |
+| Catalog | Version projection, model/skill/asset counts and catalog reference |
+
+Receipt, context, catalog, policy, snapshot, pool, registry, execution definition,
+approval, plan, node and artifact references are retained when recognized. Every
+free-form identity or declared digest is hashed with the domain
+`agent-router:audit-reference:v2\0` followed by its UTF-8 bytes. These values are
+correlation keys. They cannot be compared directly to the original declared
+digest without applying that transformation. All model identities are hashed;
+this API has no independent proof that a catalog or model identity is public.
+Hashing does not make low-entropy identities anonymous or prevent dictionary
+guessing.
+
+Prompts, credentials, private paths, reasons, provider output and arbitrary
+strings never appear as plaintext in the projection. Unknown input fields are
+ignored even when nested, and invalid enum values become unknown (`null` or an
+explicit `unknown` variant). This is an allowlist, so secret-pattern detection is
+not required to suppress raw values. The scanner's boolean remains a separate
+heuristic. Model stdout cannot add an authenticated verdict: each projection
+always declares `provenance: unverified_input`, regardless of input provenance
+or signature claims. A projected `passed` or `selected` is a supplied claim,
+not a validator result or execution authorization.
+
+Projection lists have at most 64 entries. Runtime event arrays retain the first
+64 and report the total and omitted counts. Overlong configuration lists are
+unknown rather than partially represented restrictions. Nonnegative numeric
+fields are bounded at 10^12; signed utility is bounded to ±10^18, and exit codes
+must fit a signed 32-bit integer. Invalid values are omitted. Identity strings
+above 16 KiB are omitted; strict numeric version components have at most four
+digits. The input limits above still apply before JSON parsing. New exports
+contain no recoverable copy of raw artifacts.
 
 Records form a deterministic SHA256 chain. `verify_audit_bundle` detects edits,
 reordering and invalid structure. Passing an independently retained expected
@@ -54,9 +187,24 @@ root, chain consistency proves integrity only: it does not prove provenance,
 authenticate a writer or constitute a signature. The output explicitly reports
 `raw_content_included: false` and `signature_verified: false`.
 
+The v2 chain covers the complete typed projection as well as record metadata.
+Verification checks projection kind, digest shapes, numeric/list bounds and
+event omission accounting. Deserialized bundles reject unknown output fields
+or provenance enum values. `verify_audit_bundle` still accepts original v1
+bundles, with their original hash algorithm and no projection. A projection
+added to a v1 record, a missing v2 projection or a version-only downgrade is
+rejected. No input or legacy bundle is rewritten.
+The CLI permits audit bundles up to 32 MiB when verifying, separately from the
+4 MiB source artifact limit, because typed projections can expand short input
+values into digest references.
+
 Tests cover redaction, determinism, no mutation, stale leases, false health and
 sandbox claims, malformed/duplicate JSON, hash drift, path traversal, symlink
 parents and leaves, private file permissions, bounds and audit tampering.
+Audit tests also cover a fixed v1 fixture, v2 projection edits, downgrade
+attempts, distinct transport/validation/objective outcomes, and secret canaries
+in every string field of representative inputs, including digest-shaped
+provenance values and nested unknown fields.
 
 ```sh
 cargo test -p router-doctor --locked

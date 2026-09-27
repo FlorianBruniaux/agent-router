@@ -1,0 +1,35 @@
+name: Native Linux runtime enforcement
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-runtime:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native sandbox and loopback probe tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends bubblewrap netcat-openbsd
+      - name: Verify repository Rust version
+        run: rustc --version
+      - name: Test durable runtime and real resource limits
+        run: cargo test -p router-runtime -p router-sandbox-helper --locked
+      - name: Require a real address-space allocation refusal
+        run: cargo test -p router-sandbox-helper --test limits address_space_limit_rejects_a_real_allocation --locked -- --exact --nocapture
+      - name: Require native Linux read, write and network isolation
+        run: cargo test -p router-runtime --test runtime native_bubblewrap_read_write_and_network_canary --locked -- --ignored --exact --nocapture
+      - name: Build CLI and native resource helper
+        run: cargo build -p agent-router-cli -p router-sandbox-helper --locked
+      - name: Require CLI approval, feedback, retention and interruption behavior
+        run: cargo test -p agent-router-cli --test native_execution --locked -- --ignored --nocapture --test-threads=1
+      - name: Check runtime and helper warnings
+        run: cargo clippy -p router-runtime -p router-sandbox-helper --all-targets --locked -- -D warnings

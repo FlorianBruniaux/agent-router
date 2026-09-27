@@ -64,6 +64,17 @@ pub struct MetadataDocument {
     pub assets: Vec<AssetMetadata>,
 }
 
+/// Version 2 binds canonical metadata to an independently supplied catalog
+/// content digest. Neither digest authenticates the source of its contents.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MetadataEnvelope {
+    pub schema_version: String,
+    pub catalog_content_sha256: String,
+    pub metadata_content_sha256: String,
+    pub metadata: MetadataDocument,
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Field {
@@ -201,6 +212,9 @@ pub struct Exclusion {
 pub struct SearchResult {
     pub schema_version: String,
     pub catalog_version: String,
+    /// Absent in legacy v1 results, which are explicitly unbound to a catalog.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_content_sha256: Option<String>,
     pub source_hash: String,
     pub index_hash: String,
     pub policy: SearchPolicy,

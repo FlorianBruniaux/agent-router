@@ -1,11 +1,15 @@
 [workspace]
 members = [
+  "crates/router-prepare",
     "crates/router-types",
     "crates/router-workflow",
     "crates/router-eval",
     "crates/router-decision",
+    "crates/router-runtime",
+    "crates/router-sandbox-helper",
     "crates/router-doctor",
     "crates/router-feedback",
+    "integrations/bridge-contract",
     "crates/router-catalog",
     "crates/router-policy",
     "crates/agent-router-cli",

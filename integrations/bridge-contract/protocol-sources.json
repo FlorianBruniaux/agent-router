@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "runtime_verified": false,
+  "sources": [
+    {
+      "id": "copilot-sdk-events",
+      "url": "https://raw.githubusercontent.com/github/copilot-sdk/d106d29dc6c5112da2abdae59008571b6692f12b/nodejs/src/generated/session-events.ts",
+      "commit": "d106d29dc6c5112da2abdae59008571b6692f12b",
+      "sha256": "953d49406a3f6c77be29dad973990940a49c37d68b22b22df1dc480c22af3ff9",
+      "bytes": 399545
+    },
+    {
+      "id": "opencode-cli-run",
+      "url": "https://raw.githubusercontent.com/anomalyco/opencode/b471c2b4495747353af768fbf2e0790c9d820ce2/packages/opencode/src/cli/cmd/run.ts",
+      "commit": "b471c2b4495747353af768fbf2e0790c9d820ce2",
+      "sha256": "bde848ca17f30834beb4ef0dfecb3b819730746ec2023c1ac55ecef7ca25dd37",
+      "bytes": 32368
+    }
+  ]
+}

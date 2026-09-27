@@ -42,6 +42,24 @@ impl Bm25Index {
     /// The caller supplies the authorized root and must prevent concurrent hostile
     /// filesystem replacement; path checks are not an operating-system sandbox.
     pub fn load_body(&self, root: &Path, kind: AssetKind, id: &str) -> Result<SelectedBody> {
+        self.require_unbound()?;
+        self.load_body_validated(root, kind, id)
+    }
+
+    /// Verify the current authoritative catalog digest before selecting any
+    /// body metadata or performing filesystem I/O.
+    pub fn load_body_with_catalog(
+        &self,
+        root: &Path,
+        kind: AssetKind,
+        id: &str,
+        catalog_hash: &str,
+    ) -> Result<SelectedBody> {
+        self.validate_catalog_hash(catalog_hash)?;
+        self.load_body_validated(root, kind, id)
+    }
+
+    fn load_body_validated(&self, root: &Path, kind: AssetKind, id: &str) -> Result<SelectedBody> {
         let asset = self.asset(kind, id).ok_or(RetrievalError::Selection)?;
         if !trusted(asset.trust) {
             return Err(RetrievalError::Selection);

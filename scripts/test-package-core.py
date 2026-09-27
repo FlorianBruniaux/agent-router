@@ -9,9 +9,11 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+import sys
 from unittest.mock import patch
 
 
+sys.dont_write_bytecode = True
 SPEC = importlib.util.spec_from_file_location("package_core", Path(__file__).with_name("package-core.py"))
 CORE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(CORE)
@@ -124,6 +126,54 @@ serde = "1"
             with self.assertRaisesRegex(CORE.PackageError, "workspace.excluded_path_dependency"):
                 CORE.discover(self.root)
 
+    def test_integration_selection_closes_public_dependencies_and_excludes_private_members(self):
+        def member(name, relative, dependencies=(), declared=None):
+            return {"name": name, "manifest_path": str(self.root / relative / "Cargo.toml"),
+                    "metadata": {"agent-router": {"distribution": declared}} if declared else {},
+                    "dependencies": [{"name": name, "path": str(self.root / path), "optional": True}
+                                     for name, path in dependencies]}
+        packages = [member("adapter-new", "crates/adapter-new", [("api", "crates/api")]),
+                    member("api", "crates/api", [("types", "crates/types")]),
+                    member("types", "crates/types"), member("cli", "crates/cli"),
+                    member("bridge", "integrations/bridge", [("api", "crates/api")], "integration"),
+                    member("private", "integrations/private", declared="private"),
+                    member("xtask", "xtask")]
+        metadata = {"workspace_root": str(self.root), "packages": packages}
+        with patch.object(CORE, "run", return_value=CORE.json_bytes(metadata)):
+            _, selected, excluded = CORE.discover(self.root, "integrations")
+        self.assertEqual([p["name"] for p in selected], ["adapter-new", "api", "bridge", "types"])
+        self.assertEqual([p["name"] for p in excluded], ["cli", "private", "xtask"])
+        packages[0]["dependencies"].append({"name": "private", "path": str(self.root / "integrations/private")})
+        with patch.object(CORE, "run", return_value=CORE.json_bytes(metadata)):
+            with self.assertRaisesRegex(CORE.PackageError, "workspace.excluded_path_dependency"):
+                CORE.discover(self.root, "integrations")
+
+    def test_integration_assets_and_conformance_are_selected_without_private_or_global_files(self):
+        self.write("Cargo.toml", '[workspace]\nmembers=["integrations/bridge"]\n')
+        self.write("Cargo.lock", "version=4\n")
+        for license in ("MIT", "APACHE"):
+            self.write("licenses/LICENSE-" + license, "Fixture license")
+        package = {"relative": "integrations/bridge"}
+        self.write("integrations/bridge/Cargo.toml", '[package]\nname="bridge"\nversion="0.1.0"\n')
+        self.write("integrations/bridge/src/lib.rs", "pub fn example() {}")
+        self.write("integrations/bridge/tests/conformance.rs", "#[test] fn contract() {}")
+        self.write("integrations/bridge/protocol-sources.json", '{"schema_version":1}')
+        self.write("integrations/host/adapter.json", '{"activation":"not_installed"}')
+        self.write("integrations/README.md", "Inert integration descriptors.")
+        self.write("integrations/private/secret.json", "Never distribute")
+        self.write(".codex/config.toml", "Never distribute")
+        self.write("fixtures/examples/public.json", "{}")
+        files = CORE.collect_sources(self.root, [package], "integrations", [{"relative": "integrations/private"}])
+        self.assertIn("integrations/bridge/tests/conformance.rs", files)
+        self.assertIn("integrations/bridge/protocol-sources.json", files)
+        self.assertIn("integrations/host/adapter.json", files)
+        self.assertIn("fixtures/examples/public.json", files)
+        self.assertNotIn("integrations/private/secret.json", files)
+        self.assertNotIn(".codex/config.toml", files)
+        self.write("integrations/host/.env.local", "Never distribute")
+        with self.assertRaises(CORE.PackageError):
+            CORE.collect_sources(self.root, [package], "integrations", [{"relative": "integrations/private"}])
+
     def archive(self, extra=None):
         files = {"Cargo.toml": b"[workspace]\nmembers=[]\n"}
         hashes = {name: CORE.digest(data) for name, data in files.items()}
@@ -150,6 +200,71 @@ serde = "1"
             path = self.write("tampered.tar.gz", CORE.archive_bytes(self.archive(change)))
             with self.assertRaisesRegex(CORE.PackageError, "archive.inventory_mismatch"):
                 CORE.verify_archive(path)
+
+    def test_integration_archive_prefix_and_manifest_kind_are_bound(self):
+        files = self.archive()
+        with self.assertRaisesRegex(CORE.PackageError, "archive.distribution_mismatch"):
+            CORE.verify_archive(self.write("mismatch.tar.gz", CORE.archive_bytes(files, "integrations")))
+        manifest = json.loads(files["DISTRIBUTION.json"])
+        manifest["kind"] = "integrations-source"
+        files["DISTRIBUTION.json"] = CORE.json_bytes(manifest)
+        first = CORE.archive_bytes(files, "integrations")
+        self.assertEqual(first, CORE.archive_bytes(files, "integrations"))
+        result = CORE.verify_archive(self.write("integrations.tar.gz", first))
+        self.assertEqual(result["kind"], "integrations-source")
+        data = io.BytesIO()
+        with tarfile.open(fileobj=data, mode="w:gz") as archive:
+            for prefix in ("agent-router-core", "agent-router-integrations"):
+                entry = tarfile.TarInfo(prefix + "/test.txt")
+                entry.size = 1
+                archive.addfile(entry, io.BytesIO(b"x"))
+        with self.assertRaisesRegex(CORE.PackageError, "archive.invalid_prefix"):
+            CORE.verify_archive(self.write("mixed.tar.gz", data.getvalue()))
+
+    def test_lock_projection_preserves_pinned_versions_checksums_and_public_members(self):
+        original = b'''version=4
+[[package]]
+name="core"
+version="1.0.0"
+dependencies=["external", "test-only"]
+[[package]]
+name="external"
+version="2.0.0"
+source="registry+https://example.invalid/index"
+checksum="aaaaaaaa"
+[[package]]
+name="test-only"
+version="1.0.0"
+'''
+        projected = original.replace(b'dependencies=["external", "test-only"]', b'dependencies=["external"]')
+        projected = projected[:projected.index(b'[[package]]\nname="test-only"')]
+        selected = [{"name": "core", "version": "1.0.0"}]
+        CORE.validate_projected_lock(original, projected, selected)
+        for changed in (projected.replace(b'2.0.0', b'2.0.1'),
+                        projected.replace(b'aaaaaaaa', b'bbbbbbbb'),
+                        projected.replace(b'["external"]', b'["unreviewed"]'), original):
+            with self.assertRaises(CORE.PackageError):
+                CORE.validate_projected_lock(original, changed, selected)
+
+    def test_lock_projection_accepts_cargo_unambiguous_dependency_abbreviations(self):
+        original = b'''version=4
+[[package]]
+name="core"
+version="1.0.0"
+dependencies=["external 2.0.0"]
+[[package]]
+name="external"
+version="2.0.0"
+source="registry+https://example.invalid/index"
+checksum="aaaaaaaa"
+[[package]]
+name="external"
+version="1.0.0"
+source="registry+https://example.invalid/index"
+checksum="bbbbbbbb"
+'''
+        projected = original[:original.rindex(b'[[package]]')].replace(b'"external 2.0.0"', b'"external"')
+        CORE.validate_projected_lock(original, projected, [{"name": "core", "version": "1.0.0"}])
 
     def test_inventory_keeps_other_platform_dependencies_without_claiming_success(self):
         package = self.crate()

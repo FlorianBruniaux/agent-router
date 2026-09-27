@@ -1,4 +1,4 @@
-# Core source distribution
+# Core and integration source distributions
 
 `scripts/package-core.py` exports the Rust workspace sources, a file integrity
 manifest, an SPDX 2.3 SBOM, a license inventory and dependency notices. It uses
@@ -13,11 +13,18 @@ Run from the repository root, with Cargo dependencies already available locally:
 python3 scripts/test-package-core.py
 python3 scripts/package-core.py --output /tmp/agent-router-core.tar.gz
 python3 scripts/package-core.py --verify /tmp/agent-router-core.tar.gz
+python3 scripts/package-core.py --distribution integrations --output /tmp/agent-router-integrations.tar.gz
+python3 scripts/package-core.py --verify /tmp/agent-router-integrations.tar.gz
 ```
 
 The output path must not exist. The exporter never replaces an earlier artifact.
 It invokes `cargo metadata --no-deps --locked --offline`, reads the lockfile and
 local Cargo cache, and runs Gitleaks when installed. It performs no network call.
+It also runs offline Cargo metadata in a temporary copy to project `Cargo.lock`
+onto the selected workspace. That projection can only remove dependency nodes
+or edges: package versions, sources and registry checksums must remain identical
+to the original lockfile. Dependency names are resolved before comparison so
+Cargo's unambiguous name abbreviations do not appear as version changes.
 Use `--strict-licenses --require-gitleaks` to require all dependency declarations
 and license texts to be available and the additional secret scan to pass.
 
@@ -47,7 +54,8 @@ distribution = "integration" # also: development, private
 outside `crates/` fail packaging. A core package depending on an excluded local
 member also fails, even when that dependency is optional: Cargo still needs its
 manifest. Integration packages should depend on the public core. They need their
-own export and conformance checks before their distribution can be claimed.
+own export and conformance checks. `--distribution integrations` creates that
+separate source archive; the default remains `--distribution core`.
 
 The archive contains product manifests, Rust source/test/example/benchmark files,
 public catalogs and shared test fixtures. The root manifest is projected to the
@@ -75,6 +83,45 @@ cargo build -p agent-router-cli --no-default-features --locked --offline
 This source layout preserves optional dependency manifests required by Cargo.
 It does not bundle host executables or automatically activate an integration.
 
+## Independent integration archive
+
+The integration mode selects members marked `distribution = "integration"`
+and public adapter crates under `crates/adapter-*`. It recursively includes all
+their local dependency manifests and sources, including optional and test
+dependencies needed by Cargo. A dependency on a private or development package
+fails the export. Unrelated core members, the CLI and the development harness
+are omitted unless a selected integration actually depends on a public member.
+The manifest records the selected and excluded packages explicitly.
+
+Public files under `integrations/` include inert host descriptors, protocol
+source references, documentation and synthetic conformance fixtures. Entire
+directories of excluded workspace members are omitted. Global configuration,
+credentials and activation scripts are not selected. Unexpected file types,
+symlinks, sensitive paths and content fail the same checks as the core archive.
+Shared public fixtures, including `fixtures/examples/`, remain available to
+both distributions. An adapter descriptor describes a package; it grants no
+permission and installs no hook.
+
+The archive root is `agent-router-integrations/` and its manifest kind is
+`integrations-source`. Verification binds the archive prefix to that kind and
+rejects mixed roots. License inventory, notices, SBOM, source rechecks and
+reproducible archive properties are identical to the core export. To check the
+independent workspace after extraction:
+
+```sh
+cd agent-router-integrations
+cargo test --workspace --locked --offline
+cargo clippy --workspace --all-targets --all-features --locked --offline -- -D warnings
+```
+
+These commands exercise translation and conformance against synthetic streams.
+They make no host or provider call. Copilot, OpenCode and HTTP provider runtime
+behavior remains unverified until a deployment supplies the corresponding
+native executable or authenticated HTTP transport and records a supervised
+canary. No credentials, provider installation or global activation is part of
+the archive. See `integrations/additional-hosts.md` inside it for exact protocol
+sources and remaining runtime evidence.
+
 ## License evidence and SBOM scope
 
 `LICENSE-INVENTORY.json` covers all external entries in `Cargo.lock`, including
@@ -82,9 +129,12 @@ development, optional and other-platform dependencies. This is a conservative
 inventory, not a resolved graph for one target or one feature set.
 When offline full metadata is available, each record also distinguishes normal,
 build (including procedural macro), and development dependency paths. This scope
-is explicitly all core packages, all features and all targets. A package reachable
+is explicitly all selected packages, all features and all targets. A package reachable
 only through development paths is not thereby claimed as shipped runtime code;
 binary inclusion requires checking the actual build target and feature set.
+Original lockfile entries outside the selected workspace are marked
+`outside_selected_workspace`; they remain in the conservative license inventory
+even when the projected archive lockfile no longer needs them.
 
 For each cached `.crate` archive, the exporter checks its SHA-256 against the
 lockfile before reading its package manifest and license/notice files. Original
@@ -117,7 +167,8 @@ are separate fields; this exporter cannot mark them successful.
 | --- | --- |
 | Reproducible core source package | Two identical input exports have the same hash; inventory verification passes |
 | Offline core independent of release tooling | Build and test the extracted Rust workspace offline; run a routing fixture without Python |
-| Optional host integrations | Cargo feature/default checks plus independent adapter/package conformance, maintained by integration owners |
+| Independent integration source package | Separate archive kind and workspace dependency closure; extracted conformance tests pass |
+| Optional host integrations | Cargo feature/default checks plus independent adapter conformance; live runtime remains a separate gate |
 | Public-only content | Boundary tests, reviewed catalog/fixtures, artifact Gitleaks scan and manifest inspection |
 | Provenance and notices | Complete lockfile inventory; archive checksums; license/notice hashes; separate compatibility verdict |
 | Publication | Explicit release action after license and security gates; never performed by this script |

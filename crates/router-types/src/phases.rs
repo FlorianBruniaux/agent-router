@@ -31,6 +31,20 @@ pub enum PhasePermission {
     ExecuteSkills,
     Delegate,
     Integrate,
+    NativeHostTools,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PhaseToolPolicy {
+    #[default]
+    Restricted,
+    NativeHost,
+}
+impl PhaseToolPolicy {
+    pub fn is_restricted(&self) -> bool {
+        *self == Self::Restricted
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -84,6 +98,8 @@ pub struct PhaseCandidate {
     pub agent: Option<String>,
     pub skills: BTreeSet<SkillId>,
     pub tools: BTreeSet<String>,
+    #[serde(default, skip_serializing_if = "PhaseToolPolicy::is_restricted")]
+    pub tool_policy: PhaseToolPolicy,
     pub sandbox: PhaseSandbox,
     pub verification: PhaseVerification,
     pub required_capabilities: BTreeSet<Capability>,

@@ -34,6 +34,93 @@ fn write(path: &Path, value: &Value) {
 }
 
 #[test]
+fn active_policy_store_changes_routing_and_explicit_file_overrides_it() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let store = root.join("feedback");
+    let path = root.join("strict-policy.json");
+    let policy = router_types::PhasePolicy {
+        minimum_utility_micros: i64::MAX,
+        version: "strict-test".into(),
+        ..Default::default()
+    };
+    write(&path, &serde_json::to_value(policy).unwrap());
+    command()
+        .args(["policy", "--store"])
+        .arg(&store)
+        .args(["baseline", "--policy"])
+        .arg(&path)
+        .args(["--now", "100", "--json"])
+        .assert()
+        .success();
+    let receipt = parsed(
+        phase("route-phase")
+            .arg("--policy-store")
+            .arg(&store)
+            .assert()
+            .code(3),
+    );
+    assert_eq!(receipt["abstention"], "below_threshold");
+    assert!(receipt["selected"].is_null());
+    let override_receipt = parsed(
+        phase("route-phase")
+            .arg("--policy-store")
+            .arg(&store)
+            .arg("--policy")
+            .arg(fixture("phase-policy.json"))
+            .assert()
+            .success(),
+    );
+    assert!(!override_receipt["selected"].is_null());
+    assert_ne!(receipt["policy_hash"], override_receipt["policy_hash"]);
+}
+
+#[test]
+fn catalog_content_change_invalidates_bound_metadata_even_with_same_version() {
+    let temp = tempfile::tempdir().unwrap();
+    let metadata = temp.path().join("metadata.json");
+    let catalog = temp.path().join("catalog.json");
+    let bound = temp.path().join("bound.json");
+    write(
+        &metadata,
+        &json!({"schema_version":"1","catalog_version":"fixture","assets":[]}),
+    );
+    let mut contents: Value =
+        serde_json::from_slice(&fs::read(fixture("phase-catalog.json")).unwrap()).unwrap();
+    write(&catalog, &contents);
+    let envelope = parsed(
+        command()
+            .args(["index", "--metadata"])
+            .arg(&metadata)
+            .arg("--catalog")
+            .arg(&catalog)
+            .arg("--json")
+            .assert()
+            .success(),
+    );
+    write(&bound, &envelope);
+    contents["models"][0]["quality_micros"] =
+        json!(contents["models"][0]["quality_micros"].as_u64().unwrap() - 1);
+    write(&catalog, &contents);
+    command()
+        .args(["search", "--metadata"])
+        .arg(&bound)
+        .arg("--catalog")
+        .arg(&catalog)
+        .args(["--query", "Rust", "--json"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("retrieval.catalog.mismatch"));
+    command()
+        .args(["search", "--metadata"])
+        .arg(&bound)
+        .args(["--query", "Rust", "--json"])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("retrieval.catalog.required"));
+}
+
+#[test]
 fn doctor_and_audit_never_echo_private_artifact_content() {
     let dir = tempfile::tempdir().unwrap();
     let directory = fs::canonicalize(dir.path()).unwrap();
@@ -94,6 +181,41 @@ fn doctor_and_audit_never_echo_private_artifact_content() {
         .assert()
         .code(2)
         .stderr(predicates::str::contains("doctor.audit.integrity"));
+}
+
+#[test]
+fn deep_doctor_checks_the_declared_schema_without_running_processes() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let artifact = directory.join("policy.json");
+    write(&artifact, &json!(router_types::PhasePolicy::default()));
+    let request = directory.join("deep.json");
+    write(
+        &request,
+        &json!({"schema_version":1,"base":{"schema_version":1,"root":directory,"max_snapshot_age_seconds":60,"artifacts":[{"id":"policy","relative_path":"policy.json","kind":"json_configuration","expected_sha256":null,"require_private":false}]},"schemas":[{"artifact_id":"policy","schema":"phase_policy"}],"retrieval_bindings":[]}),
+    );
+    let run = || {
+        command()
+            .args(["doctor", "--deep", "--request"])
+            .arg(&request)
+            .args(["--now", "100", "--json"])
+            .output()
+            .unwrap()
+    };
+    let valid = run();
+    assert!(matches!(valid.status.code(), Some(0 | 3)), "{valid:?}");
+    let report: Value = serde_json::from_slice(&valid.stdout).unwrap();
+    assert_eq!(report["base"]["files_modified"], 0);
+    assert_eq!(report["base"]["processes_launched"], 0);
+    assert_eq!(report["base"]["network_requests"], 0);
+    assert!(!report["checks"].as_array().unwrap().is_empty());
+    write(
+        &artifact,
+        &json!({"schema_version":2,"private_note":"PRIVATE_INVALID_POLICY"}),
+    );
+    let invalid = run();
+    assert_eq!(invalid.status.code(), Some(2));
+    assert!(!String::from_utf8_lossy(&invalid.stdout).contains("PRIVATE_INVALID_POLICY"));
 }
 
 #[test]

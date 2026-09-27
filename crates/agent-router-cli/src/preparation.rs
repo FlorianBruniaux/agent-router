@@ -1,0 +1,212 @@
+use crate::{CliError, Outcome, catalogs, command::PhaseArgs, execution, inspect, phases, product};
+use router_prepare::{PreparationInput, PreparationOptions};
+use serde::Deserialize;
+use std::{
+    collections::BTreeMap,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Manifest {
+    schema_version: u32,
+    run_id: String,
+    context: PathBuf,
+    host_snapshot: PathBuf,
+    catalog: PathBuf,
+    policy: Option<PathBuf>,
+    policy_store: Option<PathBuf>,
+    plan: PathBuf,
+    node_id: String,
+    metadata: PathBuf,
+    body_root: PathBuf,
+    template: PathBuf,
+    variables: PathBuf,
+    options: PathBuf,
+    receipt: Option<PathBuf>,
+    workflow_contract: Option<PathBuf>,
+    generation: Option<u32>,
+}
+fn resolve(base: &Path, path: PathBuf) -> PathBuf {
+    if path.is_absolute() {
+        path
+    } else {
+        base.join(path)
+    }
+}
+fn write_private(path: &Path, bytes: &[u8]) -> Result<(), CliError> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .custom_flags(libc::O_NOFOLLOW)
+        .open(path)
+        .map_err(|_| CliError::Product("prepare.output.create"))?;
+    file.write_all(bytes)
+        .and_then(|()| file.sync_all())
+        .map_err(|_| CliError::Product("prepare.output.write"))
+}
+fn serialized(value: &impl serde::Serialize) -> Result<Vec<u8>, CliError> {
+    serde_json::to_vec_pretty(value).map_err(|_| CliError::Internal)
+}
+pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outcome, CliError> {
+    if !json {
+        return Err(CliError::JsonOutputRequired);
+    }
+    let manifest: Manifest = phases::read_json(path, 64 * 1024)?;
+    if manifest.schema_version != 1
+        || manifest.run_id.is_empty()
+        || manifest.run_id.len() > 96
+        || manifest.run_id.starts_with('.')
+        || !manifest
+            .run_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b))
+    {
+        return Err(CliError::Product("prepare.manifest.invalid"));
+    }
+    let absolute = fs::canonicalize(path).map_err(|_| CliError::RequestRead)?;
+    let base = absolute.parent().ok_or(CliError::RequestRead)?;
+    let mut options: PreparationOptions =
+        phases::read_json(&resolve(base, manifest.options), 64 * 1024)?;
+    // Executable preparation never accepts a caller-supplied historic clock.
+    options.now_unix_seconds = inspect::current_time(None)?;
+    if options.max_snapshot_age_seconds > 300 {
+        return Err(CliError::Product("prepare.snapshot.maximum_age"));
+    }
+    let inputs = PhaseArgs {
+        context: resolve(base, manifest.context),
+        host_snapshot: resolve(base, manifest.host_snapshot),
+        catalog: resolve(base, manifest.catalog),
+        policy: manifest.policy.map(|p| resolve(base, p)),
+        policy_store: manifest.policy_store.map(|p| resolve(base, p)),
+        now: Some(options.now_unix_seconds),
+        snapshot_max_age_seconds: options.max_snapshot_age_seconds,
+    };
+    let (policy, active_binding) = if inputs.policy.is_none() {
+        if let Some(path) = &inputs.policy_store {
+            if !path.join("feedback.sqlite3").is_file() {
+                return Err(CliError::Product("policy.store.unavailable"));
+            }
+            let store = router_feedback::FeedbackStore::open(path)
+                .map_err(|_| CliError::Product("policy.store.invalid"))?;
+            let active = store
+                .active_policy()
+                .map_err(|_| CliError::Product("policy.active.invalid"))?
+                .ok_or(CliError::Product("policy.active.missing"))?;
+            (active.policy, Some((path.clone(), active.artifact_id)))
+        } else {
+            (phases::selected_policy(&inputs)?, None)
+        }
+    } else {
+        (phases::selected_policy(&inputs)?, None)
+    };
+    let (router, context) = phases::load_with_policy(&inputs, Some(policy.clone()))?;
+    let plan = execution::plan(&resolve(base, manifest.plan))?;
+    if manifest.workflow_contract.is_some() != manifest.generation.is_some() {
+        return Err(CliError::Product("prepare.workflow.generation_required"));
+    }
+    let workflow: Option<router_types::WorkflowExecutionContract> = manifest
+        .workflow_contract
+        .map(|path| {
+            let contract = phases::read_json(&resolve(base, path), 1024 * 1024)?;
+            router_workflow::validate_execution_contract(&contract, &plan)
+                .map_err(|_| CliError::Product("prepare.workflow.invalid"))?;
+            Ok::<_, CliError>(contract)
+        })
+        .transpose()?;
+    let index = product::read_index(&resolve(base, manifest.metadata))?;
+    let template = phases::read_json(&resolve(base, manifest.template), 256 * 1024)?;
+    let variables: BTreeMap<String, router_types::PromptValue> =
+        phases::read_json(&resolve(base, manifest.variables), 256 * 1024)?;
+    let body_root = resolve(base, manifest.body_root);
+    let receipt = if let Some(path) = manifest.receipt {
+        phases::read_json(&resolve(base, path), 1024 * 1024)?
+    } else {
+        router
+            .route(&context)
+            .map_err(|_| CliError::Product("prepare.route.invalid"))?
+    };
+    let proof = router
+        .validate_receipt(&context, &receipt)
+        .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
+    let prepared = router_prepare::prepare_with_receipt(
+        PreparationInput {
+            router: &router,
+            context: &context,
+            plan: &plan,
+            node_id: &manifest.node_id,
+            index: &index,
+            body_root: &body_root,
+            template: &template,
+            variables: &variables,
+            options: &options,
+        },
+        &proof,
+    )
+    .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
+    if let Some(directory) = output {
+        use std::os::unix::fs::DirBuilderExt;
+        let (catalog, _) =
+            catalogs::load(&inputs.catalog, inputs.now, inputs.snapshot_max_age_seconds)?;
+        if catalog
+            .content_hash()
+            .map_err(|_| CliError::CatalogInvalid)?
+            != context.catalog_hash()
+        {
+            return Err(CliError::Product("prepare.catalog.changed"));
+        }
+        // Assemble every byte before creating an output directory. All names are
+        // constant; create_new refuses user files and symlinks without overwrites.
+        let (policy_file, policy_store, policy_artifact_id) =
+            if let Some((store, id)) = &active_binding {
+                (None, Some(store), Some(id))
+            } else {
+                (Some("policy.json"), None, None)
+            };
+        let mut definition = serde_json::json!({"schema_version":1,"run_id":manifest.run_id,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":policy_file,"policy_store":policy_store,"policy_artifact_id":policy_artifact_id,"plan":"plan.json","node_id":manifest.node_id,"request":"request.json","receipt":"receipt.json"});
+        if workflow.is_some() {
+            definition["workflow_contract"] = serde_json::json!("workflow-contract.json");
+            definition["generation"] = serde_json::json!(manifest.generation);
+        }
+        let mut files = vec![
+            ("context.json", serialized(context.request())?),
+            ("snapshot.json", serialized(context.snapshot())?),
+            (
+                "catalog.json",
+                catalog
+                    .canonical_json()
+                    .map_err(|_| CliError::CatalogInvalid)?,
+            ),
+            ("policy.json", serialized(&policy)?),
+            ("plan.json", serialized(&plan)?),
+            (
+                "request.json",
+                prepared
+                    .canonical_request_json()
+                    .map_err(|_| CliError::Internal)?,
+            ),
+            ("preview.json", serialized(prepared.preview())?),
+            ("receipt.json", serialized(prepared.receipt())?),
+        ];
+        if let Some(contract) = &workflow {
+            files.push(("workflow-contract.json", serialized(contract)?));
+        }
+        files.push(("definition.json", serialized(&definition)?));
+        fs::DirBuilder::new()
+            .mode(0o700)
+            .create(directory)
+            .map_err(|_| CliError::Product("prepare.output.exists_or_unavailable"))?;
+        for (name, bytes) in files {
+            write_private(&directory.join(name), &bytes)?;
+        }
+    }
+    product::json_output(
+        &serde_json::json!({"schema_version":1,"preview":prepared.preview(),"preparation_hash":prepared.preparation_hash(),"written":output.is_some(),"executed":false,"approved":false}),
+        ExitCode::SUCCESS,
+    )
+}

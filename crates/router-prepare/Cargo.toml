@@ -1,0 +1,20 @@
+[package]
+name = "router-prepare"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+router-types = { path = "../router-types" }
+router-policy = { path = "../router-policy" }
+router-workflow = { path = "../router-workflow" }
+router-retrieval = { path = "../router-retrieval" }
+router-adapter-api = { path = "../router-adapter-api" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+router-catalog = { path = "../router-catalog" }
+tempfile.workspace = true
