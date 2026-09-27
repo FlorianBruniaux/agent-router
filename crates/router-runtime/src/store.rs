@@ -1,8 +1,8 @@
 use crate::{Result, RuntimeError, digest};
 use nix::fcntl::{Flock, FlockArg};
 use router_types::{
-    OutputArtifacts, OutputArtifactsState, OutputRetentionPolicy, RunFailure, RunState, RunSummary,
-    RuntimeEvent,
+    ExecutionRequest, ModelId, OutputArtifacts, OutputArtifactsState, OutputRetentionPolicy,
+    RunFailure, RunState, RunSummary, RuntimeEvent, WorkflowExecutionContract,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use std::{
@@ -44,7 +44,7 @@ impl Store {
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 3 {
+        if version > 4 {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -70,6 +70,25 @@ impl Store {
             tx.execute_batch("CREATE TABLE output_artifacts(run_id TEXT NOT NULL REFERENCES runs(run_id), attempt INTEGER NOT NULL, expires_at INTEGER NOT NULL, state TEXT NOT NULL, record TEXT NOT NULL, PRIMARY KEY(run_id,attempt)); CREATE INDEX output_expiration ON output_artifacts(state,expires_at); CREATE TABLE output_files(run_id TEXT NOT NULL, attempt INTEGER NOT NULL, stream TEXT NOT NULL CHECK(stream IN ('stdout','stderr')), identity TEXT NOT NULL, PRIMARY KEY(run_id,attempt,stream), FOREIGN KEY(run_id,attempt) REFERENCES output_artifacts(run_id,attempt)); PRAGMA user_version=3;")?;
             tx.commit()?;
         }
+        if version < 4 {
+            // SQLite table rebuild removes plan-global uniqueness. Historical
+            // runs remain unbound: a shared plan hash is never an instance ID.
+            db.pragma_update(None, "foreign_keys", "OFF")?;
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE runs_v4(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL);
+                INSERT INTO runs_v4 SELECT run_id,plan_id,node_id,summary FROM runs;
+                DROP TABLE runs;
+                ALTER TABLE runs_v4 RENAME TO runs;
+                CREATE TABLE workflow_instances(instance_id TEXT PRIMARY KEY, contract_hash TEXT NOT NULL, record TEXT NOT NULL);
+                CREATE TABLE workflow_node_runs(instance_id TEXT NOT NULL REFERENCES workflow_instances(instance_id), node_id TEXT NOT NULL, generation INTEGER NOT NULL, run_id TEXT NOT NULL UNIQUE REFERENCES runs(run_id), model TEXT NOT NULL, agent TEXT, PRIMARY KEY(instance_id,node_id,generation));
+                PRAGMA user_version=4;")?;
+            let violations: bool = tx.prepare("PRAGMA foreign_key_check")?.exists([])?;
+            if violations {
+                return Err(RuntimeError::Integrity("migration foreign keys"));
+            }
+            tx.commit()?;
+            db.pragma_update(None, "foreign_keys", "ON")?;
+        }
         for suffix in ["", "-wal", "-shm"] {
             let path = root.join(format!("runtime.sqlite3{suffix}"));
             if path.exists() {
@@ -90,7 +109,26 @@ impl Store {
             .lock()
             .map_err(|_| RuntimeError::Integrity("storage lock poisoned"))
     }
+    #[cfg(test)]
     pub fn register(&self, summary: &RunSummary) -> Result<RunSummary> {
+        self.register_inner(summary, None, None, 5)
+    }
+    pub fn register_workflow(
+        &self,
+        summary: &RunSummary,
+        contract: Option<&WorkflowExecutionContract>,
+        request: &ExecutionRequest,
+        max_attempts: u32,
+    ) -> Result<RunSummary> {
+        self.register_inner(summary, contract, Some(request), max_attempts)
+    }
+    fn register_inner(
+        &self,
+        summary: &RunSummary,
+        contract: Option<&WorkflowExecutionContract>,
+        request: Option<&ExecutionRequest>,
+        max_attempts: u32,
+    ) -> Result<RunSummary> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         if let Some(existing) = load_opt(&tx, &summary.run_id)? {
@@ -98,6 +136,61 @@ impl Store {
                 return Err(RuntimeError::Integrity("definition changed"));
             }
             return Ok(existing);
+        }
+        if let Some(binding) = &summary.workflow {
+            let contract = contract.ok_or(RuntimeError::Integrity("missing workflow contract"))?;
+            let existing: Option<String> = tx
+                .query_row(
+                    "SELECT contract_hash FROM workflow_instances WHERE instance_id=?1",
+                    [&binding.instance_id],
+                    |row| row.get(0),
+                )
+                .optional()?;
+            if existing
+                .as_ref()
+                .is_some_and(|hash| hash != &binding.contract_sha256)
+            {
+                return Err(RuntimeError::Integrity("execution instance changed"));
+            }
+            tx.execute(
+                "INSERT OR IGNORE INTO workflow_instances VALUES(?1,?2,?3)",
+                params![
+                    binding.instance_id,
+                    binding.contract_sha256,
+                    serde_json::to_string(contract)?
+                ],
+            )?;
+            let previous = workflow_node(&tx, &binding.instance_id, &summary.node_id)?;
+            match previous {
+                None if binding.generation == 0 => {}
+                Some((run, _, _))
+                    if run
+                        .workflow
+                        .as_ref()
+                        .is_some_and(|old| old.generation + 1 == binding.generation)
+                        && retryable(&run)
+                        && workflow_attempts(&tx, &run)? < max_attempts =>
+                {
+                    // A registered consumer freezes producer generation. A future
+                    // coordinator must schedule fallback before reviewing consumers.
+                    for (node, execution) in &contract.nodes {
+                        if execution.dependencies.contains_key(&summary.node_id)
+                            && workflow_node(&tx, &binding.instance_id, node)?.is_some()
+                        {
+                            return Err(RuntimeError::Invalid(
+                                "dependency generation already bound",
+                            ));
+                        }
+                    }
+                }
+                _ => {
+                    return Err(RuntimeError::Invalid(
+                        "node generation requires bounded retryable predecessor",
+                    ));
+                }
+            }
+        } else if contract.is_some() {
+            return Err(RuntimeError::Integrity("missing workflow binding"));
         }
         tx.execute(
             "INSERT INTO runs(run_id,plan_id,node_id,summary) VALUES(?1,?2,?3,?4)",
@@ -108,6 +201,20 @@ impl Store {
                 serde_json::to_string(summary)?
             ],
         )?;
+        if let Some(binding) = &summary.workflow {
+            let request = request.ok_or(RuntimeError::Integrity("missing node identity"))?;
+            tx.execute(
+                "INSERT INTO workflow_node_runs VALUES(?1,?2,?3,?4,?5,?6)",
+                params![
+                    binding.instance_id,
+                    summary.node_id,
+                    binding.generation,
+                    summary.run_id,
+                    serde_json::to_string(&request.model)?,
+                    request.agent
+                ],
+            )?;
+        }
         append(&tx, summary, "planned", "")?;
         tx.commit()?;
         Ok(summary.clone())
@@ -268,19 +375,12 @@ impl Store {
         tx.commit()?;
         Ok(metadata)
     }
-    pub fn node_verified(&self, plan_id: &str, node_id: &str) -> Result<bool> {
-        let db = self.lock()?;
-        let value: Option<String> = db
-            .query_row(
-                "SELECT summary FROM runs WHERE plan_id=?1 AND node_id=?2",
-                params![plan_id, node_id],
-                |r| r.get(0),
-            )
-            .optional()?;
-        Ok(value
-            .map(|v| serde_json::from_str::<RunSummary>(&v))
-            .transpose()?
-            .is_some_and(|v| v.state == RunState::Verified))
+    pub fn workflow_node(
+        &self,
+        instance: &str,
+        node: &str,
+    ) -> Result<Option<(RunSummary, ModelId, Option<String>)>> {
+        workflow_node(&*self.lock()?, instance, node)
     }
     pub fn cancel_requested(&self, id: &str) -> Result<bool> {
         Ok(self
@@ -357,7 +457,7 @@ impl Store {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
-        if run.state != RunState::Preparing || run.attempts >= max {
+        if run.state != RunState::Preparing || workflow_attempts(&tx, &run)? >= max {
             return Err(RuntimeError::Limit);
         }
         run.attempts += 1;
@@ -386,10 +486,13 @@ impl Store {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
-        if !matches!(run.state, RunState::Failed | RunState::TimedOut)
-            || run.attempts >= max
-            || run.worktree.is_some()
-        {
+        let obsolete = if let Some(binding) = &run.workflow {
+            workflow_node(&tx, &binding.instance_id, &run.node_id)?
+                .is_none_or(|(current, _, _)| current.run_id != run.run_id)
+        } else {
+            false
+        };
+        if !retryable(&run) || workflow_attempts(&tx, &run)? >= max || obsolete {
             return Err(RuntimeError::Invalid(
                 "retry requires a bounded read-only attempt",
             ));
@@ -662,7 +765,7 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2 | 3
+        2..=4
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
@@ -714,6 +817,56 @@ fn verify_events(db: &Connection) -> Result<()> {
     Ok(())
 }
 
+fn retryable(run: &RunSummary) -> bool {
+    matches!(run.state, RunState::Failed | RunState::TimedOut)
+        && run.worktree.is_none()
+        && matches!(
+            run.failure,
+            Some(
+                RunFailure::RateLimit
+                    | RunFailure::Timeout
+                    | RunFailure::Crash
+                    | RunFailure::Network
+                    | RunFailure::Interrupted
+                    | RunFailure::Spawn
+            )
+        )
+}
+fn workflow_node(
+    db: &Connection,
+    instance: &str,
+    node: &str,
+) -> Result<Option<(RunSummary, ModelId, Option<String>)>> {
+    let value: Option<(String, String, Option<String>)> = db.query_row(
+        "SELECT r.summary,n.model,n.agent FROM workflow_node_runs n JOIN runs r ON r.run_id=n.run_id WHERE n.instance_id=?1 AND n.node_id=?2 ORDER BY n.generation DESC LIMIT 1",
+        params![instance,node], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).optional()?;
+    value
+        .map(|(summary, model, agent)| {
+            Ok((
+                serde_json::from_str(&summary)?,
+                serde_json::from_str(&model)?,
+                agent,
+            ))
+        })
+        .transpose()
+}
+fn workflow_attempts(db: &Connection, run: &RunSummary) -> Result<u32> {
+    let Some(binding) = &run.workflow else {
+        return Ok(run.attempts);
+    };
+    let mut query = db.prepare("SELECT r.summary FROM workflow_node_runs n JOIN runs r ON r.run_id=n.run_id WHERE n.instance_id=?1 AND n.node_id=?2")?;
+    let rows = query.query_map(params![binding.instance_id, run.node_id], |row| {
+        row.get::<_, String>(0)
+    })?;
+    let mut attempts = 0_u32;
+    for row in rows {
+        attempts = attempts
+            .checked_add(serde_json::from_str::<RunSummary>(&row?)?.attempts)
+            .ok_or(RuntimeError::Limit)?;
+    }
+    Ok(attempts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -731,7 +884,50 @@ mod tests {
             worktree: None,
             artifact_sha256: None,
             output_retention: OutputRetentionPolicy::Disabled,
+            workflow: None,
         }
+    }
+    #[test]
+    fn schema_three_migration_preserves_history_without_inventing_instances() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        let before = store.register(&summary("old")).unwrap();
+        let events = store.events().unwrap();
+        drop(store);
+        let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
+        db.execute_batch("PRAGMA foreign_keys=OFF;
+            DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
+            CREATE TABLE old_runs(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL, UNIQUE(plan_id,node_id));
+            INSERT INTO old_runs SELECT * FROM runs; DROP TABLE runs; ALTER TABLE old_runs RENAME TO runs;
+            PRAGMA user_version=3;").unwrap();
+        drop(db);
+        let store = Store::open(&root).unwrap();
+        assert_eq!(store.get("old").unwrap(), before);
+        assert_eq!(store.events().unwrap(), events);
+        assert!(store.get("old").unwrap().workflow.is_none());
+        let db = store.lock().unwrap();
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM workflow_instances", [], |r| r
+                .get::<_, u32>(0))
+                .unwrap(),
+            0
+        );
+        assert!(
+            !db.prepare("PRAGMA foreign_key_check")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+        assert!(
+            db.execute("UPDATE events SET detail='changed'", [])
+                .is_err()
+        );
+        drop(db);
+        let mut unrelated = summary("new");
+        unrelated.plan_id = before.plan_id.clone();
+        store.register(&unrelated).unwrap();
+        assert_eq!(observe(&root, "old").unwrap(), before);
     }
     #[test]
     fn invalid_transition_is_atomic_and_emits_integrity_event() {

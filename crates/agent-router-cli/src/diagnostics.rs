@@ -21,18 +21,31 @@ fn error(error: DoctorError) -> CliError {
         DoctorError::Unsupported => "doctor.platform.unsupported",
     })
 }
-pub(crate) fn doctor(path: &Path, now: Option<u64>, json: bool) -> Result<Outcome, CliError> {
+pub(crate) fn doctor(
+    path: &Path,
+    now: Option<u64>,
+    deep: bool,
+    json: bool,
+) -> Result<Outcome, CliError> {
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
+    if deep {
+        let request = read_json(path, 256 * 1024)?;
+        let result =
+            router_doctor::diagnose_deep(&request, inspect::current_time(now)?).map_err(error)?;
+        return json_output(&result, diagnostic_exit(result.overall));
+    }
     let request = read_json(path, 256 * 1024)?;
     let result = router_doctor::diagnose(&request, inspect::current_time(now)?).map_err(error)?;
-    let code = match result.overall {
+    json_output(&result, diagnostic_exit(result.overall))
+}
+fn diagnostic_exit(state: DiagnosticState) -> ExitCode {
+    match state {
         DiagnosticState::Pass => ExitCode::SUCCESS,
         DiagnosticState::Fail => ExitCode::from(2),
         _ => ExitCode::from(3),
-    };
-    json_output(&result, code)
+    }
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

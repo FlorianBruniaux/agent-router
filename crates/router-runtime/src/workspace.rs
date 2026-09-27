@@ -2,8 +2,8 @@ use crate::{Cancellation, Result, RuntimeError, digest, process::capture};
 use std::{
     collections::BTreeSet,
     fs::{self, OpenOptions},
-    io::Write,
-    os::unix::fs::{DirBuilderExt, OpenOptionsExt},
+    io::{Read, Write},
+    os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
     path::{Component, Path, PathBuf},
 };
 use tokio::process::Command;
@@ -216,6 +216,28 @@ pub(crate) fn write_artifact(storage: &Path, run_id: &str, bytes: &[u8]) -> Resu
     fs::rename(&temp, &path)?;
     std::fs::File::open(parent)?.sync_all()?;
     Ok(path)
+}
+pub(crate) fn read_artifact(storage: &Path, run_id: &str, expected_hash: &str) -> Result<Vec<u8>> {
+    let parent = storage.join("artifacts");
+    let meta = fs::symlink_metadata(&parent)?;
+    if !meta.is_dir() || meta.file_type().is_symlink() || meta.permissions().mode() & 0o077 != 0 {
+        return Err(RuntimeError::Integrity("artifact directory"));
+    }
+    let file = OpenOptions::new()
+        .read(true)
+        .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+        .open(parent.join(format!("{run_id}.patch")))?;
+    let meta = file.metadata()?;
+    if !meta.is_file() || meta.permissions().mode() & 0o077 != 0 || meta.len() > 16 * 1024 * 1024 {
+        return Err(RuntimeError::Integrity("artifact file"));
+    }
+    let mut bytes = Vec::new();
+    file.take(16 * 1024 * 1024 + 1).read_to_end(&mut bytes)?;
+    if bytes.len() > 16 * 1024 * 1024 || router_adapter_api::content_digest(&bytes) != expected_hash
+    {
+        return Err(RuntimeError::Integrity("artifact bytes changed"));
+    }
+    Ok(bytes)
 }
 pub(crate) fn integration_digest(
     run_id: &str,

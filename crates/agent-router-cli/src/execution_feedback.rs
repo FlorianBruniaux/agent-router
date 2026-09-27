@@ -21,7 +21,7 @@ pub(crate) fn consent(path: Option<&Path>) -> Result<Option<FeedbackConsent>, Cl
 pub(crate) fn record(
     path: Option<&Path>,
     consent: Option<&FeedbackConsent>,
-    router: &router_policy::PhaseRouter,
+    selection: &router_policy::ValidatedPhaseReceipt,
     context: &ValidatedPhaseContext,
     completion: &RunCompletion,
 ) -> serde_json::Value {
@@ -33,9 +33,14 @@ pub(crate) fn record(
     }
     let result = (|| {
         let now = crate::inspect::current_time(None).map_err(|_| ())?;
-        let receipt = router.route(context).map_err(|_| ())?;
-        let selected = &receipt.selected.as_ref().ok_or(())?.candidate;
-        let input = feedback_input(context, completion, &receipt, selected, now)?;
+        let receipt = selection.receipt();
+        if selection.context_hash() != context.context_hash()
+            || completion.run.receipt_id != receipt.receipt_id
+        {
+            return Err(());
+        }
+        let selected = &selection.selection().candidate;
+        let input = feedback_input(context, completion, receipt, selected, now)?;
         let store = FeedbackStore::open(path).map_err(|_| ())?;
         if store.consent().map_err(|_| ())? != *consent {
             return Err(());

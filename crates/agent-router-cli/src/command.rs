@@ -87,6 +87,10 @@ pub enum Commands {
         #[arg(long)]
         plan: PathBuf,
         #[arg(long)]
+        execution_contract: Option<PathBuf>,
+        #[arg(long, requires = "execution_contract")]
+        seal_contract: bool,
+        #[arg(long)]
         json: bool,
     },
     Verify {
@@ -134,6 +138,8 @@ pub enum Commands {
         request: PathBuf,
         #[arg(long)]
         now: Option<u64>,
+        #[arg(long)]
+        deep: bool,
         #[arg(long)]
         json: bool,
     },

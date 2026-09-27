@@ -210,7 +210,7 @@ mod tests {
             capture(command, vec![], 30_000, 1024, 10, &Cancellation::default()).await
         });
         for _ in 0..100 {
-            if temp.path().join("heartbeat").exists() {
+            if std::fs::metadata(temp.path().join("heartbeat")).is_ok_and(|m| m.len() > 0) {
                 break;
             }
             tokio::time::sleep(Duration::from_millis(5)).await;

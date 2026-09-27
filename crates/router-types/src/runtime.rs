@@ -82,6 +82,15 @@ pub struct RunSummary {
     pub artifact_sha256: Option<String>,
     #[serde(default, skip_serializing_if = "OutputRetentionPolicy::is_disabled")]
     pub output_retention: OutputRetentionPolicy,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub workflow: Option<WorkflowRunBinding>,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorkflowRunBinding {
+    pub instance_id: String,
+    pub contract_sha256: String,
+    pub generation: u32,
 }
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]

@@ -16,7 +16,7 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #5 | Replay, golden corpus, shadow evaluations | Software implemented; human gate open | 100 complete candidate replays, 200 traces, 60/20/20 split; all human labels false |
 | #2 | Bounded optional semantic backends | Implemented in shadow only | Loopback timeout/schema/pool/confidence/fallback tests; no semantic production promotion |
 | #7 | Thin Codex and Claude adapters | Native conformance and CLI path implemented | Three CLI canaries use a fake host under real macOS isolation; actual model behavior remains UNKNOWN |
-| #1 | Durable isolated execution | Single-node runtime tested; workflow corrections in progress | Execution lot: 331 tests, five explicitly ignored native tests; three CLI native macOS canaries run separately; Linux CI pending |
+| #1 | Durable isolated execution | Runtime and workflow instance corrections tested; PR #15 pending | Corrected lot: 359 workspace tests, five explicitly ignored native tests; three CLI native macOS canaries run separately; initial PR commit has eight passing CI checks including native Linux |
 | #6 | Offline feedback and reversible policy | Consent-bound runtime recording implemented | Actual CLI canary records transport outcome; objective validation remains separate; signed promotion and rollback tested |
 | #8 | Distribution, licenses, notices, SBOM | Packaging validated; final snapshot pending | Strict license inventory and Gitleaks pass; extracted integrations: 41 tests; extracted core CLI without default adapters: 30 tests |
 | #11 | Roadmap acceptance | Pending | All dependencies and the gaps below have evidence/disposition |
@@ -46,17 +46,20 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 
 ## Open implementation and observation gates
 
-- Workflow instances must not share dependency satisfaction merely because their
-  plan hashes match. A verifier must be able to inspect an authorized immutable
-  predecessor result before that predecessor is marked verified. These runtime
-  review findings block the execution lot's merge until corrected.
+- Workflow instances now isolate dependency satisfaction, and a typed verifier
+  dependency can accept a sealed write result before it is verified. Generation,
+  migration, independence and fallback regressions pass. The one-step CLI releases
+  its owner lock while dependencies are pending. Artifact availability still does
+  not supply an authorized immutable view to a consumer by itself.
 - Full DAG coordination, declared artifact handoff, explicit fallback generations
   and concurrent control still need integrated acceptance tests.
 - Model/provider/auth/context/format dimensions and complete skill activation
   manifests need explicit versioned contracts and enforced gates. Existing v1/v2
   contracts remain readable; missing evidence must not become permission.
-- Deep diagnostics need bounded schema, content-binding and database checks;
-  passive file presence does not establish native activation or authentication.
+- Deep diagnostics now check bounded component schemas, catalog/body bindings
+  and SQLite integrity without writes. WAL requires a coherent snapshot; unsafe
+  descriptor access remains unsupported. Host activation and authentication
+  remain distinct observations, never inferred from file presence.
 - The measured NFR-003 first-launch startup target is not met: 524.315 ms and
   620.105 ms were observed against a 150 ms requirement. Decision p95 up to
   0.476 ms and hot-index retrieval p95 up to 10.789 ms meet their measured

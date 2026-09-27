@@ -1219,3 +1219,510 @@ async fn output_purge_refuses_symlink_files_and_parent_directories() {
     fs::rename(&moved, &outputs).unwrap();
     runtime.purge_output_artifacts("run-1", 1).unwrap();
 }
+
+impl Fixture {
+    fn contract(&self, instance: &str, artifact_verification: bool) -> WorkflowExecutionContract {
+        router_workflow::seal_execution_contract(
+            WorkflowExecutionContract {
+                schema_version: 1,
+                instance_id: instance.into(),
+                plan_id: self.plan.plan_id.clone(),
+                workspace: self.request.workspace.clone(),
+                source_state: self.request.source_state.clone(),
+                nodes: self
+                    .plan
+                    .nodes
+                    .iter()
+                    .map(|node| {
+                        (
+                            node.id.clone(),
+                            NodeExecutionContract {
+                                phase: match node.id.as_str() {
+                                    "plan" => StageKind::Plan,
+                                    "verify" => StageKind::Verify,
+                                    _ => StageKind::Execute,
+                                },
+                                dependencies: node
+                                    .dependencies
+                                    .iter()
+                                    .map(|id| {
+                                        (
+                                            id.clone(),
+                                            if artifact_verification && node.id == "verify" {
+                                                DependencyRequirement::ArtifactReadyForVerification
+                                            } else {
+                                                DependencyRequirement::Verified
+                                            },
+                                        )
+                                    })
+                                    .collect(),
+                            },
+                        )
+                    })
+                    .collect(),
+                contract_sha256: String::new(),
+            },
+            &self.plan,
+        )
+        .unwrap()
+    }
+    fn node_request(&self, node: &str) -> (ValidatedPhaseContext, ExecutionRequest) {
+        let node = self.plan.nodes.iter().find(|n| n.id == node).unwrap();
+        let mut route = self.context.request().clone();
+        route.phase = match node.id.as_str() {
+            "plan" => StageKind::Plan,
+            "verify" => StageKind::Verify,
+            _ => StageKind::Execute,
+        };
+        route.candidates[0].sandbox = if node.mode == NodeMode::IsolatedWrite {
+            PhaseSandbox::WorkspaceWrite
+        } else {
+            PhaseSandbox::ReadOnly
+        };
+        if node.independent_verifier {
+            route.previous_model = Some(self.request.model.clone());
+            route.candidates[0].model = ModelId::parse("fixture-second").unwrap();
+            route.candidates[0].verification = PhaseVerification::Independent;
+        }
+        let snapshot = ValidatedHostObservation::from_observation(
+            self.context.snapshot().clone(),
+            SnapshotValidation {
+                now_unix_seconds: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap();
+        let context = self.router.context(route, &snapshot, &catalog).unwrap();
+        let receipt = self.router.route(&context).unwrap();
+        let selected = receipt.selected.as_ref().unwrap();
+        let mut request = self.request.clone();
+        request.phase = receipt.phase;
+        request.receipt_id = receipt.receipt_id.clone();
+        request.model = selected.candidate.model.clone();
+        request.sandbox = if node.mode == NodeMode::IsolatedWrite {
+            ExecutionSandbox::WorkspaceWrite
+        } else {
+            ExecutionSandbox::ReadOnly
+        };
+        request.required_capabilities = self
+            .router
+            .execution_capabilities(&context, selected)
+            .unwrap();
+        (context, request)
+    }
+    async fn review_node(
+        &self,
+        runtime: &Runtime,
+        run: &str,
+        node: &str,
+        contract: &WorkflowExecutionContract,
+        generation: u32,
+    ) -> PendingRun {
+        let (context, request) = self.node_request(node);
+        let receipt = self.router.route(&context).unwrap();
+        let proof = self.router.validate_receipt(&context, &receipt).unwrap();
+        runtime
+            .review_selected(
+                run,
+                &self.router,
+                &context,
+                &proof,
+                request,
+                self.plan.clone(),
+                node,
+                Some((contract, generation)),
+            )
+            .await
+            .unwrap()
+    }
+}
+fn verify_pass(runtime: &Runtime, pending: &PendingRun) {
+    runtime
+        .record_verification(
+            pending,
+            VerificationRecord {
+                verifier: "explicit-human-reviewer".into(),
+                evidence_sha256: "a".repeat(64),
+                artifact_sha256: runtime
+                    .summary(&pending.summary().run_id)
+                    .unwrap()
+                    .artifact_sha256,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            },
+        )
+        .unwrap();
+}
+
+#[tokio::test]
+async fn workflow_instances_cannot_borrow_verified_dependencies() {
+    let f = Fixture::new(false).await;
+    let rt = f.runtime();
+    let a = f.contract("instance-a", false);
+    let b = f.contract("instance-b", false);
+    let producer = f.review_node(&rt, "a-execute", "execute", &a, 0).await;
+    rt.execute(
+        rt.approve(producer.clone(), producer.approval_digest())
+            .unwrap(),
+        &FakeAdapter("true"),
+        &FakeSupervisor,
+        Cancellation::default(),
+    )
+    .await
+    .unwrap();
+    verify_pass(&rt, &producer);
+    // Identical plan, workspace and source still do not identify an execution.
+    let consumer = f.review_node(&rt, "b-verify", "verify", &b, 0).await;
+    let digest = consumer.approval_digest().to_owned();
+    assert!(
+        tokio::time::timeout(
+            Duration::from_millis(80),
+            rt.execute(
+                rt.approve(consumer.clone(), &digest).unwrap(),
+                &FakeAdapter("true"),
+                &FakeSupervisor,
+                Cancellation::default()
+            )
+        )
+        .await
+        .is_err()
+    );
+    assert_eq!(rt.summary("b-verify").unwrap().state, RunState::Queued);
+    drop(rt);
+    let rt = f.runtime();
+    let (context, request) = f.node_request("verify");
+    let proof = f
+        .router
+        .validate_receipt(&context, &f.router.route(&context).unwrap())
+        .unwrap();
+    let consumer = rt
+        .reopen_selected(
+            "b-verify",
+            &f.router,
+            &context,
+            &proof,
+            request,
+            f.plan.clone(),
+            "verify",
+            Some((&b, 0)),
+        )
+        .unwrap();
+    assert!(rt.resume_approved(consumer.clone(), "wrong").is_err());
+    let approved = rt.resume_approved(consumer, &digest).unwrap();
+    let producer = f.review_node(&rt, "b-execute", "execute", &b, 0).await;
+    let producer_approved = rt
+        .approve(producer.clone(), producer.approval_digest())
+        .unwrap();
+    let (result, ()) = tokio::join!(
+        rt.execute(
+            approved,
+            &FakeAdapter("true"),
+            &FakeSupervisor,
+            Cancellation::default()
+        ),
+        async {
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            assert_eq!(rt.summary("b-verify").unwrap().state, RunState::Queued);
+            rt.execute(
+                producer_approved,
+                &FakeAdapter("true"),
+                &FakeSupervisor,
+                Cancellation::default(),
+            )
+            .await
+            .unwrap();
+            verify_pass(&rt, &producer);
+        }
+    );
+    assert_eq!(result.unwrap().run.state, RunState::Verifying);
+    assert_eq!(rt.summary("a-execute").unwrap().state, RunState::Verified);
+}
+
+#[tokio::test]
+async fn explicit_artifact_dependency_allows_verifier_before_producer_verification() {
+    let mut f = Fixture::new(true).await;
+    f.plan = build_plan(
+        &f.plan.task,
+        WorkflowPreset::PlanExecuteVerify,
+        PlanLimits {
+            reserve_elapsed_ms: 1_000,
+            ..PlanLimits::default()
+        },
+    )
+    .unwrap();
+    let contract = f.contract("artifact-workflow", true);
+    let rt = f.runtime();
+    let planner = f.review_node(&rt, "planner", "plan", &contract, 0).await;
+    rt.execute(
+        rt.approve(planner.clone(), planner.approval_digest())
+            .unwrap(),
+        &FakeAdapter("true"),
+        &FakeSupervisor,
+        Cancellation::default(),
+    )
+    .await
+    .unwrap();
+    verify_pass(&rt, &planner);
+    let producer = f
+        .review_node(&rt, "producer", "execute", &contract, 0)
+        .await;
+    rt.execute(
+        rt.approve(producer.clone(), producer.approval_digest())
+            .unwrap(),
+        &FakeAdapter("printf 'changed\\n' > src/base.txt"),
+        &FakeSupervisor,
+        Cancellation::default(),
+    )
+    .await
+    .unwrap();
+    assert_eq!(rt.summary("producer").unwrap().state, RunState::Verifying);
+    assert!(rt.summary("producer").unwrap().artifact_sha256.is_some());
+    let verifier = f.review_node(&rt, "verifier", "verify", &contract, 0).await;
+    let outcome = tokio::time::timeout(
+        Duration::from_secs(2),
+        rt.execute(
+            rt.approve(verifier.clone(), verifier.approval_digest())
+                .unwrap(),
+            &FakeAdapter("true"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        ),
+    )
+    .await
+    .unwrap()
+    .unwrap();
+    assert_eq!(outcome.run.state, RunState::Verifying);
+    assert_eq!(outcome.objective, VerificationOutcome::Unknown);
+    assert_eq!(rt.summary("producer").unwrap().state, RunState::Verifying);
+    // Readiness is not artifact handoff or verification evidence.
+}
+
+#[tokio::test]
+async fn workflow_binding_rejects_changed_instance_phase_and_legacy_dependencies() {
+    let f = Fixture::new(false).await;
+    let rt = f.runtime();
+    let contract = f.contract("bound", false);
+    f.review_node(&rt, "bound-run", "execute", &contract, 0)
+        .await;
+    let (context, request) = f.node_request("verify");
+    assert!(
+        rt.review(
+            "legacy-dependent",
+            &f.router,
+            &context,
+            request,
+            f.plan.clone(),
+            "verify"
+        )
+        .await
+        .is_err()
+    );
+    assert!(matches!(
+        rt.summary("legacy-dependent"),
+        Err(RuntimeError::NotFound)
+    ));
+    let mut changed = contract.clone();
+    changed.nodes.get_mut("execute").unwrap().phase = StageKind::Plan;
+    let changed = router_workflow::seal_execution_contract(changed, &f.plan).unwrap();
+    let receipt = f.router.route(&f.context).unwrap();
+    let proof = f.router.validate_receipt(&f.context, &receipt).unwrap();
+    assert!(
+        rt.review_selected(
+            "wrong-phase",
+            &f.router,
+            &f.context,
+            &proof,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            Some((&changed, 0))
+        )
+        .await
+        .is_err()
+    );
+    let mut source = contract.clone();
+    source.source_state = "a".repeat(40);
+    let source = router_workflow::seal_execution_contract(source, &f.plan).unwrap();
+    assert!(
+        rt.review_selected(
+            "wrong-source",
+            &f.router,
+            &f.context,
+            &proof,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            Some((&source, 0))
+        )
+        .await
+        .is_err()
+    );
+    // An independent-verifier node may not be invoked with an Execute receipt.
+    let mut plan = build_plan(
+        &f.plan.task,
+        WorkflowPreset::PlanExecuteVerify,
+        PlanLimits::default(),
+    )
+    .unwrap();
+    plan.task = f.plan.task.clone();
+    assert!(
+        rt.review(
+            "wrong-verifier",
+            &f.router,
+            &f.context,
+            f.request.clone(),
+            plan,
+            "verify"
+        )
+        .await
+        .is_err()
+    );
+}
+
+#[tokio::test]
+async fn workflow_generation_retry_is_cumulative_and_requires_fresh_approval() {
+    let f = Fixture::new(false).await;
+    let rt = f.runtime();
+    let contract = f.contract("retry-workflow", false);
+    let first = f
+        .review_node(&rt, "generation-zero", "execute", &contract, 0)
+        .await;
+    let failed = rt
+        .execute(
+            rt.approve(first.clone(), first.approval_digest()).unwrap(),
+            &FakeAdapter("exit 7"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(failed.run.state, RunState::Failed);
+    let mut route = f.context.request().clone();
+    let mut secondary = route.candidates[0].clone();
+    secondary.id = "secondary".into();
+    secondary.model = ModelId::parse("fixture-second").unwrap();
+    route.candidates.push(secondary);
+    let snapshot = ValidatedHostObservation::from_observation(
+        f.context.snapshot().clone(),
+        SnapshotValidation {
+            now_unix_seconds: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(include_bytes!(
+        "../../../fixtures/examples/phase-catalog.json"
+    ))
+    .unwrap();
+    let context = f.router.context(route, &snapshot, &catalog).unwrap();
+    let receipt = f
+        .router
+        .fallback(
+            &context,
+            &std::collections::BTreeSet::from(["primary".into()]),
+        )
+        .unwrap();
+    let proof = f.router.validate_receipt(&context, &receipt).unwrap();
+    let mut request = f.request.clone();
+    request.receipt_id = receipt.receipt_id.clone();
+    request.candidate_id = "secondary".into();
+    request.model = proof.selection().candidate.model.clone();
+    request.required_capabilities = f
+        .router
+        .execution_capabilities(&context, proof.selection())
+        .unwrap();
+    let second = rt
+        .review_selected(
+            "generation-one",
+            &f.router,
+            &context,
+            &proof,
+            request.clone(),
+            f.plan.clone(),
+            "execute",
+            Some((&contract, 1)),
+        )
+        .await
+        .unwrap();
+    assert_ne!(first.approval_digest(), second.approval_digest());
+    assert!(rt.approve(second.clone(), first.approval_digest()).is_err());
+    assert!(rt.retry(first).is_err());
+    rt.execute(
+        rt.approve(second.clone(), second.approval_digest())
+            .unwrap(),
+        &FakeAdapter("exit 8"),
+        &FakeSupervisor,
+        Cancellation::default(),
+    )
+    .await
+    .unwrap();
+    assert!(
+        rt.review_selected(
+            "generation-two",
+            &f.router,
+            &context,
+            &proof,
+            request,
+            f.plan.clone(),
+            "execute",
+            Some((&contract, 2))
+        )
+        .await
+        .is_err()
+    );
+    assert!(rt.retry(second).is_err());
+}
+
+#[tokio::test]
+async fn raw_request_cannot_exceed_the_declared_node_budget() {
+    use sha2::Digest;
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    for dimension in 0..3 {
+        let mut plan = fixture.plan.clone();
+        let budget = &mut plan
+            .nodes
+            .iter_mut()
+            .find(|n| n.id == "execute")
+            .unwrap()
+            .budget;
+        match dimension {
+            0 => budget.max_cost_microusd = 99,
+            1 => budget.max_tokens = 99,
+            _ => budget.max_elapsed_ms = 99,
+        }
+        plan.plan_id.clear();
+        plan.plan_id = hex::encode(sha2::Sha256::digest(serde_json::to_vec(&plan).unwrap()));
+        router_workflow::validate_plan(&plan).unwrap();
+        let mut request = fixture.request.clone();
+        request.timeout_ms = 50;
+        let run_id = format!("over-node-budget-{dimension}");
+        assert!(matches!(
+            runtime
+                .review(
+                    &run_id,
+                    &fixture.router,
+                    &fixture.context,
+                    request,
+                    plan,
+                    "execute"
+                )
+                .await,
+            Err(RuntimeError::Route)
+        ));
+        assert!(matches!(
+            runtime.summary(&run_id),
+            Err(RuntimeError::NotFound)
+        ));
+    }
+}

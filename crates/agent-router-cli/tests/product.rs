@@ -184,6 +184,41 @@ fn doctor_and_audit_never_echo_private_artifact_content() {
 }
 
 #[test]
+fn deep_doctor_checks_the_declared_schema_without_running_processes() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let artifact = directory.join("policy.json");
+    write(&artifact, &json!(router_types::PhasePolicy::default()));
+    let request = directory.join("deep.json");
+    write(
+        &request,
+        &json!({"schema_version":1,"base":{"schema_version":1,"root":directory,"max_snapshot_age_seconds":60,"artifacts":[{"id":"policy","relative_path":"policy.json","kind":"json_configuration","expected_sha256":null,"require_private":false}]},"schemas":[{"artifact_id":"policy","schema":"phase_policy"}],"retrieval_bindings":[]}),
+    );
+    let run = || {
+        command()
+            .args(["doctor", "--deep", "--request"])
+            .arg(&request)
+            .args(["--now", "100", "--json"])
+            .output()
+            .unwrap()
+    };
+    let valid = run();
+    assert!(matches!(valid.status.code(), Some(0 | 3)), "{valid:?}");
+    let report: Value = serde_json::from_slice(&valid.stdout).unwrap();
+    assert_eq!(report["base"]["files_modified"], 0);
+    assert_eq!(report["base"]["processes_launched"], 0);
+    assert_eq!(report["base"]["network_requests"], 0);
+    assert!(!report["checks"].as_array().unwrap().is_empty());
+    write(
+        &artifact,
+        &json!({"schema_version":2,"private_note":"PRIVATE_INVALID_POLICY"}),
+    );
+    let invalid = run();
+    assert_eq!(invalid.status.code(), Some(2));
+    assert!(!String::from_utf8_lossy(&invalid.stdout).contains("PRIVATE_INVALID_POLICY"));
+}
+
+#[test]
 fn feedback_requires_consent_and_policy_baseline_is_explicit() {
     let dir = tempfile::tempdir().unwrap();
     let directory = fs::canonicalize(dir.path()).unwrap();

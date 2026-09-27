@@ -6,7 +6,7 @@ use router_adapter_api::{
     MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, ValidatedHostObservation,
     authorize_execution, content_digest, strict_json,
 };
-use router_policy::{PhaseRouter, ValidatedPhaseContext};
+use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_retrieval::{AssetKind, Bm25Index, SelectedBody};
 use router_types::*;
 use serde::{Deserialize, Serialize};
@@ -173,6 +173,23 @@ fn loaded(
 }
 
 pub fn prepare(input: PreparationInput<'_>) -> Result<PreparedExecution> {
+    let receipt = input.router.route(input.context)?;
+    if receipt.selected.is_none() {
+        return Err(PreparationError::Abstained);
+    }
+    let proof = input.router.validate_receipt(input.context, &receipt)?;
+    prepare_with_receipt(input, &proof)
+}
+
+/// Prepare an explicitly reviewed fallback without replacing it with the
+/// default winner. The proof must belong to this exact immutable context.
+pub fn prepare_with_receipt(
+    input: PreparationInput<'_>,
+    proof: &ValidatedPhaseReceipt,
+) -> Result<PreparedExecution> {
+    let proof = input
+        .router
+        .validate_receipt(input.context, proof.receipt())?;
     let options = input.options;
     if options.schema_version != 1
         || options.max_input_bytes == 0
@@ -205,7 +222,7 @@ pub fn prepare(input: PreparationInput<'_>) -> Result<PreparedExecution> {
     input
         .index
         .validate_catalog_hash(input.context.catalog_hash())?;
-    let receipt = input.router.route(input.context)?;
+    let receipt = proof.receipt().clone();
     let selected = receipt
         .selected
         .as_ref()

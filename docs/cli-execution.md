@@ -41,7 +41,7 @@ agent-router prepare --manifest preparation.json --output-directory prepared --j
 
 The first command emits a redacted preview. The second creates a new 0700
 directory with 0600 request, context, snapshot, policy, catalog, plan, preview and
-definition files. It refuses an existing output directory. An I/O failure can
+receipt and definition files. It refuses an existing output directory. An I/O failure can
 leave a private partial directory; `definition.json` is written last and no
 process is started. Request files contain the assembled private prompt, so treat
 the bundle as sensitive.
@@ -50,6 +50,23 @@ An explicit policy file overrides a policy store. When the store supplies the
 policy, the generated definition preserves its artifact identity and checks that
 it remains active before fresh execution. Policy source changes invalidate the
 CLI approval. Historical inspection reconstructs the exact existing definition.
+
+An optional `receipt` path selects a previously computed fallback receipt. The
+entire receipt is reproduced from the immutable context, including the explicit
+unavailable candidate set. It does not attest that a provider actually failed.
+The resulting bundle preserves that receipt; changing or removing it cannot
+silently restore the original winner.
+
+For linked steps, supply `workflow_contract` and `generation` together in the
+preparation manifest or execution definition. The contract binds a separate
+`instance_id`, plan hash, workspace, source commit, explicit phase per node and
+typed dependencies. Its hash is part of every approval. Generations start at 0;
+a new generation is an explicit replacement, subject to retry and budget gates.
+Without a contract, the legacy path is limited to a node without dependencies.
+
+`workflow --plan plan.json --execution-contract contract.json --seal-contract
+--json` validates and hashes a proposed contract; it grants no approval. Omit
+`--seal-contract` to verify an existing hash. Nodes must match the complete plan.
 
 ## Sandbox and privacy configuration
 
@@ -89,8 +106,13 @@ agent-router events --store /absolute/private-runtime --run-id review-001 --json
 Approval includes the immutable request, plan, authority source, sandbox
 configuration and executable hashes. A changed input requires a new review.
 Retries are explicit with `run --retry` and require a new approval digest.
-The runtime enforces dependencies and refuses a node whose prerequisites have not
-been independently verified. These commands operate one node at a time.
+The runtime isolates dependencies by workflow instance and contract. A premature
+step stays queued and can be cancelled or resumed with its existing exact
+approval. Normal edges require `verified`; an explicitly independent verifier
+may use `artifact_ready_for_verification` for a sealed write result still awaiting
+verification. That readiness does not itself grant a view of the patch to the
+consumer. These commands operate one node at a time; full artifact handoff and
+workflow coordination have separate acceptance tests.
 
 ## Verification and artifacts
 

@@ -155,7 +155,12 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
             json,
         } => execution::events(&store, &run_id, json),
         Commands::SourceState { workspace, json } => execution::source_state(&workspace, json),
-        Commands::Workflow { plan, json } => execution::workflow(&plan, json),
+        Commands::Workflow {
+            plan,
+            execution_contract,
+            seal_contract,
+            json,
+        } => execution::workflow(&plan, execution_contract.as_deref(), seal_contract, json),
         Commands::Verify {
             definition,
             store,
@@ -181,7 +186,12 @@ fn run(command: Commands) -> Result<Outcome, CliError> {
             json,
             command,
         } => feedback::policy(&store, now, json, command),
-        Commands::Doctor { request, now, json } => diagnostics::doctor(&request, now, json),
+        Commands::Doctor {
+            request,
+            now,
+            deep,
+            json,
+        } => diagnostics::doctor(&request, now, deep, json),
         Commands::Audit { command } => diagnostics::audit(command),
         Commands::Config { layers, json } => product::configuration(&layers, json),
         Commands::RoutePhase { inputs, json } => phases::route(inputs, json),

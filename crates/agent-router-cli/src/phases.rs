@@ -31,6 +31,7 @@ pub(crate) fn error(error: PhaseRouteError) -> CliError {
         PhaseRouteError::OutsidePool => "phase.selection.outside_pool",
         PhaseRouteError::Ineligible => "phase.selection.ineligible",
         PhaseRouteError::PolicyMismatch => "phase.policy.mismatch",
+        PhaseRouteError::ReceiptMismatch => "phase.receipt.mismatch",
     })
 }
 pub(crate) fn load(inputs: &PhaseArgs) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {

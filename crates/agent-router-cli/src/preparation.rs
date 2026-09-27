@@ -26,6 +26,9 @@ struct Manifest {
     template: PathBuf,
     variables: PathBuf,
     options: PathBuf,
+    receipt: Option<PathBuf>,
+    workflow_contract: Option<PathBuf>,
+    generation: Option<u32>,
 }
 fn resolve(base: &Path, path: PathBuf) -> PathBuf {
     if path.is_absolute() {
@@ -104,22 +107,47 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
     };
     let (router, context) = phases::load_with_policy(&inputs, Some(policy.clone()))?;
     let plan = execution::plan(&resolve(base, manifest.plan))?;
+    if manifest.workflow_contract.is_some() != manifest.generation.is_some() {
+        return Err(CliError::Product("prepare.workflow.generation_required"));
+    }
+    let workflow: Option<router_types::WorkflowExecutionContract> = manifest
+        .workflow_contract
+        .map(|path| {
+            let contract = phases::read_json(&resolve(base, path), 1024 * 1024)?;
+            router_workflow::validate_execution_contract(&contract, &plan)
+                .map_err(|_| CliError::Product("prepare.workflow.invalid"))?;
+            Ok::<_, CliError>(contract)
+        })
+        .transpose()?;
     let index = product::read_index(&resolve(base, manifest.metadata))?;
     let template = phases::read_json(&resolve(base, manifest.template), 256 * 1024)?;
     let variables: BTreeMap<String, router_types::PromptValue> =
         phases::read_json(&resolve(base, manifest.variables), 256 * 1024)?;
     let body_root = resolve(base, manifest.body_root);
-    let prepared = router_prepare::prepare(PreparationInput {
-        router: &router,
-        context: &context,
-        plan: &plan,
-        node_id: &manifest.node_id,
-        index: &index,
-        body_root: &body_root,
-        template: &template,
-        variables: &variables,
-        options: &options,
-    })
+    let receipt = if let Some(path) = manifest.receipt {
+        phases::read_json(&resolve(base, path), 1024 * 1024)?
+    } else {
+        router
+            .route(&context)
+            .map_err(|_| CliError::Product("prepare.route.invalid"))?
+    };
+    let proof = router
+        .validate_receipt(&context, &receipt)
+        .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
+    let prepared = router_prepare::prepare_with_receipt(
+        PreparationInput {
+            router: &router,
+            context: &context,
+            plan: &plan,
+            node_id: &manifest.node_id,
+            index: &index,
+            body_root: &body_root,
+            template: &template,
+            variables: &variables,
+            options: &options,
+        },
+        &proof,
+    )
     .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
     if let Some(directory) = output {
         use std::os::unix::fs::DirBuilderExt;
@@ -140,8 +168,12 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             } else {
                 (Some("policy.json"), None, None)
             };
-        let definition = serde_json::json!({"schema_version":1,"run_id":manifest.run_id,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":policy_file,"policy_store":policy_store,"policy_artifact_id":policy_artifact_id,"plan":"plan.json","node_id":manifest.node_id,"request":"request.json"});
-        let files = [
+        let mut definition = serde_json::json!({"schema_version":1,"run_id":manifest.run_id,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":policy_file,"policy_store":policy_store,"policy_artifact_id":policy_artifact_id,"plan":"plan.json","node_id":manifest.node_id,"request":"request.json","receipt":"receipt.json"});
+        if workflow.is_some() {
+            definition["workflow_contract"] = serde_json::json!("workflow-contract.json");
+            definition["generation"] = serde_json::json!(manifest.generation);
+        }
+        let mut files = vec![
             ("context.json", serialized(context.request())?),
             ("snapshot.json", serialized(context.snapshot())?),
             (
@@ -159,8 +191,12 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
                     .map_err(|_| CliError::Internal)?,
             ),
             ("preview.json", serialized(prepared.preview())?),
-            ("definition.json", serialized(&definition)?),
+            ("receipt.json", serialized(prepared.receipt())?),
         ];
+        if let Some(contract) = &workflow {
+            files.push(("workflow-contract.json", serialized(contract)?));
+        }
+        files.push(("definition.json", serialized(&definition)?));
         fs::DirBuilder::new()
             .mode(0o700)
             .create(directory)

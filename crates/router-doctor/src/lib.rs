@@ -2,10 +2,13 @@
 #![forbid(unsafe_code)]
 
 mod audit;
+mod database;
+mod deep;
 mod diagnose;
 mod files;
 
 pub use audit::{AuditInput, build_audit_bundle, verify_audit_bundle};
+pub use deep::diagnose_deep;
 pub use diagnose::diagnose;
 
 pub const MAX_ARTIFACTS: usize = 128;

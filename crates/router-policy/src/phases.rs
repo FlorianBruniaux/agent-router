@@ -27,9 +27,32 @@ pub enum PhaseRouteError {
     Ineligible,
     #[error("phase.policy.mismatch")]
     PolicyMismatch,
+    #[error("phase.receipt.mismatch")]
+    ReceiptMismatch,
 }
 
 type Result<T> = std::result::Result<T, PhaseRouteError>;
+
+/// A deterministic receipt reproduced against an immutable context. This does
+/// not attest a provider failure or authorize execution; downstream approval
+/// still covers the complete receipt, including caller-declared unavailable IDs.
+#[derive(Clone, Debug)]
+pub struct ValidatedPhaseReceipt {
+    receipt: PhaseReceipt,
+    selection: PhaseSelection,
+}
+
+impl ValidatedPhaseReceipt {
+    pub fn receipt(&self) -> &PhaseReceipt {
+        &self.receipt
+    }
+    pub fn selection(&self) -> &PhaseSelection {
+        &self.selection
+    }
+    pub fn context_hash(&self) -> &str {
+        &self.receipt.context_hash
+    }
+}
 
 /// Immutable after construction: all eligibility evidence and full input hashes
 /// are owned snapshots, not references to mutable candidate or catalog data.
@@ -183,6 +206,28 @@ impl PhaseRouter {
 
     pub fn route(&self, context: &ValidatedPhaseContext) -> Result<PhaseReceipt> {
         self.fallback(context, &BTreeSet::new())
+    }
+
+    /// Reproduce the entire normal or fallback decision, including score,
+    /// exclusions, hashes and order. A valid candidate ID alone is insufficient.
+    pub fn validate_receipt(
+        &self,
+        context: &ValidatedPhaseContext,
+        receipt: &PhaseReceipt,
+    ) -> Result<ValidatedPhaseReceipt> {
+        let expected = self.fallback(context, &receipt.unavailable)?;
+        if expected != *receipt {
+            return Err(PhaseRouteError::ReceiptMismatch);
+        }
+        let selection = expected
+            .selected
+            .clone()
+            .ok_or(PhaseRouteError::Ineligible)?;
+        self.validate_selection(context, &selection)?;
+        Ok(ValidatedPhaseReceipt {
+            receipt: expected,
+            selection,
+        })
     }
 
     /// Explicitly unavailable candidate IDs are removed from the immutable pool.

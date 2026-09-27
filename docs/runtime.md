@@ -220,3 +220,44 @@ and 1.63 for [rustix](https://raw.githubusercontent.com/bytecodealliance/rustix/
 does not declare a Rust version; the workspace's Rust 1.85 build is the local
 compatibility check. SQLite's [WAL documentation](https://sqlite.org/wal.html)
 describes the separate reader and writer behavior used by the control API.
+
+## Explicit workflow instances
+
+The v1 `WorkflowPlan` JSON and its hash remain unchanged. An opt-in,
+separately sealed `WorkflowExecutionContract` binds a caller-chosen instance ID
+to that plan, canonical workspace, committed source state, and the declared
+phase and dependency requirement of every node. Review and approval bind the
+contract hash and node generation. Reusing an instance ID with different content
+is rejected. Legacy standalone runs have no instance and cannot satisfy workflow
+dependencies. Schema 4 migrates existing history without assigning instances.
+
+`review_selected` and `reopen_selected` consume `ValidatedPhaseReceipt`, an
+opaque proof recomputed by the phase router. It covers the exact selected or
+fallback receipt, including declared unavailable candidates; it is not evidence
+that a provider failed. Existing `review` and `reopen` wrap primary selection and
+remain available for nodes without dependencies. Dependency-bearing nodes require
+the explicit execution contract.
+
+Dependencies resolve only within an instance. A waiting node stays `Queued`,
+holds no capacity permits, and observes durable cancellation. After restart,
+`reopen_selected` plus `resume_approved` reconstruct an already approved queue
+entry. They do not grant a new approval. `dependencies_ready` supports explicit
+coordinator polling. A dependency that becomes unready during capacity acquisition
+returns `runtime.dependencies.pending`, leaving the node queued.
+
+`Verified` requires explicit verification of the producer. The separate
+`ArtifactReadyForVerification` requirement permits a read-only independent Verify
+node after an Execute writer has produced a private, hash-checked patch and entered
+`Verifying`. The verifier must use a different declared owner, requested model,
+and, when present on the producer, agent. Its `previous_model` must match the
+producer's persisted requested model. These checks do not prove an observed model
+identity, successful verification, or access to the producer's patch. Artifact
+handoff and a durable multi-node coordinator are still separate work; readiness
+alone must not be reported as complete DAG execution.
+
+An explicit new node generation can use a separately approved fallback only after
+a retryable, read-only predecessor failure. Attempt limits are cumulative across
+generations, obsolete generations cannot retry, and registering a consumer freezes
+its producers' generations. Authentication, policy, cancellation, output-limit,
+and verification failures do not authorize retries. No automatic retry or fallback
+approval is inferred.

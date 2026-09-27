@@ -44,6 +44,98 @@ free of secrets. Authorization-marker contents bypass this scanner because
 they are never read. File mode checks are metadata evidence, not proof of an
 effective sandbox or credential validity.
 
+## Explicit deep diagnostics
+
+`diagnose_deep(&DeepDoctorRequest, now)` adds local checks to the existing
+read-only pass. `agent-router doctor --deep --manifest deep.json` selects this
+contract explicitly. Its schema version is 1 and its fields are `base` (the
+unchanged `DoctorRequest`), `schemas` and `retrieval_bindings`. The result has
+`base`, additional `checks`, `overall`, `examined_body_count` and
+`database_queries`. Existing doctor manifests and audit bundles keep their
+formats. All host runtime states remain `unknown`; local SQLite integrity is a
+configuration result, not evidence of a running service.
+
+Each schema binding names an existing JSON configuration or managed-file
+artifact by `artifact_id`. `schema` selects the real component validator:
+`configuration_layers`, `effective_restrictions`, `phase_policy`,
+`normalized_task`, `workflow_plan` or `prompt_template`. Validation checks
+restriction hashes, policy bounds, task contracts, DAG invariants and prompt
+seals as applicable. It never renders a prompt or applies permissions.
+Unknown and duplicate fields are rejected, including fields tolerated by an
+older component DTO. A generic configuration without an explicit schema gets
+`component_schema_required`, not a semantic validation claim. Authentication
+markers cannot be reclassified as configuration and their contents remain
+unread.
+
+Each retrieval binding names `index_artifact_id` and `catalog_artifact_id`.
+The current validated catalog's policy projection supplies the expected
+content hash, exactly as phase routing and preparation do. The metadata must
+use the bound v2 envelope and agree on both content hash and catalog version.
+A generated catalog also supplies the explicit registry: declared assets and
+body hashes must match it. Skill trust must agree with the policy catalog;
+metadata cannot raise that trust. A legacy v1 catalog has no agent, prompt or
+tool registry, so those assets yield `catalog_asset_registry_unavailable`.
+An unbound legacy index yields `catalog_binding_required`.
+
+With `body_root: null`, no body is read. A supplied `body_root` is a relative
+directory beneath `base.root`, without traversal or symlinks. It requests all
+bodies declared by that index, not a sample. Each must exist, be trusted and
+match its declared hash. Missing bodies, blocked/untrusted assets, registry
+mismatches and excessive counts are explicit failures. Reads use the same
+descriptor-relative traversal as ordinary doctor checks; they do not use the
+retrieval loader's pathname traversal. Bodies never confer executable/tool
+authority, and neither bodies nor metadata labels appear in the report.
+
+Deep checking adds at most 16 MiB of reads to the base pass's 16 MiB budget,
+including repeated preimage comparisons. Files remain limited to 4 MiB,
+bodies to 1 MiB, body reads to 128 and retrieval bindings to 16. A limit is a
+failed check, never a silently truncated success. Between-pass hash changes
+are reported as `input_changed`.
+
+Database artifacts additionally receive SQLite `integrity_check(1)` and
+`foreign_key_check`. Opening uses an already validated descriptor with
+`mode=ro`, `immutable=1`, `SQLITE_OPEN_READ_ONLY` and `SQLITE_OPEN_NOFOLLOW`.
+The connection confirms its read-only state; it has no create flag, extension
+loading, migrations, writes or checkpoint step. Trusted schema, views and
+triggers are disabled; temporary storage is memory-only. The report counts
+three connection-local PRAGMAs and up to two integrity queries. No SQL error
+text, table name, row content or database version is exported.
+
+This descriptor technique is verified on macOS fdescfs, including replacement
+of the original pathname after opening. On platforms where `/dev/fd` resolves
+through symlinks, including ordinary Linux procfs layouts, it returns
+`database_read_only_unsupported` and does not reopen the original pathname.
+That boundary preserves the no-follow guarantee rather than claiming portable
+SQLite proof. SQL length, column count, expression depth, compiled operations,
+attached databases and worker counts are bounded. A progress callback stops
+after approximately one million VM operations or 250 ms, checked each 1,000
+operations. This is cooperative work control, not an OS deadline or memory
+sandbox.
+
+WAL-mode headers or any `-wal`, `-shm` or `-journal` sidecar yield
+`database_snapshot_required` before SQLite opens. A clean, externally produced
+consistent export is required for those databases; doctor does not make that
+export itself. Descriptor bytes, the named file and sidecar presence are checked
+again after inspection. This detects observed changes but cannot establish an
+atomic snapshot against an adversarial concurrent writer. A passing local
+result is not a migration compatibility, lock availability, liveness or future
+health claim.
+
+Deep mode launches no `--version`, authentication or status commands. Supplied
+host snapshots retain their own source/freshness checks. An executable's name or
+an argument such as `status` does not prove absence of network or disk effects.
+Any future active diagnostic must use a separate supervised execution request
+and approval bound to its exact binary, arguments, environment, permissions and
+effects. `--deep` alone is not such authorization. Hook trust/invocation,
+authentication, host sandbox enforcement and process ownership remain unknown
+without separately observed evidence. No model call or active hook is used.
+
+Tests cover all component validators, generated and legacy catalog bindings,
+trust escalation, same-version content drift, changed bodies, absent databases,
+foreign-key violations, WAL/journal refusal, descriptor replacement, symlinks,
+bounds, redaction and unchanged database files. Existing audit v2 tests remain
+part of the same package gate.
+
 `build_audit_bundle` accepts transient JSON artifacts classified as effective
 config, catalog, decision, events, evidence or versions. New exports use audit
 schema version 2. Every record retains schema version, entry count, input size,

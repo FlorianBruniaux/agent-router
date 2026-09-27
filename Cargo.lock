@@ -783,8 +783,11 @@ version = "0.1.0"
 dependencies = [
  "router-adapter-api",
  "router-catalog",
+ "router-policy",
  "router-retrieval",
  "router-types",
+ "router-workflow",
+ "rusqlite",
  "rustix",
  "serde",
  "serde_json",

@@ -452,3 +452,90 @@ pub struct PreparedProviderRequest {
     pub timeout_ms: u64,
     pub max_output_bytes: usize,
 }
+
+/// Explicit component validators for deep diagnostics. They do not execute the
+/// supplied configuration or grant its declared permissions.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DoctorSchema {
+    ConfigurationLayers,
+    EffectiveRestrictions,
+    PhasePolicy,
+    NormalizedTask,
+    WorkflowPlan,
+    PromptTemplate,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DoctorSchemaBinding {
+    pub artifact_id: String,
+    pub schema: DoctorSchema,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DoctorRetrievalBinding {
+    pub index_artifact_id: String,
+    pub catalog_artifact_id: String,
+    /// Relative directory beneath DoctorRequest.root. None checks only metadata;
+    /// Some reads every declared body, subject to the shared body/read limits.
+    pub body_root: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeepDoctorRequest {
+    pub schema_version: u32,
+    pub base: DoctorRequest,
+    #[serde(default)]
+    pub schemas: Vec<DoctorSchemaBinding>,
+    #[serde(default)]
+    pub retrieval_bindings: Vec<DoctorRetrievalBinding>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeepDoctorCode {
+    ComponentValidated,
+    ComponentSchemaRequired,
+    CatalogBindingRequired,
+    CatalogBindingValidated,
+    CatalogBindingMismatch,
+    CatalogAssetRegistryUnavailable,
+    AssetBodyValidated,
+    AssetBodyUnavailable,
+    AssetBodyUntrusted,
+    AssetBodyMismatch,
+    DatabaseIntegrityValidated,
+    DatabaseIntegrityFailed,
+    DatabaseSnapshotRequired,
+    DatabaseReadOnlyUnsupported,
+    InputChanged,
+    InputUnavailable,
+    InputLimit,
+    SchemaInvalid,
+    PathRejected,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeepDoctorCheck {
+    pub subject_sha256: String,
+    pub configuration: DiagnosticState,
+    /// Runtime host/auth/hook/sandbox evidence is never established by this API.
+    pub runtime: DiagnosticState,
+    pub code: DeepDoctorCode,
+    pub content_sha256: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeepDoctorReport {
+    pub schema_version: u32,
+    pub base: DoctorReport,
+    pub checks: Vec<DeepDoctorCheck>,
+    pub overall: DiagnosticState,
+    pub examined_body_count: usize,
+    pub database_queries: usize,
+}

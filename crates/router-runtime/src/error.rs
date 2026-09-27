@@ -36,6 +36,8 @@ pub enum RuntimeError {
     Limit,
     #[error("runtime.cancelled")]
     Cancelled,
+    #[error("runtime.dependencies.pending")]
+    DependenciesPending,
     #[error("runtime.verification.required")]
     Verification,
 }

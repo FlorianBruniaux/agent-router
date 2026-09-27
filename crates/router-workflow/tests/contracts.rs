@@ -386,3 +386,88 @@ fn empty_node_contracts_are_invalid_even_with_a_valid_hash() {
         ));
     }
 }
+
+#[test]
+fn execution_contract_is_explicit_hashed_and_does_not_change_v1_plan_bytes() {
+    let plan = build_plan(
+        &task(),
+        WorkflowPreset::PlanExecuteVerify,
+        PlanLimits::default(),
+    )
+    .unwrap();
+    let original = serde_json::to_vec(&plan).unwrap();
+    let contract = WorkflowExecutionContract {
+        schema_version: 1,
+        instance_id: "workflow-a".into(),
+        plan_id: plan.plan_id.clone(),
+        workspace: "/tmp/fixture".into(),
+        source_state: "a".repeat(40),
+        nodes: plan
+            .nodes
+            .iter()
+            .map(|node| {
+                (
+                    node.id.clone(),
+                    NodeExecutionContract {
+                        phase: match node.id.as_str() {
+                            "plan" => StageKind::Plan,
+                            "verify" => StageKind::Verify,
+                            _ => StageKind::Execute,
+                        },
+                        dependencies: node
+                            .dependencies
+                            .iter()
+                            .map(|id| {
+                                (
+                                    id.clone(),
+                                    if node.id == "verify" {
+                                        DependencyRequirement::ArtifactReadyForVerification
+                                    } else {
+                                        DependencyRequirement::Verified
+                                    },
+                                )
+                            })
+                            .collect(),
+                    },
+                )
+            })
+            .collect(),
+        contract_sha256: String::new(),
+    };
+    let sealed = seal_execution_contract(contract, &plan).unwrap();
+    validate_execution_contract(&sealed, &plan).unwrap();
+    assert_eq!(serde_json::to_vec(&plan).unwrap(), original);
+    assert_eq!(
+        seal_execution_contract(sealed.clone(), &plan).unwrap(),
+        sealed
+    );
+    let mut other = sealed.clone();
+    other.instance_id = "workflow-b".into();
+    assert!(validate_execution_contract(&other, &plan).is_err());
+    assert_ne!(
+        seal_execution_contract(other, &plan)
+            .unwrap()
+            .contract_sha256,
+        sealed.contract_sha256
+    );
+    let mut missing = sealed.clone();
+    missing.nodes.remove("plan");
+    assert!(seal_execution_contract(missing, &plan).is_err());
+    let mut forged = sealed.clone();
+    forged.nodes.get_mut("verify").unwrap().phase = StageKind::Execute;
+    assert!(seal_execution_contract(forged, &plan).is_err());
+    let mut premature = sealed.clone();
+    premature
+        .nodes
+        .get_mut("execute")
+        .unwrap()
+        .dependencies
+        .insert(
+            "plan".into(),
+            DependencyRequirement::ArtifactReadyForVerification,
+        );
+    assert!(seal_execution_contract(premature, &plan).is_err());
+    let mut writer_plan = sealed;
+    writer_plan.nodes.get_mut("execute").unwrap().phase = StageKind::Plan;
+    assert!(seal_execution_contract(writer_plan, &plan).is_err());
+}

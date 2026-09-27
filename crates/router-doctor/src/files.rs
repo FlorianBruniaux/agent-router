@@ -42,6 +42,12 @@ impl ReadRoot {
     }
 
     pub(crate) fn file(&self, path: &str) -> Result<File> {
+        self.optional_file(path)?.ok_or(DoctorError::Read)
+    }
+
+    /// Distinguish a missing final entry from a rejected entry without following
+    /// symlinks or reopening a parent by pathname.
+    pub(crate) fn optional_file(&self, path: &str) -> Result<Option<File>> {
         if !relative(path) {
             return Err(DoctorError::Path);
         }
@@ -52,14 +58,24 @@ impl ReadRoot {
                 return Err(DoctorError::Path);
             };
             let last = index + 1 == parts.len();
-            let file = open_at(&directory, name, !last)?;
             if last {
+                use rustix::fs::{Mode, OFlags, openat};
+                let file = match openat(
+                    &directory,
+                    *name,
+                    OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
+                    Mode::empty(),
+                ) {
+                    Ok(file) => File::from(file),
+                    Err(rustix::io::Errno::NOENT) => return Ok(None),
+                    Err(_) => return Err(DoctorError::Read),
+                };
                 if !file.metadata().map_err(|_| DoctorError::Read)?.is_file() {
                     return Err(DoctorError::Path);
                 }
-                return Ok(file);
+                return Ok(Some(file));
             }
-            directory = file;
+            directory = open_at(&directory, name, true)?;
         }
         Err(DoctorError::Path)
     }
@@ -175,6 +191,9 @@ impl ReadRoot {
         Err(DoctorError::Unsupported)
     }
     pub(crate) fn file(&self, _: &str) -> Result<File> {
+        Err(DoctorError::Unsupported)
+    }
+    pub(crate) fn optional_file(&self, _: &str) -> Result<Option<File>> {
         Err(DoctorError::Unsupported)
     }
 }

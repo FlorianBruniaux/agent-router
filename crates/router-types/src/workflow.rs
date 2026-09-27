@@ -134,6 +134,31 @@ pub struct WorkflowPlan {
     pub max_width: usize,
     pub requires_explicit_integration: bool,
 }
+
+/// Explicit execution authority layered over the unchanged v1 plan contract.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct WorkflowExecutionContract {
+    pub schema_version: u32,
+    pub instance_id: String,
+    pub plan_id: String,
+    pub workspace: String,
+    pub source_state: String,
+    pub nodes: BTreeMap<String, NodeExecutionContract>,
+    pub contract_sha256: String,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct NodeExecutionContract {
+    pub phase: crate::StageKind,
+    pub dependencies: BTreeMap<String, DependencyRequirement>,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DependencyRequirement {
+    Verified,
+    ArtifactReadyForVerification,
+}
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct RestrictionLayer {

@@ -659,6 +659,59 @@ fn full_content_changes_receipt_even_when_versions_are_identical() {
 }
 
 #[test]
+fn receipt_proof_accepts_exact_fallback_and_rejects_tampering_or_abstention() {
+    let router = PhaseRouter::stable_v2();
+    let context = router
+        .context(
+            request(),
+            &snapshot(observation()),
+            &catalog(catalog_json()),
+        )
+        .unwrap();
+    let original = router.route(&context).unwrap();
+    let proof = router.validate_receipt(&context, &original).unwrap();
+    assert_eq!(proof.selection().candidate.id, "primary");
+    let fallback = router
+        .fallback(&context, &BTreeSet::from(["primary".into()]))
+        .unwrap();
+    let proof = router.validate_receipt(&context, &fallback).unwrap();
+    assert_eq!(proof.selection().candidate.id, "secondary");
+    assert_eq!(proof.context_hash(), context.context_hash());
+    assert_eq!(proof.receipt(), &fallback);
+    let mut forged = fallback.clone();
+    forged.unavailable.clear();
+    assert!(matches!(
+        router.validate_receipt(&context, &forged),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let mut forged = fallback.clone();
+    forged.selected.as_mut().unwrap().candidate.model = model("fixture-best");
+    assert!(matches!(
+        router.validate_receipt(&context, &forged),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let mut changed = request();
+    changed.task.objective.push_str(" changed");
+    let changed = router
+        .context(changed, &snapshot(observation()), &catalog(catalog_json()))
+        .unwrap();
+    assert!(matches!(
+        router.validate_receipt(&changed, &fallback),
+        Err(PhaseRouteError::ReceiptMismatch)
+    ));
+    let abstained = router
+        .fallback(
+            &context,
+            &BTreeSet::from(["primary".into(), "secondary".into()]),
+        )
+        .unwrap();
+    assert!(matches!(
+        router.validate_receipt(&context, &abstained),
+        Err(PhaseRouteError::Ineligible)
+    ));
+}
+
+#[test]
 fn canonical_pool_order_is_irrelevant_but_policy_context_cannot_be_swapped() {
     let mut input = request();
     input.candidates.reverse();

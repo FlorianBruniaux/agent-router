@@ -233,6 +233,180 @@ fn review_binds_definition_and_sandbox_then_cancel_is_observable() {
 }
 
 #[test]
+fn explicit_fallback_receipt_survives_review_and_cannot_be_removed() {
+    let f = Fixture::new();
+    let mut phase: PhaseRouteRequest =
+        serde_json::from_slice(&fs::read(f.root.join("context.json")).unwrap()).unwrap();
+    let mut alternative = phase.candidates[0].clone();
+    alternative.id = "explicit-fallback".into();
+    let unavailable = std::collections::BTreeSet::from([phase.candidates[0].id.clone()]);
+    phase.candidates.push(alternative);
+    let snapshot: HostObservation =
+        serde_json::from_slice(&fs::read(f.root.join("snapshot.json")).unwrap()).unwrap();
+    let validated = ValidatedHostObservation::from_observation(
+        snapshot.clone(),
+        SnapshotValidation {
+            now_unix_seconds: snapshot.observed_at_unix_seconds,
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(&fs::read(f.root.join("catalog.json")).unwrap()).unwrap();
+    let router = PhaseRouter::stable_v2();
+    let context = router.context(phase.clone(), &validated, &catalog).unwrap();
+    assert!(router.route(&context).unwrap().selected.is_none());
+    let receipt = router.fallback(&context, &unavailable).unwrap();
+    let mut request: ExecutionRequest =
+        serde_json::from_slice(&fs::read(f.root.join("request.json")).unwrap()).unwrap();
+    request.candidate_id = "explicit-fallback".into();
+    request.receipt_id = receipt.receipt_id.clone();
+    write(&f.root.join("context.json"), &phase);
+    write(&f.root.join("request.json"), &request);
+    write(&f.root.join("receipt.json"), &receipt);
+    let mut definition: Value =
+        serde_json::from_slice(&fs::read(f.root.join("definition.json")).unwrap()).unwrap();
+    definition["receipt"] = json!("receipt.json");
+    write(&f.root.join("definition.json"), &definition);
+    let review = output(f.run().assert().success());
+    assert_eq!(review["run"]["receipt_id"], receipt.receipt_id);
+    command()
+        .args(["artifacts", "--definition"])
+        .arg(f.root.join("definition.json"))
+        .arg("--store")
+        .arg(&f.store)
+        .args(["keep", "--json"])
+        .assert()
+        .success();
+    definition.as_object_mut().unwrap().remove("receipt");
+    write(&f.root.join("definition.json"), &definition);
+    f.run()
+        .args(["--approve", review["approval_digest"].as_str().unwrap()])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("runtime.receipt.invalid"));
+}
+
+#[test]
+fn execution_contract_seals_instances_and_review_binds_generation() {
+    let f = Fixture::new();
+    let plan: Value = serde_json::from_slice(&fs::read(f.root.join("plan.json")).unwrap()).unwrap();
+    let request: ExecutionRequest =
+        serde_json::from_slice(&fs::read(f.root.join("request.json")).unwrap()).unwrap();
+    let nodes: serde_json::Map<String,Value> = plan["plan"]["nodes"].as_array().unwrap().iter().map(|node| {
+        let dependencies: serde_json::Map<String,Value> = node["dependencies"].as_array().unwrap().iter().map(|id| (id.as_str().unwrap().into(),json!("verified"))).collect();
+        (node["id"].as_str().unwrap().into(),json!({"phase":if node["independent_verifier"] == true {"verify"} else {"execute"},"dependencies":dependencies}))
+    }).collect();
+    let contract = json!({"schema_version":1,"instance_id":"instance-a","plan_id":plan["plan"]["plan_id"],"workspace":request.workspace,"source_state":request.source_state,"nodes":nodes,"contract_sha256":""});
+    write(&f.root.join("contract.json"), &contract);
+    let sealed = output(
+        command()
+            .args(["workflow", "--plan"])
+            .arg(f.root.join("plan.json"))
+            .arg("--execution-contract")
+            .arg(f.root.join("contract.json"))
+            .args(["--seal-contract", "--json"])
+            .assert()
+            .success(),
+    );
+    assert_eq!(sealed["approved"], false);
+    write(&f.root.join("contract.json"), &sealed["execution_contract"]);
+    let mut definition: Value =
+        serde_json::from_slice(&fs::read(f.root.join("definition.json")).unwrap()).unwrap();
+    definition["workflow_contract"] = json!("contract.json");
+    definition["generation"] = json!(0);
+    write(&f.root.join("definition.json"), &definition);
+    let review = output(f.run().assert().success());
+    assert_eq!(review["run"]["workflow"]["instance_id"], "instance-a");
+    assert_eq!(review["run"]["workflow"]["generation"], 0);
+    definition["generation"] = json!(1);
+    write(&f.root.join("definition.json"), &definition);
+    f.run()
+        .args(["--approve", review["approval_digest"].as_str().unwrap()])
+        .assert()
+        .code(2);
+}
+
+#[test]
+fn approved_dependency_wait_releases_cli_owner_and_stays_resumable() {
+    let f = Fixture::new();
+    let context: PhaseRouteRequest =
+        serde_json::from_slice(&fs::read(f.root.join("context.json")).unwrap()).unwrap();
+    let plan = build_plan(
+        &context.task,
+        WorkflowPreset::PlanExecuteVerify,
+        PlanLimits::default(),
+    )
+    .unwrap();
+    let mut request: ExecutionRequest =
+        serde_json::from_slice(&fs::read(f.root.join("request.json")).unwrap()).unwrap();
+    request.timeout_ms = 100;
+    write(&f.root.join("request.json"), &request);
+    let contract = router_workflow::seal_execution_contract(
+        WorkflowExecutionContract {
+            schema_version: 1,
+            instance_id: "queued-instance".into(),
+            plan_id: plan.plan_id.clone(),
+            workspace: request.workspace,
+            source_state: request.source_state,
+            nodes: plan
+                .nodes
+                .iter()
+                .map(|node| {
+                    (
+                        node.id.clone(),
+                        NodeExecutionContract {
+                            phase: match node.id.as_str() {
+                                "plan" => StageKind::Plan,
+                                "verify" => StageKind::Verify,
+                                _ => StageKind::Execute,
+                            },
+                            dependencies: node
+                                .dependencies
+                                .iter()
+                                .map(|id| (id.clone(), DependencyRequirement::Verified))
+                                .collect(),
+                        },
+                    )
+                })
+                .collect(),
+            contract_sha256: String::new(),
+        },
+        &plan,
+    )
+    .unwrap();
+    write(&f.root.join("plan.json"), &plan);
+    write(&f.root.join("contract.json"), &contract);
+    let mut definition: Value =
+        serde_json::from_slice(&fs::read(f.root.join("definition.json")).unwrap()).unwrap();
+    definition["workflow_contract"] = json!("contract.json");
+    definition["generation"] = json!(0);
+    write(&f.root.join("definition.json"), &definition);
+    let review = output(f.run().assert().success());
+    let approval = review["approval_digest"].as_str().unwrap();
+    for _ in 0..2 {
+        let queued = output(
+            f.run()
+                .args(["--approve", approval])
+                .timeout(std::time::Duration::from_secs(10))
+                .assert()
+                .code(3),
+        );
+        assert_eq!(queued["run"]["state"], "queued");
+        assert_eq!(queued["dependencies_pending"], true);
+        assert_eq!(queued["executed"], false);
+        // This operation needs the owner lock; it would fail if run still held it.
+        command()
+            .args(["artifacts", "--definition"])
+            .arg(f.root.join("definition.json"))
+            .arg("--store")
+            .arg(&f.store)
+            .args(["keep", "--json"])
+            .assert()
+            .success();
+    }
+}
+
+#[test]
 fn memory_limit_omission_is_not_implicit_authorization_to_drop_it() {
     let f = Fixture::new();
     let mut config: Value =

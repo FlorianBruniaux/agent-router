@@ -7,6 +7,7 @@ mod process;
 mod resources;
 mod sandbox;
 mod store;
+mod workflow;
 mod workspace;
 pub use bubblewrap::BubblewrapSandbox;
 pub use error::{Result, RuntimeError};
@@ -20,7 +21,7 @@ use router_adapter_api::{
     HarnessAdapter, SnapshotValidation, ValidatedHostObservation, authorize_execution,
     content_digest, execution_authorization_digest, is_digest,
 };
-use router_policy::{PhaseRouter, ValidatedPhaseContext};
+use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_types::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -76,6 +77,7 @@ pub struct PendingRun {
     plan: WorkflowPlan,
     node: WorkflowNode,
     receipt: PhaseReceipt,
+    workflow: Option<WorkflowExecutionContract>,
 }
 pub struct ApprovedRun {
     pending: PendingRun,
@@ -183,7 +185,21 @@ impl Runtime {
         receipt: &PhaseReceipt,
         plan: &WorkflowPlan,
         node_id: &str,
+        workflow: Option<&WorkflowRunBinding>,
     ) -> Result<String> {
+        if let Some(binding) = workflow {
+            return digest(
+                "runtime-definition-v3-workflow",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    binding,
+                ),
+            );
+        }
         if self.limits.output_retention.is_disabled() {
             digest("runtime-definition-v1", &(request, receipt, plan, node_id))
         } else {
@@ -206,6 +222,7 @@ impl Runtime {
                 &pending.receipt,
                 &pending.plan,
                 &pending.node.id,
+                pending.run.workflow.as_ref(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -221,6 +238,27 @@ impl Runtime {
         request: ExecutionRequest,
         plan: WorkflowPlan,
         node_id: &str,
+    ) -> Result<PendingRun> {
+        let receipt = router.route(context).map_err(|_| RuntimeError::Route)?;
+        let selection = router
+            .validate_receipt(context, &receipt)
+            .map_err(|_| RuntimeError::Route)?;
+        self.review_selected(
+            run_id, router, context, &selection, request, plan, node_id, None,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub async fn review_selected(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        selection: &ValidatedPhaseReceipt,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
     ) -> Result<PendingRun> {
         if run_id.is_empty()
             || run_id.len() > 96
@@ -242,7 +280,12 @@ impl Runtime {
             .find(|n| n.id == node_id)
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
-        let receipt = router.route(context).map_err(|_| RuntimeError::Route)?;
+        if selection.context_hash() != context.context_hash() {
+            return Err(RuntimeError::Route);
+        }
+        let receipt = selection.receipt().clone();
+        let workflow_binding =
+            workflow::validate(workflow, &plan, &node, &request, context, &receipt)?;
         let selected = receipt.selected.as_ref().ok_or(RuntimeError::Route)?;
         router
             .validate_selection(context, selected)
@@ -268,7 +311,13 @@ impl Runtime {
         let mut check = request.clone();
         check.mode = ExecutionMode::DryRun;
         authorize_execution(check, &snapshot, &context.request().restrictions, None)?;
-        let definition_hash = self.definition_hash(&request, &receipt, &plan, node_id)?;
+        let definition_hash = self.definition_hash(
+            &request,
+            &receipt,
+            &plan,
+            node_id,
+            workflow_binding.as_ref(),
+        )?;
         let approval_digest = digest(
             "runtime-approval-v1",
             &(run_id, &definition_hash, &request.source_state),
@@ -286,8 +335,14 @@ impl Runtime {
             worktree: None,
             artifact_sha256: None,
             output_retention: self.limits.output_retention,
+            workflow: workflow_binding,
         };
-        let mut run = self.store.register(&summary)?;
+        let mut run = self.store.register_workflow(
+            &summary,
+            workflow.map(|(contract, _)| contract),
+            &request,
+            self.limits.max_attempts,
+        )?;
         if run.state == RunState::Planned {
             run = self
                 .store
@@ -300,6 +355,7 @@ impl Runtime {
             plan,
             node,
             receipt,
+            workflow: workflow.map(|(contract, _)| contract.clone()),
         })
     }
     pub fn approve(&self, pending: PendingRun, approved_digest: &str) -> Result<ApprovedRun> {
@@ -317,6 +373,22 @@ impl Runtime {
             .transition(&current.run_id, RunState::Queued, "explicit_approval", None)?;
         Ok(ApprovedRun { pending })
     }
+    /// Reuses an already persisted approval after restart; never approves a new definition.
+    pub fn resume_approved(
+        &self,
+        pending: PendingRun,
+        approved_digest: &str,
+    ) -> Result<ApprovedRun> {
+        self.validate_pending_retention(&pending)?;
+        let current = self.store.get(&pending.run.run_id)?;
+        if current.state != RunState::Queued
+            || current.definition_hash != pending.run.definition_hash
+            || current.approval_digest != approved_digest
+        {
+            return Err(RuntimeError::Approval);
+        }
+        Ok(ApprovedRun { pending })
+    }
     /// Reconstructs an existing immutable definition for historical verification
     /// or artifact management. This never registers a new run, starts a process,
     /// or treats an old snapshot as current execution authority.
@@ -330,6 +402,26 @@ impl Runtime {
         plan: WorkflowPlan,
         node_id: &str,
     ) -> Result<PendingRun> {
+        let receipt = router.route(context).map_err(|_| RuntimeError::Route)?;
+        let selection = router
+            .validate_receipt(context, &receipt)
+            .map_err(|_| RuntimeError::Route)?;
+        self.reopen_selected(
+            run_id, router, context, &selection, request, plan, node_id, None,
+        )
+    }
+    #[allow(clippy::too_many_arguments)]
+    pub fn reopen_selected(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        selection: &ValidatedPhaseReceipt,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+    ) -> Result<PendingRun> {
         let run = self.store.get(run_id)?;
         router_workflow::validate_plan(&plan)
             .map_err(|_| RuntimeError::Invalid("workflow plan"))?;
@@ -342,7 +434,11 @@ impl Runtime {
             .find(|n| n.id == node_id)
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
-        let receipt = router.route(context).map_err(|_| RuntimeError::Route)?;
+        if selection.context_hash() != context.context_hash() {
+            return Err(RuntimeError::Route);
+        }
+        let receipt = selection.receipt().clone();
+        let binding = workflow::validate(workflow, &plan, &node, &request, context, &receipt)?;
         let selected = receipt.selected.as_ref().ok_or(RuntimeError::Route)?;
         router
             .validate_selection(context, selected)
@@ -357,8 +453,9 @@ impl Runtime {
                 .execution_capabilities(context, selected)
                 .map_err(|_| RuntimeError::Route)?,
         )?;
-        let definition_hash = self.definition_hash(&request, &receipt, &plan, node_id)?;
-        if definition_hash != run.definition_hash {
+        let definition_hash =
+            self.definition_hash(&request, &receipt, &plan, node_id, binding.as_ref())?;
+        if definition_hash != run.definition_hash || binding != run.workflow {
             return Err(RuntimeError::Integrity("definition changed"));
         }
         Ok(PendingRun {
@@ -368,6 +465,7 @@ impl Runtime {
             plan,
             node,
             receipt,
+            workflow: workflow.map(|(contract, _)| contract.clone()),
         })
     }
     /// Retry is explicit, requires a new approval call and never repeats writes.
@@ -409,6 +507,7 @@ impl Runtime {
         if state != RunState::Queued {
             return Err(RuntimeError::Transition);
         }
+        self.wait_dependencies(&pending, &cancel).await?;
         let acquired = self.acquire(&pending, &cancel).await;
         let _permits = match acquired {
             Ok(p) => p,
@@ -423,16 +522,8 @@ impl Runtime {
             }
             Err(e) => return Err(e),
         };
-        for dep in &pending.node.dependencies {
-            if !self.store.node_verified(&pending.plan.plan_id, dep)? {
-                self.store.transition_queued(
-                    id,
-                    RunState::Blocked,
-                    "dependency_not_verified",
-                    Some(RunFailure::Policy),
-                )?;
-                return Err(RuntimeError::Verification);
-            }
+        if !self.dependencies_ready(&pending)? {
+            return Err(RuntimeError::DependenciesPending);
         }
         self.store
             .transition_queued(id, RunState::Preparing, "capacity_acquired", None)?;
@@ -697,7 +788,13 @@ impl Runtime {
             .unwrap_or(self.limits.global_concurrency)
             .min(pending.plan.max_width)
             .min(self.limits.global_concurrency);
-        let plan = semaphore(&self.plans, &pending.plan.plan_id, count)?;
+        let plan_key = pending
+            .run
+            .workflow
+            .as_ref()
+            .map(|w| w.instance_id.as_str())
+            .unwrap_or(&pending.run.run_id);
+        let plan = semaphore(&self.plans, plan_key, count)?;
         for (sem, reason) in [
             (plan, QueueReason::GlobalCapacity),
             (agent, QueueReason::AgentCapacity),
@@ -927,6 +1024,9 @@ fn validate_binding(
         || request.scope != node.scope
         || effective_capabilities != &request.required_capabilities
         || request.timeout_ms > node.budget.max_elapsed_ms
+        || candidate.estimated_cost_microusd > node.budget.max_cost_microusd
+        || candidate.estimated_tokens > node.budget.max_tokens
+        || candidate.estimated_elapsed_ms > node.budget.max_elapsed_ms
         || request.timeout_ms > context.request().task.budget.max_elapsed_ms
         || (node.mode == NodeMode::IsolatedWrite) != (sandbox == ExecutionSandbox::WorkspaceWrite)
     {

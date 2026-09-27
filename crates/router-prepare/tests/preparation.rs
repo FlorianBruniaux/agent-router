@@ -181,7 +181,10 @@ impl Fixture {
         }
     }
     fn prepare(&self) -> Result<PreparedExecution, PreparationError> {
-        prepare(PreparationInput {
+        prepare(self.input())
+    }
+    fn input(&self) -> PreparationInput<'_> {
+        PreparationInput {
             router: &self.router,
             context: &self.context,
             plan: &self.plan,
@@ -191,7 +194,7 @@ impl Fixture {
             template: &self.template,
             variables: &self.variables,
             options: &self.options,
-        })
+        }
     }
     fn reindex(&mut self) {
         self.index =
@@ -658,5 +661,41 @@ fn selected_symlink_is_refused_but_unselected_missing_file_is_ignored() {
     assert!(matches!(
         fixture.prepare(),
         Err(PreparationError::Retrieval(RetrievalError::UnsafePath))
+    ));
+}
+
+#[test]
+fn fallback_preparation_keeps_the_proved_candidate_and_context() {
+    let mut fixture = Fixture::new();
+    let mut request = fixture.context.request().clone();
+    let original_id = request.candidates[0].id.clone();
+    let mut fallback = request.candidates[0].clone();
+    fallback.id = "fallback-only".into();
+    request.candidates.push(fallback);
+    fixture.reroute(request);
+    // Identical default alternatives abstain. An explicit exclusion selects one.
+    assert!(matches!(
+        fixture.prepare(),
+        Err(PreparationError::Abstained)
+    ));
+    let receipt = fixture
+        .router
+        .fallback(&fixture.context, &BTreeSet::from([original_id]))
+        .unwrap();
+    let proof = fixture
+        .router
+        .validate_receipt(&fixture.context, &receipt)
+        .unwrap();
+    let prepared = router_prepare::prepare_with_receipt(fixture.input(), &proof).unwrap();
+    assert_eq!(prepared.receipt(), &receipt);
+    assert_eq!(prepared.preview().candidate_id, "fallback-only");
+    let mut changed = fixture.context.request().clone();
+    changed.task.objective.push_str(" altered");
+    fixture.reroute(changed);
+    assert!(matches!(
+        router_prepare::prepare_with_receipt(fixture.input(), &proof),
+        Err(PreparationError::Route(
+            router_policy::PhaseRouteError::ReceiptMismatch
+        ))
     ));
 }

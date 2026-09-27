@@ -5,7 +5,7 @@ use crate::{
     product::json_output,
 };
 use router_adapter_api::{HarnessAdapter, HostObservation, content_digest};
-use router_policy::{PhaseRouter, ValidatedPhaseContext};
+use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
 use router_runtime::{
     Cancellation, PendingRun, ResourceLimits, ResourceSupervisor, Runtime, RuntimeError,
     RuntimeLimits, SandboxSupervisor,
@@ -35,6 +35,12 @@ struct Definition {
     plan: PathBuf,
     node_id: String,
     request: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    receipt: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    workflow_contract: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    generation: Option<u32>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -99,6 +105,7 @@ fn error(error: RuntimeError) -> CliError {
         RuntimeError::Limit => "runtime.limit",
         RuntimeError::Cancelled => "runtime.cancelled",
         RuntimeError::Verification => "runtime.verification.required",
+        RuntimeError::DependenciesPending => "runtime.dependencies.pending",
     })
 }
 fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
@@ -140,7 +147,43 @@ fn load_definition(path: &Path) -> Result<Definition, CliError> {
     }
     value.plan = resolve(base, value.plan);
     value.request = resolve(base, value.request);
+    value.receipt = value.receipt.map(|path| resolve(base, path));
+    value.workflow_contract = value.workflow_contract.map(|path| resolve(base, path));
+    if value.workflow_contract.is_some() != value.generation.is_some() {
+        return Err(CliError::Product("runtime.workflow.generation_required"));
+    }
     Ok(value)
+}
+fn workflow_contract(
+    definition: &Definition,
+) -> Result<Option<(router_types::WorkflowExecutionContract, u32)>, CliError> {
+    definition
+        .workflow_contract
+        .as_ref()
+        .map(|path| {
+            Ok((
+                phases::read_json(path, DOCUMENT_LIMIT)?,
+                definition
+                    .generation
+                    .ok_or(CliError::Product("runtime.workflow.generation_required"))?,
+            ))
+        })
+        .transpose()
+}
+fn selection(
+    definition: &Definition,
+    router: &PhaseRouter,
+    context: &ValidatedPhaseContext,
+) -> Result<ValidatedPhaseReceipt, CliError> {
+    let receipt = match &definition.receipt {
+        Some(path) => phases::read_json(path, DOCUMENT_LIMIT)?,
+        None => router
+            .route(context)
+            .map_err(|_| CliError::Product("runtime.route.invalid"))?,
+    };
+    router
+        .validate_receipt(context, &receipt)
+        .map_err(|_| CliError::Product("runtime.receipt.invalid"))
 }
 pub(crate) fn plan(path: &Path) -> Result<WorkflowPlan, CliError> {
     let value: serde_json::Value = phases::read_json(path, DOCUMENT_LIMIT)?;
@@ -224,11 +267,13 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     // Read first: an artifact/status operation never creates a missing store.
     let existing = router_runtime::observe(store, &definition.run_id).map_err(error)?;
     let (router, context) = context(definition, true)?;
+    let proof = selection(definition, &router, &context)?;
     let request = phases::read_json(
         &definition.request,
         router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
     )?;
     let plan = plan(&definition.plan)?;
+    let workflow = workflow_contract(definition)?;
     let runtime = Runtime::open(
         store,
         RuntimeLimits {
@@ -238,13 +283,17 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     )
     .map_err(error)?;
     let pending = runtime
-        .reopen(
+        .reopen_selected(
             &definition.run_id,
             &router,
             &context,
+            &proof,
             request,
             plan,
             &definition.node_id,
+            workflow
+                .as_ref()
+                .map(|(contract, generation)| (contract, *generation)),
         )
         .map_err(error)?;
     Ok((runtime, pending))
@@ -408,6 +457,8 @@ pub(crate) fn run(
     let feedback_consent = crate::execution_feedback::consent(feedback_path.as_deref())?;
     block(async {
         let (router, context) = context(&definition, false)?;
+        let proof = selection(&definition, &router, &context)?;
+        let workflow = workflow_contract(&definition)?;
         let request: ExecutionRequest = phases::read_json(
             &definition.request,
             router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
@@ -425,13 +476,17 @@ pub(crate) fn run(
         )
         .map_err(error)?;
         let pending = runtime
-            .review(
+            .review_selected(
                 &definition.run_id,
                 &router,
                 &context,
+                &proof,
                 request,
                 plan(&definition.plan)?,
                 &definition.node_id,
+                workflow
+                    .as_ref()
+                    .map(|(contract, generation)| (contract, *generation)),
             )
             .await
             .map_err(error)?;
@@ -451,10 +506,32 @@ pub(crate) fn run(
         if approved != digest {
             return Err(CliError::Product("runtime.approval.required_or_changed"));
         }
+        if !runtime.dependencies_ready(&pending).map_err(error)? {
+            // This command owns one step. Release the store owner so a separate
+            // invocation can run its prerequisites; do not wait holding the lock.
+            let inner_digest = pending.approval_digest().to_owned();
+            if pending.summary().state == router_types::RunState::Queued {
+                runtime
+                    .resume_approved(pending, &inner_digest)
+                    .map_err(error)?;
+            } else {
+                runtime.approve(pending, &inner_digest).map_err(error)?;
+            }
+            return json_output(
+                &serde_json::json!({"schema_version":1,"run":router_runtime::observe(store,&definition.run_id).map_err(error)?,"executed":false,"dependencies_pending":true,"approval_digest":digest}),
+                ExitCode::from(3),
+            );
+        }
         let adapter = adapter(&host)?;
         let supervisor = supervisor(store, config, &binaries).await?;
         let inner_digest = pending.approval_digest().to_owned();
-        let approved = runtime.approve(pending, &inner_digest).map_err(error)?;
+        let approved = if pending.summary().state == router_types::RunState::Queued {
+            runtime
+                .resume_approved(pending, &inner_digest)
+                .map_err(error)?
+        } else {
+            runtime.approve(pending, &inner_digest).map_err(error)?
+        };
         let cancel = Cancellation::default();
         let interrupt = cancel.clone();
         let listener = tokio::spawn(async move {
@@ -470,7 +547,7 @@ pub(crate) fn run(
         let feedback = crate::execution_feedback::record(
             feedback_path.as_deref(),
             feedback_consent.as_ref(),
-            &router,
+            &proof,
             &context,
             &completed,
         );
@@ -523,10 +600,29 @@ pub(crate) fn source_state(workspace: &Path, json: bool) -> Result<Outcome, CliE
         )
     })
 }
-pub(crate) fn workflow(path: &Path, json: bool) -> Result<Outcome, CliError> {
+pub(crate) fn workflow(
+    path: &Path,
+    contract: Option<&Path>,
+    seal: bool,
+    json: bool,
+) -> Result<Outcome, CliError> {
     require_json(json)?;
+    let plan = plan(path)?;
+    let contract = contract
+        .map(|path| {
+            let contract = phases::read_json(path, DOCUMENT_LIMIT)?;
+            if seal {
+                router_workflow::seal_execution_contract(contract, &plan)
+                    .map_err(|_| CliError::Product("workflow.contract.invalid"))
+            } else {
+                router_workflow::validate_execution_contract(&contract, &plan)
+                    .map_err(|_| CliError::Product("workflow.contract.invalid"))?;
+                Ok(contract)
+            }
+        })
+        .transpose()?;
     json_output(
-        &serde_json::json!({"schema_version":1,"plan":plan(path)?,"valid":true}),
+        &serde_json::json!({"schema_version":1,"plan":plan,"execution_contract":contract,"valid":true,"approved":false}),
         ExitCode::SUCCESS,
     )
 }
