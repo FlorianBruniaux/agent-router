@@ -1,0 +1,93 @@
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_54393c7c1e9ce9 34-35
+Cargo.lock
+  s_86ed8bd547d4f8::t_1ee6899ab1af80 100-101,175-180,425-430,480-485,533-541,548-557,572-581,889,892,894,1004-1005,1134,1216-1224,1377-1410,1544-1552,1568-1577
+crates/agent-router-cli/Cargo.toml
+  s_86ed8bd547d4f8::t_bea63009a71c0d 47-48
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_46eb3d08fc13f8 36-44,627
+crates/agent-router-cli/src/config_input.rs
+  s_86ed8bd547d4f8::t_23f2f7dff66887 1-291
+crates/agent-router-cli/src/coordinator.rs
+  s_86ed8bd547d4f8::t_74d773cc843e50 142,158,160-161,265,267-268,342,491,493-494
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_fd25d77fc7b272 39-40,161-164,204,314,316-317,420,428,574,576-577,626
+crates/agent-router-cli/src/generation.rs
+  s_86ed8bd547d4f8::t_ca2b3c9d890c7e 1-386
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_a6ab98e1c4c770 15,137-141
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_c0720f027ae436 24,138,152-156,158-159,170-179,228-231
+crates/agent-router-cli/src/product.rs
+  s_86ed8bd547d4f8::t_6b9b2ad0fe51a6 9-11,54
+crates/agent-router-cli/tests/config_formats.rs
+  s_86ed8bd547d4f8::t_80f068cdb6996e 1-367
+crates/agent-router-cli/tests/generation.rs
+  s_86ed8bd547d4f8::t_45dc07a589ebb3 1-148
+crates/router-catalog/Cargo.toml
+  s_86ed8bd547d4f8::t_3763cc12c39d89 12-14
+crates/router-catalog/src/lib.rs
+  s_86ed8bd547d4f8::t_350b4d924024cc 5,15
+crates/router-catalog/src/signed.rs
+  s_86ed8bd547d4f8::t_434e01d04b8168 1-1234
+crates/router-catalog/tests/signed_catalogs.rs
+  s_86ed8bd547d4f8::t_18dadf538ddb34 1-984
+crates/router-execution-decision/src/lib.rs
+  s_86ed8bd547d4f8::t_67db2a7fd4e47b 6-8,10-11,45-51,54-58,61-64,75-174,232-233,242-247,249-254,269-280,293-301,315,320,328-329,337-344,348-360
+crates/router-feedback/Cargo.toml
+  s_86ed8bd547d4f8::t_8c349ad05a9970 11-12
+crates/router-policy/src/generator.rs
+  s_86ed8bd547d4f8::t_bd323e97029c75 1-1239
+crates/router-policy/src/lib.rs
+  s_86ed8bd547d4f8::t_8720c5977de18c 5,17-21
+crates/router-policy/tests/generator.rs
+  s_86ed8bd547d4f8::t_a2f0829a02c093 1-967
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_ce88b344b8a3b8 211-216,384-388,447-455
+crates/router-runtime/src/escalation.rs
+  s_86ed8bd547d4f8::t_57a3ec12fb56e9 1-541
+crates/router-runtime/src/generated.rs
+  s_86ed8bd547d4f8::t_37f7bf0b6cf974 1-61
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_74355815debe56 7-8,20,218-219,221-250,318-319,416-425,477-478,507,514,525-527,642-650,691-692,697,708-711,715-724,797-798,859-870,1011-1038
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_11b728877db864 18-20,54,109-113,130-136,144,152,154,162,170,196-201,231,713-716,919-927,1090,1223,1272-1310,1616-1661
+crates/router-runtime/src/store/escalation.rs
+  s_86ed8bd547d4f8::t_e50ab44a6dca9c 1-161
+crates/router-runtime/tests/escalation.rs
+  s_86ed8bd547d4f8::t_70d07cd5f7ee5a 1-868
+crates/router-types/src/escalation.rs
+  s_86ed8bd547d4f8::t_f3ab94cae93c65 1-105
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_97f42303fb0ece 46-51
+crates/router-types/src/plan_generation.rs
+  s_86ed8bd547d4f8::t_a4f93a97aecd70 1-283
+docs/checkpoints/2026-09-27-paused-work.md
+  s_86ed8bd547d4f8::t_3f45b6bfa5198d 1-41
+docs/completion.md
+  s_86ed8bd547d4f8::t_ba0a59f329a44b 104,123-137
+docs/escalation.md
+  s_86ed8bd547d4f8::t_df5c4639f822ac 1-104
+docs/plan-generation.md
+  s_86ed8bd547d4f8::t_0d3801f4e4808c 1-162
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_deec808ea8101b 27,37-41
+docs/signed-catalogs.md
+  s_86ed8bd547d4f8::t_d89ba67961f51a 1-199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2c26af1e0350412afedf3874fb81b6f876a4593c",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
