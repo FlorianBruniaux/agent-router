@@ -1,0 +1,94 @@
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_bf2ee00cf086a9 10,24,80,188,190-202,225,241-261,283-288,314-320,338,340-345,358,376-391,404-423,437-441,456-458,468,510,525-526,791-797,1027-1029
+crates/agent-router-cli/tests/product.rs
+  s_86ed8bd547d4f8::t_1e67a640244821 187-220
+  s_86ed8bd547d4f8::t_d7a0540627e85e 186
+Cargo.lock
+  s_86ed8bd547d4f8::t_967d57e3720fff 786,789-790
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_e480a5a29eb36c 90-93,142-143
+crates/agent-router-cli/src/diagnostics.rs
+  s_86ed8bd547d4f8::t_401c0615676feb 24-29,33-38,41-44,48
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_3c509306c76cca 8,38-43,108,150-154,157-187,270,276,286,290,294-296,460-461,479,483,487-489,509-524,528-534,550,603-608,610-623,625
+crates/agent-router-cli/src/execution_feedback.rs
+  s_86ed8bd547d4f8::t_e8eb5d0cd5f43f 24,36-43
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_0d1ed18742723e 158-163,189-194
+crates/agent-router-cli/src/phases.rs
+  s_86ed8bd547d4f8::t_589d2baaeae747 34
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_ad19c0957e3b8b 29-31,110-121,127-150,171-176,194,196-199
+crates/agent-router-cli/tests/execution.rs
+  s_86ed8bd547d4f8::t_0216536d84903d 235-408
+crates/router-doctor/Cargo.toml
+  s_86ed8bd547d4f8::t_0f7a5f6570ae26 13-15
+crates/router-doctor/src/database.rs
+  s_86ed8bd547d4f8::t_d30c888999f32e 1-158
+crates/router-doctor/src/deep.rs
+  s_86ed8bd547d4f8::t_0af08c2dc279cc 1-471
+crates/router-doctor/src/files.rs
+  s_86ed8bd547d4f8::t_cff9ed80b0796d 45-50,62-72,76,78,196-198
+crates/router-doctor/src/lib.rs
+  s_86ed8bd547d4f8::t_305c0235f2c21e 5-6,11
+crates/router-doctor/tests/deep.rs
+  s_86ed8bd547d4f8::t_4cad5e66a25bdc 1-626
+crates/router-policy/src/lib.rs
+  s_86ed8bd547d4f8::t_f7a25c65b585cb 16
+crates/router-policy/src/phases.rs
+  s_86ed8bd547d4f8::t_4a3e0975f55baf 30-31,36-56,211-232
+crates/router-policy/tests/phases.rs
+  s_86ed8bd547d4f8::t_bcc95c06b7dba3 661-713
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_775ab8346746d8 9,176-192,225
+crates/router-prepare/tests/preparation.rs
+  s_86ed8bd547d4f8::t_e30d48a26f8978 184-187,197,666-701
+crates/router-runtime/src/error.rs
+  s_86ed8bd547d4f8::t_9a0d1d52c9f679 39-40
+crates/router-runtime/src/process.rs
+  s_86ed8bd547d4f8::t_891c4226f816ee 213
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_ca80164e096301 4-5,47,73-91,112,114-131,140-194,204-217,378-383,460,489-495,768,820-869,887,891-932
+crates/router-runtime/src/workflow.rs
+  s_86ed8bd547d4f8::t_29bdf8f4576d93 1-129
+crates/router-runtime/src/workspace.rs
+  s_86ed8bd547d4f8::t_70bad0fdd56cc9 5-6,220-241
+crates/router-runtime/tests/runtime.rs
+  s_86ed8bd547d4f8::t_4eed56b6b8c023 1222-1728
+crates/router-types/src/doctor.rs
+  s_86ed8bd547d4f8::t_b971a613841af4 455-541
+crates/router-types/src/runtime.rs
+  s_86ed8bd547d4f8::t_bd84bf681b112a 85-93
+crates/router-types/src/workflow.rs
+  s_86ed8bd547d4f8::t_6484426e118eb7 137-161
+crates/router-workflow/src/execution.rs
+  s_86ed8bd547d4f8::t_ae9f152952eb39 1-87
+crates/router-workflow/src/lib.rs
+  s_86ed8bd547d4f8::t_e8c05afa2de51b 2,7
+crates/router-workflow/tests/contracts.rs
+  s_86ed8bd547d4f8::t_c8333b5d98678f 389-473
+docs/cli-execution.md
+  s_86ed8bd547d4f8::t_987f3bca5965af 44,54-70,109-115
+docs/completion.md
+  s_86ed8bd547d4f8::t_f1e3c305407b25 19,49-53,59-62
+docs/doctor.md
+  s_86ed8bd547d4f8::t_303d6551199dce 47-138
+docs/runtime.md
+  s_86ed8bd547d4f8::t_322e4c398ef61f 223-263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "902e57c8c1ae2f3f9897559804ae6f1339bc453b",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
