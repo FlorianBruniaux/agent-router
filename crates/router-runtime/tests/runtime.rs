@@ -337,6 +337,12 @@ async fn changing_prompt_rejects_resume_definition_and_forged_receipt() {
 async fn historical_reopen_does_not_require_a_fresh_snapshot_but_execution_does() {
     let fixture = Fixture::new(false).await;
     let root = fixture.temp.path().join("runtime");
+    // Setup can outlive a one-second TTL on a busy runner. Approve under the
+    // normal freshness window, then reopen with the deliberately short window.
+    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let pending = fixture.review(&runtime).await;
+    drop(runtime);
+    tokio::time::sleep(Duration::from_secs(2)).await;
     let runtime = Runtime::open(
         &root,
         RuntimeLimits {
@@ -345,8 +351,6 @@ async fn historical_reopen_does_not_require_a_fresh_snapshot_but_execution_does(
         },
     )
     .unwrap();
-    let pending = fixture.review(&runtime).await;
-    tokio::time::sleep(Duration::from_secs(2)).await;
     let historical = runtime
         .reopen(
             "run-1",
