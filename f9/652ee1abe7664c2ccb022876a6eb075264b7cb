@@ -1,0 +1,41 @@
+crates/router-catalog-store/src/lib.rs
+  s_86ed8bd547d4f8::t_404a074c1b6460 1-706
+crates/router-catalog-store/src/files.rs
+  s_86ed8bd547d4f8::t_404a074c1b6460 1-333
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_122c5f6fcc42bb 52-57
+docs/signed-catalogs.md
+  s_86ed8bd547d4f8::t_122c5f6fcc42bb 115-121
+docs/completion.md
+  s_86ed8bd547d4f8::t_122c5f6fcc42bb 154-160
+Cargo.lock
+  s_86ed8bd547d4f8::t_c39723928c15e6 903-919
+Cargo.toml
+  s_86ed8bd547d4f8::t_1fe19b5e72332f 19
+crates/router-catalog-store/Cargo.toml
+  s_86ed8bd547d4f8::t_f2a0a80ebc2a1d 1-23
+crates/router-catalog-store/src/json.rs
+  s_86ed8bd547d4f8::t_930638d8615225 1-95
+crates/router-catalog-store/tests/store.rs
+  s_86ed8bd547d4f8::t_c04e0011dcdd37 1-565
+docs/adr/0006-current-signed-catalog-authority.md
+  s_86ed8bd547d4f8::t_d88dcbf83c11c9 1-49
+docs/catalog-store.md
+  s_86ed8bd547d4f8::t_85c6f0f98215f3 1-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f9652ee1abe7664c2ccb022876a6eb075264b7cb",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
