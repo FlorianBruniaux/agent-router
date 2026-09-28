@@ -77,3 +77,73 @@ cannot enable promotion. A passing evaluation is only evidence for the
 Still unproven: actual independent review of the required cases, an agreed
 retrieval threshold, held-out gain, and live shadow/canary results. Changing
 status fields or closing issues cannot establish those results.
+
+## Descriptive cohort metrics
+
+`agent-router eval metrics --cohort cohort.json --records record-a.json record-b.json`
+analyses sealed `ReplayRecord` observations. Add `--json` for the versioned
+report. This command does not reroute historical inputs, contact a provider,
+verify present host capabilities or change a promotion decision. A valid report
+with missing evidence exits successfully and preserves the unknown values.
+
+The cohort manifest fixes the complete set of cases:
+
+```json
+{
+  "schema_version": 1,
+  "analysis_authorized": true,
+  "provenance": "synthetic",
+  "cases": [{
+    "case_id": "case-a",
+    "input_hash": "<sealed ReplayRecord input hash>",
+    "policy_id": "baseline",
+    "policy_sha256": "<SHA-256 of the typed PhasePolicy JSON bytes>",
+    "budget": {"max_cost_microusd": 100, "max_tokens": 1000, "max_elapsed_ms": 500},
+    "predicted_success_micros": 700000,
+    "usage_complete": false,
+    "usage_evidence_sha256": null
+  }]
+}
+```
+
+`policy_sha256` uses the compact bytes from `serde_json::to_vec(&phase_policy)`
+and `router_adapter_api::content_digest`; it is separate from the route receipt
+policy hash. The input hash already binds prices, usage, outcomes and context.
+The cohort hash covers its entire canonical manifest, with cases sorted by ID.
+Records and manifest rows may be reordered without changing report bytes.
+Duplicate, missing, extra or substituted records are refused before a report is
+returned. The report contains aggregate data and hashes, without task text or
+local file paths.
+
+Provenance is `synthetic` or `supplied`. Authorization, usage completeness and
+evidence hashes are caller declarations, not authenticated facts. Complete
+usage requires a supplied evidence hash; this command does not read a file from
+that hash. Empty usage gives zero cost only when explicitly declared complete.
+Missing pricing or incomplete usage gives unknown cost, with separate counts.
+Prices explicitly equal to zero remain known zero. Invalid model identities,
+incoherent token counts and arithmetic overflow are errors.
+
+| Report field | Definition |
+| --- | --- |
+| `success_at_budget` | Functional success with cost, tokens and recorded elapsed time within every explicit limit, including equality. Functional failure or a known overrun is failure. Otherwise unknown. Recorded partial tokens can prove an overrun, but cannot prove that a budget was met. |
+| `success_at_budget_rate` | Exact successes / all cases, only when no cases are unknown. Lower and upper bounds remain available otherwise. |
+| `cost_microusd_per_functional_success` | Costs of all cases, including failures, divided by functional successes. Unknown when any necessary cost/outcome is missing or no case succeeded. Cost is recalculated from supplied usage and prices, not a provider invoice. |
+| `total_execution_ms_per_functional_success` | Sum of recorded case durations, including failures, divided by functional successes. Unknown with missing durations/outcomes or zero successes. This is not wall-clock workflow duration. |
+| `calibration.brier` | Mean binary squared error `(p - y)^2`, where `y` is functional success and probability is an explicit integer from 0 to 1,000,000. |
+| `calibration.ece` | Sum over ten fixed bins of `abs(sum(p) - successes)`, divided by all cases. Bins are lower-inclusive and upper-exclusive, except the last includes probability 1. |
+
+Ratios retain integer numerators and denominators without rounding. Brier uses
+probabilities squared in millionths; ECE uses millionths. Both global values are
+unknown unless every cohort case has a prediction and known functional outcome.
+Known-pair bins and missing counts remain visible; difficult cases are never
+silently removed from the denominator. Ranking scores are not probabilities.
+This report does not prove predictions were made before outcomes were known.
+
+Inputs are limited to 1,000 cases, 1 MiB for the manifest, 4 MiB per record and
+16 MiB of records in total. JSON rejects duplicate and unknown keys. Cost,
+latency and token sums use checked arithmetic. A manifest hash identifies an
+analysis definition; it is not an external trust anchor or preregistration proof.
+
+This R18 slice leaves comparable-plan regret, quality/cost frontier, first-plan
+acceptance, scanner false-positive rates and persistent caching open. Synthetic
+fixtures establish the calculations, not product gains or human evaluation.
