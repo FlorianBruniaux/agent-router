@@ -112,10 +112,13 @@ grant change therefore changes `Catalog::content_hash()` even when model rows an
 the publisher's version label remain unchanged. Existing catalog-bound contexts,
 receipts, retrieval indexes and caches consequently have a different key.
 
-This module is not a persistent current-version store or a filesystem watcher.
-Applications must maintain the current external pin and provide current roots and
-time. Historical signed bytes can still be inspected through the plain document
-DTO. Historical validity is not fresh execution authority.
+This verifier is not a filesystem watcher. The separate
+[`router-catalog-store` library](catalog-store.md) provides persistent, explicitly
+approved current selection, monotone revisions and a guard held through dispatch.
+Applications must still provide current external roots and time, and revalidate
+the guard at the final gate. Routing, preparation and runtime integration remain
+separate work. Historical signed bytes can still be inspected through the plain
+document DTO. Historical validity is not fresh execution authority.
 
 ## Operational projections
 
