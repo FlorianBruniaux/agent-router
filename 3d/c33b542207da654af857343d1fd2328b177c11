@@ -1,0 +1,20 @@
+crates/router-runtime/tests/native_version.rs
+  s_86ed8bd547d4f8::t_b7f629af94b2a0 18-77,387,391,398-407,409-412,414-415,425
+  s_86ed8bd547d4f8::t_83ccb4ed00b73f 416-417,421,428-429
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "3dc33b542207da654af857343d1fd2328b177c11",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
