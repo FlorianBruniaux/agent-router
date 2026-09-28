@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
 import tarfile
 import tempfile
@@ -33,23 +34,27 @@ class PackagingTests(unittest.TestCase):
         path.write_bytes(data if isinstance(data, bytes) else data.encode())
         return path
 
-    def crate(self, *, symlink=False, unsafe=False, license_text=True, license_names=("LICENSE",)):
+    def crate(self, *, symlink=False, unsafe=False, license_text=True, license_names=("LICENSE",),
+              name="example", license_declared="MIT"):
         data = io.BytesIO()
         with tarfile.open(fileobj=data, mode="w:gz") as archive:
-            files = {"example-1.0.0/Cargo.toml": b'[package]\nname="example"\nversion="1.0.0"\nlicense="MIT"\n'}
+            manifest = f'[package]\nname="{name}"\nversion="1.0.0"\n'
+            if license_declared is not None:
+                manifest += f'license="{license_declared}"\n'
+            files = {f"{name}-1.0.0/Cargo.toml": manifest.encode()}
             if license_text:
-                for name in license_names:
-                    prefix = "example-1.0.0/../" if unsafe else "example-1.0.0/"
-                    files[prefix + name] = b"Test license text\n"
-            for name, content in files.items():
-                info = tarfile.TarInfo(name)
+                for license_name in license_names:
+                    prefix = f"{name}-1.0.0/../" if unsafe else f"{name}-1.0.0/"
+                    files[prefix + license_name] = b"Test license text\n"
+            for relative, content in files.items():
+                info = tarfile.TarInfo(relative)
                 info.size = len(content)
-                if symlink and any(name.endswith("/" + license) for license in license_names):
+                if symlink and any(relative.endswith("/" + license) for license in license_names):
                     info.type, info.linkname, info.size = tarfile.SYMTYPE, "elsewhere", 0
                 archive.addfile(info, io.BytesIO(content) if info.isfile() else None)
         payload = data.getvalue()
-        self.write("registry/cache/test/example-1.0.0.crate", payload)
-        return {"name": "example", "version": "1.0.0", "source": "registry+https://example.invalid/index",
+        self.write(f"registry/cache/test/{name}-1.0.0.crate", payload)
+        return {"name": name, "version": "1.0.0", "source": "registry+https://example.invalid/index",
                 "checksum": hashlib.sha256(payload).hexdigest()}
 
     def test_cached_archive_is_bound_to_lock_checksum(self):
@@ -334,9 +339,13 @@ checksum="bbbbbbbb"
         self.assertEqual(result[("compiler-helper", "1")], ["build"])
         self.assertEqual(result[("macro", "1")], ["build"])
 
-    def test_complete_exports_are_identical_and_never_replace_an_artifact(self):
+    def export_fixture(self, externals=()):
+        """Synthetic Cargo discovery only; cache/license/archive work stays real."""
         self.write("Cargo.toml", '[workspace]\nmembers=["crates/core"]\n')
-        self.write("Cargo.lock", 'version=4\n[[package]]\nname="core"\nversion="1.0.0"\n')
+        lock = 'version=4\n[[package]]\nname="core"\nversion="1.0.0"\n'
+        for external in externals:
+            lock += '\n[[package]]\n' + ''.join(f'{key}={json.dumps(value)}\n' for key, value in external.items())
+        self.write("Cargo.lock", lock)
         self.write("crates/core/Cargo.toml", '[package]\nname="core"\nversion="1.0.0"\n')
         self.write("crates/core/src/lib.rs", "pub fn answer() -> u8 { 42 }\n")
         self.write("licenses/LICENSE-MIT", "Fixture MIT license\n")
@@ -351,6 +360,114 @@ checksum="bbbbbbbb"
             if argv[0] == "cargo":
                 return CORE.json_bytes(metadata)
             return b"2026-01-01T00:00:00Z\n" if "show" in argv else b"abcdef123456\n"
+        return command
+
+    def strict_export(self, output, command):
+        capture = io.StringIO()
+        argv = ["package-core.py", "--root", str(self.root), "--cargo-home", str(self.root),
+                "--strict-licenses", "--output", str(output)]
+        with patch.object(CORE, "run", side_effect=command), patch.object(CORE.shutil, "which", return_value=None), \
+                patch.object(sys, "argv", argv), redirect_stdout(capture):
+            status = CORE.main()
+        return status, json.loads(capture.getvalue())
+
+    def archive_files(self, path):
+        with tarfile.open(path, "r:gz") as archive:
+            return {member.name.removeprefix("agent-router-core/"): archive.extractfile(member).read()
+                    for member in archive}
+
+    def test_strict_export_includes_all_locked_external_evidence(self):
+        externals = [self.crate(), self.crate(name="other-platform", license_names=("LICENSE", "NOTICE"))]
+        # Both are deliberately outside Cargo's selected graph: original lock
+        # inventory must not silently omit optional/other-platform dependencies.
+        command = self.export_fixture(externals)
+        output = self.root / "complete.tar.gz"
+        status, result = self.strict_export(output, command)
+        self.assertEqual(status, 0, result)
+        self.assertTrue(result["verified"])
+        self.assertEqual(CORE.verify_archive(output)["sha256"], result["sha256"])
+        self.assertEqual(result["evidence"]["missing_licenses"], [])
+        self.assertEqual(result["evidence"]["license_texts"], "complete")
+        self.assertEqual(result["evidence"]["legal_compatibility_review"], "UNKNOWN")
+        self.assertEqual(result["evidence"]["security_review"], "UNKNOWN")
+        files = self.archive_files(output)
+        inventory = json.loads(files["LICENSE-INVENTORY.json"])["packages"]
+        external_inventory = {item["name"]: item for item in inventory if item["source"] != "workspace"}
+        self.assertEqual(set(external_inventory), {p["name"] for p in externals})
+        for external in externals:
+            record = external_inventory[external["name"]]
+            self.assertEqual(record["checksum"], external["checksum"])
+            self.assertEqual(record["evidence"], "checksum_verified")
+            self.assertEqual(record["dependency_scopes"], ["outside_selected_workspace"])
+            self.assertIn(f"| {external['name']} 1.0.0 | MIT | checksum_verified |",
+                          files["THIRD_PARTY_NOTICES.md"].decode())
+            for text in record["license_files"]:
+                self.assertEqual(files[text["path"]], b"Test license text\n")
+                self.assertEqual(CORE.digest(files[text["path"]]), text["sha256"])
+        self.assertEqual(len(external_inventory["other-platform"]["license_files"]), 2)
+        self.assertTrue(all(p["licenseConcluded"] == "NOASSERTION"
+                            for p in json.loads(files["SBOM.spdx.json"])["packages"]))
+
+    def test_strict_export_refuses_incomplete_external_evidence_without_output(self):
+        for missing in ("cache", "checksum", "declaration", "text"):
+            with self.subTest(missing=missing):
+                external = self.crate(license_text=missing != "text",
+                                      license_declared=None if missing == "declaration" else "MIT")
+                cache = self.root / "registry/cache/test/example-1.0.0.crate"
+                if missing == "cache":
+                    cache.unlink()
+                elif missing == "checksum":
+                    cache.write_bytes(cache.read_bytes() + b"changed")
+                command = self.export_fixture([external])
+                output = self.root / f"incomplete-{missing}.tar.gz"
+                status, result = self.strict_export(output, command)
+                self.assertEqual(status, 2, result)
+                self.assertEqual(result["error"], "license.evidence_incomplete: 1 dependencies")
+                self.assertFalse(output.exists())
+                self.assertEqual(list(self.root.glob(".agent-router-package-*")), [])
+
+    def test_strict_export_refuses_tampered_supplement_without_output(self):
+        external = self.crate(license_text=False)
+        command = self.export_fixture([external])
+        path = "licenses/third-party/example-1.0.0/LICENSE"
+        published = b"Published upstream license\n"
+        self.write(path, published)
+        self.write("licenses/third-party/evidence.json", CORE.json_bytes({"packages": [{
+            "name": "example", "version": "1.0.0", "crate_sha256": external["checksum"],
+            "files": [{"path": path, "sha256": CORE.digest(published),
+                       "url": "https://example.invalid/pinned-commit/LICENSE"}]}]}))
+        valid = self.root / "supplement-complete.tar.gz"
+        status, result = self.strict_export(valid, command)
+        self.assertEqual(status, 0, result)
+        self.assertEqual(self.archive_files(valid)[path], published)
+        original = valid.read_bytes()
+        self.write(path, b"tampered")
+        output = self.root / "supplement-tampered.tar.gz"
+        status, result = self.strict_export(output, command)
+        self.assertEqual(status, 2, result)
+        self.assertEqual(result["error"], "license.supplement_hash_mismatch")
+        self.assertFalse(output.exists())
+        self.assertEqual(valid.read_bytes(), original)
+
+    def test_strict_export_license_and_inventory_tampering_fail_verification(self):
+        command = self.export_fixture([self.crate()])
+        output = self.root / "untampered.tar.gz"
+        status, result = self.strict_export(output, command)
+        self.assertEqual(status, 0, result)
+        original = self.archive_files(output)
+        for name in ("licenses/dependencies/example-1.0.0/LICENSE", "LICENSE-INVENTORY.json"):
+            with self.subTest(member=name):
+                files = dict(original)
+                files[name] += b"changed"
+                tampered = self.write("tampered.tar.gz", CORE.archive_bytes(files))
+                capture = io.StringIO()
+                with patch.object(sys, "argv", ["package-core.py", "--verify", str(tampered)]), \
+                        redirect_stdout(capture):
+                    self.assertEqual(CORE.main(), 2)
+                self.assertEqual(json.loads(capture.getvalue())["error"], "archive.inventory_mismatch")
+
+    def test_complete_exports_are_identical_and_never_replace_an_artifact(self):
+        command = self.export_fixture()
 
         with patch.object(CORE, "run", side_effect=command), patch.object(CORE.shutil, "which", return_value=None):
             first, second = self.root / "first.tar.gz", self.root / "second.tar.gz"
