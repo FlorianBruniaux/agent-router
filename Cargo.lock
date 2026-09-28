@@ -1104,6 +1104,7 @@ dependencies = [
  "router-catalog",
  "router-catalog-store",
  "router-decision",
+ "router-doctor",
  "router-eval",
  "router-execution-decision",
  "router-policy",

@@ -17,11 +17,8 @@ pub(crate) fn inspect(file: &File, bytes: &[u8], queries: &mut usize) -> Result<
 
 #[cfg(unix)]
 fn inspect_descriptor(file: &File, queries: &mut usize) -> Result<DeepDoctorCode> {
-    use rusqlite::{Connection, DatabaseName, OpenFlags, config::DbConfig, limits::Limit};
-    use std::{
-        os::fd::AsRawFd,
-        time::{Duration, Instant},
-    };
+    use rusqlite::{Connection, DatabaseName, OpenFlags};
+    use std::os::fd::AsRawFd;
 
     let path = format!("/dev/fd/{}", file.as_raw_fd());
     // macOS fdescfs exposes a regular descriptor directly. Linux commonly uses
@@ -49,6 +46,17 @@ fn inspect_descriptor(file: &File, queries: &mut usize) -> Result<DeepDoctorCode
     {
         return Err(DoctorError::Unsupported);
     }
+    inspect_connection(&connection, queries)
+}
+
+/// Inspect only the supplied connection. Callers must establish its ownership,
+/// read-only source boundary or isolated in-memory snapshot before entering.
+pub(crate) fn inspect_connection(
+    connection: &rusqlite::Connection,
+    queries: &mut usize,
+) -> Result<DeepDoctorCode> {
+    use rusqlite::{config::DbConfig, limits::Limit};
+    use std::time::{Duration, Instant};
     for (limit, value) in [
         (Limit::SQLITE_LIMIT_LENGTH, MAX_FILE_BYTES as i32),
         (Limit::SQLITE_LIMIT_SQL_LENGTH, 64 * 1024),

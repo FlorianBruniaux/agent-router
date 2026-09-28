@@ -139,6 +139,12 @@ impl Store {
             .lock()
             .map_err(|_| RuntimeError::Integrity("storage lock poisoned"))
     }
+    pub(crate) fn diagnose_snapshot(
+        &self,
+    ) -> router_doctor::Result<router_doctor::DatabaseSnapshotReport> {
+        let connection = self.lock().map_err(|_| router_doctor::DoctorError::Read)?;
+        router_doctor::diagnose_database_snapshot(&connection)
+    }
     #[cfg(test)]
     pub fn register(&self, summary: &RunSummary) -> Result<RunSummary> {
         self.register_inner(summary, None, None, 5, None)

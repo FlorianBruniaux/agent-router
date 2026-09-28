@@ -121,6 +121,47 @@ atomic snapshot against an adversarial concurrent writer. A passing local
 result is not a migration compatibility, lock availability, liveness or future
 health claim.
 
+### Coherent snapshots from an owned connection
+
+`diagnose_database_snapshot(&Connection)` is a separate, explicit library API.
+`Runtime::diagnose_storage()` uses it under the mutex of its already owned SQLite
+connection. It accepts no pathname, reopens no file, starts no process and creates
+no on-disk export. It neither opens a new runtime nor runs migrations. The existing
+file-based deep diagnostic retains its WAL and unsafe `/dev/fd` refusals.
+
+The API explicitly starts a deferred read transaction, irrespective of the
+caller's default transaction mode, checks the source page count and size, then
+uses [SQLite's online backup API](https://sqlite.org/backup.html) to copy that read
+view into a private in-memory connection. Committed WAL data is included; another
+connection's uncommitted changes are excluded. The read transaction remains held
+through all copy batches. A source already in a transaction is rejected without
+rolling it back or consuming it. The API executes no source DML or checkpoint.
+SQLite retains its ordinary read locks and shared-memory bookkeeping; this is not
+a claim that SQLite reads never affect OS metadata.
+
+Snapshots are limited to 4 MiB, 16 pages per copy batch and 513 batches. The copy
+budget is checked between batches at 250 ms. The application must separately
+bound source I/O and its busy handler; this cooperative check is not an OS deadline.
+Busy/locked or incomplete copies return an unavailable/limit error, never a valid
+report. Both success and failure release the transaction created by the diagnostic.
+The temporary connection is then checked with the same defensive SQLite settings,
+integrity queries and VM/time limits as deep mode. No source settings are changed.
+
+The report contains a version, integrity code, SHA-256 of the serialized in-memory
+snapshot, byte count and query count. It exports no row, schema, pathname or SQL
+error text. A full inspection counts eight PRAGMA queries; transaction controls
+and SQLite's internal backup operations are not query-count entries. The digest
+identifies the captured bytes, not the current live database after the call.
+Integrity does not authenticate the runtime journal, certify schema compatibility,
+prove process liveness or authorize execution. `Runtime::verify_integrity()` and
+host evidence remain separate checks. A CLI snapshot command and active native
+host/hook diagnostics are not implemented by this library change.
+
+Tests cover committed WAL foreign-key violations, uncommitted writes, preservation
+of source permissions and active caller transactions, size/page-size limits,
+copy-deadline refusal, lock contention, recovery after refusal and runtime ownership.
+Linux evidence comes from the same tests in CI, not from the macOS result.
+
 Deep mode launches no `--version`, authentication or status commands. Supplied
 host snapshots retain their own source/freshness checks. An executable's name or
 an argument such as `status` does not prove absence of network or disk effects.
