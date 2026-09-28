@@ -1,0 +1,44 @@
+crates/router-feedback/Cargo.toml
+  s_86ed8bd547d4f8::t_1f1499737f0fce 19
+crates/router-coordinator/Cargo.toml
+  s_86ed8bd547d4f8::t_1f1499737f0fce 21
+crates/router-runtime/Cargo.toml
+  s_86ed8bd547d4f8::t_1f1499737f0fce 20
+docs/sqlite-wal-fix.md
+  s_86ed8bd547d4f8::t_1f1499737f0fce 1-23
+crates/router-doctor/tests/sqlite_bundle.rs
+  s_86ed8bd547d4f8::t_b8a39474716f0e 1-48
+  s_86ed8bd547d4f8::t_aadc631a4cefff 49-53
+crates/router-doctor/Cargo.toml
+  s_86ed8bd547d4f8::t_1f1499737f0fce 15
+crates/router-doctor/tests/snapshot.rs
+  s_86ed8bd547d4f8::t_a5ef71cfd1855b 60
+crates/router-doctor/src/snapshot.rs
+  s_86ed8bd547d4f8::t_a5ef71cfd1855b 7
+  s_86ed8bd547d4f8::t_0f7615e5961e15 34
+crates/router-doctor/src/database.rs
+  s_86ed8bd547d4f8::t_d1ec87f6c63433 85-93
+  s_86ed8bd547d4f8::t_a5ef71cfd1855b 20,44,69-71
+Cargo.lock
+  s_86ed8bd547d4f8::t_28743193664b3e 237-242,520,522,524,538,540,542,588-597,606,608,1157-1166,1169,1171,1176,1179,1210-1215,1326-1337,1517-1561
+licenses/third-party/evidence.json
+  s_86ed8bd547d4f8::t_f8563a83a5828c 25-47
+licenses/third-party/rsqlite-vfs-0.1.1/LICENSE
+  s_86ed8bd547d4f8::t_97b606d2ad272c 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1cf033e7c9017e036326fef3be16a05240a2b028",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
