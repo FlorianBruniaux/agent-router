@@ -1,0 +1,92 @@
+fuzz/.gitignore
+  s_86ed8bd547d4f8::t_b22610810baa45 1-3
+fuzz/Cargo.toml
+  s_86ed8bd547d4f8::t_fd8e8a66e56c59 1-13,15-40
+  s_86ed8bd547d4f8::t_2557439f4e6d1f 14
+.github/workflows/parser-fuzz.yml
+  s_86ed8bd547d4f8::t_aa793fb992cbee 42,47-54
+  s_86ed8bd547d4f8::t_c99864249e2c09 22-23,43-46
+  s_86ed8bd547d4f8::t_51b2e0d87449de 1-21,24-41
+docs/fuzzing.md
+  s_86ed8bd547d4f8::t_5e0681bf952231 1-30
+  s_86ed8bd547d4f8::t_aa793fb992cbee 31
+fuzz/fuzz_targets/host_snapshot.rs
+  s_86ed8bd547d4f8::t_fd8e8a66e56c59 1-3,7-13,18-26,46-47
+  s_86ed8bd547d4f8::t_b22610810baa45 4-6,27-45
+  s_86ed8bd547d4f8::t_2557439f4e6d1f 14-17
+  s_86ed8bd547d4f8::t_c44808034b0fd8 48-49
+fuzz/fuzz_targets/provider_sse.rs
+  s_86ed8bd547d4f8::t_2557439f4e6d1f 15-25
+  s_86ed8bd547d4f8::t_fd8e8a66e56c59 1-14,26-38
+  s_86ed8bd547d4f8::t_c5c72fa746621f 39-40
+fuzz/fuzz_targets/phase_scope.rs
+  s_86ed8bd547d4f8::t_2557439f4e6d1f 4,8-10
+  s_86ed8bd547d4f8::t_fd8e8a66e56c59 1-3,5-7,11-37
+  s_86ed8bd547d4f8::t_28178a179e5570 38-41
+fuzz/Cargo.lock
+  s_86ed8bd547d4f8::t_78608b5ea82217 1-629
+fuzz/corpus/host_snapshot/capability-contradiction.json
+  s_86ed8bd547d4f8::t_d8e8640668dc24 1
+fuzz/corpus/host_snapshot/duplicate-model-set.json
+  s_86ed8bd547d4f8::t_a28339451c9bb5 1
+fuzz/corpus/host_snapshot/future-observation.json
+  s_86ed8bd547d4f8::t_0af27a63820703 1
+fuzz/corpus/host_snapshot/incoherent-hash.json
+  s_86ed8bd547d4f8::t_8c7640e08d0819 1
+fuzz/corpus/host_snapshot/valid-phase-snapshot.json
+  s_86ed8bd547d4f8::t_051ea7f9fd9977 1-71
+fuzz/corpus/phase_scope/absolute-scope.json
+  s_86ed8bd547d4f8::t_e42c560eedc2af 1
+fuzz/corpus/phase_scope/backslash-scope.json
+  s_86ed8bd547d4f8::t_0ab2876bdfb6c0 1
+fuzz/corpus/phase_scope/candidate-limit.json
+  s_86ed8bd547d4f8::t_cc8dc598be8fa6 1
+fuzz/corpus/phase_scope/dot-component-scope.json
+  s_86ed8bd547d4f8::t_d7fb41c8662e6f 1
+fuzz/corpus/phase_scope/empty-component-scope.json
+  s_86ed8bd547d4f8::t_af20df1e8a165c 1
+fuzz/corpus/phase_scope/parent-component-workspace.json
+  s_86ed8bd547d4f8::t_2bc8a1363b5ed2 1
+fuzz/corpus/phase_scope/relative-workspace.json
+  s_86ed8bd547d4f8::t_e771ee15376684 1
+fuzz/corpus/phase_scope/traversal-scope.json
+  s_86ed8bd547d4f8::t_4e88b77ab209ee 1
+fuzz/corpus/phase_scope/uppercase-source-state.json
+  s_86ed8bd547d4f8::t_901c5d2dd04866 1
+fuzz/corpus/phase_scope/valid-relative-scope.json
+  s_86ed8bd547d4f8::t_3924f8c9ff7a27 1
+fuzz/corpus/phase_scope/valid-unicode-relative-scope.json
+  s_86ed8bd547d4f8::t_9435700feb2d3c 1
+fuzz/corpus/provider_sse/anthropic-complete.sse
+  s_86ed8bd547d4f8::t_6a0b971270ea52 1-6
+fuzz/corpus/provider_sse/duplicate-data-lines.sse
+  s_86ed8bd547d4f8::t_15c9f65f2c5fce 1-3
+fuzz/corpus/provider_sse/duplicate-event-field.sse
+  s_86ed8bd547d4f8::t_ab23a6193dfdaa 1-4
+fuzz/corpus/provider_sse/event-limit.sse
+  s_86ed8bd547d4f8::t_64cc7bdc15a636 1-4098
+fuzz/corpus/provider_sse/invalid-utf8.sse
+  s_86ed8bd547d4f8::t_12024cefa0793e 1
+fuzz/corpus/provider_sse/openai-complete.sse
+  s_86ed8bd547d4f8::t_34c15a634dbd8c 1-2
+fuzz/corpus/provider_sse/openai-sequence.sse
+  s_86ed8bd547d4f8::t_96496811ece8fc 1-6
+fuzz/corpus/provider_sse/truncated-frame.sse
+  s_86ed8bd547d4f8::t_4dfcbdcf721af8 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "dd7e1285aa41e06e8426fa9368220ffd8d6918bf",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
