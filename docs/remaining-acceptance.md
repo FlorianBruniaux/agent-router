@@ -82,6 +82,39 @@ Les évolutions suivantes le complètent :
   Les huit et dix checks respectifs de PR passent. Le fuzz des parsers,
   le SBOM des binaires, la release signée et les gates P3/P6 restent ouverts.
 
+### Candidat combiné du 28 septembre
+
+Les PR #34 à #42 sont réunies localement sur `codex/project-integration`.
+Le code à `1acec1d` passe 905 tests, sans échec, et six canaris macOS séparés.
+Les 34 tests ignorés de la suite générale ne sont pas comptés comme réussis.
+Les contrôles GitHub restent bloqués par la facturation, donc aucune livraison
+fusionnée de ce candidat n'est revendiquée.
+
+- **R12 / O3** : admission partagée, équité et allocations cumulées conservatrices
+  implémentées ; la reprise conserve les engagements et les plafonds approuvés.
+  Les coûts observés restent UNKNOWN. Voir [les budgets](session-budgets.md).
+- **R16** : [la saisie guidée](task-guide.md) complète les faits explicites et
+  exporte une tâche complète ; elle ne déduit aucune permission.
+- **R17** : [doctor runtime](doctor.md) observe le schéma 9 sans reprise ni
+  libération de réservation. Les diagnostics Database par chemin demandent
+  désormais un snapshot détenu ; les régressions de verrous sont corrigées.
+- **R18** : [les métriques de cohorte](evaluation.md) couvrent succès sous budget,
+  coût/temps par succès et calibration. Regret/frontière et cache restent ouverts.
+- **R06** : gardes et reconstruction des revues livrées en bibliothèque dans le
+  candidat. La CLI de catalogue actif et le dispatch signé restent ouverts.
+- **R20** : cibles fuzz, SQLite corrigé et [recette binaire locale](binary-distribution.md)
+  présents. Deux builds de la source `1cf033e` sont identiques et leurs 276 textes
+  de licence vérifiés ; cette preuve précède les correctifs de verrous de
+  l'intégration. Les trois essais fuzz instrumentés sur l'archive exacte
+  `b38b860` passent avec corpus et lockfiles inchangés ; les workspaces extraits
+  passent aussi leurs suites hors ligne. Ces preuves sont locales à macOS.
+  La reproduction finale par plateforme, la release signée et P3/P6 restent
+  ouverts.
+
+Le [registre de complétion](completion.md#combined-local-candidate-september-28)
+détaille les résultats et les limites. La table suivante reste le constat
+historique de départ ; ces compléments ne ferment pas les preuves externes.
+
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
 | Lot | Périmètre et exigence | Écart concret et preuve de code | Acceptation observable |

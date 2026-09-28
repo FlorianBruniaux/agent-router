@@ -23,10 +23,27 @@ modify dependency files.
 
 ## Evidence boundary
 
-Local workflow validation does not establish the advisory status of this lock.
-Only a successful run of this workflow against the intended commit can provide
-that result. The advisory database is fetched by `cargo-audit` during CI, so a
-network or database-fetch failure also fails the job and is not a clean audit.
+Workflow syntax validation does not establish the advisory status of a lockfile.
+An actual audit must identify the tool, unchanged lockfile digest and advisory
+revision. A local audit is separate evidence from a successful remote workflow.
+A network or database-fetch failure fails the job and is not a clean audit.
+
+## Local integration audit, September 28
+
+The integration candidate's two lockfiles were audited with `cargo-audit` 0.22.2,
+installed using Rust 1.88.0 under an isolated temporary directory. The workspace
+audit fetched a fresh database at `ef03605143a913024f864d2edf476adad5720c93`
+(1,273 advisories); the fuzz audit reused that exact checkout without fetching.
+Both used `--deny warnings`, with no ignored advisories, and exited successfully:
+
+| Lockfile | SHA-256 | Dependencies | Vulnerabilities / warnings |
+| --- | --- | ---: | --- |
+| `Cargo.lock` | `965bfffa58676c98f141fa2c84b247936b5389423a2d5b5d6f1aa2e6de09ef8a` | 169 | 0 / 0 |
+| `fuzz/Cargo.lock` | `0aeb8d93d4744037b84157efc19788d46ee2b7fe39be921231f06888d50ea0e9` | 67 | 0 / 0 |
+
+Both file digests were unchanged afterward. This establishes the local audit
+result for those locks and that advisory revision, not an absence of future
+vulnerabilities or remote CI success. No global toolchain configuration changed.
 
 References:
 
