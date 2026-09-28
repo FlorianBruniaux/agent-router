@@ -1,0 +1,47 @@
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_653b27daf0f31a 180-187
+crates/agent-router-cli/src/diagnostics.rs
+  s_86ed8bd547d4f8::t_9a2985b4835aaf 25-26,34-39
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_6870e850b7a118 225,229
+crates/agent-router-cli/tests/runtime_doctor.rs
+  s_86ed8bd547d4f8::t_5f2bd8789c254a 1-87
+crates/router-doctor/src/lib.rs
+  s_86ed8bd547d4f8::t_7a026389448a4f 14-16
+crates/router-doctor/src/snapshot.rs
+  s_86ed8bd547d4f8::t_8d0dd50e44e580 31-42,44,46-66,72
+crates/router-doctor/tests/snapshot.rs
+  s_86ed8bd547d4f8::t_3b04be55bc735e 199-253
+crates/router-runtime/src/diagnostics.rs
+  s_86ed8bd547d4f8::t_85ce2ecbb892e0 1-314
+crates/router-runtime/src/diagnostics/files.rs
+  s_86ed8bd547d4f8::t_51858e97ac9a7d 1-168
+crates/router-runtime/src/leases.rs
+  s_86ed8bd547d4f8::t_936533256eb698 139-213
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_85296d1bc5eaa5 6,20-23
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_b6ff33dc8945bb 1180-1183,1196,1198,1212-1213,1234
+crates/router-runtime/tests/diagnostics.rs
+  s_86ed8bd547d4f8::t_4c11e4437b416c 1-412
+docs/adr/0010-passive-runtime-diagnostics.md
+  s_86ed8bd547d4f8::t_85b15fd2987060 1-45
+docs/doctor.md
+  s_86ed8bd547d4f8::t_88b5e16d024097 157-159,166-236
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "068e13b10f67c8c9258cfa41cd67f1ef1175cc43",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
