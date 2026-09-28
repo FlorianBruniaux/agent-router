@@ -20,6 +20,7 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+mod sidecar;
 
 use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
 
@@ -140,6 +141,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             now,
             json,
         } => generation::run(&manifest, now, json),
+        Commands::Sidecar { command, json } => sidecar::run(command, json),
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Escalation { command, json } => escalation::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
@@ -230,6 +232,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         Commands::Backend {
             inputs,
             backend,
+            expected_backend_artifact,
             endpoint,
             bearer_env,
             allow_redacted_metadata,
@@ -241,6 +244,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             inputs,
             phases::BackendArgs {
                 backend,
+                expected_backend_artifact,
                 endpoint,
                 bearer_env,
                 allow_redacted_metadata,

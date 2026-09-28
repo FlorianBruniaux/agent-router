@@ -2,7 +2,9 @@
 
 mod learning;
 mod policy;
+mod sidecar_export;
 mod store;
+pub use sidecar_export::{SidecarExportGuard, SidecarExportProjection};
 
 pub use learning::*;
 pub use policy::*;

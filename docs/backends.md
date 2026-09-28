@@ -57,3 +57,11 @@ they do not establish behavior or quality of an installed Laya checkpoint.
 criteria. Its verdict alone changes no runtime configuration. Until held-out
 human labels and a measured improvement exist, the semantic backend remains
 disabled for production selection.
+
+## Standard protocol client
+
+`--backend standard-v1` is an additional explicit choice under `local-sidecar`.
+It negotiates `/v1/capabilities`, pins the expected backend artifact and sends
+`/v1/rank` under a single deadline. Legacy Jev/Laya behavior is unchanged.
+See [the standard sidecar protocol](standard-sidecar.md) for strict wire contracts,
+explicit single-event outcome/feedback commands and delivery uncertainty.

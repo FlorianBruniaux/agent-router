@@ -414,7 +414,7 @@ pub(crate) fn read_events(db: &Connection) -> Result<Vec<FeedbackEvent>> {
         })
         .collect()
 }
-fn event_hash(event: &FeedbackEvent) -> Result<String> {
+pub(crate) fn event_hash(event: &FeedbackEvent) -> Result<String> {
     hash(
         "feedback-event-v1",
         &(
