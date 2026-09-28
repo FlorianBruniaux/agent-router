@@ -1,0 +1,95 @@
+docs/configuration-formats.md
+  s_86ed8bd547d4f8::t_478e72da480bbc 1-131
+integrations/bridge-contract/Cargo.toml
+  s_86ed8bd547d4f8::t_6cf454032a8136 13,22
+integrations/bridge-contract/src/omnigent.rs
+  s_86ed8bd547d4f8::t_6cf454032a8136 1-198
+integrations/README.md
+  s_86ed8bd547d4f8::t_c7c1965321e4cd 96-99
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_34f8e116df5a4a 83-101,108
+  s_86ed8bd547d4f8::t_4aeff0abd516bb 34-38
+  s_86ed8bd547d4f8::t_215adc3dd5dd49 40-42,46-53,102-107
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_f0acb4c8b0b9b0 189-205
+  s_86ed8bd547d4f8::t_7227b06bda08ad 173,206-213,270-278,1160-1216,1270-1316
+crates/agent-router-cli/tests/generation.rs
+  s_86ed8bd547d4f8::t_a0c2f9dee35f4c 149-153,158-159,163,176-182,189-190,208-209,230-232,239-242,248-255,257-260,283-289,291,313,315-320,331-336,338,345-346
+  s_86ed8bd547d4f8::t_8d5340069c5a32 154-157,160-162,164-175,183-188,191-207,210-229,233-238,243-247,256,265-282,290,292-312,314,321-330,337,339-344
+  s_86ed8bd547d4f8::t_3cad78485b58dc 261-264
+  s_86ed8bd547d4f8::t_1a710282899177 347-664
+crates/router-runtime/tests/escalation.rs
+  s_86ed8bd547d4f8::t_68509ceadc6153 19
+  s_86ed8bd547d4f8::t_384be81763aeda 11-12,344-354
+integrations/omnigent.md
+  s_86ed8bd547d4f8::t_c7c1965321e4cd 1-59
+crates/router-catalog/tests/signed_catalogs.rs
+  s_86ed8bd547d4f8::t_a9273c65da3a10 719,721,734,742-748,757,847-848
+  s_86ed8bd547d4f8::t_c4d5e24b1d6f91 720,771-779,781-785,787-794,799-803,806-812,815-817,819-827,833-846
+  s_86ed8bd547d4f8::t_1528bfbeae0991 718,722-733,735-741,749-756,758-770,780,786,795-798,804-805,813-814,818,828-832
+integrations/bridge-contract/src/lib.rs
+  s_86ed8bd547d4f8::t_6cf454032a8136 6
+docs/completion.md
+  s_86ed8bd547d4f8::t_215adc3dd5dd49 115-119,141-162
+  s_86ed8bd547d4f8::t_19822efd53bb42 163
+docs/omnigent-comparison.md
+  s_86ed8bd547d4f8::t_c7c1965321e4cd 43-44
+  s_86ed8bd547d4f8::t_215adc3dd5dd49 20-23,47
+  s_86ed8bd547d4f8::t_34f8e116df5a4a 1-19,24-42,45-46,48-67
+crates/agent-router-cli/src/execution_backend.rs
+  s_86ed8bd547d4f8::t_6cf454032a8136 5
+integrations/bridge-contract/tests/omnigent.rs
+  s_86ed8bd547d4f8::t_5a8644e754f5a6 1-182
+  s_86ed8bd547d4f8::t_3963151b3ba240 183-251
+docs/cli-output.md
+  s_86ed8bd547d4f8::t_3465acfc3666de 33-37
+crates/router-runtime/tests/native_failures.rs
+  s_86ed8bd547d4f8::t_5c76b86ea352a8 183-209
+  s_86ed8bd547d4f8::t_4aeff0abd516bb 162-165,177
+  s_86ed8bd547d4f8::t_9ba2d3b7b8a246 176,178-182,210
+README.md
+  s_86ed8bd547d4f8::t_6e8e258cecc714 57,59,171,187,189
+crates/router-runtime/tests/generated.rs
+  s_86ed8bd547d4f8::t_9accd114b8c031 609-644
+  s_86ed8bd547d4f8::t_27d936559b175a 95-96,576,584-587,590-594,602-607
+  s_86ed8bd547d4f8::t_833ef14f57af16 1,6-7,12-15,22-40,65,74,94,304-307,324-325,349,352-355,365-366,383,400,445-449,454,513-517,535-537,541-543,608
+  s_86ed8bd547d4f8::t_e4333a6af6b1e7 2-5,8-11,16-21,41-64,66-73,75-93,97-303,308-323,326-348,350-351,356-364,367-382,384-399,401-444,450-453,455-512,518-534,538-540,544-575,577-583,588-589,600-601
+  s_86ed8bd547d4f8::t_6d1012b042afae 595-599
+  s_86ed8bd547d4f8::t_fd22df1948d1d3 645-733
+crates/router-catalog/src/signed.rs
+  s_86ed8bd547d4f8::t_1528bfbeae0991 82-83,937-950
+  s_86ed8bd547d4f8::t_e2b54ccd67b8a0 951-952
+crates/agent-router-cli/tests/config_formats.rs
+  s_86ed8bd547d4f8::t_6ec4b0fbf2cf94 368-371,396-426,428,442,458-461,466-467,476-481,492-493,501,524-545,553,557,562
+  s_86ed8bd547d4f8::t_1cd86facd729c5 3,434-441,502-509,514-523
+  s_86ed8bd547d4f8::t_51aae58f9fb5c2 372-395,427,429-433,443-457,462-465,468-475,482-491,494-500,546-552,554-556,558-561
+  s_86ed8bd547d4f8::t_3465acfc3666de 510-513
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_cc4941006acc3c 36-37
+Cargo.lock
+  s_86ed8bd547d4f8::t_1c07090a7a71cf 879-880
+crates/agent-router-cli/tests/support/native_fixture.rs
+  s_86ed8bd547d4f8::t_95a5ef903f6a00 31-32,38-39,46-47,434-463
+crates/router-catalog/src/lib.rs
+  s_86ed8bd547d4f8::t_a298c549a8c992 19
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_c964afe9a86250 417-423,648-654
+docs/plan-generation.md
+  s_86ed8bd547d4f8::t_187be9a7cafe12 10-14,164-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "338ca00b4a508e64a57e1eccd3cad11da65c0d3a",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
