@@ -1,0 +1,6 @@
+event: message_start
+data: {"type":"message_start","message":{"type":"message","role":"assistant","model":"claude-3-7-sonnet"}}
+
+event: message_stop
+data: {"type":"message_stop"}
+

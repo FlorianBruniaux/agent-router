@@ -1,0 +1,6 @@
+data: {"type":"response.created"}
+
+data: {"type":"response.output_text.delta","delta":"synthetic"}
+
+data: {"type":"response.completed","response":{"status":"completed","model":"gpt-4.1"}}
+
