@@ -1,0 +1,24 @@
+scripts/test-package-core.py
+  s_86ed8bd547d4f8::t_4f145dbb2f7975 49-50,52,342-343,345-348,363-470
+  s_86ed8bd547d4f8::t_31267690fa6f06 8,37-38,41-44,46-48,56-57
+docs/distribution.md
+  s_86ed8bd547d4f8::t_82b9336566cd2e 42-64
+.github/workflows/ci.yml
+  s_86ed8bd547d4f8::t_82b9336566cd2e 36-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "18a715c1466c8999d722b76da14b88ef48f7fce6",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
