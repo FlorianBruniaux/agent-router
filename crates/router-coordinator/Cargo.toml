@@ -6,6 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+router-prepare = { path = "../router-prepare" }
 router-execution-decision = { path = "../router-execution-decision" }
 router-types = { path = "../router-types" }
 router-runtime = { path = "../router-runtime" }
