@@ -1,0 +1,48 @@
+crates/router-policy/src/phases.rs
+  s_86ed8bd547d4f8::t_631d5abda3e139 5,66,132,141,157-164,184-190,209,242,348-354,370-372,437
+  s_86ed8bd547d4f8::t_5808bb15c9565e 446,578-586,724-726,747-765
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_631d5abda3e139 640,785-792
+  s_86ed8bd547d4f8::t_2526f90fc8f6b7 395-399,641-644
+crates/router-policy/src/signed_phases.rs
+  s_86ed8bd547d4f8::t_c962bee0beec76 1-279,281
+  s_86ed8bd547d4f8::t_1d14a072052482 280,282-421
+crates/router-policy/Cargo.toml
+  s_86ed8bd547d4f8::t_c962bee0beec76 14-15,21-24
+crates/router-runtime/Cargo.toml
+  s_86ed8bd547d4f8::t_c962bee0beec76 25-26
+crates/router-policy/src/lib.rs
+  s_86ed8bd547d4f8::t_631d5abda3e139 11,31
+crates/router-policy/src/asset_phases.rs
+  s_86ed8bd547d4f8::t_631d5abda3e139 65,151,243,272
+Cargo.lock
+  s_86ed8bd547d4f8::t_3aaea30f06a005 1039,1044-1045,1051,1102,1107
+crates/router-policy/src/generator.rs
+  s_86ed8bd547d4f8::t_cc80586fb9c98d 969-978
+crates/router-policy/tests/legacy_phase_bytes.rs
+  s_86ed8bd547d4f8::t_1711c1850b4ccf 1-64
+crates/router-policy/tests/signed_phases.rs
+  s_86ed8bd547d4f8::t_dab81808e31686 1-578
+crates/router-policy/tests/support/signed_fixture.rs
+  s_86ed8bd547d4f8::t_2646377e59cbe1 1-314
+crates/router-runtime/tests/signed_catalog.rs
+  s_86ed8bd547d4f8::t_ea38d68a9bb410 1-181
+docs/signed-routing.md
+  s_86ed8bd547d4f8::t_8ebf451e41feb7 1-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "63b2ef49acccbf74237adfd5566a4fe5a6fe6ebd",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
