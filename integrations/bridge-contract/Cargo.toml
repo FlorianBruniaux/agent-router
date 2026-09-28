@@ -10,6 +10,7 @@ distribution = "integration"
 
 [dependencies]
 router-types = { path = "../../crates/router-types" }
+router-policy = { path = "../../crates/router-policy" }
 router-adapter-api = { path = "../../crates/router-adapter-api" }
 thiserror.workspace = true
 serde_json.workspace = true
@@ -18,3 +19,4 @@ hex.workspace = true
 ed25519-dalek = "=2.2.0"
 
 [dev-dependencies]
+router-catalog = { path = "../../crates/router-catalog" }

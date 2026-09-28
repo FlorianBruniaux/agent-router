@@ -414,7 +414,13 @@ impl Runtime {
             .clone();
         decision.validate_identity(router, context)?;
         self.validate_escalation(router, context, decision, &node, &request, None, false)?;
-        if decision.generated_binding().is_some() && workflow.is_some_and(|(_, generation)| generation != 0) { return Err(RuntimeError::Invalid("generated plan retry requires new instance")); }
+        if decision.generated_binding().is_some()
+            && workflow.is_some_and(|(_, generation)| generation != 0)
+        {
+            return Err(RuntimeError::Invalid(
+                "generated plan retry requires new instance",
+            ));
+        }
         generated::validate(
             decision,
             &plan,
@@ -639,7 +645,13 @@ impl Runtime {
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
         decision.validate_identity(router, context)?;
-        if decision.generated_binding().is_some() && workflow.is_some_and(|(_, generation)| generation != 0) { return Err(RuntimeError::Invalid("generated plan retry requires new instance")); }
+        if decision.generated_binding().is_some()
+            && workflow.is_some_and(|(_, generation)| generation != 0)
+        {
+            return Err(RuntimeError::Invalid(
+                "generated plan retry requires new instance",
+            ));
+        }
         generated::validate(
             decision,
             &plan,

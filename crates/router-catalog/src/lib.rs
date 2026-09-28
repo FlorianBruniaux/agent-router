@@ -12,11 +12,11 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 pub use error::CatalogError;
-pub use signed::*;
 pub use generated::{
     AssetAlias, AssetAvailability, AssetKind, AssetProvenance, AssetRegistry, GeneratedAsset,
     GeneratedCatalog, GenerationConfig, RegistryAsset,
 };
+pub use signed::*;
 
 /// Maximum number of model rows accepted by the MVP catalog parser.
 pub const MAX_CATALOG_MODELS: usize = 64;

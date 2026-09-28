@@ -716,6 +716,137 @@ fn host_and_model_references_are_validated_without_creating_availability() {
 }
 
 #[test]
+fn prompt_host_reference_must_resolve_to_a_pinned_harness_not_an_asset_id() {
+    for invalid_host in ["invented-host", "fixture-host", "fixture-tool"] {
+        let (mut manifest, _) = fixture();
+        let prompt = manifest
+            .assets
+            .iter_mut()
+            .find(|entry| entry.id == "fixture-prompt")
+            .unwrap();
+        assert_eq!(
+            prompt.requirements.compatible_hosts,
+            BTreeSet::from([host()])
+        );
+        let SignedAssetPayload::Prompt(definition) = &mut prompt.payload else {
+            panic!()
+        };
+        definition.compatible_hosts = BTreeSet::from([invalid_host.into()]);
+        assert!(
+            matches!(
+                seal_signed_manifest(manifest),
+                Err(SignedCatalogError::Invalid)
+            ),
+            "unresolved harness accepted: {invalid_host}"
+        );
+    }
+}
+
+#[test]
+fn prompt_payload_cannot_expand_its_signed_host_requirements() {
+    let (mut manifest, _) = fixture();
+    manifest.assets.push(entry("second-host-asset", "host", json!({"harness":"claude-code","versions":["1.2.3"],"declared_capabilities":["tools"],"compatible_models":["fixture-model-v1"]}), None));
+    let prompt = manifest
+        .assets
+        .iter_mut()
+        .find(|entry| entry.id == "fixture-prompt")
+        .unwrap();
+    let SignedAssetPayload::Prompt(definition) = &mut prompt.payload else {
+        panic!()
+    };
+    definition.compatible_hosts.insert("claude-code".into());
+    assert!(
+        matches!(
+            seal_signed_manifest(manifest),
+            Err(SignedCatalogError::Invalid)
+        ),
+        "a declared host still requires an exact signed host/version pin"
+    );
+}
+
+#[test]
+fn prompt_may_narrow_pinned_harnesses_without_changing_any_version_or_restriction() {
+    let (mut manifest, body) = fixture();
+    manifest.assets.push(entry("second-host-asset", "host", json!({"harness":"claude-code","versions":["1.2.3"],"declared_capabilities":["tools"],"compatible_models":["fixture-model-v1"]}), None));
+    let SignedAssetPayload::Host(definition) = &mut manifest
+        .assets
+        .iter_mut()
+        .find(|entry| entry.id == "fixture-host")
+        .unwrap()
+        .payload
+    else {
+        panic!()
+    };
+    definition.versions.insert("1.2.4".into());
+    let prompt = manifest
+        .assets
+        .iter_mut()
+        .find(|entry| entry.id == "fixture-prompt")
+        .unwrap();
+    prompt.requirements.compatible_hosts.extend([
+        AssetHostBinding {
+            harness: HarnessId::parse("codex").unwrap(),
+            version: "1.2.4".into(),
+        },
+        AssetHostBinding {
+            harness: HarnessId::parse("claude-code").unwrap(),
+            version: "1.2.3".into(),
+        },
+    ]);
+    let requirements = prompt.requirements.clone();
+    let restrictions = prompt.restrictions.clone();
+    let sealed = seal_signed_manifest(manifest).unwrap();
+    let prompt = sealed
+        .assets
+        .iter()
+        .find(|entry| entry.id == "fixture-prompt")
+        .unwrap();
+    assert_eq!(prompt.requirements, requirements);
+    assert_eq!(prompt.restrictions, restrictions);
+    let SignedAssetPayload::Prompt(definition) = &prompt.payload else {
+        panic!()
+    };
+    assert_eq!(
+        definition.compatible_hosts,
+        BTreeSet::from(["codex".into()])
+    );
+    let publishers = roots();
+    let catalog = verified(&signed(sealed), &publishers);
+    let template = catalog
+        .validate_prompt("fixture-prompt", &body, &access(&catalog, &publishers, 110))
+        .unwrap();
+    assert_eq!(template.compatible_hosts, BTreeSet::from(["codex".into()]));
+    assert!(
+        router_workflow::render_prompt(
+            &template,
+            "claude-code",
+            &ModelId::parse("fixture-model-v1").unwrap(),
+            &BTreeMap::from([("topic".into(), PromptValue::Text("Rust".into()))])
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn prompt_harness_match_cannot_replace_a_missing_exact_version_pin() {
+    let (mut manifest, _) = fixture();
+    manifest
+        .assets
+        .iter_mut()
+        .find(|entry| entry.id == "fixture-prompt")
+        .unwrap()
+        .requirements
+        .compatible_hosts = BTreeSet::from([AssetHostBinding {
+        harness: HarnessId::parse("codex").unwrap(),
+        version: "9.9.9".into(),
+    }]);
+    assert!(matches!(
+        seal_signed_manifest(manifest),
+        Err(SignedCatalogError::Invalid)
+    ));
+}
+
+#[test]
 fn a_valid_body_hash_does_not_override_the_signed_prompt_contract() {
     let (mut manifest, original) = fixture();
     let mut changed: PromptTemplate = serde_json::from_slice(&original).unwrap();

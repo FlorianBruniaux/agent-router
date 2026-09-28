@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use serde_json::{Value, json};
-use std::{fs, path::Path, process::Output};
+use std::{fmt::Write, fs, path::Path, process::Output};
 
 const TOML: &str = r#"schema_version = 1
 [defaults]
@@ -364,4 +364,199 @@ fn symlinks_and_non_regular_inputs_are_refused_without_following_them() {
         assert!(!String::from_utf8_lossy(&output.stderr).contains("private-sentinel"));
     }
     assert_eq!(fs::read_to_string(source).unwrap(), YAML);
+}
+
+#[test]
+fn decoded_keys_and_members_cannot_hide_duplicates_with_escaping() {
+    for (extension, text) in [
+        (
+            "json",
+            r#"{"schema_version":1,"defaults":{"name":"base","na\u006de":"second"}}"#,
+        ),
+        (
+            "json",
+            r#"{"schema_version":1,"defaults":{"name":"base","allowed_models":["fixture-a","fixture-\u0061"]}}"#,
+        ),
+        (
+            "toml",
+            "schema_version=1\n[defaults]\nname='base'\n\"na\\u006de\"='second'",
+        ),
+        (
+            "toml",
+            "schema_version=1\n[defaults]\nname='base'\nallowed_models=['fixture-a',\"fixture-\\u0061\"]",
+        ),
+        (
+            "yaml",
+            "schema_version: 1\ndefaults: {name: base, \"na\\u006de\": second}",
+        ),
+        (
+            "yaml",
+            "schema_version: 1\ndefaults: {name: base, allowed_models: [fixture-a, \"fixture-\\u0061\"]}",
+        ),
+    ] {
+        rejected(extension, text, "configuration.invalid");
+    }
+}
+
+#[test]
+fn byte_limit_is_inclusive_and_measured_before_parsing() {
+    for (extension, text) in [
+        ("json", serde_json::to_string(&fixture()).unwrap()),
+        ("toml", TOML.into()),
+        ("yaml", YAML.into()),
+    ] {
+        let expected = run(extension, &text);
+        let mut bytes = text.into_bytes();
+        bytes.resize(256 * 1024, b' ');
+        let at_limit = run(extension, &bytes);
+        assert!(at_limit.status.success());
+        assert_eq!(expected.stdout, at_limit.stdout);
+        bytes.push(b' ');
+        rejected(extension, bytes, "configuration.limit");
+    }
+}
+
+#[test]
+fn depth_node_and_utf8_scalar_limits_cover_mappings_as_well_as_arrays() {
+    let deep_json = format!("{}null{}", "{\"nested\":".repeat(18), "}".repeat(18));
+    rejected("json", deep_json, "configuration.limit");
+    let deep_yaml = format!("{}null{}", "{nested: ".repeat(18), "}".repeat(18));
+    rejected("yaml", deep_yaml, "configuration.limit");
+    let deep_toml = format!("nested = {}0{}", "{ nested = ".repeat(18), "}".repeat(18));
+    rejected("toml", deep_toml, "configuration.limit");
+    let fields: Vec<_> = (0..4096).map(|i| (format!("field{i}"), json!(0))).collect();
+    let json_fields = fields.iter().cloned().collect::<serde_json::Map<_, _>>();
+    rejected(
+        "json",
+        Value::Object(json_fields).to_string(),
+        "configuration.limit",
+    );
+    let mut yaml = String::new();
+    let mut toml = String::new();
+    for (key, _) in &fields {
+        writeln!(&mut yaml, "{key}: 0").unwrap();
+        writeln!(&mut toml, "{key}=0").unwrap();
+    }
+    rejected("yaml", yaml, "configuration.limit");
+    rejected("toml", toml, "configuration.limit");
+    let unicode = "é".repeat(4097);
+    rejected(
+        "json",
+        json!({"schema_version":1,"defaults":{"name":unicode}}).to_string(),
+        "configuration.limit",
+    );
+    rejected(
+        "toml",
+        format!("schema_version=1\n[defaults]\nname='{unicode}'"),
+        "configuration.limit",
+    );
+    rejected(
+        "yaml",
+        format!("schema_version: 1\ndefaults: {{name: '{unicode}'}}"),
+        "configuration.limit",
+    );
+}
+
+#[test]
+fn numbers_do_not_round_or_coerce_float_and_string_budgets() {
+    let expected = run(
+        "json",
+        r#"{"schema_version":1,"defaults":{"name":"base","max_tokens":9223372036854775807}}"#,
+    );
+    assert!(expected.status.success());
+    for (extension, text) in [
+        (
+            "toml",
+            "schema_version=1\n[defaults]\nname='base'\nmax_tokens=9223372036854775807",
+        ),
+        (
+            "yaml",
+            "schema_version: 1\ndefaults: {name: base, max_tokens: 9223372036854775807}",
+        ),
+    ] {
+        let output = run(extension, text);
+        assert!(output.status.success());
+        assert_eq!(output.stdout, expected.stdout);
+    }
+    for number in ["18446744073709551616", "1e309", "1.5", "'100'"] {
+        rejected(
+            "yaml",
+            format!("schema_version: 1\ndefaults: {{name: base, max_tokens: {number}}}"),
+            "configuration.invalid",
+        );
+        rejected(
+            "toml",
+            format!("schema_version=1\n[defaults]\nname='base'\nmax_tokens={number}"),
+            "configuration.invalid",
+        );
+    }
+    for number in ["1e309", "1.5", "\"100\""] {
+        rejected(
+            "json",
+            format!(
+                "{{\"schema_version\":1,\"defaults\":{{\"name\":\"base\",\"max_tokens\":{number}}}}}"
+            ),
+            "configuration.invalid",
+        );
+    }
+    let upper = run(
+        "json",
+        r#"{"schema_version":1,"defaults":{"name":"base","max_tokens":18446744073709551615}}"#,
+    );
+    let yaml_upper = run(
+        "yaml",
+        "schema_version: 1\ndefaults: {name: base, max_tokens: 18446744073709551615}",
+    );
+    assert!(upper.status.success() && yaml_upper.status.success());
+    assert_eq!(upper.stdout, yaml_upper.stdout);
+    let value: Value = serde_json::from_slice(&upper.stdout).unwrap();
+    assert_eq!(value["max_tokens"].as_u64(), Some(u64::MAX));
+    rejected(
+        "toml",
+        "schema_version=1\n[defaults]\nname='base'\nmax_tokens=9223372036854775808",
+        "configuration.invalid",
+    );
+    rejected(
+        "json",
+        r#"{"schema_version":1,"defaults":{"name":"base","max_tokens":18446744073709551616}}"#,
+        "configuration.invalid",
+    );
+}
+
+#[test]
+fn yaml_reserved_directives_block_tags_and_alias_bombs_are_rejected() {
+    for text in [
+        "%RESERVED secret-value\n---\nschema_version: 1\ndefaults: {name: base}",
+        "schema_version: 1\ndefaults:\n  name: !<tag:example.test,2026:secret-value> base",
+        "schema_version: 1\ndefaults: {name: base, '<<': {max_tokens: 1}}",
+        "a: &a [secret-value, secret-value]\nb: &b [*a, *a, *a]\nc: [*b, *b, *b]",
+        "schema_version: 1\ndefaults: &base\n  name: base\nproject: *base",
+        "---\nschema_version: 1\ndefaults: {name: base}\n---\n# empty second document",
+        "---\n# empty first document\n---\nschema_version: 1\ndefaults: {name: base}",
+    ] {
+        rejected("yaml", text, "configuration.invalid");
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn a_fifo_with_a_valid_extension_is_rejected_without_waiting_for_a_writer() {
+    let temp = tempfile::tempdir().unwrap();
+    let fifo = temp.path().join("private-sentinel.yaml");
+    assert!(
+        std::process::Command::new("/usr/bin/mkfifo")
+            .arg(&fifo)
+            .status()
+            .unwrap()
+            .success()
+    );
+    Command::new(assert_cmd::cargo::cargo_bin!("agent-router"))
+        .args(["config", "--layers"])
+        .arg(&fifo)
+        .arg("--json")
+        .timeout(std::time::Duration::from_secs(5))
+        .assert()
+        .code(2)
+        .stdout("")
+        .stderr("error: configuration.read\n");
 }

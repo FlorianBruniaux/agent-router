@@ -170,6 +170,7 @@ impl Store {
             verify_plan_pin(&tx, summary.workflow.as_ref(), generated)?;
             return Ok(existing);
         }
+        let mut initial_generated_pin = None;
         if let Some(binding) = &summary.workflow {
             let contract = contract.ok_or(RuntimeError::Integrity("missing workflow contract"))?;
             let existing: Option<String> = tx
@@ -185,20 +186,31 @@ impl Store {
             {
                 return Err(RuntimeError::Integrity("execution instance changed"));
             }
-            tx.execute(
-                "INSERT OR IGNORE INTO workflow_instances VALUES(?1,?2,?3)",
-                params![
-                    binding.instance_id,
-                    binding.contract_sha256,
-                    serde_json::to_string(contract)?
-                ],
-            )?;
-            let pin = plan_pin(generated)?;
-            tx.execute(
-                "INSERT OR IGNORE INTO workflow_plan_authority VALUES(?1,?2)",
-                params![binding.instance_id, pin],
-            )?;
-            verify_plan_pin(&tx, Some(binding), generated)?;
+            if existing.is_none() {
+                tx.execute(
+                    "INSERT INTO workflow_instances VALUES(?1,?2,?3)",
+                    params![
+                        binding.instance_id,
+                        binding.contract_sha256,
+                        serde_json::to_string(contract)?
+                    ],
+                )?;
+                let pin = plan_pin(generated)?;
+                tx.execute(
+                    "INSERT INTO workflow_plan_authority VALUES(?1,?2)",
+                    params![binding.instance_id, pin],
+                )?;
+                if generated.is_some() {
+                    initial_generated_pin = Some(PlanAuthorityAnchor {
+                        schema_version: 1,
+                        instance_id: binding.instance_id.clone(),
+                        contract_sha256: binding.contract_sha256.clone(),
+                        pin,
+                    });
+                }
+            }
+            // An existing instance must retain its original pin. Missing data
+            // is corruption, never permission to replace the global proposal.
             let previous = workflow_node(&tx, &binding.instance_id, &summary.node_id)?;
             match previous {
                 None if binding.generation == 0 => {}
@@ -255,6 +267,15 @@ impl Store {
             )?;
         }
         append(&tx, summary, "planned", "")?;
+        if let Some(anchor) = initial_generated_pin {
+            append(
+                &tx,
+                summary,
+                "workflow.plan.authority.v1",
+                &serde_json::to_string(&anchor)?,
+            )?;
+        }
+        verify_plan_pin(&tx, summary.workflow.as_ref(), generated)?;
         tx.commit()?;
         Ok(summary.clone())
     }
@@ -1136,6 +1157,63 @@ fn verify_events(db: &Connection) -> Result<()> {
         }
         previous = event.event_hash.clone();
     }
+    // Older schemas have no generated authority. Their legacy records remain
+    // readable; the v7 migration never infers a generated pin from mutable data.
+    if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 7 {
+        verify_authority_pins(db)?;
+    }
+    Ok(())
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PlanAuthorityAnchor {
+    schema_version: u8,
+    instance_id: String,
+    contract_sha256: String,
+    pin: String,
+}
+
+fn verify_authority_pins(db: &Connection) -> Result<()> {
+    let mut anchors = std::collections::BTreeMap::new();
+    let mut query = db.prepare(
+        "SELECT detail FROM events WHERE kind='workflow.plan.authority.v1' ORDER BY sequence",
+    )?;
+    for row in query.query_map([], |r| r.get::<_, String>(0))? {
+        let detail = row?;
+        if detail.len() > 2048 {
+            return Err(RuntimeError::Limit);
+        }
+        let anchor: PlanAuthorityAnchor = serde_json::from_str(&detail)
+            .map_err(|_| RuntimeError::Integrity("workflow plan authority anchor"))?;
+        if anchor.schema_version != 1
+            || anchor.pin == "legacy"
+            || !router_adapter_api::is_digest(&anchor.pin)
+            || !router_adapter_api::is_digest(&anchor.contract_sha256)
+            || anchors.insert(anchor.instance_id.clone(), anchor).is_some()
+        {
+            return Err(RuntimeError::Integrity("workflow plan authority anchor"));
+        }
+    }
+    let mut query = db.prepare("SELECT w.instance_id,w.contract_hash,p.pin FROM workflow_instances w LEFT JOIN workflow_plan_authority p ON p.instance_id=w.instance_id")?;
+    for row in query.query_map([], |r| {
+        Ok((
+            r.get::<_, String>(0)?,
+            r.get::<_, String>(1)?,
+            r.get::<_, Option<String>>(2)?,
+        ))
+    })? {
+        let (instance, contract, pin) = row?;
+        match (pin.as_deref(), anchors.remove(&instance)) {
+            (Some("legacy"), None) => {}
+            (Some(pin), Some(anchor))
+                if pin == anchor.pin && contract == anchor.contract_sha256 => {}
+            _ => return Err(RuntimeError::Integrity("workflow plan authority changed")),
+        }
+    }
+    if !anchors.is_empty() {
+        return Err(RuntimeError::Integrity("workflow plan authority changed"));
+    }
     Ok(())
 }
 
@@ -1187,6 +1265,53 @@ fn workflow_attempts(db: &Connection, run: &RunSummary) -> Result<u32> {
             .ok_or(RuntimeError::Limit)?;
     }
     Ok(attempts)
+}
+
+fn plan_pin(generated: Option<&router_types::GeneratedDecisionBinding>) -> Result<String> {
+    generated.map_or(Ok("legacy".into()), |g| {
+        digest(
+            "runtime-global-plan-pin-v1",
+            &(
+                g.schema_version,
+                &g.instance_id,
+                &g.workflow_plan_id,
+                &g.execution_contract_sha256,
+                &g.input_hash,
+                &g.proposal_hash,
+            ),
+        )
+    })
+}
+fn verify_plan_pin(
+    db: &Connection,
+    workflow: Option<&router_types::WorkflowRunBinding>,
+    generated: Option<&router_types::GeneratedDecisionBinding>,
+) -> Result<()> {
+    let Some(workflow) = workflow else {
+        return if generated.is_none() {
+            Ok(())
+        } else {
+            Err(RuntimeError::Integrity("generated plan missing instance"))
+        };
+    };
+    if generated.is_some_and(|g| {
+        g.instance_id != workflow.instance_id
+            || g.execution_contract_sha256 != workflow.contract_sha256
+    }) {
+        return Err(RuntimeError::Integrity("generated plan instance"));
+    }
+    let pin: Option<String> = db
+        .query_row(
+            "SELECT pin FROM workflow_plan_authority WHERE instance_id=?1",
+            [&workflow.instance_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    verify_events(db)?;
+    if pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
+        return Err(RuntimeError::Integrity("workflow plan authority changed"));
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1612,50 +1737,4 @@ mod tests {
             .writer_lock("two", "/fixture/repo", &["tests".into()])
             .unwrap();
     }
-}
-
-fn plan_pin(generated: Option<&router_types::GeneratedDecisionBinding>) -> Result<String> {
-    generated.map_or(Ok("legacy".into()), |g| {
-        digest(
-            "runtime-global-plan-pin-v1",
-            &(
-                g.schema_version,
-                &g.instance_id,
-                &g.workflow_plan_id,
-                &g.execution_contract_sha256,
-                &g.input_hash,
-                &g.proposal_hash,
-            ),
-        )
-    })
-}
-fn verify_plan_pin(
-    db: &Connection,
-    workflow: Option<&router_types::WorkflowRunBinding>,
-    generated: Option<&router_types::GeneratedDecisionBinding>,
-) -> Result<()> {
-    let Some(workflow) = workflow else {
-        return if generated.is_none() {
-            Ok(())
-        } else {
-            Err(RuntimeError::Integrity("generated plan missing instance"))
-        };
-    };
-    if generated.is_some_and(|g| {
-        g.instance_id != workflow.instance_id
-            || g.execution_contract_sha256 != workflow.contract_sha256
-    }) {
-        return Err(RuntimeError::Integrity("generated plan instance"));
-    }
-    let pin: Option<String> = db
-        .query_row(
-            "SELECT pin FROM workflow_plan_authority WHERE instance_id=?1",
-            [&workflow.instance_id],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
-        return Err(RuntimeError::Integrity("workflow plan authority changed"));
-    }
-    Ok(())
 }

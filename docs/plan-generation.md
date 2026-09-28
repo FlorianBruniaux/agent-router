@@ -7,10 +7,11 @@ specification §6. Its additive schema version 1 preserves existing routing and
 workflow wire formats. The library does not launch a host, load skill bodies or
 change a parent model.
 
-The application must connect this library to preparation and execution before
-R04 is complete. A generated JSON proposal alone is not permission to execute.
-The existing phase asset gates, signed backend activation rules, workflow
-ownership, runtime approval and sandbox checks remain separate requirements.
+The CLI connects generation to preparation and per-node execution through an
+explicit generated-plan document. A generated JSON proposal alone is not
+permission to execute. Phase asset gates, workflow ownership, runtime approval
+and sandbox checks remain separate requirements. Generated decisions and signed
+semantic backend decisions cannot be composed in the same execution definition.
 
 ## Inputs and compatibility
 
@@ -160,3 +161,57 @@ class weights, stale/future signals, diversity, global work exhaustion, bounded
 serialization, strict schemas, proposal tampering, exact execution bindings and
 expiration between planning and execution. All fixture host evidence and history
 are explicitly synthetic; no model, network call or real cache is involved.
+
+
+## CLI and durable workflow binding
+
+`generate-plan --manifest generation.json --json` writes a report with its exact
+input manifest identity, source digest and planning timestamp. A preparation
+manifest can name that document with `generated_plan`, alongside the workflow
+contract and node generation. `prepare --manifest prepare.json
+--output-directory bundle --json` reconstructs the whole report, including the
+unselected nodes, validates freshness and writes a private reviewable bundle.
+It does not approve or start a worker. The subsequent `run --definition
+bundle/definition.json --store /absolute/private/store --sandbox sandbox.json
+--json` returns the exact approval digest. Repeating it with `--approve DIGEST`
+requires the same generated document, manifest sources, v3 asset authority,
+workflow contract, request and sandbox configuration.
+
+The generated decision ID binds the retained global proposal and exact node
+selection. It occupies the runtime receipt identity; the deterministic baseline
+receipt remains separately inspectable. The runtime pins the global proposal
+for the workflow instance, so another node cannot mix a legacy decision or a
+different retained proposal into the same instance. The initial generated pin,
+instance and contract are recorded in `workflow.plan.authority.v1` within the
+registration transaction. Registration, dispatch and reopening compare the
+mutable lookup table against that event and the event hash chain. Removing a
+pin or replacing it with another valid proposal's pin is rejected. This is local
+consistency evidence, not protection against an actor able to rewrite the whole
+database and recompute its history.
+
+The SQLite v6-to-v7 migration preserves existing runs, events and contracts and
+marks existing instances `legacy`. It runs transactionally and reopening is
+idempotent. A generated v7 pin without its original authority event is refused;
+it is never promoted from an unanchored lookup value. Expired proposals remain
+readable for history, but cannot start another attempt.
+
+The runtime `generated` suite exercises actual SQLite migration and rollback,
+reopening, unchanged history, mixed decisions, missing and substituted pins,
+source/scope/capability changes and expiry before dispatch. The CLI `generation`
+suite checks report recomputation, changed manifests and unselected-node inputs,
+preparation boundaries and refusal to publish a bundle after invalid evidence.
+
+An explicitly ignored native canary,
+`native_generated_plan_prepare_approve_and_execute_preserves_v3_authority`, uses
+a fake Claude protocol under the real OS sandbox. It generates and prepares a
+complete two-node assignment, then approves and executes only its execution
+node. Its phase baseline chooses `primary` (`fixture-best`), while the global
+compatibility constraint selects `secondary` (`fixture-second`) for execution.
+The fake host requires the explicit model and effort flags and writes their
+received values into the isolated worktree. Assertions cover those exact
+arguments, the generated decision identity, refusal without v3 authority, exact
+retained output and writes confined to that worktree. Its
+availability and model metadata are synthetic. Transport completion leaves task
+validation and objective success UNKNOWN; it does not prove live provider
+availability or an entire verified workflow. The Linux native workflow invokes
+this canary explicitly instead of treating an ignored test as a passing check.

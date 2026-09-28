@@ -31,14 +31,26 @@ Les évolutions suivantes le complètent :
   Aucun fournisseur d'embeddings n'est encore exécuté, et P1 reste ouvert.
 - **R13 partiel** : classification native des pannes implémentée et soumise à
   revue ; l'exécution de validations structurées reste à faire.
+- **R12 partiel** : le code livré sur `5525b12` regroupe déjà le quota local
+  par provider issu des exigences d'assets validées ; les identités inconnues
+  partagent un groupe conservateur. L'équité entre workflows et les quotas
+  partagés entre instances restent à faire. Le constat de table ci-dessous
+  sur une clé par host est historique.
 - **R16 partiel** : rendu humain des commandes produit, avec conservation des
-  résultats JSON et digests d'approbation. L'entrée guidée et les formats de
-  configuration supplémentaires restent à faire.
+  résultats JSON et digests d'approbation. La reprise du 28 septembre ajoute
+  JSON/TOML/YAML stricts pour `config --layers` avec 16 tests dans chaque mode
+  de compilation CLI. L'entrée guidée et les autres manifests restent séparés.
 - **R05, bibliothèque revue** : journal de tentatives réelles, bornes comptables
   explicitement approuvées, choix alternatif et réservation unique implémentés.
   Le raccord CLI et la validation Linux de cette livraison restent à vérifier.
-- **R04 et R06 en développement** : leurs modifications locales ne sont pas
-  une livraison et ne ferment aucune acceptation dans ce document.
+- **R04, reprise du 28 septembre** : génération bornée, liaison CLI à la
+  préparation et aux décisions effectives, migration v6→v7, ancre du plan dans
+  le journal et refus de substitution revus. La preuve native et la livraison
+  distante doivent accompagner la PR ; ce constat local ne clôt pas le lot.
+- **R06, bibliothèque revue** : manifestes communs signés, hosts/presets,
+  références de prompts et projections vérifiés par 42 tests catalogue.
+  Le raccord du catalogue actif au dispatch et l'invalidation durable restent
+  à livrer ; une signature valide ne crée pas l'autorité d'exécuter.
 
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
@@ -67,6 +79,32 @@ Chaque ligne donne la source de l'exigence, le constat dans le code et une condi
 | R21 | **T/E**, technique §18 release | `scripts/package-core.py` distribue et vérifie les **sources** core/intégrations. `docs/distribution.md` distingue intégrité et signature ; aucun workflow Homebrew ou signature d'archives/binaires. | Release candidate reproductible, signature vérifiable avec clé externe protégée, archives/checksums/notices par plateforme et formule Homebrew testée sur archive locale. Publication séparée après P3 ; aucune activation de host à l'installation. |
 | R22 | **E**, NFR-007 et technique §18 | Runtime/doctor/sandbox utilisent les primitives Unix ; `router-doctor/src/files.rs` retourne Unsupported hors Unix. Pas de cible Windows dans CI. | Contrats Windows de permissions privées, process tree/job, confinement et paths ; mêmes suites host/runtime et reprise sur runner Windows, refus explicites des capacités non garanties. |
 | R23 | **E**, technique phase 7 | Pas de TUI/web locale, catalogue de packs signés, marketplace ou importers dans le workspace et la CLI. | Une surface locale TUI **ou** web sur contrats stabilisés, revue/approbation visible ; packs/importers versionnés et signés, provenance/licence/quarantaine, import idempotent et rollback. Aucun téléchargement/activation silencieux ; UI web applique les protections de §16. |
+
+## Compléments Omnigent, 2026-09-28
+
+La [comparaison et ses sources](omnigent-comparison.md) ajoutent six acceptations
+aux lots existants, sans remplacer le périmètre R01–R23 ni les gates P1–P6 :
+
+- **O1, R11/R19** : traduction stricte de l'API de routage externe Omnigent,
+  puis endpoint local opt-in. Un refus ne vaut pas blocage natif tant que le
+  repli Omnigent vers le harness par défaut n'est pas maîtrisé.
+- **O2, R04/R09/R13** : revue par fournisseur distinct avec identité prouvée et
+  comportement explicite si aucun reviewer indépendant n'est disponible.
+- **O3, R10/R12** : compteurs de budget et seuils cumulatifs par session,
+  persistants et partagés entre instances ; restrictions monotones conservées.
+- **O4, R08/R10** : broker de credentials sans secret dans le processus enfant,
+  testé sur serveur local et destination bornée avant toute activation.
+- **O5, R19/R23** : reprise/fork locaux et contrôle humain visible ; nouveau
+  contexte d'autorité, sans copie d'approbation exécutable depuis le parent.
+- **O6, R06/R09/R23** : registre d'adaptateurs versionnés et signés, découverte
+  inerte, noms réservés, installation réversible et preuve native séparée.
+
+O1 possède une traduction hors ligne revue, avec dix tests de contrat ;
+l'endpoint et la preuve côté Omnigent restent à livrer. Les autres points sont
+planifiés. La documentation d'un autre produit n'est pas une preuve de livraison
+dans ce dépôt. Les critères de test sont définis dans la comparaison ; aucune
+installation Omnigent ni autorisation globale n'est requise pour leur première
+validation locale.
 
 ## Ordre et dépendances
 

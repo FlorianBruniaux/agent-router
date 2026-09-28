@@ -93,6 +93,10 @@ establishes them. Such a snapshot cannot authorize an execution effort.
 
 ## Shared checks
 
+The [Omnigent routing translation](omnigent.md) is a separate offline contract
+for recommending an offered model/harness pair. It uses the local phase policy,
+does not execute requests, and cannot enforce Omnigent's downstream fallback.
+
 `cargo test -p adapter-claude -p adapter-codex -p router-adapter-api --locked`
 runs shared acceptance and rejection cases for both adapters. Fixtures in
 `crates/adapter-claude/tests/fixtures` are synthetic and contain no live provider

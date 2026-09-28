@@ -112,8 +112,11 @@ still require clarification, and classification grants no permissions.
 
 Product commands expose a bounded human rendering of the same versioned result
 as `--json`. Approval digests and operation exit codes are preserved, including
-when an oversized display is shortened. Guided task input and additional
-configuration formats remain separate work.
+when an oversized display is shortened. The September 28 continuation adds
+strict JSON, TOML and YAML input for `config --layers`; 16 CLI tests exercise
+valid files, equivalent semantics and adversarial syntax in both default-host
+and core-only builds. Guided task input and other manifest formats remain
+separate work. See [configuration formats](configuration-formats.md).
 
 Native failure classification uses bounded typed host events, with unsupported,
 conflicting or incomplete evidence falling back to the generic failure. Timeout,
@@ -134,6 +137,29 @@ canaries using synthetic workers. The canaries include the v3 asset gate and a
 regression refusing writing failures even after their worktrees are discarded.
 This library delivery does not yet expose the escalation lifecycle in the CLI;
 the native Linux gate is included for remote validation.
+
+## Resumed planning, catalogs and Omnigent work
+
+The September 28 continuation validates the paused checkpoint's bounded global
+plan generator and connects its retained proposal to CLI preparation and runtime
+decisions. The initial proposal is pinned transactionally to the workflow event
+history. Eight runtime regression tests cover migration, restart, altered or
+missing pins, source/scope changes and expiry. The record is a consistency check,
+not a signature protecting a database whose entire history can be rewritten.
+See [plan generation](plan-generation.md) for the native execution evidence.
+
+Signed catalog validation now covers common provenance, author, license and
+validity fields, hosts and presets, and exact prompt references. The 42 catalog
+tests include a correction for payload hosts outside a prompt's signed
+requirements. Active catalog state and dispatch-time invalidation remain a
+separate integration. See [signed catalogs](signed-catalogs.md).
+
+The [Omnigent comparison](omnigent-comparison.md) extends existing roadmap lots
+with six documented ideas. The first implementation is a strict, offline routing
+translation with ten tests and independent review. It only recommends a pair
+that Omnigent offered and the local router validates. It starts no session and
+does not enforce Omnigent's fallback behavior; an HTTP endpoint and native
+integration evidence remain open. See [the bridge contract](../integrations/omnigent.md).
 
 ## Acceptance that automated implementation cannot manufacture
 

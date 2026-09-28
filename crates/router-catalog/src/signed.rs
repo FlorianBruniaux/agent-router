@@ -79,6 +79,8 @@ pub struct SignedAssetRestrictions {
 #[serde(deny_unknown_fields)]
 pub struct SignedPromptDefinition {
     pub variables: BTreeMap<String, PromptVariableType>,
+    /// Harness IDs, not catalog asset IDs or host@version strings. This may
+    /// narrow the entry's exact host/version requirements, never expand them.
     pub compatible_hosts: BTreeSet<String>,
     pub compatible_models: BTreeSet<ModelId>,
     pub max_rendered_bytes: usize,
@@ -932,6 +934,22 @@ pub fn seal_signed_manifest(mut manifest: SignedCatalogManifest) -> Result<Signe
                 return Err(SignedCatalogError::Invalid);
             }
         }
+        if let SignedAssetPayload::Prompt(prompt) = &entry.payload {
+            // Exact version pins above resolve against Host definitions. A
+            // template's unversioned harness list is only a further restriction;
+            // a matching Host asset elsewhere cannot grant an unpinned harness.
+            if prompt.compatible_hosts.iter().any(|harness| {
+                !entry
+                    .requirements
+                    .compatible_hosts
+                    .iter()
+                    .any(|required| required.harness.as_str() == harness)
+            }) {
+                return Err(SignedCatalogError::Invalid);
+            }
+        }
+        // Models resolve by Model payload ID, never by a similarly named asset
+        // of another kind. These declarations provide no runtime availability.
         let references = match &entry.payload {
             SignedAssetPayload::Host(value) => Some(&value.compatible_models),
             SignedAssetPayload::Prompt(value) => Some(&value.compatible_models),

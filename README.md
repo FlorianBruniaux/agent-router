@@ -54,8 +54,9 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Explainable routing** | Select a model and effort for plan, execute and verify; inspect exclusions and missing evidence. | `route`, `route-phase`, `explain` |
 | **Host evidence** | Read supported local host evidence and keep unknown capabilities explicit. | `inspect`, [contracts](docs/reference/json-contracts.md) |
 | **Catalogs and search** | Search five asset families with BM25, contextual signals, deterministic rank fusion and checked incremental updates. | `catalog`, `index`, `search`, `refresh`, [retrieval](docs/retrieval.md) |
-| **Workflow planning** | Apply an explainable risk floor, clarify missing facts and build one of eight presets with budgets and dependencies. | `normalize`, `plan`, `workflow`, [risk rules](docs/risk-classification.md) |
+| **Workflow planning** | Apply a risk floor, clarify missing facts and build one of eight presets, then rank bounded global assignments under cumulative budgets. | `normalize`, `plan`, `workflow`, `generate-plan`, [plan generation](docs/plan-generation.md) |
 | **Human and JSON output** | Read decisions and approvals in the terminal, or preserve full versioned results for scripts with `--json`. | [CLI output](docs/cli-output.md) |
+| **Layered configuration** | Load strict JSON, TOML or YAML configuration layers while preserving restrictive precedence. | `config --layers`, [formats](docs/configuration-formats.md) |
 | **Review before execution** | Prepare a request, bind selected assets and approve the exact execution digest. | `assets`, `prepare`, `run`, [execution](docs/cli-execution.md) |
 | **Durable execution** | Track runs, cancel work, recover interrupted attempts and isolate writes in Git worktrees. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
 | **Coordinated workflows** | Run approved waves, pass declared artifacts and require verification before integration. | `coordinate`, [coordination](docs/coordinator.md) |
@@ -167,6 +168,7 @@ Later workflow steps receive only declared, bounded artifacts.
 | **Claude Code** | CLI adapter and explicit native-stream inspection. Missing model or effort evidence remains unknown. |
 | **OpenCode / Copilot** | Optional CLI adapters with approved configuration and isolated version probes. Protocol fixtures and fake-host sandbox canaries are tested; native installations and providers remain unverified. [Setup and limits](docs/other-hosts.md). |
 | **Other hosts** | Integration descriptors and synthetic conformance fixtures are available. [Integration status](integrations/additional-hosts.md) records remaining native proof. |
+| **Omnigent** | Offline routing translation with strict offered-pair and local eligibility checks. No HTTP endpoint or native session integration yet. [Contract and limits](integrations/omnigent.md). |
 | **macOS** | Seatbelt supervisor and real local sandbox/recovery canaries. Process-group cleanup does not establish containment of detached descendants. |
 | **Linux** | Bubblewrap supervisor with PID namespace cleanup, exercised by [native runtime CI](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
 | **Windows** | Native execution is not implemented. |
@@ -182,7 +184,9 @@ an existing parent conversation.
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
 | [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |
 | [Coordinate a workflow](docs/coordinator.md) | [JSON contracts](docs/reference/json-contracts.md) |
+| [Generate bounded plans](docs/plan-generation.md) | [Durable escalation library](docs/escalation.md) |
 | [Search catalogs](docs/retrieval.md) | [Routing architecture](docs/adr/0002-bounded-routing-pipeline.md) |
+| [Validate signed catalogs](docs/signed-catalogs.md) | [Omnigent comparison and roadmap](docs/omnigent-comparison.md) |
 | [Evaluate decisions](docs/evaluation.md) | [Private feedback and offline policy](docs/feedback.md) |
 | [Execute signed backend decisions](docs/backend-execution.md) | [Activation and rollback](docs/backend-store.md) |
 | [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |

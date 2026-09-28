@@ -8,13 +8,15 @@ use router_policy::{PhaseRouter, ValidatedPhaseContext};
 use router_runtime::*;
 use router_types::*;
 use router_workflow::{PlanLimits, build_plan};
+#[cfg(target_os = "linux")]
+use std::path::Path;
 use std::{
     collections::BTreeMap,
     fs,
-    path::Path,
     process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
+
 struct Fixture {
     temp: tempfile::TempDir,
     router: PhaseRouter,
@@ -339,9 +341,17 @@ fn account(runtime: &Runtime, pending: &PendingRun, amount: u64) {
 }
 async fn native_supervisor(fixture: &Fixture) -> ResourceSupervisor<impl SandboxSupervisor> {
     let test_binary = std::env::current_exe().unwrap();
-    let helper = fs::canonicalize(test_binary.parent().unwrap().parent().unwrap().join(
-        format!("router-sandbox-helper{}", std::env::consts::EXE_SUFFIX),
-    ))
+    let helper = fs::canonicalize(
+        test_binary
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join(format!(
+                "router-sandbox-helper{}",
+                std::env::consts::EXE_SUFFIX
+            )),
+    )
     .unwrap();
     let root = fs::canonicalize(fixture.temp.path()).unwrap();
     let programs = BTreeMap::from([("/bin/sh".into(), fs::canonicalize("/bin/sh").unwrap())]);
