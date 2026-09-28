@@ -1,5 +1,8 @@
 # Core and integration source distributions
 
+The separate local native binary export, including its build proof, limits and
+reproduction steps, is documented in [binary-distribution.md](binary-distribution.md).
+
 `scripts/package-core.py` exports the Rust workspace sources, a file integrity
 manifest, an SPDX 2.3 SBOM, a license inventory and dependency notices. It uses
 Python 3.11 or newer as release tooling. The Rust library and CLI do not invoke
