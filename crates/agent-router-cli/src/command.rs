@@ -33,6 +33,13 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Configure and inspect an explicitly shared concurrency domain.
+    Admission {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: crate::admission::Command,
+    },
     /// Review accounting bounds and propose durable attempt-based escalation.
     Escalation {
         #[arg(long, global = true)]
@@ -633,6 +640,7 @@ impl Commands {
         let (json, title) = match self {
             Self::GeneratePlan { json, .. } => (json, "Generated plan"),
             Self::Escalation { json, .. } => (json, "Escalation"),
+            Self::Admission { json, .. } => (json, "Shared admission"),
             Self::BackendActivation { json, .. } => (json, "Backend activation"),
             Self::Coordinate { json, .. } => (json, "Workflow coordination"),
             Self::Prepare { json, .. } => (json, "Prepared execution"),

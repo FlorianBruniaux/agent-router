@@ -26,6 +26,8 @@ const DOCUMENT_LIMIT: usize = 4 * 1024 * 1024;
 pub(crate) struct Definition {
     schema_version: u32,
     pub(crate) run_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) admission: Option<router_types::AdmissionConfig>,
     context: PathBuf,
     host_snapshot: PathBuf,
     catalog: PathBuf,
@@ -153,6 +155,9 @@ pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     }
     let absolute = std::fs::canonicalize(path).map_err(|_| CliError::RequestRead)?;
     let base = absolute.parent().ok_or(CliError::RequestRead)?;
+    if let Some(config) = &mut value.admission {
+        crate::admission::resolve(config, base)?;
+    }
     value.context = resolve(base, value.context);
     value.host_snapshot = resolve(base, value.host_snapshot);
     value.catalog = resolve(base, value.catalog);
@@ -326,7 +331,7 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     if let Some(proposal) = &proposal {
         proposal.validate_store(store)?;
     }
-    let runtime = Runtime::open(
+    let runtime = crate::admission::open(
         store,
         RuntimeLimits {
             max_attempts: proposal
@@ -335,6 +340,7 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
             output_retention: existing.output_retention,
             ..RuntimeLimits::default()
         },
+        definition.admission.as_ref(),
     )
     .map_err(error)?;
     let (pending, _) = reopen_in(&runtime, definition, proposal.as_ref())?;
@@ -625,7 +631,7 @@ pub(crate) fn run(
             proposal.validate_store(store)?;
         }
         let open_runtime = || {
-            Runtime::open(
+            crate::admission::open(
                 store,
                 RuntimeLimits {
                     max_attempts: proposal
@@ -634,6 +640,7 @@ pub(crate) fn run(
                     output_retention: config.output_retention,
                     ..RuntimeLimits::default()
                 },
+                definition.admission.as_ref(),
             )
             .map_err(error)
         };

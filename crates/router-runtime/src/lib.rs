@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 //! Durable, approval-bound supervision. JSON receipts are never authority.
+mod admission;
 mod artifact_storage;
 mod artifacts;
 mod bubblewrap;
@@ -15,6 +16,7 @@ mod sandbox;
 mod store;
 mod workflow;
 mod workspace;
+pub use admission::{AdmissionStore, admission_policy_hash, admission_runtime_root_hash};
 pub use bubblewrap::BubblewrapSandbox;
 pub use error::{Result, RuntimeError};
 pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
@@ -68,6 +70,7 @@ impl Default for RuntimeLimits {
 }
 pub struct Runtime {
     store: Store,
+    admission: Option<admission::SharedAdmission>,
     output_store: outputs::OutputStorage,
     artifact_store: artifact_storage::ArtifactStorage,
     limits: RuntimeLimits,
@@ -114,6 +117,20 @@ impl ApprovedRun {
 
 impl Runtime {
     pub fn open(root: &Path, limits: RuntimeLimits) -> Result<Self> {
+        Self::open_configured(root, limits, None)
+    }
+    pub fn open_with_admission(
+        root: &Path,
+        limits: RuntimeLimits,
+        config: &AdmissionConfig,
+    ) -> Result<Self> {
+        Self::open_configured(root, limits, Some(config))
+    }
+    fn open_configured(
+        root: &Path,
+        limits: RuntimeLimits,
+        config: Option<&AdmissionConfig>,
+    ) -> Result<Self> {
         if limits.global_concurrency == 0
             || limits.global_concurrency > 32
             || limits.provider_concurrency == 0
@@ -130,9 +147,17 @@ impl Runtime {
             return Err(RuntimeError::Limit);
         }
         let store = Store::open(root)?;
+        let admission = config
+            .map(|c| admission::SharedAdmission::open(c, &store.root))
+            .transpose()?;
+        store.bind_admission(admission.as_ref().map(|a| a.binding()))?;
+        if let Some(a) = &admission {
+            a.recover(&store)?;
+        }
         let output_store = outputs::OutputStorage::open(&store.root)?;
         Ok(Self {
             store,
+            admission,
             output_store,
             artifact_store: artifact_storage::ArtifactStorage::open(root)?,
             global: Arc::new(Semaphore::new(limits.global_concurrency)),
@@ -141,6 +166,9 @@ impl Runtime {
             agents: Mutex::new(BTreeMap::new()),
             plans: Mutex::new(BTreeMap::new()),
         })
+    }
+    pub fn admission_binding(&self) -> Option<&AdmissionBinding> {
+        self.admission.as_ref().map(|a| a.binding())
     }
     pub fn storage_root(&self) -> &Path {
         &self.store.root
@@ -224,6 +252,27 @@ impl Runtime {
         escalation: Option<&EscalationDecisionBinding>,
         generated: Option<&GeneratedDecisionBinding>,
     ) -> Result<String> {
+        if let Some(admission) = &self.admission {
+            return digest(
+                "runtime-definition-v8-admission",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    workflow,
+                    artifacts,
+                    decision,
+                    escalation,
+                    generated,
+                    admission.binding(),
+                    self.limits.global_concurrency,
+                    self.limits.provider_concurrency,
+                    self.limits.agent_concurrency,
+                ),
+            );
+        }
         if let Some(binding) = generated {
             return digest(
                 "runtime-definition-v7-generated",
@@ -483,6 +532,9 @@ impl Runtime {
         let mut check = request.clone();
         check.mode = ExecutionMode::DryRun;
         authorize_execution(check, &snapshot, &context.request().restrictions, None)?;
+        if let Some(shared) = &self.admission {
+            shared.validate_request(context, &request, &node.owner)?;
+        }
         let definition_hash = self.definition_hash(
             &request,
             &receipt,
@@ -540,6 +592,9 @@ impl Runtime {
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
         };
+        if let Some(shared) = &self.admission {
+            shared.validate(&pending)?;
+        }
         self.claim_escalation(&pending)?;
         Ok(pending)
     }
@@ -708,6 +763,9 @@ impl Runtime {
             &request,
             false,
         )?;
+        if let Some(shared) = &self.admission {
+            shared.validate_request(context, &request, &node.owner)?;
+        }
         let definition_hash = self.definition_hash(
             &request,
             &receipt,
@@ -788,6 +846,47 @@ impl Runtime {
         cancel: Cancellation,
         authority: Option<&dyn ActivationAuthority>,
     ) -> Result<RunCompletion> {
+        if let Some(shared) = &self.admission {
+            if !supervisor.parent_lifetime_enforced() {
+                return Err(RuntimeError::Sandbox);
+            }
+            self.store.require_cleanup_complete()?;
+            self.validate_pending_retention(&approved.pending)?;
+            self.wait_dependencies(&approved.pending, &cancel).await?;
+            let ticket = shared.start(&self.store, &approved.pending, &self.limits)?;
+            let result = match shared.wait(&self.store, &ticket, &cancel).await {
+                Ok(()) => {
+                    self.execute_decision_inner(approved, adapter, supervisor, cancel, authority)
+                        .await
+                }
+                Err(RuntimeError::Cancelled) => {
+                    match self.store.transition_queued(
+                        &ticket.run_id,
+                        RunState::Cancelled,
+                        "cancelled_while_admission_queued",
+                        None,
+                    ) {
+                        Ok(_) | Err(RuntimeError::Cancelled) => Err(RuntimeError::Cancelled),
+                        Err(error) => Err(error),
+                    }
+                }
+                Err(e) => Err(e),
+            };
+            shared.release(&self.store, &ticket)?;
+            result
+        } else {
+            self.execute_decision_inner(approved, adapter, supervisor, cancel, authority)
+                .await
+        }
+    }
+    async fn execute_decision_inner(
+        &self,
+        approved: ApprovedRun,
+        adapter: &dyn HarnessAdapter,
+        supervisor: &dyn SandboxSupervisor,
+        cancel: Cancellation,
+        authority: Option<&dyn ActivationAuthority>,
+    ) -> Result<RunCompletion> {
         // Routing proof is not current catalog execution authority. Keep all
         // legacy execution entrances closed until a combined dispatch guard is
         // acquired and retained through spawn by the signed-catalog integration.
@@ -808,7 +907,11 @@ impl Runtime {
             return Err(RuntimeError::Transition);
         }
         self.wait_dependencies(&pending, &cancel).await?;
-        let acquired = self.acquire(&pending, &cancel).await;
+        let acquired = if self.admission.is_some() {
+            Ok(Vec::new())
+        } else {
+            self.acquire(&pending, &cancel).await
+        };
         let _permits = match acquired {
             Ok(p) => p,
             Err(RuntimeError::Cancelled) => {
@@ -1376,8 +1479,13 @@ impl Runtime {
         Ok((run, command))
     }
     async fn capture_artifact(&self, pending: &PendingRun, path: &Path) -> Result<()> {
-        let (bytes, _) =
-            workspace::patch(path, &pending.request.scope, &pending.request.source_state).await?;
+        let (bytes, _) = workspace::patch_observed(
+            path,
+            &pending.request.scope,
+            &pending.request.source_state,
+            Some(&self.store.finalization(&pending.run.run_id)),
+        )
+        .await?;
         workspace::write_artifact(&self.store.root, &pending.run.run_id, &bytes)?;
         self.store
             .artifact(&pending.run.run_id, &content_digest(&bytes))
