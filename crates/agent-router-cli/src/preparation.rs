@@ -22,6 +22,7 @@ struct Manifest {
     asset_authority: Option<PathBuf>,
     backend_decision: Option<PathBuf>,
     generated_plan: Option<PathBuf>,
+    escalation_decision: Option<PathBuf>,
     plan: PathBuf,
     node_id: String,
     metadata: PathBuf,
@@ -135,7 +136,10 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             .route(&context)
             .map_err(|_| CliError::Product("prepare.route.invalid"))?
     };
-    if manifest.backend_decision.is_none() && manifest.generated_plan.is_none() {
+    if manifest.backend_decision.is_none()
+        && manifest.generated_plan.is_none()
+        && manifest.escalation_decision.is_none()
+    {
         router
             .validate_receipt(&context, &receipt)
             .map_err(|_| CliError::Product("prepare.receipt.invalid_or_abstained"))?;
@@ -153,9 +157,26 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         .generated_plan
         .as_ref()
         .map(|path| resolve(base, path.clone()));
+    let escalation_path = manifest
+        .escalation_decision
+        .as_ref()
+        .map(|path| resolve(base, path.clone()));
+    if escalation_path.is_some() && (backend_path.is_some() || generated_path.is_some()) {
+        return Err(CliError::Product("escalation.composition.denied"));
+    }
+    let proposal = escalation_path
+        .as_deref()
+        .map(crate::escalation::LoadedProposal::read)
+        .transpose()?;
+    let runtime = proposal
+        .as_ref()
+        .map(crate::escalation::LoadedProposal::open_runtime)
+        .transpose()?;
     let loaded = crate::generation::load_decision(
         backend_path.as_deref(),
         generated_path.as_deref(),
+        proposal.as_ref(),
+        runtime.as_ref(),
         &manifest.node_id,
         &router,
         &context,
@@ -192,6 +213,20 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         &loaded.decision,
     )
     .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
+    if let Some(runtime) = &runtime {
+        runtime
+            .validate_escalation_preparation(
+                &router,
+                &context,
+                &loaded.decision,
+                prepared.request(),
+                &plan,
+                &manifest.node_id,
+                &manifest.run_id,
+                workflow.as_ref().zip(manifest.generation),
+            )
+            .map_err(execution::error)?;
+    }
     if let Some(directory) = output {
         use std::os::unix::fs::DirBuilderExt;
         let (catalog, _) =
@@ -227,6 +262,10 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         }
         if let Some(path) = &generated_path {
             definition["generated_plan"] =
+                serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
+        }
+        if let Some(path) = &escalation_path {
+            definition["escalation_decision"] =
                 serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);
         }
         let mut files = vec![
