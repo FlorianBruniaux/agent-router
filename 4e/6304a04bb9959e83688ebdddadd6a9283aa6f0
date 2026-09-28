@@ -1,0 +1,25 @@
+docs/binary-distribution.md
+  s_86ed8bd547d4f8::t_a4609bc4b04818 1-107
+docs/distribution.md
+  s_86ed8bd547d4f8::t_6fbe20b50c6838 3-5
+scripts/package-binary.py
+  s_86ed8bd547d4f8::t_7eeb9791a9ec03 1-594
+scripts/test-package-binary.py
+  s_86ed8bd547d4f8::t_a8ab51c96fe285 1-288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4e6304a04bb9959e83688ebdddadd6a9283aa6f0",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
