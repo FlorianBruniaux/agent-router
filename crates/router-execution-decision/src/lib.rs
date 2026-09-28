@@ -56,8 +56,8 @@ enum Source {
         proof: Box<ValidatedGeneratedPlan>,
         binding: Box<GeneratedDecisionBinding>,
     },
-    Deterministic(ValidatedPhaseReceipt),
-    Activated(ActivatedBackendDecision),
+    Deterministic(Box<ValidatedPhaseReceipt>),
+    Activated(Box<ActivatedBackendDecision>),
     Escalated {
         baseline: PhaseReceipt,
         binding: Box<EscalationDecisionBinding>,
@@ -182,7 +182,7 @@ impl ExecutionDecision {
             .map_err(|_| DecisionError::Context)?;
         Ok(Self {
             selection: proof.selection().clone(),
-            source: Source::Deterministic(proof),
+            source: Source::Deterministic(Box::new(proof)),
             binding: None,
         })
     }
@@ -221,7 +221,7 @@ impl ExecutionDecision {
         binding.decision_id = hash("agent-router:execution-decision:v1", &binding)?;
         Ok(Self {
             selection: selected.clone(),
-            source: Source::Activated(proof.clone()),
+            source: Source::Activated(Box::new(proof.clone())),
             binding: Some(binding),
         })
     }
