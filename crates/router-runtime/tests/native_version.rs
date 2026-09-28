@@ -260,6 +260,126 @@ async fn version_bytes_without_cleanup_evidence_never_count_as_a_probe() {
     ));
 }
 
+struct DelayedOutputPeer {
+    root: PathBuf,
+    clean: bool,
+    overflow: bool,
+}
+impl SandboxSupervisor for DelayedOutputPeer {
+    fn resource_limits_enforced(&self) -> bool {
+        true
+    }
+    fn parent_lifetime_enforced(&self) -> bool {
+        true
+    }
+    fn command(&self, _: &PreparedRun, _: &SandboxPolicy) -> Result<tokio::process::Command> {
+        // Test-only protocol peer, not an OS sandbox or native cleanup proof.
+        // The leader exits first. Its stream holder closes only when released,
+        // so the test can cancel after capture has reaped the leader.
+        let mut command = tokio::process::Command::new("/bin/sh");
+        command
+            .args([
+                "-c",
+                r#"
+printf '%s' "$$" > leader
+(
+    attempts=0
+    while [ ! -f release ] && [ "$attempts" -lt 500 ]; do
+        /bin/sleep 0.01
+        attempts=$((attempts + 1))
+    done
+    printf 'router-runtime-lease-v1:%s\n' "$FIXTURE_CLEANUP" > "$ROUTER_RUNTIME_LEASE"
+    if [ "$FIXTURE_OVERFLOW" = yes ]; then printf '%8193s' ''; fi
+) &
+exit 17
+"#,
+            ])
+            .env_clear()
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1")
+            .env(
+                "FIXTURE_CLEANUP",
+                if self.clean { "group-clean" } else { "active" },
+            )
+            .env("FIXTURE_OVERFLOW", if self.overflow { "yes" } else { "no" })
+            .current_dir(&self.root);
+        Ok(command)
+    }
+}
+
+#[tokio::test]
+async fn cancellation_after_leader_reap_is_preserved_after_output_collection() {
+    assert!(matches!(
+        late_cancellation(true, false).await,
+        RuntimeError::Cancelled
+    ));
+}
+
+#[tokio::test]
+async fn late_probe_cancellation_does_not_mask_unknown_cleanup() {
+    assert!(matches!(
+        late_cancellation(false, false).await,
+        RuntimeError::CleanupUnknown
+    ));
+}
+
+#[tokio::test]
+async fn late_probe_cancellation_does_not_mask_output_overflow() {
+    assert!(matches!(
+        late_cancellation(true, true).await,
+        RuntimeError::Limit
+    ));
+}
+
+async fn late_cancellation(clean: bool, overflow: bool) -> RuntimeError {
+    use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
+    let temp = private_dir();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let supervisor = DelayedOutputPeer {
+        root: root.clone(),
+        clean,
+        overflow,
+    };
+    let cancel = Cancellation::default();
+    let request = prepared(&root);
+    let probe = probe_native_version(&supervisor, &request, &root, &cancel);
+    let (result, ()) = tokio::join!(probe, async {
+        let reaped = tokio::time::timeout(Duration::from_secs(4), async {
+            loop {
+                let pid = fs::read_to_string(root.join("leader"))
+                    .ok()
+                    .and_then(|value| value.parse::<i32>().ok())
+                    .and_then(Pid::from_raw);
+                if let Some(pid) = pid {
+                    if matches!(
+                        waitid(
+                            WaitId::Pid(pid),
+                            WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT
+                        ),
+                        Err(rustix::io::Errno::CHILD)
+                    ) {
+                        break;
+                    }
+                }
+                tokio::time::sleep(Duration::from_millis(1)).await;
+            }
+        })
+        .await;
+        cancel.cancel();
+        fs::write(root.join("release"), []).unwrap();
+        assert!(
+            reaped.is_ok(),
+            "capture must reap the leader before cancellation"
+        );
+    });
+    assert_eq!(
+        probe_lease_status(&root),
+        if clean { "group_clean" } else { "active" }
+    );
+    result
+        .err()
+        .expect("a cancelled probe must never return a version")
+}
+
 async fn native_supervisor(root: &Path, script: &str) -> Box<dyn SandboxSupervisor> {
     let program = root.join("fake-version-host");
     fs::write(&program, format!("#!/bin/sh\n{script}\n")).unwrap();

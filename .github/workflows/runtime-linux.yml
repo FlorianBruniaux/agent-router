@@ -43,6 +43,8 @@ jobs:
         run: cargo test -p router-coordinator --test workflow native_sandbox_plan_execute_verify_handoff --locked -- --ignored --exact --nocapture
       - name: Require runtime recovery after supervisor SIGKILL
         run: cargo test -p router-runtime --test runtime native_supervisor_sigkill_recovery_waits_for_cleanup_proof --locked -- --ignored --exact --nocapture
+      - name: Require preparation recovery to retain authority until probe cleanup
+        run: cargo test -p router-runtime --test runtime native_version_probe_sigkill_recovery_requires_its_bound_lease --locked -- --ignored --exact --nocapture
       - name: Require public coordinator approval and integration lifecycle
         run: cargo test -p agent-router-cli --test coordinator native_coordinator_cli_run_verify_service_apply_and_purge --locked -- --ignored --exact --nocapture
       - name: Require signed semantic selection under the native sandbox
