@@ -1,0 +1,62 @@
+crates/router-runtime/Cargo.toml
+  s_86ed8bd547d4f8::t_40bec8b7aa0883 25
+crates/router-runtime/tests/signed_catalog.rs
+  s_86ed8bd547d4f8::t_40bec8b7aa0883 4-5,10,161-183
+  s_86ed8bd547d4f8::t_6643862407bea5 184-190
+crates/router-prepare/tests/support/signed_clock.rs
+  s_86ed8bd547d4f8::t_c164cf995d07d3 1-58,60-102
+  s_86ed8bd547d4f8::t_bf7baa009e58c6 59
+crates/router-prepare/tests/signed_preparation.rs
+  s_86ed8bd547d4f8::t_bc4bfd780a0fda 1,6-7,10-12,27-28,39-40,42,48,63,76-78,81,101,108-110,117-118,123-124,148-151,154,171,173,202-205,207,250-251
+  s_86ed8bd547d4f8::t_bf7baa009e58c6 138
+  s_86ed8bd547d4f8::t_68b1ac688ce706 2-5,13-26,29-38,41,44-47,49-62,64-75,79-80,82-100,102-107,111-116,119-122,125,152-153,155-170,172,206,208-249,252-256
+  s_86ed8bd547d4f8::t_f5facfe61607c2 174-182,184-185,189-197,201
+  s_86ed8bd547d4f8::t_c164cf995d07d3 8-9,43,126-137,139-147,183,186-188,198-200
+crates/router-policy/src/asset_phases.rs
+  s_86ed8bd547d4f8::t_4e60b9fad61bd6 272-277,279-291
+  s_86ed8bd547d4f8::t_2a3adcde2623a3 269,295-309
+  s_86ed8bd547d4f8::t_f424c1024cd2fa 263-268,270-271,278,292-294,310-312
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_68b1ac688ce706 5-6,13-16,274-276,284-288
+  s_86ed8bd547d4f8::t_475639c37ff87a 8
+  s_86ed8bd547d4f8::t_1e5f652277671f 7,9-11
+  s_86ed8bd547d4f8::t_bc4bfd780a0fda 12,17,171-180,239,254,267-273,277-281,349,368,387,479
+  s_86ed8bd547d4f8::t_e00e9c5964c4f5 282-283
+docs/signed-preparation.md
+  s_86ed8bd547d4f8::t_97df8060d74fea 1-40
+crates/router-prepare/tests/support/signed_assets.rs
+  s_86ed8bd547d4f8::t_c164cf995d07d3 1-104
+  s_86ed8bd547d4f8::t_597a502d549dd7 105-108
+crates/router-prepare/src/signed.rs
+  s_86ed8bd547d4f8::t_2a3adcde2623a3 14-19,39-48,95-109,127-129,132-144,166-168,171-177,179-180,182-184,186-188,193-202,204-207,209-211,213-218,227-229,233-234,236-250,252-254,256-258,264-268,272-280,284-292,298-300,302-308,310-311,313-315,324-326,329-342,345-353
+  s_86ed8bd547d4f8::t_ded2690aeab10c 1-13,20-38,49-94,110-126,130-131,145-165,169-170,178,189-192,203,208,212,219-226,230-232,235,251,255,259-263,269-271,281-283,293-297,301,309,323,327-328,343-344,354-361
+  s_86ed8bd547d4f8::t_b6fc526282edbe 181,185,312,316
+  s_86ed8bd547d4f8::t_1c576f5e4ee5b4 317-322
+crates/router-prepare/tests/support/signed_preparation_fixture.rs
+  s_86ed8bd547d4f8::t_c164cf995d07d3 45-47,125
+  s_86ed8bd547d4f8::t_2a3aa0fa5bbd12 9,12,15-20,36-43,50,54-74,76-77,79-88,90-96,98-124,126-182,184-218,220-235,237-238,240-245,247-262,264-270
+  s_86ed8bd547d4f8::t_081cbb2c0d6b8c 10-11,23,48-49
+  s_86ed8bd547d4f8::t_bc4bfd780a0fda 1-8,13-14,21-22,24-35,44,51-53,75,78,89,97,183,219,236,239,246,263,271-272
+Cargo.lock
+  s_86ed8bd547d4f8::t_1fe3e5b5a9e1ee 1061,1066,1110
+crates/router-policy/src/signed_phases.rs
+  s_86ed8bd547d4f8::t_0f510222577690 172-235,237-242
+crates/router-prepare/Cargo.toml
+  s_86ed8bd547d4f8::t_13117056760193 9-10,22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "db4e3be5e8041ba49323f907f5953fac54049859",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
