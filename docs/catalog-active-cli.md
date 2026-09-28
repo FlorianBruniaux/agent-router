@@ -1,6 +1,6 @@
-# Signed catalog authority CLI slice
+# Publisher policy guards and catalog review reconstruction
 
-This slice defines the trust boundary for a future `catalog-active` command. It does not grant runtime dispatch or process execution permission. Signed documents cannot provide publisher roots, and `CatalogPublisherGrant` remains constructed only after the CLI decodes a separate parent-owned policy and verifies its independently retained fingerprint.
+This slice provides reusable library guards and review reconstruction, but no `catalog-active` CLI. A future CLI must decode a separate parent-owned policy and verify its independently retained fingerprint before constructing `CatalogPublisherGrant`. Signed documents cannot provide publisher roots. None of these APIs grants runtime dispatch or process execution permission.
 
 ## Publisher policy guard
 
