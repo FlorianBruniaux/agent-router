@@ -35,3 +35,10 @@ not undo or repeat that write.
 and refusal rules. Task input and other product manifests retain their JSON
 contracts. An interactive task questionnaire is not implemented by the output
 renderer.
+
+`escalation bound` displays an accounting preview; only its explicit approval
+persists a parent-attested ceiling. `escalation propose` displays an inert,
+source-pinned proposal, and ordinary `prepare` / `run` perform the separate run
+review and approval. See [durable escalation and CLI boundaries](escalation.md).
+The run view distinguishes `decision_origin`, `escalation_decision` and the
+unchanged `baseline_receipt_id`; changing the output format adds no authority.

@@ -68,6 +68,69 @@ struct Claim {
     target_definition_hash: String,
 }
 impl Runtime {
+    /// Check the fully prepared request against durable source evidence before
+    /// writing an execution bundle. This neither registers nor reserves a run;
+    /// review and dispatch must still perform their existing independent checks.
+    #[allow(clippy::too_many_arguments)]
+    pub fn validate_escalation_preparation(
+        &self,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &router_execution_decision::ExecutionDecision,
+        request: &ExecutionRequest,
+        plan: &WorkflowPlan,
+        node_id: &str,
+        target_run_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+    ) -> crate::Result<()> {
+        let binding = decision
+            .escalation_binding()
+            .ok_or(RuntimeError::Invalid("escalation decision required"))?;
+        router_workflow::validate_plan(plan).map_err(|_| RuntimeError::Invalid("workflow plan"))?;
+        if context.request().task != plan.task {
+            return Err(RuntimeError::Route);
+        }
+        decision.validate_identity(router, context)?;
+        let node = plan
+            .nodes
+            .iter()
+            .find(|node| node.id == node_id)
+            .ok_or(RuntimeError::Invalid("node id"))?;
+        let selected = decision.selection();
+        let capabilities = router
+            .execution_capabilities(context, selected)
+            .map_err(|_| RuntimeError::Route)?;
+        crate::validate_binding(
+            request,
+            &selected.candidate,
+            decision.baseline(),
+            decision.authorization_id(),
+            node,
+            context,
+            &capabilities,
+        )?;
+        let target_workflow =
+            crate::workflow::validate(workflow, plan, node, request, context, selected)?;
+        self.validate_escalation(router, context, decision, node, request, None, false)?;
+        let source = self.summary(&binding.source_run_id)?;
+        if target_run_id.is_empty()
+            || target_run_id == source.run_id
+            || source.plan_id != plan.plan_id
+            || source.node_id != node_id
+            || match (&source.workflow, target_workflow.as_ref()) {
+                (None, None) => false,
+                (Some(a), Some(b)) => {
+                    a.instance_id != b.instance_id
+                        || a.contract_sha256 != b.contract_sha256
+                        || a.generation.checked_add(1) != Some(b.generation)
+                }
+                _ => true,
+            }
+        {
+            return Err(RuntimeError::Invalid("escalation target identity"));
+        }
+        Ok(())
+    }
     /// Returns only facts emitted by this runtime, with event-chain validation.
     pub fn attempt_evidence(&self, source_run_id: &str) -> Result<Vec<AttemptEvidence>> {
         let history = self.store.escalation_history(source_run_id)?;
