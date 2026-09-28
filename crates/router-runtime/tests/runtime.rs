@@ -2274,20 +2274,38 @@ async fn activated_secondary_obeys_final_asset_gate_and_actual_input_budget() {
 
 #[tokio::test]
 async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
+    // This test supervisor is deliberately not a native sandbox. Keep control
+    // files outside the source repositories so the barrier cannot dirty them.
+    struct BarrierSupervisor {
+        control: PathBuf,
+    }
+    impl SandboxSupervisor for BarrierSupervisor {
+        fn resource_limits_enforced(&self) -> bool {
+            true
+        }
+        fn command(
+            &self,
+            run: &PreparedRun,
+            policy: &SandboxPolicy,
+        ) -> Result<tokio::process::Command> {
+            let mut command = FakeSupervisor.command(run, policy)?;
+            command
+                .env("PROVIDER_TEST_STARTED", self.control.join("started"))
+                .env("PROVIDER_TEST_RELEASE", self.control.join("release"));
+            Ok(command)
+        }
+    }
+    let control = tempfile::tempdir().unwrap();
+    let supervisor = BarrierSupervisor {
+        control: control.path().to_path_buf(),
+    };
     let mut first = Fixture::new(false).await;
-    first.enable_semantic_assets();
     let mut second = Fixture::new(false).await;
     let mut route = second.context.request().clone();
     route.task.objective = "Second host using the same provider".into();
-    second.plan = build_plan(
-        &route.task,
-        WorkflowPreset::DirectSafe,
-        PlanLimits {
-            reserve_elapsed_ms: 1000,
-            ..PlanLimits::default()
-        },
-    )
-    .unwrap();
+    // These bounds are failure guards, not the scheduling oracle. A stays
+    // alive until the test observes B waiting on the actual provider semaphore.
+    route.task.budget.max_elapsed_ms = 60_000;
     let mut observation = second.context.snapshot().clone();
     observation.host.harness = HarnessId::parse("claude-code").unwrap();
     let now = SystemTime::now()
@@ -2306,9 +2324,26 @@ async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
         "../../../fixtures/examples/phase-catalog.json"
     ))
     .unwrap();
+    let mut first_route = first.context.request().clone();
+    first_route.task.budget.max_elapsed_ms = 60_000;
+    let first_snapshot = ValidatedHostObservation::from_observation(
+        first.context.snapshot().clone(),
+        SnapshotValidation {
+            now_unix_seconds: now,
+            max_age_seconds: 300,
+        },
+    )
+    .unwrap();
+    first.context = first
+        .router
+        .context(first_route, &first_snapshot, &catalog)
+        .unwrap();
+    first.enable_semantic_assets();
     second.context = second.router.context(route, &snapshot, &catalog).unwrap();
     second.request.host = snapshot.host().harness.clone();
     second.enable_semantic_assets();
+    first.request.timeout_ms = 15_000;
+    second.request.timeout_ms = 15_000;
     assert_ne!(first.request.host, second.request.host);
     assert_ne!(first.plan.plan_id, second.plan.plan_id);
     assert_eq!(
@@ -2354,38 +2389,63 @@ async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
     }
     let b = runs.pop().unwrap();
     let a = runs.pop().unwrap();
-    let (a, b) = tokio::join!(
+    let (a, (b, queued, first_before_release)) = tokio::join!(
         rt.execute(
             a,
-            &FakeAdapter("sleep 0.25"),
-            &FakeSupervisor,
+            &FakeAdapter("printf ready > \"$PROVIDER_TEST_STARTED\"; while [ ! -f \"$PROVIDER_TEST_RELEASE\" ]; do /bin/sleep 0.01; done"),
+            &supervisor,
             Cancellation::default()
         ),
         async {
-            tokio::time::timeout(Duration::from_secs(5), async {
-                while rt.summary("host-a").unwrap().state != RunState::Running {
+            let started = tokio::time::timeout(Duration::from_secs(5), async {
+                while !control.path().join("started").exists() {
                     tokio::time::sleep(Duration::from_millis(5)).await;
                 }
             })
-            .await
-            .unwrap();
-            let (outcome, ()) = tokio::join!(
+            .await;
+            if started.is_err() {
+                fs::write(control.path().join("release"), []).unwrap();
+            }
+            assert!(started.is_ok(), "first process must reach the controlled barrier");
+            let (outcome, (queued, first_before_release)) = tokio::join!(
                 rt.execute(
                     b,
                     &FakeAdapter("true"),
-                    &FakeSupervisor,
+                    &supervisor,
                     Cancellation::default()
                 ),
                 async {
-                    tokio::time::sleep(Duration::from_millis(40)).await;
-                    assert_eq!(rt.summary("host-b").unwrap().state, RunState::Queued);
+                    let queued = tokio::time::timeout(Duration::from_secs(5), async {
+                        loop {
+                            let state = rt.summary("host-b").unwrap().state;
+                            let provider_queue = rt.events().unwrap().iter().any(|event| {
+                                event.run_id == "host-b"
+                                    && event.kind == "queued"
+                                    && event.detail == "ProviderCapacity"
+                            });
+                            if provider_queue || state != RunState::Queued {
+                                break provider_queue && state == RunState::Queued;
+                            }
+                            tokio::time::sleep(Duration::from_millis(5)).await;
+                        }
+                    }).await;
+                    let first_before_release = rt.summary("host-a").unwrap().state;
+                    // Release even on an assertion failure, then collect both
+                    // outcomes before testing the provider-queue observation.
+                    fs::write(control.path().join("release"), []).unwrap();
+                    (queued, first_before_release)
                 }
             );
-            outcome
+            (outcome, queued, first_before_release)
         }
     );
     assert_eq!(a.unwrap().run.state, RunState::Verifying);
     assert_eq!(b.unwrap().run.state, RunState::Verifying);
+    assert_eq!(first_before_release, RunState::Running);
+    assert!(
+        queued.is_ok_and(|queued| queued),
+        "second host must queue on the shared provider before A is released"
+    );
 }
 
 #[tokio::test]
@@ -2565,6 +2625,200 @@ impl HarnessAdapter for NativeVersionAdapter {
     ) -> std::result::Result<RuntimeEvidence, AdapterError> {
         Err(AdapterError::Protocol)
     }
+}
+
+#[tokio::test]
+#[ignore = "requires native OS sandbox, built helper and supervisor SIGKILL during a version probe"]
+async fn native_version_probe_sigkill_recovery_requires_its_bound_lease() {
+    const CHILD: &str = "AR_PROBE_SIGKILL_FIXTURE_ROOT";
+    if let Some(parent) = std::env::var_os(CHILD) {
+        use std::os::unix::fs::PermissionsExt;
+        let parent = PathBuf::from(parent);
+        let f = Fixture::new_at(true, tempfile::tempdir_in(&parent).unwrap()).await;
+        let runtime = f.runtime();
+        let pending = f.review(&runtime).await;
+        let root = fs::canonicalize(f.temp.path()).unwrap();
+        let program = root.join("fixture-native-version");
+        fs::write(&program, b"#!/bin/sh\nif [ \"$#\" -eq 1 ] && [ \"$1\" = --version ]; then exec /bin/sleep 20; fi\nprintf 'UNEXPECTED_WORKER' > src/worker-started\n").unwrap();
+        fs::set_permissions(&program, fs::Permissions::from_mode(0o700)).unwrap();
+        let helper = std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("router-sandbox-helper");
+        #[cfg(target_os = "macos")]
+        let wrapper = Path::new("/usr/bin/sandbox-exec");
+        #[cfg(target_os = "linux")]
+        let wrapper = Path::new("/usr/bin/bwrap");
+        let hashes = expected_hashes(&[&helper, &program, wrapper]);
+        #[cfg(target_os = "macos")]
+        let sandbox = SeatbeltSandbox::probe_expected(
+            &root,
+            BTreeMap::from([("fixture-native-version".into(), program)]),
+            vec![],
+            BTreeMap::new(),
+            &hashes,
+        )
+        .await
+        .unwrap();
+        #[cfg(target_os = "linux")]
+        let sandbox = BubblewrapSandbox::probe_expected(
+            &root,
+            wrapper,
+            BTreeMap::from([("fixture-native-version".into(), program)]),
+            vec![],
+            BTreeMap::new(),
+            &hashes,
+        )
+        .await
+        .unwrap();
+        let supervisor = ResourceSupervisor::probe_expected(
+            &helper,
+            ResourceLimits {
+                address_space_bytes: None,
+                max_processes: 4096,
+                ..ResourceLimits::default()
+            },
+            sandbox,
+            &hashes,
+        )
+        .await
+        .unwrap();
+        fs::write(
+            parent.join("runtime-path"),
+            runtime.storage_root().to_str().unwrap(),
+        )
+        .unwrap();
+        let approved = runtime
+            .approve(pending.clone(), pending.approval_digest())
+            .unwrap();
+        let result = runtime
+            .execute(
+                approved,
+                &NativeVersionAdapter,
+                &supervisor,
+                Cancellation::default(),
+            )
+            .await;
+        panic!("fixture supervisor must be killed during its version probe: {result:?}");
+    }
+
+    let temp = tempfile::tempdir().unwrap();
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--ignored",
+            "--exact",
+            "native_version_probe_sigkill_recovery_requires_its_bound_lease",
+            "--nocapture",
+        ])
+        .env(CHILD, temp.path())
+        .spawn()
+        .unwrap();
+    let mut ready = None;
+    for _ in 0..1_000 {
+        if let Ok(root) = fs::read_to_string(temp.path().join("runtime-path")) {
+            let root = PathBuf::from(root);
+            if observe(&root, "run-1")
+                .is_ok_and(|run| run.state == RunState::Preparing && run.attempts == 0)
+            {
+                if let Ok(files) = fs::read_dir(root.join("leases")) {
+                    for file in files.filter_map(|entry| entry.ok()) {
+                        if fs::read(file.path())
+                            .is_ok_and(|bytes| bytes == b"router-runtime-lease-v1:active\n")
+                        {
+                            ready = Some((root.clone(), file.path()));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if ready.is_some() || child.try_wait().unwrap().is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(5)).await;
+    }
+    child.kill().ok();
+    let status = child.wait().unwrap();
+    let (root, lease) =
+        ready.expect("supervisor must enter Preparing with a live native version probe");
+    use std::os::unix::process::ExitStatusExt;
+    assert_eq!(status.signal(), Some(nix::libc::SIGKILL));
+
+    // Keep the original inode and let the surviving helper finish through its
+    // open descriptor. Recovery must refuse the temporarily missing pathname.
+    let held = root.join("held-probe-lease");
+    fs::rename(&lease, &held).unwrap();
+    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let db = rusqlite::Connection::open(root.join("runtime.sqlite3")).unwrap();
+    let quarantined: u32 = db
+        .query_row(
+            "SELECT COUNT(*) FROM cleanup_blocks WHERE run_id='run-1'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    drop(db);
+    drop(runtime);
+    let mut clean = false;
+    for _ in 0..500 {
+        // A published marker can precede helper unlock. Observe both parts of
+        // the cleanup contract before asserting that reconciliation is possible.
+        match nix::fcntl::Flock::lock(
+            fs::File::open(&held).unwrap(),
+            nix::fcntl::FlockArg::LockExclusiveNonblock,
+        ) {
+            Ok(proof) => {
+                let bytes = fs::read(&held).unwrap();
+                clean = bytes == b"router-runtime-lease-v1:group-clean\n"
+                    || bytes == b"router-runtime-lease-v1:namespace-clean\n";
+                drop(proof);
+                if clean {
+                    break;
+                }
+            }
+            Err((_, nix::errno::Errno::EWOULDBLOCK)) => {}
+            Err((_, error)) => panic!("cleanup fixture lock failed: {error}"),
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert!(
+        clean,
+        "watchdog must finish cleanup before fixture disposal"
+    );
+    fs::rename(&held, &lease).unwrap();
+    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let run = runtime.summary("run-1").unwrap();
+    assert_eq!(run.state, RunState::Failed);
+    assert_eq!(run.failure, Some(RunFailure::Interrupted));
+    assert_eq!(run.attempts, 0);
+    let db = rusqlite::Connection::open(root.join("runtime.sqlite3")).unwrap();
+    let blocks: u32 = db
+        .query_row(
+            "SELECT COUNT(*) FROM cleanup_blocks WHERE run_id='run-1'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        blocks, 0,
+        "restored exact lease and cleanup proof allow reconciliation"
+    );
+    assert!(!root.join("worktrees").exists());
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|event| event.kind == "attempt.started" || event.detail == "spawn_requested")
+    );
+    runtime.verify_integrity().unwrap();
+    assert_eq!(
+        quarantined, 1,
+        "an absent version-probe lease must retain authority, even without a model attempt"
+    );
 }
 
 #[tokio::test]

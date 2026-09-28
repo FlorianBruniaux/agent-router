@@ -260,6 +260,56 @@ impl ValidatedPhaseContext {
 }
 
 impl PhaseRouter {
+    /// Revalidate the immutable v3 evidence bundle against the current signed
+    /// catalog and wall clock before selected body I/O.
+    pub fn validate_signed_assets_current(
+        &self,
+        context: &ValidatedPhaseContext,
+        catalog: &Catalog,
+        selected_candidate_id: &str,
+        now: u64,
+    ) -> Result<()> {
+        let assets = context.assets.as_ref().ok_or(PhaseRouteError::Invalid(
+            "signed v3 asset contracts required",
+        ))?;
+        let catalog_hash = catalog
+            .content_hash()
+            .map_err(|_| PhaseRouteError::Catalog)?;
+        if assets.inputs.contracts.catalog_hash() != catalog_hash
+            || assets.inputs.availability.snapshot_hash() != context.snapshot().snapshot_hash
+            || assets.binding_digest
+                != phases::hash(
+                    "phase-asset-bindings-v1",
+                    &(
+                        assets.inputs.contracts.document(),
+                        assets.inputs.availability.document(),
+                        &assets.inputs.policy,
+                        &assets.inputs.requests,
+                        &assets.inputs.execution_scope,
+                        &assets.inputs.approved_review_digests,
+                    ),
+                )?
+        {
+            return Err(PhaseRouteError::Invalid("signed v3 asset evidence changed"));
+        }
+        let selection = context
+            .eligible_selection(selected_candidate_id)
+            .ok_or(PhaseRouteError::Ineligible)?;
+        let extension = assets
+            .inputs
+            .requests
+            .get(&selection.candidate.id)
+            .ok_or(PhaseRouteError::Invalid("asset request absent"))?;
+        preflight(
+            &assets.inputs.contracts,
+            &assets.inputs.availability,
+            extension,
+            &assets.inputs.policy,
+            now,
+        )?;
+        Ok(())
+    }
+
     pub fn context_with_assets(
         &self,
         request: PhaseRouteRequest,

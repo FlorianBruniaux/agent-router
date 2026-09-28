@@ -6,6 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
+router-catalog = { path = "../router-catalog" }
+router-catalog-store = { path = "../router-catalog-store" }
 router-execution-decision = { path = "../router-execution-decision" }
 router-types = { path = "../router-types" }
 router-policy = { path = "../router-policy" }
@@ -17,8 +19,8 @@ serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+hex.workspace = true
 router-asset-contracts = { path = "../router-asset-contracts" }
-router-catalog = { path = "../router-catalog" }
 tempfile.workspace = true
 router-backend-policy = { path = "../router-backend-policy" }
 router-decision = { path = "../router-decision" }
