@@ -259,6 +259,23 @@ mod unix {
         check_file(&file)?;
         Ok(file)
     }
+    pub(super) fn read_private_external(path: &Path, limit: usize) -> Result<Vec<u8>> {
+        let parent = path.parent().ok_or(StoreError::Path)?;
+        let name = path.file_name().ok_or(StoreError::Path)?;
+        let directory = traverse(parent)?;
+        let file = private_file(&directory, name.to_str().ok_or(StoreError::Path)?)?;
+        if file.metadata().map_err(|_| StoreError::Io)?.len() > limit as u64 {
+            return Err(StoreError::Limit);
+        }
+        let mut bytes = Vec::new();
+        file.take(limit as u64 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| StoreError::Io)?;
+        if bytes.len() > limit {
+            return Err(StoreError::Limit);
+        }
+        Ok(bytes)
+    }
     fn create_file(directory: &File, name: &str) -> Result<File> {
         let file = openat(
             directory,
@@ -303,6 +320,11 @@ mod unix {
 #[cfg(unix)]
 pub(crate) use unix::{Guard, Root};
 
+#[cfg(unix)]
+pub(crate) fn read_private_external(path: &Path, limit: usize) -> Result<Vec<u8>> {
+    unix::read_private_external(path, limit)
+}
+
 #[cfg(not(unix))]
 pub(crate) struct Root;
 #[cfg(not(unix))]
@@ -330,4 +352,8 @@ impl Root {
     pub(crate) fn commit(&self, _: &[u8], _: Option<&[u8]>) -> Result<()> {
         Err(StoreError::Unsupported)
     }
+}
+#[cfg(not(unix))]
+pub(crate) fn read_private_external(_: &Path, _: usize) -> Result<Vec<u8>> {
+    Err(StoreError::Unsupported)
 }
