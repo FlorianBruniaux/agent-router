@@ -1192,6 +1192,10 @@ fn read_events(db: &Connection) -> Result<Vec<RuntimeEvent>> {
         .collect()
 }
 fn verify_events(db: &Connection) -> Result<()> {
+    verify_diagnostic_events(db, &mut 0)
+}
+pub(crate) fn verify_diagnostic_events(db: &Connection, queries: &mut usize) -> Result<()> {
+    *queries += 1;
     let mut previous = String::new();
     for (index, event) in read_events(db)?.iter().enumerate() {
         if event.sequence != index as u64 + 1
@@ -1204,8 +1208,9 @@ fn verify_events(db: &Connection) -> Result<()> {
     }
     // Older schemas have no generated authority. Their legacy records remain
     // readable; the v7 migration never infers a generated pin from mutable data.
+    *queries += 1;
     if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 7 {
-        verify_authority_pins(db)?;
+        verify_authority_pins(db, queries)?;
     }
     Ok(())
 }
@@ -1219,7 +1224,8 @@ struct PlanAuthorityAnchor {
     pin: String,
 }
 
-fn verify_authority_pins(db: &Connection) -> Result<()> {
+fn verify_authority_pins(db: &Connection, queries: &mut usize) -> Result<()> {
+    *queries += 1;
     let mut anchors = std::collections::BTreeMap::new();
     let mut query = db.prepare(
         "SELECT detail FROM events WHERE kind='workflow.plan.authority.v1' ORDER BY sequence",
@@ -1240,6 +1246,7 @@ fn verify_authority_pins(db: &Connection) -> Result<()> {
             return Err(RuntimeError::Integrity("workflow plan authority anchor"));
         }
     }
+    *queries += 1;
     let mut query = db.prepare("SELECT w.instance_id,w.contract_hash,p.pin FROM workflow_instances w LEFT JOIN workflow_plan_authority p ON p.instance_id=w.instance_id")?;
     for row in query.query_map([], |r| {
         Ok((

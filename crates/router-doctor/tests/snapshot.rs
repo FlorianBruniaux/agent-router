@@ -196,3 +196,58 @@ fn write_transaction_defaults_do_not_change_readonly_snapshot_behavior() {
         writer.execute_batch("ROLLBACK;").unwrap();
     }
 }
+
+#[test]
+fn callback_sees_same_committed_copy_and_cannot_normally_write() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("source.db");
+    let writer = Connection::open(&path).unwrap();
+    writer
+        .execute_batch(
+            "PRAGMA journal_mode=WAL; CREATE TABLE proof(value); INSERT INTO proof VALUES(11);",
+        )
+        .unwrap();
+    let source =
+        Connection::open_with_flags(&path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY).unwrap();
+    let (report, seen) =
+        router_doctor::diagnose_database_snapshot_with(&source, |copy, queries| {
+            // Commit on the original after capture: the inspection must still see 11.
+            writer.execute("UPDATE proof SET value=23", []).unwrap();
+            *queries += 1;
+            let value: i64 = copy
+                .query_row("SELECT value FROM proof", [], |r| r.get(0))
+                .unwrap();
+            assert!(copy.execute("UPDATE proof SET value=42", []).is_err());
+            Ok(value)
+        })
+        .unwrap();
+    assert_eq!(seen, 11);
+    assert_eq!(report.database_queries, 9);
+    let next = diagnose_database_snapshot(&source).unwrap();
+    assert_ne!(report.snapshot_sha256, next.snapshot_sha256);
+    assert!(source.is_autocommit());
+}
+
+#[test]
+fn trusted_callback_drift_and_open_transactions_are_rejected() {
+    let source = Connection::open_in_memory().unwrap();
+    source
+        .execute_batch("CREATE TABLE proof(value); INSERT INTO proof VALUES(11);")
+        .unwrap();
+    let before = diagnose_database_snapshot(&source).unwrap();
+    for sql in [
+        "PRAGMA query_only=OFF; UPDATE proof SET value=42;",
+        "BEGIN;",
+    ] {
+        let result = router_doctor::diagnose_database_snapshot_with(&source, |copy, _| {
+            copy.execute_batch(sql).unwrap();
+            Ok(())
+        });
+        assert!(matches!(result, Err(DoctorError::Integrity)));
+    }
+    assert_eq!(
+        before.snapshot_sha256,
+        diagnose_database_snapshot(&source).unwrap().snapshot_sha256
+    );
+    assert!(source.is_autocommit());
+}

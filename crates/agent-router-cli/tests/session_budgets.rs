@@ -260,6 +260,44 @@ fn native_concurrent_roots_commit_once_and_ignore_claimed_zero_usage() {
         }
         std::thread::sleep(Duration::from_millis(20));
     }
+    let admission = router_runtime::AdmissionStore::open(&registry, &h).unwrap();
+    let capacity_before = admission.status().unwrap();
+    assert_eq!(capacity_before.granted, 1);
+    let budget_before = checked(&mut budget_command("status", &registry, &h, &bh), 0);
+    assert_eq!(budget_before["reserved_allocation"], json!(amount(0, 0)));
+    assert_eq!(
+        budget_before["committed_allocation"],
+        json!(amount(100, 4500))
+    );
+    let doctor = checked(
+        command()
+            .args(["doctor", "--runtime-root"])
+            .arg(&a.store)
+            .arg("--json"),
+        0,
+    );
+    assert_eq!(doctor["overall"], "pass");
+    assert_eq!(doctor["storage_schema_version"], 9);
+    assert_eq!(doctor["schema_layout"], "recognized_read_layout");
+    assert_eq!(
+        doctor["database"]["integrity"],
+        "database_integrity_validated"
+    );
+    assert_eq!(doctor["journal_integrity"], "pass");
+    assert_eq!(doctor["owner_lock"], "busy");
+    for field in [
+        "journal_authenticity",
+        "process_liveness",
+        "cleanup_authority",
+        "shared_admission_accounting",
+    ] {
+        assert_eq!(doctor[field], "unknown", "{field}");
+    }
+    assert_eq!(admission.status().unwrap(), capacity_before);
+    assert_eq!(
+        checked(&mut budget_command("status", &registry, &h, &bh), 0),
+        budget_before,
+    );
     rejected(
         b.run().args(["--approve", &db]),
         "session_budget.cost.exhausted",

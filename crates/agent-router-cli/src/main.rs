@@ -225,10 +225,11 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         } => feedback::policy(&store, now, json, command),
         Commands::Doctor {
             request,
+            runtime_root,
             now,
             deep,
             json,
-        } => diagnostics::doctor(&request, now, deep, json),
+        } => diagnostics::doctor(request.as_deref(), runtime_root.as_deref(), now, deep, json),
         Commands::Audit { command } => diagnostics::audit(command),
         Commands::Config { layers, json } => product::configuration(&layers, json),
         Commands::RoutePhase { inputs, json } => phases::route(inputs, json),

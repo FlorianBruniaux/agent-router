@@ -154,13 +154,90 @@ and SQLite's internal backup operations are not query-count entries. The digest
 identifies the captured bytes, not the current live database after the call.
 Integrity does not authenticate the runtime journal, certify schema compatibility,
 prove process liveness or authorize execution. `Runtime::verify_integrity()` and
-host evidence remain separate checks. A CLI snapshot command and active native
-host/hook diagnostics are not implemented by this library change.
+host evidence remain separate checks. The passive runtime CLI below adds a
+bounded journal and read-layout inspection. Active native host/hook diagnostics
+remain outside these APIs.
 
 Tests cover committed WAL foreign-key violations, uncommitted writes, preservation
 of source permissions and active caller transactions, size/page-size limits,
 copy-deadline refusal, lock contention, recovery after refusal and runtime ownership.
 Linux evidence comes from the same tests in CI, not from the macOS result.
+
+### Passive runtime storage diagnostics
+
+```sh
+agent-router doctor --runtime-root /absolute/private/runtime --json
+```
+
+`--runtime-root` is exclusive with `--request` and `--deep`. Without `--json`,
+the same report is rendered for humans. Exit codes are 0 for passing storage
+checks, 2 for a failed check or refusal, and 3 for warnings. This command never
+calls `Runtime::open`, runs migrations, recovers interrupted runs, resolves a
+lease, releases reservations, repairs a database or starts a host process.
+It neither creates a missing runtime nor reads stored prompts into its output.
+
+It opens the existing private database with SQLite's ordinary read-only flags
+and takes the coherent memory snapshot described above. It deliberately avoids
+`immutable=1`: cancellation can write through another connection even while the
+runtime owner lock is available. SQLite may create or update its WAL-index and
+read marks, including internal WAL-index recovery after a crash. This is **not**
+a zero-filesystem-write guarantee. No application recovery or explicit checkpoint
+is requested. See [SQLite read-only WAL](https://sqlite.org/wal.html#read_only_databases)
+and [immutable semantics](https://sqlite.org/uri.html#uriimmutable).
+
+The report keeps these observations separate:
+
+| Field | Meaning | Limit |
+| --- | --- | --- |
+| `database` | Integrity, fingerprint and size of the committed copy | Does not authenticate its source |
+| `schema_layout` | Expected version-9 tables and ordered columns are present | A recognized read layout does not prove every write constraint or authenticate schema SQL |
+| `journal_integrity` | Event hash-chain and workflow authority-pin consistency on the same copy | A self-consistent replacement journal is not authenticated |
+| `counts` | Runs, events, writer reservations, cleanup blocks, preparation cycles and recorded leases | Aggregates of persisted records, not proof of current execution |
+| `owner_lock` | Shared-lock attempt was available, busy, missing or unknown | No PID lookup, orphan inference or recovery authority |
+| `leases` | Later held, pending, cleanup-marked, missing or ambiguous observations | Markers are not opaque cleanup proofs; this observation is not atomic with the database copy |
+
+Older schemas return `migration_required` without migration. Future versions or
+missing expected tables/columns fail the check; counts and lease observations
+are omitted for these layouts. A corrupted journal fails separately from SQLite
+integrity. Cleanup blocks, pending/missing/ambiguous leases and missing owner
+locks produce a warning. A busy owner is normal and does not prevent inspection.
+`shared_admission_accounting`, `journal_authenticity`, `process_liveness` and
+`cleanup_authority` remain `unknown`
+on every successful report, including one whose scoped storage checks pass.
+The runtime admission binding and intent tables are included in layout/size checks,
+but the separate admission registry and session counters are not inspected.
+In particular, a schema-8 runtime is reported as needing migration without opening
+it for recovery or creating the two schema-9 tables.
+
+The operator-selected runtime and its ancestors must remain under the operator's
+control. The final directory is pinned, private and owned by the current user.
+The database, existing SQLite sidecars and owner lock must be regular private
+files with one link and the same owner. The main file is limited to 4 MiB; all
+SQLite files together to 16 MiB. Identities are checked before and after capture;
+new sidecars created by SQLite are checked too. Substitution or disappearance of
+an initially present sidecar is refused. These checks do not protect against a
+malicious actor with the same user privileges replacing ancestors between calls.
+POSIX mode checks do not certify platform ACLs.
+
+Database checks use `statat` without opening extra DB/SHM descriptors. Closing an
+auxiliary descriptor can release SQLite's process-wide POSIX locks, even if that
+descriptor was read-only. SQLite owns all its database descriptor lifetimes.
+The passive lease reader uses a shared nonblocking lock, a 96-byte marker limit
+and the recorded identity. It never changes a pending marker to recovered.
+
+Inspection is limited to 4,096 rows per table and 64 KiB per field before journal
+parsing or lease materialization. SQLite VM/time limits remain active on the
+copy. The `diagnose_database_snapshot_with` callback is trusted linked Rust code, not a sandbox for arbitrary SQL or Rust. It counts its statements and
+must preserve connection limits. A changed final fingerprint or an open
+transaction is rejected. The checks cannot detect a trusted callback changing
+and rolling back data before returning a misleading value, nor bound arbitrary
+Rust computation. The historical snapshot wrapper and its JSON shape are unchanged.
+
+Tests cover committed WAL observations, unchanged reservation and pending-lease
+records, schema migration refusal, redaction, journal corruption, unsafe paths,
+row bounds and a second process remaining blocked by an existing SQLite writer
+lock after inspection. Native host activation and orphan cleanup are not covered
+by these storage tests.
 
 Deep mode launches no `--version`, authentication or status commands. Supplied
 host snapshots retain their own source/freshness checks. An executable's name or

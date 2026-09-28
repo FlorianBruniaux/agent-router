@@ -4,6 +4,7 @@ mod admission;
 mod artifact_storage;
 mod artifacts;
 mod bubblewrap;
+mod diagnostics;
 mod error;
 mod escalation;
 mod generated;
@@ -21,6 +22,10 @@ pub use admission::{
     admission_runtime_root_hash, session_budget_policy_hash,
 };
 pub use bubblewrap::BubblewrapSandbox;
+pub use diagnostics::{
+    OwnerLockState, RuntimeLeaseObservations, RuntimeSchemaState, RuntimeStorageCounts,
+    RuntimeStorageReport, diagnose_runtime_storage,
+};
 pub use error::{Result, RuntimeError};
 pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
 pub use native_version::{NativeVersionProbe, probe_native_version};
