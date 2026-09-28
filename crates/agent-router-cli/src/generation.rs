@@ -271,6 +271,7 @@ pub(crate) fn run(path: &Path, now: Option<u64>, json: bool) -> Result<Outcome, 
 #[derive(Serialize)]
 #[serde(untagged)]
 pub(crate) enum SourceBinding {
+    Escalated(crate::escalation::SourceBinding),
     Backend(crate::execution_backend::AuthorityBinding),
     Generated {
         document: PathBuf,
@@ -295,6 +296,8 @@ impl LoadedDecision {
 pub(crate) fn load_decision(
     backend: Option<&Path>,
     generated: Option<&Path>,
+    escalation: Option<&crate::escalation::LoadedProposal>,
+    runtime: Option<&router_runtime::Runtime>,
     node_id: &str,
     router: &PhaseRouter,
     context: &ValidatedPhaseContext,
@@ -302,6 +305,18 @@ pub(crate) fn load_decision(
     scope_sha256: &str,
     historical: bool,
 ) -> Result<LoadedDecision, CliError> {
+    if let Some(proposal) = escalation {
+        if backend.is_some() || generated.is_some() {
+            return Err(CliError::Product("escalation.composition.denied"));
+        }
+        let runtime = runtime.ok_or(CliError::Product("escalation.runtime.required"))?;
+        let (decision, binding) = proposal.reconstruct(runtime, router, context, baseline)?;
+        return Ok(LoadedDecision {
+            decision,
+            authority: None,
+            binding: Some(SourceBinding::Escalated(binding)),
+        });
+    }
     let Some(path) = generated else {
         let loaded = crate::execution_backend::load(
             backend,

@@ -36,6 +36,14 @@ fn error(error: CoordinatorError) -> CliError {
         CoordinatorError::Json(_) => CliError::Product("coordinator.json"),
     }
 }
+// A coordinator source also binds final dependency bytes and artifact grants.
+// Fail explicitly until its bundle reconstruction is supported by escalation.
+fn reject_escalation(source: &execution::Definition) -> Result<(), CliError> {
+    if source.escalation_decision.is_some() {
+        return Err(CliError::Product("escalation.coordinator.unsupported"));
+    }
+    Ok(())
+}
 fn resolve(base: &Path, path: PathBuf) -> PathBuf {
     if path.is_absolute() {
         path
@@ -144,6 +152,7 @@ fn reopen(
     CliError,
 > {
     let mut source = execution::load_definition(&bundle.source_definition)?;
+    reject_escalation(&source)?;
     if source.node_id != bundle.node_id {
         return Err(CliError::Product("coordinator.node.mismatch"));
     }
@@ -158,6 +167,8 @@ fn reopen(
     let loaded = crate::generation::load_decision(
         source.backend_decision.as_deref(),
         source.generated_plan.as_deref(),
+        None,
+        None,
         &source.node_id,
         &router,
         &context,
@@ -251,6 +262,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
         } => execution::block(async {
             let workflow = definition(&path)?;
             let mut source = execution::load_definition(&source_definition)?;
+            reject_escalation(&source)?;
             if source.node_id != node_id {
                 return Err(CliError::Product("coordinator.node.mismatch"));
             }
@@ -265,6 +277,8 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let loaded = crate::generation::load_decision(
                 source.backend_decision.as_deref(),
                 source.generated_plan.as_deref(),
+                None,
+                None,
                 &source.node_id,
                 &router,
                 &context,
@@ -476,6 +490,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let workflow = definition(&bundle.workflow)?;
             router_coordinator::observe(&store.join("coordinator"), &workflow).map_err(error)?;
             let source = execution::load_definition(&bundle.source_definition)?;
+            reject_escalation(&source)?;
             let mut source = source;
             source.run_id = bundle.run_id.clone();
             source.request = bundle.final_request.clone();
@@ -491,6 +506,8 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let loaded = crate::generation::load_decision(
                 source.backend_decision.as_deref(),
                 source.generated_plan.as_deref(),
+                None,
+                None,
                 &source.node_id,
                 &router,
                 &context,

@@ -38,6 +38,8 @@ pub(crate) struct Definition {
     pub(crate) backend_decision: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) generated_plan: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) escalation_decision: Option<PathBuf>,
     plan: PathBuf,
     pub(crate) node_id: String,
     pub(crate) request: PathBuf,
@@ -159,6 +161,12 @@ pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     value.asset_authority = value.asset_authority.map(|path| resolve(base, path));
     value.backend_decision = value.backend_decision.map(|path| resolve(base, path));
     value.generated_plan = value.generated_plan.map(|path| resolve(base, path));
+    value.escalation_decision = value.escalation_decision.map(|path| resolve(base, path));
+    if value.escalation_decision.is_some()
+        && (value.backend_decision.is_some() || value.generated_plan.is_some())
+    {
+        return Err(CliError::Product("escalation.composition.denied"));
+    }
     if value.backend_decision.is_some() && value.generated_plan.is_some() {
         return Err(CliError::Product("generation.composition.denied"));
     }
@@ -201,7 +209,10 @@ pub(crate) fn selection(
             .route(context)
             .map_err(|_| CliError::Product("runtime.route.invalid"))?,
     };
-    if definition.backend_decision.is_none() && definition.generated_plan.is_none() {
+    if definition.backend_decision.is_none()
+        && definition.generated_plan.is_none()
+        && definition.escalation_decision.is_none()
+    {
         router
             .validate_receipt(context, &receipt)
             .map_err(|_| CliError::Product("runtime.receipt.invalid"))?;
@@ -303,8 +314,38 @@ pub(crate) fn context(
     )
 }
 fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, PendingRun), CliError> {
-    // Read first: an artifact/status operation never creates a missing store.
     let existing = router_runtime::observe(store, &definition.run_id).map_err(error)?;
+    let proposal = definition
+        .escalation_decision
+        .as_deref()
+        .map(crate::escalation::LoadedProposal::read)
+        .transpose()?;
+    if let Some(proposal) = &proposal {
+        proposal.validate_store(store)?;
+    }
+    let runtime = Runtime::open(
+        store,
+        RuntimeLimits {
+            max_attempts: proposal
+                .as_ref()
+                .map_or(2, crate::escalation::LoadedProposal::max_attempts),
+            output_retention: existing.output_retention,
+            ..RuntimeLimits::default()
+        },
+    )
+    .map_err(error)?;
+    let (pending, _) = reopen_in(&runtime, definition, proposal.as_ref())?;
+    Ok((runtime, pending))
+}
+/// Reconstruct against an already-owned store; never acquire it recursively.
+pub(crate) fn reopen_in(
+    runtime: &Runtime,
+    definition: &Definition,
+    proposal: Option<&crate::escalation::LoadedProposal>,
+) -> Result<(PendingRun, crate::generation::LoadedDecision), CliError> {
+    if definition.escalation_decision.is_some() != proposal.is_some() {
+        return Err(CliError::Product("escalation.runtime.required"));
+    }
     let (router, context) = context(definition, true)?;
     let proof = selection(definition, &router, &context)?;
     let request: ExecutionRequest = phases::read_json(
@@ -314,6 +355,8 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     let loaded = crate::generation::load_decision(
         definition.backend_decision.as_deref(),
         definition.generated_plan.as_deref(),
+        proposal,
+        Some(runtime),
         &definition.node_id,
         &router,
         &context,
@@ -327,14 +370,6 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
     )?;
     let plan = plan(&definition.plan)?;
     let workflow = workflow_contract(definition)?;
-    let runtime = Runtime::open(
-        store,
-        RuntimeLimits {
-            output_retention: existing.output_retention,
-            ..RuntimeLimits::default()
-        },
-    )
-    .map_err(error)?;
     let pending = runtime
         .reopen_decision(
             &definition.run_id,
@@ -350,7 +385,7 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
             None,
         )
         .map_err(error)?;
-    Ok((runtime, pending))
+    Ok((pending, loaded))
 }
 pub(crate) fn adapter(
     host: &str,
@@ -455,7 +490,11 @@ pub(crate) fn approval_for_digest(
     }
     let bytes = if let Some(backend) = backend {
         serde_json::to_vec(&(
-            "runtime-cli-approval-v2-backend",
+            if matches!(backend, crate::generation::SourceBinding::Escalated(_)) {
+                "runtime-cli-approval-v3-escalation"
+            } else {
+                "runtime-cli-approval-v2-backend"
+            },
             inner_digest,
             definition,
             config,
@@ -571,9 +610,39 @@ pub(crate) fn run(
             &definition.request,
             router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
         )?;
+        let proposal = definition
+            .escalation_decision
+            .as_deref()
+            .map(crate::escalation::LoadedProposal::read)
+            .transpose()?;
+        if let Some(proposal) = &proposal {
+            proposal.validate_store(store)?;
+        }
+        let open_runtime = || {
+            Runtime::open(
+                store,
+                RuntimeLimits {
+                    max_attempts: proposal
+                        .as_ref()
+                        .map_or(2, crate::escalation::LoadedProposal::max_attempts),
+                    output_retention: config.output_retention,
+                    ..RuntimeLimits::default()
+                },
+            )
+            .map_err(error)
+        };
+        // Only escalation needs an existing owned journal while reconstructing.
+        // Invalid ordinary/backend/generated inputs still cannot create a store.
+        let runtime = if proposal.is_some() {
+            Some(open_runtime()?)
+        } else {
+            None
+        };
         let loaded = crate::generation::load_decision(
             definition.backend_decision.as_deref(),
             definition.generated_plan.as_deref(),
+            proposal.as_ref(),
+            runtime.as_ref(),
             &definition.node_id,
             &router,
             &context,
@@ -587,17 +656,10 @@ pub(crate) fn run(
         )?;
         let host = request.host.as_str().to_owned();
         validate_adapter_config(&host, &config)?;
+        let runtime = runtime.map_or_else(open_runtime, Ok)?;
         let display = serde_json::json!({"host": request.host, "model": request.model, "effort": request.effort,
             "scope": request.scope, "sandbox": request.sandbox, "tools": request.tools,
             "prompt_sha256": content_digest(request.prompt.as_bytes()), "resource_limits": config.limits});
-        let runtime = Runtime::open(
-            store,
-            RuntimeLimits {
-                output_retention: config.output_retention,
-                ..RuntimeLimits::default()
-            },
-        )
-        .map_err(error)?;
         let pending = runtime
             .review_decision(
                 &definition.run_id,
@@ -623,7 +685,7 @@ pub(crate) fn run(
         let Some(approved) = approve else {
             return json_output(
                 &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":digest,
-                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"executed":false}),
+                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"escalation_decision":loaded.decision.escalation_binding(),"decision_origin":loaded.decision.origin(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"executed":false}),
                 ExitCode::SUCCESS,
             );
         };

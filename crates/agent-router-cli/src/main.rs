@@ -7,6 +7,7 @@ mod cli;
 mod command;
 mod coordinator;
 mod diagnostics;
+mod escalation;
 mod evaluation;
 mod execution;
 mod execution_backend;
@@ -140,6 +141,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         } => generation::run(&manifest, now, json),
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
+        Commands::Escalation { command, json } => escalation::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
         Commands::Assets { command } => match command {
             command::AssetCommand::Review {
