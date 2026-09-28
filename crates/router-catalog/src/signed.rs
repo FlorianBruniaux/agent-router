@@ -1167,11 +1167,49 @@ fn text(value: &str, limit: usize) -> bool {
     !value.trim().is_empty() && value.len() <= limit && !value.chars().any(char::is_control)
 }
 fn public_source(value: &str) -> bool {
-    text(value, 512)
-        && !value.contains(['@', '?', '#', '\\'])
-        && !(value.as_bytes().get(1) == Some(&b':') && value.as_bytes().get(2) == Some(&b'/'))
-        && (value.starts_with("https://")
-            || (label(value) && !value.starts_with('/') && !value.starts_with("file:")))
+    if !text(value, 512) || value.contains(['@', '?', '#', '\\']) {
+        return false;
+    }
+    if let Some(rest) = value.strip_prefix("https://") {
+        let (authority, path) = rest.split_once('/').unwrap_or((rest, ""));
+        return public_authority(authority) && public_path(path);
+    }
+    value != "."
+        && value != ".."
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+}
+fn public_authority(value: &str) -> bool {
+    let (host, port) = match value.split_once(':') {
+        Some((host, port)) => (host, Some(port)),
+        None => (value, None),
+    };
+    !host.is_empty()
+        && host.bytes().any(|b| b != b'.')
+        && host
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-'))
+        && port.is_none_or(|port| {
+            (1..=5).contains(&port.len())
+                && port.bytes().all(|b| b.is_ascii_digit())
+                && port.parse::<u32>().is_ok_and(|p| (1..=65535).contains(&p))
+        })
+}
+/// Empty segments are refused except one trailing slash.
+fn public_path(path: &str) -> bool {
+    let mut segments: Vec<&str> = path.split('/').collect();
+    if segments.len() > 1 && segments.last() == Some(&"") {
+        segments.pop();
+    }
+    path.is_empty()
+        || segments.iter().all(|s| {
+            !s.is_empty()
+                && *s != "."
+                && *s != ".."
+                && s.bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'_' | b'~' | b'-'))
+        })
 }
 fn hex_string(value: &str, length: usize) -> bool {
     value.len() == length
