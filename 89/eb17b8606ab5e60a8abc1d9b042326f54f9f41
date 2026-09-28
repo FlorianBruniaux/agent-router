@@ -1,0 +1,19 @@
+crates/router-decision/tests/standard_sidecar.rs
+  s_86ed8bd547d4f8::t_a69fddd7175812 162-173,175-177,180,184,188-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "89eb17b8606ab5e60a8abc1d9b042326f54f9f41",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
