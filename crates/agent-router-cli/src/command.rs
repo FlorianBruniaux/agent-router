@@ -33,6 +33,13 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Review accounting bounds and propose durable attempt-based escalation.
+    Escalation {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: crate::escalation::Command,
+    },
     /// Generate a bounded global plan from eligible metadata only.
     GeneratePlan {
         #[arg(long)]
@@ -625,6 +632,7 @@ impl Commands {
     pub(crate) fn structured_output(&mut self) -> Option<&'static str> {
         let (json, title) = match self {
             Self::GeneratePlan { json, .. } => (json, "Generated plan"),
+            Self::Escalation { json, .. } => (json, "Escalation"),
             Self::BackendActivation { json, .. } => (json, "Backend activation"),
             Self::Coordinate { json, .. } => (json, "Workflow coordination"),
             Self::Prepare { json, .. } => (json, "Prepared execution"),

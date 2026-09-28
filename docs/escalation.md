@@ -102,3 +102,112 @@ eligible for escalation.
 Tests use local synthetic workers. Native canaries exercise the real OS sandbox
 and resource helper, but do not establish provider behavior, model quality,
 objective completion, native pricing or token accounting.
+
+## CLI: standalone run definitions
+
+The CLI supports accounting review and approval, an inert proposal file, selected
+asset preparation, run review and a separately approved dispatch. All inputs are
+strict bounded JSON. The source is an existing standalone run definition and its
+private runtime store. A new proposal requires the source's v3 asset authority.
+This does not retrofit v3 authority or attempt evidence onto an old run.
+
+First inspect a bound for one completed attempt. The numeric ceilings below are
+operator inputs, not values estimated or measured by this command:
+
+```sh
+agent-router escalation bound --store runtime --source-definition source/definition.json \
+  --attempt-run-id source --attempt 1 \
+  --max-cost-microusd "$COST_BOUND" --max-tokens "$TOKEN_BOUND" --json
+```
+
+Repeat that exact command with `--approve DIGEST` using the displayed
+`preview.approval_digest`. Repeat the review/approval pair for attempt 2. Review
+and approve one bound at a time: approving another bound changes the ledger and
+invalidates previews created against its previous state. An approved ceiling is
+reported as `parent_attested_upper_bound`; observed cost and tokens remain null.
+A bound cannot be approved twice or replaced with a smaller value.
+
+A policy explicitly lists allowed transitions and failures:
+
+```json
+{
+  "schema_version": 1,
+  "minimum_failed_attempts": 2,
+  "retryable_failures": ["crash", "timeout"],
+  "transitions": [
+    {"from_candidate_id": "primary", "to_candidate_id": "secondary"}
+  ]
+}
+```
+
+```sh
+agent-router escalation propose --store runtime --source-definition source/definition.json \
+  --policy escalation-policy.json --max-attempts 3 --output proposal.json --json
+```
+
+`--max-attempts` is required, accepts 3 through 5 and is a total attempt ceiling
+for this escalation family. It does not increase the ordinary run default of two
+attempts. Proposal output contains `document` and `preview`, with `executed:false`
+and `approved:false`. `--output` writes only the document, using a private new
+file and refusing overwrites. Proposing does not reserve a target or launch a
+worker. UNKNOWN accounting or cleanup, exhausted budgets, inadmissible targets
+and unsupported source origins remain refusals.
+
+Add `"escalation_decision":"proposal.json"` to the existing preparation manifest,
+use a new `run_id`, and retain the original task, prompt variables, workspace,
+source and scope. The field is exclusive with `backend_decision` and
+`generated_plan`. `prepare` uses the existing selected-asset pipeline and checks
+the actual prepared request against the source evidence before writing a bundle:
+
+```sh
+agent-router prepare --manifest prepare-target.json --output-directory target --json
+agent-router run --definition target/definition.json --store runtime --sandbox sandbox.json --json
+agent-router run --definition target/definition.json --store runtime --sandbox sandbox.json \
+  --approve FINAL_RUN_DIGEST --json
+```
+
+The final digest is the new run review's `approval_digest`, not an accounting
+approval or a proposal hash. The source and target must use the same output
+retention configuration for historical source reconstruction. Snapshot/asset
+freshness, the approved binaries and the OS sandbox are still checked through
+ordinary execution. A changed template or agent instruction that changes the
+prompt requires a new task instead of escalation. Each run review exposes
+`decision_origin`, `escalation_decision` and the unchanged `baseline_receipt_id`.
+The baseline receipt written to the bundle is never replaced with a fabricated
+selection or unavailability report.
+
+Proposal schema 1 pins the canonical runtime store, source definition, source
+material hash, policy, attempt ceiling, ledger hash and decision identifier. The
+source material includes the reopened immutable runtime definition and any
+historical backend authority locator. The CLI reads the proposal once, rebuilds
+its opaque proof from the currently owned journal, and binds its bytes and
+canonical paths into the final CLI approval. Copying a store, substituting a
+source locator, changing the ledger or changing the proposal invalidates an old
+approval or causes reconstruction to fail. No serialized `EscalationProof` is
+accepted and source manifests are not followed recursively. Generated and
+already escalated source decisions are rejected before their decision files are
+read. A historically activated source can contribute its completed attempts;
+this never reactivates a revoked semantic backend for dispatch.
+
+After restart, verification/artifact commands reopen the same source and proposal
+against the same store. Review reserves one exact target through the runtime's
+existing transactional claim; neither a second target nor `run --retry` can
+spend the escalation again. A changed or missing input does not fall back to the
+baseline silently.
+
+### Current CLI boundary
+
+Coordinator bundles are not accepted as escalation sources in this CLI version.
+`coordinate` explicitly refuses definitions containing `escalation_decision`
+with `escalation.coordinator.unsupported`. Those bundles also bind artifact
+grants and dependency bytes added to the final prompt; supporting them requires
+reconstruction through the coordinator. The standalone path does not discard
+those bindings or append dependency text after validation. This is an outstanding
+R05 application integration, not a completed coordinator capability.
+
+Ordinary CLI tests use local fake worker processes and deliberately retain UNKNOWN
+cleanup. They establish refusal and accounting behavior. The ignored native
+canaries use a built `router-sandbox-helper`, real OS containment and a synthetic
+Claude-speaking executable to establish the positive path, restart, source/store
+pins and final approval. They invoke no real provider and establish no live model
+availability, success quality or measured token/cost claim.

@@ -453,6 +453,15 @@ pub fn prepare_with_decision(
     } else {
         preparation_hash
     };
+    let preparation_hash = if let Some(binding) = decision.escalation_binding() {
+        content_digest(&json(&(
+            "agent-router:preparation:v4-escalation",
+            &preparation_hash,
+            binding,
+        ))?)
+    } else {
+        preparation_hash
+    };
     let preview = PreparationPreview {
         schema_version: 1,
         plan_id: input.plan.plan_id.clone(),
