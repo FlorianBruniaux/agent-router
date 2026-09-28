@@ -151,8 +151,13 @@ See [plan generation](plan-generation.md) for the native execution evidence.
 Signed catalog validation now covers common provenance, author, license and
 validity fields, hosts and presets, and exact prompt references. The 42 catalog
 tests include a correction for payload hosts outside a prompt's signed
-requirements. Active catalog state and dispatch-time invalidation remain a
-separate integration. See [signed catalogs](signed-catalogs.md).
+requirements. A separate [current catalog store](catalog-store.md) now implements
+explicit activation/revocation approval, durable revisions, cross-process guards
+and historical inspection. Its 15 local tests cover rollback, expiry, changed
+grants and replacement of the directory or lock while a guard is held. Independent
+regressions reproduced both stale-guard paths before correction and reject them
+afterward. This is library evidence; routing, preparation and dispatch integration
+remain open. See [signed catalogs](signed-catalogs.md).
 
 The [Omnigent comparison](omnigent-comparison.md) extends existing roadmap lots
 with six documented ideas. The first implementation is a strict, offline routing

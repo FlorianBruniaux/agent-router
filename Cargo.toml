@@ -16,6 +16,7 @@ members = [
     "crates/router-feedback",
     "integrations/bridge-contract",
     "crates/router-catalog",
+    "crates/router-catalog-store",
     "crates/router-policy",
     "crates/agent-router-cli",
     "crates/router-adapter-api",
