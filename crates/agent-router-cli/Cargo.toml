@@ -16,6 +16,7 @@ claude = ["dep:adapter-claude"]
 opencode = ["dep:adapter-opencode"]
 copilot = ["dep:adapter-copilot"]
 local-sidecar = ["router-decision/local-sidecar"]
+local-api = ["dep:router-local-api"]
 semantic-retrieval = ["router-retrieval/semantic-ranking"]
 
 [dependencies]
@@ -36,6 +37,7 @@ router-coordinator = { path = "../router-coordinator" }
 router-backend-policy = { path = "../router-backend-policy" }
 router-backend-store = { path = "../router-backend-store" }
 router-execution-decision = { path = "../router-execution-decision" }
+router-local-api = { path = "../router-local-api", optional = true }
 tokio = { version = "=1.45.1", features = ["rt-multi-thread", "time", "signal"] }
 clap.workspace = true
 router-catalog = { path = "../router-catalog" }

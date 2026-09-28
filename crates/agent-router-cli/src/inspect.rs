@@ -112,8 +112,16 @@ pub(crate) fn read_snapshot(
         CliError::SnapshotRead,
         CliError::SnapshotTooLarge,
     )?;
+    parse_snapshot(&bytes, now, max_age_seconds)
+}
+
+pub(crate) fn parse_snapshot(
+    bytes: &[u8],
+    now: Option<u64>,
+    max_age_seconds: u64,
+) -> Result<ValidatedHostObservation, CliError> {
     ValidatedHostObservation::from_json(
-        &bytes,
+        bytes,
         SnapshotValidation {
             now_unix_seconds: current_time(now)?,
             max_age_seconds,

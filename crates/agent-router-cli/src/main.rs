@@ -21,6 +21,8 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+#[cfg(all(feature = "local-api", unix))]
+mod serve;
 mod session_budget;
 mod sidecar;
 mod task_guide;
@@ -30,6 +32,7 @@ use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
 use clap::{Parser, error::ErrorKind};
 use cli::Cli;
 use command::Commands;
+use router_adapter_api::ValidatedHostObservation;
 use router_catalog::Catalog;
 use router_policy::Router;
 use router_types::{DecisionEnvelope, RouteDecision, RouteRequest};
@@ -372,6 +375,12 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         ),
         Commands::Explain { decision } => explain(&decision),
+        #[cfg(all(feature = "local-api", unix))]
+        Commands::Serve {
+            state_dir,
+            max_connections,
+            request_deadline_ms,
+        } => serve::run(&state_dir, max_connections, request_deadline_ms),
     }
 }
 
@@ -406,6 +415,17 @@ fn route(
         }
         .map_err(product::retrieval_error)?;
     }
+    decide(request, &catalog, snapshot, embedded_snapshot)
+}
+
+/// Shared by `route` and the local API: merges the explicit and embedded host
+/// snapshots, routes, and renders the canonical decision JSON.
+pub(crate) fn decide(
+    mut request: RouteRequest,
+    catalog: &Catalog,
+    snapshot: Option<ValidatedHostObservation>,
+    embedded_snapshot: Option<ValidatedHostObservation>,
+) -> Result<Outcome, CliError> {
     let snapshot = match (snapshot, embedded_snapshot) {
         (Some(explicit), Some(embedded)) if explicit.hash() != embedded.hash() => {
             return Err(CliError::Product("catalog.snapshot.mismatch"));
@@ -419,8 +439,8 @@ fn route(
     }
     let router = Router::stable_v1();
     let decision = match &snapshot {
-        Some(snapshot) => router.route_with_snapshot_hash(&request, &catalog, snapshot.hash()),
-        None => router.route(&request, &catalog),
+        Some(snapshot) => router.route_with_snapshot_hash(&request, catalog, snapshot.hash()),
+        None => router.route(&request, catalog),
     }
     .map_err(|error| {
         if error.is_invalid_request() {

@@ -20,6 +20,7 @@ members = [
     "crates/router-catalog-store",
     "crates/router-policy",
     "crates/agent-router-cli",
+    "crates/router-local-api",
     "crates/router-adapter-api",
     "crates/adapter-codex",
     "crates/adapter-claude",

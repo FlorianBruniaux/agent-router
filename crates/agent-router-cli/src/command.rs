@@ -273,6 +273,17 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Serve route-only decisions on an owner-private Unix socket.
+    #[cfg(all(feature = "local-api", unix))]
+    Serve {
+        /// Absolute path of the 0700 directory holding the socket and token.
+        #[arg(long)]
+        state_dir: PathBuf,
+        #[arg(long, default_value_t = 16)]
+        max_connections: usize,
+        #[arg(long, default_value_t = 10_000)]
+        request_deadline_ms: u64,
+    },
     Inspect {
         #[arg(long, value_enum, default_value = "auto")]
         host: HostChoice,
@@ -727,6 +738,8 @@ impl Commands {
                 | CatalogCommand::Refresh { json, .. } => (json, "Catalog"),
             },
             Self::Route { .. } | Self::Explain { .. } => return None,
+            #[cfg(all(feature = "local-api", unix))]
+            Self::Serve { .. } => return None,
         };
         let human = !*json;
         *json = true;

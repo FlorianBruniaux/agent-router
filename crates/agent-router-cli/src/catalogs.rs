@@ -45,8 +45,15 @@ pub(crate) fn load(
     now: Option<u64>,
     max_age: u64,
 ) -> Result<(Catalog, Option<ValidatedHostObservation>), CliError> {
-    let bytes = bytes(path)?;
-    if let Some(generated) = generated(&bytes, now, max_age)? {
+    load_bytes(&bytes(path)?, now, max_age)
+}
+
+pub(crate) fn load_bytes(
+    bytes: &[u8],
+    now: Option<u64>,
+    max_age: u64,
+) -> Result<(Catalog, Option<ValidatedHostObservation>), CliError> {
+    if let Some(generated) = generated(bytes, now, max_age)? {
         let snapshot = ValidatedHostObservation::from_observation(
             generated.snapshot().clone(),
             validation(now, max_age)?,
@@ -55,7 +62,7 @@ pub(crate) fn load(
         Ok((generated.catalog().clone(), Some(snapshot)))
     } else {
         Ok((
-            Catalog::from_json(&bytes).map_err(|_| CliError::CatalogInvalid)?,
+            Catalog::from_json(bytes).map_err(|_| CliError::CatalogInvalid)?,
             None,
         ))
     }
