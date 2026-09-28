@@ -30,5 +30,8 @@ a whole index or audit for another program. For commands that write files, the
 published artifact is independent of the display limit; changing formats does
 not undo or repeat that write.
 
-Configuration and task input remain strict bounded JSON. TOML/YAML input and an
-interactive task questionnaire are not implemented by the output renderer.
+`config --layers` accepts strict bounded JSON, TOML and YAML; see
+[configuration layer formats](configuration-formats.md) for the supported schema
+and refusal rules. Task input and other product manifests retain their JSON
+contracts. An interactive task questionnaire is not implemented by the output
+renderer.

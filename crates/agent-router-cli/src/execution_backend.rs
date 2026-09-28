@@ -2,7 +2,7 @@
 use crate::{CliError, inspect, phases};
 use router_backend_policy::{SignedBackendProposal, decide_active};
 use router_backend_store::BackendStore;
-use router_execution_decision::{ActivationAuthority, ActivationGuard, ExecutionDecision};
+use router_execution_decision::{ActivationGuard, ExecutionDecision};
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -29,13 +29,6 @@ pub(crate) struct AuthorityBinding {
     expected_config_hash: String,
     expected_head: Option<String>,
     manifest_sha256: String,
-}
-impl LoadedDecision {
-    pub fn authority(&self) -> Option<&dyn ActivationAuthority> {
-        self.authority
-            .as_ref()
-            .map(|store| store as &dyn ActivationAuthority)
-    }
 }
 pub(crate) fn scope_hash(
     workspace: &str,

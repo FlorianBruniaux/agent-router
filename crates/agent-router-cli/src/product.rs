@@ -6,6 +6,9 @@ use router_types::{TaskInput, WorkflowPreset};
 use router_workflow::{PlanLimits, WorkflowError};
 use std::{path::Path, process::ExitCode};
 
+#[path = "config_input.rs"]
+mod config_input;
+
 pub(crate) fn json_output(
     value: &impl serde::Serialize,
     exit_code: ExitCode,
@@ -48,7 +51,7 @@ pub(crate) fn configuration(path: &Path, json: bool) -> Result<Outcome, CliError
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
-    let layers = crate::phases::read_json(path, 256 * 1024)?;
+    let layers = config_input::read(path)?;
     let result = router_workflow::resolve_configuration(&layers).map_err(workflow_error)?;
     json_output(&result, ExitCode::SUCCESS)
 }

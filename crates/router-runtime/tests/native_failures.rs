@@ -159,6 +159,10 @@ impl Fixture {
         .unwrap()
     }
     async fn review(&self, runtime: &Runtime) -> PendingRun {
+        let review_started = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
         runtime
             .review(
                 "run-1",
@@ -169,7 +173,41 @@ impl Fixture {
                 "execute",
             )
             .await
-            .unwrap()
+            .unwrap_or_else(|error| {
+                eprintln!("original runtime review error: {error:?}");
+                let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                let snapshot = ValidatedHostObservation::from_observation(
+                    self.context.snapshot().clone(),
+                    SnapshotValidation { now_unix_seconds: now, max_age_seconds: 300 },
+                );
+                let receipt = self.router.route(&self.context).unwrap();
+                let receipt_error = self.router.validate_receipt(&self.context, &receipt).err();
+                let selection = receipt.selected.as_ref().unwrap();
+                let candidate = &selection.candidate;
+                let node = self.plan.nodes.iter().find(|node| node.id == "execute").unwrap();
+                let binding = [
+                    ("task", self.context.request().task == self.plan.task),
+                    ("receipt", self.request.receipt_id == receipt.receipt_id),
+                    ("candidate", self.request.candidate_id == candidate.id),
+                    ("phase", self.request.phase == receipt.phase),
+                    ("model", self.request.model == candidate.model),
+                    ("effort", self.request.effort == candidate.effort),
+                    ("agent", self.request.agent == candidate.agent),
+                    ("scope", self.request.scope == node.scope),
+                    ("capabilities", self.request.required_capabilities == self.router.execution_capabilities(&self.context, selection).unwrap()),
+                    ("timeout", self.request.timeout_ms <= node.budget.max_elapsed_ms),
+                    ("cost", candidate.estimated_cost_microusd <= node.budget.max_cost_microusd),
+                    ("tokens", candidate.estimated_tokens <= node.budget.max_tokens),
+                    ("elapsed", candidate.estimated_elapsed_ms <= node.budget.max_elapsed_ms),
+                ];
+                let mismatches: Vec<_> = binding.iter().filter_map(|(field, valid)| (!valid).then_some(field)).collect();
+                let permissions_error = snapshot.as_ref().ok().and_then(|snapshot| {
+                    let mut request = self.request.clone();
+                    request.mode = ExecutionMode::DryRun;
+                    router_adapter_api::authorize_execution(request, snapshot, &self.context.request().restrictions, None).err()
+                });
+                panic!("review failed: {error:?}; started={review_started}; now={now}; observed={}; snapshot={:?}; receipt={receipt_error:?}; mismatches={mismatches:?}; permissions={permissions_error:?}", self.context.snapshot().observed_at_unix_seconds, snapshot.err());
+            })
     }
 }
 

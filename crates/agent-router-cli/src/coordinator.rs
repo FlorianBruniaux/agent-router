@@ -139,7 +139,7 @@ fn reopen(
         execution::Definition,
         router_policy::PhaseRouter,
         router_policy::ValidatedPhaseContext,
-        crate::execution_backend::LoadedDecision,
+        crate::generation::LoadedDecision,
     ),
     CliError,
 > {
@@ -155,8 +155,10 @@ fn reopen(
         &bundle.final_request,
         router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
     )?;
-    let loaded = crate::execution_backend::load(
+    let loaded = crate::generation::load_decision(
         source.backend_decision.as_deref(),
+        source.generated_plan.as_deref(),
+        &source.node_id,
         &router,
         &context,
         &selection,
@@ -260,8 +262,10 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             )?;
             let config = execution::sandbox(&sandbox)?;
             execution::validate_adapter_config(request.host.as_str(), &config)?;
-            let loaded = crate::execution_backend::load(
+            let loaded = crate::generation::load_decision(
                 source.backend_decision.as_deref(),
+                source.generated_plan.as_deref(),
+                &source.node_id,
                 &router,
                 &context,
                 &selection,
@@ -335,7 +339,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 write_private(&directory.join(name), &content)?;
             }
             json_output(
-                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"execution_decision":loaded.decision.binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
+                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
                 ExitCode::SUCCESS,
             )
         }),
@@ -484,8 +488,10 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &source.request,
                 router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
             )?;
-            let loaded = crate::execution_backend::load(
+            let loaded = crate::generation::load_decision(
                 source.backend_decision.as_deref(),
+                source.generated_plan.as_deref(),
+                &source.node_id,
                 &router,
                 &context,
                 &baseline,

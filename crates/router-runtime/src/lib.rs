@@ -4,6 +4,8 @@ mod artifact_storage;
 mod artifacts;
 mod bubblewrap;
 mod error;
+mod escalation;
+mod generated;
 mod leases;
 mod native_version;
 mod outputs;
@@ -15,6 +17,7 @@ mod workflow;
 mod workspace;
 pub use bubblewrap::BubblewrapSandbox;
 pub use error::{Result, RuntimeError};
+pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
 pub use native_version::{NativeVersionProbe, probe_native_version};
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
@@ -212,7 +215,39 @@ impl Runtime {
         workflow: Option<&WorkflowRunBinding>,
         artifacts: Option<&RunArtifactContract>,
         decision: Option<&ExecutionDecisionBinding>,
+        escalation: Option<&EscalationDecisionBinding>,
+        generated: Option<&GeneratedDecisionBinding>,
     ) -> Result<String> {
+        if let Some(binding) = generated {
+            return digest(
+                "runtime-definition-v7-generated",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    workflow,
+                    artifacts,
+                    binding,
+                ),
+            );
+        }
+        if let Some(binding) = escalation {
+            return digest(
+                "runtime-definition-v6-escalation",
+                &(
+                    request,
+                    receipt,
+                    plan,
+                    node_id,
+                    self.limits.output_retention,
+                    workflow,
+                    artifacts,
+                    binding,
+                ),
+            );
+        }
         if let Some(binding) = decision {
             return digest(
                 "runtime-definition-v5-decision",
@@ -280,6 +315,8 @@ impl Runtime {
                 pending.run.workflow.as_ref(),
                 pending.artifacts.as_ref(),
                 pending.decision.binding(),
+                pending.decision.escalation_binding(),
+                pending.decision.generated_binding(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -376,6 +413,22 @@ impl Runtime {
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
         decision.validate_identity(router, context)?;
+        self.validate_escalation(router, context, decision, &node, &request, None, false)?;
+        if decision.generated_binding().is_some()
+            && workflow.is_some_and(|(_, generation)| generation != 0)
+        {
+            return Err(RuntimeError::Invalid(
+                "generated plan retry requires new instance",
+            ));
+        }
+        generated::validate(
+            decision,
+            &plan,
+            node_id,
+            &request,
+            workflow.map(|(contract, _)| contract),
+            false,
+        )?;
         let receipt = decision.baseline().clone();
         let workflow_binding = workflow::validate(
             workflow,
@@ -427,6 +480,8 @@ impl Runtime {
             workflow_binding.as_ref(),
             artifacts,
             decision.binding(),
+            decision.escalation_binding(),
+            decision.generated_binding(),
         )?;
         let approval_digest = digest(
             "runtime-approval-v1",
@@ -455,13 +510,14 @@ impl Runtime {
             workflow.map(|(contract, _)| contract),
             &request,
             self.limits.max_attempts,
+            decision.generated_binding(),
         )?;
         if run.state == RunState::Planned {
             run = self
                 .store
                 .transition(run_id, RunState::AwaitingApproval, "reviewed", None)?;
         }
-        Ok(PendingRun {
+        let pending = PendingRun {
             run,
             request,
             context: context.clone(),
@@ -472,7 +528,9 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
-        })
+        };
+        self.claim_escalation(&pending)?;
+        Ok(pending)
     }
     pub fn approve(&self, pending: PendingRun, approved_digest: &str) -> Result<ApprovedRun> {
         self.validate_pending_retention(&pending)?;
@@ -587,6 +645,21 @@ impl Runtime {
             .ok_or(RuntimeError::Invalid("node id"))?
             .clone();
         decision.validate_identity(router, context)?;
+        if decision.generated_binding().is_some()
+            && workflow.is_some_and(|(_, generation)| generation != 0)
+        {
+            return Err(RuntimeError::Invalid(
+                "generated plan retry requires new instance",
+            ));
+        }
+        generated::validate(
+            decision,
+            &plan,
+            node_id,
+            &request,
+            workflow.map(|(contract, _)| contract),
+            false,
+        )?;
         let receipt = decision.baseline().clone();
         let binding = workflow::validate(
             workflow,
@@ -627,11 +700,13 @@ impl Runtime {
             binding.as_ref(),
             artifacts,
             decision.binding(),
+            decision.escalation_binding(),
+            decision.generated_binding(),
         )?;
         if definition_hash != run.definition_hash || binding != run.workflow {
             return Err(RuntimeError::Integrity("definition changed"));
         }
-        Ok(PendingRun {
+        let pending = PendingRun {
             run,
             request,
             context: context.clone(),
@@ -642,10 +717,23 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
-        })
+        };
+        self.validate_pending_escalation(&pending, false)?;
+        self.validate_pending_generated(&pending, false)?;
+        Ok(pending)
     }
     /// Retry is explicit, requires a new approval call and never repeats writes.
     pub fn retry(&self, mut pending: PendingRun) -> Result<PendingRun> {
+        if pending.decision.generated_binding().is_some() {
+            return Err(RuntimeError::Invalid(
+                "generated plan requires a new global review",
+            ));
+        }
+        if pending.decision.escalation_binding().is_some() {
+            return Err(RuntimeError::Invalid(
+                "escalated attempt requires new accounted decision",
+            ));
+        }
         self.validate_pending_retention(&pending)?;
         self.store
             .retry(&pending.run.run_id, self.limits.max_attempts)?;
@@ -718,6 +806,8 @@ impl Runtime {
         // Keep polling durable controls while preparation runs. In particular,
         // never drop a version probe future before its helper proves cleanup.
         let preparing = async {
+            self.validate_pending_escalation(&pending, true)?;
+            self.validate_pending_generated(&pending, true)?;
             drop(pending.decision.acquire_dispatch(
                 &pending.router,
                 &pending.context,
@@ -778,6 +868,18 @@ impl Runtime {
                 return Err(error);
             }
         };
+        if let Err(error) = self
+            .validate_pending_escalation(&pending, true)
+            .and_then(|()| self.validate_pending_generated(&pending, true))
+        {
+            self.store.transition(
+                id,
+                RunState::Blocked,
+                "escalation_changed_before_dispatch",
+                Some(RunFailure::Policy),
+            )?;
+            return Err(error);
+        }
         let dispatch = match pending.decision.acquire_dispatch(
             &pending.router,
             &pending.context,
@@ -918,10 +1020,34 @@ impl Runtime {
                 _ => (RunState::Failed, Some(RunFailure::Crash)),
             }
         };
-        self.store
-            .finish_attempt(id, &format!("{:?}", output.outcome.termination))?;
-        self.store
-            .transition(id, state, "transport_observed", failure)?;
+        self.store.observed_attempt(AttemptEvidence {
+            schema_version: 1,
+            identity: AttemptIdentity {
+                run_id: id.into(),
+                attempt: self.store.get(id)?.attempts,
+            },
+            definition_hash: pending.run.definition_hash.clone(),
+            authorization_id: pending.decision.authorization_id().into(),
+            decision_origin: pending.decision.origin(),
+            sandbox: pending.request.sandbox,
+            context_hash: pending.context.context_hash().into(),
+            pool_hash: pending.context.pool_hash().into(),
+            source_state: pending.request.source_state.clone(),
+            task_execution_sha256: escalation::task_execution_hash(&pending.request)?,
+            candidate_id: pending.request.candidate_id.clone(),
+            model: pending.request.model.clone(),
+            effort: pending.request.effort,
+            workflow: pending.run.workflow.clone(),
+            state,
+            failure,
+            transport: output.outcome.clone(),
+            cleanup: ProcessCleanupEvidence::Unknown,
+            observed_cost_microusd: None,
+            observed_tokens: None,
+            started_event_hash: String::new(),
+            finished_event_hash: String::new(),
+            transition_event_hash: String::new(),
+        })?;
         let output_artifacts =
             if let OutputRetentionPolicy::PrivateArtifacts { retention_seconds } =
                 self.limits.output_retention

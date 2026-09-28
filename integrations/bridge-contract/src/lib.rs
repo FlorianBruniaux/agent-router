@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 mod harness;
+pub mod omnigent;
 mod provider;
 mod stream;
 pub use harness::{CopilotAdapter, OpenCodeAdapter};

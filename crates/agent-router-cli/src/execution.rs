@@ -36,6 +36,8 @@ pub(crate) struct Definition {
     asset_authority: Option<PathBuf>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) backend_decision: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) generated_plan: Option<PathBuf>,
     plan: PathBuf,
     pub(crate) node_id: String,
     pub(crate) request: PathBuf,
@@ -156,6 +158,10 @@ pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     value.policy_store = value.policy_store.map(|path| resolve(base, path));
     value.asset_authority = value.asset_authority.map(|path| resolve(base, path));
     value.backend_decision = value.backend_decision.map(|path| resolve(base, path));
+    value.generated_plan = value.generated_plan.map(|path| resolve(base, path));
+    if value.backend_decision.is_some() && value.generated_plan.is_some() {
+        return Err(CliError::Product("generation.composition.denied"));
+    }
     if value.policy_store.is_some() != value.policy_artifact_id.is_some() {
         return Err(CliError::Product("policy.artifact.required"));
     }
@@ -195,7 +201,7 @@ pub(crate) fn selection(
             .route(context)
             .map_err(|_| CliError::Product("runtime.route.invalid"))?,
     };
-    if definition.backend_decision.is_none() {
+    if definition.backend_decision.is_none() && definition.generated_plan.is_none() {
         router
             .validate_receipt(context, &receipt)
             .map_err(|_| CliError::Product("runtime.receipt.invalid"))?;
@@ -305,8 +311,10 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
         &definition.request,
         router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
     )?;
-    let loaded = crate::execution_backend::load(
+    let loaded = crate::generation::load_decision(
         definition.backend_decision.as_deref(),
+        definition.generated_plan.as_deref(),
+        &definition.node_id,
         &router,
         &context,
         &proof,
@@ -409,7 +417,7 @@ fn approval(
     pending: &PendingRun,
     config: &SandboxConfig,
     definition: &Definition,
-    backend: Option<&crate::execution_backend::AuthorityBinding>,
+    backend: Option<&crate::generation::SourceBinding>,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
     approval_for_digest(pending.approval_digest(), config, definition, backend)
 }
@@ -417,7 +425,7 @@ pub(crate) fn approval_for_digest(
     inner_digest: &str,
     config: &SandboxConfig,
     definition: &Definition,
-    backend: Option<&crate::execution_backend::AuthorityBinding>,
+    backend: Option<&crate::generation::SourceBinding>,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
     let mut hashes = BTreeMap::new();
     for path in config
@@ -563,8 +571,10 @@ pub(crate) fn run(
             &definition.request,
             router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
         )?;
-        let loaded = crate::execution_backend::load(
+        let loaded = crate::generation::load_decision(
             definition.backend_decision.as_deref(),
+            definition.generated_plan.as_deref(),
+            &definition.node_id,
             &router,
             &context,
             &proof,
@@ -613,7 +623,7 @@ pub(crate) fn run(
         let Some(approved) = approve else {
             return json_output(
                 &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":digest,
-                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"execution_decision":loaded.decision.binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"executed":false}),
+                "request":display,"sandbox_configuration":config,"binary_hashes":binaries,"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"executed":false}),
                 ExitCode::SUCCESS,
             );
         };

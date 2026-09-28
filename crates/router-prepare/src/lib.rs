@@ -208,6 +208,12 @@ pub fn prepare_with_decision(
     decision: &ExecutionDecision,
 ) -> Result<PreparedExecution> {
     decision.validate_identity(input.router, input.context)?;
+    decision.validate_generated_current(input.options.now_unix_seconds)?;
+    if let Some(proof) = decision.generated_plan() {
+        proof
+            .validate_workflow(input.plan, proof.execution_contract())
+            .map_err(|_| PreparationError::Binding("generated workflow"))?;
+    }
     let options = input.options;
     if options.schema_version != 1
         || options.max_input_bytes == 0
@@ -375,6 +381,11 @@ pub fn prepare_with_decision(
         timeout_ms: options.timeout_ms,
         max_output_bytes: options.max_output_bytes,
     };
+    if let Some(proof) = decision.generated_plan() {
+        proof
+            .validate_execution(input.node_id, &request, options.now_unix_seconds)
+            .map_err(|_| PreparationError::Binding("generated execution"))?;
+    }
     // Reuse adapter input gates in dry-run mode. No execute authorization digest
     // is manufactured or returned, and no adapter or supervisor is invoked.
     let mut preflight = request.clone();
@@ -427,6 +438,15 @@ pub fn prepare_with_decision(
     let preparation_hash = if let Some(binding) = decision.binding() {
         content_digest(&json(&(
             "agent-router:preparation:v2-decision",
+            &preparation_hash,
+            binding,
+        ))?)
+    } else {
+        preparation_hash
+    };
+    let preparation_hash = if let Some(binding) = decision.generated_binding() {
+        content_digest(&json(&(
+            "agent-router:preparation:v3-generated",
             &preparation_hash,
             binding,
         ))?)

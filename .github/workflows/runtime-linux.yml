@@ -31,6 +31,10 @@ jobs:
         run: cargo test -p router-runtime --test runtime native_bubblewrap_read_write_and_network_canary --locked -- --ignored --exact --nocapture
       - name: Build CLI and native resource helper
         run: cargo build -p agent-router-cli -p router-sandbox-helper --locked
+      - name: Require durable attempt accounting and approved escalation
+        run: cargo test -p router-runtime --test escalation --locked -- --ignored --test-threads=1
+      - name: Require generated plan preparation and approved native execution
+        run: cargo test -p agent-router-cli --test generation native_generated_plan_prepare_approve_and_execute_preserves_v3_authority --locked -- --ignored --exact --nocapture
       - name: Require CLI approval, feedback, retention and interruption behavior
         run: cargo test -p agent-router-cli --test native_execution --locked -- --ignored --nocapture --test-threads=1
       - name: Require native workflow artifact handoff

@@ -28,19 +28,23 @@ set -eu
 tools=missing
 permission=missing
 prompts=missing
+model=missing
+effort=missing
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --tools) [ "$#" -ge 2 ] && [ -z "$2" ] || exit 41; tools=disabled; shift 2 ;;
         --permission-mode) permission="$2"; shift 2 ;;
         --permission-prompts) prompts="$2"; shift 2 ;;
-        --model) [ "$2" = fixture-best ] || exit 42; shift 2 ;;
-        --effort) [ "$2" = medium ] || exit 43; shift 2 ;;
+        --model) [ "$2" = fixture-best ] || exit 42; model="$2"; shift 2 ;;
+        --effort) [ "$2" = medium ] || exit 43; effort="$2"; shift 2 ;;
         --output-format) [ "$2" = stream-json ] || exit 44; shift 2 ;;
         --input-format) [ "$2" = text ] || exit 45; shift 2 ;;
         --print|--verbose|--no-session-persistence) shift ;;
         *) exit 46 ;;
     esac
 done
+[ "$model" = fixture-best ] || exit 42
+[ "$effort" = medium ] || exit 43
 [ "$tools" = disabled ] && [ "$permission" = manual ] && [ "$prompts" = none ] || exit 47
 /bin/cat >/dev/null
 "#;
@@ -425,5 +429,35 @@ impl Fixture {
                 .args(["export", "--json"]),
             0,
         )
+    }
+}
+
+#[test]
+fn argument_contract_requires_both_model_and_effort() {
+    let base = [
+        "--tools",
+        "",
+        "--permission-mode",
+        "manual",
+        "--permission-prompts",
+        "none",
+    ];
+    for (extra, expected) in [
+        (vec!["--model", "fixture-best", "--effort", "medium"], 0),
+        (vec!["--effort", "medium"], 42),
+        (vec!["--model", "fixture-best"], 43),
+        (vec!["--model", "fixture-second", "--effort", "medium"], 42),
+        (vec!["--model", "fixture-best", "--effort", "high"], 43),
+    ] {
+        let output = Command::new("/bin/sh")
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .args(["-c", ARGUMENT_CHECK, "fixture"])
+            .args(base)
+            .args(&extra)
+            .stdin(std::process::Stdio::null())
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(expected), "flags: {extra:?}");
     }
 }

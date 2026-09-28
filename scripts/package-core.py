@@ -314,6 +314,7 @@ def crate_evidence(package: dict, cargo_home: Path) -> tuple[dict, dict[str, byt
                 relative = member.name[len(prefix):]
                 basename = PurePosixPath(relative).name.upper()
                 if not (basename.startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE"))
+                        or basename.endswith(("-LICENSE", "-LICENCE"))
                         or basename == "AUTHORS" or relative == named_license):
                     continue
                 if not member.isfile() or not safe_path(relative) or member.size > MAX_FILE:

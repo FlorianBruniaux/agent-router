@@ -33,6 +33,15 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Generate a bounded global plan from eligible metadata only.
+    GeneratePlan {
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        now: Option<u64>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Manage signed, explicitly approved semantic backend activation.
     BackendActivation {
         #[arg(long, global = true)]
@@ -615,6 +624,7 @@ impl Commands {
     /// result for humans. Existing machine flags and exit statuses are preserved.
     pub(crate) fn structured_output(&mut self) -> Option<&'static str> {
         let (json, title) = match self {
+            Self::GeneratePlan { json, .. } => (json, "Generated plan"),
             Self::BackendActivation { json, .. } => (json, "Backend activation"),
             Self::Coordinate { json, .. } => (json, "Workflow coordination"),
             Self::Prepare { json, .. } => (json, "Prepared execution"),

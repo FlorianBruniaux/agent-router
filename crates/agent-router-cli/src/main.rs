@@ -12,6 +12,7 @@ mod execution;
 mod execution_backend;
 mod execution_feedback;
 mod feedback;
+mod generation;
 mod human;
 mod inspect;
 mod phases;
@@ -133,6 +134,11 @@ fn run(mut command: Commands) -> Result<Outcome, CliError> {
 
 fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::GeneratePlan {
+            manifest,
+            now,
+            json,
+        } => generation::run(&manifest, now, json),
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
         Commands::Assets { command } => match command {

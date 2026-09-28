@@ -44,6 +44,8 @@ router-types = { path = "../router-types" }
 router-workflow = { path = "../router-workflow" }
 serde.workspace = true
 serde_json.workspace = true
+toml = { version = "=0.8.23", default-features = false, features = ["parse"] }
+yaml-rust2 = { version = "=0.13.0", default-features = false }
 
 [dev-dependencies]
 ed25519-dalek = "=2.2.0"

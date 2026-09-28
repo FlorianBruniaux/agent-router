@@ -2,6 +2,7 @@
 
 mod error;
 mod generated;
+mod signed;
 mod validate;
 
 use std::collections::BTreeMap;
@@ -15,6 +16,7 @@ pub use generated::{
     AssetAlias, AssetAvailability, AssetKind, AssetProvenance, AssetRegistry, GeneratedAsset,
     GeneratedCatalog, GenerationConfig, RegistryAsset,
 };
+pub use signed::*;
 
 /// Maximum number of model rows accepted by the MVP catalog parser.
 pub const MAX_CATALOG_MODELS: usize = 64;
