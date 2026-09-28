@@ -57,17 +57,19 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Catalogs and search** | Search five asset families with BM25, contextual signals, deterministic rank fusion and checked incremental updates. | `catalog`, `index`, `search`, `refresh`, [retrieval](docs/retrieval.md) |
 | **Signed asset preparation** | Validate the current catalog and publisher grants around assembly of the selected assets. Available through the library; signed CLI execution remains open work. | [Signed preparation](docs/signed-preparation.md) |
 | **Workflow planning** | Apply a risk floor, clarify missing facts and build one of eight presets, then rank bounded global assignments under cumulative budgets. | `normalize`, `plan`, `workflow`, `generate-plan`, [plan generation](docs/plan-generation.md) |
+| **Guided task intake** | Collect missing facts explicitly and export a complete task without granting implied permissions. | `task-guide`, [guided intake](docs/task-guide.md) |
 | **Human and JSON output** | Read decisions and approvals in the terminal, or preserve full versioned results for scripts with `--json`. | [CLI output](docs/cli-output.md) |
 | **Layered configuration** | Load strict JSON, TOML or YAML configuration layers while preserving restrictive precedence. | `config --layers`, [formats](docs/configuration-formats.md) |
 | **Review before execution** | Prepare a request, bind selected assets and approve the exact execution digest. | `assets`, `prepare`, `run`, [execution](docs/cli-execution.md) |
 | **Durable execution** | Track runs, cancel work, recover interrupted attempts and isolate writes in Git worktrees. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
+| **Shared capacity and session budgets** | Reserve capacity and conservative cost/token allocations across runtime roots; review additional allocation against the current ledger. | `admission`, `admission budget`, [budgets](docs/session-budgets.md) |
 | **Coordinated workflows** | Run approved waves, pass declared artifacts and require verification before integration. | `coordinate`, [coordination](docs/coordinator.md) |
 | **Explicit integration** | Preview, apply or discard a verified patch; control output retention and purge. | `artifacts`, [controls](docs/cli-execution.md) |
-| **Evaluation and feedback** | Replay decisions, compare policies offline and store consented, redacted feedback locally. | `replay`, `eval`, `feedback`, `policy` |
+| **Evaluation and feedback** | Replay decisions, report success under budget and calibration on explicit cohorts, and retain consented feedback locally. | `replay`, `eval`, `feedback`, `policy` |
 | **Optional semantic decisions** | Compare proposals in shadow, then review signed evidence, activate explicitly and revoke before dispatch. | `backend`, `backend-activation`, [execution binding](docs/backend-execution.md) |
 | **Local ranking sidecar** | Compare bounded ranking proposals and explicitly send selected outcomes or feedback under current consent. | `sidecar`, [protocol and consent](docs/standard-sidecar.md) |
-| **Diagnostics and audit** | Inspect configuration, storage and evidence; export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
-| **Separate distributions** | Export core and integration workspaces with integrity manifests and license inventory. | [Distribution](docs/distribution.md) |
+| **Diagnostics and audit** | Inspect configuration and active runtime storage without recovery; keep process and cleanup authority unknown, and export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
+| **Separate distributions** | Export source workspaces or build a local native binary with verified licenses, inventories and reproducibility checks. | [Distribution](docs/distribution.md) |
 | **Dependency checks** | Verify source license evidence and audit the committed dependency lock against a fresh RustSec database in CI. | [License evidence](docs/distribution.md#continuous-integration-license-evidence-gate), [security audit](docs/dependency-audit.md) |
 
 The project is under active development. Human validation of the evaluation
@@ -194,7 +196,8 @@ an existing parent conversation.
 | [Evaluate decisions](docs/evaluation.md) | [Private feedback and offline policy](docs/feedback.md) |
 | [Execute signed backend decisions](docs/backend-execution.md) | [Activation and rollback](docs/backend-store.md) |
 | [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |
-| [Build source distributions](docs/distribution.md) | [Development harness](docs/harness.md) |
+| [Build source distributions](docs/distribution.md) | [Build a local native binary](docs/binary-distribution.md) |
+| [Review shared session budgets](docs/session-budgets.md) | [Development harness](docs/harness.md) |
 
 The [functional specification](docs/specs/functional-specification.md) and
 [technical specification](docs/specs/technical-specification.md) define the wider
