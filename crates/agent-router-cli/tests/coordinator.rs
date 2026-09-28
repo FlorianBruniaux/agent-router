@@ -299,3 +299,43 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
     );
     assert_eq!(purged["purged"]["state"], "purged");
 }
+
+#[path = "support/admission_fixture.rs"]
+mod admission_fixture;
+#[test]
+fn coordinator_review_and_reopen_keep_the_shared_registry_pin() {
+    use std::os::unix::fs::DirBuilderExt;
+    let f = WorkflowFixture::new(Fixture::metadata("exit 99", 3000));
+    fs::DirBuilder::new()
+        .mode(0o700)
+        .create(&f.native.store)
+        .unwrap();
+    let registry = f.native.root.join("registry");
+    let (_, hash) = admission_fixture::bind(
+        &registry,
+        &[(
+            &f.native.root,
+            &f.native.store.join("runtime"),
+            "coordinator",
+        )],
+    );
+    let review = f.review();
+    assert_eq!(review["executed"], false);
+    let bad = f.wave("wrong").output().unwrap();
+    assert!(
+        String::from_utf8_lossy(&bad.stderr).contains("coordinator.approval.required_or_changed")
+    );
+    let mut source: Value =
+        serde_json::from_slice(&fs::read(f.native.root.join("definition.json")).unwrap()).unwrap();
+    source.as_object_mut().unwrap().remove("admission");
+    write(&f.native.root.join("definition.json"), &source);
+    let bad = f
+        .wave(review["approval_digest"].as_str().unwrap())
+        .output()
+        .unwrap();
+    assert_eq!(bad.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&bad.stderr).contains("runtime.approval.required_or_changed"));
+    let registry = router_runtime::AdmissionStore::open(&registry, &hash).unwrap();
+    assert_eq!(registry.status().unwrap().granted, 0);
+    assert!(!f.native.store.join("runtime/worktrees").exists());
+}

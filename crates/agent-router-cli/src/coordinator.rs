@@ -209,19 +209,26 @@ pub(crate) fn escalation_source(
         artifacts,
     })
 }
+pub(crate) fn bundle_admission(
+    path: &Path,
+) -> Result<Option<router_types::AdmissionConfig>, CliError> {
+    Ok(execution::load_definition(&bundle_base(path)?.source_definition)?.admission)
+}
 fn runtime(
     store: &Path,
     retention: OutputRetentionPolicy,
     max_attempts: u32,
+    admission: Option<&router_types::AdmissionConfig>,
 ) -> Result<Arc<Runtime>, CliError> {
     Ok(Arc::new(
-        Runtime::open(
+        crate::admission::open(
             &store.join("runtime"),
             RuntimeLimits {
                 output_retention: retention,
                 max_attempts,
                 ..RuntimeLimits::default()
             },
+            admission,
         )
         .map_err(execution::error)?,
     ))
@@ -397,6 +404,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &store,
                 config.output_retention,
                 proposal.as_ref().map_or(2, |p| p.max_attempts()),
+                source.admission.as_ref(),
             )?;
             let coordinator = owner(&store, runtime)?;
             coordinator.register(&workflow).map_err(error)?;
@@ -519,10 +527,18 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 return Err(CliError::Product("coordinator.wave.attempt_limit_mismatch"));
             }
             let max_attempts = *limits.first().ok_or(CliError::InvalidCommand)?;
+            let configs = entries
+                .iter()
+                .map(|(b, _, _)| {
+                    execution::load_definition(&b.source_definition).map(|d| d.admission)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            let admission = crate::admission::same(&configs)?;
             let runtime = runtime(
                 &store,
                 retention.ok_or(CliError::InvalidCommand)?,
                 max_attempts,
+                admission.as_ref(),
             )?;
             let coordinator = owner(&store, runtime)?;
             let mut pending_steps = Vec::new();
@@ -708,7 +724,12 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 .map(|p| p.max_attempts())
                 .max()
                 .unwrap_or(2);
-            let runtime = runtime(&store, retained, max_attempts)?;
+            let configs = loaded
+                .iter()
+                .map(|b| execution::load_definition(&b.source_definition).map(|d| d.admission))
+                .collect::<Result<Vec<_>, _>>()?;
+            let admission = crate::admission::same(&configs)?;
+            let runtime = runtime(&store, retained, max_attempts, admission.as_ref())?;
             let coordinator = owner(&store, runtime)?;
             for bundle in loaded {
                 if definition(&bundle.workflow)? != workflow {
@@ -737,6 +758,9 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &store,
                 retained,
                 bundle.proposal.as_ref().map_or(2, |p| p.max_attempts()),
+                execution::load_definition(&bundle.source_definition)?
+                    .admission
+                    .as_ref(),
             )?;
             let coordinator = owner(&store, Arc::clone(&runtime))?;
             let (pending, ..) = reopen(&coordinator, &workflow, &bundle, true)?;

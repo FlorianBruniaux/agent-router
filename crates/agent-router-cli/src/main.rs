@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod admission;
 mod assets;
 mod backend_activation;
 mod catalogs;
@@ -20,6 +21,7 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+mod session_budget;
 mod sidecar;
 
 use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
@@ -144,6 +146,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         Commands::Sidecar { command, json } => sidecar::run(command, json),
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Escalation { command, json } => escalation::run(command, json),
+        Commands::Admission { command, json } => admission::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
         Commands::Assets { command } => match command {
             command::AssetCommand::Review {

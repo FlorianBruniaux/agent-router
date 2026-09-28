@@ -14,6 +14,7 @@ use std::{
 struct Manifest {
     schema_version: u32,
     run_id: String,
+    admission: Option<router_types::AdmissionConfig>,
     context: PathBuf,
     host_snapshot: PathBuf,
     catalog: PathBuf,
@@ -61,7 +62,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
-    let manifest: Manifest = phases::read_json(path, 64 * 1024)?;
+    let mut manifest: Manifest = phases::read_json(path, 64 * 1024)?;
     if manifest.schema_version != 1
         || manifest.run_id.is_empty()
         || manifest.run_id.len() > 96
@@ -75,6 +76,9 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
     }
     let absolute = fs::canonicalize(path).map_err(|_| CliError::RequestRead)?;
     let base = absolute.parent().ok_or(CliError::RequestRead)?;
+    if let Some(config) = &mut manifest.admission {
+        crate::admission::resolve(config, base)?;
+    }
     let mut options: PreparationOptions =
         phases::read_json(&resolve(base, manifest.options), 64 * 1024)?;
     // Executable preparation never accepts a caller-supplied historic clock.
@@ -262,6 +266,10 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
                 (Some("policy.json"), None, None)
             };
         let mut definition = serde_json::json!({"schema_version":1,"run_id":manifest.run_id,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":policy_file,"policy_store":policy_store,"policy_artifact_id":policy_artifact_id,"plan":"plan.json","node_id":manifest.node_id,"request":"request.json","receipt":"receipt.json"});
+        if let Some(config) = &manifest.admission {
+            definition["admission"] =
+                serde_json::to_value(config).map_err(|_| CliError::Internal)?;
+        }
         if let Some(path) = &inputs.asset_authority {
             definition["asset_authority"] =
                 serde_json::json!(fs::canonicalize(path).map_err(|_| CliError::RequestRead)?);

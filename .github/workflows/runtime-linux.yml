@@ -31,6 +31,10 @@ jobs:
         run: cargo test -p router-runtime --test runtime native_bubblewrap_read_write_and_network_canary --locked -- --ignored --exact --nocapture
       - name: Build CLI and native resource helper
         run: cargo build -p agent-router-cli -p router-sandbox-helper --locked
+      - name: Require shared admission, queued cancellation and fresh authority
+        run: cargo test -p agent-router-cli --features claude --test admission --locked -- --ignored --nocapture --test-threads=1
+      - name: Require shared session allocations and crash recovery
+        run: cargo test -p agent-router-cli --features claude --test session_budgets --locked -- --ignored --nocapture --test-threads=1
       - name: Require durable attempt accounting and approved escalation
         run: cargo test -p router-runtime --test escalation --locked -- --ignored --test-threads=1
       - name: Require CLI escalation approval, workflow recovery and rejection gates
