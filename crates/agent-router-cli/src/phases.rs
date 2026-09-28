@@ -101,6 +101,7 @@ pub(crate) fn route(inputs: PhaseArgs, json: bool) -> Result<Outcome, CliError> 
 }
 pub(crate) struct BackendArgs {
     pub backend: String,
+    pub expected_backend_artifact: Option<String>,
     pub endpoint: Option<SocketAddr>,
     pub bearer_env: Option<String>,
     pub allow_redacted_metadata: bool,
@@ -109,6 +110,9 @@ pub(crate) struct BackendArgs {
     pub minimum_confidence_micros: u32,
 }
 fn adapter(args: &BackendArgs) -> Result<Box<dyn DecisionBackend>, CliError> {
+    if args.backend != "standard-v1" && args.expected_backend_artifact.is_some() {
+        return Err(CliError::InvalidCommand);
+    }
     if args.backend == "deterministic" {
         if args.endpoint.is_some() || args.bearer_env.is_some() {
             return Err(CliError::InvalidCommand);
@@ -135,6 +139,21 @@ fn adapter(args: &BackendArgs) -> Result<Box<dyn DecisionBackend>, CliError> {
             })
             .transpose()?;
         let backend: Box<dyn DecisionBackend> = match args.backend.as_str() {
+            "standard-v1" => Box::new(
+                router_decision::StandardSidecarBackend::new(
+                    endpoint,
+                    bearer,
+                    args.expected_backend_artifact
+                        .clone()
+                        .ok_or(CliError::Product("backend.artifact.required"))?,
+                    if args.allow_redacted_metadata {
+                        BackendDataPolicy::RedactedMetadataToLoopback
+                    } else {
+                        BackendDataPolicy::Deny
+                    },
+                )
+                .map_err(|e| CliError::Product(e.code()))?,
+            ),
             "laya" => Box::new(
                 router_decision::LayaLocalBackend::new(endpoint, bearer)
                     .map_err(|e| CliError::Product(e.code()))?,

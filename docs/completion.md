@@ -58,9 +58,10 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 - The watchdog distinguishes process-group termination from Linux namespace
   termination. Detached descendants are outside the macOS group-only proof.
   Missing, corrupt or unresolved leases block recovery and retain writer locks.
-- Deep diagnostics now check bounded component schemas, catalog/body bindings
-  and SQLite integrity without writes. WAL requires a coherent snapshot; unsafe
-  descriptor access remains unsupported. Host activation and authentication
+- Deep diagnostics check bounded component schemas, catalog/body bindings
+  and SQLite integrity without writes. PR #26 adds a bounded in-memory snapshot
+  from an already-owned connection, including committed WAL contents. The path
+  diagnostic still refuses WAL and unsafe descriptor access. Host activation and authentication
   remain distinct observations, never inferred from file presence.
 - The measured NFR-003 first-launch startup target is not met: 524.315 ms and
   620.105 ms were observed against a 150 ms requirement. Decision p95 up to
@@ -139,13 +140,15 @@ The standalone CLI lifecycle shipped in PR #22, merged as `cc8b3e4`; all eight
 checks passed on its exact head `8d11338`. It requires parent accounting approval,
 an inert pinned proposal, selected-asset preparation and a fresh run approval.
 
-The coordinator extension is implemented locally with registered bundle sources,
+The coordinator extension shipped in PR #25 at `009b701` with registered bundle sources,
 exact final prompts and artifact grants, cumulative reservations and next-generation
 approval. Two native synthetic-host canaries cover a nonempty predecessor handoff,
 two failed generations, secondary dispatch, historical reopen, interrupted
 registration recovery, and budget/cancellation refusals before a new claim.
-Its independent review and remote CI must accompany delivery; those local canaries
-do not establish provider behavior or measured accounting. See
+Its independent review and eight PR checks passed, as did all four post-merge
+checks. The local suite passed 687 tests, with 27 explicitly ignored native
+cases run separately where applicable. Those canaries do not establish provider
+behavior or measured accounting. See
 [coordinator escalation](escalation.md#cli-coordinator-source-bundles).
 
 ## Resumed planning, catalogs and Omnigent work
@@ -166,8 +169,24 @@ explicit activation/revocation approval, durable revisions, cross-process guards
 and historical inspection. Its 15 local tests cover rollback, expiry, changed
 grants and replacement of the directory or lock while a guard is held. Independent
 regressions reproduced both stale-guard paths before correction and reject them
-afterward. This is library evidence; routing, preparation and dispatch integration
-remain open. See [signed catalogs](signed-catalogs.md).
+afterward. The store shipped in PR #23 at `4804b37`. PR #27 at `9c47a2b`
+then added [signed routing](signed-routing.md): authenticated constraints are
+applied before scoring and v4 receipts bind the current catalog and grants.
+All eight PR checks and four post-merge checks passed. Signed preparation
+and dispatch remain closed. See [signed catalogs](signed-catalogs.md).
+
+PR #26 at `4116045` delivered the owned SQLite snapshot after independent
+review found and reproduced an inherited transaction-mode defect. Explicit
+deferred reads now preserve caller defaults and work during a concurrent WAL
+writer. The final local suite passed 697 tests with 27 ignored; all eight PR
+checks and four post-merge checks passed. A snapshot is not evidence of host
+activation, schema migration correctness or process liveness.
+
+The optional [standard sidecar client](standard-sidecar.md) is undergoing
+verification. It negotiates protocol v1, ranks only the supplied candidate pool
+and sends separately authorized retained outcomes or human feedback. The
+deterministic decision stays active; a transport acknowledgement proves neither
+learning nor native execution. This client does not implement the local daemon.
 
 The [Omnigent comparison](omnigent-comparison.md) extends existing roadmap lots
 with six documented ideas. The first implementation is a strict, offline routing
