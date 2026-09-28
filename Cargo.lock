@@ -1037,15 +1037,19 @@ dependencies = [
 name = "router-policy"
 version = "0.1.0"
 dependencies = [
+ "ed25519-dalek",
  "hex",
  "router-adapter-api",
  "router-asset-contracts",
  "router-catalog",
+ "router-catalog-store",
+ "router-retrieval",
  "router-types",
  "router-workflow",
  "serde",
  "serde_json",
  "sha2",
+ "tempfile",
  "thiserror",
 ]
 
@@ -1096,10 +1100,13 @@ dependencies = [
  "router-asset-contracts",
  "router-backend-policy",
  "router-catalog",
+ "router-catalog-store",
  "router-decision",
+ "router-doctor",
  "router-eval",
  "router-execution-decision",
  "router-policy",
+ "router-retrieval",
  "router-types",
  "router-workflow",
  "rusqlite",

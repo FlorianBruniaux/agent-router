@@ -2,6 +2,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::asset_phases::ValidatedPhaseAssets;
+use crate::signed_phases::ValidatedPhaseCatalog;
 use router_adapter_api::{HostObservation, ValidatedHostObservation};
 use router_catalog::Catalog;
 use router_types::*;
@@ -62,6 +63,7 @@ impl ValidatedPhaseReceipt {
 #[derive(Clone, Debug)]
 pub struct ValidatedPhaseContext {
     pub(crate) assets: Option<ValidatedPhaseAssets>,
+    pub(crate) signed_catalog: Option<ValidatedPhaseCatalog>,
     request: PhaseRouteRequest,
     policy: PhasePolicy,
     snapshot: HostObservation,
@@ -127,7 +129,7 @@ impl PhaseRouter {
         snapshot: &ValidatedHostObservation,
         catalog: &Catalog,
     ) -> Result<ValidatedPhaseContext> {
-        self.context_inner(request, snapshot, catalog, None)
+        self.context_inner(request, snapshot, catalog, None, None)
     }
 
     pub(crate) fn context_inner(
@@ -136,6 +138,7 @@ impl PhaseRouter {
         snapshot: &ValidatedHostObservation,
         catalog: &Catalog,
         assets: Option<ValidatedPhaseAssets>,
+        signed_catalog: Option<ValidatedPhaseCatalog>,
     ) -> Result<ValidatedPhaseContext> {
         validate_request(&request)?;
         router_workflow::validate_task(&request.task)
@@ -151,7 +154,14 @@ impl PhaseRouter {
             .content_hash()
             .map_err(|_| PhaseRouteError::Catalog)?;
         let policy_hash = hash("phase-policy-v2", &self.policy)?;
-        let pool_hash = hash("phase-pool-v2", &request.candidates)?;
+        let legacy_pool_hash = hash("phase-pool-v2", &request.candidates)?;
+        let pool_hash = match &signed_catalog {
+            Some(signed) => hash(
+                "phase-pool-v4",
+                &(&legacy_pool_hash, signed.binding_digest()),
+            )?,
+            None => legacy_pool_hash,
+        };
         let registry_hash = hash("phase-registry-v2", &request.registry)?;
         // The snapshot payload is bound in addition to its digest, and the entire
         // canonical catalog hash is bound rather than its declared version.
@@ -171,6 +181,13 @@ impl PhaseRouter {
             )?,
             None => legacy_context_hash,
         };
+        let context_hash = match &signed_catalog {
+            Some(signed) => hash(
+                "phase-context-v4",
+                &(&context_hash, signed.binding_digest()),
+            )?,
+            None => context_hash,
+        };
         let mut eligible = Vec::new();
         let mut execution_capabilities = BTreeMap::new();
         let mut exclusions = Vec::new();
@@ -189,6 +206,7 @@ impl PhaseRouter {
                 &registry,
                 &self.policy,
                 assets.as_ref(),
+                signed_catalog.as_ref(),
             )? {
                 Ok(evaluation) => {
                     execution_capabilities.insert(
@@ -221,6 +239,7 @@ impl PhaseRouter {
         exclusions.dedup();
         Ok(ValidatedPhaseContext {
             assets,
+            signed_catalog,
             request,
             policy: self.policy.clone(),
             snapshot: snapshot.observation().clone(),
@@ -326,7 +345,13 @@ impl PhaseRouter {
             .map(|s| (*s).clone())
             .collect();
         let mut receipt = PhaseReceipt {
-            schema_version: if context.assets.is_some() { 3 } else { 2 },
+            schema_version: if context.signed_catalog.is_some() {
+                4
+            } else if context.assets.is_some() {
+                3
+            } else {
+                2
+            },
             receipt_id: String::new(),
             phase: context.request.phase,
             context_hash: context.context_hash.clone(),
@@ -342,7 +367,9 @@ impl PhaseRouter {
             unavailable: unavailable.clone(),
         };
         receipt.receipt_id = hash(
-            if context.assets.is_some() {
+            if context.signed_catalog.is_some() {
+                "phase-receipt-v4"
+            } else if context.assets.is_some() {
                 "phase-receipt-v3"
             } else {
                 "phase-receipt-v2"
@@ -407,6 +434,7 @@ struct EligibleEvaluation {
     capabilities: BTreeSet<Capability>,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn evaluate(
     request: &PhaseRouteRequest,
     candidate: &PhaseCandidate,
@@ -415,6 +443,7 @@ fn evaluate(
     registry: &BTreeMap<(PhaseAssetKind, &str), &PhaseRegisteredAsset>,
     policy: &PhasePolicy,
     extended_assets: Option<&ValidatedPhaseAssets>,
+    signed_catalog: Option<&ValidatedPhaseCatalog>,
 ) -> Result<std::result::Result<EligibleEvaluation, Vec<PhaseExclusion>>> {
     let mut failures = Vec::new();
     let mut reject = |code: &str, evidence: String| {
@@ -545,6 +574,15 @@ fn evaluate(
             content_sha256: hash("phase-skill-v2", skill)?,
             authority: "policy_catalog".into(),
         });
+    }
+    if let Some(signed) = signed_catalog {
+        match signed.requirements(candidate) {
+            Ok((extra_capabilities, extra_mutations)) => {
+                capabilities.extend(extra_capabilities);
+                mutations.extend(extra_mutations);
+            }
+            Err(code) => reject(code, "signed asset requirements unavailable".into()),
+        }
     }
     if capabilities.contains(&Capability::WorkspaceWrite) {
         mutations.insert(Mutation::WorkspaceWrite);
@@ -683,8 +721,9 @@ fn evaluate(
     // Scoring is reached only after every hard constraint passes.
     if let Some(extended) = extended_assets {
         match extended.gate_candidate(request, candidate, &capabilities, &mutations) {
-            Ok(extra) => {
-                capabilities = extra;
+            Ok((extra_capabilities, extra_mutations)) => {
+                capabilities = extra_capabilities;
+                mutations = extra_mutations;
                 for asset in &mut assets {
                     if asset.kind == "skill" {
                         let id = SkillId::parse(asset.id.clone())
@@ -701,6 +740,25 @@ fn evaluate(
                     candidate_id: candidate.id.clone(),
                     code: error.code().into(),
                     evidence: "extended asset gate rejected candidate".into(),
+                }]));
+            }
+        }
+    }
+    if let Some(signed) = signed_catalog {
+        match signed.gate_candidate(
+            request,
+            candidate,
+            &capabilities,
+            &mutations,
+            snapshot,
+            extended_assets,
+        ) {
+            Ok(signed_assets) => assets.extend(signed_assets),
+            Err(code) => {
+                return Ok(Err(vec![PhaseExclusion {
+                    candidate_id: candidate.id.clone(),
+                    code: code.into(),
+                    evidence: "current signed catalog rejected candidate before scoring".into(),
                 }]));
             }
         }

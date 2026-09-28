@@ -160,6 +160,12 @@ impl Runtime {
     pub fn verify_integrity(&self) -> Result<()> {
         self.store.verify_events()
     }
+    /// Inspect a coherent in-memory copy of the already owned SQLite connection.
+    /// This does not certify schema compatibility, journal authenticity, host
+    /// liveness or cleanup; those evidence checks remain separate.
+    pub fn diagnose_storage(&self) -> router_doctor::Result<router_doctor::DatabaseSnapshotReport> {
+        self.store.diagnose_snapshot()
+    }
     /// Returns metadata only; retained bytes must still match their recorded hashes.
     pub fn output_artifacts(&self, id: &str) -> Result<Vec<OutputArtifacts>> {
         let records = self.store.output_artifacts(id)?;
@@ -392,6 +398,11 @@ impl Runtime {
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
     ) -> Result<PendingRun> {
+        if context.has_signed_catalog() {
+            return Err(RuntimeError::Invalid(
+                "signed catalog dispatch authority unavailable",
+            ));
+        }
         if run_id.is_empty()
             || run_id.len() > 96
             || !run_id
@@ -632,6 +643,11 @@ impl Runtime {
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
     ) -> Result<PendingRun> {
+        if context.has_signed_catalog() {
+            return Err(RuntimeError::Invalid(
+                "signed catalog dispatch authority unavailable",
+            ));
+        }
         let run = self.store.get(run_id)?;
         router_workflow::validate_plan(&plan)
             .map_err(|_| RuntimeError::Invalid("workflow plan"))?;
@@ -772,6 +788,14 @@ impl Runtime {
         cancel: Cancellation,
         authority: Option<&dyn ActivationAuthority>,
     ) -> Result<RunCompletion> {
+        // Routing proof is not current catalog execution authority. Keep all
+        // legacy execution entrances closed until a combined dispatch guard is
+        // acquired and retained through spawn by the signed-catalog integration.
+        if approved.pending.context.has_signed_catalog() {
+            return Err(RuntimeError::Invalid(
+                "signed catalog dispatch authority unavailable",
+            ));
+        }
         let pending = approved.pending;
         self.store.require_cleanup_complete()?;
         self.validate_pending_retention(&pending)?;
