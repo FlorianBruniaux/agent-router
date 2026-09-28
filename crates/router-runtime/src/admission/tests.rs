@@ -1,7 +1,7 @@
 use super::*;
 use std::collections::BTreeMap;
 
-fn policy() -> AdmissionPolicy {
+pub(super) fn policy() -> AdmissionPolicy {
     AdmissionPolicy {
         schema_version: 1,
         global_limit: 2,
@@ -27,13 +27,20 @@ fn policy() -> AdmissionPolicy {
         }],
     }
 }
-fn fixture() -> (tempfile::TempDir, AdmissionStore) {
+pub(super) fn fixture() -> (tempfile::TempDir, AdmissionStore) {
     let temp = tempfile::tempdir().unwrap();
     let store = AdmissionStore::create(&temp.path().join("registry"), &policy()).unwrap();
     (temp, store)
 }
-fn ticket(s: &AdmissionStore, owner: &str, run: &str, group: &str, provider: &str) -> Ticket {
+pub(super) fn ticket(
+    s: &AdmissionStore,
+    owner: &str,
+    run: &str,
+    group: &str,
+    provider: &str,
+) -> Ticket {
     let mut t = Ticket {
+        session_budget: None,
         id: String::new(),
         binding: s.binding(owner).unwrap(),
         run_id: run.into(),

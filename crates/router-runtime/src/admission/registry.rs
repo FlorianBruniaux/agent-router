@@ -3,11 +3,12 @@ use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use std::sync::Mutex;
 
 pub struct AdmissionStore {
-    db: Mutex<Connection>,
-    files: files::Files,
-    policy: AdmissionPolicy,
-    policy_hash: String,
-    registry_hash: String,
+    pub(super) db: Mutex<Connection>,
+    pub(super) files: files::Files,
+    pub(super) policy: AdmissionPolicy,
+    pub(super) policy_hash: String,
+    pub(super) registry_hash: String,
+    pub(super) budget_policy: Option<SessionBudgetPolicy>,
 }
 impl AdmissionStore {
     /// Explicitly initializes an empty private registry; never imports legacy runs.
@@ -38,7 +39,7 @@ impl AdmissionStore {
             tx.commit()?;
         }
         let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if version != 1 {
+        if ![1, 2].contains(&version) {
             return Err(RuntimeError::Integrity("admission schema"));
         }
         let json: String = db.query_row(
@@ -54,6 +55,13 @@ impl AdmissionStore {
         if policy_hash != expected || json != serde_json::to_string(&policy)? {
             return Err(RuntimeError::Approval);
         }
+        let budget_policy = budget::read_policy(&db)?;
+        if budget_policy
+            .as_ref()
+            .is_some_and(|p| p.runtime_sessions.keys().ne(policy.runtimes.keys()))
+        {
+            return Err(BudgetError::Policy.into());
+        }
         let registry_hash = files.binding_hash()?;
         files.check()?;
         Ok(Self {
@@ -62,6 +70,7 @@ impl AdmissionStore {
             policy,
             policy_hash,
             registry_hash,
+            budget_policy,
         })
     }
     pub fn policy(&self) -> &AdmissionPolicy {
@@ -75,6 +84,7 @@ impl AdmissionStore {
             return Err(RuntimeError::Invalid("admission unknown runtime"));
         }
         Ok(AdmissionBinding {
+            session_budget: self.budget_binding(runtime_id)?,
             schema_version: 1,
             registry_sha256: self.registry_hash.clone(),
             policy_sha256: self.policy_hash.clone(),
@@ -88,7 +98,7 @@ impl AdmissionStore {
     pub(super) fn waiter(&self, ticket: &Ticket) -> Result<files::Owner> {
         self.files.owner(&format!("ticket:{}", ticket.id))
     }
-    fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
+    pub(super) fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
         self.files.check()?;
         let db = self
             .db
@@ -102,10 +112,14 @@ impl AdmissionStore {
         if json != serde_json::to_string(&self.policy)? {
             return Err(RuntimeError::Approval);
         }
+        if budget::read_policy(&db)? != self.budget_policy {
+            return Err(BudgetError::Authority.into());
+        }
         Ok(db)
     }
-    fn validate_ticket(&self, ticket: &Ticket) -> Result<()> {
+    pub(super) fn validate_ticket(&self, ticket: &Ticket) -> Result<()> {
         ticket.verify()?;
+        self.validate_budget_config(&ticket.binding.runtime_id, ticket.session_budget.as_ref())?;
         if ticket.binding != self.binding(&ticket.binding.runtime_id)?
             || !self.policy.providers.contains_key(&ticket.provider)
             || !self.policy.agents.contains_key(&ticket.agent)
@@ -216,7 +230,8 @@ impl AdmissionStore {
         if granted.len() > self.policy.global_limit as usize {
             return Err(RuntimeError::Integrity("admission overcapacity"));
         }
-        let reasons = self.reasons(ticket, &granted);
+        let states = self.budget_states(&tx)?;
+        let reasons = self.reasons(ticket, &granted, &states);
         if !reasons.is_empty() {
             tx.commit()?;
             return Ok(reasons);
@@ -225,12 +240,15 @@ impl AdmissionStore {
         if waiting
             .iter()
             .filter(|t| groups.insert(&t.group))
-            .find(|t| self.reasons(t, &granted).is_empty())
+            .find(|t| self.reasons(t, &granted, &states).is_empty())
             .map(|t| &t.id)
             != Some(&ticket.id)
         {
             tx.commit()?;
             return Ok(vec![AdmissionQueueReason::FairTurn]);
+        }
+        if let Some(policy) = &self.budget_policy {
+            budget_store::reserve(&tx, ticket, policy, &self.registry_hash)?;
         }
         tx.execute(
             "UPDATE tickets SET state='granted' WHERE id=?1 AND state='waiting'",
@@ -244,7 +262,12 @@ impl AdmissionStore {
         tx.commit()?;
         Ok(vec![])
     }
-    fn reasons(&self, t: &Ticket, active: &[Ticket]) -> Vec<AdmissionQueueReason> {
+    fn reasons(
+        &self,
+        t: &Ticket,
+        active: &[Ticket],
+        states: &std::collections::BTreeMap<String, SessionBudgetStatus>,
+    ) -> Vec<AdmissionQueueReason> {
         let count = |f: &dyn Fn(&Ticket) -> bool| active.iter().filter(|v| f(v)).count() as u32;
         let mut out = Vec::new();
         if active.len() as u32 >= self.policy.global_limit {
@@ -294,6 +317,7 @@ impl AdmissionStore {
         {
             out.push(AdmissionQueueReason::WorkflowCapacity);
         }
+        out.extend(budget::reasons(t, states));
         out
     }
     pub(crate) fn release(&self, proof: &ReleaseProof) -> Result<()> {
@@ -311,6 +335,9 @@ impl AdmissionStore {
         let expected = serde_json::to_string(ticket)?;
         if json.as_deref().is_some_and(|j| j != expected) {
             return Err(RuntimeError::Integrity("admission release identity"));
+        }
+        if let Some(policy) = &self.budget_policy {
+            budget_store::release(&tx, proof, policy, &self.registry_hash)?;
         }
         // Missing means the runtime intent committed before registry enqueue.
         tx.execute(

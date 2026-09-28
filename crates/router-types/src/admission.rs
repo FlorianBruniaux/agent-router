@@ -30,6 +30,8 @@ pub struct AdmissionAgentMapping {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AdmissionConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_budget: Option<crate::SessionBudgetConfig>,
     pub schema_version: u32,
     pub registry: PathBuf,
     pub expected_policy_sha256: String,
@@ -38,6 +40,8 @@ pub struct AdmissionConfig {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AdmissionBinding {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_budget: Option<crate::SessionBudgetBinding>,
     pub schema_version: u32,
     pub registry_sha256: String,
     pub policy_sha256: String,
@@ -52,6 +56,8 @@ pub enum AdmissionQueueReason {
     AgentCapacity,
     WorkflowCapacity,
     FairTurn,
+    SessionCostBudget,
+    SessionTokenBudget,
 }
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]

@@ -1,6 +1,6 @@
 use crate::{Result, RuntimeError, outputs::FileIdentity};
 use nix::fcntl::{Flock, FlockArg};
-use rustix::fs::{Mode, OFlags, openat};
+use rustix::fs::{AtFlags, FileType, Mode, OFlags, Stat, openat, statat};
 use std::{
     fs::{File, OpenOptions},
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
@@ -38,12 +38,15 @@ impl Files {
         }
         let path = std::fs::canonicalize(root)?;
         let identity = FileIdentity::from_file(&dir)?;
-        let file = private(&dir, "admission.sqlite3", create)?;
-        let db_identity = FileIdentity::from_file(&file)?;
-        // Pre-create auxiliaries privately; SQLite may remove them on last close.
-        for name in ["admission.sqlite3-wal", "admission.sqlite3-shm"] {
-            let _ = private(&dir, name, true)?;
+        // A second open/close of an inode used by SQLite releases this process's
+        // POSIX locks, even when SQLite's own descriptor remains open.
+        if create {
+            drop(private(&dir, "admission.sqlite3", true)?);
         }
+        let db_identity = stat_identity(&private_stat(&dir, "admission.sqlite3")?);
+        // SQLite creates its auxiliaries with the private database mode. Never
+        // open/close existing WAL or SHM descriptors outside SQLite.
+        check_auxiliaries(&dir)?;
         Ok(Self {
             path,
             dir,
@@ -62,19 +65,13 @@ impl Files {
             .read(true)
             .custom_flags(nix::libc::O_DIRECTORY | nix::libc::O_NOFOLLOW)
             .open(&self.path)?;
-        if !self.identity.matches(&dir)?
-            || dir.metadata()?.permissions().mode() & 0o077 != 0
-            || !self
-                .db_identity
-                .matches(&private(&dir, "admission.sqlite3", false)?)?
-        {
+        if !self.identity.matches(&dir)? || dir.metadata()?.permissions().mode() & 0o077 != 0 || {
+            let identity = stat_identity(&private_stat(&dir, "admission.sqlite3")?);
+            self.db_identity.device != identity.device || self.db_identity.inode != identity.inode
+        } {
             return Err(RuntimeError::Integrity("admission registry replaced"));
         }
-        for name in ["admission.sqlite3-wal", "admission.sqlite3-shm"] {
-            if self.path.join(name).exists() {
-                private(&dir, name, false)?;
-            }
-        }
+        check_auxiliaries(&dir)?;
         Ok(())
     }
     fn owner_file(&self, id: &str) -> Result<File> {
@@ -83,6 +80,21 @@ impl Files {
             &format!("{}.owner", crate::digest("admission-owner-v1", &id)?),
             true,
         )
+    }
+    pub fn budget_guard(&self, shared: bool) -> Result<Owner> {
+        self.check()?;
+        let file = private(&self.dir, "session-budget.lock", true)?;
+        Ok(Owner(Some(
+            Flock::lock(
+                file,
+                if shared {
+                    FlockArg::LockSharedNonblock
+                } else {
+                    FlockArg::LockExclusiveNonblock
+                },
+            )
+            .map_err(|_| RuntimeError::Locked)?,
+        )))
     }
     pub fn owner(&self, id: &str) -> Result<Owner> {
         Ok(Owner(Some(
@@ -119,4 +131,32 @@ fn private(dir: &File, name: &str, create: bool) -> Result<File> {
         return Err(RuntimeError::Invalid("admission private file"));
     }
     Ok(file)
+}
+
+#[allow(clippy::unnecessary_cast)] // Stat integer widths differ on Linux/macOS.
+fn stat_identity(stat: &Stat) -> FileIdentity {
+    FileIdentity {
+        device: stat.st_dev as u64,
+        inode: stat.st_ino as u64,
+    }
+}
+fn private_stat(dir: &File, name: &str) -> Result<Stat> {
+    let stat = statat(dir, name, AtFlags::SYMLINK_NOFOLLOW).map_err(std::io::Error::from)?;
+    if FileType::from_raw_mode(stat.st_mode) != FileType::RegularFile
+        || stat.st_nlink != 1
+        || stat.st_mode & 0o077 != 0
+    {
+        return Err(RuntimeError::Invalid("admission private file"));
+    }
+    Ok(stat)
+}
+fn check_auxiliaries(dir: &File) -> Result<()> {
+    for name in ["admission.sqlite3-wal", "admission.sqlite3-shm"] {
+        match private_stat(dir, name) {
+            Ok(_) => {}
+            Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
 }

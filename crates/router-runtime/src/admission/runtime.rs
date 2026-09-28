@@ -4,6 +4,7 @@ use crate::{Cancellation, PendingRun, RuntimeLimits, store::Store};
 pub(crate) struct SharedAdmission {
     registry: AdmissionStore,
     binding: AdmissionBinding,
+    budget: Option<SessionBudgetConfig>,
     _owner: files::Owner,
 }
 impl SharedAdmission {
@@ -12,6 +13,7 @@ impl SharedAdmission {
             return Err(RuntimeError::Invalid("admission configuration"));
         }
         let registry = AdmissionStore::open(&config.registry, &config.expected_policy_sha256)?;
+        registry.validate_budget_config(&config.runtime_id, config.session_budget.as_ref())?;
         let binding = registry.binding(&config.runtime_id)?;
         if registry.policy().runtimes[&config.runtime_id].root_sha256
             != admission_runtime_root_hash(root)?
@@ -22,13 +24,39 @@ impl SharedAdmission {
         Ok(Self {
             registry,
             binding,
+            budget: config.session_budget.clone(),
             _owner: owner,
         })
     }
     pub fn binding(&self) -> &AdmissionBinding {
         &self.binding
     }
+    pub fn budget_config(&self) -> Option<&SessionBudgetConfig> {
+        self.budget.as_ref()
+    }
     pub fn validate(&self, pending: &PendingRun) -> Result<(String, String)> {
+        if let Some(c) = &self.budget {
+            let a = c.attempt_allocation;
+            let candidate = &pending.decision.selection().candidate;
+            let r = &pending.context.request().restrictions;
+            if a.cost_microusd
+                > pending
+                    .node
+                    .budget
+                    .max_cost_microusd
+                    .min(r.max_cost_microusd.unwrap_or(u64::MAX))
+                || a.tokens
+                    > pending
+                        .node
+                        .budget
+                        .max_tokens
+                        .min(r.max_tokens.unwrap_or(u64::MAX))
+                || a.cost_microusd < candidate.estimated_cost_microusd
+                || a.tokens < candidate.estimated_tokens
+            {
+                return Err(BudgetError::Policy.into());
+            }
+        }
         self.validate_request(&pending.context, &pending.request, &pending.node.owner)
     }
     pub fn validate_request(
@@ -72,6 +100,7 @@ impl SharedAdmission {
             &pending.run.run_id,
         )?;
         let t = Ticket {
+            session_budget: self.budget.clone(),
             id: String::new(),
             binding: self.binding.clone(),
             run_id: pending.run.run_id.clone(),
@@ -116,10 +145,23 @@ impl SharedAdmission {
                     "admission.queued",
                     &serde_json::to_string(&reasons)?,
                 )?;
-                previous = reasons;
+                previous = reasons.clone();
+            }
+            if reasons.contains(&AdmissionQueueReason::SessionCostBudget) {
+                return Err(BudgetError::Cost.into());
+            }
+            if reasons.contains(&AdmissionQueueReason::SessionTokenBudget) {
+                return Err(BudgetError::Tokens.into());
             }
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         }
+    }
+    pub fn commit_budget(&self, store: &Store, id: &str) -> Result<Option<BudgetDispatchGuard>> {
+        if self.budget.is_none() {
+            return Ok(None);
+        }
+        let ticket = store.arm_session_budget(id)?;
+        self.registry.commit_budget(&ticket)
     }
     pub fn release(&self, store: &Store, ticket: &Ticket) -> Result<()> {
         let proof = store.admission_release_proof(ticket)?;

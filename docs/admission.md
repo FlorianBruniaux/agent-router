@@ -91,9 +91,10 @@ are bounded to 128 entries per category, and a registry retains at most 4096
 tickets. Exhaustion refuses new work; no silent history purge or capacity reset
 is provided. Duplicate runtime owners are refused.
 
-This is a local concurrency contract. It does not add cumulative cost/token
-budgets, authenticate parent accounting, discover provider quota allowances or
-coordinate independent machines. A malicious process with the same UID can
+This is a local concurrency contract. Optional [session allocations](session-budgets.md)
+add persistent parent-declared cost/token reservations in the same registry.
+Neither feature authenticates provider accounting, discovers provider quota
+allowances or coordinates independent machines. A malicious process with the same UID can
 rewrite the entire registry and runtime history; no external anti-rollback
 anchor is claimed. Open/untracked Git windows can require manual investigation
 and remain quarantined, without an override that fabricates cleanup.

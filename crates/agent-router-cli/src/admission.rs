@@ -9,6 +9,11 @@ use std::{
 };
 #[derive(Subcommand)]
 pub(crate) enum Command {
+    /// Explicit local session allocations and limit approvals.
+    Budget {
+        #[command(subcommand)]
+        command: crate::session_budget::Command,
+    },
     /// Initialize a new private shared registry from an explicit parent policy.
     Init {
         #[arg(long)]
@@ -39,6 +44,7 @@ pub(crate) fn run(command: Command, json: bool) -> Result<Outcome, CliError> {
         return Err(CliError::JsonOutputRequired);
     }
     let value = match command {
+        Command::Budget { command } => return crate::session_budget::run(command, json),
         Command::Init { registry, policy } => {
             let policy = phases::read_json(&policy, 128 * 1024)?;
             let store = AdmissionStore::create(&registry, &policy).map_err(execution::error)?;
@@ -102,4 +108,48 @@ pub(crate) fn same<'a>(
         return Err(CliError::Product("coordinator.admission.mismatch"));
     }
     Ok(first)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use router_types::{BudgetAmount, SessionBudgetConfig};
+
+    #[test]
+    fn a_wave_cannot_widen_another_steps_approved_session_limit() {
+        let original = Some(AdmissionConfig {
+            schema_version: 1,
+            registry: "/synthetic/registry".into(),
+            expected_policy_sha256: "a".repeat(64),
+            runtime_id: "worker".into(),
+            session_budget: Some(SessionBudgetConfig {
+                schema_version: 1,
+                expected_policy_sha256: "b".repeat(64),
+                session_id: "session".into(),
+                approved_limit: BudgetAmount {
+                    cost_microusd: 100,
+                    tokens: 200,
+                },
+                attempt_allocation: BudgetAmount {
+                    cost_microusd: 10,
+                    tokens: 20,
+                },
+            }),
+        });
+        assert_eq!(same([&original, &original]).ok(), Some(original.clone()));
+        let mut wider = original.clone();
+        wider
+            .as_mut()
+            .unwrap()
+            .session_budget
+            .as_mut()
+            .unwrap()
+            .approved_limit
+            .cost_microusd = 200;
+        assert!(matches!(
+            same([&original, &wider]),
+            Err(CliError::Product("coordinator.admission.mismatch"))
+        ));
+        assert!(same([&original, &None]).is_err());
+    }
 }

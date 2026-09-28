@@ -283,3 +283,9 @@ canaries use a built `router-sandbox-helper`, real OS containment and a syntheti
 Claude-speaking executable to establish the positive path, restart, source/store
 pins and final approval. They invoke no real provider and establish no live model
 availability, success quality or measured token/cost claim.
+
+When [shared session allocations](session-budgets.md) are configured, each failed
+attempt and the escalated target retain their own full committed allocation.
+The preparation and coordinator paths preserve the exact admission configuration;
+changing an R05 bound or supplying a smaller accounting attestation cannot refund
+the session or enlarge the definition's approved session limit.

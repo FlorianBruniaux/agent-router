@@ -16,7 +16,10 @@ mod sandbox;
 mod store;
 mod workflow;
 mod workspace;
-pub use admission::{AdmissionStore, admission_policy_hash, admission_runtime_root_hash};
+pub use admission::{
+    AdmissionStore, BudgetError, ReviewedSessionLimit, admission_policy_hash,
+    admission_runtime_root_hash, session_budget_policy_hash,
+};
 pub use bubblewrap::BubblewrapSandbox;
 pub use error::{Result, RuntimeError};
 pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
@@ -253,6 +256,30 @@ impl Runtime {
         generated: Option<&GeneratedDecisionBinding>,
     ) -> Result<String> {
         if let Some(admission) = &self.admission {
+            if let Some(budget) = admission.budget_config() {
+                return digest(
+                    "runtime-definition-v9-session-budget",
+                    &(
+                        request,
+                        receipt,
+                        plan,
+                        node_id,
+                        self.limits.output_retention,
+                        workflow,
+                        artifacts,
+                        decision,
+                        escalation,
+                        generated,
+                        admission.binding(),
+                        (
+                            self.limits.global_concurrency,
+                            self.limits.provider_concurrency,
+                            self.limits.agent_concurrency,
+                        ),
+                        budget,
+                    ),
+                );
+            }
             return digest(
                 "runtime-definition-v8-admission",
                 &(
@@ -1057,6 +1084,25 @@ impl Runtime {
         if self.store.cancel_requested(id)? {
             cancel.cancel();
         }
+        let budget_dispatch = match self
+            .admission
+            .as_ref()
+            .map(|a| a.commit_budget(&self.store, id))
+            .transpose()
+        {
+            Ok(guard) => guard.flatten(),
+            Err(error) => {
+                self.store.confirm_attempt_cleanup(id)?;
+                self.store.finish_attempt(id, "budget_dispatch_refused")?;
+                self.store.transition(
+                    id,
+                    RunState::Failed,
+                    "budget_dispatch_refused",
+                    Some(RunFailure::Policy),
+                )?;
+                return Err(error);
+            }
+        };
         let process = process::capture_guarded(
             command,
             run.stdin.as_bytes().to_vec(),
@@ -1065,6 +1111,7 @@ impl Runtime {
             self.limits.termination_grace_ms,
             &cancel,
             dispatch,
+            budget_dispatch,
         );
         tokio::pin!(process);
         let captured = loop {

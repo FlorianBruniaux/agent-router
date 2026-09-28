@@ -83,7 +83,7 @@ pub(crate) async fn capture(
     cancel: &Cancellation,
 ) -> Result<Capture> {
     capture_guarded(
-        command, input, timeout_ms, max_bytes, grace_ms, cancel, None,
+        command, input, timeout_ms, max_bytes, grace_ms, cancel, None, None,
     )
     .await
 }
@@ -97,6 +97,7 @@ pub(crate) async fn capture_guarded(
     grace_ms: u64,
     cancel: &Cancellation,
     dispatch: Option<router_execution_decision::DispatchGuard<'_>>,
+    budget_dispatch: Option<crate::admission::BudgetDispatchGuard>,
 ) -> Result<Capture> {
     if timeout_ms == 0
         || timeout_ms > 86_400_000
@@ -126,6 +127,7 @@ pub(crate) async fn capture_guarded(
         guard.validate_at(crate::now()?)?;
     }
     let spawned = command.spawn();
+    drop(budget_dispatch);
     drop(dispatch); // Release activation lock immediately after the spawn attempt.
     let mut child = spawned?;
     let child_id = child.id().ok_or(RuntimeError::Process)?;

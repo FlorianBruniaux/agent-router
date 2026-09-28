@@ -102,6 +102,16 @@ pub(crate) struct SandboxConfig {
 
 pub(crate) fn error(error: RuntimeError) -> CliError {
     CliError::Product(match error {
+        RuntimeError::Budget(e) => match e {
+            router_runtime::BudgetError::Policy => "session_budget.policy.invalid",
+            router_runtime::BudgetError::Authority => {
+                "session_budget.authority.required_or_changed"
+            }
+            router_runtime::BudgetError::Cost => "session_budget.cost.exhausted",
+            router_runtime::BudgetError::Tokens => "session_budget.tokens.exhausted",
+            router_runtime::BudgetError::Stale => "session_budget.review.stale",
+            router_runtime::BudgetError::Unknown => "session_budget.accounting.unknown",
+        },
         RuntimeError::Invalid(_) => "runtime.invalid",
         RuntimeError::Io(_) => "runtime.io",
         RuntimeError::Storage(_) => "runtime.storage",

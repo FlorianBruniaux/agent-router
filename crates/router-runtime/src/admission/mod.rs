@@ -1,4 +1,10 @@
 //! One explicitly pinned shared concurrency domain. No time-based reclamation.
+mod budget;
+mod budget_store;
+#[cfg(test)]
+mod budget_tests;
+pub(crate) use budget::BudgetDispatchGuard;
+pub use budget::{BudgetError, ReviewedSessionLimit, session_budget_policy_hash};
 mod files;
 mod registry;
 mod runtime;
@@ -81,6 +87,8 @@ pub fn admission_runtime_root_hash(root: &Path) -> Result<String> {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Ticket {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_budget: Option<SessionBudgetConfig>,
     pub id: String,
     pub binding: AdmissionBinding,
     pub run_id: String,
@@ -133,6 +141,7 @@ impl Ticket {
 /// Created only after the owned runtime has verified this exact activity cycle.
 /// Keeping construction in Store prevents forged public cleanup DTOs being used.
 pub(crate) struct ReleaseProof {
+    pub(crate) budget_armed: bool,
     pub(super) ticket: Ticket,
     _model_lock: Option<crate::leases::CleanupProof>,
 }
@@ -141,6 +150,7 @@ impl ReleaseProof {
         Self {
             ticket,
             _model_lock: model_lock,
+            budget_armed: false,
         }
     }
 }

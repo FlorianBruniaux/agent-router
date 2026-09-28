@@ -4,6 +4,9 @@ use super::*;
 use crate::admission::{ReleaseProof, Ticket};
 use router_types::AdmissionBinding;
 use serde::{Deserialize, Serialize};
+fn is_false(value: &bool) -> bool {
+    !*value
+}
 const EVENT: &str = "admission.intent.v1";
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -12,6 +15,8 @@ struct Intent {
     released: bool,
     git_open: bool,
     captures: u32,
+    #[serde(default, skip_serializing_if = "is_false")]
+    budget_armed: bool,
 }
 
 pub(crate) struct Finalization<'a> {
@@ -72,6 +77,7 @@ impl Store {
             released: false,
             git_open: false,
             captures: 0,
+            budget_armed: false,
         };
         persist(&tx, &run, &intent)?;
         tx.commit()?;
@@ -124,7 +130,27 @@ impl Store {
         } else {
             return Err(RuntimeError::CleanupUnknown);
         };
-        Ok(ReleaseProof::checked(ticket.clone(), lock))
+        let mut proof = ReleaseProof::checked(ticket.clone(), lock);
+        proof.budget_armed = intent.budget_armed;
+        Ok(proof)
+    }
+    pub(crate) fn arm_session_budget(&self, id: &str) -> Result<Ticket> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        let mut intent = load(&tx, &run)?.ok_or(crate::admission::BudgetError::Unknown)?;
+        if run.state != RunState::Running
+            || run.attempts != intent.ticket.attempt
+            || intent.released
+            || intent.budget_armed
+            || intent.ticket.session_budget.is_none()
+        {
+            return Err(crate::admission::BudgetError::Authority.into());
+        }
+        intent.budget_armed = true;
+        persist(&tx, &run, &intent)?;
+        tx.commit()?;
+        Ok(intent.ticket)
     }
     pub(crate) fn admission_released(&self, ticket: &Ticket) -> Result<()> {
         let mut db = self.lock()?;
@@ -232,6 +258,11 @@ mod tests {
     use super::*;
     use crate::workspace::CaptureObserver;
     pub(super) fn setup() -> (tempfile::TempDir, Store, Ticket) {
+        setup_with_budget(None)
+    }
+    fn setup_with_budget(
+        budget: Option<router_types::SessionBudgetConfig>,
+    ) -> (tempfile::TempDir, Store, Ticket) {
         let temp = tempfile::tempdir().unwrap();
         let store = Store::open(&temp.path().join("runtime")).unwrap();
         let mut run = super::super::tests::summary("admission-run");
@@ -250,8 +281,10 @@ mod tests {
             .transition(&run.run_id, router_types::RunState::Queued, "", None)
             .unwrap();
         let ticket = Ticket {
+            session_budget: budget,
             id: String::new(),
             binding: AdmissionBinding {
+                session_budget: None,
                 schema_version: 1,
                 registry_sha256: "c".repeat(64),
                 policy_sha256: "d".repeat(64),
@@ -274,6 +307,63 @@ mod tests {
         };
         let t = store.start_admission(ticket).unwrap();
         (temp, store, t)
+    }
+    #[test]
+    fn dispatch_arming_survives_reopen_and_projection_cannot_forge_a_refund() {
+        let config = router_types::SessionBudgetConfig {
+            schema_version: 1,
+            expected_policy_sha256: "f".repeat(64),
+            session_id: "session".into(),
+            approved_limit: router_types::BudgetAmount {
+                cost_microusd: 100,
+                tokens: 100,
+            },
+            attempt_allocation: router_types::BudgetAmount {
+                cost_microusd: 60,
+                tokens: 60,
+            },
+        };
+        let (temp, store, t) = setup_with_budget(Some(config));
+        assert!(store.arm_session_budget(&t.run_id).is_err());
+        let prep = store.begin_preparation(&t.run_id).unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        let lease = store.attempt(&t.run_id, 2, true).unwrap().unwrap();
+        let held = nix::fcntl::Flock::lock(
+            std::fs::File::open(lease).unwrap(),
+            nix::fcntl::FlockArg::LockExclusiveNonblock,
+        )
+        .unwrap();
+        store
+            .transition(&t.run_id, RunState::Running, "test", None)
+            .unwrap();
+        assert_eq!(store.arm_session_budget(&t.run_id).unwrap(), t);
+        assert!(store.arm_session_budget(&t.run_id).is_err());
+        assert!(store.admission_release_proof(&t).is_err());
+        drop(held);
+        store.confirm_attempt_cleanup(&t.run_id).unwrap();
+        drop(store);
+        let store = Store::open(&temp.path().join("runtime")).unwrap();
+        assert!(store.admission_release_proof(&t).unwrap().budget_armed);
+        {
+            let db = store.lock().unwrap();
+            let json: String = db
+                .query_row(
+                    "SELECT record FROM admission_intents WHERE run_id=?1",
+                    [&t.run_id],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            let mut intent: Intent = serde_json::from_str(&json).unwrap();
+            intent.budget_armed = false;
+            db.execute(
+                "UPDATE admission_intents SET record=?1 WHERE run_id=?2",
+                params![serde_json::to_string(&intent).unwrap(), t.run_id],
+            )
+            .unwrap();
+        }
+        assert!(store.admission_release_proof(&t).is_err());
     }
     #[test]
     fn intent_before_enqueue_has_no_child_but_is_not_reusable_concurrently() {
@@ -349,6 +439,7 @@ mod tests {
         drop(db);
         let store = Store::open(&root).unwrap();
         let binding = AdmissionBinding {
+            session_budget: None,
             schema_version: 1,
             registry_sha256: "a".repeat(64),
             policy_sha256: "b".repeat(64),

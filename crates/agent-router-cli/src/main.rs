@@ -21,6 +21,7 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+mod session_budget;
 mod sidecar;
 
 use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};

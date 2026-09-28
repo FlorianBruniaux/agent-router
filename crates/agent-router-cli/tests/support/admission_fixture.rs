@@ -3,7 +3,15 @@ use router_types::*;
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, fs, os::unix::fs::DirBuilderExt, path::Path};
 
+#[allow(dead_code)] // Consumers use either default or explicit provider capacity.
 pub fn bind(registry: &Path, roots: &[(&Path, &Path, &str)]) -> (AdmissionPolicy, String) {
+    bind_with_capacity(registry, roots, 1)
+}
+pub fn bind_with_capacity(
+    registry: &Path,
+    roots: &[(&Path, &Path, &str)],
+    capacity: u32,
+) -> (AdmissionPolicy, String) {
     let mut policy = AdmissionPolicy {
         schema_version: 1,
         global_limit: 4,
@@ -30,9 +38,10 @@ pub fn bind(registry: &Path, roots: &[(&Path, &Path, &str)]) -> (AdmissionPolicy
         let requirements: BTreeMap<String, AssetGateRequest> =
             serde_json::from_slice(&fs::read(fixture.join("asset-requests.json")).unwrap())
                 .unwrap();
-        policy
-            .providers
-            .insert(requirements[&request.candidate_id].provider.clone(), 1);
+        policy.providers.insert(
+            requirements[&request.candidate_id].provider.clone(),
+            capacity,
+        );
         policy.agent_mappings.push(AdmissionAgentMapping {
             runtime_id: (*id).into(),
             plan_owner: plan
