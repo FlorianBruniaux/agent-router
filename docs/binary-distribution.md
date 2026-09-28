@@ -105,3 +105,6 @@ Archive extraction rejects links, path traversal, extra members, unexpected
 modes and changed contents. Archive creation is atomic and refuses to replace
 an existing path. Failures leave no binary archive; bounded diagnostics may
 remain in the explicitly named private directory for investigation.
+
+To bind such an archive to a signed manifest, see
+[release-local.md](release-local.md).
