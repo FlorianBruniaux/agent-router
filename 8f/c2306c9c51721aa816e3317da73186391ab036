@@ -1,0 +1,87 @@
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_83eeb8c7c0b131 36-37
+crates/agent-router-cli/src/admission.rs
+  s_86ed8bd547d4f8::t_d1af69e938d29f 12-16,47,112-155
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_975794372d44c5 105-114
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_3efa0db30c222c 24
+crates/agent-router-cli/src/session_budget.rs
+  s_86ed8bd547d4f8::t_76a5445378414a 1-120
+crates/agent-router-cli/tests/escalation.rs
+  s_86ed8bd547d4f8::t_01aaa5adb0524e 1416-1540
+crates/agent-router-cli/tests/session_budgets.rs
+  s_86ed8bd547d4f8::t_39e0a8c6d1f248 1-352
+crates/agent-router-cli/tests/support/admission_fixture.rs
+  s_86ed8bd547d4f8::t_97e9b172faa062 6,8-14,41-44
+crates/router-runtime/src/admission/budget.rs
+  s_86ed8bd547d4f8::t_4cec3972d6759a 1-331
+crates/router-runtime/src/admission/budget_store.rs
+  s_86ed8bd547d4f8::t_7bfb8cc2837aac 1-366
+crates/router-runtime/src/admission/budget_tests.rs
+  s_86ed8bd547d4f8::t_0aa374d1c59eb2 1-408
+crates/router-runtime/src/admission/files.rs
+  s_86ed8bd547d4f8::t_0f2a96db2e39dc 3,41-44,46-49,68-71,74,84-98,135-162
+crates/router-runtime/src/admission/mod.rs
+  s_86ed8bd547d4f8::t_7dcfdef2ca5ffc 2-7,90-91,144,153
+crates/router-runtime/src/admission/registry.rs
+  s_86ed8bd547d4f8::t_642dc9fab5c5cd 6-11,42,58-64,73,87,101,115-117,120,122,233-234,243,250-252,265-270,320,339-341
+crates/router-runtime/src/admission/runtime.rs
+  s_86ed8bd547d4f8::t_f22d42511e8194 7,16,27,34-36,38-59,103,148-154,159-165
+crates/router-runtime/src/admission/tests.rs
+  s_86ed8bd547d4f8::t_755ded07fab3be 4,30,35-41,43
+crates/router-runtime/src/error.rs
+  s_1d56781f1a7372::t_3004c654f0cfac 3-4
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_7efeaaf55c770b 19-22,259-282,1087-1105,1114
+crates/router-runtime/src/process.rs
+  s_1d56781f1a7372::t_f188531c196507 86,100,130
+crates/router-runtime/src/store/admission.rs
+  s_86ed8bd547d4f8::t_b5f9d37efa0243 7-9,18-19,80,133-153,261-265,284,287,312-368,442
+crates/router-types/src/admission.rs
+  s_86ed8bd547d4f8::t_2a8f9aec73036d 33-34,43-44,59-60
+crates/router-types/src/lib.rs
+  s_aa6b435b3088c4::t_0408ec72f38888 58-60
+crates/router-types/src/session_budget.rs
+  s_86ed8bd547d4f8::t_0814dc910035b1 1-75
+docs/admission.md
+  s_86ed8bd547d4f8::t_0770aea32837a5 94-97
+docs/adr/0009-conservative-session-allocations.md
+  s_86ed8bd547d4f8::t_81a81f63460c44 1-67
+docs/escalation.md
+  s_86ed8bd547d4f8::t_3c9698d9bfd834 286-291
+docs/session-budgets.md
+  s_86ed8bd547d4f8::t_6807f40cd60dc2 1-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "8fc2306c9c51721aa816e3317da73186391ab036",
+  "prompts": {},
+  "sessions": {
+    "s_1d56781f1a7372": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "57d48624-9721-47a5-a9e4-2f2262a84f4f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_aa6b435b3088c4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce55c850-64b1-42b6-95c6-3c60b16d50f9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
