@@ -33,6 +33,16 @@ jobs:
         run: python3 scripts/check-host-syntax.py
       - name: Check source distribution boundaries and license evidence
         run: python3 scripts/test-package-core.py
+      - name: Fetch all locked dependency archives for license evidence
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        run: cargo fetch --locked
+      - name: Verify real source distribution and complete license evidence
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        run: |
+          python3 scripts/package-core.py --distribution core --strict-licenses --output "$RUNNER_TEMP/agent-router-core.tar.gz"
+          python3 scripts/package-core.py --verify "$RUNNER_TEMP/agent-router-core.tar.gz"
 
   secrets:
     runs-on: ubuntu-latest

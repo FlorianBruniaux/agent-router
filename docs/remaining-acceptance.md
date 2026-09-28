@@ -40,24 +40,37 @@ Les évolutions suivantes le complètent :
   résultats JSON et digests d'approbation. La reprise du 28 septembre ajoute
   JSON/TOML/YAML stricts pour `config --layers` avec 16 tests dans chaque mode
   de compilation CLI. L'entrée guidée et les autres manifests restent séparés.
-- **R05, CLI autonome livrée, coordinateur local** : journal, bornes approuvées,
-  proposition et préparation/exécution CLI livrés par PR #22 (`cc8b3e4`), avec
-  huit checks verts sur `8d11338`. Le raccord coordinateur conserve prompt final,
-  grants et génération, avec deux canaris natifs synthétiques et contrôle du
-  budget cumulé. Revue et CI distantes du raccord restent nécessaires à sa
-  livraison ; les compteurs demeurent attestés par le parent, pas observés.
+- **R05, CLI et coordinateur livrés** : journal, bornes approuvées,
+  proposition et préparation/exécution CLI livrés par PR #22 (`cc8b3e4`).
+  La PR #25 (`009b701`) livre le raccord coordinateur avec prompt final,
+  grants, génération et contrôle du budget cumulé. Ses huit checks de PR
+  et quatre checks post-fusion passent ; les cinq canaris CLI macOS séparés
+  incluent deux scénarios coordinateur. Les compteurs demeurent attestés
+  par le parent, pas observés.
 - **R04, reprise du 28 septembre** : génération bornée, liaison CLI à la
   préparation et aux décisions effectives, migration v6→v7, ancre du plan dans
   le journal et refus de substitution revus. La preuve native et la livraison
   distante doivent accompagner la PR ; ce constat local ne clôt pas le lot.
-- **R06, bibliothèque revue** : manifestes communs signés, hosts/presets,
+- **R06, stockage et routage livrés, préparation ouverte** : manifestes communs signés, hosts/presets,
   références de prompts et projections vérifiés par 42 tests catalogue.
   Le stockage durable du catalogue actif ajoute 15 tests : activation/révocation
   approuvées, révisions monotones, verrou interprocessus, expiration et refus
   après remplacement du répertoire ou du verrou. Les deux dernières régressions
-  ont été reproduites puis revues indépendamment. Le raccord à la sélection,
-  à la préparation et au dispatch reste à livrer ; cette preuve de bibliothèque
-  ne crée pas l'autorité d'exécuter. Voir [le stockage](catalog-store.md).
+  ont été reproduites puis revues indépendamment. La PR #23 (`4804b37`)
+  livre le stockage ; la PR #27 (`9c47a2b`) applique les contraintes signées
+  avant sélection et lie les receipts v4 au catalogue actif et à ses grants.
+  Ses huit checks de PR et quatre checks post-fusion passent. Préparation
+  et dispatch signés restent fermés. Voir [le stockage](catalog-store.md)
+  et [le routage signé](signed-routing.md).
+- **R17, snapshot SQLite livré** : PR #26 (`4116045`), avec huit checks
+  de PR et quatre checks post-fusion réussis. Une connexion déjà détenue
+  permet une copie cohérente de WAL, bornée, privée et en mémoire, sans
+  exporter le contenu ni changer la transaction par défaut de l'appelant.
+  Les diagnostics CLI et les observations actives de hosts restent ouverts.
+- **R11, client standard en vérification** : capacités, classement et exports
+  ponctuels consentis sont implémentés. Les limites négociées et les fixtures
+  réseau restent soumis aux tests et à la revue de cette livraison. Ce client
+  ne livre pas le serveur R19. Voir [le protocole](standard-sidecar.md).
 
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
@@ -67,7 +80,7 @@ Chaque ligne donne la source de l'exigence, le constat dans le code et une condi
 | R02 | **T/E**, technique §6 récupération et phase 2 | `crates/router-retrieval/src/index.rs:40-58` reconstruit un index BM25 en mémoire ; pas d'API de mise à jour incrémentale, seconde source, RRF ou feature embeddings. Le moteur BM25 existant n'est pas un défaut par son seul choix de bibliothèque. | Ajout/suppression/modification incrémentaux équivalents à un rebuild ; fusion RRF déterministe et déduplication canonique ; embeddings désactivés par défaut, erreur/fallback explicites, aucune installation ou requête réseau implicite. Rappel validé séparément en P1. |
 | R03 | **T**, technique §6 normalisation | `crates/router-workflow/src/normalize.rs:6-8,103` prend le risque explicitement fourni et pose les questions manquantes ; pas de classification déterministe imposant un plancher de risque à partir du contexte. | Règles versionnées et explicables, cas sensibles impossibles à abaisser par texte LLM ou override moins restrictif ; inconnus déclenchent clarification. Conserver l'autorité explicite sur permissions et budget. |
 | R04 | **T**, technique §6 génération/score ; FR-006/007/010/013 | `crates/router-policy/src/phases.rs:719` score qualité/relevance/coût/latence d'un pool déjà fourni. `crates/router-workflow/src/plan.rs:31,75` compose des presets fixes. Pas de jointure top-k des dimensions, beam search borné, dominance/diversité ni coût de coordination/changement de modèle/cache/historique. | Générateur borné de plans éligibles avant scoring ; budgets cumulés ; dominance et diversité testées ; score et alternatives expliqués avec poids par classe. Un plan complexe proposé par modèle passe schéma, portée et approbation avant toute exécution. Aucun candidat ou droit ajouté par un backend. |
-| R05 | **T, CLI livrée / coordinateur local**, FR-006 et technique §9 runtime | `router-runtime/src/escalation.rs` reconstruit les tentatives et réserve une décision distincte ; `agent-router-cli/src/escalation.rs` expose bounds/proposal ; `router-coordinator` et la CLI reconstruisent maintenant le bundle enregistré et les grants exacts. | Revue et CI du raccord coordinateur, après canaris natifs : prédécesseur non vide vérifié, deux échecs distincts, budget restant, sélection secondaire, nouvelle approbation, reprise historique et refus de substitution/cumul. Baseline et fallback manuel préservés ; aucune indisponibilité ni mesure de coût inventée. |
+| R05 | **T, CLI et coordinateur livrés**, FR-006 et technique §9 runtime | `router-runtime/src/escalation.rs` reconstruit les tentatives et réserve une décision distincte ; `agent-router-cli/src/escalation.rs` expose bounds/proposal ; `router-coordinator` et la CLI reconstruisent le bundle enregistré et les grants exacts. | PR #22/#25 et leurs CI livrent les chemins testés : prédécesseur non vide vérifié, deux échecs distincts, budget restant, sélection secondaire, nouvelle approbation, reprise historique et refus de substitution/cumul. Baseline et fallback manuel préservés ; aucune indisponibilité ni mesure de coût inventée. |
 | R06 | **M/T**, FR-005/008/017/018 ; technique §5 assets, §13 | `crates/router-catalog/src/generated.rs:18,39` expose modèle/agent/skill/prompt/tool, sans catalogue de hosts/presets. `crates/router-types/src/asset_contracts.rs:54,75` lie provenance/licence/hash des skills mais pas signature d'éditeur, auteurs et validité commune de tous les assets. | Catalogue versionné couvrant hosts/presets ; manifeste commun avec provenance/licence/auteurs/période de validité ; validation de signature avec clé approuvée extérieurement ; suppression/modification invalide index/cache. Un hash réémis ne crée jamais un éditeur fiable. |
 | R07 | **E**, FR-005 ; technique §5 ModelSpec, §11 API | Les contrats déclarent audio/images/fichiers/citations/JSON structuré, mais `crates/router-policy/src/asset_phases.rs` refuse les exigences que `ExecutionRequest` texte seul ne représente pas. Le refus est correct ; le transport multimodal n'existe pas. | Entrées et sorties typées bornées pour chaque modalité prise en charge ; schéma transmis au vrai adaptateur ; tests de contraintes et flux tronqués ; preuve native par modèle/host/version avant `Supported`. Aucun élargissement à partir d'une déclaration enfant. |
 | R08 | **E**, FR-008/018 ; technique §5/13 | `crates/router-asset-contracts/src/gate.rs:289` renvoie `ExecutableUnsupported` pour une skill exécutable ; seule l'instruction textuelle approuvée peut être préparée. | Runner distinct à argv typés, artefact et dépendances épinglés, revue/scanner/approbation des bytes, permissions réduites et sandbox CPU/mémoire/PID/réseau ; fixtures de code tiers refusé et canary local confiné. Ne pas assimiler instruction et programme. |

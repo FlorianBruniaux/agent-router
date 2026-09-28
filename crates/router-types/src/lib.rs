@@ -49,3 +49,6 @@ pub use plan_generation::*;
 
 mod escalation;
 pub use escalation::*;
+
+mod sidecar;
+pub use sidecar::*;

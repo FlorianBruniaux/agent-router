@@ -6,10 +6,7 @@ use router_decision::{
 };
 use router_policy::PhaseRouter;
 use router_types::{BackendDataPolicy, BackendFailurePolicy, BackendProposal, BackendRequest};
-use std::{
-    collections::BTreeMap,
-    time::{Duration, Instant},
-};
+use std::{collections::BTreeMap, time::Instant};
 
 fn context() -> BoundedDecisionContext {
     let request = serde_json::from_str(include_str!(
@@ -182,6 +179,7 @@ fn digest_pool_and_probability_mass_cannot_be_forged() {
 mod network {
     use super::*;
     use router_decision::{JevSidecarBackend, LayaLocalBackend};
+    use std::time::Duration;
     use std::{
         io::{Read, Write},
         net::{SocketAddr, TcpListener},
