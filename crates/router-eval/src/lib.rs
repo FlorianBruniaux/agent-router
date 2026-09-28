@@ -5,6 +5,7 @@ mod corpus;
 mod metrics;
 mod promotion;
 mod replay;
+mod tradeoffs;
 
 pub use candidate_replay::{CandidateReplay, ProposedDecision};
 pub use corpus::{CandidateCase, CandidateCorpus};
@@ -14,6 +15,7 @@ pub use promotion::{
     ShadowReport, compare_shadow, dataset_hash,
 };
 pub use replay::*;
+pub use tradeoffs::*;
 
 use serde::Serialize;
 use sha2::{Digest, Sha256};
