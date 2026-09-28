@@ -38,7 +38,7 @@ pub(crate) fn retrieval_error(error: RetrievalError) -> CliError {
         RetrievalError::Io { .. } => "retrieval.io",
     })
 }
-fn workflow_error(error: WorkflowError) -> CliError {
+pub(crate) fn workflow_error(error: WorkflowError) -> CliError {
     CliError::Product(match error {
         WorkflowError::Invalid(_) => "workflow.invalid",
         WorkflowError::Limit(_) => "workflow.limit",
