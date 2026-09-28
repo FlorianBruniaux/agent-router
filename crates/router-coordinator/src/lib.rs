@@ -58,6 +58,7 @@ pub struct Coordinator {
     store: store::Store,
     runtime: Arc<Runtime>,
     materials: Mutex<std::collections::BTreeMap<String, PendingStep>>,
+    review_admission: tokio::sync::Mutex<()>,
 }
 /// Contains confidential request text, intentionally not serializable or Debug.
 #[derive(Clone)]
@@ -106,7 +107,11 @@ impl Coordinator {
             store: store::Store::open(root)?,
             runtime,
             materials: Mutex::new(std::collections::BTreeMap::new()),
+            review_admission: tokio::sync::Mutex::new(()),
         })
+    }
+    pub fn runtime(&self) -> &Runtime {
+        &self.runtime
     }
     pub fn register(&self, definition: &WorkflowDefinition) -> Result<()> {
         validate_definition(definition)?;
@@ -237,11 +242,50 @@ impl Coordinator {
         decision: &ExecutionDecision,
         mut request: ExecutionRequest,
     ) -> Result<PendingStep> {
+        let _admission = self.review_admission.lock().await;
         let artifacts = self.inputs(definition, node)?;
         request
             .prompt
             .push_str(&self.runtime.render_dependency_context(&artifacts)?);
+        router_prepare::validate_prepared_input(
+            router,
+            context,
+            &request,
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_err(|_| CoordinatorError::Invalid("clock"))?
+                .as_secs(),
+        )
+        .map_err(|_| CoordinatorError::Invalid("final input assets"))?;
         let run_id = run_id(definition, node, generation)?;
+        if let Some(binding) = decision.escalation_binding() {
+            let source = self.runtime.summary(&binding.source_run_id)?;
+            if source.artifact_contract_sha256.as_deref()
+                != Some(hash("runtime-artifact-contract-v1", &artifacts)?.as_str())
+            {
+                return Err(CoordinatorError::Integrity);
+            }
+            self.runtime.validate_escalation_preparation(
+                router,
+                context,
+                decision,
+                &request,
+                &definition.plan,
+                node,
+                &run_id,
+                Some((&definition.execution, generation)),
+            )?;
+        }
+        let candidate = &decision.selection().candidate;
+        // The exclusive coordinator owner serializes step registrations. Refuse
+        // cumulative limits before the runtime reserves an escalation claim.
+        self.store.check_budget(
+            definition,
+            node,
+            generation,
+            candidate.estimated_cost_microusd,
+            candidate.estimated_tokens,
+        )?;
         let pending = self
             .runtime
             .review_decision(
@@ -313,37 +357,17 @@ impl Coordinator {
         request: ExecutionRequest,
         artifacts: RunArtifactContract,
     ) -> Result<PendingStep> {
-        validate_definition(definition)?;
-        self.store.check(definition)?;
-        if artifacts.workflow_definition_sha256 != definition.definition_sha256
-            || artifacts.outputs
-                != definition
-                    .artifacts
-                    .get(node)
-                    .ok_or(CoordinatorError::Invalid("node"))?
-                    .outputs
-        {
-            return Err(CoordinatorError::Integrity);
-        }
-        let run_id = run_id(definition, node, generation)?;
-        if !self
-            .store
-            .steps(&definition.execution.instance_id)?
-            .iter()
-            .any(|(n, g, id)| n == node && *g == generation && id == &run_id)
-        {
-            return Err(CoordinatorError::Integrity);
-        }
-        let pending = self.runtime.reopen_decision(
-            &run_id,
+        let pending = reopen_recorded_step(
+            &self.store.root,
+            &self.runtime,
+            definition,
+            node,
+            generation,
             router,
             context,
             decision,
             request.clone(),
-            definition.plan.clone(),
-            node,
-            Some((&definition.execution, generation)),
-            Some(&artifacts),
+            artifacts.clone(),
         )?;
         let step = PendingStep {
             pending,
@@ -636,6 +660,56 @@ impl Coordinator {
         Ok(())
     }
 }
+/// Reconstruct confidential material for a registered historical step without
+/// acquiring another coordinator or runtime ownership lock. This grants no
+/// approval and never substitutes a JSON receipt for the execution decision.
+#[allow(clippy::too_many_arguments)]
+pub fn reopen_recorded_step(
+    root: &Path,
+    runtime: &Runtime,
+    definition: &WorkflowDefinition,
+    node: &str,
+    generation: u32,
+    router: &PhaseRouter,
+    context: &ValidatedPhaseContext,
+    decision: &ExecutionDecision,
+    request: ExecutionRequest,
+    artifacts: RunArtifactContract,
+) -> Result<PendingRun> {
+    validate_definition(definition)?;
+    if artifacts.workflow_definition_sha256 != definition.definition_sha256
+        || artifacts.outputs
+            != definition
+                .artifacts
+                .get(node)
+                .ok_or(CoordinatorError::Invalid("node"))?
+                .outputs
+    {
+        return Err(CoordinatorError::Integrity);
+    }
+    let id = run_id(definition, node, generation)?;
+    let pending = runtime.reopen_decision(
+        &id,
+        router,
+        context,
+        decision,
+        request,
+        definition.plan.clone(),
+        node,
+        Some((&definition.execution, generation)),
+        Some(&artifacts),
+    )?;
+    store::check_recorded(
+        root,
+        definition,
+        runtime.storage_root(),
+        node,
+        generation,
+        pending.summary(),
+    )?;
+    Ok(pending)
+}
+
 fn run_id(definition: &WorkflowDefinition, node: &str, generation: u32) -> Result<String> {
     if !definition.execution.nodes.contains_key(node) || generation >= 5 {
         return Err(CoordinatorError::Invalid("step identity"));

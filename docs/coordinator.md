@@ -107,6 +107,39 @@ to the process group; `NamespaceTerminated` on Linux is a separate containment
 claim. Ordinary future cancellation and clean restart tests are not proof of
 SIGKILL recovery; keep that evidence separate from coordinator reconstruction.
 
+## Escalation of a failed step
+
+A registered read-only step may supply durable attempts to the explicit
+[escalation CLI](escalation.md#cli-coordinator-source-bundles). Its final prompt,
+artifact grants, workflow instance and node remain fixed. The selected model or
+effort changes only through the reviewed runtime proof and a new per-step
+approval. The target is the next generation, with at most one attempt and no
+implicit target retry. Generated and already escalated origins are ineligible.
+
+`reopen_recorded_step` reconstructs historical confidential material against the
+recorded coordinator/runtime mapping without opening a second owner. It grants
+no approval. `review_step_decision` serializes admissions, checks the cumulative
+reservation budget before runtime review, and requires the source's exact
+artifact-contract hash. Runtime repeats that hash check before its durable claim.
+
+The coordinator gates the final serialized request, including dependency text,
+through the same conservative v3 preparation bound as the standalone pipeline.
+Both serialized request size and actual host stdin remain bounded. Preparation
+exports the base request, so review appends one dependency section rather than
+duplicating a previously finalized prompt.
+
+The CLI requires homogeneous attempt ceilings within a wave. An ordinary step
+keeps the ceiling of two; an explicitly approved escalation wave can use three
+through five. Cumulative declared coordinator reservations and parent-attested
+actual-attempt ceilings are separate conservative checks. Neither measures a
+provider's bill or tokens.
+
+Registration spans two durable stores. A crash after the runtime claim but before
+the coordinator row is recoverable by reviewing identical material. That operation
+is idempotent and cannot reserve another target. Cancellation after reservation
+keeps it consumed and blocks execution. There is no cross-database atomic commit
+or automatic refund.
+
 ## Validation evidence
 
 The tests use temporary Git repositories and fake native host processes. They

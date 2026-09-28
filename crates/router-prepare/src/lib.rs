@@ -148,6 +148,39 @@ impl PreparedExecution {
     }
 }
 
+/// Validate a request after all trusted-boundary dependency framing is added.
+/// This conservative preparation check is repeated on actual adapter stdin at dispatch.
+pub fn validate_prepared_input(
+    router: &PhaseRouter,
+    context: &ValidatedPhaseContext,
+    request: &ExecutionRequest,
+    now_unix_seconds: u64,
+) -> Result<()> {
+    let serialized = json(request)?;
+    if serialized.len() > MAX_EXECUTION_INPUT_BYTES {
+        return Err(PreparationError::Limit);
+    }
+    // The complete JSON request includes escaped bodies and their metadata. Add
+    // a conservative allowance for the shared adapter's textual framing. This
+    // is preparation evidence only: runtime must gate its actual prepared stdin
+    // again, including any approved dependency context and fresh availability.
+    if context.has_asset_contracts() {
+        let allowance = request.skills.iter().try_fold(128_usize, |size, skill| {
+            size.checked_add(128 + skill.id.as_str().len())
+                .ok_or(PreparationError::Limit)
+        })?;
+        let bound = serialized
+            .len()
+            .checked_add(allowance)
+            .filter(|size| *size <= MAX_EXECUTION_INPUT_BYTES)
+            .ok_or(PreparationError::Limit)?;
+        let mut conservative = serialized.clone();
+        conservative.resize(bound, b' ');
+        router.validate_execution_assets(context, request, &conservative, now_unix_seconds)?;
+    }
+    Ok(())
+}
+
 fn json(value: &impl Serialize) -> Result<Vec<u8>> {
     serde_json::to_vec(value).map_err(|_| PreparationError::Json)
 }
@@ -396,33 +429,13 @@ pub fn prepare_with_decision(
         &input.context.request().restrictions,
         None,
     )?;
+    validate_prepared_input(
+        input.router,
+        input.context,
+        &request,
+        options.now_unix_seconds,
+    )?;
     let serialized = json(&request)?;
-    if serialized.len() > MAX_EXECUTION_INPUT_BYTES {
-        return Err(PreparationError::Limit);
-    }
-    // The complete JSON request includes escaped bodies and their metadata. Add
-    // a conservative allowance for the shared adapter's textual framing. This
-    // is preparation evidence only: runtime must gate its actual prepared stdin
-    // again, including any approved dependency context and fresh availability.
-    if input.context.has_asset_contracts() {
-        let allowance = request.skills.iter().try_fold(128_usize, |size, skill| {
-            size.checked_add(128 + skill.id.as_str().len())
-                .ok_or(PreparationError::Limit)
-        })?;
-        let bound = serialized
-            .len()
-            .checked_add(allowance)
-            .filter(|size| *size <= MAX_EXECUTION_INPUT_BYTES)
-            .ok_or(PreparationError::Limit)?;
-        let mut conservative = serialized.clone();
-        conservative.resize(bound, b' ');
-        input.router.validate_execution_assets(
-            input.context,
-            &request,
-            &conservative,
-            options.now_unix_seconds,
-        )?;
-    }
     let preparation_hash = content_digest(&json(&(
         "agent-router:preparation:v1",
         &request,
