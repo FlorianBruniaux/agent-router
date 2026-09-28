@@ -1058,10 +1058,12 @@ name = "router-prepare"
 version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
+ "hex",
  "router-adapter-api",
  "router-asset-contracts",
  "router-backend-policy",
  "router-catalog",
+ "router-catalog-store",
  "router-decision",
  "router-eval",
  "router-execution-decision",
@@ -1106,6 +1108,7 @@ dependencies = [
  "router-eval",
  "router-execution-decision",
  "router-policy",
+ "router-prepare",
  "router-retrieval",
  "router-types",
  "router-workflow",

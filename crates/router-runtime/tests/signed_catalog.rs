@@ -1,10 +1,13 @@
 //! Signed routing snapshots deliberately cannot enter the legacy runtime.
 #[path = "../../router-policy/tests/support/signed_fixture.rs"]
 mod signed_fixture;
+#[path = "../../router-prepare/tests/support/signed_preparation_fixture.rs"]
+mod signed_preparation_fixture;
 use router_execution_decision::ExecutionDecision;
 use router_runtime::{Runtime, RuntimeError, RuntimeLimits};
 use router_types::*;
 use signed_fixture::Fixture;
+use signed_preparation_fixture::Fixture as PreparationFixture;
 
 fn request(decision: &ExecutionDecision, fixture: &Fixture) -> ExecutionRequest {
     let candidate = &decision.selection().candidate;
@@ -154,6 +157,36 @@ async fn all_review_and_reopen_entries_refuse_signed_context_before_git_or_regis
     runtime.verify_integrity().unwrap();
     // No PendingRun or ApprovedRun is constructible by these public APIs.
     // execute_decision retains the same gate as defense against future callers.
+}
+
+#[tokio::test]
+async fn runtime_refuses_a_real_signed_prepared_execution_without_journal_or_spawn() {
+    let f = PreparationFixture::new();
+    let prepared = f.prepare().unwrap();
+    let runtime = Runtime::open(
+        &f.source.temp.path().join("runtime"),
+        RuntimeLimits::default(),
+    )
+    .unwrap();
+    let before = runtime.events().unwrap();
+    let plan = f.context.signed_plan().unwrap().clone();
+    let result = runtime
+        .review_decision(
+            "signed-prepared",
+            f.router(),
+            &f.context,
+            prepared.decision(),
+            prepared.request().clone(),
+            plan,
+            "plan",
+            Some((&f.execution, 0)),
+            None,
+        )
+        .await;
+    refused(result);
+    assert_eq!(runtime.events().unwrap(), before);
+    assert!(runtime.summary("signed-prepared").is_err());
+    runtime.verify_integrity().unwrap();
 }
 #[test]
 fn signed_execution_decision_cannot_validate_against_a_legacy_context() {

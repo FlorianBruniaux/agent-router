@@ -2,6 +2,19 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
+extern crate self as router_prepare;
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#[path = "../../router-policy/tests/support/signed_fixture.rs"]
+mod signed_fixture;
+
+mod signed;
+pub use signed::{
+    PublicSignedPreparationOptions, SignedPreparationInput, SignedPreparationPreview,
+    SignedPreparedExecution, prepare_signed_with_receipt,
+};
+
 use router_adapter_api::{
     MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, ValidatedHostObservation,
     authorize_execution, content_digest, strict_json,
@@ -156,6 +169,16 @@ pub fn validate_prepared_input(
     request: &ExecutionRequest,
     now_unix_seconds: u64,
 ) -> Result<()> {
+    refuse_unguarded_signed(context)?;
+    validate_prepared_input_inner(router, context, request, now_unix_seconds)
+}
+
+fn validate_prepared_input_inner(
+    router: &PhaseRouter,
+    context: &ValidatedPhaseContext,
+    request: &ExecutionRequest,
+    now_unix_seconds: u64,
+) -> Result<()> {
     let serialized = json(request)?;
     if serialized.len() > MAX_EXECUTION_INPUT_BYTES {
         return Err(PreparationError::Limit);
@@ -213,6 +236,7 @@ fn loaded(
 }
 
 pub fn prepare(input: PreparationInput<'_>) -> Result<PreparedExecution> {
+    refuse_unguarded_signed(input.context)?;
     let receipt = input.router.route(input.context)?;
     if receipt.selected.is_none() {
         return Err(PreparationError::Abstained);
@@ -227,6 +251,7 @@ pub fn prepare_with_receipt(
     input: PreparationInput<'_>,
     proof: &ValidatedPhaseReceipt,
 ) -> Result<PreparedExecution> {
+    refuse_unguarded_signed(input.context)?;
     let proof = input
         .router
         .validate_receipt(input.context, proof.receipt())?;
@@ -239,6 +264,28 @@ pub fn prepare_with_receipt(
 pub fn prepare_with_decision(
     input: PreparationInput<'_>,
     decision: &ExecutionDecision,
+) -> Result<PreparedExecution> {
+    refuse_unguarded_signed(input.context)?;
+    prepare_with_decision_inner(input, decision, loaded)
+}
+
+fn refuse_unguarded_signed(context: &ValidatedPhaseContext) -> Result<()> {
+    if context.has_signed_catalog() {
+        return Err(PreparationError::Binding(
+            "signed catalog preparation authority required",
+        ));
+    }
+    Ok(())
+}
+
+fn prepare_with_decision_inner(
+    input: PreparationInput<'_>,
+    decision: &ExecutionDecision,
+    mut load: impl FnMut(
+        &PreparationInput<'_>,
+        AssetKind,
+        &str,
+    ) -> Result<(SelectedBody, PreparedAsset)>,
 ) -> Result<PreparedExecution> {
     decision.validate_identity(input.router, input.context)?;
     decision.validate_generated_current(input.options.now_unix_seconds)?;
@@ -299,7 +346,7 @@ pub fn prepare_with_decision(
     }
 
     // The prompt choice is explicit caller input, never a hidden retrieval winner.
-    let (prompt_body, prompt_evidence) = loaded(&input, AssetKind::Prompt, &input.template.id)?;
+    let (prompt_body, prompt_evidence) = load(&input, AssetKind::Prompt, &input.template.id)?;
     let parsed: PromptTemplate = serde_json::from_value(
         strict_json(prompt_body.text.as_bytes()).map_err(|_| PreparationError::Json)?,
     )
@@ -318,7 +365,7 @@ pub fn prepare_with_decision(
     let mut assets = vec![prompt_evidence];
     let mut agent_instructions = None;
     if let Some(id) = &candidate.agent {
-        let (body, evidence) = loaded(&input, AssetKind::Agent, id)?;
+        let (body, evidence) = load(&input, AssetKind::Agent, id)?;
         let authority = input
             .context
             .request()
@@ -337,7 +384,7 @@ pub fn prepare_with_decision(
     }
     let mut skills = Vec::new();
     for id in &candidate.skills {
-        let (body, evidence) = loaded(&input, AssetKind::Skill, id.as_str())?;
+        let (body, evidence) = load(&input, AssetKind::Skill, id.as_str())?;
         if input.context.has_asset_contracts() {
             let manifest =
                 input
@@ -429,7 +476,7 @@ pub fn prepare_with_decision(
         &input.context.request().restrictions,
         None,
     )?;
-    validate_prepared_input(
+    validate_prepared_input_inner(
         input.router,
         input.context,
         &request,
