@@ -6,10 +6,12 @@ mod database;
 mod deep;
 mod diagnose;
 mod files;
+mod snapshot;
 
 pub use audit::{AuditInput, build_audit_bundle, verify_audit_bundle};
 pub use deep::diagnose_deep;
 pub use diagnose::diagnose;
+pub use snapshot::{DatabaseSnapshotReport, diagnose_database_snapshot};
 
 pub const MAX_ARTIFACTS: usize = 128;
 pub const MAX_FILE_BYTES: usize = 4 * 1024 * 1024;

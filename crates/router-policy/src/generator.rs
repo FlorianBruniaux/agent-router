@@ -966,6 +966,16 @@ fn proposal(
     Ok(plan)
 }
 pub fn generate_plans(input: &PlanGenerationInput<'_>) -> Result<PlanGenerationReport> {
+    // A caller-supplied plan is not yet bound to the signed preset/node contract.
+    if input
+        .nodes
+        .iter()
+        .any(|node| node.context.has_signed_catalog())
+    {
+        return Err(GenerationError::Invalid(
+            "signed catalog plan generation unavailable",
+        ));
+    }
     let weights = policy_valid(input.policy, input.plan.task.kind)?;
     let mut work = Work {
         stats: GenerationStatistics::default(),

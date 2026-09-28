@@ -8,6 +8,7 @@ mod preset;
 mod retrieval;
 mod route;
 mod score;
+mod signed_phases;
 
 pub use asset_phases::{PhaseAssetInputs, PhaseExecutionScope, asset_authority_scope_digest};
 pub use constraint::{
@@ -27,3 +28,4 @@ pub use retrieval::{
     RetrievalError, SkillRetriever, StaticSkillRetriever, parse_candidate_document,
 };
 pub use route::{PolicyConfig, RouteError, Router};
+pub use signed_phases::SignedPhaseInputs;

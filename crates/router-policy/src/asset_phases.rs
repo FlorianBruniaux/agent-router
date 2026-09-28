@@ -62,7 +62,7 @@ pub fn asset_authority_scope_digest(
 }
 
 impl ValidatedPhaseAssets {
-    fn new(
+    pub(crate) fn new(
         request: &PhaseRouteRequest,
         snapshot: &ValidatedHostObservation,
         catalog: &Catalog,
@@ -148,7 +148,7 @@ impl ValidatedPhaseAssets {
         candidate: &PhaseCandidate,
         base_capabilities: &BTreeSet<Capability>,
         base_mutations: &BTreeSet<Mutation>,
-    ) -> std::result::Result<BTreeSet<Capability>, ContractError> {
+    ) -> std::result::Result<(BTreeSet<Capability>, BTreeSet<Mutation>), ContractError> {
         let extension = self
             .inputs
             .requests
@@ -240,7 +240,7 @@ impl ValidatedPhaseAssets {
         {
             return Err(ContractError::Gate(GateCode::ContextExceeded));
         }
-        Ok(capabilities)
+        Ok((capabilities, mutations))
     }
 }
 
@@ -269,7 +269,7 @@ impl PhaseRouter {
         now: u64,
     ) -> Result<ValidatedPhaseContext> {
         let assets = ValidatedPhaseAssets::new(&request, snapshot, catalog, inputs, now)?;
-        self.context_inner(request, snapshot, catalog, Some(assets))
+        self.context_inner(request, snapshot, catalog, Some(assets), None)
     }
 
     /// Always call on the actual adapter-prepared stdin immediately before
