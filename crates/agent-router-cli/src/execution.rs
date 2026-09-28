@@ -320,6 +320,9 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
         .as_deref()
         .map(crate::escalation::LoadedProposal::read)
         .transpose()?;
+    if proposal.as_ref().is_some_and(|p| p.is_coordinator()) {
+        return Err(CliError::Product("escalation.source.coordinator_required"));
+    }
     if let Some(proposal) = &proposal {
         proposal.validate_store(store)?;
     }
@@ -615,6 +618,9 @@ pub(crate) fn run(
             .as_deref()
             .map(crate::escalation::LoadedProposal::read)
             .transpose()?;
+        if proposal.as_ref().is_some_and(|p| p.is_coordinator()) {
+            return Err(CliError::Product("escalation.source.coordinator_required"));
+        }
         if let Some(proposal) = &proposal {
             proposal.validate_store(store)?;
         }

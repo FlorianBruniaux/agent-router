@@ -135,8 +135,18 @@ the same task/source/scope, and the remaining cumulative budget.
 The reviewed version passed 60 runtime/decision tests and four real macOS sandbox
 canaries using synthetic workers. The canaries include the v3 asset gate and a
 regression refusing writing failures even after their worktrees are discarded.
-This library delivery does not yet expose the escalation lifecycle in the CLI;
-the native Linux gate is included for remote validation.
+The standalone CLI lifecycle shipped in PR #22, merged as `cc8b3e4`; all eight
+checks passed on its exact head `8d11338`. It requires parent accounting approval,
+an inert pinned proposal, selected-asset preparation and a fresh run approval.
+
+The coordinator extension is implemented locally with registered bundle sources,
+exact final prompts and artifact grants, cumulative reservations and next-generation
+approval. Two native synthetic-host canaries cover a nonempty predecessor handoff,
+two failed generations, secondary dispatch, historical reopen, interrupted
+registration recovery, and budget/cancellation refusals before a new claim.
+Its independent review and remote CI must accompany delivery; those local canaries
+do not establish provider behavior or measured accounting. See
+[coordinator escalation](escalation.md#cli-coordinator-source-bundles).
 
 ## Resumed planning, catalogs and Omnigent work
 

@@ -116,6 +116,47 @@ impl Store {
         let db = self.lock()?;
         check(&db, definition)
     }
+    pub fn check_budget(
+        &self,
+        definition: &WorkflowDefinition,
+        node: &str,
+        generation: u32,
+        cost: u64,
+        tokens: u64,
+    ) -> Result<()> {
+        let db = self.lock()?;
+        if check(&db, definition)? {
+            return Err(CoordinatorError::Cancelled);
+        }
+        let exists: bool = db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM steps WHERE instance=?1 AND node=?2 AND generation=?3)",
+            params![definition.execution.instance_id, node, generation],
+            |row| row.get(0),
+        )?;
+        if exists {
+            return Ok(());
+        }
+        let (used_cost, used_tokens): (u64,u64) = db.query_row(
+            "SELECT COALESCE(SUM(cost),0),COALESCE(SUM(tokens),0) FROM steps WHERE instance=?1 AND node=?2",
+            params![definition.execution.instance_id,node], |row| Ok((row.get(0)?,row.get(1)?)))?;
+        let budget = &definition
+            .plan
+            .nodes
+            .iter()
+            .find(|n| n.id == node)
+            .ok_or(CoordinatorError::Invalid("node"))?
+            .budget;
+        if used_cost
+            .checked_add(cost)
+            .is_none_or(|v| v > budget.max_cost_microusd)
+            || used_tokens
+                .checked_add(tokens)
+                .is_none_or(|v| v > budget.max_tokens)
+        {
+            return Err(CoordinatorError::Limit);
+        }
+        Ok(())
+    }
     pub fn bind_step(
         &self,
         definition: &WorkflowDefinition,
@@ -383,6 +424,35 @@ pub fn request_cancel(root: &Path, instance: &str) -> Result<()> {
                 Err(e) => return Err(e.into()),
             }
         }
+    }
+    Ok(())
+}
+
+pub(crate) fn check_recorded(
+    root: &Path,
+    definition: &WorkflowDefinition,
+    runtime: &Path,
+    node: &str,
+    generation: u32,
+    run: &RunSummary,
+) -> Result<()> {
+    let db = control(root, false)?;
+    check(&db, definition)?; // Cancellation does not erase historical material.
+    let pinned: String = db.query_row(
+        "SELECT runtime_root FROM workflows WHERE instance=?1",
+        [&definition.execution.instance_id],
+        |row| row.get(0),
+    )?;
+    if Path::new(&pinned) != runtime {
+        return Err(CoordinatorError::Integrity);
+    }
+    let saved: (String, String) = db.query_row(
+        "SELECT run_id,definition_hash FROM steps WHERE instance=?1 AND node=?2 AND generation=?3",
+        params![definition.execution.instance_id, node, generation],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    if saved != (run.run_id.clone(), run.definition_hash.clone()) {
+        return Err(CoordinatorError::Integrity);
     }
     Ok(())
 }

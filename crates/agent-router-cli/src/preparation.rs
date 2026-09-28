@@ -214,12 +214,27 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
     )
     .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
     if let Some(runtime) = &runtime {
+        let final_request = proposal
+            .as_ref()
+            .ok_or(CliError::Internal)?
+            .prepared_request(
+                runtime,
+                prepared.request(),
+                workflow.as_ref().zip(manifest.generation),
+            )?;
+        router_prepare::validate_prepared_input(
+            &router,
+            &context,
+            &final_request,
+            options.now_unix_seconds,
+        )
+        .map_err(|_| CliError::Product("prepare.final_input.invalid_or_denied"))?;
         runtime
             .validate_escalation_preparation(
                 &router,
                 &context,
                 &loaded.decision,
-                prepared.request(),
+                &final_request,
                 &plan,
                 &manifest.node_id,
                 &manifest.run_id,

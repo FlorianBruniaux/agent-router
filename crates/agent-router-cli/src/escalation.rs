@@ -21,8 +21,18 @@ const LIMIT: usize = 64 * 1024;
 pub(crate) struct SourceArgs {
     #[arg(long)]
     store: PathBuf,
-    #[arg(long)]
-    source_definition: PathBuf,
+    #[arg(
+        long,
+        required_unless_present = "source_bundle",
+        conflicts_with = "source_bundle"
+    )]
+    source_definition: Option<PathBuf>,
+    #[arg(
+        long,
+        required_unless_present = "source_definition",
+        conflicts_with = "source_definition"
+    )]
+    source_bundle: Option<PathBuf>,
 }
 #[derive(Subcommand)]
 pub(crate) enum Command {
@@ -59,7 +69,10 @@ pub(crate) enum Command {
 struct Document {
     schema_version: u32,
     runtime_store: PathBuf,
-    source_definition: PathBuf,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_definition: Option<PathBuf>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    source_bundle: Option<PathBuf>,
     source_material_sha256: String,
     policy: EscalationPolicy,
     max_attempts: u32,
@@ -77,7 +90,10 @@ pub(crate) struct SourceBinding {
     document: PathBuf,
     document_sha256: String,
     runtime_store: PathBuf,
-    source_definition: PathBuf,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_definition: Option<PathBuf>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source_bundle: Option<PathBuf>,
     source_material_sha256: String,
     ledger_hash: String,
     decision_id: String,
@@ -121,7 +137,19 @@ fn definition(path: &Path) -> Result<execution::Definition, CliError> {
     }
     Ok(source)
 }
-fn source_in(runtime: &Runtime, path: &Path) -> Result<(PendingRun, String), CliError> {
+fn source_in(
+    runtime: &Runtime,
+    path: Option<&Path>,
+    bundle: Option<&Path>,
+) -> Result<(PendingRun, String), CliError> {
+    if let Some(path) = bundle {
+        if path.as_os_str().is_empty() {
+            return Err(CliError::RequestRead);
+        }
+        return crate::coordinator::escalation_source(runtime, path)
+            .map(|s| (s.pending, s.material));
+    }
+    let path = path.ok_or(CliError::InvalidCommand)?;
     let path = canonical(path)?;
     let source = definition(&path)?;
     let (pending, loaded) = execution::reopen_in(runtime, &source, None)?;
@@ -140,10 +168,19 @@ fn source_in(runtime: &Runtime, path: &Path) -> Result<(PendingRun, String), Cli
     ))?;
     Ok((pending, material))
 }
-fn open_source(store: &Path, path: &Path, max_attempts: u32) -> Result<Runtime, CliError> {
-    let source = definition(path)?;
+fn open_source(
+    store: &Path,
+    path: Option<&Path>,
+    bundle: Option<&Path>,
+    max_attempts: u32,
+) -> Result<Runtime, CliError> {
+    let run_id = if let Some(path) = bundle {
+        crate::coordinator::escalation_source_id(path)?
+    } else {
+        definition(path.ok_or(CliError::InvalidCommand)?)?.run_id
+    };
     // Observe first so review/proposal never creates a missing source store.
-    let summary = router_runtime::observe(store, &source.run_id).map_err(execution::error)?;
+    let summary = router_runtime::observe(store, &run_id).map_err(execution::error)?;
     Runtime::open(
         store,
         RuntimeLimits {
@@ -167,8 +204,14 @@ impl LoadedProposal {
             router_adapter_api::strict_json(&raw).map_err(|_| CliError::RequestJsonInvalid)?,
         )
         .map_err(|_| CliError::RequestJsonInvalid)?;
-        if document.schema_version != 1
-            || !(3..=5).contains(&document.max_attempts)
+        if !matches!(
+            (
+                document.schema_version,
+                document.source_definition.is_some(),
+                document.source_bundle.is_some()
+            ),
+            (1, true, false) | (2, false, true)
+        ) || !(3..=5).contains(&document.max_attempts)
             || !hash_valid(&document.source_material_sha256)
             || !hash_valid(&document.expected_ledger_hash)
             || !hash_valid(&document.expected_decision_id)
@@ -177,7 +220,14 @@ impl LoadedProposal {
         }
         let base = path.parent().ok_or(CliError::RequestRead)?;
         document.runtime_store = canonical(&base.join(&document.runtime_store))?;
-        document.source_definition = canonical(&base.join(&document.source_definition))?;
+        document.source_definition = document
+            .source_definition
+            .map(|p| canonical(&base.join(p)))
+            .transpose()?;
+        document.source_bundle = document
+            .source_bundle
+            .map(|p| canonical(&base.join(p)))
+            .transpose()?;
         Ok(Self {
             document,
             path,
@@ -196,9 +246,53 @@ impl LoadedProposal {
     pub(crate) fn open_runtime(&self) -> Result<Runtime, CliError> {
         open_source(
             &self.document.runtime_store,
-            &self.document.source_definition,
+            self.document.source_definition.as_deref(),
+            self.document.source_bundle.as_deref(),
             self.max_attempts(),
         )
+    }
+    pub(crate) fn is_coordinator(&self) -> bool {
+        self.document.source_bundle.is_some()
+    }
+    /// This is only a CLI digest projection for a queued control. The owner
+    /// reconstructs the proof and confidential material before applying it.
+    pub(crate) fn control_binding(&self) -> SourceBinding {
+        SourceBinding {
+            document: self.path.clone(),
+            document_sha256: self.sha256.clone(),
+            runtime_store: self.document.runtime_store.clone(),
+            source_definition: self.document.source_definition.clone(),
+            source_bundle: self.document.source_bundle.clone(),
+            source_material_sha256: self.document.source_material_sha256.clone(),
+            ledger_hash: self.document.expected_ledger_hash.clone(),
+            decision_id: self.document.expected_decision_id.clone(),
+            max_attempts: self.max_attempts(),
+        }
+    }
+    pub(crate) fn prepared_request(
+        &self,
+        runtime: &Runtime,
+        request: &router_types::ExecutionRequest,
+        workflow: Option<(&router_types::WorkflowExecutionContract, u32)>,
+    ) -> Result<router_types::ExecutionRequest, CliError> {
+        let mut final_request = request.clone();
+        if let Some(path) = &self.document.source_bundle {
+            let source = crate::coordinator::escalation_source(runtime, path)?;
+            let Some((contract, generation)) = workflow else {
+                return Err(CliError::Product("escalation.workflow.required"));
+            };
+            if contract != &source.workflow.execution
+                || source.generation.checked_add(1) != Some(generation)
+            {
+                return Err(CliError::Product("escalation.workflow.changed"));
+            }
+            final_request.prompt.push_str(
+                &runtime
+                    .render_dependency_context(&source.artifacts)
+                    .map_err(execution::error)?,
+            );
+        }
+        Ok(final_request)
     }
     pub(crate) fn reconstruct(
         &self,
@@ -208,7 +302,11 @@ impl LoadedProposal {
         baseline: &PhaseReceipt,
     ) -> Result<(ExecutionDecision, SourceBinding), CliError> {
         self.validate_store(runtime.storage_root())?;
-        let (source, material) = source_in(runtime, &self.document.source_definition)?;
+        let (source, material) = source_in(
+            runtime,
+            self.document.source_definition.as_deref(),
+            self.document.source_bundle.as_deref(),
+        )?;
         if material != self.document.source_material_sha256 {
             return Err(CliError::Product("escalation.source.changed"));
         }
@@ -224,19 +322,7 @@ impl LoadedProposal {
         if decision.baseline() != baseline {
             return Err(CliError::Product("escalation.baseline.changed"));
         }
-        Ok((
-            decision,
-            SourceBinding {
-                document: self.path.clone(),
-                document_sha256: self.sha256.clone(),
-                runtime_store: self.document.runtime_store.clone(),
-                source_definition: self.document.source_definition.clone(),
-                source_material_sha256: material,
-                ledger_hash: proof.binding().ledger_hash.clone(),
-                decision_id: proof.binding().decision_id.clone(),
-                max_attempts: self.max_attempts(),
-            },
-        ))
+        Ok((decision, self.control_binding()))
     }
 }
 pub(crate) fn run(command: Command, json: bool) -> Result<Outcome, CliError> {
@@ -252,8 +338,22 @@ pub(crate) fn run(command: Command, json: bool) -> Result<Outcome, CliError> {
             max_tokens,
             approve,
         } => {
-            let runtime = open_source(&source.store, &source.source_definition, 2)?;
-            let (pending, _) = source_in(&runtime, &source.source_definition)?;
+            let runtime_root = if source.source_bundle.is_some() {
+                source.store.join("runtime")
+            } else {
+                source.store.clone()
+            };
+            let runtime = open_source(
+                &runtime_root,
+                source.source_definition.as_deref(),
+                source.source_bundle.as_deref(),
+                2,
+            )?;
+            let (pending, _) = source_in(
+                &runtime,
+                source.source_definition.as_deref(),
+                source.source_bundle.as_deref(),
+            )?;
             let reviewed = runtime
                 .review_attempt_bound(
                     &pending,
@@ -283,18 +383,37 @@ pub(crate) fn run(command: Command, json: bool) -> Result<Outcome, CliError> {
             max_attempts,
             output,
         } => {
-            let source_path = canonical(&source.source_definition)?;
-            execution::require_asset_authority(&definition(&source_path)?)?;
-            let runtime = open_source(&source.store, &source_path, max_attempts)?;
-            let (pending, source_material_sha256) = source_in(&runtime, &source_path)?;
+            let source_path = source
+                .source_definition
+                .as_deref()
+                .map(canonical)
+                .transpose()?;
+            let bundle_path = source.source_bundle.as_deref().map(canonical).transpose()?;
+            if let Some(path) = &source_path {
+                execution::require_asset_authority(&definition(path)?)?;
+            }
+            let runtime_root = if bundle_path.is_some() {
+                source.store.join("runtime")
+            } else {
+                source.store.clone()
+            };
+            let runtime = open_source(
+                &runtime_root,
+                source_path.as_deref(),
+                bundle_path.as_deref(),
+                max_attempts,
+            )?;
+            let (pending, source_material_sha256) =
+                source_in(&runtime, source_path.as_deref(), bundle_path.as_deref())?;
             let policy: EscalationPolicy = phases::read_json(&policy, LIMIT)?;
             let proof = runtime
                 .review_escalation(&pending, &policy)
                 .map_err(error)?;
             let document = Document {
-                schema_version: 1,
+                schema_version: if bundle_path.is_some() { 2 } else { 1 },
                 runtime_store: runtime.storage_root().to_owned(),
                 source_definition: source_path,
+                source_bundle: bundle_path,
                 source_material_sha256,
                 policy,
                 max_attempts,

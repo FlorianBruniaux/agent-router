@@ -692,3 +692,724 @@ fn native_cli_escalation_rejects_a_proposal_after_source_history_changes() {
     );
     assert!(!fixture.files.root.join("target").exists());
 }
+
+#[test]
+fn coordinator_bundle_source_is_a_distinct_exclusive_input() {
+    let f = Fixture::new();
+    let missing = f.files.root.join("missing-coordinator-bundle.json");
+    let mut input = command();
+    input
+        .args(["escalation", "propose", "--source-bundle"])
+        .arg(&missing)
+        .arg("--store")
+        .arg(&f.files.store)
+        .arg("--policy")
+        .arg(f.files.root.join("escalation-policy.json"))
+        .args(["--max-attempts", "3", "--json"]);
+    let output = input.output().unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        !String::from_utf8_lossy(&output.stderr).contains("cli.invalid"),
+        "source bundle must be parsed, then rejected for missing source: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(!f.files.store.exists());
+    input.arg("--source-definition").arg(f.source());
+    rejected(&mut input, "cli.invalid");
+}
+
+struct CoordinatedFixture {
+    base: Fixture,
+    workflow: std::path::PathBuf,
+}
+impl CoordinatedFixture {
+    fn new(native: bool) -> Self {
+        Self::with_budget(native, 45_000)
+    }
+    fn with_budget(native: bool, max_tokens: u64) -> Self {
+        let mut base = Fixture::build(native);
+        let root = &base.files.root;
+        let mut route = base.context.request().clone();
+        route.task.budget.max_tokens = max_tokens;
+        let snapshot = ValidatedHostObservation::from_observation(
+            read(&root.join("snapshot.json")),
+            SnapshotValidation {
+                now_unix_seconds: base.context.snapshot().observed_at_unix_seconds,
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(&fs::read(root.join("catalog.json")).unwrap()).unwrap();
+        let source_request: ExecutionRequest = read(&root.join("source/request.json"));
+        let assets = native_fixture::asset_inputs(
+            &route,
+            &snapshot,
+            &catalog,
+            &base.files.repo,
+            &source_request.source_state,
+            snapshot.observation().observed_at_unix_seconds,
+        );
+        native_fixture::write_asset_authority(root, &assets);
+        base.context = base
+            .router
+            .context_with_assets(
+                route.clone(),
+                &snapshot,
+                &catalog,
+                assets,
+                snapshot.observation().observed_at_unix_seconds,
+            )
+            .unwrap();
+        let receipt = base.router.route(&base.context).unwrap();
+        assert!(
+            receipt.selected.is_some(),
+            "coordinator fixture eligibility: {:?}",
+            receipt.abstention
+        );
+        write(&root.join("context.json"), &route);
+        let plan = router_workflow::build_plan(
+            &base.context.request().task,
+            WorkflowPreset::PlanExecuteVerify,
+            router_workflow::PlanLimits::default(),
+        )
+        .unwrap();
+        write(&root.join("plan.json"), &plan);
+        let request: ExecutionRequest = read(&root.join("source/request.json"));
+        let contract = router_workflow::seal_execution_contract(
+            WorkflowExecutionContract {
+                schema_version: 1,
+                instance_id: "coordinator-escalation-fixture".into(),
+                plan_id: plan.plan_id.clone(),
+                workspace: request.workspace.clone(),
+                source_state: request.source_state.clone(),
+                nodes: plan
+                    .nodes
+                    .iter()
+                    .map(|n| {
+                        (
+                            n.id.clone(),
+                            NodeExecutionContract {
+                                phase: match n.id.as_str() {
+                                    "plan" => StageKind::Plan,
+                                    "verify" => StageKind::Verify,
+                                    _ => StageKind::Execute,
+                                },
+                                dependencies: n
+                                    .dependencies
+                                    .iter()
+                                    .map(|d| (d.clone(), DependencyRequirement::Verified))
+                                    .collect(),
+                            },
+                        )
+                    })
+                    .collect(),
+                contract_sha256: String::new(),
+            },
+            &plan,
+        )
+        .unwrap();
+        write(&root.join("workflow-contract.json"), &contract);
+        let definition = router_coordinator::seal_definition(WorkflowDefinition {
+            schema_version: 1,
+            execution: contract,
+            artifacts: plan
+                .nodes
+                .iter()
+                .map(|n| {
+                    (
+                        n.id.clone(),
+                        NodeArtifactDeclaration {
+                            outputs: n
+                                .outputs
+                                .iter()
+                                .map(|label| OutputDeclaration {
+                                    label: label.clone(),
+                                    source: DeclaredOutputSource::NativeFinalText,
+                                    max_bytes: 16384,
+                                    retention_seconds: 300,
+                                })
+                                .collect(),
+                            inputs: n
+                                .dependencies
+                                .iter()
+                                .map(|p| ArtifactEdge {
+                                    producer: p.clone(),
+                                    label: format!("artifact:{p}"),
+                                    exposure: ArtifactExposure::PromptData,
+                                })
+                                .collect(),
+                        },
+                    )
+                })
+                .collect(),
+            plan,
+            failure_policy: WorkflowFailurePolicy::ContinueIndependent,
+            max_input_bytes: 65536,
+            definition_sha256: String::new(),
+        })
+        .unwrap();
+        let workflow = root.join("workflow.json");
+        write(&workflow, &definition);
+        let mut manifest: Value = read(&root.join("prepare.json"));
+        manifest["workflow_contract"] = json!("workflow-contract.json");
+        manifest["generation"] = json!(0);
+        write(&root.join("co-prepare.json"), &manifest);
+        checked(
+            command()
+                .args(["prepare", "--manifest"])
+                .arg(root.join("co-prepare.json"))
+                .arg("--output-directory")
+                .arg(root.join("co-source"))
+                .arg("--json"),
+            0,
+        );
+        let mut route = base.context.request().clone();
+        route.phase = StageKind::Plan;
+        write(&root.join("plan-context.json"), &route);
+        let snapshot = ValidatedHostObservation::from_observation(
+            read(&root.join("snapshot.json")),
+            SnapshotValidation {
+                now_unix_seconds: base.context.snapshot().observed_at_unix_seconds,
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(&fs::read(root.join("catalog.json")).unwrap()).unwrap();
+        let asset_dir = root.join("plan-assets");
+        fs::create_dir(&asset_dir).unwrap();
+        let assets = native_fixture::asset_inputs(
+            &route,
+            &snapshot,
+            &catalog,
+            &base.files.repo,
+            &request.source_state,
+            snapshot.observation().observed_at_unix_seconds,
+        );
+        native_fixture::write_asset_authority(&asset_dir, &assets);
+        write(
+            &root.join("plan-variables.json"),
+            &BTreeMap::from([("subject", PromptValue::Text("PREDECESSOR".into()))]),
+        );
+        manifest["context"] = json!("plan-context.json");
+        manifest["asset_authority"] = json!("plan-assets/asset-authority.json");
+        manifest["node_id"] = json!("plan");
+        manifest["variables"] = json!("plan-variables.json");
+        write(&root.join("plan-prepare.json"), &manifest);
+        checked(
+            command()
+                .args(["prepare", "--manifest"])
+                .arg(root.join("plan-prepare.json"))
+                .arg("--output-directory")
+                .arg(root.join("co-plan"))
+                .arg("--json"),
+            0,
+        );
+        let stream = native_fixture::STREAM.replace(
+            "synthetic-private-result",
+            "DEPENDENCY_NONEMPTY_SYNTHETIC_DATA",
+        );
+        fs::write(root.join("fake-claude"),format!("#!/bin/sh\nset -eu\nmodel=\neffort=\nwhile [ \"$#\" -gt 0 ]; do\ncase \"$1\" in --model) model=\"$2\"; shift 2;; --effort) effort=\"$2\"; shift 2;; *) shift;; esac\ndone\n[ \"$effort\" = medium ] || exit 43\nprompt=$(/bin/cat)\ncase \"$prompt\" in *PREDECESSOR*) printf '%s' {}; exit 0;; esac\ncase \"$prompt\" in *DEPENDENCY_NONEMPTY_SYNTHETIC_DATA*) :;; *) exit 44;; esac\n[ \"$model\" = fixture-best ] && exit 1\n[ \"$model\" = fixture-second ] || exit 42\nprintf '%s' {}\n",native_fixture::shell_quote(&stream),native_fixture::shell_quote(native_fixture::STREAM))).unwrap();
+        Self { base, workflow }
+    }
+    fn action(&self, action: &str) -> Command {
+        let mut c = command();
+        c.args(["coordinate", action, "--definition"])
+            .arg(&self.workflow)
+            .arg("--store")
+            .arg(&self.base.files.store)
+            .arg("--json");
+        c
+    }
+    fn review(&self, node: &str, generation: u32, source: &str, out: &str) -> Value {
+        checked(
+            self.action("review")
+                .args([
+                    "--node-id",
+                    node,
+                    "--generation",
+                    &generation.to_string(),
+                    "--source-definition",
+                ])
+                .arg(self.base.files.root.join(source))
+                .arg("--sandbox")
+                .arg(self.base.files.root.join("sandbox.json"))
+                .arg("--output-directory")
+                .arg(self.base.files.root.join(out)),
+            0,
+        )
+    }
+    fn wave_command(&self, bundle: &str, approval: &str) -> Command {
+        write(
+            &self.base.files.root.join("co-wave.json"),
+            &json!({"schema_version":1,"steps":[{"bundle":self.base.files.root.join(bundle),"approval":approval}]}),
+        );
+        let mut cmd = self.action("run-wave");
+        cmd.arg("--wave")
+            .arg(self.base.files.root.join("co-wave.json"));
+        cmd
+    }
+    fn wave(&self, bundle: &str, approval: &str, code: i32) -> Value {
+        checked(&mut self.wave_command(bundle, approval), code)
+    }
+    fn prepare_target(&self) -> Command {
+        let mut cmd = command();
+        cmd.args(["prepare", "--manifest"])
+            .arg(self.base.files.root.join("co-target-prepare.json"))
+            .arg("--output-directory")
+            .arg(self.base.files.root.join("co-target"))
+            .arg("--json");
+        cmd
+    }
+    fn verify(&self, bundle: &str, approval: &str) {
+        let root = &self.base.files.root;
+        write(
+            &root.join("co-evidence.json"),
+            &json!({"verifier":"explicit-fixture-reviewer","evidence_sha256":router_adapter_api::content_digest(b"synthetic assertions"),"artifact_sha256":null,"validation":"passed","objective":"passed"}),
+        );
+        let result = checked(
+            command()
+                .args(["coordinate", "verify", "--bundle"])
+                .arg(root.join(bundle))
+                .arg("--store")
+                .arg(&self.base.files.store)
+                .arg("--evidence")
+                .arg(root.join("co-evidence.json"))
+                .args(["--approval", approval, "--json"]),
+            0,
+        );
+        assert_eq!(result["verified"], false);
+        let service = checked(
+            self.action("service")
+                .arg("--bundle")
+                .arg(root.join(bundle)),
+            0,
+        );
+        assert_eq!(service["applied_controls"], 1);
+    }
+    fn bound(&self, run: &str) -> Command {
+        let mut c = command();
+        c.args(["escalation", "bound", "--source-bundle"])
+            .arg(self.base.files.root.join("failed1/bundle.json"))
+            .arg("--store")
+            .arg(&self.base.files.store)
+            .args([
+                "--attempt-run-id",
+                run,
+                "--attempt",
+                "1",
+                "--max-cost-microusd",
+                "10",
+                "--max-tokens",
+                "10",
+                "--json",
+            ]);
+        c
+    }
+    fn failed_sources(&self) -> (Value, Value) {
+        let f = self;
+        let root = &self.base.files.root;
+        let parent = f.review("plan", 0, "co-plan/definition.json", "parent");
+        let parent_approval = parent["approval_digest"].as_str().unwrap();
+        f.wave("parent/bundle.json", parent_approval, 0);
+        f.verify("parent/bundle.json", parent_approval);
+        let mut attempts = Vec::new();
+        for generation in 0..2 {
+            let review = f.review(
+                "execute",
+                generation,
+                "co-source/definition.json",
+                &format!("failed{generation}"),
+            );
+            let request: ExecutionRequest =
+                read(&root.join(format!("failed{generation}/request.json")));
+            assert!(
+                request
+                    .prompt
+                    .contains("DEPENDENCY_NONEMPTY_SYNTHETIC_DATA")
+            );
+            assert_eq!(
+                request
+                    .prompt
+                    .matches("Agent Router dependency data")
+                    .count(),
+                1
+            );
+            let done = f.wave(
+                &format!("failed{generation}/bundle.json"),
+                review["approval_digest"].as_str().unwrap(),
+                3,
+            );
+            assert_eq!(done["wave"]["completions"][0]["run"]["failure"], "crash");
+            attempts.push(review["run"]["run_id"].as_str().unwrap().to_string());
+        }
+        rejected(&mut f.proposal(), "escalation.accounting.unknown");
+        for id in &attempts {
+            let preview = checked(&mut f.bound(id), 0);
+            checked(
+                f.bound(id).args([
+                    "--approve",
+                    preview["preview"]["approval_digest"].as_str().unwrap(),
+                ]),
+                0,
+            );
+        }
+        let proposed = checked(
+            f.proposal()
+                .arg("--output")
+                .arg(root.join("co-proposal.json")),
+            0,
+        );
+        assert_eq!(proposed["document"]["schema_version"], 2);
+        (parent, proposed)
+    }
+    fn proposal(&self) -> Command {
+        let mut c = command();
+        c.args(["escalation", "propose", "--source-bundle"])
+            .arg(self.base.files.root.join("failed1/bundle.json"))
+            .arg("--store")
+            .arg(&self.base.files.store)
+            .arg("--policy")
+            .arg(self.base.files.root.join("escalation-policy.json"))
+            .args(["--max-attempts", "3", "--json"]);
+        c
+    }
+}
+#[test]
+#[ignore = "real native sandbox, synthetic host, nonempty predecessor artifact handoff"]
+fn native_coordinator_escalation_preserves_handoff_approval_and_restart() {
+    let f = CoordinatedFixture::new(true);
+    let root = &f.base.files.root;
+    let (parent, proposed) = f.failed_sources();
+    let parent_approval = parent["approval_digest"].as_str().unwrap();
+    let mut manifest: Value = read(&root.join("co-prepare.json"));
+    manifest["escalation_decision"] = json!("co-proposal.json");
+    manifest["generation"] = json!(2);
+    manifest["run_id"] = json!("co-target");
+    write(&root.join("co-target-prepare.json"), &manifest);
+    // A same-byte bundle copied to another locator cannot reuse the proposal.
+    let proposal: Value = read(&root.join("co-proposal.json"));
+    fs::copy(
+        root.join("failed1/bundle.json"),
+        root.join("failed1/alias.json"),
+    )
+    .unwrap();
+    let mut changed = proposal.clone();
+    changed["source_bundle"] = json!(root.join("failed1/alias.json"));
+    write(&root.join("co-proposal.json"), &changed);
+    rejected(&mut f.prepare_target(), "escalation.source.changed");
+    write(&root.join("co-proposal.json"), &proposal);
+    // Same content hash, different artifact identity is still a changed grant.
+    let original_grants: Value = read(&root.join("failed1/artifacts.json"));
+    let mut forged = original_grants.clone();
+    forged["inputs"][0]["artifact_id"] = json!("different-artifact-same-content");
+    write(&root.join("failed1/artifacts.json"), &forged);
+    let refused = f.prepare_target().output().unwrap();
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(!root.join("co-target").exists());
+    write(&root.join("failed1/artifacts.json"), &original_grants);
+    // The saved final request must never receive its footer a second time.
+    let original_request: ExecutionRequest = read(&root.join("failed1/request.json"));
+    let mut changed_request = original_request.clone();
+    changed_request.prompt.push_str(&original_request.prompt);
+    write(&root.join("failed1/request.json"), &changed_request);
+    let refused = f.prepare_target().output().unwrap();
+    assert_eq!(refused.status.code(), Some(2));
+    assert!(!root.join("co-target").exists());
+    write(&root.join("failed1/request.json"), &original_request);
+    let mut wrong_generation = manifest.clone();
+    wrong_generation["generation"] = json!(3);
+    write(&root.join("co-target-prepare.json"), &wrong_generation);
+    rejected(&mut f.prepare_target(), "escalation.workflow.changed");
+    write(&root.join("co-target-prepare.json"), &manifest);
+    checked(&mut f.prepare_target(), 0);
+    let prepared: ExecutionRequest = read(&root.join("co-target/request.json"));
+    assert!(!prepared.prompt.contains("Agent Router dependency data"));
+    assert_eq!(prepared.model.as_str(), "fixture-second");
+    let baseline: Value = read(&root.join("co-source/receipt.json"));
+    assert_eq!(
+        read::<Value>(&root.join("co-target/receipt.json")),
+        baseline
+    );
+    rejected(
+        &mut f.base.run(&root.join("co-target/definition.json")),
+        "escalation.source.coordinator_required",
+    );
+    // Simulate a crash after the runtime durably claimed the exact target but
+    // before the coordinator committed its step row. The next CLI review must
+    // recover this same reservation, never mint a second claim.
+    tokio::runtime::Runtime::new().unwrap().block_on(async {
+        let runtime = Runtime::open(
+            &f.base.files.store.join("runtime"),
+            RuntimeLimits {
+                max_attempts: 3,
+                ..RuntimeLimits::default()
+            },
+        )
+        .unwrap();
+        let workflow: WorkflowDefinition = read(&f.workflow);
+        let baseline = f.base.router.route(&f.base.context).unwrap();
+        let receipt = f
+            .base
+            .router
+            .validate_receipt(&f.base.context, &baseline)
+            .unwrap();
+        let original = router_execution_decision::ExecutionDecision::deterministic(
+            &f.base.router,
+            &f.base.context,
+            &receipt,
+        )
+        .unwrap();
+        let artifacts: RunArtifactContract = read(&root.join("failed1/artifacts.json"));
+        let source = router_coordinator::reopen_recorded_step(
+            &f.base.files.store.join("coordinator"),
+            &runtime,
+            &workflow,
+            "execute",
+            1,
+            &f.base.router,
+            &f.base.context,
+            &original,
+            read(&root.join("failed1/request.json")),
+            artifacts.clone(),
+        )
+        .unwrap();
+        let proof = runtime
+            .review_escalation(&source, &read(&root.join("escalation-policy.json")))
+            .unwrap();
+        let decision = proof.decision(&f.base.router, &f.base.context).unwrap();
+        let mut final_request = prepared.clone();
+        final_request
+            .prompt
+            .push_str(&runtime.render_dependency_context(&artifacts).unwrap());
+        let mut id_bytes = b"coordinator-run-id-v1\0".to_vec();
+        id_bytes
+            .extend(serde_json::to_vec(&(&workflow.definition_sha256, "execute", 2_u32)).unwrap());
+        let id = format!("wf-{}", router_adapter_api::content_digest(&id_bytes));
+        runtime
+            .review_decision(
+                &id,
+                &f.base.router,
+                &f.base.context,
+                &decision,
+                final_request,
+                workflow.plan.clone(),
+                "execute",
+                Some((&workflow.execution, 2)),
+                Some(&artifacts),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            runtime
+                .events()
+                .unwrap()
+                .iter()
+                .filter(|event| event.kind == "escalation.claim.v1")
+                .count(),
+            1
+        );
+    });
+    let review = f.review("execute", 2, "co-target/definition.json", "target-bundle");
+    assert_eq!(review["decision_origin"], "escalated");
+    assert_eq!(review["baseline_receipt_id"], baseline["receipt_id"]);
+    assert_eq!(
+        read::<Value>(&root.join("target-bundle/artifacts.json")),
+        read::<Value>(&root.join("failed1/artifacts.json"))
+    );
+    let final_request: ExecutionRequest = read(&root.join("target-bundle/request.json"));
+    assert_eq!(
+        final_request.prompt,
+        read::<ExecutionRequest>(&root.join("failed1/request.json")).prompt
+    );
+    let approval = review["approval_digest"].as_str().unwrap();
+    rejected(
+        &mut f.wave_command("target-bundle/bundle.json", parent_approval),
+        "coordinator.approval.required_or_changed",
+    );
+    // Wave limits cannot silently raise another step's default attempt ceiling.
+    write(
+        &root.join("mixed-wave.json"),
+        &json!({"schema_version":1,"steps":[
+        {"bundle":root.join("parent/bundle.json"),"approval":parent_approval},
+        {"bundle":root.join("target-bundle/bundle.json"),"approval":approval}]}),
+    );
+    rejected(
+        f.action("run-wave")
+            .arg("--wave")
+            .arg(root.join("mixed-wave.json")),
+        "coordinator.wave.attempt_limit_mismatch",
+    );
+    let done = f.wave("target-bundle/bundle.json", approval, 0);
+    assert_eq!(done["wave"]["completions"][0]["run"]["state"], "verifying");
+    assert_eq!(
+        done["wave"]["completions"][0]["runtime_evidence"]["objective"],
+        "unknown"
+    );
+    f.verify("target-bundle/bundle.json", approval);
+    let restarted = checked(
+        f.action("service")
+            .arg("--bundle")
+            .arg(root.join("target-bundle/bundle.json")),
+        0,
+    );
+    assert_eq!(restarted["applied_controls"], 0);
+    let runtime = Runtime::open(
+        &f.base.files.store.join("runtime"),
+        RuntimeLimits::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        runtime
+            .summary(parent["run"]["run_id"].as_str().unwrap())
+            .unwrap()
+            .attempts,
+        1
+    );
+    assert_eq!(
+        runtime
+            .summary(review["run"]["run_id"].as_str().unwrap())
+            .unwrap()
+            .attempts,
+        1
+    );
+    drop(runtime);
+    let replay = f
+        .wave_command("target-bundle/bundle.json", approval)
+        .output()
+        .unwrap();
+    assert_eq!(replay.status.code(), Some(2));
+    for value in [&parent, &proposed, &review, &done, &restarted] {
+        assert!(
+            !value
+                .to_string()
+                .contains("DEPENDENCY_NONEMPTY_SYNTHETIC_DATA")
+        );
+        assert!(!value.to_string().contains("PRIVATE_ESCALATION_SUBJECT"));
+    }
+    let runtime = Runtime::open(
+        &f.base.files.store.join("runtime"),
+        RuntimeLimits::default(),
+    )
+    .unwrap();
+    let parent_artifact = runtime
+        .declared_artifacts(parent["run"]["run_id"].as_str().unwrap())
+        .unwrap()
+        .remove(0);
+    runtime
+        .purge_declared_artifact(&parent_artifact.artifact_id)
+        .unwrap();
+    drop(runtime);
+    let unavailable = command()
+        .args(["prepare", "--manifest"])
+        .arg(root.join("co-target-prepare.json"))
+        .arg("--output-directory")
+        .arg(root.join("purged-input-target"))
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert_eq!(unavailable.status.code(), Some(2));
+    assert!(!root.join("purged-input-target").exists());
+}
+
+#[test]
+fn coordinator_escalation_fixture_prepares_reviewable_source_material() {
+    let f = CoordinatedFixture::new(false);
+    let review = f.review("plan", 0, "co-plan/definition.json", "parent");
+    assert_eq!(review["executed"], false);
+    assert_eq!(review["decision_origin"], "deterministic");
+}
+
+#[test]
+#[ignore = "real sandbox; cumulative coordinator budget must fail before a new claim"]
+fn native_coordinator_cumulative_reservation_refuses_before_claim() {
+    let f = CoordinatedFixture::with_budget(true, 36_000);
+    f.failed_sources();
+    let root = &f.base.files.root;
+    let mut manifest: Value = read(&root.join("co-prepare.json"));
+    manifest["escalation_decision"] = json!("co-proposal.json");
+    manifest["generation"] = json!(2);
+    manifest["run_id"] = json!("co-target");
+    write(&root.join("co-target-prepare.json"), &manifest);
+    checked(&mut f.prepare_target(), 0);
+    let mut review = f.action("review");
+    review
+        .args([
+            "--node-id",
+            "execute",
+            "--generation",
+            "2",
+            "--source-definition",
+        ])
+        .arg(root.join("co-target/definition.json"))
+        .arg("--sandbox")
+        .arg(root.join("sandbox.json"))
+        .arg("--output-directory")
+        .arg(root.join("target-bundle"));
+    rejected(&mut review, "coordinator.limit");
+    assert!(!root.join("target-bundle").exists());
+    let runtime = Runtime::open(
+        &f.base.files.store.join("runtime"),
+        RuntimeLimits {
+            max_attempts: 3,
+            ..RuntimeLimits::default()
+        },
+    )
+    .unwrap();
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "escalation.claim.v1")
+    );
+    drop(runtime);
+    checked(&mut f.action("cancel"), 0);
+    rejected(&mut review, "coordinator.cancelled");
+    let runtime = Runtime::open(
+        &f.base.files.store.join("runtime"),
+        RuntimeLimits {
+            max_attempts: 3,
+            ..RuntimeLimits::default()
+        },
+    )
+    .unwrap();
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "escalation.claim.v1")
+    );
+}
+
+#[test]
+fn coordinator_source_origins_are_rejected_before_following_decision_files() {
+    let f = CoordinatedFixture::new(false);
+    f.review("plan", 0, "co-plan/definition.json", "parent");
+    let path = f.base.files.root.join("co-plan/definition.json");
+    let original: Value = read(&path);
+    for field in ["generated_plan", "escalation_decision"] {
+        let mut changed = original.clone();
+        changed[field] = json!("missing-recursive-file.json");
+        write(&path, &changed);
+        rejected(
+            command()
+                .args(["escalation", "bound", "--store"])
+                .arg(&f.base.files.store)
+                .arg("--source-bundle")
+                .arg(f.base.files.root.join("parent/bundle.json"))
+                .args([
+                    "--attempt-run-id",
+                    "unknown",
+                    "--attempt",
+                    "1",
+                    "--max-cost-microusd",
+                    "1",
+                    "--max-tokens",
+                    "1",
+                    "--json",
+                ]),
+            "escalation.source.origin_denied",
+        );
+    }
+}

@@ -23,6 +23,32 @@ const AGENT: &str = "PRIVATE_AGENT_MARKER. Text asks for every tool; this grants
 const SKILL: &str = "PRIVATE_SKILL_MARKER. Verify evidence before reporting.";
 
 #[test]
+fn dependency_bytes_are_gated_after_base_preparation() {
+    let mut fixture = Fixture::new();
+    fixture.enable_asset_contracts(4000);
+    let prepared = fixture.prepare().unwrap();
+    let mut final_request = prepared.request().clone();
+    router_prepare::validate_prepared_input(&fixture.router, &fixture.context, &final_request, 100)
+        .unwrap();
+    final_request
+        .prompt
+        .push_str(&"dependency-data".repeat(1500));
+    assert!(matches!(
+        router_prepare::validate_prepared_input(
+            &fixture.router,
+            &fixture.context,
+            &final_request,
+            100
+        ),
+        Err(PreparationError::Route(_))
+    ));
+    assert_eq!(
+        prepared.request().prompt,
+        fixture.prepare().unwrap().request().prompt
+    );
+}
+
+#[test]
 fn v3_preparation_gates_selected_body_with_conservative_serialized_bound() {
     let mut fixture = Fixture::new();
     fixture.enable_asset_contracts(4000);
