@@ -1,9 +1,15 @@
 #![forbid(unsafe_code)]
 
 #[cfg(feature = "local-sidecar")]
+mod http;
+#[cfg(feature = "local-sidecar")]
 mod sidecar;
 #[cfg(feature = "local-sidecar")]
+mod standard_sidecar;
+#[cfg(feature = "local-sidecar")]
 pub use sidecar::{JevSidecarBackend, LayaLocalBackend};
+#[cfg(feature = "local-sidecar")]
+pub use standard_sidecar::*;
 
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
 use router_types::{
@@ -21,6 +27,10 @@ pub const MAX_RESPONSE_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum BackendError {
+    #[error("backend.protocol.incompatible")]
+    Protocol,
+    #[error("backend.delivery.unknown")]
+    DeliveryUnknown,
     #[error("backend.invalid")]
     Invalid,
     #[error("backend.data_policy.denied")]
@@ -47,6 +57,8 @@ pub enum BackendError {
 impl BackendError {
     pub fn code(&self) -> &'static str {
         match self {
+            Self::Protocol => "backend.protocol.incompatible",
+            Self::DeliveryUnknown => "backend.delivery.unknown",
             Self::Invalid => "backend.invalid",
             Self::DataPolicy => "backend.data_policy.denied",
             Self::Timeout => "backend.timeout",

@@ -135,7 +135,11 @@ async fn probe_native_version_inner(
     if captured.output_limited {
         return Err(RuntimeError::Limit);
     }
-    if captured.outcome.termination == TransportTermination::Cancelled {
+    // Capture may observe exit before cancellation arrives during stream
+    // collection. Keep cleanup, output bounds and an observed timeout intact.
+    if captured.outcome.termination == TransportTermination::Cancelled
+        || (captured.outcome.termination == TransportTermination::Exited && cancel.is_cancelled())
+    {
         return Err(RuntimeError::Cancelled);
     }
     if captured.outcome.termination != TransportTermination::Exited

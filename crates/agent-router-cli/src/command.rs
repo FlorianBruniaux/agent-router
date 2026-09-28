@@ -40,6 +40,13 @@ pub enum Commands {
         #[command(subcommand)]
         command: crate::admission::Command,
     },
+    /// Explicit standard-sidecar capability and single-event export commands.
+    Sidecar {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: crate::sidecar::Command,
+    },
     /// Review accounting bounds and propose durable attempt-based escalation.
     Escalation {
         #[arg(long, global = true)]
@@ -205,8 +212,10 @@ pub enum Commands {
     Backend {
         #[command(flatten)]
         inputs: PhaseArgs,
-        #[arg(long, default_value = "deterministic", value_parser = ["deterministic", "laya", "jev"])]
+        #[arg(long, default_value = "deterministic", value_parser = ["deterministic", "laya", "jev", "standard-v1"])]
         backend: String,
+        #[arg(long)]
+        expected_backend_artifact: Option<String>,
         #[arg(long)]
         endpoint: Option<std::net::SocketAddr>,
         #[arg(long)]
@@ -641,6 +650,7 @@ impl Commands {
             Self::GeneratePlan { json, .. } => (json, "Generated plan"),
             Self::Escalation { json, .. } => (json, "Escalation"),
             Self::Admission { json, .. } => (json, "Shared admission"),
+            Self::Sidecar { json, .. } => (json, "Sidecar exchange"),
             Self::BackendActivation { json, .. } => (json, "Backend activation"),
             Self::Coordinate { json, .. } => (json, "Workflow coordination"),
             Self::Prepare { json, .. } => (json, "Prepared execution"),

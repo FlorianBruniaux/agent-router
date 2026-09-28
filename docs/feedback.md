@@ -138,3 +138,17 @@ another process's memory. Such copies remain the caller's responsibility.
 Clock values are explicit for deterministic tests. Production callers must use
 a trusted wall clock. On-disk hashes detect accidental modification; they do not
 protect against a local owner replacing the entire database, keys or program.
+
+## Explicit sidecar export
+
+Collection or learning consent alone never causes network transmission.
+`sidecar outcome` and `sidecar feedback` additionally require an explicit
+`--allow-sidecar-export`, destination, artifact pin, event hash and current consent
+revision. They send exactly one retained event under a live consent guard; no
+runtime completion path invokes them. The projection removes free identifiers
+and keeps automated, human, validation and objective outcomes distinct.
+
+See [standard sidecar export](standard-sidecar.md) for the authority boundary,
+redaction, retention checks and `delivery_unknown` after an ambiguous POST. A
+server ACK does not prove learning. Local purge does not claim deletion of data
+already delivered to an external process.

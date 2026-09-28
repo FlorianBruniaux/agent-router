@@ -52,3 +52,6 @@ pub use escalation::*;
 
 mod admission;
 pub use admission::*;
+
+mod sidecar;
+pub use sidecar::*;

@@ -39,6 +39,29 @@ headers are fixed. The SPDX creation date comes from the source commit.
 Source files are checked again before publication; a concurrent source change
 aborts the export. A verified temporary archive is linked into place atomically.
 
+## Continuous integration license evidence gate
+
+The Ubuntu quality job exports the actual repository with `--strict-licenses`
+and independently runs `--verify` on the resulting core source archive. Before
+export, `cargo fetch --locked` fills the Cargo cache for all locked dependencies,
+including optional and other-platform entries. The fetch step has a five-minute
+CI timeout; export and verification together have a separate five-minute timeout.
+The exporter itself remains offline. The archive stays in `$RUNNER_TEMP` and is
+not uploaded or published.
+
+The gate fails when an external dependency lacks a cached archive, a matching
+lockfile checksum, a license declaration or verified license text. Supplemental
+texts must match their pinned archive and text hashes. Archive verification
+also rejects changed or missing inventory members. The synthetic packaging tests
+exercise these failures through the exporter CLI and check that a refused export
+creates no output archive.
+
+This checks evidence completeness and byte integrity. License compatibility and
+vulnerability review remain separate requirements. The generated SPDX document
+still inventories source dependencies across the lockfile; it is not a target-
+and feature-specific SBOM for a compiled binary. The separate CI secret scan
+does not change those evidence boundaries.
+
 ## Workspace boundaries
 
 Cargo metadata discovers product members under `crates/`; no fixed crate list is

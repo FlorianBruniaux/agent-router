@@ -169,7 +169,77 @@ impl PhaseRouter {
     }
 }
 
+impl PhaseRouter {
+    /// Revalidate a routing snapshot against a currently held catalog read guard.
+    /// This check is not a dispatch capability and does not make trust sticky.
+    pub fn validate_signed_catalog_authority(
+        &self,
+        context: &ValidatedPhaseContext,
+        guard: &CurrentCatalogGuard,
+        publishers: &TrustedCatalogPublishers,
+        index: &Bm25Index,
+        now: u64,
+    ) -> Result<()> {
+        self.route(context)?;
+        let signed = context
+            .signed_catalog
+            .as_ref()
+            .ok_or(PhaseRouteError::Invalid("signed catalog context required"))?;
+        let access = guard
+            .access(publishers, now)
+            .map_err(|_| PhaseRouteError::Invalid("signed catalog current authority"))?;
+        if guard.head() != &signed.head {
+            return Err(PhaseRouteError::Invalid("signed catalog head changed"));
+        }
+        guard
+            .catalog()
+            .validate_retrieval(index, &access)
+            .map_err(|_| PhaseRouteError::Invalid("signed catalog metadata"))?;
+        let projected = guard
+            .catalog()
+            .build_plan(
+                &signed.inputs.preset_asset_id,
+                &context.request().task,
+                &signed.host,
+                &access,
+            )
+            .map_err(|_| PhaseRouteError::Invalid("signed preset task"))?;
+        let scope_hash =
+            asset_authority_scope_digest(context.request(), &signed.inputs.execution_scope)?;
+        let config_hash = StoreIdentity {
+            schema_version: 1,
+            store_id: signed.head.store_id.clone(),
+            catalog_id: signed.head.catalog_id.clone(),
+            locator_sha256: signed.head.locator_sha256.clone(),
+        }
+        .content_hash()
+        .map_err(|_| PhaseRouteError::Catalog)?;
+        let authority = phases::hash(
+            "phase-signed-authority-v1",
+            &(
+                &config_hash,
+                guard.head(),
+                &signed.inputs,
+                &scope_hash,
+                projected.content_hash(),
+                index.source_hash(),
+                index.index_hash(),
+            ),
+        )?;
+        if authority != signed.authority_hash || projected.plan() != &signed.plan {
+            return Err(PhaseRouteError::Invalid("signed catalog authority changed"));
+        }
+        Ok(())
+    }
+}
+
 impl ValidatedPhaseContext {
+    /// Exact parent execution scope included in this signed routing snapshot.
+    pub fn signed_execution_scope(&self) -> Option<&PhaseExecutionScope> {
+        self.signed_catalog
+            .as_ref()
+            .map(|signed| &signed.inputs.execution_scope)
+    }
     pub fn has_signed_catalog(&self) -> bool {
         self.signed_catalog.is_some()
     }
