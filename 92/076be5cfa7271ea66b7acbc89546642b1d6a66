@@ -1,0 +1,91 @@
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_774b058d53cdbc 34-37
+crates/agent-router-cli/src/admission.rs
+  s_86ed8bd547d4f8::t_7932656f8a5852 1-155
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_e100903682a0f4 36-42,652
+crates/agent-router-cli/src/coordinator.rs
+  s_86ed8bd547d4f8::t_a009c24461d3a1 212-216,221,224,231,407,530-536,541,727-732,761-763
+crates/agent-router-cli/src/escalation.rs
+  s_86ed8bd547d4f8::t_c9b2940b51c842 184-189,196
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_f2e86a80b9958e 29-30,105-114,168-170,344,353,644,653
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_661837179d261e 3,24,149
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_c961e550f53e9b 17,65,79-81,269-272
+crates/agent-router-cli/src/session_budget.rs
+  s_86ed8bd547d4f8::t_8d9a8ed5127901 1-120
+crates/agent-router-cli/tests/admission.rs
+  s_86ed8bd547d4f8::t_30912e4017cde6 1-277
+crates/agent-router-cli/tests/coordinator.rs
+  s_86ed8bd547d4f8::t_0a11aab18da621 302-341
+crates/agent-router-cli/tests/escalation.rs
+  s_86ed8bd547d4f8::t_469a894beb9522 1416-1540
+crates/agent-router-cli/tests/session_budgets.rs
+  s_86ed8bd547d4f8::t_db0036e4c1f863 1-352
+crates/agent-router-cli/tests/support/admission_fixture.rs
+  s_86ed8bd547d4f8::t_4b04d3b5a75ef4 1-68
+crates/router-runtime/src/admission/budget.rs
+  s_86ed8bd547d4f8::t_720e2db597a67f 1-331
+crates/router-runtime/src/admission/budget_store.rs
+  s_86ed8bd547d4f8::t_9d56b4d6778728 1-366
+crates/router-runtime/src/admission/budget_tests.rs
+  s_86ed8bd547d4f8::t_32e977f3cb4ff8 1-408
+crates/router-runtime/src/admission/files.rs
+  s_86ed8bd547d4f8::t_b00c168bb0b7b3 1-162
+crates/router-runtime/src/admission/mod.rs
+  s_86ed8bd547d4f8::t_ffd549d1cfe90f 1-156
+crates/router-runtime/src/admission/registry.rs
+  s_86ed8bd547d4f8::t_744cc4e758f925 1-366
+crates/router-runtime/src/admission/runtime.rs
+  s_86ed8bd547d4f8::t_d590867d0212cd 1-218
+crates/router-runtime/src/admission/tests.rs
+  s_86ed8bd547d4f8::t_e44a222e6a2161 1-335
+crates/router-runtime/src/error.rs
+  s_86ed8bd547d4f8::t_57440fbfaebac5 3-4
+crates/router-runtime/src/lib.rs
+  s_86ed8bd547d4f8::t_18484119bbca87 3,19-22,76,123-136,153-159,163,173-175,258-302,562-564,622-624,793-795,875-915,937-941,1087-1105,1114,1529-1535
+crates/router-runtime/src/process.rs
+  s_86ed8bd547d4f8::t_dfbfed1ac23301 86,100,130
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_551c2dfce01ac9 18,57,122-126,636-637,750,907-908,975-979,1074-1075,1156,1434
+crates/router-runtime/src/store/admission.rs
+  s_86ed8bd547d4f8::t_791850d95db999 1-495
+crates/router-runtime/src/store/preparation.rs
+  s_86ed8bd547d4f8::t_5a121a6bbdcc4f 352-375,770,779
+crates/router-runtime/tests/generated.rs
+  s_86ed8bd547d4f8::t_bd09b7108a241d 369,407,663
+crates/router-types/src/admission.rs
+  s_86ed8bd547d4f8::t_a84b3e0641959e 1-72
+crates/router-types/src/lib.rs
+  s_86ed8bd547d4f8::t_4a1e4d602c72ec 53-55,58-60
+crates/router-types/src/session_budget.rs
+  s_86ed8bd547d4f8::t_75c9cd7d6ba98c 1-75
+docs/admission.md
+  s_86ed8bd547d4f8::t_ad10bbcbb5941c 1-100
+docs/adr/0008-shared-admission.md
+  s_86ed8bd547d4f8::t_62606190af61f6 1-32
+docs/adr/0009-conservative-session-allocations.md
+  s_86ed8bd547d4f8::t_f6e2212193304b 1-67
+docs/escalation.md
+  s_86ed8bd547d4f8::t_a5984458003d44 286-291
+docs/session-budgets.md
+  s_86ed8bd547d4f8::t_df09e68a1e9d7a 1-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "92076be5cfa7271ea66b7acbc89546642b1d6a66",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
