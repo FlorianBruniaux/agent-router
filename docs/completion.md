@@ -233,7 +233,7 @@ packaging tests, workflow syntax and the source secret scan passed.
 | R17, PR #39 | Passive runtime storage observation, integrated with schema 9 | Process liveness, journal authenticity, cleanup authority and separate admission accounting stay UNKNOWN |
 | R18, PR #36 | Cohort-bound success under budget, cost/time per success, Brier and calibration metrics | Human evidence, observed gain, frontier/regret metrics and durable cache remain open |
 | R06, PR #37 | Library guards for publisher policy and reconstruction of approval reviews | The signed catalog CLI and runtime dispatch remain unimplemented |
-| R20, PRs #34, #41 and #42 | Three bounded parser fuzz targets, SQLite 3.51.3 and local binary export with license texts and build inventories | New combined fuzz runs, platform evidence and release/security gates remain separately tracked |
+| R20, PRs #34, #41 and #42 | Three bounded parser fuzz targets, SQLite 3.51.3 and local binary export with license texts and build inventories | Combined macOS fuzz smokes passed; platform evidence and release/security gates remain separately tracked |
 
 Integration reproduced a POSIX-lock defect independently of the upstream
 SQLite WAL-reset issue: opening and closing an auxiliary descriptor could
@@ -254,8 +254,29 @@ The pull requests remain drafts. GitHub Actions on PR #42 head `668a001` did
 not execute any step because of the account payment/spending restriction.
 [The recorded job](https://github.com/FlorianBruniaux/agent-router/actions/runs/36465499224/job/109074428992)
 is distinct from local checks. Linux execution and remote merge validation for
-this candidate remain unverified. Exported-workspace checks and fresh combined
-fuzz evidence are recorded independently as they complete.
+this candidate remain unverified.
+
+Extracted workspaces passed offline with Rust 1.85.1: core 875 tests (34
+ignored), integrations 359 and minimal CLI 125, with zero failures. Final
+exports from clean `b38b860` preserve exactly the tested sources, tests,
+manifests, lockfiles, notices and license inventories; only provenance metadata
+differs. Their SHA-256 digests are
+`d5a27bad0f24a23ff228a59f195467f66e25119cfaff9c7b997a6cc5afc536f3`
+(core) and
+`0c846641452dae256afd1f49b661369ffbd982a206e7dc271870975ce282f2e4`
+(integrations).
+
+Three instrumented macOS fuzz smokes on the exact `b38b860` source archive
+passed: 213,730 host snapshot inputs, 20,971 provider streams and 172,412 phase
+scopes. Both lockfiles and the tracked seed corpus remained unchanged. These
+bounded runs do not establish exhaustive coverage or Linux behavior. Their
+proof manifest SHA-256 is
+`a7164d0954ac8825af3e3497a1261d0becdec6aeec2c96067788434740b42a77`.
+
+The [local dependency audit](dependency-audit.md#local-integration-audit-september-28)
+also passed for the unchanged workspace and fuzz lockfiles with `cargo-audit`
+0.22.2 and RustSec revision `ef03605143a913024f864d2edf476adad5720c93`:
+no reported vulnerabilities or warnings. It does not replace the blocked CI.
 
 ## Acceptance that automated implementation cannot manufacture
 

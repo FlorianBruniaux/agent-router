@@ -105,8 +105,11 @@ fusionnée de ce candidat n'est revendiquée.
 - **R20** : cibles fuzz, SQLite corrigé et [recette binaire locale](binary-distribution.md)
   présents. Deux builds de la source `1cf033e` sont identiques et leurs 276 textes
   de licence vérifiés ; cette preuve précède les correctifs de verrous de
-  l'intégration. La reproduction finale par plateforme, la release signée et
-  P3/P6 restent ouverts.
+  l'intégration. Les trois essais fuzz instrumentés sur l'archive exacte
+  `b38b860` passent avec corpus et lockfiles inchangés ; les workspaces extraits
+  passent aussi leurs suites hors ligne. Ces preuves sont locales à macOS.
+  La reproduction finale par plateforme, la release signée et P3/P6 restent
+  ouverts.
 
 Le [registre de complétion](completion.md#combined-local-candidate-september-28)
 détaille les résultats et les limites. La table suivante reste le constat
