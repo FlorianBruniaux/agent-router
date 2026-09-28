@@ -126,6 +126,9 @@ fn inspect(
     now: u64,
     total: &mut usize,
 ) -> Result<(DiagnosticState, DoctorCode, Option<String>)> {
+    if artifact.kind == DoctorArtifactKind::Database {
+        return inspect_database(root, artifact);
+    }
     let file = root.file(&artifact.relative_path)?;
     let metadata = file.metadata().map_err(|_| DoctorError::Read)?;
     #[cfg(unix)]
@@ -224,10 +227,7 @@ fn inspect(
             DoctorCode::RetrievalValidated
         }
         DoctorArtifactKind::Database => {
-            if !bytes.starts_with(b"SQLite format 3\0") {
-                return Err(DoctorError::Schema);
-            }
-            DoctorCode::DatabaseHeaderOnly
+            return Err(DoctorError::Invalid);
         }
         DoctorArtifactKind::Hook => DoctorCode::HookNotInvoked,
         DoctorArtifactKind::ManagedFile => DoctorCode::ManagedFilePresent,
@@ -286,6 +286,25 @@ fn inspect(
         ));
     }
     Ok((DiagnosticState::Pass, code, Some(hash)))
+}
+
+pub(crate) fn inspect_database(
+    root: &ReadRoot,
+    artifact: &DoctorArtifact,
+) -> Result<(DiagnosticState, DoctorCode, Option<String>)> {
+    let metadata = root.database_metadata(&artifact.relative_path)?;
+    if artifact.require_private && !metadata.private {
+        return Ok((DiagnosticState::Fail, DoctorCode::PermissionsBroad, None));
+    }
+    if metadata.bytes > MAX_FILE_BYTES as u64 {
+        return Err(DoctorError::Limit);
+    }
+    // No content, expected digest or secret scan is claimed from metadata.
+    Ok((
+        DiagnosticState::Unknown,
+        DoctorCode::DatabaseSnapshotRequired,
+        None,
+    ))
 }
 
 fn json_object(bytes: &[u8]) -> Result<serde_json::Value> {

@@ -24,6 +24,11 @@ pub(crate) struct ReadRoot(File);
 #[cfg(not(unix))]
 pub(crate) struct ReadRoot;
 
+pub(crate) struct DatabaseMetadata {
+    pub bytes: u64,
+    pub private: bool,
+}
+
 #[cfg(unix)]
 impl ReadRoot {
     pub(crate) fn open(path: &str) -> Result<Self> {
@@ -43,6 +48,35 @@ impl ReadRoot {
 
     pub(crate) fn file(&self, path: &str) -> Result<File> {
         self.optional_file(path)?.ok_or(DoctorError::Read)
+    }
+
+    /// Opening and then closing any descriptor of a SQLite inode can release
+    /// another connection's process-wide POSIX locks. Inspect only metadata.
+    pub(crate) fn database_metadata(&self, path: &str) -> Result<DatabaseMetadata> {
+        use rustix::fs::{AtFlags, FileType, statat};
+        if !relative(path) {
+            return Err(DoctorError::Path);
+        }
+        let mut directory = self.0.try_clone().map_err(|_| DoctorError::Read)?;
+        let parts: Vec<_> = Path::new(path).components().collect();
+        for (index, part) in parts.iter().enumerate() {
+            let Component::Normal(name) = part else {
+                return Err(DoctorError::Path);
+            };
+            if index + 1 == parts.len() {
+                let stat = statat(&directory, *name, AtFlags::SYMLINK_NOFOLLOW)
+                    .map_err(|_| DoctorError::Read)?;
+                if FileType::from_raw_mode(stat.st_mode) != FileType::RegularFile {
+                    return Err(DoctorError::Path);
+                }
+                return Ok(DatabaseMetadata {
+                    bytes: stat.st_size.try_into().map_err(|_| DoctorError::Limit)?,
+                    private: stat.st_mode & 0o077 == 0,
+                });
+            }
+            directory = open_at(&directory, name, true)?;
+        }
+        Err(DoctorError::Path)
     }
 
     /// Distinguish a missing final entry from a rejected entry without following
@@ -194,6 +228,9 @@ impl ReadRoot {
         Err(DoctorError::Unsupported)
     }
     pub(crate) fn optional_file(&self, _: &str) -> Result<Option<File>> {
+        Err(DoctorError::Unsupported)
+    }
+    pub(crate) fn database_metadata(&self, _: &str) -> Result<DatabaseMetadata> {
         Err(DoctorError::Unsupported)
     }
 }

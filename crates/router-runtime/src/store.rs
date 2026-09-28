@@ -46,8 +46,7 @@ impl Store {
         let lock = Flock::lock(lock_file, FlockArg::LockExclusiveNonblock)
             .map_err(|_| RuntimeError::Locked)?;
         let path = root.join("runtime.sqlite3");
-        let file = private_file(&path)?;
-        drop(file);
+        private_database(&path)?;
         let mut db = Connection::open(&path)?;
         db.busy_timeout(std::time::Duration::from_secs(2))?;
         db.pragma_update(None, "journal_mode", "WAL")?;
@@ -1035,6 +1034,28 @@ pub(crate) fn overlaps(a: &str, b: &str) -> bool {
         || a.strip_prefix(b).is_some_and(|s| s.starts_with('/'))
         || b.strip_prefix(a).is_some_and(|s| s.starts_with('/'))
 }
+// Closing any auxiliary FD for an existing database discards this process's
+// POSIX locks, including locks held by other live SQLite connections. Inspect
+// existing inodes without opening them; create_new can only create a new inode.
+fn private_database(path: &Path) -> Result<()> {
+    let meta = match fs::symlink_metadata(path) {
+        Ok(meta) => meta,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+            .open(path)?
+            .metadata()?,
+        Err(error) => return Err(error.into()),
+    };
+    if !meta.is_file() || meta.file_type().is_symlink() || meta.permissions().mode() & 0o077 != 0 {
+        return Err(RuntimeError::Invalid("private regular file"));
+    }
+    Ok(())
+}
+
 pub(crate) fn private_file(path: &Path) -> Result<File> {
     let file = OpenOptions::new()
         .read(true)

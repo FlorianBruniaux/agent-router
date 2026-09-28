@@ -21,7 +21,7 @@ Paths, user labels and file contents do not appear in diagnostics or errors.
 | Hook or plugin | Bounded content, JSON structure for plugin, optional expected hash | Hook invocation/trust and plugin loading remain unknown |
 | Authentication marker | File presence and private permissions only; content is never read or hashed | Credentials are not tested |
 | Executable | Regular-file presence and Unix executable permission | No `--version` process is launched; host versions may be supplied in snapshots |
-| Database | SQLite header only | Integrity, migrations, locks and live health remain unknown |
+| Database | Regular-file metadata only | `database_snapshot_required`; content, hash, integrity and live health remain unknown |
 | Lease | PID shape, heartbeat timestamp and bounded expiry | Staleness does not prove an orphan; no process is killed |
 | Backend status | Bounded supplied JSON | Health and liveness remain unknown without an independent observation |
 | Sandbox evidence | Bounded supplied JSON | A JSON claim does not establish enforcement |
@@ -92,34 +92,31 @@ bodies to 1 MiB, body reads to 128 and retrieval bindings to 16. A limit is a
 failed check, never a silently truncated success. Between-pass hash changes
 are reported as `input_changed`.
 
-Database artifacts additionally receive SQLite `integrity_check(1)` and
-`foreign_key_check`. Opening uses an already validated descriptor with
-`mode=ro`, `immutable=1`, `SQLITE_OPEN_READ_ONLY` and `SQLITE_OPEN_NOFOLLOW`.
-The connection confirms its read-only state; it has no create flag, extension
-loading, migrations, writes or checkpoint step. Trusted schema, views and
-triggers are disabled; temporary storage is memory-only. The report counts
-three connection-local PRAGMAs and up to two integrity queries. No SQL error
-text, table name, row content or database version is exported.
+Artifacts declared `database` now receive only descriptor-relative `statat`
+checks of their path, regular-file type, requested private permissions and size.
+Neither the main file nor its sidecars are opened by this path. Both ordinary
+and deep reports return `database_snapshot_required` with configuration
+`unknown`, no content hash and zero database queries. Missing, unsafe,
+over-permissive or oversized entries remain explicit failures. An expected
+digest is not validated, and no header or secret scan is claimed. This is a
+visible change from the previous header check and macOS `/dev/fd` integrity
+inspection, including for an apparently offline database.
 
-This descriptor technique is verified on macOS fdescfs, including replacement
-of the original pathname after opening. On platforms where `/dev/fd` resolves
-through symlinks, including ordinary Linux procfs layouts, it returns
-`database_read_only_unsupported` and does not reopen the original pathname.
-That boundary preserves the no-follow guarantee rather than claiming portable
-SQLite proof. SQL length, column count, expression depth, compiled operations,
-attached databases and worker counts are bounded. A progress callback stops
-after approximately one million VM operations or 250 ms, checked each 1,000
-operations. This is cooperative work control, not an OS deadline or memory
-sandbox.
+The reason is process-wide POSIX locking: closing an auxiliary descriptor can
+release another SQLite connection's locks even when that connection remains
+active. Checking the WAL header after opening cannot prevent this effect. The
+public `diagnose_database_snapshot(&Connection)` API below retains the actual
+integrity checks through SQLite's own connection and snapshot machinery.
+SQL length, columns, expression depth, VM work and elapsed cooperative work
+limits remain applied there; no pathname-based integrity result is fabricated.
 
-WAL-mode headers or any `-wal`, `-shm` or `-journal` sidecar yield
-`database_snapshot_required` before SQLite opens. A clean, externally produced
-consistent export is required for those databases; doctor does not make that
-export itself. Descriptor bytes, the named file and sidecar presence are checked
-again after inspection. This detects observed changes but cannot establish an
-atomic snapshot against an adversarial concurrent writer. A passing local
-result is not a migration compatibility, lock availability, liveness or future
-health claim.
+This protection applies to artifacts declared `database`. Callers must not
+misclassify a live SQLite file or sidecar as `managed_file`, JSON or another
+ordinary byte-readable kind. Those readers do not promise preservation of
+SQLite locks for incorrectly typed inputs. Deep schema bindings cannot change
+a `database` artifact into `managed_file`; such bindings are rejected before
+the base diagnostic. Metadata is an observation, not an atomic filesystem
+snapshot or evidence of lock availability, service liveness or authenticity.
 
 ### Coherent snapshots from an owned connection
 
@@ -127,7 +124,7 @@ health claim.
 `Runtime::diagnose_storage()` uses it under the mutex of its already owned SQLite
 connection. It accepts no pathname, reopens no file, starts no process and creates
 no on-disk export. It neither opens a new runtime nor runs migrations. The existing
-file-based deep diagnostic retains its WAL and unsafe `/dev/fd` refusals.
+file-based diagnostic requires this explicit connection-based path for integrity.
 
 The API explicitly starts a deferred read transaction, irrespective of the
 caller's default transaction mode, checks the source page count and size, then
@@ -250,7 +247,8 @@ without separately observed evidence. No model call or active hook is used.
 
 Tests cover all component validators, generated and legacy catalog bindings,
 trust escalation, same-version content drift, changed bodies, absent databases,
-foreign-key violations, WAL/journal refusal, descriptor replacement, symlinks,
+foreign-key violations through owned snapshots, database-path refusal,
+same-process main/SHM lock preservation, descriptor traversal, symlinks,
 bounds, redaction and unchanged database files. Existing audit v2 tests remain
 part of the same package gate.
 

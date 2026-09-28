@@ -244,7 +244,7 @@ fn hook_plugin_database_lease_and_backend_do_not_claim_runtime() {
     assert_eq!(check(&report, "lease").code, DoctorCode::LeaseStale);
     assert_eq!(
         check(&report, "database").code,
-        DoctorCode::DatabaseHeaderOnly
+        DoctorCode::DatabaseSnapshotRequired
     );
     assert!(
         report
