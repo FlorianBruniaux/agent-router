@@ -33,16 +33,18 @@ class PackagingTests(unittest.TestCase):
         path.write_bytes(data if isinstance(data, bytes) else data.encode())
         return path
 
-    def crate(self, *, symlink=False, unsafe=False, license_text=True):
+    def crate(self, *, symlink=False, unsafe=False, license_text=True, license_names=("LICENSE",)):
         data = io.BytesIO()
         with tarfile.open(fileobj=data, mode="w:gz") as archive:
             files = {"example-1.0.0/Cargo.toml": b'[package]\nname="example"\nversion="1.0.0"\nlicense="MIT"\n'}
             if license_text:
-                files["example-1.0.0/../LICENSE" if unsafe else "example-1.0.0/LICENSE"] = b"Test license text\n"
+                for name in license_names:
+                    prefix = "example-1.0.0/../" if unsafe else "example-1.0.0/"
+                    files[prefix + name] = b"Test license text\n"
             for name, content in files.items():
                 info = tarfile.TarInfo(name)
                 info.size = len(content)
-                if symlink and name.endswith("/LICENSE"):
+                if symlink and any(name.endswith("/" + license) for license in license_names):
                     info.type, info.linkname, info.size = tarfile.SYMTYPE, "elsewhere", 0
                 archive.addfile(info, io.BytesIO(content) if info.isfile() else None)
         payload = data.getvalue()
@@ -57,6 +59,33 @@ class PackagingTests(unittest.TestCase):
         self.assertEqual(record["license_files"][0]["sha256"], CORE.digest(b"Test license text\n"))
         self.assertEqual(list(files), ["licenses/dependencies/example-1.0.0/LICENSE"])
         self.assertNotIn(str(self.root), json.dumps(record))
+
+    def test_suffix_license_names_preserve_exact_text_and_checksum_evidence(self):
+        names = ("MIT-LICENSE", "Apache-LICENSE", "BSD-LICENCE")
+        record, files = CORE.crate_evidence(self.crate(license_names=names), self.root)
+        self.assertEqual(record["evidence"], "checksum_verified")
+        expected = {"licenses/dependencies/example-1.0.0/" + name for name in names}
+        self.assertEqual(set(files), expected)
+        self.assertEqual({entry["path"] for entry in record["license_files"]}, expected)
+        for entry in record["license_files"]:
+            self.assertEqual(files[entry["path"]], b"Test license text\n")
+            self.assertEqual(entry["sha256"], CORE.digest(files[entry["path"]]))
+        spdx = CORE.sbom([record], "fixture", "2026-01-01T00:00:00Z")
+        self.assertTrue(all(p["licenseConcluded"] == "NOASSERTION" for p in spdx["packages"]))
+
+    def test_suffix_lookalikes_do_not_substitute_for_license_text(self):
+        package = self.crate(license_names=("parser-license.rs", "notes-on-licenses.txt"))
+        record, files = CORE.crate_evidence(package, self.root)
+        self.assertEqual(record["evidence"], "license_text_missing")
+        self.assertFalse(record["license_files"])
+        self.assertFalse(files)
+
+    def test_suffix_license_symlink_and_traversal_are_refused(self):
+        for option in ({"symlink": True}, {"unsafe": True}):
+            with self.subTest(option=option):
+                package = self.crate(license_names=("MIT-LICENSE",), **option)
+                with self.assertRaisesRegex(CORE.PackageError, "license.unsafe_file"):
+                    CORE.crate_evidence(package, self.root)
 
     def test_corrupt_or_missing_cache_preserves_unknown(self):
         package = self.crate()
