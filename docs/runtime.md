@@ -81,6 +81,31 @@ helper from spawning after recovery. Missing, active, corrupt or replaced leases
 preserve writer locks and block new execution and retries. Observation remains
 available. Historical interrupted runs without leases are not assumed safe.
 
+Schema 8 additionally journals each preparation cycle before Git or a native
+version probe can run. The cycle binds the run definition, workflow generation
+and next model attempt, but has its own sequence and never consumes an attempt.
+Every Git capture, including its configuration query, opens an `untracked`
+window before spawn. Only a completed capture closes it, even when Git then
+reports a business error such as a changed source. A crash or capture error in
+that window remains unknown. These Git-return observations are separate from
+native group/namespace cleanup evidence.
+
+Version-probe leases are registered against the cycle before capture and resolved
+under their original inode lock through the journal commit. Recovery requires
+both safe preparation and safe model-attempt cleanup. Restoring the original
+lease after a temporary absence permits reconciliation only after its cleanup
+status and lock can both be verified. Terminal cancellation or rejection retains
+quarantine while either proof is unknown. No timeout or PID observation clears
+it. Historical interrupted `Preparing` and `Running` runs without a cycle remain
+quarantined, including runs with a clean model lease. Migration does not backfill
+missing evidence; completed history remains readable.
+
+Cycle projections are anchored in append-only events, with at most 1,024 cycles
+per run, 1,024 captures and eight probes per cycle, and 16 KiB per cycle event.
+The events contain identities and evidence kinds, never probe output or prompts.
+The local hash chain detects projection changes but is not authentication against
+complete database rewriting by its owner. See [ADR 0007](adr/0007-durable-preparation-cleanup.md).
+
 `Runtime::cleanup_evidence` distinguishes `Unknown`, `NotStarted`,
 `GroupTerminated` and `NamespaceTerminated`. The macOS contract proves termination
 of the process group, not hostile descendants that detached with `setsid`.
