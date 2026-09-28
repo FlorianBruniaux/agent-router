@@ -1,0 +1,45 @@
+crates/agent-router-cli/tests/evaluation_tradeoffs.rs
+  s_86ed8bd547d4f8::t_385f1103076382 1-4,7,12-13,17,72
+  s_86ed8bd547d4f8::t_77b0ccfddf3287 5-6,8-11,14-16,18-71
+  s_86ed8bd547d4f8::t_6ae36013f1f00d 73-76
+crates/agent-router-cli/src/evaluation.rs
+  s_86ed8bd547d4f8::t_4427b7ed93ddd1 55-69,77,80,88-89
+  s_86ed8bd547d4f8::t_77cf7800a20ddc 70-76,78-79,81-87
+crates/router-eval/src/tradeoffs.rs
+  s_86ed8bd547d4f8::t_33136862d75200 1-7,10-16,21-22,28-29,37-38,46-48,56-59,77,87-88,131-135,154,166,171,182,186-190,194,280-281,290,394,418,442
+  s_86ed8bd547d4f8::t_c116279d26a399 17-20,23-27,30-36,39-45,49-55,60-76,78-86,92-130,136-153,155-165,167-170,172-181,183-185,191-193,195-279,282-289,291-332,334-391,395-417,419-441
+  s_86ed8bd547d4f8::t_001a37445f3380 8-9,89-91,333,392-393
+crates/router-eval/tests/tradeoffs.rs
+  s_86ed8bd547d4f8::t_f380db73ebe123 1-6,10,14,28-29,47,69,110-113,141-143,152-153,275,284
+  s_86ed8bd547d4f8::t_6248f24e35e3c4 7-9,11-13,16-17,19-27,30-46,48-62,65-68,70-109,114-140,144-151,276-283
+  s_86ed8bd547d4f8::t_5a765bedbbce7a 154-181
+  s_86ed8bd547d4f8::t_86cfd713e45519 182-260,262-263,265-274
+  s_86ed8bd547d4f8::t_3daac8b8cea3a1 261,264
+  s_86ed8bd547d4f8::t_897027a769bbad 15,18,63-64
+  s_86ed8bd547d4f8::t_feb6faa8b1f8ed 285-303
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_4427b7ed93ddd1 584-591
+  s_86ed8bd547d4f8::t_9a1b9fe08d6b0e 717-718
+docs/evaluation.md
+  s_86ed8bd547d4f8::t_796f59ea02a372 163-164
+  s_86ed8bd547d4f8::t_8d72e41f49d4e2 147-150
+  s_86ed8bd547d4f8::t_2e806dfbefb638 151-162,165-182
+crates/router-eval/src/lib.rs
+  s_86ed8bd547d4f8::t_abf708be7e39ae 8,18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f130c44f2b27cccf7ae0d7895edf7f0ca09dc19f",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
