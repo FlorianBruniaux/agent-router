@@ -1,0 +1,54 @@
+name: parser-fuzz
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parser-fuzz-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install nightly-2026-09-12 --profile minimal
+      - name: Install pinned cargo-fuzz
+        run: cargo +nightly-2026-09-12 install cargo-fuzz --version 0.13.2 --locked --root "$RUNNER_TEMP/cargo-fuzz-tool"
+      - name: Add isolated tool directory to PATH
+        run: echo "$RUNNER_TEMP/cargo-fuzz-tool/bin" >> "$GITHUB_PATH"
+      - name: Verify locks and tool version
+        run: |
+          cargo fuzz --version
+          cargo +nightly-2026-09-12 metadata --manifest-path fuzz/Cargo.toml --locked --no-deps >/dev/null
+          sha256sum Cargo.lock fuzz/Cargo.lock
+      - name: Build all fuzz targets
+        run: cargo +nightly-2026-09-12 fuzz build --fuzz-dir fuzz
+      - name: Bounded host snapshot smoke
+        run: cargo +nightly-2026-09-12 fuzz run --fuzz-dir fuzz host_snapshot -- -max_total_time=10 -timeout=3 -max_len=4194305 -rss_limit_mb=1024
+      - name: Bounded provider stream smoke
+        run: cargo +nightly-2026-09-12 fuzz run --fuzz-dir fuzz provider_sse -- -max_total_time=10 -timeout=3 -max_len=4194305 -rss_limit_mb=1024
+      - name: Bounded phase scope smoke
+        run: cargo +nightly-2026-09-12 fuzz run --fuzz-dir fuzz phase_scope -- -max_total_time=10 -timeout=3 -max_len=262144 -rss_limit_mb=1024
+      - name: Verify product lock stayed unchanged
+        if: always()
+        run: |
+          sha256sum Cargo.lock fuzz/Cargo.lock
+          test "$(sha256sum Cargo.lock | cut -d' ' -f1)" = "$(git show HEAD:Cargo.lock | sha256sum | cut -d' ' -f1)"
+          test "$(sha256sum fuzz/Cargo.lock | cut -d' ' -f1)" = "$(git show HEAD:fuzz/Cargo.lock | sha256sum | cut -d' ' -f1)"
+      - name: Preserve synthetic crash inputs
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: parser-fuzz-crashes
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
+          retention-days: 7
