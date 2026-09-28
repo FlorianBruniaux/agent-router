@@ -18,7 +18,7 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #7 | Thin Codex and Claude adapters | Complete within the issue scope | PR #15 merged at `8b36b07aff508410a764f8feeefc62eaa0512935`; native canaries use a fake host under real macOS/Linux isolation; actual model behavior remains UNKNOWN |
 | #1 | Durable isolated execution | Complete within the issue scope | PR #16 merged at `dfe7d9346093bf3b6bec4d423706301d1b7f1825` after 411 local tests and eight PR checks; watchdog, durable leases, coordination and native macOS/Linux SIGKILL recovery covered. PR #17 stabilizes the historical-expiry test |
 | #6 | Offline feedback and reversible policy | Complete within the issue scope | PR #15 merged with eight passing CI checks; consent-bound runtime recording, signed offline promotion and rollback tested; objective validation remains separate |
-| #8 | Distribution, licenses, notices, SBOM | Packaging validated; final snapshot pending | Strict license inventory and Gitleaks pass on the PR #16 snapshot; extracted integrations: 41 tests; extracted core CLI without default adapters: 39 tests. Rebuild required for subsequent changes |
+| #8 | Distribution, licenses, notices, SBOM | Source license and advisory gates delivered; final release pending | PR #29 (`0fa3adf`) enforces real strict source exports and verification in CI; PR #32 (`e1e8fe0`) adds fresh RustSec audits. Binary SBOM, signed release artifacts and final extracted-workspace validation remain open |
 | #11 | Roadmap acceptance | Pending | All dependencies and the gaps below have evidence/disposition |
 
 ## Specification coverage beyond issue titles
@@ -172,8 +172,14 @@ regressions reproduced both stale-guard paths before correction and reject them
 afterward. The store shipped in PR #23 at `4804b37`. PR #27 at `9c47a2b`
 then added [signed routing](signed-routing.md): authenticated constraints are
 applied before scoring and v4 receipts bind the current catalog and grants.
-All eight PR checks and four post-merge checks passed. Signed preparation
-and dispatch remain closed. See [signed catalogs](signed-catalogs.md).
+All eight PR checks and four post-merge checks passed. PR #31 (`d4eafa1`)
+then delivered opaque [signed preparation](signed-preparation.md): current
+catalog and publisher authority are checked before body reads and after
+assembly, including the exact selected candidate and snapshot expiry. An
+independent regression corrected rejection caused by an excluded candidate.
+The integrated local suite passed 723 tests, with 27 explicitly ignored;
+all eight PR checks passed. Runtime dispatch and the public signed CLI
+lifecycle remain open. See [signed catalogs](signed-catalogs.md).
 
 PR #26 at `4116045` delivered the owned SQLite snapshot after independent
 review found and reproduced an inherited transaction-mode defect. Explicit
@@ -182,11 +188,24 @@ writer. The final local suite passed 697 tests with 27 ignored; all eight PR
 checks and four post-merge checks passed. A snapshot is not evidence of host
 activation, schema migration correctness or process liveness.
 
-The optional [standard sidecar client](standard-sidecar.md) is undergoing
-verification. It negotiates protocol v1, ranks only the supplied candidate pool
+The optional [standard sidecar client](standard-sidecar.md) shipped in PR #28
+at `2caf048`. The final local suite passed 731 tests, with 27 explicitly ignored;
+all eight PR checks and four post-merge checks passed. Independent regressions
+cover capacity negotiation, concurrent sockets and a deadline shared by
+negotiation and ranking. It negotiates protocol v1, ranks only the supplied candidate pool
 and sends separately authorized retained outcomes or human feedback. The
 deterministic decision stays active; a transport acknowledgement proves neither
 learning nor native execution. This client does not implement the local daemon.
+
+PR #29 (`0fa3adf`) requires a real core source export with complete license
+evidence and independent archive verification in CI. Its 26 packaging tests
+include incomplete evidence and tampering refusals; all eight PR and four
+post-merge checks passed. PR #32 (`e1e8fe0`) adds a bounded, read-only RustSec
+audit with an isolated pinned toolchain and no advisory exceptions. All ten
+PR checks passed, including two audits against fresh database state. The
+recorded lockfile/database pair is documented in the PR; future advisories
+remain subject to the recurring check. Neither gate supplies legal approval,
+a compiled-binary SBOM or authorization for public release.
 
 The [Omnigent comparison](omnigent-comparison.md) extends existing roadmap lots
 with six documented ideas. The first implementation is a strict, offline routing

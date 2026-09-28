@@ -51,7 +51,7 @@ Les évolutions suivantes le complètent :
   préparation et aux décisions effectives, migration v6→v7, ancre du plan dans
   le journal et refus de substitution revus. La preuve native et la livraison
   distante doivent accompagner la PR ; ce constat local ne clôt pas le lot.
-- **R06, stockage et routage livrés, préparation ouverte** : manifestes communs signés, hosts/presets,
+- **R06, stockage, routage et préparation de bibliothèque livrés** : manifestes communs signés, hosts/presets,
   références de prompts et projections vérifiés par 42 tests catalogue.
   Le stockage durable du catalogue actif ajoute 15 tests : activation/révocation
   approuvées, révisions monotones, verrou interprocessus, expiration et refus
@@ -59,18 +59,28 @@ Les évolutions suivantes le complètent :
   ont été reproduites puis revues indépendamment. La PR #23 (`4804b37`)
   livre le stockage ; la PR #27 (`9c47a2b`) applique les contraintes signées
   avant sélection et lie les receipts v4 au catalogue actif et à ses grants.
-  Ses huit checks de PR et quatre checks post-fusion passent. Préparation
-  et dispatch signés restent fermés. Voir [le stockage](catalog-store.md)
-  et [le routage signé](signed-routing.md).
+  Ses huit checks de PR et quatre checks post-fusion passent. La PR #31
+  (`d4eafa1`) livre la préparation opaque, avec revalidation du catalogue,
+  des grants et de la fraîcheur avant et après assemblage des seuls assets
+  sélectionnés. Revue indépendante et huit checks de PR réussis ; 723 tests
+  locaux passent, 27 ignorés. Le cycle CLI signé et le dispatch restent à
+  raccorder. Voir [le stockage](catalog-store.md), [le routage signé](signed-routing.md)
+  et [la préparation signée](signed-preparation.md).
 - **R17, snapshot SQLite livré** : PR #26 (`4116045`), avec huit checks
   de PR et quatre checks post-fusion réussis. Une connexion déjà détenue
   permet une copie cohérente de WAL, bornée, privée et en mémoire, sans
   exporter le contenu ni changer la transaction par défaut de l'appelant.
   Les diagnostics CLI et les observations actives de hosts restent ouverts.
-- **R11, client standard en vérification** : capacités, classement et exports
-  ponctuels consentis sont implémentés. Les limites négociées et les fixtures
-  réseau restent soumis aux tests et à la revue de cette livraison. Ce client
+- **R11, client standard livré** : PR #28 (`2caf048`), avec huit checks de PR
+  et quatre checks post-fusion réussis ; 731 tests locaux passent, 27 ignorés.
+  Capacités, classement borné et exports ponctuels consentis sont vérifiés,
+  ainsi que le délai commun à la négociation et au classement. Ce client
   ne livre pas le serveur R19. Voir [le protocole](standard-sidecar.md).
+- **R20, preuves de licences et audit RustSec livrés** : PR #29 (`0fa3adf`)
+  vérifie l'export réel strict des sources et ses notices ; PR #32 (`e1e8fe0`)
+  audite le lock Cargo contre une base fraîche, sans exception d'advisory.
+  Les huit et dix checks respectifs de PR passent. Le fuzz des parsers,
+  le SBOM des binaires, la release signée et les gates P3/P6 restent ouverts.
 
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
