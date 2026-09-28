@@ -1,0 +1,51 @@
+.github/workflows/runtime-linux.yml
+  s_86ed8bd547d4f8::t_25252dab69d203 36
+Cargo.lock
+  s_86ed8bd547d4f8::t_8f236948750592 918
+crates/agent-router-cli/src/coordinator.rs
+  s_86ed8bd547d4f8::t_1fa89f85a71aee 82-83,85,99-216,222,281-282,387-402,406-407,419,460,476,514-526,631-660,665,705-711,736-740
+crates/agent-router-cli/src/escalation.rs
+  s_86ed8bd547d4f8::t_9121efc5933594 24-35,72-75,93-96,140-152,171-181,183,207-214,223-230,249-250,254-296,305-309,325,341-356,386-407,413,416
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_bee2df0daeb07f 323-325,621-623
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_85f21b613c4b3b 217-231,237
+crates/agent-router-cli/tests/escalation.rs
+  s_86ed8bd547d4f8::t_c5d05c258b2878 695-1415
+crates/router-coordinator/Cargo.toml
+  s_86ed8bd547d4f8::t_ff9233813aab9f 9
+crates/router-coordinator/src/lib.rs
+  s_86ed8bd547d4f8::t_5bc0a8b5a56a78 61,110,113-115,245,250-259,261-288,360-365,370,663-712
+crates/router-coordinator/src/store.rs
+  s_86ed8bd547d4f8::t_dee58c1aaf423c 119-159,431-459
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_f1d25c59939ae2 151-183,432-437
+crates/router-prepare/tests/preparation.rs
+  s_86ed8bd547d4f8::t_ae6edef7f768fa 25-50
+crates/router-runtime/src/escalation.rs
+  s_86ed8bd547d4f8::t_a58ef4a2c93733 589,606-643
+docs/completion.md
+  s_86ed8bd547d4f8::t_02d5e755b5a896 138-149
+docs/coordinator.md
+  s_86ed8bd547d4f8::t_278596aa469931 110-142
+docs/escalation.md
+  s_86ed8bd547d4f8::t_7116326e6745df 198-278
+docs/remaining-acceptance.md
+  s_86ed8bd547d4f8::t_87a396eb1ba234 43-48,66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f03fbaa02d93b61ddf68085794858bfb5b850fb2",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
