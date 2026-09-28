@@ -1,0 +1,42 @@
+name: Rust dependency security audit
+
+on:
+  pull_request:
+  push:
+    branches: [main, 'codex/**']
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rustsec:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Install isolated RustSec toolchain
+        env:
+          CARGO_HOME: ${{ runner.temp }}/dependency-audit-cargo-home
+        run: |
+          rustup toolchain install 1.88.0 --profile minimal
+          cargo +1.88.0 install --locked --version 0.22.2 --root "$RUNNER_TEMP/dependency-audit-tool" cargo-audit
+      - name: Audit the committed lockfile against RustSec
+        env:
+          CARGO_HOME: ${{ runner.temp }}/dependency-audit-cargo-home
+        run: |
+          tool="$RUNNER_TEMP/dependency-audit-tool/bin/cargo-audit"
+          lock_before="$(sha256sum Cargo.lock | cut -d' ' -f1)"
+          "$tool" --version
+          "$tool" audit --file Cargo.lock --db "$CARGO_HOME/advisory-db" --deny warnings
+          db_sha="$(git -C "$CARGO_HOME/advisory-db" rev-parse HEAD)"
+          lock_after="$(sha256sum Cargo.lock | cut -d' ' -f1)"
+          test -n "$db_sha"
+          test "$lock_before" = "$lock_after"
+          printf 'Audited Cargo.lock sha256: %s\nRustSec advisory-db commit: %s\n' "$lock_after" "$db_sha"
