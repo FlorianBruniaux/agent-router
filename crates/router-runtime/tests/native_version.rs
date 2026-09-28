@@ -15,6 +15,66 @@ use std::{
     time::{Duration, Instant},
 };
 
+// Failure-only diagnostics for the local synthetic fixture. Do not print worker
+// output, filenames or unknown lease bytes, and never wait or change a gate.
+fn probe_lease_status(root: &Path) -> &'static str {
+    use std::{io::Read, os::unix::fs::OpenOptionsExt};
+    let Ok(entries) = fs::read_dir(root.join("leases")) else {
+        return "unavailable";
+    };
+    let entries = entries.take(2).collect::<std::io::Result<Vec<_>>>();
+    let Ok(entries) = entries else {
+        return "unreadable";
+    };
+    if entries.len() != 1 {
+        return "unexpected_count";
+    }
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+        .open(entries[0].path());
+    let Ok(file) = file else {
+        return "unreadable";
+    };
+    if !file.metadata().is_ok_and(|m| m.is_file()) {
+        return "not_regular";
+    }
+    let mut bytes = Vec::new();
+    if file.take(97).read_to_end(&mut bytes).is_err() {
+        return "unreadable";
+    }
+    match bytes.as_slice() {
+        b"router-runtime-lease-v1:pending\n" => "pending",
+        b"router-runtime-lease-v1:active\n" => "active",
+        b"router-runtime-lease-v1:group-clean\n" => "group_clean",
+        b"router-runtime-lease-v1:namespace-clean\n" => "namespace_clean",
+        b"router-runtime-lease-v1:recovered\n" => "recovered",
+        _ => "unknown",
+    }
+}
+
+#[test]
+fn probe_failure_diagnostics_are_bounded_and_do_not_disclose_lease_contents() {
+    let root = private_dir();
+    assert_eq!(probe_lease_status(root.path()), "unavailable");
+    fs::create_dir(root.path().join("leases")).unwrap();
+    let lease = root.path().join("leases/fixture.lease");
+    fs::write(&lease, b"router-runtime-lease-v1:namespace-clean\n").unwrap();
+    assert_eq!(probe_lease_status(root.path()), "namespace_clean");
+    fs::write(&lease, b"PRIVATE_UNEXPECTED_FIXTURE_CONTENT").unwrap();
+    assert_eq!(probe_lease_status(root.path()), "unknown");
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&lease)
+        .unwrap()
+        .set_len(1024 * 1024)
+        .unwrap();
+    assert_eq!(probe_lease_status(root.path()), "unknown");
+    fs::remove_file(&lease).unwrap();
+    std::os::unix::fs::symlink(root.path().join("absent"), &lease).unwrap();
+    assert_eq!(probe_lease_status(root.path()), "unreadable");
+}
+
 fn prepared(root: &Path) -> PreparedRun {
     PreparedRun {
         schema_version: 1,
@@ -324,32 +384,49 @@ async fn native_version_probe_rejects_timeout_output_overflow_stderr_and_cancell
         let start = Instant::now();
         let request = prepared(&root);
         let future = probe_native_version(&*supervisor, &request, &root, &cancel);
+        let mut cancellation_requested_at = None;
         let result = if scenario == "cancel" {
             let (result, ()) = tokio::join!(future, async {
                 tokio::time::sleep(Duration::from_millis(100)).await;
+                cancellation_requested_at = Some(start.elapsed().as_millis());
                 cancel.cancel();
             });
             result
         } else {
             future.await
         };
-        let error = result.err().expect("unsafe probe accepted");
+        let elapsed = start.elapsed();
+        let diagnostic = format!(
+            "scenario={scenario} elapsed_ms={} cancel_requested_ms={cancellation_requested_at:?} cancelled={} lease={}",
+            elapsed.as_millis(),
+            cancel.is_cancelled(),
+            probe_lease_status(&root),
+        );
+        let error = result
+            .err()
+            .unwrap_or_else(|| panic!("unsafe probe accepted: {diagnostic}"));
         if scenario == "overflow" {
-            assert!(matches!(error, RuntimeError::Limit), "{error}");
+            assert!(
+                matches!(error, RuntimeError::Limit),
+                "{diagnostic}: {error}"
+            );
         } else if scenario == "cancel" {
-            assert!(matches!(error, RuntimeError::Cancelled), "{error}");
+            assert!(
+                matches!(error, RuntimeError::Cancelled),
+                "{diagnostic}: {error}"
+            );
         } else {
             assert!(
                 matches!(error, RuntimeError::Process),
-                "{scenario}: {error}"
+                "{diagnostic}: {error}"
             );
         }
         if scenario == "timeout" {
-            assert!(start.elapsed() >= Duration::from_secs(5));
+            assert!(elapsed >= Duration::from_secs(5), "{diagnostic}");
         }
         assert!(
-            start.elapsed() < Duration::from_secs(9),
-            "{scenario} was not bounded"
+            elapsed < Duration::from_secs(9),
+            "probe was not bounded: {diagnostic}"
         );
     }
 }
