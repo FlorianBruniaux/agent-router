@@ -1,0 +1,65 @@
+Cargo.lock
+  s_00c6bf8ee605be::t_04d2649690482e 90,1041-1053
+Cargo.toml
+  s_00c6bf8ee605be::t_2bdedbc49feda7 22
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_c0c5e7a5165714 19,40
+crates/agent-router-cli/src/catalogs.rs
+  s_00c6bf8ee605be::t_cc65f4eec2e508 48-56,65
+crates/agent-router-cli/src/command.rs
+  s_00c6bf8ee605be::t_c19fd301955d3c 276-286,732-733
+crates/agent-router-cli/src/inspect.rs
+  s_00c6bf8ee605be::t_d006b006cf2523 115-122,124
+crates/agent-router-cli/src/main.rs
+  s_00c6bf8ee605be::t_5774006aa9d2bf 24-25,35,378-383,418-428,442-443
+crates/agent-router-cli/src/serve.rs
+  s_00c6bf8ee605be::t_d42b840f107593 1-275
+crates/agent-router-cli/tests/local_api.rs
+  s_2b47aafd5c6e51::t_4f3ecaac55b242 1-310
+crates/agent-router-cli/tests/local_api_absent.rs
+  s_00c6bf8ee605be::t_eb3472eed97544 1-24
+crates/router-local-api/Cargo.toml
+  s_00c6bf8ee605be::t_b84afe064dbb91 1-19
+crates/router-local-api/src/error.rs
+  s_00c6bf8ee605be::t_a77760ecad141e 1-25
+crates/router-local-api/src/http.rs
+  s_2b47aafd5c6e51::t_61b748499dec1e 1-278
+crates/router-local-api/src/json.rs
+  s_2b47aafd5c6e51::t_684b844f168c1b 1-341
+crates/router-local-api/src/lib.rs
+  s_00c6bf8ee605be::t_52addfaaa919d5 1-23
+crates/router-local-api/src/server.rs
+  s_00c6bf8ee605be::t_32d44c55f2a8ea 1-1113
+crates/router-local-api/src/state.rs
+  s_00c6bf8ee605be::t_87ba2ce25bbf69 1-341
+crates/router-local-api/tests/server.rs
+  s_2b47aafd5c6e51::t_5ae90d34673621 1-373
+docs/adr/0012-local-route-api.md
+  s_00c6bf8ee605be::t_57acad30da4e0c 1-58
+docs/local-api.md
+  s_00c6bf8ee605be::t_1ba90120845007 1-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6c2961f4ab819553310dfa75bf45c2e071e415f4",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
