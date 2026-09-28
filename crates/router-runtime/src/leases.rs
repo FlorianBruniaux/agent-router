@@ -136,3 +136,78 @@ impl LeaseStorage {
         })
     }
 }
+
+/// Observation only: even a cleanup marker is not an opaque cleanup proof.
+pub(crate) enum LeaseObservation {
+    Held,
+    Pending,
+    CleanupMarked,
+    Missing,
+    Ambiguous,
+}
+pub(crate) fn observe_lease(
+    root: &File,
+    id: &str,
+    attempt: u32,
+    record: &LeaseRecord,
+) -> LeaseObservation {
+    observe_lease_checked(root, id, attempt, record).unwrap_or(LeaseObservation::Ambiguous)
+}
+fn observe_lease_checked(
+    root: &File,
+    id: &str,
+    attempt: u32,
+    record: &LeaseRecord,
+) -> Result<LeaseObservation> {
+    if attempt == 0 || attempt > 5 || record.name != LeaseStorage::name(id, attempt)? {
+        return Ok(LeaseObservation::Ambiguous);
+    }
+    let open = |directory: &File, name: &str, flags: OFlags| -> std::io::Result<File> {
+        openat(
+            directory,
+            name,
+            flags | OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map(File::from)
+        .map_err(std::io::Error::from)
+    };
+    let directory = match open(root, "leases", OFlags::DIRECTORY) {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(LeaseObservation::Missing),
+        Err(e) => return Err(e.into()),
+    };
+    let meta = directory.metadata()?;
+    if meta.permissions().mode() & 0o077 != 0 || meta.uid() != rustix::process::getuid().as_raw() {
+        return Ok(LeaseObservation::Ambiguous);
+    }
+    let file = match open(&directory, &record.name, OFlags::empty()) {
+        Ok(file) => file,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(LeaseObservation::Missing),
+        Err(e) => return Err(e.into()),
+    };
+    let meta = file.metadata()?;
+    if !meta.is_file()
+        || meta.nlink() != 1
+        || meta.len() > 96
+        || meta.mode() & 0o077 != 0
+        || meta.uid() != rustix::process::getuid().as_raw()
+        || !record.identity.matches(&file)?
+    {
+        return Ok(LeaseObservation::Ambiguous);
+    }
+    let mut lock = match Flock::lock(file, FlockArg::LockSharedNonblock) {
+        Ok(lock) => lock,
+        Err((_, nix::errno::Errno::EWOULDBLOCK)) => return Ok(LeaseObservation::Held),
+        Err(_) => return Ok(LeaseObservation::Ambiguous),
+    };
+    let mut bytes = Vec::new();
+    (&mut *lock).take(97).read_to_end(&mut bytes)?;
+    Ok(if bytes == PENDING {
+        LeaseObservation::Pending
+    } else if bytes == GROUP_CLEAN || bytes == NAMESPACE_CLEAN || bytes == RECOVERED {
+        LeaseObservation::CleanupMarked
+    } else {
+        LeaseObservation::Ambiguous
+    })
+}

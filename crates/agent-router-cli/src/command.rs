@@ -177,8 +177,14 @@ pub enum Commands {
         command: PolicyCommand,
     },
     Doctor {
-        #[arg(long)]
-        request: PathBuf,
+        #[arg(
+            long,
+            required_unless_present = "runtime_root",
+            conflicts_with = "runtime_root"
+        )]
+        request: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["request", "deep"])]
+        runtime_root: Option<PathBuf>,
         #[arg(long)]
         now: Option<u64>,
         #[arg(long)]

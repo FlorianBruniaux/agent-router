@@ -22,7 +22,8 @@ fn error(error: DoctorError) -> CliError {
     })
 }
 pub(crate) fn doctor(
-    path: &Path,
+    path: Option<&Path>,
+    runtime_root: Option<&Path>,
     now: Option<u64>,
     deep: bool,
     json: bool,
@@ -30,6 +31,12 @@ pub(crate) fn doctor(
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
+    if let Some(root) = runtime_root {
+        let result = router_runtime::diagnose_runtime_storage(root, inspect::current_time(now)?)
+            .map_err(error)?;
+        return json_output(&result, diagnostic_exit(result.overall));
+    }
+    let path = path.ok_or(CliError::InvalidCommand)?;
     if deep {
         let request = read_json(path, 256 * 1024)?;
         let result =
