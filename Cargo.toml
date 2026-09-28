@@ -25,6 +25,7 @@ members = [
     "crates/adapter-opencode",
     "crates/adapter-copilot",
     "crates/router-retrieval",
+    "crates/router-import",
     "xtask",
 ]
 resolver = "2"

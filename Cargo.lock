@@ -1038,6 +1038,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-import"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "libc",
+ "router-catalog",
+ "router-retrieval",
+ "router-types",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+ "yaml-rust2",
+]
+
+[[package]]
 name = "router-policy"
 version = "0.1.0"
 dependencies = [
