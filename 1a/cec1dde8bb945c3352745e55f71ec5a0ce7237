@@ -1,0 +1,50 @@
+crates/router-types/src/doctor.rs
+  s_86ed8bd547d4f8::t_89be1b63536f7c 66
+crates/router-doctor/tests/database_locks.rs
+  s_86ed8bd547d4f8::t_2816db674453db 1-2,8-30,32-33,35-45,57-98,118-132,135-137,139-148,219
+  s_86ed8bd547d4f8::t_1f7b481f4bbeb5 3-7,99-117,149-218
+  s_86ed8bd547d4f8::t_8e201015d71558 31,34,46-56,133-134,138
+  s_86ed8bd547d4f8::t_fea7c2d0922d12 220-252
+docs/doctor.md
+  s_86ed8bd547d4f8::t_d1ac89f89e4349 24,95-119,127,250-251
+crates/router-doctor/src/diagnose.rs
+  s_86ed8bd547d4f8::t_be69daf370e99b 129-131,230,291-307
+  s_86ed8bd547d4f8::t_0e6f9a241b9945 308-309
+crates/router-doctor/tests/deep.rs
+  s_86ed8bd547d4f8::t_428eecbdecf59c 389,394,400-402
+  s_86ed8bd547d4f8::t_dcc49a746c8f05 403-407
+crates/router-doctor/src/database.rs
+  s_86ed8bd547d4f8::t_428eecbdecf59c 1
+crates/router-doctor/src/files.rs
+  s_86ed8bd547d4f8::t_89be1b63536f7c 27-31,53-79
+  s_86ed8bd547d4f8::t_be69daf370e99b 233
+  s_86ed8bd547d4f8::t_9dcf4bf241b1b9 80-81,234-235
+crates/router-doctor/src/deep.rs
+  s_86ed8bd547d4f8::t_be69daf370e99b 2,93-100
+crates/router-doctor/tests/diagnostics.rs
+  s_86ed8bd547d4f8::t_428eecbdecf59c 247
+crates/router-coordinator/src/store.rs
+  s_86ed8bd547d4f8::t_863036d1a6aa74 39,358-379
+crates/router-coordinator/tests/sqlite_locks.rs
+  s_86ed8bd547d4f8::t_098a78b9d1da66 1-199
+crates/router-runtime/src/store.rs
+  s_86ed8bd547d4f8::t_8e1219e4f9e826 49,1037-1058
+crates/router-runtime/tests/sqlite_locks.rs
+  s_86ed8bd547d4f8::t_fc61d945e75e6a 1-190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1acec1dde8bb945c3352745e55f71ec5a0ce7237",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
