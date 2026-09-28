@@ -24,11 +24,15 @@ jobs:
         run: rustup show active-toolchain
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Check the CLI without bundled host adapters
+        run: cargo clippy -p agent-router-cli --all-targets --no-default-features --locked -- -D warnings
       - run: cargo test --workspace --all-features --locked
       - name: Reject projection drift, stale files and unsafe paths
         run: cargo run -p xtask --locked -- check
       - name: Parse native configuration syntax
         run: python3 scripts/check-host-syntax.py
+      - name: Check source distribution boundaries and license evidence
+        run: python3 scripts/test-package-core.py
 
   secrets:
     runs-on: ubuntu-latest
