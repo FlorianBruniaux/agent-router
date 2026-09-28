@@ -36,14 +36,6 @@ fn error(error: CoordinatorError) -> CliError {
         CoordinatorError::Json(_) => CliError::Product("coordinator.json"),
     }
 }
-// A coordinator source also binds final dependency bytes and artifact grants.
-// Fail explicitly until its bundle reconstruction is supported by escalation.
-fn reject_escalation(source: &execution::Definition) -> Result<(), CliError> {
-    if source.escalation_decision.is_some() {
-        return Err(CliError::Product("escalation.coordinator.unsupported"));
-    }
-    Ok(())
-}
 fn resolve(base: &Path, path: PathBuf) -> PathBuf {
     if path.is_absolute() {
         path
@@ -87,8 +79,10 @@ struct Bundle {
     node_id: String,
     generation: u32,
     run_id: String,
+    #[serde(skip)]
+    proposal: Option<crate::escalation::LoadedProposal>,
 }
-fn bundle(path: &Path) -> Result<Bundle, CliError> {
+fn bundle_base(path: &Path) -> Result<Bundle, CliError> {
     let mut value: Bundle = phases::read_json(path, 64 * 1024)?;
     if value.schema_version != 1 || value.generation >= 5 {
         return Err(CliError::Product("coordinator.bundle.invalid"));
@@ -102,12 +96,130 @@ fn bundle(path: &Path) -> Result<Bundle, CliError> {
     value.artifact_contract = resolve(base, value.artifact_contract);
     Ok(value)
 }
-fn runtime(store: &Path, retention: OutputRetentionPolicy) -> Result<Arc<Runtime>, CliError> {
+fn bundle(path: &Path) -> Result<Bundle, CliError> {
+    let mut value = bundle_base(path)?;
+    let source = execution::load_definition(&value.source_definition)?;
+    value.proposal = proposal(&source)?;
+    Ok(value)
+}
+fn proposal(
+    source: &execution::Definition,
+) -> Result<Option<crate::escalation::LoadedProposal>, CliError> {
+    let result = source
+        .escalation_decision
+        .as_deref()
+        .map(crate::escalation::LoadedProposal::read)
+        .transpose()?;
+    if result.as_ref().is_some_and(|p| !p.is_coordinator()) {
+        return Err(CliError::Product("escalation.source.coordinator_required"));
+    }
+    Ok(result)
+}
+pub(crate) struct EscalationSource {
+    pub pending: router_runtime::PendingRun,
+    pub material: String,
+    pub workflow: WorkflowDefinition,
+    pub generation: u32,
+    pub artifacts: RunArtifactContract,
+}
+fn escalation_bundle(path: &Path) -> Result<(Bundle, execution::Definition), CliError> {
+    let bundle = bundle_base(path)?;
+    let source = execution::load_definition(&bundle.source_definition)?;
+    // Never follow a decision file from a disallowed source origin.
+    if source.generated_plan.is_some() || source.escalation_decision.is_some() {
+        return Err(CliError::Product("escalation.source.origin_denied"));
+    }
+    execution::require_asset_authority(&source)?;
+    Ok((bundle, source))
+}
+pub(crate) fn escalation_source_id(path: &Path) -> Result<String, CliError> {
+    escalation_bundle(path).map(|(bundle, _)| bundle.run_id)
+}
+pub(crate) fn escalation_source(
+    runtime: &Runtime,
+    path: &Path,
+) -> Result<EscalationSource, CliError> {
+    let path = absolute(path)?;
+    let (bundle, mut source) = escalation_bundle(&path)?;
+    if source.node_id != bundle.node_id {
+        return Err(CliError::Product("coordinator.node.mismatch"));
+    }
+    let workflow = definition(&bundle.workflow)?;
+    source.run_id = bundle.run_id.clone();
+    source.request = bundle.final_request.clone();
+    let (router, context) = execution::context(&source, true)?;
+    let baseline = execution::selection(&source, &router, &context)?;
+    let request: ExecutionRequest = phases::read_json(
+        &bundle.final_request,
+        router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+    )?;
+    let artifacts: RunArtifactContract = phases::read_json(&bundle.artifact_contract, LIMIT)?;
+    let loaded = crate::generation::load_decision(
+        source.backend_decision.as_deref(),
+        None,
+        None,
+        None,
+        &source.node_id,
+        &router,
+        &context,
+        &baseline,
+        &crate::execution_backend::scope_hash(
+            &request.workspace,
+            &request.source_state,
+            &request.scope,
+        )?,
+        true,
+    )?;
+    let coordinator_root = runtime
+        .storage_root()
+        .parent()
+        .ok_or(CliError::RequestRead)?
+        .join("coordinator");
+    let pending = router_coordinator::reopen_recorded_step(
+        &coordinator_root,
+        runtime,
+        &workflow,
+        &bundle.node_id,
+        bundle.generation,
+        &router,
+        &context,
+        &loaded.decision,
+        request,
+        artifacts.clone(),
+    )
+    .map_err(error)?;
+    if pending.summary().run_id != bundle.run_id {
+        return Err(CliError::Product("coordinator.run.mismatch"));
+    }
+    let material = router_adapter_api::content_digest(&bytes(&(
+        "agent-router:escalation-coordinator-source:v1",
+        &path,
+        &bundle,
+        &source,
+        &workflow,
+        &pending.summary().definition_hash,
+        &loaded.binding,
+        &artifacts,
+    ))?);
+    Ok(EscalationSource {
+        pending,
+        material,
+        workflow,
+        generation: bundle.generation,
+        artifacts,
+    })
+}
+fn runtime(
+    store: &Path,
+    retention: OutputRetentionPolicy,
+    max_attempts: u32,
+) -> Result<Arc<Runtime>, CliError> {
     Ok(Arc::new(
         Runtime::open(
             &store.join("runtime"),
             RuntimeLimits {
                 output_retention: retention,
+                max_attempts,
                 ..RuntimeLimits::default()
             },
         )
@@ -152,7 +264,6 @@ fn reopen(
     CliError,
 > {
     let mut source = execution::load_definition(&bundle.source_definition)?;
-    reject_escalation(&source)?;
     if source.node_id != bundle.node_id {
         return Err(CliError::Product("coordinator.node.mismatch"));
     }
@@ -167,8 +278,8 @@ fn reopen(
     let loaded = crate::generation::load_decision(
         source.backend_decision.as_deref(),
         source.generated_plan.as_deref(),
-        None,
-        None,
+        bundle.proposal.as_ref(),
+        Some(coordinator.runtime()),
         &source.node_id,
         &router,
         &context,
@@ -262,7 +373,6 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
         } => execution::block(async {
             let workflow = definition(&path)?;
             let mut source = execution::load_definition(&source_definition)?;
-            reject_escalation(&source)?;
             if source.node_id != node_id {
                 return Err(CliError::Product("coordinator.node.mismatch"));
             }
@@ -274,11 +384,27 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             )?;
             let config = execution::sandbox(&sandbox)?;
             execution::validate_adapter_config(request.host.as_str(), &config)?;
+            // Refuse an existing bundle before registering anything in the store.
+            if output_directory.exists() {
+                return Err(CliError::Product("coordinator.bundle.exists"));
+            }
+            ensure_store(&store)?;
+            let proposal = proposal(&source)?;
+            if let Some(proposal) = &proposal {
+                proposal.validate_store(&store.join("runtime"))?;
+            }
+            let runtime = runtime(
+                &store,
+                config.output_retention,
+                proposal.as_ref().map_or(2, |p| p.max_attempts()),
+            )?;
+            let coordinator = owner(&store, runtime)?;
+            coordinator.register(&workflow).map_err(error)?;
             let loaded = crate::generation::load_decision(
                 source.backend_decision.as_deref(),
                 source.generated_plan.as_deref(),
-                None,
-                None,
+                proposal.as_ref(),
+                Some(coordinator.runtime()),
                 &source.node_id,
                 &router,
                 &context,
@@ -290,14 +416,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 )?,
                 false,
             )?;
-            // Refuse an existing bundle before registering anything in the store.
-            if output_directory.exists() {
-                return Err(CliError::Product("coordinator.bundle.exists"));
-            }
-            ensure_store(&store)?;
-            let runtime = runtime(&store, config.output_retention)?;
-            let coordinator = owner(&store, runtime)?;
-            coordinator.register(&workflow).map_err(error)?;
+
             let pending = coordinator
                 .review_step_decision(
                     &workflow,
@@ -338,6 +457,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 node_id,
                 generation,
                 run_id: pending.summary().run_id.clone(),
+                proposal: None,
             };
             let files = [
                 ("request.json", bytes(pending.final_request())?),
@@ -353,7 +473,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 write_private(&directory.join(name), &content)?;
             }
             json_output(
-                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
+                &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":approval,"binary_hashes":binaries,"artifact_contract":pending.artifact_contract(),"execution_decision":loaded.decision.binding(),"generated_decision":loaded.decision.generated_binding(),"escalation_decision":loaded.decision.escalation_binding(),"decision_origin":loaded.decision.origin(),"baseline_receipt_id":loaded.decision.baseline().receipt_id,"final_request_sha256":router_adapter_api::content_digest(&bytes(pending.final_request())?),"bundle":directory.join("bundle.json"),"executed":false}),
                 ExitCode::SUCCESS,
             )
         }),
@@ -391,7 +511,19 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             }
             // A wave only reconstructs registered steps; a missing store is not created.
             router_coordinator::observe(&store.join("coordinator"), &workflow).map_err(error)?;
-            let runtime = runtime(&store, retention.ok_or(CliError::InvalidCommand)?)?;
+            let limits: BTreeSet<_> = entries
+                .iter()
+                .map(|(bundle, _, _)| bundle.proposal.as_ref().map_or(2, |p| p.max_attempts()))
+                .collect();
+            if limits.len() != 1 {
+                return Err(CliError::Product("coordinator.wave.attempt_limit_mismatch"));
+            }
+            let max_attempts = *limits.first().ok_or(CliError::InvalidCommand)?;
+            let runtime = runtime(
+                &store,
+                retention.ok_or(CliError::InvalidCommand)?,
+                max_attempts,
+            )?;
             let coordinator = owner(&store, runtime)?;
             let mut pending_steps = Vec::new();
             let mut adapters = Vec::new();
@@ -490,40 +622,47 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let workflow = definition(&bundle.workflow)?;
             router_coordinator::observe(&store.join("coordinator"), &workflow).map_err(error)?;
             let source = execution::load_definition(&bundle.source_definition)?;
-            reject_escalation(&source)?;
             let mut source = source;
             source.run_id = bundle.run_id.clone();
             source.request = bundle.final_request.clone();
             let config = execution::sandbox(&bundle.sandbox)?;
             let summary = router_runtime::observe(&store.join("runtime"), &bundle.run_id)
                 .map_err(execution::error)?;
-            let (router, context) = execution::context(&source, true)?;
-            let baseline = execution::selection(&source, &router, &context)?;
-            let request: ExecutionRequest = phases::read_json(
-                &source.request,
-                router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
-            )?;
-            let loaded = crate::generation::load_decision(
-                source.backend_decision.as_deref(),
-                source.generated_plan.as_deref(),
-                None,
-                None,
-                &source.node_id,
-                &router,
-                &context,
-                &baseline,
-                &crate::execution_backend::scope_hash(
-                    &request.workspace,
-                    &request.source_state,
-                    &request.scope,
-                )?,
-                true,
-            )?;
+            let binding = if let Some(proposal) = &bundle.proposal {
+                proposal.validate_store(&store.join("runtime"))?;
+                Some(crate::generation::SourceBinding::Escalated(
+                    proposal.control_binding(),
+                ))
+            } else {
+                let (router, context) = execution::context(&source, true)?;
+                let baseline = execution::selection(&source, &router, &context)?;
+                let request: ExecutionRequest = phases::read_json(
+                    &source.request,
+                    router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+                )?;
+                let loaded = crate::generation::load_decision(
+                    source.backend_decision.as_deref(),
+                    source.generated_plan.as_deref(),
+                    None,
+                    None,
+                    &source.node_id,
+                    &router,
+                    &context,
+                    &baseline,
+                    &crate::execution_backend::scope_hash(
+                        &request.workspace,
+                        &request.source_state,
+                        &request.scope,
+                    )?,
+                    true,
+                )?;
+                loaded.binding
+            };
             let (digest, _) = execution::approval_for_digest(
                 &summary.approval_digest,
                 &config,
                 &source,
-                loaded.binding.as_ref(),
+                binding.as_ref(),
             )?;
             if approval != digest {
                 return Err(CliError::Product(
@@ -563,7 +702,13 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let retained = router_runtime::observe(&store.join("runtime"), &first.run_id)
                 .map_err(execution::error)?
                 .output_retention;
-            let runtime = runtime(&store, retained)?;
+            let max_attempts = loaded
+                .iter()
+                .filter_map(|bundle| bundle.proposal.as_ref())
+                .map(|p| p.max_attempts())
+                .max()
+                .unwrap_or(2);
+            let runtime = runtime(&store, retained, max_attempts)?;
             let coordinator = owner(&store, runtime)?;
             for bundle in loaded {
                 if definition(&bundle.workflow)? != workflow {
@@ -588,7 +733,11 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let retained = router_runtime::observe(&store.join("runtime"), &bundle.run_id)
                 .map_err(execution::error)?
                 .output_retention;
-            let runtime = runtime(&store, retained)?;
+            let runtime = runtime(
+                &store,
+                retained,
+                bundle.proposal.as_ref().map_or(2, |p| p.max_attempts()),
+            )?;
             let coordinator = owner(&store, Arc::clone(&runtime))?;
             let (pending, ..) = reopen(&coordinator, &workflow, &bundle, true)?;
             use crate::command::ArtifactCommand;

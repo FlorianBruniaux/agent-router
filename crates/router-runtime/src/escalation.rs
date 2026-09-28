@@ -586,6 +586,7 @@ pub(crate) fn task_execution_hash(request: &ExecutionRequest) -> crate::Result<S
 
 fn validate_target_identity(source: &RunSummary, target: &RunSummary) -> crate::Result<()> {
     if target.plan_id != source.plan_id
+        || target.artifact_contract_sha256 != source.artifact_contract_sha256
         || target.node_id != source.node_id
         || target.run_id == source.run_id
         || match (&source.workflow, &target.workflow) {
@@ -601,4 +602,42 @@ fn validate_target_identity(source: &RunSummary, target: &RunSummary) -> crate::
         return Err(RuntimeError::Invalid("escalation target identity"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod target_identity_tests {
+    use super::*;
+    #[test]
+    fn escalation_never_drops_or_substitutes_the_source_artifact_contract() {
+        let source = RunSummary {
+            run_id: "source".into(),
+            definition_hash: "source-definition".into(),
+            approval_digest: "source-approval".into(),
+            receipt_id: "baseline".into(),
+            plan_id: "plan".into(),
+            node_id: "execute".into(),
+            state: RunState::Failed,
+            attempts: 2,
+            failure: Some(RunFailure::Crash),
+            worktree: None,
+            artifact_sha256: None,
+            output_retention: OutputRetentionPolicy::Disabled,
+            workflow: Some(WorkflowRunBinding {
+                instance_id: "instance".into(),
+                contract_sha256: "contract".into(),
+                generation: 1,
+            }),
+            artifact_contract_sha256: Some("exact-source-grants".into()),
+        };
+        let mut target = source.clone();
+        target.run_id = "target".into();
+        target.workflow.as_mut().unwrap().generation = 2;
+        assert!(validate_target_identity(&source, &target).is_ok());
+        target.artifact_contract_sha256 = None;
+        assert!(validate_target_identity(&source, &target).is_err());
+        target.artifact_contract_sha256 = Some("different-grant-same-prompt".into());
+        assert!(validate_target_identity(&source, &target).is_err());
+        target.artifact_contract_sha256 = source.artifact_contract_sha256.clone();
+        assert!(validate_target_identity(&source, &target).is_ok());
+    }
 }

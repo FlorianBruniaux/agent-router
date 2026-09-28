@@ -195,15 +195,87 @@ existing transactional claim; neither a second target nor `run --retry` can
 spend the escalation again. A changed or missing input does not fall back to the
 baseline silently.
 
-### Current CLI boundary
+## CLI: coordinator source bundles
 
-Coordinator bundles are not accepted as escalation sources in this CLI version.
-`coordinate` explicitly refuses definitions containing `escalation_decision`
-with `escalation.coordinator.unsupported`. Those bundles also bind artifact
-grants and dependency bytes added to the final prompt; supporting them requires
-reconstruction through the coordinator. The standalone path does not discard
-those bindings or append dependency text after validation. This is an outstanding
-R05 application integration, not a completed coordinator capability.
+`--source-bundle` selects a registered coordinator step instead of a standalone
+run definition. It is exclusive with `--source-definition`. Here `--store` is the
+coordinate store containing both `runtime/` and `coordinator/`:
+
+```sh
+agent-router escalation bound --store coordinate-store --source-bundle failed-1/bundle.json \
+  --attempt-run-id "$FIRST_RUN_ID" --attempt 1 \
+  --max-cost-microusd "$COST_BOUND" --max-tokens "$TOKEN_BOUND" --json
+```
+
+Approve the displayed bound digest, then review and approve the other completed
+attempt. Different generations have different `wf-...` run IDs; each actual
+process attempt counts once. Use the latest failed source bundle to include the
+same node's earlier generations. A verified predecessor is a dependency, not a
+failed attempt of this node.
+
+```sh
+agent-router escalation propose --store coordinate-store --source-bundle failed-1/bundle.json \
+  --policy escalation-policy.json --max-attempts 3 --output proposal.json --json
+```
+
+Proposal schema 2 binds the source bundle, its resolved locators, workflow,
+registered run/generation, final request and artifact contract. Reopening checks
+the coordinator's step row, immutable definition hash and runtime storage root.
+It uses the original final request and recorded grants, not the latest dependency
+text. Generated and escalated sources are rejected before their decision files
+are followed. Proposal schema 1 remains the standalone format.
+
+The target preparation manifest names `escalation_decision`, the same sealed
+`workflow_contract`, and `generation` equal to the source generation plus one.
+Keep the same base prompt template and variables. Preparation reconstructs a copy
+with the recorded dependency section, validates the v3 input budget on these
+final bytes, and exports only the base request. The runtime still validates the
+actual adapter stdin at dispatch. Missing or purged input artifacts refuse
+preparation; the CLI does not reconstruct missing content from a model answer.
+
+```sh
+agent-router prepare --manifest prepare-target.json --output-directory target --json
+agent-router coordinate review --definition workflow.json --source-definition target/definition.json \
+  --node-id execute --generation 2 --store coordinate-store --sandbox sandbox.json \
+  --output-directory target-step --json
+```
+
+The generation `2` example follows source generation `1`; it is not a default.
+Coordinate review computes the final dependency inputs again and requires their
+exact artifact-contract hash to match the source. A different grant is rejected
+even if it would render the same text. The runtime also compares the source and
+target contract hashes before reserving a claim. New workflow, node, source,
+permissions or prompt authority cannot be introduced by changing the proposal.
+
+Create the existing wave manifest with `target-step/bundle.json` and this review's
+new `approval_digest`, then explicitly execute it:
+
+```sh
+agent-router coordinate run-wave --definition workflow.json --wave target-wave.json \
+  --store coordinate-store --json
+```
+
+A proposal for a coordinator step is refused by standalone `run`. Within a wave,
+all steps must have the same approved attempt ceiling; ordinary steps retain two.
+Use a separate wave for an escalation with a higher ceiling. This avoids silently
+raising another step's allowance through a shared runtime. Output-retention
+settings must also match. Fail-fast or explicitly cancelled workflows cannot be
+revived by an escalation.
+
+Coordinate `verify`, `service` and `artifacts` reopen the same bundle after a
+restart. Verification control submission binds the proposal's input projection;
+it does not treat that projection as a proof. The owner reconstructs the opaque
+runtime decision and confidential final request before applying the queued
+control. A successful transport remains UNKNOWN objective evidence until an
+explicit verification record is applied.
+
+Admission is serialized within a coordinator owner. Cumulative declared
+cost/token reservations are checked before runtime review and checked again when
+the coordinator records the step. The runtime claim and coordinator step row live
+in separate databases: they are not a distributed transaction. If a crash occurs
+between them, reviewing the exact target again reuses that durable claim and
+finishes the step registration. A cancellation after reservation conservatively
+keeps the reservation consumed and blocks dispatch; it does not refund authority.
 
 Ordinary CLI tests use local fake worker processes and deliberately retain UNKNOWN
 cleanup. They establish refusal and accounting behavior. The ignored native
