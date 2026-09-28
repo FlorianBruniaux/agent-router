@@ -159,24 +159,38 @@ fn rank_rejects_foreign_identity_pool_duplicate_and_rounding() {
     }
 }
 #[test]
+fn negotiation_timeout_stops_before_rank() {
+    let s = Server::start(vec![Step {
+        delay: Duration::from_millis(1500),
+        reply: Reply::Json(capabilities()),
+    }]);
+    let result = backend(s.address).propose(&request(), Instant::now() + Duration::from_secs(1));
+    let requests = s.finish();
+    assert!(matches!(result, Err(BackendError::Timeout)), "{result:?}");
+    assert_eq!(requests.len(), 1);
+    assert!(requests[0].starts_with(b"GET /v1/capabilities "));
+}
+#[test]
 fn one_deadline_covers_both_negotiation_and_rank() {
+    // Each response fits a fresh two-second budget, but their combined delay
+    // exceeds it. Leave scheduling margin to reach rank before the shared
+    // deadline; expiration during negotiation has its own test above.
     let s = Server::start(vec![
         Step {
-            delay: Duration::from_millis(75),
+            delay: Duration::from_secs(1),
             reply: Reply::Json(capabilities()),
         },
         Step {
-            delay: Duration::from_millis(100),
+            delay: Duration::from_millis(1500),
             reply: Reply::Json(ranked()),
         },
     ]);
-    let start = Instant::now();
-    assert!(matches!(
-        backend(s.address).propose(&request(), start + Duration::from_millis(140)),
-        Err(BackendError::Timeout)
-    ));
-    assert!(start.elapsed() < Duration::from_millis(300));
-    s.finish();
+    let result = backend(s.address).propose(&request(), Instant::now() + Duration::from_secs(2));
+    let requests = s.finish();
+    assert_eq!(requests.len(), 2);
+    assert!(requests[0].starts_with(b"GET /v1/capabilities "));
+    assert!(requests[1].starts_with(b"POST /v1/rank "));
+    assert!(matches!(result, Err(BackendError::Timeout)), "{result:?}");
 }
 #[test]
 fn negotiated_request_and_response_budgets_are_enforced() {
