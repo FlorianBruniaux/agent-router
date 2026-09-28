@@ -17,7 +17,7 @@ pub(crate) fn inspect(file: &File, bytes: &[u8], queries: &mut usize) -> Result<
 
 #[cfg(unix)]
 fn inspect_descriptor(file: &File, queries: &mut usize) -> Result<DeepDoctorCode> {
-    use rusqlite::{Connection, DatabaseName, OpenFlags};
+    use rusqlite::{Connection, OpenFlags};
     use std::os::fd::AsRawFd;
 
     let path = format!("/dev/fd/{}", file.as_raw_fd());
@@ -41,7 +41,7 @@ fn inspect_descriptor(file: &File, queries: &mut usize) -> Result<DeepDoctorCode
     )
     .map_err(|_| DoctorError::Read)?;
     if !connection
-        .is_readonly(DatabaseName::Main)
+        .is_readonly("main")
         .map_err(|_| DoctorError::Read)?
     {
         return Err(DoctorError::Unsupported);
@@ -66,7 +66,9 @@ pub(crate) fn inspect_connection(
         (Limit::SQLITE_LIMIT_ATTACHED, 0),
         (Limit::SQLITE_LIMIT_WORKER_THREADS, 0),
     ] {
-        connection.set_limit(limit, value);
+        connection
+            .set_limit(limit, value)
+            .map_err(|_| DoctorError::Unsupported)?;
     }
     for (configuration, enabled) in [
         (DbConfig::SQLITE_DBCONFIG_TRUSTED_SCHEMA, false),
@@ -80,13 +82,15 @@ pub(crate) fn inspect_connection(
     }
     let started = Instant::now();
     let mut ticks = 0usize;
-    connection.progress_handler(
-        1000,
-        Some(move || {
-            ticks += 1;
-            ticks >= 1000 || started.elapsed() >= Duration::from_millis(250)
-        }),
-    );
+    connection
+        .progress_handler(
+            1000,
+            Some(move || {
+                ticks += 1;
+                ticks >= 1000 || started.elapsed() >= Duration::from_millis(250)
+            }),
+        )
+        .map_err(|_| DoctorError::Unsupported)?;
     for (name, value) in [
         ("query_only", "ON"),
         ("temp_store", "MEMORY"),

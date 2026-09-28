@@ -57,7 +57,7 @@ fn source_connections_keep_their_permissions_and_uncommitted_rows_are_excluded()
     let after = diagnose_database_snapshot(&source).unwrap();
     assert_eq!(after.integrity, DeepDoctorCode::DatabaseIntegrityFailed);
     assert_ne!(during.snapshot_sha256, after.snapshot_sha256);
-    assert!(source.is_readonly(rusqlite::DatabaseName::Main).unwrap());
+    assert!(source.is_readonly("main").unwrap());
     assert!(source.execute("INSERT INTO parent VALUES(87)", []).is_err());
 }
 

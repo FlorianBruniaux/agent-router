@@ -4,7 +4,7 @@ use crate::{DoctorError, MAX_FILE_BYTES, Result, database};
 use router_adapter_api::content_digest;
 use router_types::DeepDoctorCode;
 use rusqlite::{
-    Connection, DatabaseName, Transaction, TransactionBehavior,
+    Connection, Transaction, TransactionBehavior,
     backup::{Backup, StepResult},
 };
 use serde::Serialize;
@@ -31,9 +31,7 @@ pub fn diagnose_database_snapshot(source: &Connection) -> Result<DatabaseSnapsho
     let snapshot = capture(source, COPY_BUDGET)?;
     let mut queries = 3; // source page size/count and destination page size.
     let integrity = database::inspect_connection(&snapshot, &mut queries)?;
-    let bytes = snapshot
-        .serialize(DatabaseName::Main)
-        .map_err(|_| DoctorError::Read)?;
+    let bytes = snapshot.serialize("main").map_err(|_| DoctorError::Read)?;
     if bytes.len() > MAX_FILE_BYTES {
         return Err(DoctorError::Limit);
     }
