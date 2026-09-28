@@ -1,0 +1,22 @@
+crates/router-catalog-store/tests/publisher_policy.rs
+  s_86ed8bd547d4f8::t_eed34999fad45f 1-9,11-81
+  s_86ed8bd547d4f8::t_ffb65d82b1ced9 10
+crates/router-catalog-store/tests/store.rs
+  s_86ed8bd547d4f8::t_1cf91e31888816 321-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "193af21c2deff7fb4f5cb7267381e46ffd4c8b2c",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
