@@ -160,6 +160,12 @@ impl Runtime {
     pub fn verify_integrity(&self) -> Result<()> {
         self.store.verify_events()
     }
+    /// Inspect a coherent in-memory copy of the already owned SQLite connection.
+    /// This does not certify schema compatibility, journal authenticity, host
+    /// liveness or cleanup; those evidence checks remain separate.
+    pub fn diagnose_storage(&self) -> router_doctor::Result<router_doctor::DatabaseSnapshotReport> {
+        self.store.diagnose_snapshot()
+    }
     /// Returns metadata only; retained bytes must still match their recorded hashes.
     pub fn output_artifacts(&self, id: &str) -> Result<Vec<OutputArtifacts>> {
         let records = self.store.output_artifacts(id)?;
