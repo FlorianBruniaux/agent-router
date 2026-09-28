@@ -23,6 +23,7 @@ mod product;
 mod render;
 mod session_budget;
 mod sidecar;
+mod task_guide;
 
 use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
 
@@ -347,6 +348,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             output.as_deref(),
             json,
         ),
+        Commands::TaskGuide { args, json } => task_guide::run(args, json),
         Commands::Normalize {
             task,
             risk_context,

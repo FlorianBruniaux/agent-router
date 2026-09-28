@@ -342,6 +342,13 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Collect explicit task facts and clarify unknowns without executing anything.
+    TaskGuide {
+        #[command(flatten)]
+        args: crate::task_guide::GuideArgs,
+        #[arg(long)]
+        json: bool,
+    },
     Normalize {
         #[arg(long)]
         task: PathBuf,
@@ -687,6 +694,7 @@ impl Commands {
             Self::Search { json, .. } => (json, "Search results"),
             Self::Index { json, .. } => (json, "Metadata index"),
             Self::Refresh { json, .. } => (json, "Index update"),
+            Self::TaskGuide { json, .. } => (json, "Task guide"),
             Self::Normalize { json, .. } => (json, "Task normalization"),
             Self::Plan { json, .. } => (json, "Workflow plan"),
             Self::Assets {
