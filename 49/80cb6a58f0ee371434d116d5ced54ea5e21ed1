@@ -1,0 +1,42 @@
+crates/router-runtime/src/escalation.rs
+  s_86ed8bd547d4f8::t_fe1c0a1d74552a 71-117,122,124
+  s_86ed8bd547d4f8::t_b0253a05b1b9e7 118-121,123,125-133
+crates/agent-router-cli/src/command.rs
+  s_86ed8bd547d4f8::t_df764a35976cf6 36-42,635
+crates/agent-router-cli/src/coordinator.rs
+  s_86ed8bd547d4f8::t_9d99bd64fc0b4c 39-46,155,170-171,265,280-281,493,509-510
+crates/agent-router-cli/src/escalation.rs
+  s_86ed8bd547d4f8::t_adebfad9ebd59b 1-324
+crates/agent-router-cli/src/execution.rs
+  s_86ed8bd547d4f8::t_eba22f50a96d5b 41-42,164-169,212-215,318-348,358-359,388,493-497,613-640,644-645,659,688
+crates/agent-router-cli/src/generation.rs
+  s_86ed8bd547d4f8::t_6a58b90dbb0eab 274,299-300,308-319
+crates/agent-router-cli/src/main.rs
+  s_86ed8bd547d4f8::t_ae3199fc45ba68 10,144
+crates/agent-router-cli/src/preparation.rs
+  s_86ed8bd547d4f8::t_0d1d82258e414c 25,139-142,160-174,178-179,216-229,267-270
+crates/agent-router-cli/tests/escalation.rs
+  s_86ed8bd547d4f8::t_6a5c59f1c80a6f 1-694
+crates/router-prepare/src/lib.rs
+  s_86ed8bd547d4f8::t_3f30126e32f159 456-464
+docs/cli-output.md
+  s_86ed8bd547d4f8::t_f11bc1b6b75190 38-44
+docs/escalation.md
+  s_86ed8bd547d4f8::t_fbda00b952300a 105-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4980cb6a58f0ee371434d116d5ced54ea5e21ed1",
+  "prompts": {},
+  "sessions": {
+    "s_86ed8bd547d4f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ddea-193b-7a90-97b4-7fabe707f76c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
