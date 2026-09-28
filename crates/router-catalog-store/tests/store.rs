@@ -318,6 +318,45 @@ fn reopened_review_rechecks_current_time_roots_and_compare_and_swap() {
         Err(StoreError::Conflict)
     ));
 }
+
+#[test]
+fn independent_reopen_revoke_refuses_substitution_expiry_roots_and_replay() {
+    let f = Fixture::new();
+    f.activate("A", 110);
+    let review = f.store.review_revoke(&f.roots, 120, 10).unwrap();
+    let projection = review.projection().clone();
+    let reopened = f.store.reopen_revoke(&projection, &f.roots, 121).unwrap();
+    assert_eq!(review.approval_digest(), reopened.approval_digest());
+    assert!(matches!(
+        f.store.reopen_revoke(&projection, &f.roots, 119),
+        Err(StoreError::Time)
+    ));
+    assert!(matches!(
+        f.store.reopen_revoke(&projection, &f.roots, 130),
+        Err(StoreError::Time)
+    ));
+    assert!(
+        f.store
+            .reopen_revoke(&projection, &roots(SkillTrust::TrustedLocal), 121)
+            .is_err()
+    );
+    assert!(
+        f.store
+            .reopen_activate(&projection, &document("A"), &f.roots, 121)
+            .is_err()
+    );
+    let mut changed = projection.clone();
+    changed.expected_revision += 1;
+    assert!(f.store.reopen_revoke(&changed, &f.roots, 121).is_err());
+    f.store
+        .apply(&reopened, reopened.approval_digest(), &f.roots, 121)
+        .unwrap();
+    assert!(matches!(
+        f.store.reopen_revoke(&projection, &f.roots, 122),
+        Err(StoreError::Conflict)
+    ));
+}
+
 #[test]
 fn copied_store_or_replaced_directory_is_not_the_approved_locator() {
     let f = Fixture::new();
