@@ -52,6 +52,41 @@ pub(crate) fn replay(
 }
 pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
     match command {
+        EvalCommand::Metrics {
+            cohort,
+            records,
+            json,
+        } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            if records.is_empty() || records.len() > router_eval::MAX_EVALUATION_CASES {
+                return Err(CliError::Product("eval.limit"));
+            }
+            let input = read_bounded(
+                &cohort,
+                router_eval::MAX_METRICS_COHORT_BYTES,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )?;
+            let cohort = router_eval::MetricsCohort::from_json(&input).map_err(error)?;
+            let mut total = 0usize;
+            let mut inputs = Vec::new();
+            for path in records {
+                let raw = bytes(&path)?;
+                total = total
+                    .checked_add(raw.len())
+                    .ok_or(CliError::Product("eval.limit"))?;
+                if total > router_eval::MAX_METRICS_RECORD_BYTES {
+                    return Err(CliError::Product("eval.limit"));
+                }
+                inputs.push(ReplayRecord::from_json(&raw).map_err(error)?);
+            }
+            json_output(
+                &router_eval::evaluate_metrics(&cohort, &inputs).map_err(error)?,
+                ExitCode::SUCCESS,
+            )
+        }
         EvalCommand::Seal { input, json } => {
             if !json {
                 return Err(CliError::JsonOutputRequired);

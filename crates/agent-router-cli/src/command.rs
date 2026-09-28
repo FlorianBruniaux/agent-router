@@ -574,6 +574,14 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    Metrics {
+        #[arg(long)]
+        cohort: PathBuf,
+        #[arg(long, required = true, num_args = 1..)]
+        records: Vec<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     Seal {
         #[arg(long)]
         input: PathBuf,
@@ -690,7 +698,8 @@ impl Commands {
                 }
             },
             Self::Eval { command } => match command {
-                EvalCommand::Seal { json, .. }
+                EvalCommand::Metrics { json, .. }
+                | EvalCommand::Seal { json, .. }
                 | EvalCommand::Compare { json, .. }
                 | EvalCommand::Corpus { json, .. } => (json, "Evaluation"),
             },
