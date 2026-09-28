@@ -21,14 +21,21 @@ fn helper() -> Command {
 }
 #[test]
 fn probe_and_invalid_arguments_fail_closed() {
-    assert!(helper().arg("--probe").status().unwrap().success());
+    // Capture stdout like the runtime does: an inherited file stdout past the
+    // 1024-byte file-size limit would kill the probe with SIGXFSZ.
+    let probe = helper().arg("--probe").output().unwrap();
+    assert!(probe.status.success());
     assert!(
-        !Command::new(env!("CARGO_BIN_EXE_router-sandbox-helper"))
-            .arg("--probe")
-            .status()
-            .unwrap()
-            .success()
+        probe
+            .stdout
+            .starts_with(b"router-sandbox-helper-v1:limits-applied:")
     );
+    let invalid = Command::new(env!("CARGO_BIN_EXE_router-sandbox-helper"))
+        .arg("--probe")
+        .output()
+        .unwrap();
+    assert!(!invalid.status.success());
+    assert_eq!(invalid.stderr, b"sandbox-helper.arguments\n");
 }
 
 #[test]
