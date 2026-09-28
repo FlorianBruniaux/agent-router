@@ -43,6 +43,26 @@ pub async fn probe_native_version(
     private_dir: &Path,
     cancel: &Cancellation,
 ) -> Result<NativeVersionProbe> {
+    probe_native_version_inner(supervisor, prepared, private_dir, cancel, None).await
+}
+
+pub(crate) async fn probe_native_version_recorded(
+    supervisor: &dyn SandboxSupervisor,
+    prepared: &PreparedRun,
+    private_dir: &Path,
+    cancel: &Cancellation,
+    preparation: &crate::store::Preparation<'_>,
+) -> Result<NativeVersionProbe> {
+    probe_native_version_inner(supervisor, prepared, private_dir, cancel, Some(preparation)).await
+}
+
+async fn probe_native_version_inner(
+    supervisor: &dyn SandboxSupervisor,
+    prepared: &PreparedRun,
+    private_dir: &Path,
+    cancel: &Cancellation,
+    preparation: Option<&crate::store::Preparation<'_>>,
+) -> Result<NativeVersionProbe> {
     if !supervisor.parent_lifetime_enforced() || !supervisor.resource_limits_enforced() {
         return Err(RuntimeError::Sandbox);
     }
@@ -81,15 +101,33 @@ pub async fn probe_native_version(
     run.max_output_bytes = MAX_BYTES;
     let mut command = supervisor.command(&run, &SandboxPolicy { network: false })?;
     let leases = LeaseStorage::open(private_dir)?;
-    let (record, path) = leases.create(&id, 0)?;
+    let registered = if let Some(preparation) = preparation {
+        Some(preparation.register_probe()?)
+    } else {
+        None
+    };
+    let local = if registered.is_none() {
+        Some(leases.create(&id, 0)?)
+    } else {
+        None
+    };
+    let path = registered
+        .as_ref()
+        .map(|(_, p)| p)
+        .or_else(|| local.as_ref().map(|(_, p)| p))
+        .ok_or(RuntimeError::Integrity("missing probe lease"))?;
     command.env("ROUTER_RUNTIME_LEASE", path);
     let captured = capture(command, Vec::new(), TIMEOUT_MS, MAX_BYTES, 100, cancel).await;
     // Invalidate an unstarted lease too, so a delayed helper cannot launch after
     // a failed spawn. Active or ambiguous cleanup never authorizes execution.
-    let cleanup = leases.cleanup_proof(&id, 0, &record)?;
+    let cleanup = match (preparation, registered.as_ref(), local.as_ref()) {
+        (Some(preparation), Some((id, _)), None) => preparation.resolve_probe(id)?,
+        (None, None, Some((record, _))) => leases.cleanup_proof(&id, 0, record)?.evidence,
+        _ => return Err(RuntimeError::Integrity("probe registration")),
+    };
     let captured = captured?;
     if !matches!(
-        cleanup.evidence,
+        cleanup,
         ProcessCleanupEvidence::GroupTerminated | ProcessCleanupEvidence::NamespaceTerminated
     ) {
         return Err(RuntimeError::CleanupUnknown);
@@ -110,6 +148,6 @@ pub async fn probe_native_version(
         output_sha256: content_digest(&captured.stdout),
         stdout: captured.stdout,
         outcome: captured.outcome,
-        cleanup: cleanup.evidence,
+        cleanup,
     })
 }

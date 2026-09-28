@@ -8,7 +8,20 @@ use std::{
 };
 use tokio::process::Command;
 
+pub(crate) trait CaptureObserver: Send + Sync {
+    fn before_capture(&self) -> Result<()>;
+    fn after_capture(&self) -> Result<()>;
+}
+
 pub(crate) async fn git(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>> {
+    git_observed(root, args, input, None).await
+}
+pub(crate) async fn git_observed(
+    root: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+    observer: Option<&dyn CaptureObserver>,
+) -> Result<Vec<u8>> {
     let names = git_raw(
         root,
         &[
@@ -20,6 +33,7 @@ pub(crate) async fn git(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Ve
             "--list",
         ],
         vec![],
+        observer,
     )
     .await?;
     if names
@@ -30,9 +44,14 @@ pub(crate) async fn git(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Ve
             "repository filters are not permitted",
         ));
     }
-    git_raw(root, args, input).await
+    git_raw(root, args, input, observer).await
 }
-async fn git_raw(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>> {
+async fn git_raw(
+    root: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+    observer: Option<&dyn CaptureObserver>,
+) -> Result<Vec<u8>> {
     let mut command = Command::new("/usr/bin/git");
     command
         .arg("-c")
@@ -47,6 +66,20 @@ async fn git_raw(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>> 
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_TERMINAL_PROMPT", "0");
+    let output = capture_observed(command, input, observer).await?;
+    if output.outcome.exit_code != Some(0) || output.output_limited {
+        return Err(RuntimeError::Process);
+    }
+    Ok(output.stdout)
+}
+async fn capture_observed(
+    command: Command,
+    input: Vec<u8>,
+    observer: Option<&dyn CaptureObserver>,
+) -> Result<crate::process::Capture> {
+    if let Some(observer) = observer {
+        observer.before_capture()?;
+    }
     let output = capture(
         command,
         input,
@@ -56,30 +89,37 @@ async fn git_raw(root: &Path, args: &[&str], input: Vec<u8>) -> Result<Vec<u8>> 
         &Cancellation::default(),
     )
     .await?;
-    if output.outcome.exit_code != Some(0) || output.output_limited {
-        return Err(RuntimeError::Process);
+    if let Some(observer) = observer {
+        observer.after_capture()?;
     }
-    Ok(output.stdout)
+    Ok(output)
 }
 pub async fn source_state(root: &Path) -> Result<String> {
+    source_state_observed(root, None).await
+}
+pub(crate) async fn source_state_observed(
+    root: &Path,
+    observer: Option<&dyn CaptureObserver>,
+) -> Result<String> {
     let canonical = fs::canonicalize(root)?;
     if canonical != root || root == Path::new("/") {
         return Err(RuntimeError::Invalid("canonical project path"));
     }
-    let top = git(root, &["rev-parse", "--show-toplevel"], vec![]).await?;
+    let top = git_observed(root, &["rev-parse", "--show-toplevel"], vec![], observer).await?;
     if top.strip_suffix(b"\n") != Some(root.as_os_str().as_encoded_bytes()) {
         return Err(RuntimeError::Invalid("repository root"));
     }
-    let status = git(
+    let status = git_observed(
         root,
         &["status", "--porcelain=v1", "-z", "--untracked-files=all"],
         vec![],
+        observer,
     )
     .await?;
     if !status.is_empty() {
         return Err(RuntimeError::SourceChanged);
     }
-    let head = git(root, &["rev-parse", "--verify", "HEAD"], vec![]).await?;
+    let head = git_observed(root, &["rev-parse", "--verify", "HEAD"], vec![], observer).await?;
     let head = String::from_utf8(head).map_err(|_| RuntimeError::Invalid("git head"))?;
     let head = head.trim();
     if !matches!(head.len(), 40 | 64) || !head.bytes().all(|b| b.is_ascii_hexdigit()) {
@@ -117,6 +157,7 @@ pub(crate) async fn create(
     storage: &Path,
     run_id: &str,
     head: &str,
+    observer: Option<&dyn CaptureObserver>,
 ) -> Result<PathBuf> {
     let parent = storage.join("worktrees");
     if !parent.exists() {
@@ -129,10 +170,11 @@ pub(crate) async fn create(
     let path_text = path
         .to_str()
         .ok_or(RuntimeError::Invalid("utf8 worktree"))?;
-    git(
+    git_observed(
         root,
         &["worktree", "add", "--detach", path_text, head],
         vec![],
+        observer,
     )
     .await?;
     Ok(path)
@@ -142,16 +184,25 @@ pub(crate) async fn patch(
     scope: &[String],
     base: &str,
 ) -> Result<(Vec<u8>, Vec<String>)> {
+    patch_observed(worktree, scope, base, None).await
+}
+pub(crate) async fn patch_observed(
+    worktree: &Path,
+    scope: &[String],
+    base: &str,
+    observer: Option<&dyn CaptureObserver>,
+) -> Result<(Vec<u8>, Vec<String>)> {
     safe_scope(worktree, scope)?;
     // The private worktree index is isolated from the user's repository index.
     // Intent-to-add permits binary/untracked additions in a reviewable patch.
-    git(
+    git_observed(
         worktree,
         &["add", "--intent-to-add", "--all", "--", "."],
         vec![],
+        observer,
     )
     .await?;
-    let changed = git(
+    let changed = git_observed(
         worktree,
         &[
             "diff",
@@ -163,6 +214,7 @@ pub(crate) async fn patch(
             "--",
         ],
         vec![],
+        observer,
     )
     .await?;
     let mut paths = BTreeSet::new();
@@ -179,7 +231,7 @@ pub(crate) async fn patch(
         safe_scope(worktree, &[path.into()])?;
         paths.insert(path.to_owned());
     }
-    let patch = git(
+    let patch = git_observed(
         worktree,
         &[
             "diff",
@@ -190,6 +242,7 @@ pub(crate) async fn patch(
             "--",
         ],
         vec![],
+        observer,
     )
     .await?;
     Ok((patch, paths.into_iter().collect()))
@@ -246,4 +299,64 @@ pub(crate) fn integration_digest(
     paths: &[String],
 ) -> Result<String> {
     digest("runtime-integration-v1", &(run_id, source, artifact, paths))
+}
+
+#[cfg(test)]
+mod observer_tests {
+    use super::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[derive(Default)]
+    struct Observer {
+        reject_start: bool,
+        starts: AtomicUsize,
+        returns: AtomicUsize,
+    }
+    impl CaptureObserver for Observer {
+        fn before_capture(&self) -> Result<()> {
+            if self.reject_start {
+                return Err(RuntimeError::Integrity("observer refused"));
+            }
+            self.starts.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+        fn after_capture(&self) -> Result<()> {
+            self.returns.fetch_add(1, Ordering::SeqCst);
+            Ok(())
+        }
+    }
+    #[tokio::test]
+    async fn spawn_error_leaves_an_open_capture_window() {
+        let observer = Observer::default();
+        let temp = tempfile::tempdir().unwrap();
+        let command = Command::new(temp.path().join("missing-program"));
+        assert!(
+            capture_observed(command, vec![], Some(&observer))
+                .await
+                .is_err()
+        );
+        assert_eq!(observer.starts.load(Ordering::SeqCst), 1);
+        assert_eq!(observer.returns.load(Ordering::SeqCst), 0);
+    }
+    #[tokio::test]
+    async fn observer_failure_prevents_the_process_side_effect() {
+        let temp = tempfile::tempdir().unwrap();
+        let marker = temp.path().join("marker");
+        let observer = Observer {
+            reject_start: true,
+            ..Observer::default()
+        };
+        let mut command = Command::new("/bin/sh");
+        command
+            .arg("-c")
+            .arg("printf started > marker")
+            .current_dir(temp.path());
+        assert!(matches!(
+            capture_observed(command, vec![], Some(&observer)).await,
+            Err(RuntimeError::Integrity("observer refused"))
+        ));
+        assert!(!marker.exists());
+        assert_eq!(observer.starts.load(Ordering::SeqCst), 0);
+        assert_eq!(observer.returns.load(Ordering::SeqCst), 0);
+    }
 }

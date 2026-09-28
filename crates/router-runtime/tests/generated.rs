@@ -362,11 +362,13 @@ async fn sqlite_v6_migration_preserves_runs_events_instances_and_legacy_pins_acr
         .unwrap();
     let events = runtime.events().unwrap();
     drop(runtime);
-    // v6 differs only by absence of the v7 authority table. Keep real runs,
+    // v6 predates both authority and preparation tables. Keep real runs,
     // events, contract and node association bytes from the legacy runtime path.
     let db = Connection::open(fixture.storage().join("runtime.sqlite3")).unwrap();
-    db.execute_batch("DROP TABLE workflow_plan_authority; PRAGMA user_version=6;")
-        .unwrap();
+    db.execute_batch(
+        "DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; PRAGMA user_version=6;",
+    )
+    .unwrap();
     let before: Vec<(String, String)> = db
         .prepare("SELECT instance_id,record FROM workflow_instances ORDER BY instance_id")
         .unwrap()
@@ -402,7 +404,7 @@ async fn sqlite_v6_migration_preserves_runs_events_instances_and_legacy_pins_acr
         assert_eq!(
             db.pragma_query_value::<u32, _>(None, "user_version", |r| r.get(0))
                 .unwrap(),
-            7
+            8
         );
         let after: Vec<(String, String)> = db
             .prepare("SELECT instance_id,record FROM workflow_instances ORDER BY instance_id")
@@ -658,7 +660,7 @@ async fn failed_v6_migration_rolls_back_schema_and_preserves_history() {
     drop(runtime);
     let db = Connection::open(fixture.storage().join("runtime.sqlite3")).unwrap();
     // A conflicting object simulates an incomplete/corrupted external migration.
-    db.execute_batch("DROP TABLE workflow_plan_authority; CREATE VIEW workflow_plan_authority AS SELECT instance_id,'legacy' AS pin FROM workflow_instances; PRAGMA user_version=6;").unwrap();
+    db.execute_batch("DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; CREATE VIEW workflow_plan_authority AS SELECT instance_id,'legacy' AS pin FROM workflow_instances; PRAGMA user_version=6;").unwrap();
     drop(db);
     assert!(Runtime::open(&fixture.storage(), RuntimeLimits::default()).is_err());
     let db = Connection::open(fixture.storage().join("runtime.sqlite3")).unwrap();

@@ -801,8 +801,8 @@ impl Runtime {
         if !self.dependencies_ready(&pending)? {
             return Err(RuntimeError::DependenciesPending);
         }
-        self.store
-            .transition_queued(id, RunState::Preparing, "capacity_acquired", None)?;
+        let preparation = self.store.begin_preparation(id)?;
+        preparation.no_child_yet()?;
         // Keep polling durable controls while preparation runs. In particular,
         // never drop a version probe future before its helper proves cleanup.
         let preparing = async {
@@ -814,7 +814,8 @@ impl Runtime {
                 authority,
                 now()?,
             )?);
-            self.prepare(&pending, adapter, supervisor, &cancel).await
+            self.prepare(&pending, adapter, supervisor, &cancel, &preparation)
+                .await
         };
         tokio::pin!(preparing);
         let mut control_error = None;
@@ -1150,6 +1151,7 @@ impl Runtime {
         adapter: &dyn HarnessAdapter,
         supervisor: &dyn SandboxSupervisor,
         cancel: &Cancellation,
+        preparation: &store::Preparation<'_>,
     ) -> Result<(PreparedRun, tokio::process::Command)> {
         if !supervisor.resource_limits_enforced() {
             return Err(RuntimeError::Sandbox);
@@ -1158,7 +1160,9 @@ impl Runtime {
             return Err(RuntimeError::Cancelled);
         }
         let root = Path::new(&pending.request.workspace);
-        if source_state(root).await? != pending.request.source_state {
+        if workspace::source_state_observed(root, Some(preparation)).await?
+            != pending.request.source_state
+        {
             return Err(RuntimeError::SourceChanged);
         }
         if cancel.is_cancelled() {
@@ -1199,8 +1203,14 @@ impl Runtime {
             )
             .map_err(|_| RuntimeError::Route)?;
         if adapter.requires_native_version() {
-            let probe =
-                probe_native_version(supervisor, &initial, &self.store.root, cancel).await?;
+            let probe = native_version::probe_native_version_recorded(
+                supervisor,
+                &initial,
+                &self.store.root,
+                cancel,
+                preparation,
+            )
+            .await?;
             adapter.validate_native_version(probe.stdout())?;
             self.store
                 .event(id, "native.version_validated", &probe.output_sha256)?;
@@ -1217,7 +1227,14 @@ impl Runtime {
         if request.sandbox == ExecutionSandbox::WorkspaceWrite {
             self.store
                 .writer_lock(id, &request.workspace, &request.scope)?;
-            let path = workspace::create(root, &self.store.root, id, &request.source_state).await?;
+            let path = workspace::create(
+                root,
+                &self.store.root,
+                id,
+                &request.source_state,
+                Some(preparation),
+            )
+            .await?;
             let path = path
                 .to_str()
                 .ok_or(RuntimeError::Invalid("utf8 worktree"))?;
@@ -1231,18 +1248,40 @@ impl Runtime {
                 .filter(|a| a.exposure == ArtifactExposure::ReadOnlyWorkspacePatch)
                 .collect();
             if !patches.is_empty() {
-                let path =
-                    workspace::create(root, &self.store.root, id, &request.source_state).await?;
+                let path = workspace::create(
+                    root,
+                    &self.store.root,
+                    id,
+                    &request.source_state,
+                    Some(preparation),
+                )
+                .await?;
                 self.store
                     .worktree(id, Some(path.to_str().ok_or(RuntimeError::Scope)?))?;
                 for grant in patches {
                     let bytes = self.read_declared_artifact(&grant.artifact_id)?;
-                    workspace::git(&path, &["apply", "--check", "--binary", "-"], bytes.clone())
-                        .await?;
-                    workspace::git(&path, &["apply", "--binary", "-"], bytes).await?;
+                    workspace::git_observed(
+                        &path,
+                        &["apply", "--check", "--binary", "-"],
+                        bytes.clone(),
+                        Some(preparation),
+                    )
+                    .await?;
+                    workspace::git_observed(
+                        &path,
+                        &["apply", "--binary", "-"],
+                        bytes,
+                        Some(preparation),
+                    )
+                    .await?;
                 }
-                let (_, paths) =
-                    workspace::patch(&path, &request.scope, &request.source_state).await?;
+                let (_, paths) = workspace::patch_observed(
+                    &path,
+                    &request.scope,
+                    &request.source_state,
+                    Some(preparation),
+                )
+                .await?;
                 workspace::safe_scope(&path, &paths)?;
                 request.workspace = path.to_str().ok_or(RuntimeError::Scope)?.into();
                 self.store.event(
@@ -1309,6 +1348,7 @@ impl Runtime {
                 network: request.required_capabilities.contains(&Capability::Network),
             },
         )?;
+        preparation.complete()?;
         Ok((run, command))
     }
     async fn capture_artifact(&self, pending: &PendingRun, path: &Path) -> Result<()> {

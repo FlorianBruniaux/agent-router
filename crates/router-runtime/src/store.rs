@@ -16,7 +16,9 @@ use std::{
 };
 
 mod escalation;
+mod preparation;
 pub(crate) use escalation::EscalationHistory;
+pub(crate) use preparation::Preparation;
 
 pub(crate) struct Store {
     db: Mutex<Connection>,
@@ -51,7 +53,7 @@ impl Store {
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 7 {
+        if version > 8 {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -109,6 +111,11 @@ impl Store {
         if version < 7 {
             let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
             tx.execute_batch("CREATE TABLE workflow_plan_authority(instance_id TEXT PRIMARY KEY REFERENCES workflow_instances(instance_id), pin TEXT NOT NULL); INSERT INTO workflow_plan_authority SELECT instance_id,'legacy' FROM workflow_instances; PRAGMA user_version=7;")?;
+            tx.commit()?;
+        }
+        if version < 8 {
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE preparation_cycles(run_id TEXT NOT NULL REFERENCES runs(run_id), sequence INTEGER NOT NULL, record TEXT NOT NULL, PRIMARY KEY(run_id,sequence)); PRAGMA user_version=8;")?;
             tx.commit()?;
         }
         for suffix in ["", "-wal", "-shm"] {
@@ -614,9 +621,10 @@ impl Store {
         save(&tx, &run)?;
         append(&tx, &run, "transition", detail)?;
         if next.terminal()
-            && tx
-                .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
-                .exists([id])?
+            && (!preparation::terminal_safe(&tx, &run)?
+                || tx
+                    .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
+                    .exists([id])?)
         {
             tx.execute("INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)", [id])?;
         }
@@ -653,6 +661,7 @@ impl Store {
         if cleanup_blocked(&tx, None)? {
             return Err(RuntimeError::CleanupUnknown);
         }
+        preparation::require_complete(&tx, &run)?;
         run.attempts += 1;
         let lease = if supervised {
             let (record, path) = self.leases.create(id, run.attempts)?;
@@ -856,7 +865,8 @@ impl Store {
                         |r| Ok((r.get(0)?, r.get(1)?)),
                     )
                     .optional()?;
-                let safe = if let Some((record, resolved)) = lease {
+                let preparation_safe = preparation::recover(self, &tx, &run, &mut cleanup_locks)?;
+                let model_safe = if let Some((record, resolved)) = lease {
                     if resolved {
                         true
                     } else {
@@ -876,21 +886,29 @@ impl Store {
                         }
                     }
                 } else {
-                    run.state == RunState::Preparing
+                    // No new model was launched in this preparation. The
+                    // cycle gate separately proves every earlier child.
+                    preparation::no_model_started(&tx, &run)?
                 };
-                run.state = RunState::Failed;
-                run.failure = Some(RunFailure::Interrupted);
-                save(&tx, &run)?;
-                append(
-                    &tx,
-                    &run,
-                    "recovery.interrupted",
-                    if safe {
-                        "cleanup_confirmed_no_replay"
-                    } else {
-                        "cleanup_unknown_authority_retained"
-                    },
-                )?;
+                let safe = preparation_safe && model_safe;
+                let interrupted = matches!(run.state, RunState::Preparing | RunState::Running);
+                if interrupted {
+                    run.state = RunState::Failed;
+                    run.failure = Some(RunFailure::Interrupted);
+                    save(&tx, &run)?;
+                }
+                if interrupted || safe {
+                    append(
+                        &tx,
+                        &run,
+                        "recovery.interrupted",
+                        if safe {
+                            "cleanup_confirmed_no_replay"
+                        } else {
+                            "cleanup_unknown_authority_retained"
+                        },
+                    )?;
+                }
                 if safe {
                     tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [&run.run_id])?;
                     tx.execute("DELETE FROM cleanup_blocks WHERE run_id=?1", [&run.run_id])?;
@@ -939,7 +957,7 @@ fn save(tx: &Transaction<'_>, run: &RunSummary) -> Result<()> {
 fn append(tx: &Transaction<'_>, run: &RunSummary, kind: &str, detail: &str) -> Result<()> {
     let max_detail = if matches!(
         kind,
-        "attempt.evidence.v1" | "attempt.bound.v1" | "escalation.claim.v1"
+        "attempt.evidence.v1" | "attempt.bound.v1" | "escalation.claim.v1" | "preparation.cycle.v1"
     ) {
         16_384
     } else {
@@ -1031,6 +1049,12 @@ fn cleanup_evidence(db: &Connection, id: &str) -> Result<router_types::ProcessCl
     if db.pragma_query_value(None, "user_version", |row| row.get::<_, u32>(0))? < 6 {
         return Ok(router_types::ProcessCleanupEvidence::Unknown);
     }
+    if cleanup_blocked(db, Some(id))?
+        || (db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 8
+            && !preparation::terminal_safe(db, &run)?)
+    {
+        return Ok(router_types::ProcessCleanupEvidence::Unknown);
+    }
     let evidence: Option<Option<String>> = db
         .query_row(
             "SELECT evidence FROM attempt_leases WHERE run_id=?1 AND attempt=?2",
@@ -1108,7 +1132,7 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2..=7
+        2..=8
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
@@ -1317,7 +1341,7 @@ fn verify_plan_pin(
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn summary(id: &str) -> RunSummary {
+    pub(super) fn summary(id: &str) -> RunSummary {
         RunSummary {
             run_id: id.into(),
             definition_hash: "a".repeat(64),
@@ -1336,6 +1360,47 @@ mod tests {
         }
     }
     #[test]
+    fn interrupted_preparation_without_child_evidence_stays_quarantined() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        store.register(&summary("next")).unwrap();
+        for state in [
+            RunState::AwaitingApproval,
+            RunState::Queued,
+            RunState::Preparing,
+        ] {
+            store.transition("run", state, "legacy", None).unwrap();
+        }
+        store
+            .writer_lock("run", "/fixture/repo", &["src".into()])
+            .unwrap();
+        // Legacy version probes have a lease, but no durable binding to the run.
+        // There is no main attempt yet. Preparing alone proves no child cleanup.
+        let (_, path) = store.leases.create("unbound-version-probe", 0).unwrap();
+        let held = Flock::lock(File::open(path).unwrap(), FlockArg::LockExclusiveNonblock).unwrap();
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(matches!(
+            store.writer_lock("next", "/fixture/repo", &["src".into()]),
+            Err(RuntimeError::Scope)
+        ));
+        assert_eq!(store.get("run").unwrap().attempts, 0);
+        drop(held);
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        // An unlocked, unbound file cannot retrospectively establish provenance.
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+    }
+    #[test]
     fn schema_three_migration_preserves_history_without_inventing_instances() {
         let temp = tempfile::tempdir().unwrap();
         let root = temp.path().join("data");
@@ -1345,7 +1410,7 @@ mod tests {
         drop(store);
         let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
         db.execute_batch("PRAGMA foreign_keys=OFF;
-            DROP TABLE workflow_plan_authority; DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
+            DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
             CREATE TABLE old_runs(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL, UNIQUE(plan_id,node_id));
             INSERT INTO old_runs SELECT * FROM runs; DROP TABLE runs; ALTER TABLE old_runs RENAME TO runs;
             PRAGMA user_version=3;").unwrap();
@@ -1399,13 +1464,12 @@ mod tests {
         let root = temp.path().join("history");
         let store = Store::open(&root).unwrap();
         store.register(&summary("legacy")).unwrap();
-        for state in [
-            RunState::AwaitingApproval,
-            RunState::Queued,
-            RunState::Preparing,
-        ] {
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
             store.transition("legacy", state, "legacy", None).unwrap();
         }
+        let prep = store.begin_preparation("legacy").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
         store.attempt("legacy", 2, false).unwrap();
         store
             .transition("legacy", RunState::Running, "legacy", None)
@@ -1502,16 +1566,15 @@ mod tests {
             let store = Store::open(&root).unwrap();
             store.register(&summary("run")).unwrap();
             store.register(&summary("next")).unwrap();
-            for state in [
-                RunState::AwaitingApproval,
-                RunState::Queued,
-                RunState::Preparing,
-            ] {
+            for state in [RunState::AwaitingApproval, RunState::Queued] {
                 store.transition("run", state, "", None).unwrap();
             }
             store
                 .writer_lock("run", "/fixture/repo", &["src".into()])
                 .unwrap();
+            let prep = store.begin_preparation("run").unwrap();
+            prep.no_child_yet().unwrap();
+            prep.complete().unwrap();
             let path = store.attempt("run", 2, true).unwrap().unwrap();
             assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o077, 0);
             store
@@ -1593,16 +1656,15 @@ mod tests {
         let store = Store::open(&root).unwrap();
         store.register(&summary("run")).unwrap();
         store.register(&summary("next")).unwrap();
-        for state in [
-            RunState::AwaitingApproval,
-            RunState::Queued,
-            RunState::Preparing,
-        ] {
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
             store.transition("run", state, "", None).unwrap();
         }
         store
             .writer_lock("run", "/fixture/repo", &["src".into()])
             .unwrap();
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
         let path = store.attempt("run", 2, true).unwrap().unwrap();
         fs::write(&path, b"router-runtime-lease-v1:active\n").unwrap();
         store
@@ -1639,16 +1701,15 @@ mod tests {
         let store = Store::open(&temp.path().join("data")).unwrap();
         store.register(&summary("run")).unwrap();
         store.register(&summary("next")).unwrap();
-        for state in [
-            RunState::AwaitingApproval,
-            RunState::Queued,
-            RunState::Preparing,
-        ] {
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
             store.transition("run", state, "", None).unwrap();
         }
         store
             .writer_lock("run", "/fixture/repo", &["src".into()])
             .unwrap();
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
         store.attempt("run", 2, true).unwrap();
         store
             .transition("run", RunState::Running, "", None)
