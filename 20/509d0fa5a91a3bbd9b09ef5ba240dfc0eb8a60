@@ -1,0 +1,29 @@
+crates/agent-router-cli/src/command.rs
+  s_b953c230335952::t_5cdeefe4087e0e 345-351,697
+crates/agent-router-cli/src/main.rs
+  s_b953c230335952::t_0b55af949b0f7c 26,351
+crates/agent-router-cli/src/product.rs
+  s_b953c230335952::t_1a02ad638fcd93 41
+crates/agent-router-cli/src/task_guide.rs
+  s_b953c230335952::t_81c2c8963e7789 1-404
+crates/agent-router-cli/tests/task_guide.rs
+  s_b953c230335952::t_084a7e8079360f 1-1017
+docs/task-guide.md
+  s_b953c230335952::t_d76cc0d4a5bbf9 1-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "20509d0fa5a91a3bbd9b09ef5ba240dfc0eb8a60",
+  "prompts": {},
+  "sessions": {
+    "s_b953c230335952": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0850a-5dca-7843-a6b2-4cec237a7c86",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
