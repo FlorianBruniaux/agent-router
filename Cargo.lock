@@ -901,6 +901,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "router-catalog-store"
+version = "0.1.0"
+dependencies = [
+ "ed25519-dalek",
+ "hex",
+ "router-adapter-api",
+ "router-catalog",
+ "router-types",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "router-coordinator"
 version = "0.1.0"
 dependencies = [

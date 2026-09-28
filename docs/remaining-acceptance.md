@@ -49,8 +49,12 @@ Les évolutions suivantes le complètent :
   distante doivent accompagner la PR ; ce constat local ne clôt pas le lot.
 - **R06, bibliothèque revue** : manifestes communs signés, hosts/presets,
   références de prompts et projections vérifiés par 42 tests catalogue.
-  Le raccord du catalogue actif au dispatch et l'invalidation durable restent
-  à livrer ; une signature valide ne crée pas l'autorité d'exécuter.
+  Le stockage durable du catalogue actif ajoute 15 tests : activation/révocation
+  approuvées, révisions monotones, verrou interprocessus, expiration et refus
+  après remplacement du répertoire ou du verrou. Les deux dernières régressions
+  ont été reproduites puis revues indépendamment. Le raccord à la sélection,
+  à la préparation et au dispatch reste à livrer ; cette preuve de bibliothèque
+  ne crée pas l'autorité d'exécuter. Voir [le stockage](catalog-store.md).
 
 Chaque ligne donne la source de l'exigence, le constat dans le code et une condition de clôture observable. Les références de code sont relatives à la racine du dépôt.
 
