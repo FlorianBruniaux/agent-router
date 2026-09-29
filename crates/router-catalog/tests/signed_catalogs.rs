@@ -524,6 +524,22 @@ fn canonical_order_is_stable_and_nested_unknown_fields_duplicates_and_bad_digest
     ));
 }
 #[test]
+fn sealed_catalog_between_snapshot_and_catalog_bounds_parses() {
+    // The JSON parser's default bound is 4 MiB; the catalog bound is 8 MiB.
+    // Whitespace padding keeps the document semantically identical to the
+    // sealed one, so only the size path differs from the small fixtures.
+    let (manifest, _) = fixture();
+    let sealed = signed(manifest);
+    let canonical = sealed.canonical_json().unwrap();
+    let mut padded = Vec::with_capacity(canonical.len() + 5 * 1024 * 1024 + 1);
+    padded.push(canonical[0]);
+    padded.resize(padded.len() + 5 * 1024 * 1024, b' ');
+    padded.extend_from_slice(&canonical[1..]);
+    assert!(padded.len() > 4 * 1024 * 1024 && padded.len() <= MAX_SIGNED_CATALOG_BYTES);
+    let parsed = SignedCatalogDocument::from_json(&padded).unwrap();
+    assert_eq!(parsed.canonical_json().unwrap(), canonical);
+}
+#[test]
 fn unsafe_paths_publisher_permissions_expiry_and_cross_family_deprecation_are_refused() {
     for path in ["../escape", "/private/secret", "x/../file", "x\\file"] {
         let (mut manifest, _) = fixture();
