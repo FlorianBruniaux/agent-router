@@ -133,3 +133,57 @@ fn route_request_serializes_explicit_capability_support_in_stable_order() {
     let json = serde_json::to_string(&request).unwrap();
     assert!(json.contains(r#""capability_knowledge":{"tools":"unknown","vision":"unsupported"}"#));
 }
+
+fn assert_unknown_field<T: serde::de::DeserializeOwned>(mut value: serde_json::Value, field: &str) {
+    value["unexpected_key"] = serde_json::json!(1);
+    let error = serde_json::from_value::<T>(value)
+        .err()
+        .unwrap_or_else(|| panic!("unknown key accepted on {field}"));
+    assert!(
+        error.to_string().contains("unknown field `unexpected_key`"),
+        "{field}: {error}"
+    );
+}
+
+#[test]
+fn unknown_keys_are_rejected_on_routing_and_catalog_contracts() {
+    use router_types::{EffectiveRestrictions, ModelSpec, RouteRequest, SkillSpec, TaskContext};
+    let request: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/requests/codex-implementation.json"
+    ))
+    .unwrap();
+    assert!(serde_json::from_value::<RouteRequest>(request.clone()).is_ok());
+    assert_unknown_field::<RouteRequest>(request.clone(), "RouteRequest");
+    assert_unknown_field::<TaskContext>(request["task"].clone(), "TaskContext");
+
+    assert_unknown_field::<HostSnapshot>(request["host"].clone(), "HostSnapshot");
+    let mut nested = request.clone();
+    nested["host"]["unexpected_key"] = serde_json::json!(1);
+    assert!(serde_json::from_value::<RouteRequest>(nested).is_err());
+    assert_unknown_field::<SkillCandidate>(
+        request["skill_candidates"][0].clone(),
+        "SkillCandidate",
+    );
+    let mut nested = request.clone();
+    nested["skill_candidates"][0]["unexpected_key"] = serde_json::json!(1);
+    let error = serde_json::from_value::<RouteRequest>(nested).unwrap_err();
+    assert!(
+        error.to_string().contains("unknown field `unexpected_key`"),
+        "{error}"
+    );
+
+    let model = serde_json::json!({"id":"m1","stages":["plan"],"efforts":["low"],"capabilities":[],
+        "quality_micros":1,"cost_micros":1,"latency_micros":1,"source":"s"});
+    assert!(serde_json::from_value::<ModelSpec>(model.clone()).is_ok());
+    assert_unknown_field::<ModelSpec>(model, "ModelSpec");
+    let skill = serde_json::json!({"id":"s1","description":"d","task_kinds":["explore"],
+        "required_capabilities":[],"trust":"builtin"});
+    assert!(serde_json::from_value::<SkillSpec>(skill.clone()).is_ok());
+    assert_unknown_field::<SkillSpec>(skill, "SkillSpec");
+
+    let restrictions = serde_json::json!({"schema_version":1,"sources":[],"allowed_models":null,
+        "allowed_capabilities":null,"allowed_mutations":null,"max_cost_microusd":null,
+        "max_tokens":null,"max_concurrency":null,"preferred_model":null,"policy_hash":"h"});
+    assert!(serde_json::from_value::<EffectiveRestrictions>(restrictions.clone()).is_ok());
+    assert_unknown_field::<EffectiveRestrictions>(restrictions, "EffectiveRestrictions");
+}

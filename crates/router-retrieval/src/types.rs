@@ -89,6 +89,17 @@ pub enum Field {
 }
 
 impl Field {
+    /// Every field in declaration order; the index hash lists boosts in this order.
+    pub(crate) const ALL: [Field; 7] = [
+        Self::Identifier,
+        Self::TaskKinds,
+        Self::Triggers,
+        Self::Description,
+        Self::Examples,
+        Self::Tags,
+        Self::Paths,
+    ];
+
     pub fn boost_millis(self) -> u32 {
         match self {
             Self::Identifier => 8000,

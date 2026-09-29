@@ -13,11 +13,16 @@ This project has no published release yet. Every entry below is under
 ### Breaking
 
 - **BREAKING:** Signed catalogs whose provenance source is `owner/repo`, `scheme:id` or a local path are now invalid. A source must be a lowercase `https://` URL (ASCII host, optional port 1 to 65535, path segments limited to `A-Za-z0-9._~-`, no dot segments, percent escapes, credentials, query strings or fragments) or a bare identifier without `/` or `:`. `verify` and sealing fail with a hard `Invalid` error before the publisher lookup, with no `Quarantined` state and no `schema_version` bump (it stays 1). A catalog already signed with a refused source must have its source fixed, then be re-sealed and re-signed. The repository's signed catalog fixtures still pass with the new rule (workspace tests on `e456214`). (#46)
+- **BREAKING:** The unsigned catalog document, `ModelSpec`, `SkillSpec`, `RouteRequest`, `TaskContext`, `HostSnapshot`, `SkillCandidate`, `EffectiveRestrictions` and the BM25 candidate document now reject unknown keys (`deny_unknown_fields`). Producers that added extra keys must remove them; a per-candidate `path` stays accepted and ignored in the candidate document. Unsigned catalogs also apply the signed label and text rules: ids in `[A-Za-z0-9-_.:/]`, no control or bidirectional characters in the version, model source or skill description.
+- **BREAKING:** `public_source` is hardened: loopback, private, link-local, `0/8`, `100.64/10`, multicast, `localhost` and `*.local` literal hosts, integer or hexadecimal address spellings, and bare identifiers that do not start and end with a letter or digit are refused. Signed manifests that used such a source now fail sealing and verification and must be re-sealed and re-signed.
+- **BREAKING:** Importer report paths escape control and bidirectional characters as `\u{..}` and a backslash as `\\`, and `source_locator` is checked by the signed verifier predicate.
+- Retrieval queries accept at most 8 distinct quoted phrases; more is refused with `Limit("query phrases")`.
 
 ### Added
 
 Routing, policy and catalogs
 
+- `public_source` is now public in `router-catalog`, so the importer and other producers share the signed verifier's provenance check.
 - Validated routing and offline evaluation foundation: passive host probing with explicit snapshots, provenance-bearing catalogs and aliases, local BM25 metadata retrieval, immutable phase routing with receipts, and replay and shadow evaluation. (#14)
 - Contextual retrieval and evidence-aware task handling, with risk floors and human-readable CLI output. (#20)
 - Validation of generated plans and an Omnigent routing bridge. (#21)

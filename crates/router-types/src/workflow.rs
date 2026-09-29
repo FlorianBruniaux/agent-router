@@ -172,6 +172,7 @@ pub struct RestrictionLayer {
     pub preferred_model: Option<ModelId>,
 }
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct EffectiveRestrictions {
     pub schema_version: u32,
     pub sources: Vec<String>,

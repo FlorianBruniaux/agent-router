@@ -85,7 +85,7 @@ pub(crate) fn scan_with(root: &Path, max_total: u64) -> Result<Scan, ScanFailure
 
 fn refuse(scan: &mut Scan, path: &str, reason: RefusalReason) {
     scan.refused.push(RefusedFile {
-        path: path.to_owned(),
+        path: crate::escape_path(path),
         reason,
     });
 }

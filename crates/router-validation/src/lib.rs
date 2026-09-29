@@ -68,7 +68,7 @@ pub struct ValidationContract {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Assertion {
-    ChangedPathsWithinScope,
+    ChangedPathsWithinScope {},
     PathPresent {
         path: String,
     },
@@ -93,7 +93,7 @@ pub enum Assertion {
 impl Assertion {
     fn kind(&self) -> AssertionKind {
         match self {
-            Self::ChangedPathsWithinScope => AssertionKind::ChangedPathsWithinScope,
+            Self::ChangedPathsWithinScope {} => AssertionKind::ChangedPathsWithinScope,
             Self::PathPresent { .. } => AssertionKind::PathPresent,
             Self::PathAbsent { .. } => AssertionKind::PathAbsent,
             Self::Sha256 { .. } => AssertionKind::Sha256,
@@ -129,13 +129,74 @@ pub fn parse_contract(bytes: &[u8]) -> Result<ValidatedContract, ValidationError
     if !within_depth(bytes) {
         return Err(ValidationError::ContractTooDeep);
     }
-    let contract: ValidationContract = serde_json::from_slice(bytes)
+    let value =
+        strict_json(bytes).map_err(|error| ValidationError::InvalidContract(error.to_string()))?;
+    let contract: ValidationContract = serde_json::from_value(value)
         .map_err(|error| ValidationError::InvalidContract(error.to_string()))?;
     check_contract(&contract)?;
     Ok(ValidatedContract {
         contract,
         sha256: hex::encode(Sha256::digest(bytes)),
     })
+}
+
+/// Parses JSON and rejects duplicate object keys at every depth, so a
+/// `JsonPointerEquals.value` cannot silently merge repeated keys.
+fn strict_json(bytes: &[u8]) -> Result<Value, serde_json::Error> {
+    use serde::de::{Error as _, MapAccess, SeqAccess, Visitor};
+    struct Strict(Value);
+    struct StrictVisitor;
+    impl<'de> Visitor<'de> for StrictVisitor {
+        type Value = Strict;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("JSON with unique object keys")
+        }
+        fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<Strict, E> {
+            Ok(Strict(value.into()))
+        }
+        fn visit_i64<E: serde::de::Error>(self, value: i64) -> Result<Strict, E> {
+            Ok(Strict(value.into()))
+        }
+        fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<Strict, E> {
+            Ok(Strict(value.into()))
+        }
+        fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<Strict, E> {
+            serde_json::Number::from_f64(value)
+                .map(|number| Strict(number.into()))
+                .ok_or_else(|| E::custom("non-finite number"))
+        }
+        fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Strict, E> {
+            Ok(Strict(value.into()))
+        }
+        fn visit_string<E: serde::de::Error>(self, value: String) -> Result<Strict, E> {
+            Ok(Strict(value.into()))
+        }
+        fn visit_unit<E: serde::de::Error>(self) -> Result<Strict, E> {
+            Ok(Strict(Value::Null))
+        }
+        fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Strict, A::Error> {
+            let mut items = Vec::new();
+            while let Some(Strict(item)) = seq.next_element()? {
+                items.push(item);
+            }
+            Ok(Strict(items.into()))
+        }
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Strict, A::Error> {
+            let mut fields = serde_json::Map::new();
+            while let Some((key, Strict(item))) = map.next_entry::<String, Strict>()? {
+                if fields.insert(key, item).is_some() {
+                    return Err(A::Error::custom("duplicate object key"));
+                }
+            }
+            Ok(Strict(fields.into()))
+        }
+    }
+    impl<'de> Deserialize<'de> for Strict {
+        fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            deserializer.deserialize_any(StrictVisitor)
+        }
+    }
+    serde_json::from_slice::<Strict>(bytes).map(|strict| strict.0)
 }
 
 fn check_contract(contract: &ValidationContract) -> Result<(), ValidationError> {
@@ -156,7 +217,7 @@ fn check_contract(contract: &ValidationContract) -> Result<(), ValidationError> 
     }
     for (index, assertion) in contract.assertions.iter().enumerate() {
         match assertion {
-            Assertion::ChangedPathsWithinScope => {
+            Assertion::ChangedPathsWithinScope {} => {
                 if contract.scope.is_empty() {
                     return Err(ValidationError::ScopeRequired);
                 }
@@ -443,7 +504,7 @@ fn check_assertion(
     view: &ValidationView,
 ) -> (Option<String>, Option<FailureCode>) {
     match assertion {
-        Assertion::ChangedPathsWithinScope => {
+        Assertion::ChangedPathsWithinScope {} => {
             let offender = changed.iter().find(|path| !in_scope(scope, path));
             (
                 offender.map(|p| (*p).to_owned()),

@@ -335,3 +335,110 @@ fn generated_catalog(model_count: usize, skill_count: usize) -> Vec<u8> {
     }))
     .unwrap()
 }
+
+fn catalog_with(pointer: &str, value: serde_json::Value) -> Vec<u8> {
+    let mut parsed: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../assets/catalogs/codex-core-v1.json"
+    ))
+    .unwrap();
+    *parsed.pointer_mut(pointer).expect("fixture pointer") = value;
+    serde_json::to_vec(&parsed).unwrap()
+}
+
+#[test]
+fn rejects_unsafe_labels_and_text_like_the_signed_path() {
+    let long = "x".repeat(129);
+    let long_source = "x".repeat(513);
+    let long_description = "x".repeat(8193);
+    for (pointer, value, code) in [
+        (
+            "/version",
+            serde_json::json!("v1\u{202e}2"),
+            "catalog.version.invalid",
+        ),
+        (
+            "/version",
+            serde_json::json!("v1\u{0007}"),
+            "catalog.version.invalid",
+        ),
+        (
+            "/version",
+            serde_json::json!(long),
+            "catalog.version.invalid",
+        ),
+        (
+            "/models/0/source",
+            serde_json::json!("a\nb"),
+            "catalog.model.invalid_source",
+        ),
+        (
+            "/models/0/source",
+            serde_json::json!("a\u{2066}b"),
+            "catalog.model.invalid_source",
+        ),
+        (
+            "/models/0/source",
+            serde_json::json!("  "),
+            "catalog.model.invalid_source",
+        ),
+        (
+            "/models/0/source",
+            serde_json::json!(long_source),
+            "catalog.model.invalid_source",
+        ),
+        (
+            "/models/0/id",
+            serde_json::json!("gpt 5\u{202e}"),
+            "catalog.model.invalid_id",
+        ),
+        (
+            "/models/0/id",
+            serde_json::json!("x".repeat(129)),
+            "catalog.model.invalid_id",
+        ),
+        (
+            "/skills/0/id",
+            serde_json::json!("skill\u{0}id"),
+            "catalog.skill.invalid_id",
+        ),
+        (
+            "/skills/0/id",
+            serde_json::json!("skill id"),
+            "catalog.skill.invalid_id",
+        ),
+        (
+            "/skills/0/description",
+            serde_json::json!("a\u{202e}b"),
+            "catalog.skill.invalid_description",
+        ),
+        (
+            "/skills/0/description",
+            serde_json::json!("a\u{1b}[31m"),
+            "catalog.skill.invalid_description",
+        ),
+        (
+            "/skills/0/description",
+            serde_json::json!(long_description),
+            "catalog.skill.invalid_description",
+        ),
+    ] {
+        let error = Catalog::from_json(&catalog_with(pointer, value)).unwrap_err();
+        assert_eq!(error.code(), code, "pointer {pointer}");
+    }
+}
+
+#[test]
+fn rejects_unknown_keys_at_catalog_model_and_skill_level() {
+    for pointer in ["", "/models/0", "/skills/0"] {
+        let mut parsed: serde_json::Value = serde_json::from_slice(include_bytes!(
+            "../../../assets/catalogs/codex-core-v1.json"
+        ))
+        .unwrap();
+        parsed.pointer_mut(pointer).unwrap()["unexpected_key"] = serde_json::json!(1);
+        let error = Catalog::from_json(&serde_json::to_vec(&parsed).unwrap()).unwrap_err();
+        assert!(
+            error.to_string().contains("unexpected_key"),
+            "pointer {pointer:?}: {error}"
+        );
+    }
+}

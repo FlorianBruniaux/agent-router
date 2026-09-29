@@ -440,3 +440,32 @@ fn duplicate_registry_assets_and_excessive_work_fail_before_generation() {
         "catalog.alias.too_many"
     );
 }
+
+#[test]
+fn registry_source_must_not_be_a_local_absolute_path() {
+    let prior = Catalog::from_json(PRIOR).unwrap();
+    for source in [
+        "/etc/registry",
+        "\\\\server\\share",
+        "C:\\registry",
+        "c:/registry",
+        "~/registry",
+        "file:///tmp/registry",
+        "FILE:registry",
+        "../registry",
+        "a/../registry",
+    ] {
+        let mut config = full_config();
+        config.registry.assets[0].source = source.into();
+        assert_eq!(
+            GeneratedCatalog::generate(&snapshot(false), &prior, &config)
+                .unwrap_err()
+                .code(),
+            "catalog.registry.asset.invalid",
+            "source {source}"
+        );
+    }
+    let mut config = full_config();
+    config.registry.assets[0].source = "https://example.com/registry".into();
+    assert!(GeneratedCatalog::generate(&snapshot(false), &prior, &config).is_ok());
+}

@@ -25,20 +25,36 @@ an author independently or issue a legal compatibility opinion. A source is eith
 `https://` URL (lowercase scheme) or a bare identifier, at most 512 bytes.
 
 - URL authority: `host[:port]`. The host is ASCII `[A-Za-z0-9.-]` in any case, not
-  empty and not only dots. The port, if present, is 1 to 5 digits between 1 and 65535.
+  empty and not only dots. Loopback (`localhost`, `*.localhost`, `127.0.0.0/8`),
+  private (`10/8`, `172.16/12`, `192.168/16`, `100.64/10`), link-local
+  (`169.254/16`), `0/8`, multicast (`224/4` and above) addresses and `*.local` are
+  refused. These checks apply to literal addresses only: a DNS name that resolves
+  to a private range is not detected. A host whose last label starts with a digit
+  must be a strict decimal dotted quad, so integer and hexadecimal spellings of an
+  address cannot bypass the ranges. The port, if present, is 1 to 5 digits between 1 and 65535.
 - URL path: segments of `[A-Za-z0-9._~-]`. `.`/`..` segments, empty segments
   (`//`), percent escapes, spaces, non-ASCII and bidi characters are refused. One
   trailing slash is allowed.
-- Bare identifier: `[A-Za-z0-9._-]`, no `/` or `:`, not `.` or `..`.
+- Bare identifier: `[A-Za-z0-9._-]`, no `/` or `:`, starting and ending with a
+  letter or digit (so `.`, `..` and `...` are refused).
 - Refused: credentials, query strings, fragments, backslashes, any other scheme in
   any case (`file:`, `HTTP:`), absolute or relative paths, drive paths (`C:\`,
   `C:/`) and `owner/repo` forms, since a relative path cannot be told apart from
   `owner/repo`.
 
+Unsigned catalogs (`Catalog::from_json`, also used for signed model payloads) apply
+the same label and text rules: ids are at most 128 bytes of `[A-Za-z0-9-_.:/]`,
+and the version, model source and skill description are non-blank text within
+128, 512 and 8192 bytes without control or bidirectional characters. Registry
+sources of a generated catalog additionally refuse local absolute paths.
+
 Compatibility break: a catalog already signed with a source such as `owner/repo`,
 `scheme:id` or a path now fails with a hard `Invalid` error, both when sealing and
 when verifying, before the publisher lookup. There is no `Quarantined` state and no
 schema version bump (`schema_version` stays 1). Fix the source, re-seal and re-sign.
+The same applies to manifests whose source is a local or private literal host
+(loopback, private, link-local, `0/8`, `100.64/10`, multicast, `localhost`,
+`*.local`) or a bare identifier that does not start and end with a letter or digit.
 
 No machine configuration, environment
 variable, credential store or private key is read to populate a manifest.

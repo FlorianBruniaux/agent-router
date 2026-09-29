@@ -271,7 +271,8 @@ fn parse<T: DeserializeOwned + Serialize>(bytes: &[u8]) -> Result<T> {
     let value = strict_json(bytes).map_err(|_| DoctorError::Schema)?;
     let parsed = serde_json::from_value::<T>(value.clone()).map_err(|_| DoctorError::Schema)?;
     let accepted = serde_json::to_value(&parsed).map_err(|_| DoctorError::Schema)?;
-    // Some historical component DTOs intentionally tolerate unknown fields.
+    // Some component DTOs still tolerate unknown fields (the routing, catalog
+    // and restriction contracts now reject them).
     // Deep diagnostics must not silently certify fields ignored by a validator.
     if !known_fields(&value, &accepted) {
         return Err(DoctorError::Schema);

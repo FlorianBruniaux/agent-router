@@ -289,6 +289,17 @@ fn the_source_locator_is_never_a_local_path_or_a_non_public_scheme() {
         "https://example.test/a b",
         "https://exa mple.test/x",
         "ssh://example.test/x",
+        "https://localhost/x",
+        "https://127.0.0.1/x",
+        "https://10.0.0.1/x",
+        "https://192.168.1.1/x",
+        "https://169.254.169.254/latest",
+        "https://2130706433/x",
+        "https://example.test:0/x",
+        "https://example.test:99999/x",
+        "https://example.test//x",
+        "...",
+        "-",
     ];
     for locator in refused {
         let mut r = request(dir.path());
@@ -614,12 +625,20 @@ fn control_and_bidi_characters_are_refused_in_names_and_descriptions() {
         Some(RefusalReason::InvalidDescription)
     );
     assert_eq!(
-        refused(&output, "agents/new\nline.md"),
+        refused(&output, "agents/new\\u{a}line.md"),
         Some(RefusalReason::UnsafePath)
     );
     assert_eq!(
-        refused(&output, "agents/rlo\u{202E}.md"),
+        refused(&output, "agents/rlo\\u{202e}.md"),
         Some(RefusalReason::UnsafePath)
+    );
+    assert!(
+        output
+            .report
+            .refused
+            .iter()
+            .all(|r| !r.path.chars().any(|c| c.is_control() || c == '\u{202E}')),
+        "no raw control or bidi character reaches the report"
     );
 }
 
