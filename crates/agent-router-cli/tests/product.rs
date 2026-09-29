@@ -184,6 +184,38 @@ fn doctor_and_audit_never_echo_private_artifact_content() {
 }
 
 #[test]
+fn audit_verify_accepts_a_bundle_above_the_snapshot_cap_below_its_own_bound() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let artifact = directory.join("config.json");
+    write(&artifact, &json!({"schema_version":1}));
+    let inputs = directory.join("audit-inputs.json");
+    write(
+        &inputs,
+        &json!({"schema_version":1,"inputs":[{"kind":"effective_config","path":artifact}]}),
+    );
+    let bundle = command()
+        .args(["audit", "export", "--inputs"])
+        .arg(&inputs)
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert_eq!(bundle.status.code(), Some(0));
+    // Valid JSON padded with whitespace to 5 MiB: above the 4 MiB snapshot cap,
+    // below the 32 MiB documented bundle bound.
+    let mut padded = bundle.stdout;
+    padded.resize(padded.len() + 5 * 1024 * 1024, b' ');
+    let path = directory.join("big-audit.json");
+    fs::write(&path, padded).unwrap();
+    command()
+        .args(["audit", "verify", "--bundle"])
+        .arg(&path)
+        .arg("--json")
+        .assert()
+        .success();
+}
+
+#[test]
 fn deep_doctor_checks_the_declared_schema_without_running_processes() {
     let dir = tempfile::tempdir().unwrap();
     let directory = fs::canonicalize(dir.path()).unwrap();

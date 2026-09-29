@@ -830,7 +830,40 @@ impl Runtime {
         Ok(pending)
     }
     /// Retry is explicit, requires a new approval call and never repeats writes.
-    pub fn retry(&self, mut pending: PendingRun) -> Result<PendingRun> {
+    pub fn retry(&self, pending: PendingRun) -> Result<PendingRun> {
+        self.retry_checked(pending, None)
+    }
+    /// `retry` bound to the digest of a prior `preview_retry`: if the run
+    /// changed since, `Approval` is returned and nothing is persisted.
+    pub fn retry_approved(&self, pending: PendingRun, expected_digest: &str) -> Result<PendingRun> {
+        self.retry_checked(pending, Some(expected_digest))
+    }
+    fn retry_checked(&self, mut pending: PendingRun, expected: Option<&str>) -> Result<PendingRun> {
+        self.retry_guards(&pending)?;
+        match expected {
+            None => self
+                .store
+                .retry(&pending.run.run_id, self.limits.max_attempts)?,
+            Some(digest) => self.store.retry_expecting(
+                &pending.run.run_id,
+                self.limits.max_attempts,
+                Some(digest),
+            )?,
+        }
+        pending.run = self.store.get(&pending.run.run_id)?;
+        Ok(pending)
+    }
+    /// Read-only counterpart of `retry`: same guards, same resulting approval
+    /// digest, nothing persisted. The store stays unchanged.
+    pub fn preview_retry(&self, pending: &PendingRun) -> Result<PendingRun> {
+        self.retry_guards(pending)?;
+        let mut previewed = pending.clone();
+        previewed.run = self
+            .store
+            .retry_preview(&pending.run.run_id, self.limits.max_attempts)?;
+        Ok(previewed)
+    }
+    fn retry_guards(&self, pending: &PendingRun) -> Result<()> {
         if pending.decision.generated_binding().is_some() {
             return Err(RuntimeError::Invalid(
                 "generated plan requires a new global review",
@@ -841,11 +874,7 @@ impl Runtime {
                 "escalated attempt requires new accounted decision",
             ));
         }
-        self.validate_pending_retention(&pending)?;
-        self.store
-            .retry(&pending.run.run_id, self.limits.max_attempts)?;
-        pending.run = self.store.get(&pending.run.run_id)?;
-        Ok(pending)
+        self.validate_pending_retention(pending)
     }
     pub fn cancel_queued(&self, id: &str) -> Result<RunSummary> {
         self.store

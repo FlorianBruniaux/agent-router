@@ -814,3 +814,128 @@ fn prepare_assembles_private_request_bundle_without_running_or_overwriting() {
             "runtime.approval.required_or_changed",
         ));
 }
+
+fn fail_run(f: &Fixture) {
+    // Force the persisted run into a retryable failure. Real failures need a
+    // native sandbox that is unavailable to ordinary tests.
+    let db = rusqlite::Connection::open(f.store.join("runtime.sqlite3")).unwrap();
+    let changed = db
+        .execute(
+            "UPDATE runs SET summary=json_set(summary,'$.state','failed','$.failure','crash','$.attempts',1)",
+            [],
+        )
+        .unwrap();
+    assert_eq!(changed, 1);
+}
+fn store_state(f: &Fixture) -> (Vec<u8>, Value, Value) {
+    let run = |name: &str| {
+        output(
+            command()
+                .args([name, "--store"])
+                .arg(&f.store)
+                .args(["--run-id", "cli-run", "--json"])
+                .assert()
+                .success(),
+        )
+    };
+    (
+        fs::read(f.store.join("runtime.sqlite3")).unwrap(),
+        run("status"),
+        run("events"),
+    )
+}
+
+#[test]
+fn retry_without_approve_is_a_read_only_preview() {
+    let f = Fixture::new();
+    let review = output(f.run().assert().success());
+    fail_run(&f);
+    let before = store_state(&f);
+    assert_eq!(before.1["run"]["state"], "failed");
+    let preview = output(f.run().arg("--retry").assert().success());
+    assert_eq!(preview["executed"], false);
+    assert_eq!(preview["run"]["state"], "awaiting_approval");
+    assert_ne!(preview["approval_digest"], review["approval_digest"]);
+    assert_eq!(store_state(&f), before);
+}
+
+#[test]
+fn retry_with_a_wrong_digest_is_refused_and_changes_nothing() {
+    let f = Fixture::new();
+    let review = output(f.run().assert().success());
+    fail_run(&f);
+    let before = store_state(&f);
+    for wrong in [
+        review["approval_digest"].as_str().unwrap().to_owned(),
+        "0".repeat(64),
+    ] {
+        f.run()
+            .args(["--retry", "--approve", &wrong])
+            .assert()
+            .code(2)
+            .stderr(predicates::str::contains(
+                "runtime.approval.required_or_changed",
+            ));
+    }
+    assert_eq!(store_state(&f), before);
+}
+
+#[test]
+fn plain_approve_on_a_failed_run_requires_retry_approve() {
+    let f = Fixture::new();
+    let review = output(f.run().assert().success());
+    fail_run(&f);
+    let before = store_state(&f);
+    f.run()
+        .args(["--approve", review["approval_digest"].as_str().unwrap()])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("runtime.retry.use_retry_approve"));
+    assert_eq!(store_state(&f), before);
+}
+
+#[test]
+fn retry_approve_with_the_preview_digest_performs_the_transition() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    fail_run(&f);
+    let preview = output(f.run().arg("--retry").assert().success());
+    let digest = preview["approval_digest"].as_str().unwrap();
+    // Execution itself needs a native sandbox; the transition is persisted first.
+    let outcome = f
+        .run()
+        .args(["--retry", "--approve", digest])
+        .output()
+        .unwrap();
+    assert!(
+        !String::from_utf8_lossy(&outcome.stderr).contains("runtime.approval.required_or_changed")
+    );
+    let (_, status, events) = store_state(&f);
+    assert_ne!(status["run"]["state"], "failed");
+    assert!(events.to_string().contains("retry.awaiting_fresh_approval"));
+}
+
+#[test]
+fn retry_approve_with_a_digest_from_before_the_run_changed_is_refused() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    fail_run(&f);
+    let preview = output(f.run().arg("--retry").assert().success());
+    let old = preview["approval_digest"].as_str().unwrap().to_owned();
+    rusqlite::Connection::open(f.store.join("runtime.sqlite3"))
+        .unwrap()
+        .execute(
+            "UPDATE runs SET summary=json_set(summary,'$.attempts',0)",
+            [],
+        )
+        .unwrap();
+    let before = store_state(&f);
+    f.run()
+        .args(["--retry", "--approve", &old])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains(
+            "runtime.approval.required_or_changed",
+        ));
+    assert_eq!(store_state(&f), before);
+}

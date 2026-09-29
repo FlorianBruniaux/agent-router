@@ -1,3 +1,4 @@
+use crate::human::escaped;
 use router_types::{DecisionEnvelope, RouteDecision};
 
 pub fn decision_json(decision: &DecisionEnvelope) -> Result<String, serde_json::Error> {
@@ -7,7 +8,10 @@ pub fn decision_json(decision: &DecisionEnvelope) -> Result<String, serde_json::
 }
 
 pub fn explain(decision: &DecisionEnvelope) -> String {
-    let mut lines = vec![format!("Decision {}", decision.decision_id)];
+    let mut lines = vec![format!(
+        "Decision {}",
+        escaped(&decision.decision_id.to_string())
+    )];
 
     match &decision.decision {
         RouteDecision::Selected {
@@ -16,11 +20,17 @@ pub fn explain(decision: &DecisionEnvelope) -> String {
             missing_evidence,
             ..
         } => {
-            lines.push(format!("Preset: {}", plan.preset));
+            lines.push(format!("Preset: {}", escaped(&plan.preset.to_string())));
             let plan = plan
                 .stages
                 .iter()
-                .map(|stage| format!("{}/{}", stage.model, effort_label(stage.effort)))
+                .map(|stage| {
+                    format!(
+                        "{}/{}",
+                        escaped(&stage.model.to_string()),
+                        effort_label(stage.effort)
+                    )
+                })
                 .collect::<Vec<_>>()
                 .join(" -> ");
             lines.push(format!("Plan: {plan}"));
@@ -35,9 +45,12 @@ pub fn explain(decision: &DecisionEnvelope) -> String {
             lines.push(format!("Missing evidence: {}", missing_evidence.len()));
             for exclusion in exclusions {
                 lines.push(format!("Stage: {}", stage_label(exclusion.stage)));
-                lines.push(format!("Model: {}", exclusion.model));
-                lines.push(format!("Code: {}", exclusion.code));
-                lines.push(format!("Evidence: {}", exclusion.evidence));
+                lines.push(format!("Model: {}", escaped(&exclusion.model.to_string())));
+                lines.push(format!("Code: {}", escaped(&exclusion.code.to_string())));
+                lines.push(format!(
+                    "Evidence: {}",
+                    escaped(&exclusion.evidence.to_string())
+                ));
             }
         }
     }

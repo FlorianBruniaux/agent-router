@@ -27,6 +27,8 @@ jobs:
       - name: Check the CLI without bundled host adapters
         run: cargo clippy -p agent-router-cli --all-targets --no-default-features --locked -- -D warnings
       - run: cargo test --workspace --all-features --locked
+      - name: Test the CLI without the local API feature
+        run: cargo test -p agent-router-cli --no-default-features --locked --test local_api_absent
       - name: Reject projection drift, stale files and unsafe paths
         run: cargo run -p xtask --locked -- check
       - name: Parse native configuration syntax

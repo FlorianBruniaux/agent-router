@@ -189,7 +189,17 @@ agent-router events --store /absolute/private-runtime --run-id review-001 --json
 
 Approval includes the immutable request, plan, authority source, sandbox
 configuration and executable hashes. A changed input requires a new review.
-Retries are explicit with `run --retry` and require a new approval digest.
+If writing the result to stdout fails (for example a closed pipe), `run` and the
+other commands here exit `4` with `route.internal`; the persisted run state and
+events are unaffected, so read them back with `status` or `events`.
+Retries are explicit and require a new approval digest. `run --retry` alone is a
+read-only preview: it prints the digest the retry would need and persists
+nothing (state, events and control requests are unchanged). `run --retry
+--approve DIGEST` checks `DIGEST` against that preview, performs the transition
+and then executes. A plain `run --approve DIGEST` on a run in `failed` or
+`timed_out` is refused with `runtime.retry.use_retry_approve`. Breaking change:
+`--retry` used to persist the awaiting-approval state and could not be combined
+with `--approve`.
 Status separately reports `cleanup_evidence`: `not_started`,
 `group_terminated`, `namespace_terminated`, or `unknown`. Group termination
 does not prove termination of a descendant that created a separate session.

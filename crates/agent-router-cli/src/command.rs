@@ -98,7 +98,10 @@ pub enum Commands {
         sandbox: PathBuf,
         #[arg(long)]
         approve: Option<String>,
-        #[arg(long, conflicts_with = "approve")]
+        /// Retry a failed or timed-out run. Alone it previews the retry and its
+        /// approval digest without changing the store; with `--approve <digest>`
+        /// it performs the transition, then executes.
+        #[arg(long)]
         retry: bool,
         #[arg(long)]
         json: bool,
