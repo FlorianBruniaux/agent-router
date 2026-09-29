@@ -70,7 +70,8 @@ Reuse `router-decision/src/http.rs`. Rejected for this lot:
 - making `bridge-contract` depend on `router-decision` adds a heavy edge for one
   helper. There is no cycle today, but the dependency would be permanent.
 
-The cost is a second small HTTP/1.1 reader. It duplicates the loopback check,
+The cost is a second small HTTP/1.1 reader (a third, server-side one lives in
+`router-local-api`, see ADR 0012). It duplicates the loopback check,
 the global deadline idea and the header bound. A later lot may extract a shared
 `loopback-http` crate once both sides stabilize.
 
@@ -80,7 +81,9 @@ the global deadline idea and the header bound. A later lot may extract a shared
   and the credential go in clear text to any listener on the approved address:
   another local user, a forwarder (`ssh -L`, `socat`, a container port-forward),
   a listener that replaced the intended one. There is no peer authentication and
-  no port ownership check. The runtime must pick a port it controls.
+  no port ownership check. The runtime must pick a port it controls, and the
+  transport is supported on single-user hosts only (decided 2026-09-29; a Unix
+  socket endpoint was considered and deferred).
 - No TLS. A non-loopback endpoint cannot be approved, so no real provider is
   reachable through this code. No real canary was run.
 - Redaction is a refusal on the listed encodings only. Other transformations

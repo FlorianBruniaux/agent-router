@@ -83,10 +83,13 @@ fn budget_command(op: &str, registry: &Path, h: &str, b: &str) -> Command {
 }
 #[track_caller]
 fn rejected(c: &mut Command, code: &str) {
+    rejected_with(c, code, 2);
+}
+fn rejected_with(c: &mut Command, code: &str, status: i32) {
     let o = c.output().unwrap();
     assert_eq!(
         o.status.code(),
-        Some(2),
+        Some(status),
         "{}",
         String::from_utf8_lossy(&o.stderr)
     );
@@ -146,7 +149,8 @@ fn limit_review_requires_exact_current_ledger_and_never_launches() {
     let mut d = read(&path);
     d["admission"]["session_budget"]["approved_limit"]["cost_microusd"] = json!(200);
     write(&path, &d);
-    rejected(&mut f.run(), "runtime.integrity");
+    // A definition changed after review is an altered file: integrity class.
+    rejected_with(&mut f.run(), "runtime.integrity", 7);
     assert!(!f.store.join("worktrees").exists());
 }
 #[test]

@@ -247,8 +247,9 @@ For phase-specific routing, try the synthetic observed-host fixture:
 `--now 100` is only for the fixture's clock. Real host evidence must be fresh.
 Most product commands expose stable machine output through `--json`; run
 `agent-router <command> --help` for the required inputs. `route` exits `0` for a
-selection, `3` for a valid no-route result, `2` for invalid input and `4` for an
-internal error.
+selection, `3` for a valid no-route result, `2` for invalid input, `4` for an
+internal error and `7` for an integrity error; see
+[exit codes](docs/cli-output.md#exit-codes-and-error-codes).
 
 </details>
 
@@ -369,7 +370,7 @@ an existing parent conversation.
 
 ## Documentation
 
-Guides for installing, routing, execution, release and the development harness are indexed in the table below.
+The [full documentation index](docs/README.md) lists every guide by task. The most used ones are below.
 
 <details>
 <summary>Documentation index</summary>

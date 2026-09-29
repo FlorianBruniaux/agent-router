@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod admission;
+mod approval_key;
 mod assets;
 mod backend_activation;
 mod catalogs;
@@ -91,6 +92,7 @@ enum CliError {
     DecisionRead,
     DecisionTooLarge,
     DecisionJsonInvalid,
+    DecisionSchema,
     DecisionRender,
     SnapshotRead,
     SnapshotTooLarge,
@@ -116,6 +118,7 @@ impl CliError {
             Self::DecisionRead => "decision.read",
             Self::DecisionTooLarge => "decision.too_large",
             Self::DecisionJsonInvalid => "decision.json.invalid",
+            Self::DecisionSchema => "decision.schema.unsupported",
             Self::DecisionRender => "decision.render",
             Self::SnapshotRead => "snapshot.read",
             Self::SnapshotTooLarge => "snapshot.too_large",
@@ -127,10 +130,68 @@ impl CliError {
     }
 
     fn exit_code(self) -> ExitCode {
-        match self {
-            Self::Internal | Self::DecisionRender => ExitCode::from(4),
-            _ => ExitCode::from(2),
+        ExitCode::from(exit_class(self.code()) as u8)
+    }
+}
+
+/// Exit status of a failed command. Status 0 (success), 3 (valid but not final
+/// outcome) and 130 (interruption) are chosen by the command itself, never here.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+enum ExitClass {
+    /// Invalid input or a policy refusal: change the input before retrying.
+    Invalid = 2,
+    /// Internal serialization, storage or invariant failure.
+    Internal = 4,
+    /// Transient contention: the same command may be relaunched unchanged.
+    Retryable = 5,
+    /// The outcome is unknown: inspect the state before any retry.
+    OutcomeUnknown = 6,
+    /// A stored record, hash chain, digest or signature no longer matches.
+    Integrity = 7,
+}
+
+/// Codes whose effect may already have happened; retrying blindly could repeat it.
+const OUTCOME_UNKNOWN_CODES: [&str; 3] = [
+    "backend_store.published_durability_unknown",
+    "runtime.approval_key.published_durability_unknown",
+    "runtime.cleanup.unknown",
+];
+
+/// Integrity codes without the `integrity` suffix: a stored record, a hash
+/// chain or a signature no longer matches (alteration or corruption).
+const INTEGRITY_CODES: [&str; 8] = [
+    "assets.review.trust_mismatch",
+    "backend_store.anchor",
+    "coordinator.storage_corrupt",
+    "feedback.policy.signature",
+    "feedback.storage_corrupt",
+    "feedback.store.invalid",
+    "policy.store.invalid",
+    "runtime.storage_corrupt",
+];
+
+/// The single classification of every stable error code into an exit status.
+/// It reads only the code: explicit tables first, then the last dotted segment.
+/// `7` is an altered stored record, chain or signature, and `*.integrity` also
+/// covers a sealed input edited after approval; `2` covers every refusal,
+/// including user input that drifted after approval (`*.changed`).
+/// `*.io` and `*.storage_io` stay invalid input: a missing or unreadable
+/// caller path reaches them.
+fn exit_class(code: &str) -> ExitClass {
+    if OUTCOME_UNKNOWN_CODES.contains(&code) {
+        return ExitClass::OutcomeUnknown;
+    }
+    if INTEGRITY_CODES.contains(&code) {
+        return ExitClass::Integrity;
+    }
+    match code.rsplit('.').next().unwrap_or(code) {
+        "busy" | "locked" | "storage_locked" => ExitClass::Retryable,
+        "integrity" => ExitClass::Integrity,
+        "internal" | "render" | "serialization" | "json" | "storage" | "storage_database" => {
+            ExitClass::Internal
         }
+        _ => ExitClass::Invalid,
     }
 }
 
@@ -486,6 +547,9 @@ fn explain(decision_path: &Path) -> Result<Outcome, CliError> {
     )?;
     let decision = serde_json::from_slice::<DecisionEnvelope>(&bytes)
         .map_err(|_| CliError::DecisionJsonInvalid)?;
+    if !decision.has_supported_schema() {
+        return Err(CliError::DecisionSchema);
+    }
     Ok(Outcome {
         output: render::explain(&decision),
         exit_code: ExitCode::SUCCESS,
@@ -518,6 +582,19 @@ fn read_bounded(
     read_error: CliError,
     too_large: CliError,
 ) -> Result<Vec<u8>, CliError> {
+    let file = open_regular(path, read_error)?;
+    let mut bytes = Vec::new();
+    file.take(max_bytes as u64 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| read_error)?;
+    if bytes.len() > max_bytes {
+        return Err(too_large);
+    }
+    Ok(bytes)
+}
+
+/// Opens a regular file without following a final symlink or blocking on a FIFO.
+fn open_regular(path: &Path, read_error: CliError) -> Result<std::fs::File, CliError> {
     let mut options = OpenOptions::new();
     options.read(true);
     #[cfg(unix)]
@@ -529,12 +606,178 @@ fn read_bounded(
     if !file.metadata().map_err(|_| read_error)?.is_file() {
         return Err(read_error);
     }
-    let mut bytes = Vec::new();
-    file.take(max_bytes as u64 + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|_| read_error)?;
-    if bytes.len() > max_bytes {
-        return Err(too_large);
+    Ok(file)
+}
+
+#[cfg(test)]
+mod exit_class_tests {
+    use super::*;
+
+    #[test]
+    fn every_exit_class_is_reached_by_real_error_codes() {
+        use ExitClass::*;
+        for (code, class) in [
+            ("cli.invalid", Invalid),
+            ("request.json.invalid", Invalid),
+            ("decision.schema.unsupported", Invalid),
+            ("policy.composition.denied", Invalid),
+            ("runtime.approval.required_or_changed", Invalid),
+            ("runtime.sandbox.unknown_or_unsafe", Invalid),
+            ("runtime.io", Invalid),
+            ("runtime.not_found", Invalid),
+            ("session_budget.accounting.unknown", Invalid),
+            ("snapshot.json.invalid", Invalid),
+            ("route.internal", Internal),
+            ("decision.render", Internal),
+            ("phase.serialization", Internal),
+            ("feedback.serialization", Internal),
+            ("runtime.json", Internal),
+            ("coordinator.json", Internal),
+            ("runtime.storage", Internal),
+            ("coordinator.storage", Internal),
+            ("feedback.storage_database", Internal),
+            ("runtime.busy", Retryable),
+            ("coordinator.busy", Retryable),
+            ("backend_store.busy", Retryable),
+            ("runtime.locked", Retryable),
+            ("coordinator.locked", Retryable),
+            ("feedback.storage_locked", Retryable),
+            ("backend_store.published_durability_unknown", OutcomeUnknown),
+            ("runtime.cleanup.unknown", OutcomeUnknown),
+            (
+                "runtime.approval_key.published_durability_unknown",
+                OutcomeUnknown,
+            ),
+            ("runtime.integrity", Integrity),
+            ("coordinator.integrity", Integrity),
+            ("backend_store.integrity", Integrity),
+            ("feedback.integrity", Integrity),
+            ("retrieval.integrity", Integrity),
+            ("workflow.integrity", Integrity),
+            ("eval.integrity", Integrity),
+            ("phase.catalog.integrity", Integrity),
+            ("doctor.audit.integrity", Integrity),
+            ("runtime.approval_key.integrity", Integrity),
+            ("runtime.storage_corrupt", Integrity),
+            ("coordinator.storage_corrupt", Integrity),
+            ("feedback.storage_corrupt", Integrity),
+            ("policy.store.invalid", Integrity),
+            ("feedback.store.invalid", Integrity),
+            ("feedback.policy.signature", Integrity),
+            ("assets.review.trust_mismatch", Integrity),
+            ("backend_store.anchor", Integrity),
+            ("backend_store.conflict", Invalid),
+            ("feedback.storage_io", Invalid),
+            ("policy.active.changed", Invalid),
+            ("escalation.source.changed", Invalid),
+            ("generation.context.changed", Invalid),
+            ("runtime.approval_key.unsafe", Invalid),
+            ("runtime.approval_key.unavailable", Invalid),
+        ] {
+            assert_eq!(exit_class(code), class, "{code}");
+        }
     }
-    Ok(bytes)
+
+    #[test]
+    fn fixed_cli_errors_keep_their_documented_status() {
+        for (error, status) in [
+            (CliError::InvalidCommand, 2),
+            (CliError::RequestTooLarge, 2),
+            (CliError::DecisionSchema, 2),
+            (CliError::Internal, 4),
+            (CliError::DecisionRender, 4),
+            (CliError::Product("runtime.busy"), 5),
+            (CliError::Product("runtime.cleanup.unknown"), 6),
+            (CliError::Product("runtime.integrity"), 7),
+        ] {
+            assert_eq!(exit_class(error.code()) as u8, status, "{}", error.code());
+        }
+    }
+
+    #[test]
+    fn the_outcome_unknown_list_is_not_matched_by_suffix() {
+        // Only listed codes are unknown outcomes; other `unknown` suffixes are refusals.
+        for code in ["task.budget.unknown", "risk.environment.unknown"] {
+            assert_eq!(exit_class(code), ExitClass::Invalid, "{code}");
+        }
+    }
+
+    /// `main.rs` without the classification tables and the test module.
+    fn emitted_part_of_main(text: &str) -> String {
+        let tables = text
+            .find("/// Codes whose effect may already have happened")
+            .expect("classification tables start");
+        let classifier = text.find("fn exit_class(").expect("classifier");
+        let tests = text
+            .find("#[cfg(test)]\nmod exit_class_tests")
+            .expect("test module");
+        assert!(tables < classifier && classifier < tests);
+        format!("{}{}", &text[..tables], &text[classifier..tests])
+    }
+
+    /// String literals shaped like a dotted error code, e.g. `"runtime.busy"`.
+    fn quoted_codes(text: &str) -> std::vec::IntoIter<&str> {
+        let bytes = text.as_bytes();
+        let mut codes = Vec::new();
+        for (start, _) in text.match_indices('"') {
+            let body = &text[start + 1..];
+            let length = body
+                .bytes()
+                .take_while(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b"_.".contains(b))
+                .count();
+            let code = &body[..length];
+            if bytes.get(start + 1 + length) == Some(&b'"')
+                && code.contains('.')
+                && code.starts_with(|c: char| c.is_ascii_lowercase())
+            {
+                codes.push(code);
+            }
+        }
+        codes.into_iter()
+    }
+
+    #[test]
+    fn every_emitted_integrity_contention_or_durability_code_has_its_class() {
+        let mut texts = Vec::new();
+        let mut pending = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+        while let Some(directory) = pending.pop() {
+            for entry in std::fs::read_dir(&directory).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    pending.push(path);
+                } else if path.extension().is_some_and(|e| e == "rs") {
+                    texts.push((path.clone(), std::fs::read_to_string(&path).unwrap()));
+                }
+            }
+        }
+        let mut emitted = std::collections::BTreeSet::new();
+        for (path, text) in &texts {
+            if path.file_name().is_some_and(|name| name == "main.rs") {
+                // The classification tables and these tests would otherwise
+                // count their own literals as emitted codes.
+                emitted.extend(quoted_codes(&emitted_part_of_main(text)).map(str::to_owned));
+            } else {
+                emitted.extend(quoted_codes(text).map(str::to_owned));
+            }
+        }
+        let mut checked = 0;
+        for code in &emitted {
+            let expected = if code.contains("durability") {
+                ExitClass::OutcomeUnknown
+            } else if code.contains("integrity") || code.contains("corrupt") {
+                ExitClass::Integrity
+            } else if code.contains("busy") || code.contains("locked") {
+                ExitClass::Retryable
+            } else {
+                continue;
+            };
+            checked += 1;
+            assert_eq!(exit_class(code), expected, "{code}");
+        }
+        assert!(checked >= 15, "scanner found only {checked} codes");
+        // A typo in a table would silently leave the real code in class 2.
+        for code in INTEGRITY_CODES.iter().chain(&OUTCOME_UNKNOWN_CODES) {
+            assert!(emitted.contains(*code), "{code} is not emitted by the CLI");
+        }
+    }
 }

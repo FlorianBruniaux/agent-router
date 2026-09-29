@@ -2,7 +2,7 @@
 //! Active projections require current external roots, clock and expected binding.
 use crate::{AssetKind, AssetRegistry, Catalog, GenerationConfig, RegistryAsset};
 use ed25519_dalek::{Signature, VerifyingKey};
-use router_adapter_api::{content_digest, is_digest, strict_json};
+use router_adapter_api::{content_digest, is_digest, strict_json, strict_json_limited};
 use router_retrieval::{
     AssetMetadata, AssetSignals, Bm25Index, MetadataDocument, MetadataEnvelopeV3,
 };
@@ -313,7 +313,8 @@ impl SignedCatalogDocument {
         if bytes.len() > MAX_SIGNED_CATALOG_BYTES {
             return Err(SignedCatalogError::Limit);
         }
-        let value = strict_json(bytes).map_err(|_| SignedCatalogError::Invalid)?;
+        let value = strict_json_limited(bytes, MAX_SIGNED_CATALOG_BYTES)
+            .map_err(|_| SignedCatalogError::Invalid)?;
         reject_duplicates(&value)?;
         let document: Self =
             serde_json::from_value(value.clone()).map_err(|_| SignedCatalogError::Invalid)?;

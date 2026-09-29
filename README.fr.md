@@ -185,7 +185,7 @@ pour les critères d'acceptation. La release publique reste conditionnée à une
 
 ### Compiler depuis les sources
 
-Le [guide d'installation](docs/install.md) couvre les prérequis, les features de build optionnelles,
+Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
 la release locale vérifiable et la désinstallation. Utilisez Rust 1.85 ou plus récent. Le dépôt épingle la toolchain de développement dans
 [`rust-toolchain.toml`](rust-toolchain.toml). Un accès en clone est nécessaire tant que le
 dépôt est privé.
@@ -248,8 +248,9 @@ Pour un routage par phase, essayez la fixture synthétique d'hôte observé :
 `--now 100` sert uniquement à l'horloge de la fixture. Les preuves d'hôte réelles doivent être récentes.
 La plupart des commandes du produit exposent une sortie machine stable via `--json` ; lancez
 `agent-router <command> --help` pour connaître les entrées requises. `route` retourne `0` pour une
-sélection, `3` pour un résultat valide sans route, `2` pour une entrée invalide et `4` pour une erreur
-interne.
+sélection, `3` pour un résultat valide sans route, `2` pour une entrée invalide, `4` pour une erreur
+interne et `7` pour une erreur d'intégrité ; voir
+[les codes de sortie](docs/cli-output.md#exit-codes-and-error-codes).
 
 </details>
 
@@ -370,14 +371,14 @@ d'une conversation parente existante.
 
 ## Documentation
 
-Les guides d'installation, de routage, d'exécution, de release et du harness de développement sont indexés dans le tableau ci-dessous.
+L'[index complet de la documentation](docs/README.fr.md) classe tous les guides par besoin. Les plus utilisés sont ci-dessous.
 
 <details>
 <summary>Index de la documentation</summary>
 
 | Pour commencer | Pour aller plus loin |
 | --- | --- |
-| [Install Agent Router](docs/install.md) | [Changelog](CHANGELOG.md) |
+| [Installer Agent Router](docs/install.fr.md) | [Changelog](CHANGELOG.md) |
 | [Serve the local route API](docs/local-api.md) | [Build a verifiable local release](docs/release-local.md) |
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
 | [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |

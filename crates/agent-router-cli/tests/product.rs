@@ -179,7 +179,7 @@ fn doctor_and_audit_never_echo_private_artifact_content() {
         .arg("0".repeat(64))
         .arg("--json")
         .assert()
-        .code(2)
+        .code(7)
         .stderr(predicates::str::contains("doctor.audit.integrity"));
 }
 
@@ -294,6 +294,20 @@ fn feedback_requires_consent_and_policy_baseline_is_explicit() {
             .success(),
     );
     assert!(before["active"].is_null());
+    // An empty trusted-key set is invalid input (2), not a signature mismatch (7).
+    let keys = directory.join("trusted-keys.json");
+    write(&keys, &json!([]));
+    command()
+        .args(["policy", "--store"])
+        .arg(&store)
+        .args(["apply", "--approval"])
+        .arg(&keys)
+        .arg("--trusted-keys")
+        .arg(&keys)
+        .args(["--now", "100", "--json"])
+        .assert()
+        .code(2)
+        .stderr("error: feedback.invalid\n");
     command()
         .args(["policy", "--store"])
         .arg(&store)
@@ -575,7 +589,8 @@ fn eval_seal_replay_compare_never_treats_synthetic_input_as_a_promotion() {
         .arg(&record_path)
         .args(["--policy", "baseline", "--now", "100", "--json"])
         .assert()
-        .code(2);
+        .code(7)
+        .stderr("error: eval.integrity\n");
 }
 #[cfg(feature = "claude")]
 #[test]

@@ -14,6 +14,7 @@ use router_types::{ExecutionRequest, WorkflowPlan};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
+    ffi::OsString,
     future::Future,
     path::{Path, PathBuf},
     process::ExitCode,
@@ -114,6 +115,12 @@ pub(crate) fn error(error: RuntimeError) -> CliError {
         },
         RuntimeError::Invalid(_) => "runtime.invalid",
         RuntimeError::Io(_) => "runtime.io",
+        RuntimeError::Storage(e) if contention(e.sqlite_error().map(|f| f.extended_code)) => {
+            "runtime.busy"
+        }
+        RuntimeError::Storage(e) if corruption(e.sqlite_error().map(|f| f.extended_code)) => {
+            "runtime.storage_corrupt"
+        }
         RuntimeError::Storage(_) => "runtime.storage",
         RuntimeError::Json(_) => "runtime.json",
         RuntimeError::Integrity(_) => "runtime.integrity",
@@ -135,6 +142,16 @@ pub(crate) fn error(error: RuntimeError) -> CliError {
         RuntimeError::CleanupUnknown => "runtime.cleanup.unknown",
         RuntimeError::Decision(_) => "runtime.decision.invalid_or_changed",
     })
+}
+/// SQLite reports contention as SQLITE_BUSY (5) or SQLITE_LOCKED (6) in the
+/// primary byte of its extended result code. Relaunching may then succeed.
+pub(crate) fn contention(extended_code: Option<i32>) -> bool {
+    extended_code.is_some_and(|code| matches!(code & 0xff, 5 | 6))
+}
+/// SQLITE_CORRUPT (11) or SQLITE_NOTADB (26): the stored database is damaged
+/// or replaced, an integrity failure rather than an internal one.
+pub(crate) fn corruption(extended_code: Option<i32>) -> bool {
+    extended_code.is_some_and(|code| matches!(code & 0xff, 11 | 26))
 }
 pub(crate) fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
     tokio::runtime::Builder::new_multi_thread()
@@ -187,6 +204,11 @@ pub(crate) fn load_definition(path: &Path) -> Result<Definition, CliError> {
     }
     if value.policy_store.is_some() != value.policy_artifact_id.is_some() {
         return Err(CliError::Product("policy.artifact.required"));
+    }
+    // One policy authority per definition: a file would silently shadow the
+    // pinned store artifact.
+    if value.policy.is_some() && value.policy_store.is_some() {
+        return Err(CliError::Product("policy.composition.denied"));
     }
     value.plan = resolve(base, value.plan);
     value.request = resolve(base, value.request);
@@ -472,15 +494,151 @@ fn approval(
     config: &SandboxConfig,
     definition: &Definition,
     backend: Option<&crate::generation::SourceBinding>,
+    store: &Path,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
-    approval_for_digest(pending.approval_digest(), config, definition, backend)
+    approval_for_digest(
+        pending.approval_digest(),
+        config,
+        definition,
+        backend,
+        store,
+    )
 }
+
+const BINARY_LIMIT: u64 = 256 * 1024 * 1024;
+
+/// Streams a binary through SHA-256 in fixed blocks: memory stays constant.
+/// Same open rules, bound and errors as `read_bounded`, and the same hex
+/// digest as `content_digest` of the whole content.
+fn binary_digest(path: &Path, limit: u64) -> Result<String, CliError> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read as _;
+    let mut file = crate::open_regular(path, CliError::RequestRead)?.take(limit + 1);
+    let mut hasher = Sha256::new();
+    let mut block = vec![0; 64 * 1024];
+    let mut total = 0u64;
+    loop {
+        let read = match file.read(&mut block) {
+            Ok(0) => break,
+            Ok(read) => read,
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+            Err(_) => return Err(CliError::RequestRead),
+        };
+        total += read as u64;
+        if total > limit {
+            return Err(CliError::RequestTooLarge);
+        }
+        hasher.update(&block[..read]);
+    }
+    Ok(hex(&hasher.finalize()))
+}
+fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        // Writing to a String cannot fail.
+        let _ = write!(text, "{byte:02x}");
+    }
+    text
+}
+
+/// Configuration variables bound by value. Every other named variable, API
+/// keys included, is bound only through a keyed MAC of its value.
+const PLAIN_ENVIRONMENT: [&str; 4] = ["HOME", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "SSL_CERT_FILE"];
+const ENVIRONMENT_VALUE_DOMAIN: &[u8] = b"agent-router.approval.environment-hmac.v1";
+
+/// What the approval binds for one named variable. A secret value never
+/// appears here, only its HMAC-SHA256 under the runtime store's approval key:
+/// the displayed digest cannot confirm a guessed key without that file.
+#[derive(Debug, Eq, PartialEq, Serialize)]
+#[serde(tag = "state", rename_all = "snake_case")]
+enum EnvironmentBinding {
+    Absent,
+    Value { value: String },
+    HmacSha256 { hmac_sha256: String },
+}
+
+fn environment_value_mac(
+    key: &crate::approval_key::ApprovalKey,
+    name: &str,
+    value: &[u8],
+) -> Result<String, CliError> {
+    use hmac::{Hmac, Mac};
+    let mut mac =
+        Hmac::<sha2::Sha256>::new_from_slice(key.bytes()).map_err(|_| CliError::Internal)?;
+    mac.update(ENVIRONMENT_VALUE_DOMAIN);
+    mac.update(&[0]);
+    mac.update(name.as_bytes());
+    mac.update(&[0]);
+    mac.update(value);
+    Ok(hex(&mac.finalize().into_bytes()))
+}
+
+/// The approval key is loaded (or created) only when a secret value is bound.
+fn environment_binding(
+    names: &[String],
+    lookup: impl Fn(&str) -> Option<OsString>,
+    key: impl FnOnce() -> Result<crate::approval_key::ApprovalKey, CliError>,
+) -> Result<BTreeMap<&str, EnvironmentBinding>, CliError> {
+    let mut source = Some(key);
+    let mut loaded = None;
+    let mut bound = BTreeMap::new();
+    for name in names {
+        let value = match lookup(name).map(OsString::into_string) {
+            None => {
+                bound.insert(name.as_str(), EnvironmentBinding::Absent);
+                continue;
+            }
+            Some(Ok(value)) if PLAIN_ENVIRONMENT.contains(&name.as_str()) => {
+                bound.insert(name.as_str(), EnvironmentBinding::Value { value });
+                continue;
+            }
+            Some(Ok(value)) => value.into_bytes(),
+            // Not launchable either; bound so that any later change differs.
+            Some(Err(value)) => value.into_encoded_bytes(),
+        };
+        if loaded.is_none() {
+            let load = source.take().ok_or(CliError::Internal)?;
+            loaded = Some(load()?);
+        }
+        let key = loaded.as_ref().ok_or(CliError::Internal)?;
+        let hmac_sha256 = environment_value_mac(key, name, &value)?;
+        bound.insert(
+            name.as_str(),
+            EnvironmentBinding::HmacSha256 { hmac_sha256 },
+        );
+    }
+    Ok(bound)
+}
+
+/// The launch reads the named variables from this same process environment,
+/// so a value changed between review and `--approve` changes the digest.
+/// `store` is the runtime store directory holding the approval key.
 pub(crate) fn approval_for_digest(
     inner_digest: &str,
     config: &SandboxConfig,
     definition: &Definition,
     backend: Option<&crate::generation::SourceBinding>,
+    store: &Path,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
+    approval_with_environment(
+        inner_digest,
+        config,
+        definition,
+        backend,
+        |name| std::env::var_os(name),
+        || crate::approval_key::load_or_create(store),
+    )
+}
+fn approval_with_environment(
+    inner_digest: &str,
+    config: &SandboxConfig,
+    definition: &Definition,
+    backend: Option<&crate::generation::SourceBinding>,
+    lookup: impl Fn(&str) -> Option<OsString>,
+    key: impl FnOnce() -> Result<crate::approval_key::ApprovalKey, CliError>,
+) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
+    let environment = environment_binding(&config.environment_names, lookup, key)?;
     let mut hashes = BTreeMap::new();
     for path in config
         .programs
@@ -488,45 +646,37 @@ pub(crate) fn approval_for_digest(
         .chain(std::iter::once(&config.helper))
         .chain(config.bubblewrap.iter())
     {
-        let bytes = crate::read_bounded(
-            path,
-            256 * 1024 * 1024,
-            CliError::RequestRead,
-            CliError::RequestTooLarge,
-        )?;
-        hashes.insert(path.clone(), content_digest(&bytes));
+        hashes.insert(path.clone(), binary_digest(path, BINARY_LIMIT)?);
     }
     #[cfg(target_os = "macos")]
     {
         let wrapper = PathBuf::from("/usr/bin/sandbox-exec");
-        let bytes = crate::read_bounded(
-            &wrapper,
-            256 * 1024 * 1024,
-            CliError::RequestRead,
-            CliError::RequestTooLarge,
-        )?;
-        hashes.insert(wrapper, content_digest(&bytes));
+        let digest = binary_digest(&wrapper, BINARY_LIMIT)?;
+        hashes.insert(wrapper, digest);
     }
+    // v4 adds the environment binding; every v1/v2/v3 approval is stale.
     let bytes = if let Some(backend) = backend {
         serde_json::to_vec(&(
             if matches!(backend, crate::generation::SourceBinding::Escalated(_)) {
-                "runtime-cli-approval-v3-escalation"
+                "runtime-cli-approval-v4-escalation"
             } else {
-                "runtime-cli-approval-v2-backend"
+                "runtime-cli-approval-v4-backend"
             },
             inner_digest,
             definition,
             config,
             &hashes,
+            &environment,
             backend,
         ))
     } else {
         serde_json::to_vec(&(
-            "runtime-cli-approval-v1",
+            "runtime-cli-approval-v4",
             inner_digest,
             definition,
             config,
             &hashes,
+            &environment,
         ))
     }
     .map_err(|_| CliError::Internal)?;
@@ -699,21 +849,32 @@ pub(crate) fn run(
             )
             .await
             .map_err(error)?;
-        let pending = if retry {
+        // The approval (binary hashes included) is computed once per invocation.
+        let (pending, (digest, binaries)) = if retry {
             // Read-only preview first: nothing is persisted until the caller
             // presents the digest of this exact preview with `--approve`.
             let preview = runtime.preview_retry(&pending).map_err(error)?;
+            let computed = approval(
+                &preview,
+                &config,
+                &definition,
+                loaded.binding.as_ref(),
+                store,
+            )?;
             match approve {
-                None => preview,
+                None => (preview, computed),
                 Some(approved) => {
-                    let (digest, _) =
-                        approval(&preview, &config, &definition, loaded.binding.as_ref())?;
-                    if approved != digest {
+                    if approved != computed.0 {
                         return Err(CliError::Product("runtime.approval.required_or_changed"));
                     }
                     // The store re-checks the inner digest inside its transaction.
                     let inner = preview.approval_digest().to_owned();
-                    runtime.retry_approved(pending, &inner).map_err(error)?
+                    let retried = runtime.retry_approved(pending, &inner).map_err(error)?;
+                    // The approved digest covers the previewed inner digest only.
+                    if retried.approval_digest() != inner {
+                        return Err(CliError::Product("runtime.approval.required_or_changed"));
+                    }
+                    (retried, computed)
                 }
             }
         } else if approve.is_some()
@@ -725,9 +886,15 @@ pub(crate) fn run(
             // A failed run needs a fresh approval: `--retry --approve <digest>`.
             return Err(CliError::Product("runtime.retry.use_retry_approve"));
         } else {
-            pending
+            let computed = approval(
+                &pending,
+                &config,
+                &definition,
+                loaded.binding.as_ref(),
+                store,
+            )?;
+            (pending, computed)
         };
-        let (digest, binaries) = approval(&pending, &config, &definition, loaded.binding.as_ref())?;
         let Some(approved) = approve else {
             return json_output(
                 &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":digest,
@@ -938,6 +1105,7 @@ pub(crate) fn artifacts(
 #[cfg(test)]
 mod adapter_configuration_tests {
     use super::*;
+    use crate::approval_key::ApprovalKey;
     use serde_json::json;
 
     fn config_value() -> serde_json::Value {
@@ -950,7 +1118,6 @@ mod adapter_configuration_tests {
                 "max_processes":64,"max_file_bytes":1048576},"feedback_store":null,
             "output_retention":{"mode":"none"}})
     }
-    #[cfg(any(feature = "opencode", feature = "copilot"))]
     fn definition() -> Definition {
         serde_json::from_value(
             json!({"schema_version":1,"run_id":"run-1","context":"context.json",
@@ -996,11 +1163,13 @@ mod adapter_configuration_tests {
                 .unwrap_or_else(|_| panic!("valid adapter config"))
                 .requires_native_version()
         );
-        let before = approval_for_digest(&"a".repeat(64), &original, &definition(), None)
+        // No secret variable is named, so the store key is never read.
+        let store = Path::new("/nonexistent/runtime");
+        let before = approval_for_digest(&"a".repeat(64), &original, &definition(), None, store)
             .unwrap_or_else(|_| panic!("valid approval fixture"));
         value[host]["expected_cli_version"] = json!("1.0.1-fixture");
         let changed: SandboxConfig = serde_json::from_value(value).unwrap();
-        let after = approval_for_digest(&"a".repeat(64), &changed, &definition(), None)
+        let after = approval_for_digest(&"a".repeat(64), &changed, &definition(), None, store)
             .unwrap_or_else(|_| panic!("valid changed fixture"));
         assert_eq!(
             before.1, after.1,
@@ -1010,5 +1179,226 @@ mod adapter_configuration_tests {
             before.0, after.0,
             "configuration change requires fresh approval"
         );
+    }
+    fn environment(pairs: &[(&'static str, &'static str)]) -> impl Fn(&str) -> Option<OsString> {
+        let values: BTreeMap<&'static str, &'static str> = pairs.iter().copied().collect();
+        move |name| values.get(name).map(OsString::from)
+    }
+    #[test]
+    fn approval_binds_plain_values_and_keyed_macs_of_secret_values() {
+        let mut value = config_value();
+        value["environment_names"] = json!(["HOME", "SSL_CERT_FILE", "OPENAI_API_KEY"]);
+        value["output_retention"] =
+            serde_json::to_value(router_types::OutputRetentionPolicy::default()).unwrap();
+        let config: SandboxConfig = serde_json::from_value(value).unwrap();
+        let secret = "sk-unit-secret-value";
+        let base = [
+            ("HOME", "/home/a"),
+            ("SSL_CERT_FILE", "/etc/a.pem"),
+            ("OPENAI_API_KEY", secret),
+        ];
+        let keyed = |pairs: &[(&'static str, &'static str)], key: u8| {
+            approval_with_environment(
+                &"a".repeat(64),
+                &config,
+                &definition(),
+                None,
+                environment(pairs),
+                || Ok(ApprovalKey::fixed(key)),
+            )
+            .unwrap_or_else(|_| panic!("valid approval fixture"))
+        };
+        let digest = |pairs: &[(&'static str, &'static str)]| keyed(pairs, 1);
+        let reference = digest(&base);
+        assert_eq!(reference, digest(&base), "same environment and key");
+        assert_ne!(reference.0, keyed(&base, 2).0, "another store key");
+        let mut changed = Vec::new();
+        for (index, replacement) in [
+            (0, Some("/home/b")),
+            (1, Some("/etc/b.pem")),
+            (1, None),
+            (2, Some("sk-unit-secret-other")),
+            (2, None),
+            (2, Some("")),
+        ] {
+            let pairs: Vec<_> = base
+                .iter()
+                .enumerate()
+                .filter_map(|(i, pair)| match (i == index, replacement) {
+                    (false, _) => Some(*pair),
+                    (true, Some(value)) => Some((pair.0, value)),
+                    (true, None) => None,
+                })
+                .collect();
+            let after = digest(&pairs);
+            assert_eq!(after.1, reference.1, "binary identity unchanged");
+            assert_ne!(after.0, reference.0, "{index} {replacement:?}");
+            changed.push(after.0);
+        }
+        changed.sort();
+        changed.dedup();
+        assert_eq!(changed.len(), 6, "absent and empty values are distinct");
+
+        let binding = serde_json::to_string(
+            &environment_binding(&config.environment_names, environment(&base), || {
+                Ok(ApprovalKey::fixed(1))
+            })
+            .unwrap_or_else(|_| panic!("binding")),
+        )
+        .unwrap();
+        assert!(binding.contains("/home/a") && binding.contains("/etc/a.pem"));
+        assert!(!binding.contains(secret), "{binding}");
+        let mac = |key: u8, name: &str| {
+            environment_value_mac(&ApprovalKey::fixed(key), name, secret.as_bytes())
+                .unwrap_or_else(|_| panic!("mac"))
+        };
+        assert!(binding.contains(&mac(1, "OPENAI_API_KEY")));
+        assert!(
+            !binding.contains(&content_digest(secret.as_bytes())),
+            "keyed"
+        );
+        assert_ne!(
+            mac(1, "OPENAI_API_KEY"),
+            mac(1, "ANTHROPIC_API_KEY"),
+            "name bound"
+        );
+        assert_ne!(
+            mac(1, "OPENAI_API_KEY"),
+            mac(2, "OPENAI_API_KEY"),
+            "key bound"
+        );
+    }
+    #[test]
+    fn the_store_key_is_read_only_when_a_secret_value_is_bound() {
+        let names = vec!["HOME".to_owned(), "OPENAI_API_KEY".to_owned()];
+        let unavailable = || Err(CliError::Product("runtime.approval_key.unavailable"));
+        assert!(environment_binding(&names, environment(&[("HOME", "/h")]), unavailable).is_ok());
+        assert_eq!(
+            environment_binding(&names, environment(&[("OPENAI_API_KEY", "k")]), unavailable)
+                .map(|_| ())
+                .map_err(CliError::code),
+            Err("runtime.approval_key.unavailable")
+        );
+    }
+    #[test]
+    fn unknown_names_are_bound_by_mac_and_absence_is_explicit() {
+        let names = vec!["HOME".to_owned(), "CUSTOM_TOKEN".to_owned()];
+        let bound = environment_binding(&names, environment(&[("CUSTOM_TOKEN", "t0ken")]), || {
+            Ok(ApprovalKey::fixed(1))
+        })
+        .unwrap_or_else(|_| panic!("binding"));
+        assert_eq!(bound["HOME"], EnvironmentBinding::Absent);
+        assert_eq!(
+            bound["CUSTOM_TOKEN"],
+            EnvironmentBinding::HmacSha256 {
+                hmac_sha256: environment_value_mac(
+                    &ApprovalKey::fixed(1),
+                    "CUSTOM_TOKEN",
+                    b"t0ken"
+                )
+                .unwrap_or_else(|_| panic!("mac"))
+            }
+        );
+    }
+    #[test]
+    fn streamed_binary_digest_equals_the_whole_content_digest() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("binary");
+        // Empty, one partial block, exact blocks and a multi-block tail.
+        for length in [0usize, 1, 64 * 1024, 128 * 1024, 200 * 1024 + 7] {
+            let content: Vec<u8> = (0..length).map(|i| (i * 31 % 251) as u8).collect();
+            std::fs::write(&path, &content).unwrap();
+            let streamed = binary_digest(&path, BINARY_LIMIT)
+                .unwrap_or_else(|_| panic!("streamed digest of {length} bytes"));
+            assert_eq!(streamed, content_digest(&content), "{length} bytes");
+            let whole = crate::read_bounded(
+                &path,
+                BINARY_LIMIT as usize,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )
+            .unwrap_or_else(|_| panic!("bounded read of {length} bytes"));
+            assert_eq!(streamed, content_digest(&whole));
+        }
+    }
+    #[test]
+    fn streamed_binary_digest_keeps_the_bound_and_errors() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("binary");
+        std::fs::write(&path, vec![7u8; 100_000]).unwrap();
+        assert!(
+            binary_digest(&path, 100_000).is_ok(),
+            "exactly at the bound"
+        );
+        for limit in [99_999u64, 65_536, 0] {
+            let streamed = binary_digest(&path, limit)
+                .map(|_| ())
+                .map_err(CliError::code);
+            let whole = crate::read_bounded(
+                &path,
+                limit as usize,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )
+            .map(|_| ())
+            .map_err(CliError::code);
+            assert_eq!(streamed, Err("request.too_large"), "{limit}");
+            assert_eq!(streamed, whole, "{limit}");
+        }
+        let missing = directory.path().join("missing");
+        assert_eq!(
+            binary_digest(&missing, BINARY_LIMIT).map_err(CliError::code),
+            Err("request.read")
+        );
+        #[cfg(unix)]
+        {
+            let link = directory.path().join("link");
+            std::os::unix::fs::symlink(&path, &link).unwrap();
+            assert_eq!(
+                binary_digest(&link, BINARY_LIMIT).map_err(CliError::code),
+                Err("request.read"),
+                "no-follow like read_bounded"
+            );
+            assert_eq!(
+                binary_digest(directory.path(), BINARY_LIMIT).map_err(CliError::code),
+                Err("request.read"),
+                "regular files only"
+            );
+        }
+    }
+    #[test]
+    fn storage_contention_maps_to_the_retryable_busy_code() {
+        assert!(contention(Some(5)) && contention(Some(6)));
+        assert!(contention(Some(5 | (1 << 8))), "SQLITE_BUSY_RECOVERY");
+        assert!(!contention(Some(11)) && !contention(None));
+        assert!(corruption(Some(11)) && corruption(Some(26)));
+        assert!(corruption(Some(11 | (1 << 8))), "SQLITE_CORRUPT_VTAB");
+        assert!(!corruption(Some(5)) && !corruption(None));
+    }
+    #[test]
+    fn runtime_display_codes_match_the_cli_codes() {
+        use RuntimeError::*;
+        for variant in [
+            Locked,
+            Transition,
+            NotFound,
+            Approval,
+            SourceChanged,
+            Scope,
+            Sandbox,
+            Route,
+            Process,
+            CleanupUnknown,
+            Limit,
+            Cancelled,
+            DependenciesPending,
+            Verification,
+        ] {
+            let display = variant.to_string();
+            assert_eq!(error(variant).code(), display);
+        }
+        let io = Io(std::io::Error::other("fixture"));
+        let display = io.to_string();
+        assert_eq!(Some(error(io).code()), display.split(':').next());
     }
 }

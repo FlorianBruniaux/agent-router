@@ -1,6 +1,10 @@
 # ADR 0008: Explicit shared admission with opaque release
 
-Status: implemented for review, not yet delivered.
+Status: implemented. Amended by [ADR 0009](0009-conservative-session-allocations.md)
+(session cost and token allocations) and
+[ADR 0017](0017-bounded-retention-and-publish-durability.md) (pruning of settled
+tickets), which supersede the "no implicit pruning" and "no cost/token
+accounting" sentences below.
 
 Local semaphores cannot coordinate independent runtime owners and can release
 capacity when an interrupted future still has unproven descendants. R12 adds an
