@@ -291,7 +291,8 @@ inside a query cannot keep old evidence fresh. The existing explicit `--now 110`
 flag selects a reproducible replay clock for fixtures; it is not runtime evidence.
 Weights and the separate fused ambiguity margin can be supplied or use their
 library defaults. Exit code `3` means abstention, `2` means invalid or unavailable
-input, and `0` means a candidate was selected. Selection is metadata advice and
+input, `7` means an integrity failure (`retrieval.integrity`), and `0` means a
+candidate was selected. Selection is metadata advice and
 never authorizes model or tool execution.
 
 To validate an externally prepared semantic ranking, compile with CLI feature
