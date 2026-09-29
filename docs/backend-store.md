@@ -95,7 +95,7 @@ the previous snapshot authoritative. A complete renamed snapshot is verified on
 restart. A crash between rename and directory sync follows the filesystem's
 usual durability boundary; the library does not promise which of the two valid
 snapshots survives a power loss. A final directory-sync error after the rename
-returns `backend_store.published_durability_unknown`, distinct from
+returns `backend_store.published_durability_unknown` (CLI exit 6), distinct from
 `backend_store.io` (nothing published, including a failed rename) and from every
 earlier failure: the new head may already be visible and its durability is
 UNKNOWN. Reopen and inspect the head before retrying, and never blindly generate

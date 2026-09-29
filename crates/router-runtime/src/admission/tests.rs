@@ -366,3 +366,69 @@ fn lifetime_ticket_count_is_not_capped_because_settled_rows_are_pruned() {
     // Pruned at enqueue, so the newest release is on top of the retained window.
     assert_eq!(status.released, MAX_RETAINED_RELEASED + 1);
 }
+#[test]
+fn poll_with_nothing_to_change_does_not_take_the_write_lock() {
+    let (temp, s) = fixture();
+    let _one = s.owner("one").unwrap();
+    let _two = s.owner("two").unwrap();
+    let a = ticket(&s, "one", "a", "A", "provider");
+    let b = ticket(&s, "two", "b", "B", "provider");
+    let _waiters = [&a, &b].map(|t| s.waiter(t).unwrap());
+    for t in [&a, &b] {
+        s.enqueue(t).unwrap();
+    }
+    let other =
+        rusqlite::Connection::open(temp.path().join("registry").join("admission.sqlite3")).unwrap();
+    // A grant needs the write lock, held here by another connection.
+    other.execute_batch("BEGIN IMMEDIATE").unwrap();
+    assert!(matches!(
+        s.poll(&a),
+        Err(RuntimeError::Storage(rusqlite::Error::SqliteFailure(f, _)))
+            if f.code == rusqlite::ErrorCode::DatabaseBusy
+    ));
+    other.execute_batch("COMMIT").unwrap();
+    assert!(s.poll(&a).unwrap().is_empty());
+    // Nothing to grant or release for b: polling proceeds while the lock is held.
+    other.execute_batch("BEGIN IMMEDIATE").unwrap();
+    for _ in 0..3 {
+        assert_eq!(
+            s.poll(&b).unwrap(),
+            vec![AdmissionQueueReason::ProviderCapacity]
+        );
+    }
+    other.execute_batch("COMMIT").unwrap();
+}
+#[test]
+fn policy_change_is_detected_without_reserializing_the_policy() {
+    let (temp, s) = fixture();
+    let _one = s.owner("one").unwrap();
+    let a = ticket(&s, "one", "a", "A", "provider");
+    let _waiter = s.waiter(&a).unwrap();
+    s.enqueue(&a).unwrap();
+    let other =
+        rusqlite::Connection::open(temp.path().join("registry").join("admission.sqlite3")).unwrap();
+    let mut changed = policy();
+    changed.global_limit = 3;
+    other
+        .execute(
+            "UPDATE config SET json=?1",
+            [serde_json::to_string(&changed).unwrap()],
+        )
+        .unwrap();
+    assert!(matches!(s.poll(&a), Err(RuntimeError::Approval)));
+    // Same policy, different bytes: still not the pinned row.
+    other
+        .execute(
+            "UPDATE config SET json=?1",
+            [format!("{} ", serde_json::to_string(&policy()).unwrap())],
+        )
+        .unwrap();
+    assert!(matches!(s.poll(&a), Err(RuntimeError::Approval)));
+    other
+        .execute(
+            "UPDATE config SET json=?1",
+            [serde_json::to_string(&policy()).unwrap()],
+        )
+        .unwrap();
+    assert!(s.poll(&a).unwrap().is_empty());
+}

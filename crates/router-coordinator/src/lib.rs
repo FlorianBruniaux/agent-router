@@ -3,7 +3,9 @@
 //! every step needs an approval bound to its final prompt and artifact inputs.
 mod definition;
 mod store;
-pub use definition::{seal_definition, validate_definition};
+pub use definition::{
+    ValidatedDefinition, seal_definition, validate_definition, validations_on_this_thread,
+};
 use router_adapter_api::HarnessAdapter;
 use router_execution_decision::{ActivationAuthority, ExecutionDecision};
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
@@ -156,12 +158,14 @@ impl Coordinator {
         observe(&self.store.root, definition)
     }
     fn check(&self, definition: &WorkflowDefinition) -> Result<()> {
-        validate_definition(definition)?;
-        if self.store.check(definition)? {
+        self.check_validated(validate_definition(definition)?)
+    }
+    fn check_validated(&self, definition: ValidatedDefinition<'_>) -> Result<()> {
+        if self.store.check(&definition)? {
             return Err(CoordinatorError::Cancelled);
         }
         if definition.failure_policy == WorkflowFailurePolicy::FailFast
-            && self.status(definition)?.nodes.iter().any(|n| {
+            && self.status(&definition)?.nodes.iter().any(|n| {
                 n.state
                     .is_some_and(|s| s.terminal() && s != RunState::Verified)
             })
@@ -445,9 +449,16 @@ impl Coordinator {
         Ok(ApprovedStep { pending, approved })
     }
     fn check_step(&self, definition: &WorkflowDefinition, pending: &PendingStep) -> Result<()> {
-        self.check(definition)?;
+        self.check_step_validated(validate_definition(definition)?, pending)
+    }
+    fn check_step_validated(
+        &self,
+        definition: ValidatedDefinition<'_>,
+        pending: &PendingStep,
+    ) -> Result<()> {
+        self.check_validated(definition)?;
         if definition.definition_sha256 != pending.definition_sha256
-            || run_id(definition, &pending.node, pending.generation)? != pending.summary().run_id
+            || run_id(&definition, &pending.node, pending.generation)? != pending.summary().run_id
         {
             return Err(CoordinatorError::Integrity);
         }
@@ -490,8 +501,10 @@ impl Coordinator {
     /// owner is supervising workers. Missing confidential material stays queued
     /// until the caller reconstructs that exact step after a restart.
     pub fn service_controls(&self, definition: &WorkflowDefinition) -> Result<usize> {
-        validate_definition(definition)?;
-        self.store.check(definition)?;
+        self.service_controls_validated(validate_definition(definition)?)
+    }
+    fn service_controls_validated(&self, definition: ValidatedDefinition<'_>) -> Result<usize> {
+        self.store.check(&definition)?;
         let mut applied = 0;
         for (id, run, control) in self.store.controls(&definition.execution.instance_id)? {
             let pending = self
@@ -549,14 +562,14 @@ impl Coordinator {
                         {
                             Ok(())
                         } else {
-                            self.approve_step(definition, pending, &digest).map(|_| ())
+                            self.approve_step(&definition, pending, &digest).map(|_| ())
                         }
                     }
                     store::Control::Verify { record, .. } => {
                         if self.runtime.verification_record(&run)?.as_ref() == Some(&record) {
                             Ok(())
                         } else {
-                            self.verify_step(definition, &pending, record).map(|_| ())
+                            self.verify_step(&definition, &pending, record).map(|_| ())
                         }
                     }
                 }
@@ -606,13 +619,16 @@ impl Coordinator {
         definition: &WorkflowDefinition,
         jobs: Vec<DecisionStepExecution<'a>>,
     ) -> Result<WaveCompletion> {
-        self.check(definition)?;
+        // Validated once per wave: the borrow keeps the definition unchanged
+        // and every tick still compares the stored hash through the store.
+        let validated = validate_definition(definition)?;
+        self.check_validated(validated)?;
         if jobs.len() > 64 {
             return Err(CoordinatorError::Limit);
         }
         let mut unique = BTreeSet::new();
         for job in &jobs {
-            self.check_step(definition, &job.execution.step.pending)?;
+            self.check_step_validated(validated, &job.execution.step.pending)?;
             if !unique.insert(job.execution.step.pending.summary().run_id.clone()) {
                 return Err(CoordinatorError::Invalid("duplicate step"));
             }
@@ -676,7 +692,7 @@ impl Coordinator {
                 break;
             }
             let completed = tokio::select! {result=poll_fn(|cx|{for (index,future) in active.iter_mut().enumerate(){if let Poll::Ready(result)=future.as_mut().poll(cx){return Poll::Ready((index,result));}}Poll::Pending})=>Some(result),_=tokio::time::sleep(std::time::Duration::from_millis(20))=>None};
-            self.service_controls(definition)?;
+            self.service_controls_validated(validated)?;
             if self.store.check(definition)? && !stopped {
                 stopped = true;
                 cancel.cancel();

@@ -85,3 +85,31 @@ fn missing_owner_is_warning_and_is_never_created() {
     assert_eq!(report["overall"], "warning");
     assert!(!lock.exists());
 }
+
+#[test]
+fn database_over_the_inspection_cap_is_a_partial_unknown_report_with_exit_3() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap().join("runtime");
+    drop(Runtime::open(&root, RuntimeLimits::default()).unwrap());
+    rusqlite::Connection::open(root.join("runtime.sqlite3"))
+        .unwrap()
+        .execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;")
+        .unwrap();
+    let output = Command::cargo_bin("agent-router")
+        .unwrap()
+        .args(["doctor", "--runtime-root"])
+        .arg(&root)
+        .arg("--json")
+        .assert()
+        .code(3)
+        .get_output()
+        .stdout
+        .clone();
+    let report: Value = serde_json::from_slice(&output).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
+    assert_eq!(report["database"], Value::Null);
+}
