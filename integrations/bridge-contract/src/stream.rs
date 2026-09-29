@@ -7,6 +7,15 @@ use router_types::{
     TransportTermination, VerificationOutcome,
 };
 
+/// True when `bytes` end on a frame boundary: a blank line once CRLF is read as
+/// LF. The decoder and the transport share this one rule.
+pub(crate) fn ends_at_frame_boundary(bytes: &[u8]) -> bool {
+    let tail = &bytes[bytes.len().saturating_sub(4)..];
+    String::from_utf8_lossy(tail)
+        .replace("\r\n", "\n")
+        .ends_with("\n\n")
+}
+
 /// Bounded SSE normalization. Provider text is discarded, and no assistant
 /// completion claim becomes objective or validation evidence.
 pub(crate) fn decode_sse(
@@ -132,6 +141,8 @@ pub(crate) fn decode_sse(
             kind: event,
         });
     }
+    // Anything after the last blank line, even whitespace, is an unfinished frame.
+    partial |= !ends_at_frame_boundary(bytes);
     models.sort_by(|a, b| a.model.cmp(&b.model));
     let mut missing = vec![
         "validation.not_run".into(),

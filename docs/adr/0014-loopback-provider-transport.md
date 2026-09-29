@@ -28,7 +28,7 @@ only with the `loopback-transport` feature. The default build is unchanged.
 - **Endpoint.** `ApprovedEndpoint` is built by the supervising runtime from its
   own trust store, because the envelope does not carry an address. It accepts a
   loopback IPv4 or IPv6 address with a non-zero port, parsed from `ip:port`.
-  A host name does not parse. It is also bound to one provider kind.
+  A host name does not parse, and an IPv6 scope id is refused. It is also bound to one provider kind.
 - **Revalidation.** `execute` calls `verify_provider_request` immediately before
   connecting, then hashes the body part of the exact bytes about to be written
   against the signed payload digest. Any failure returns before a socket opens.
@@ -44,16 +44,20 @@ only with the `loopback-transport` feature. The default build is unchanged.
   header value reach an error. 401/403 map to `Unauthorized`, 429 to
   `RateLimited` (`Retry-After` kept only when it is all digits, capped at
   3600 s), 5xx to `ServerError`, other 4xx to `Rejected`, a cut body or stream
-  to `Truncated`, a forged or ill-formed response to `Malformed`, size and
-  event bounds to `Limit`. `SecretEcho`, `Credential`, `Envelope` and `Io`
-  are additions to the list requested for R10-a.
+  to `Truncated` (a socket error before any response byte is `Io`),
+  a provider failure event to `ProviderFailed`, a forged or ill-formed response to `Malformed`, size and
+  event bounds to `Limit`. `SecretEcho`, `Credential`, `Envelope`, `Io` and
+  `ProviderFailed` are additions to the list requested for R10-a.
 - **Redaction by refusal.** A response that contains the credential in a
   covered form is refused with `SecretEcho`, not scrubbed. The whole body is
-  buffered first, so a value split across TCP chunks is caught. The forms are
-  listed in `docs/provider-transport.md`.
+  buffered first, so a value split across TCP chunks is caught. The scan is a
+  linear multi-pattern search that checks the deadline and the cancellation
+  token between passes, and frame and JSON path sizes are bounded before it
+  walks them. The forms are listed in `docs/provider-transport.md`.
 - **Output.** The transport returns `RuntimeEvidence` from the existing stream
   decoder. Provider text is discarded there. No tool runs and no workspace is
-  involved. A terminal error event is returned as evidence, not as an error.
+  involved. A provider failure event is returned as `ProviderFailed`, not as a
+  successful run.
 
 ## Alternatives
 

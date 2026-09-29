@@ -66,15 +66,19 @@ impl JevSidecarBackend {
         // Laya's legacy confidence is entropy, while answer_confidence is the
         // chosen answer's reported confidence. Never treat entropy as that
         // probability when the more specific field or distribution is present.
-        let confidence = answer
-            .answer_confidence
-            .or_else(|| {
-                answer
-                    .choice
-                    .as_ref()
-                    .and_then(|id| answer.probabilities.get(id).copied())
-            })
-            .unwrap_or(answer.confidence);
+        // With neither, a chosen candidate has no usable confidence: refuse the
+        // response. An abstention (no choice) carries none.
+        let chosen = answer.answer_confidence.or_else(|| {
+            answer
+                .choice
+                .as_ref()
+                .and_then(|id| answer.probabilities.get(id).copied())
+        });
+        let confidence = match (chosen, &answer.choice) {
+            (Some(value), _) => value,
+            (None, None) => 0.0,
+            (None, Some(_)) => return Err(BackendError::Schema),
+        };
         let probabilities_micros = answer
             .probabilities
             .iter()

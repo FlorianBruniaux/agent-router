@@ -289,4 +289,68 @@ mod network {
             join.join().unwrap();
         }
     }
+    #[test]
+    fn entropy_confidence_is_never_the_answer_probability() {
+        // Neither `answer_confidence` nor a probability for the choice: the
+        // legacy `confidence` (entropy) must not stand in for them.
+        let cases = [
+            r#"{"answers":{"route":{"type":"choice","choice":"c01","confidence":0.5}}}"#,
+            r#"{"answers":{"route":{"type":"choice","choice":"c01","confidence":0.5,"probabilities":{"c00":1.0}}}}"#,
+        ];
+        for body in cases {
+            let (addr, _captured, join) = server(response(body), Duration::ZERO);
+            let backend = JevSidecarBackend::new(addr, None).unwrap();
+            let result = backend.propose(
+                context().redacted_request(),
+                Instant::now() + Duration::from_secs(1),
+            );
+            assert_eq!(result.unwrap_err().code(), "backend.schema", "{body}");
+            join.join().unwrap();
+        }
+        // An abstention carries no confidence, and the entropy value is not one.
+        let body = r#"{"answers":{"route":{"type":"choice","confidence":0.5}}}"#;
+        let (addr, _captured, join) = server(response(body), Duration::ZERO);
+        let backend = JevSidecarBackend::new(addr, None).unwrap();
+        let proposal = backend
+            .propose(
+                context().redacted_request(),
+                Instant::now() + Duration::from_secs(1),
+            )
+            .unwrap();
+        assert_eq!(proposal.candidate_id, None);
+        assert_eq!(proposal.confidence_micros, 0);
+        join.join().unwrap();
+    }
+    #[test]
+    fn content_length_takes_digits_only_and_content_type_ignores_case() {
+        let body = r#"{"answers":{"route":{"type":"choice","choice":"c01","confidence":0.5,"answer_confidence":0.9,"probabilities":{"c00":0.1,"c01":0.9}}}}"#;
+        let wire = |length: String, content_type: &str| {
+            format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {length}\r\n\r\n{body}"
+            )
+            .into_bytes()
+        };
+        let attempt = |wire: Vec<u8>| {
+            let (addr, _captured, join) = server(wire, Duration::ZERO);
+            let backend = JevSidecarBackend::new(addr, None).unwrap();
+            let result = backend.propose(
+                context().redacted_request(),
+                Instant::now() + Duration::from_secs(1),
+            );
+            join.join().unwrap();
+            result
+        };
+        let plus = format!("+{}", body.len());
+        assert_eq!(
+            attempt(wire(plus, "application/json")).unwrap_err().code(),
+            "backend.schema"
+        );
+        assert!(
+            attempt(wire(
+                body.len().to_string(),
+                "Application/JSON; charset=utf-8"
+            ))
+            .is_ok()
+        );
+    }
 }

@@ -1468,3 +1468,229 @@ fn a_secret_that_only_appears_once_whitespace_is_removed_is_refused_by_design() 
     );
     server.join().unwrap();
 }
+
+#[test]
+fn a_payload_with_deeply_nested_long_keys_is_refused_with_limit() {
+    let s = setup_with("openai-api", 5_000, 65_536);
+    // 60 levels of 100-byte keys: a 6 KiB path, far over the 1 KiB path bound.
+    let mut value = serde_json::json!("v");
+    for level in 0..60 {
+        let key = format!("{level:03}{}", "k".repeat(97));
+        value = serde_json::json!({ key: value });
+    }
+    let body = format!("data: {value}\n\n");
+    let (addr, server) = serve(respond(sse_response(body.as_bytes())));
+    assert_eq!(s.run(addr, &CancelToken::new()), Err(TransportError::Limit));
+    server.join().unwrap();
+}
+
+#[test]
+fn the_redaction_scan_stops_between_passes_on_a_deadline_or_a_cancel() {
+    let redactor = Redactor::new(&[SECRET]).unwrap();
+    let frames = "data: {\"type\":\"t\",\"a\":\"nothing\"}\n\n".repeat(50);
+    assert_eq!(
+        redactor.scan_sse(frames.as_bytes(), &|| Err(TransportError::Cancelled)),
+        Err(TransportError::Cancelled)
+    );
+    let calls = std::cell::Cell::new(0usize);
+    let stop_after_ten = || {
+        calls.set(calls.get() + 1);
+        if calls.get() > 10 {
+            Err(TransportError::Timeout)
+        } else {
+            Ok(())
+        }
+    };
+    assert_eq!(
+        redactor.scan_sse(frames.as_bytes(), &stop_after_ten),
+        Err(TransportError::Timeout)
+    );
+    assert!(calls.get() <= 11, "the scan ignored the check");
+    assert_eq!(redactor.scan_sse(frames.as_bytes(), &|| Ok(())), Ok(false));
+}
+
+#[test]
+fn a_complete_stream_without_framing_that_never_closes_ends_at_the_deadline() {
+    let s = setup_with("openai-api", 400, 8192);
+    let body = stream_with_text("openai-api", "x");
+    let mut wire = head("200 OK", &["Content-Type: text/event-stream".into()]);
+    wire.extend_from_slice(body.as_bytes());
+    let (addr, server) = serve(move |st| {
+        st.write_all(&wire).unwrap();
+        hold(st);
+    });
+    let started = Instant::now();
+    assert_eq!(
+        s.run(addr, &CancelToken::new()),
+        Err(TransportError::Timeout)
+    );
+    assert!(started.elapsed() < Duration::from_secs(3));
+    server.join().unwrap();
+}
+
+#[test]
+fn a_connection_reset_before_any_response_byte_is_io_not_truncated() {
+    let s = setup("openai-api");
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        // Wait for the request, then close without reading it: the kernel
+        // answers with a reset, not a FIN.
+        stream
+            .set_read_timeout(Some(Duration::from_secs(10)))
+            .unwrap();
+        let mut byte = [0u8; 1];
+        while stream.peek(&mut byte).map(|n| n == 0).unwrap_or(false) {}
+        drop(stream);
+    });
+    assert_eq!(s.run(addr, &CancelToken::new()), Err(TransportError::Io));
+    server.join().unwrap();
+}
+
+#[test]
+fn the_event_stream_media_type_is_case_insensitive() {
+    for host in HOSTS {
+        let s = setup(host);
+        let body = stream_with_text(host, "x");
+        let mut wire = head(
+            "200 OK",
+            &[
+                "Content-Type: Text/Event-Stream; charset=UTF-8".into(),
+                format!("Content-Length: {}", body.len()),
+            ],
+        );
+        wire.extend_from_slice(body.as_bytes());
+        let (addr, server) = serve(respond(wire));
+        assert!(s.run(addr, &CancelToken::new()).unwrap().stream_complete);
+        server.join().unwrap();
+    }
+}
+
+#[test]
+fn a_chunked_body_of_one_byte_chunks_within_the_limit_is_accepted() {
+    let s = setup_with("openai-api", 20_000, 32 * 1024);
+    // Comment lines pad the stream to about 30 KiB, each byte in its own chunk:
+    // 6 wire bytes per decoded byte, more than four times the limit.
+    let pad = format!(": {}\n", "p".repeat(30_000));
+    let body = format!("{pad}{}", stream_with_text("openai-api", "x"));
+    assert!(body.len() <= 32 * 1024);
+    let mut wire = chunked_head();
+    for byte in body.as_bytes() {
+        wire.extend_from_slice(format!("1\r\n{}\r\n", *byte as char).as_bytes());
+    }
+    wire.extend_from_slice(b"0\r\n\r\n");
+    let (addr, server) = serve(respond(wire));
+    assert!(s.run(addr, &CancelToken::new()).unwrap().stream_complete);
+    server.join().unwrap();
+}
+
+#[test]
+fn an_ipv6_scope_id_is_not_approved() {
+    use std::net::{Ipv6Addr, SocketAddrV6};
+    let scoped = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::LOCALHOST, 8123, 0, 1));
+    assert_eq!(
+        ApprovedEndpoint::new(SupplementalBridgeKind::OpenAiCompatibleApi, scoped),
+        Err(TransportError::Refused)
+    );
+    let plain = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::LOCALHOST, 8123, 0, 0));
+    assert!(ApprovedEndpoint::new(SupplementalBridgeKind::OpenAiCompatibleApi, plain).is_ok());
+}
+
+#[test]
+fn a_failed_terminal_event_is_an_error_not_a_successful_run() {
+    let cases = [
+        (
+            "openai-api",
+            event("response.created", serde_json::json!({}))
+                + &event("response.failed", serde_json::json!({})),
+        ),
+        (
+            "openai-api",
+            event("response.created", serde_json::json!({}))
+                + &event("response.incomplete", serde_json::json!({})),
+        ),
+        (
+            "anthropic-api",
+            event(
+                "message_start",
+                serde_json::json!({"message":{"type":"message","role":"assistant"}}),
+            ) + &event("error", serde_json::json!({})),
+        ),
+    ];
+    for (host, body) in cases {
+        let s = setup(host);
+        let (addr, server) = serve(respond(sse_response(body.as_bytes())));
+        assert_eq!(
+            s.run(addr, &CancelToken::new()),
+            Err(TransportError::ProviderFailed),
+            "{body}"
+        );
+        server.join().unwrap();
+    }
+}
+
+#[test]
+fn one_rule_decides_whether_the_last_frame_is_finished() {
+    let body = stream_with_text("openai-api", "x");
+    let outcome = TransportOutcome {
+        termination: TransportTermination::Exited,
+        exit_code: Some(0),
+        elapsed_ms: 1,
+    };
+    let decode = |bytes: &[u8]| {
+        OpenAiResponsesAdapter
+            .decode_stream(bytes, outcome.clone(), 8192)
+            .unwrap()
+            .stream_complete
+    };
+    assert!(decode(body.as_bytes()));
+    assert!(decode(body.replace('\n', "\r\n").as_bytes()));
+    assert!(!decode(format!("{body} ").as_bytes()));
+    assert!(!decode(format!("{body}\n ").as_bytes()));
+    // The transport applies the same rule and refuses the stream as cut.
+    let s = setup("openai-api");
+    let (addr, server) = serve(respond(sse_response(format!("{body} ").as_bytes())));
+    assert_eq!(
+        s.run(addr, &CancelToken::new()),
+        Err(TransportError::Truncated)
+    );
+    server.join().unwrap();
+}
+
+#[test]
+fn a_secret_of_the_maximum_size_builds_quickly_and_its_echo_is_refused() {
+    let value: String = (0..MAX_SECRET_BYTES)
+        .map(|i| char::from(b'A' + (i % 26) as u8))
+        .collect();
+    assert_eq!(value.len(), MAX_SECRET_BYTES);
+    let s = setup("openai-api");
+    let started = Instant::now();
+    let credential = Secret::new(value.clone()).unwrap();
+    let (listener_addr, server) = {
+        let body = stream_with_text("openai-api", &value);
+        serve(respond(sse_response(body.as_bytes())))
+    };
+    let transport = ProviderTransport::new(
+        ApprovedEndpoint::new(s.kind, listener_addr).unwrap(),
+        credential,
+    );
+    assert!(
+        started.elapsed() < Duration::from_secs(2),
+        "building the redactor took {:?}",
+        started.elapsed()
+    );
+    // `Credential` here would mean the automaton build was swallowed into None.
+    assert_eq!(
+        transport.execute(
+            s.adapter,
+            &s.prepared,
+            &s.key,
+            &s.validated,
+            "run-1",
+            &CancelToken::new()
+        ),
+        Err(TransportError::SecretEcho)
+    );
+    server.join().unwrap();
+}

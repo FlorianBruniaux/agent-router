@@ -40,6 +40,7 @@ Execution, workflows and runtime
 - Typed structured validation contracts in a new `router-validation` crate. Library only: no I/O, no process spawning, no command runner. (#52)
 - Typed multimodal input and JSON output contracts in `router-asset-contracts`. (#56)
 - Inert validation of adapter descriptors in `router-adapter-api`. Descriptors are data, never authority, and `activation` must be `none`. (#54)
+- Supervised loopback provider transport in `router-bridge-contract`, behind the default-off `loopback-transport` feature ([ADR 0014](docs/adr/0014-loopback-provider-transport.md)). It sends a verified `PreparedProviderRequest` to an approved loopback endpoint with bounded time and size, normalized errors and redaction by refusal. Library only: not wired into the CLI or the runtime, no TLS, no credential broker, no real provider canary. (#58)
 
 CLI and integrations
 
@@ -66,6 +67,7 @@ Release and supply chain
 - Two environment-dependent workspace test failures. The competing-processes budget test now writes its result through a staging file and rename, so the parent no longer reads an empty file under load. (#45)
 - Test-only: stabilized historical expiry setup in runtime tests. (#17)
 - Test-only: added diagnostics for native version cancellation failures in runtime tests. (#24)
+- Review fixes to the loopback transport, the decision backends and the local API. Transport: linear multi-pattern redaction scan that observes the deadline and cancellation, bounded frame and path sizes before the scan, a provider failure event (`response.failed`, `response.incomplete`, Anthropic `error`) is now `TransportError::ProviderFailed` instead of a successful run, socket errors before any response byte are `Io`, case-insensitive media type, a chunked cap that accepts one-byte chunks, one rule for an unfinished last frame, IPv6 scope ids refused, redactor built once. Decision: a legacy entropy `confidence` no longer stands in for the answer probability, and `Content-Length` takes digits only. Local API: documented that `RouteHandler::route` is outside the slot time bound. `router-bridge-contract` gains `aho-corasick` (already in `Cargo.lock`) as an optional dependency of the feature.
 
 ### Security
 
