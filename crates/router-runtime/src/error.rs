@@ -26,6 +26,8 @@ pub enum RuntimeError {
     SourceChanged,
     #[error("runtime.scope.denied")]
     Scope,
+    #[error("runtime.workspace.nested_git")]
+    NestedGit,
     #[error("runtime.sandbox.unknown_or_unsafe")]
     Sandbox,
     #[error("runtime.resource.unsupported: {0}")]

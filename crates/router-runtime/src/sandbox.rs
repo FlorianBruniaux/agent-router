@@ -302,6 +302,9 @@ impl SandboxSupervisor for SeatbeltSandbox {
         } else {
             vec![]
         };
+        // Seatbelt accepts scope paths that do not exist yet; a missing tail is
+        // checked through its deepest existing ancestor.
+        require_canonical_paths(&reads, &writes, false)?;
         let profile = seatbelt_profile(&reads, &writes, policy.network)?;
         let mut command = checked_seatbelt_command(
             &self.wrapper_hash,
@@ -318,6 +321,39 @@ impl SandboxSupervisor for SeatbeltSandbox {
         }
         Ok(command)
     }
+}
+/// Guard shared by both sandboxes: every readable root (which includes the
+/// working directory) and writable path must already be canonical, so a symlink
+/// or `..` alias cannot redirect a grant, and `/` is never readable. With
+/// `writes_exist` false a write path that does not exist yet passes when its
+/// deepest existing ancestor is canonical; bubblewrap binds paths and needs them
+/// to exist.
+pub(crate) fn require_canonical_paths(
+    reads: &[PathBuf],
+    writes: &[PathBuf],
+    writes_exist: bool,
+) -> Result<()> {
+    for root in reads {
+        if fs::canonicalize(root)? != *root || root == Path::new("/") {
+            return Err(RuntimeError::Sandbox);
+        }
+    }
+    for root in writes {
+        let mut existing = root.as_path();
+        let canonical = loop {
+            match fs::canonicalize(existing) {
+                Ok(path) => break path,
+                Err(e) if !writes_exist && e.kind() == std::io::ErrorKind::NotFound => {
+                    existing = existing.parent().ok_or(RuntimeError::Sandbox)?;
+                }
+                Err(e) => return Err(e.into()),
+            }
+        };
+        if canonical != existing {
+            return Err(RuntimeError::Sandbox);
+        }
+    }
+    Ok(())
 }
 fn checked_seatbelt_command(
     wrapper_hash: &str,
@@ -455,6 +491,39 @@ mod tests {
         assert_eq!(classify_dns(Some(true), None), Unknown);
         assert_eq!(classify_dns(Some(false), Some(false)), Unknown);
         assert_eq!(classify_dns(None, Some(true)), Unknown);
+    }
+    #[test]
+    fn a_working_directory_behind_a_symlink_is_refused() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        fs::create_dir_all(root.join("real/src")).unwrap();
+        std::os::unix::fs::symlink(root.join("real"), root.join("link")).unwrap();
+        let cwd = root.join("real");
+        let aliased = root.join("link");
+        for exist in [false, true] {
+            require_canonical_paths(&[cwd.clone()], &[cwd.join("src")], exist).unwrap();
+            assert!(matches!(
+                require_canonical_paths(&[aliased.clone()], &[], exist),
+                Err(RuntimeError::Sandbox)
+            ));
+            assert!(matches!(
+                require_canonical_paths(&[cwd.clone()], &[aliased.join("src")], exist),
+                Err(RuntimeError::Sandbox)
+            ));
+        }
+        assert!(matches!(
+            require_canonical_paths(&[PathBuf::from("/")], &[], false),
+            Err(RuntimeError::Sandbox)
+        ));
+        // A scope path that does not exist yet is fine for Seatbelt only.
+        let fresh = cwd.join("new/dir");
+        require_canonical_paths(&[cwd.clone()], &[fresh.clone()], false).unwrap();
+        assert!(require_canonical_paths(&[cwd], &[fresh], true).is_err());
+        // The alias is caught even when the missing tail hides behind it.
+        assert!(matches!(
+            require_canonical_paths(&[], &[aliased.join("new/dir")], false),
+            Err(RuntimeError::Sandbox)
+        ));
     }
     #[test]
     fn quote_escapes_and_refuses_unsafe_paths() {

@@ -153,6 +153,47 @@ pub(crate) fn safe_scope(root: &Path, scope: &[String]) -> Result<()> {
     }
     Ok(())
 }
+/// Bounds for the pre-git walk of a produced worktree. Git itself scans every
+/// entry during `add --all`, so the walk is no worse than the command it guards;
+/// past either bound the result is `Limit`, never a partial pass.
+const NESTED_GIT_MAX_ENTRIES: usize = 500_000;
+const NESTED_GIT_MAX_DEPTH: usize = 128;
+/// Refuses any entry named `.git` (ASCII case-insensitive) other than the
+/// worktree's own at `root`. Bubblewrap remounts only a scope-root `.git`
+/// read-only, so a worker can leave a nested repository whose config the host
+/// git would otherwise read outside the sandbox. Entries are inspected with
+/// `symlink_metadata`, so symlinks are never followed.
+pub(crate) fn refuse_nested_git(root: &Path) -> Result<()> {
+    let mut pending = vec![(root.to_path_buf(), 0usize)];
+    let mut seen = 0usize;
+    while let Some((dir, depth)) = pending.pop() {
+        if depth > NESTED_GIT_MAX_DEPTH {
+            return Err(RuntimeError::Limit);
+        }
+        for entry in fs::read_dir(&dir)? {
+            let entry = entry?;
+            seen += 1;
+            if seen > NESTED_GIT_MAX_ENTRIES {
+                return Err(RuntimeError::Limit);
+            }
+            let path = entry.path();
+            let is_git = entry
+                .file_name()
+                .as_encoded_bytes()
+                .eq_ignore_ascii_case(b".git");
+            if is_git {
+                if dir == root && entry.file_name() == ".git" {
+                    continue;
+                }
+                return Err(RuntimeError::NestedGit);
+            }
+            if fs::symlink_metadata(&path)?.is_dir() {
+                pending.push((path, depth + 1));
+            }
+        }
+    }
+    Ok(())
+}
 pub(crate) async fn create(
     root: &Path,
     storage: &Path,
@@ -194,6 +235,9 @@ pub(crate) async fn patch_observed(
     observer: Option<&dyn CaptureObserver>,
 ) -> Result<(Vec<u8>, Vec<String>)> {
     safe_scope(worktree, scope)?;
+    // Before the first host git command: a worker-made nested repository must
+    // not be read by git outside the sandbox.
+    refuse_nested_git(worktree)?;
     // The private worktree index is isolated from the user's repository index.
     // Intent-to-add permits binary/untracked additions in a reviewable patch.
     git_observed(
@@ -446,6 +490,59 @@ mod scope_tests {
         assert!(matches!(
             patch(&root, &["src".into()], &head).await,
             Err(RuntimeError::Scope)
+        ));
+    }
+
+    #[tokio::test]
+    async fn nested_git_entries_fail_the_patch_before_any_git_call() {
+        struct Counting(std::sync::atomic::AtomicUsize);
+        impl CaptureObserver for Counting {
+            fn before_capture(&self) -> Result<()> {
+                self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                Ok(())
+            }
+            fn after_capture(&self) -> Result<()> {
+                Ok(())
+            }
+        }
+        for (name, file) in [
+            ("dir with config", "src/sub/.git/config"),
+            ("file", "src/a/b/.git"),
+            ("upper case", "src/sub/.GIT"),
+        ] {
+            let (_temp, root, head) = repo().await;
+            let file = root.join(file);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "[core]\n").unwrap();
+            let observer = Counting(Default::default());
+            assert!(
+                matches!(
+                    patch_observed(&root, &["src".into()], &head, Some(&observer)).await,
+                    Err(RuntimeError::NestedGit)
+                ),
+                "{name}"
+            );
+            assert_eq!(observer.0.load(std::sync::atomic::Ordering::SeqCst), 0);
+        }
+    }
+
+    #[test]
+    fn nested_git_walk_allows_the_root_git_and_does_not_follow_symlinks() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        fs::create_dir_all(root.join(".git")).unwrap();
+        fs::create_dir_all(root.join("src/.github")).unwrap();
+        refuse_nested_git(&root).unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        fs::create_dir(outside.path().join(".git")).unwrap();
+        std::os::unix::fs::symlink(outside.path(), root.join("src/link")).unwrap();
+        refuse_nested_git(&root).unwrap();
+        // A root entry spelled in another case is not the expected `.git`.
+        let other = tempfile::tempdir().unwrap();
+        fs::create_dir(other.path().join(".GIT")).unwrap();
+        assert!(matches!(
+            refuse_nested_git(other.path()),
+            Err(RuntimeError::NestedGit)
         ));
     }
 

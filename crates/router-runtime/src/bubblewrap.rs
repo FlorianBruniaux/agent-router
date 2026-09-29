@@ -3,7 +3,7 @@
 use crate::{
     Cancellation, Result, RuntimeError, SandboxPolicy, SandboxSupervisor,
     process::capture,
-    sandbox::{binary_hash, validate_configuration},
+    sandbox::{binary_hash, require_canonical_paths, validate_configuration},
     workspace::safe_scope,
 };
 use router_types::{ExecutionSandbox, PreparedRun};
@@ -220,8 +220,9 @@ impl SandboxSupervisor for BubblewrapSandbox {
 /// case-insensitively, without following symlinks. Only the scope root is
 /// inspected: a recursive walk fails (or costs seconds) on scopes containing
 /// `node_modules` or `target`. A `.git` symlink is refused. Nested `.git`
-/// entries, and any created during the run, are not remounted; git never tracks
-/// a path named `.git` and the diff scope check rejects other-case spellings.
+/// entries, and any created during the run, are not remounted; the host refuses
+/// any nested `.git` in the worktree before its first git command
+/// (`workspace::refuse_nested_git`).
 fn git_entries(root: &Path) -> Result<Vec<PathBuf>> {
     if !fs::symlink_metadata(root)?.is_dir() {
         return Ok(vec![]);
@@ -280,16 +281,11 @@ fn wrap(
         }
     }
     command.args(["--proc", "/proc", "--dev", "/dev"]);
+    require_canonical_paths(reads, writes, true)?;
     for root in reads {
-        if fs::canonicalize(root)? != *root || root == Path::new("/") {
-            return Err(RuntimeError::Sandbox);
-        }
         command.arg("--ro-bind").arg(root).arg(root);
     }
     for root in writes {
-        if fs::canonicalize(root)? != *root {
-            return Err(RuntimeError::Sandbox);
-        }
         command.arg("--bind").arg(root).arg(root);
         // Seatbelt denies writes to every `.git` path. Bubblewrap cannot deny
         // by name, so remount a `.git` at the scope root read-only over the bind.
