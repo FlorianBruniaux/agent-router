@@ -9,6 +9,7 @@ use std::sync::MutexGuard;
 /// Not serializable: the authority is a live store lock, not a JSON claim.
 /// Holding it serializes configure/purge with the one explicitly requested send.
 pub struct SidecarExportGuard<'a> {
+    store: &'a FeedbackStore,
     _connection: MutexGuard<'a, Connection>,
     projection: SidecarExportProjection,
     valid_until_unix_seconds: u64,
@@ -16,6 +17,14 @@ pub struct SidecarExportGuard<'a> {
 pub enum SidecarExportProjection {
     Outcome(SidecarOutcome),
     Feedback(SidecarHumanFeedback),
+}
+impl Drop for SidecarExportGuard<'_> {
+    fn drop(&mut self) {
+        // Runs before `_connection` is released.
+        if let Ok(mut holder) = self.store.export_holder.lock() {
+            *holder = None;
+        }
+    }
 }
 impl SidecarExportGuard<'_> {
     /// Exclusive retention boundary. Bound the complete outbound exchange to it.
@@ -29,7 +38,8 @@ impl SidecarExportGuard<'_> {
 impl FeedbackStore {
     /// Authorize exactly this event at its current consent revision. This method
     /// makes no network call. The caller separately authorizes the destination.
-    /// The live guard must outlive the bounded network exchange.
+    /// The live guard must outlive the bounded network exchange. Calling any store
+    /// method from the thread holding it returns `Locked` instead of deadlocking.
     pub fn authorize_sidecar_export(
         &self,
         sequence: u64,
@@ -100,7 +110,13 @@ impl FeedbackStore {
         }
         let projection = project(&event)?;
         tx.commit()?;
+        *self
+            .export_holder
+            .lock()
+            .map_err(|_| FeedbackError::Integrity("lock poisoned"))? =
+            Some(std::thread::current().id());
         Ok(SidecarExportGuard {
+            store: self,
             _connection: db,
             projection,
             valid_until_unix_seconds: observed + consent.preferences.retention_seconds + 1,

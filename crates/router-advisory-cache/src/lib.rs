@@ -158,6 +158,8 @@ fn valid_key(value: &str) -> bool {
 }
 
 /// Parses and authenticates one entry against the key it is stored under.
+/// `Expired` also covers `now < created_unix`: an authenticated entry dated in
+/// the future (clock skew) is not live, so a full-directory sweep removes it.
 fn decode(
     mac_key: &MacKey,
     cache_key: &str,
@@ -235,10 +237,20 @@ impl AdvisoryCache {
         let bytes = serde_json::to_vec(&entry).map_err(|_| CacheError::Invalid)?;
         // A live, authenticated entry is kept (`Exists`). An expired, malformed,
         // unauthenticated or unreadable one must not block the key forever.
-        self.root
-            .publish(&format!("{cache_key}.json"), &bytes, &|existing| {
-                decode(mac_key, cache_key, existing, now_unix).is_err()
-            })
+        // When the directory is full, only entries that are authenticated and
+        // expired, or unauthenticated, are swept. The cache stays advisory:
+        // sweeping never deletes a live entry.
+        self.root.publish(
+            &format!("{cache_key}.json"),
+            &bytes,
+            &|existing| decode(mac_key, cache_key, existing, now_unix).is_err(),
+            &|key, existing| {
+                matches!(
+                    decode(mac_key, key, existing, now_unix),
+                    Err(MissReason::Expired | MissReason::Unauthenticated)
+                )
+            },
+        )
     }
 
     /// Every failure mode is a miss. A hit is still only a proposal.

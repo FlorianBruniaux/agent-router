@@ -29,7 +29,8 @@ Paths, user labels and file contents do not appear in diagnostics or errors.
 Reads are limited to 128 artifacts, 4 MiB per file and 16 MiB cumulatively.
 Unix traversal opens every directory relative to an existing directory
 descriptor with `O_NOFOLLOW`, then opens the final regular file with the same
-rule. Symlinks, traversal and nonregular files are rejected; concurrent parent
+rule. Symlinks, traversal and nonregular files are rejected with the path rejection
+code (`PathRejected`), never as an unreadable file; concurrent parent
 renames cannot redirect the descriptor traversal. Other platforms return an
 explicit unsupported error. Pass a canonical root such as `/private/tmp` on
 macOS; `/tmp` itself is a symlink and is rejected.
@@ -142,7 +143,11 @@ bound source I/O and its busy handler; this cooperative check is not an OS deadl
 Busy/locked or incomplete copies return an unavailable/limit error, never a valid
 report. Both success and failure release the transaction created by the diagnostic.
 The temporary connection is then checked with the same defensive SQLite settings,
-integrity queries and VM/time limits as deep mode. No source settings are changed.
+integrity queries and VM/time limits as deep mode. Those limits are 4,000 progress
+ticks (1,000 VDBE steps each) and a 2 s wall-clock budget, shared by all queries.
+The densest valid 4 MiB database measured (74,800 rows, two indexes) needs 1,197
+ticks for `integrity_check`, so a valid database under the size cap is never
+reported as `InputLimit`; a test covers a dense near-cap database. No source settings are changed.
 
 The report contains a version, integrity code, SHA-256 of the serialized in-memory
 snapshot, byte count and query count. It exports no row, schema, pathname or SQL

@@ -111,6 +111,13 @@ impl Fixture {
         Self::with_failure(BackendFailurePolicy::DeterministicFallback)
     }
     fn with_failure(failure_policy: BackendFailurePolicy) -> Self {
+        Self::build(failure_policy, "test-v1")
+    }
+    /// Same trust roots, a distinct artifact (hence a distinct promotion hash).
+    fn with_version(version: &str) -> Self {
+        Self::build(BackendFailurePolicy::DeterministicFallback, version)
+    }
+    fn build(failure_policy: BackendFailurePolicy, version: &str) -> Self {
         let keys = Keys::new();
         let authorities = keys.authorities();
         let request: PhaseRouteRequest = serde_json::from_slice(include_bytes!(
@@ -141,7 +148,7 @@ impl Fixture {
         let artifact = BackendArtifact {
             schema_version: 1,
             backend_id: "synthetic-semantic".into(),
-            version: "test-v1".into(),
+            version: version.into(),
             artifact_sha256: "a".repeat(64),
             implementation_sha256: "b".repeat(64),
             protocol_sha256: protocol_hash(),
@@ -353,6 +360,16 @@ impl Fixture {
         now: u64,
         nonce: &str,
     ) -> Signed<ActivationApproval> {
+        self.approval_with_nonce(state, action, target, now, nonce.repeat(64))
+    }
+    fn approval_with_nonce(
+        &self,
+        state: &BackendActivationState,
+        action: ActivationAction,
+        target: &str,
+        now: u64,
+        nonce_sha256: String,
+    ) -> Signed<ActivationApproval> {
         self.keys.sign(
             AuthorityRole::Approver,
             ActivationApproval {
@@ -362,7 +379,7 @@ impl Fixture {
                 target_hash: target.into(),
                 issued_at_unix_seconds: now,
                 expires_at_unix_seconds: now + 100,
-                nonce_sha256: nonce.repeat(64),
+                nonce_sha256,
             },
         )
     }

@@ -353,7 +353,8 @@ fn body_symlinks_and_parent_traversal_are_rejected() {
     )
     .unwrap();
     let report = diagnose_deep(&input, 110).unwrap();
-    assert!(has(&report, DeepDoctorCode::InputUnavailable));
+    assert!(has(&report, DeepDoctorCode::PathRejected));
+    assert!(!has(&report, DeepDoctorCode::InputUnavailable));
     assert_eq!(report.examined_body_count, 0);
     input.retrieval_bindings[0].body_root = Some("../escape".into());
     assert_eq!(diagnose_deep(&input, 110), Err(DoctorError::Invalid));

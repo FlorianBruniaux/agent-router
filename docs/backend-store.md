@@ -94,9 +94,23 @@ A failed candidate never changes the published head. A crash before rename leave
 the previous snapshot authoritative. A complete renamed snapshot is verified on
 restart. A crash between rename and directory sync follows the filesystem's
 usual durability boundary; the library does not promise which of the two valid
-snapshots survives a power loss. A final directory-sync error is returned as an
-I/O failure even if rename already happened: reopen and inspect the head before
-retrying, and never blindly generate another approval.
+snapshots survives a power loss. A final directory-sync error after the rename
+returns `backend_store.published_durability_unknown`, distinct from
+`backend_store.io` (nothing published, including a failed rename) and from every
+earlier failure: the new head may already be visible and its durability is
+UNKNOWN. Reopen and inspect the head before retrying, and never blindly generate
+another approval. Policy: ADR 0017
+(`docs/adr/0017-bounded-retention-and-publish-durability.md`).
+
+Bounds: `MAX_EVENTS` (128) is a lifetime cap on activation events, and
+`MAX_PROMOTIONS` is derived as `MAX_EVENTS / 2` (64). An activation requires no
+active promotion, so each promotion costs at least an activate and a rollback
+event; the event cap is the binding limit and refuses further activations with
+`backend_store.limit`. Nothing is pruned: replay from genesis needs every event
+and promotion to rebuild used nonces and artifact versions, and dropping either
+would reopen nonce and version replay. Checkpoint compaction (a signed restore
+from a snapshot with nonce and version carry-over) is deferred; see ADR 0017
+(`docs/adr/0017-bounded-retention-and-publish-durability.md`).
 
 A leftover staging file is ignored by readers. The next exclusive writer removes
 only that exact private, regular, single-link `state.pending` before staging its

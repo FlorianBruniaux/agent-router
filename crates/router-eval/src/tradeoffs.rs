@@ -2,12 +2,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use router_adapter_api::content_digest;
+use router_catalog::Catalog;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     EvalError, MetricsBudget, MetricsCase, MetricsCohort, MetricsProvenance, ObservedOutcome,
-    ProductMetricsReport, ReplayRecord, Result, evaluate_metrics, hash, price_usage, text,
-    valid_hash,
+    PricingTable, ProductMetricsReport, ReplayRecord, Result, TokenUsage, evaluate_metrics, hash,
+    price_usage, text, valid_hash,
 };
 
 pub const MAX_TRADEOFF_CELLS: usize = 8_000;
@@ -336,7 +337,7 @@ pub fn evaluate_tradeoffs(
                 {
                     cost_unknown += 1;
                 } else {
-                    let catalog = router_catalog::Catalog::from_json(
+                    let catalog = Catalog::from_json(
                         &serde_json::to_vec(&record.input().catalog)
                             .map_err(|_| EvalError::Catalog)?,
                     )
@@ -348,7 +349,7 @@ pub fn evaluate_tradeoffs(
                             .is_some_and(|cell| cell.usage_complete)
                     };
                     let choice_cost = if usage_complete(&case.selected_policy_id) {
-                        price_usage(&record.input().pricing, &chosen.usage, &catalog).ok()
+                        known_price(&record.input().pricing, &chosen.usage, &catalog)?
                     } else {
                         None
                     };
@@ -363,16 +364,16 @@ pub fn evaluate_tradeoffs(
                                 .map(|o| (id, o))
                         })
                         .collect();
-                    let costs: Vec<_> = successful
+                    let costs = successful
                         .iter()
                         .map(|(id, obs)| {
                             if usage_complete(id) {
-                                price_usage(&record.input().pricing, &obs.usage, &catalog).ok()
+                                known_price(&record.input().pricing, &obs.usage, &catalog)
                             } else {
-                                None
+                                Ok(None)
                             }
                         })
-                        .collect();
+                        .collect::<Result<Vec<_>>>()?;
                     if let (Some(actual), Some(best)) = (
                         choice_cost,
                         costs
@@ -439,4 +440,87 @@ pub fn evaluate_tradeoffs(
         incomplete,
         incomparable,
     })
+}
+
+/// Only a price genuinely absent from the table is unknown cost. An unknown
+/// model, an overflow or a limit is an evaluation error, never silently unknown.
+fn known_price(
+    pricing: &PricingTable,
+    usage: &[TokenUsage],
+    catalog: &Catalog,
+) -> Result<Option<u64>> {
+    match price_usage(pricing, usage, catalog) {
+        Ok(cost) => Ok(Some(cost)),
+        Err(EvalError::UnknownPricing) => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::TokenPrice;
+    use router_types::ModelId;
+
+    fn catalog() -> Catalog {
+        Catalog::from_json(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap()
+    }
+    fn pricing(models: &[(&str, u64)]) -> PricingTable {
+        PricingTable {
+            schema_version: 1,
+            version: "fixture".into(),
+            source: "fixture".into(),
+            observed_at_unix_seconds: 100,
+            models: models
+                .iter()
+                .map(|(name, rate)| {
+                    (
+                        ModelId::parse(*name).unwrap(),
+                        TokenPrice {
+                            input_microusd_per_million: *rate,
+                            cached_input_microusd_per_million: *rate,
+                            output_microusd_per_million: *rate,
+                        },
+                    )
+                })
+                .collect(),
+        }
+    }
+    fn usage(model: &str, input_tokens: u64) -> TokenUsage {
+        TokenUsage {
+            model: ModelId::parse(model).unwrap(),
+            input_tokens,
+            cached_input_tokens: 0,
+            output_tokens: 0,
+        }
+    }
+
+    #[test]
+    fn only_a_missing_price_is_an_unknown_cost() {
+        let catalog = catalog();
+        let priced = pricing(&[("fixture-best", 1_000_000)]);
+        assert!(matches!(
+            known_price(&priced, &[usage("fixture-best", 7)], &catalog),
+            Ok(Some(7))
+        ));
+        assert!(matches!(
+            known_price(&pricing(&[]), &[usage("fixture-best", 7)], &catalog),
+            Ok(None)
+        ));
+        assert!(matches!(
+            known_price(&priced, &[usage("not-in-catalog", 7)], &catalog),
+            Err(EvalError::UnknownModel)
+        ));
+        assert!(matches!(
+            known_price(
+                &pricing(&[("fixture-best", u64::MAX)]),
+                &[usage("fixture-best", u64::MAX)],
+                &catalog
+            ),
+            Err(EvalError::CostOverflow)
+        ));
+    }
 }

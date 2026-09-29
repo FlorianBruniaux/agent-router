@@ -6,7 +6,7 @@ use router_types::PhasePolicy;
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
 
-use crate::store::{ensure_clock, read_consent, timestamp};
+use crate::store::{ensure_clock, read_consent, scrub, snapshot_in, timestamp};
 use crate::{FeedbackError, FeedbackStore, LearningRules, Result, hash, valid_hash};
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -182,11 +182,25 @@ impl FeedbackStore {
     ) -> Result<PolicyArtifact> {
         rules.validate()?;
         validate_policy(&policy)?;
-        let stats = self.statistics(now)?;
+        timestamp(now)?;
+        let mut db = self.lock()?;
+        // Expiry is committed and scrubbed first, so a refused gate below still
+        // enforces retention. The store lock is held from here to the write
+        // commit: the samples the gate counts are the ones `statistics_hash`
+        // commits to, and no other writer can change them in between.
+        let (events, removed) = {
+            let tx = db.transaction()?;
+            let (events, _, removed) = snapshot_in(&tx, now, true)?;
+            tx.commit()?;
+            (events, removed)
+        };
+        if removed > 0 {
+            scrub(&db)?;
+        }
+        let stats = crate::learning::statistics(&events)?;
         if stats.objective.verified_samples() < u64::from(rules.minimum_verified_samples) {
             return Err(FeedbackError::Gate("insufficient verified samples"));
         }
-        let mut db = self.lock()?;
         let tx = db.transaction()?;
         ensure_clock(&tx, now)?;
         if !read_consent(&tx)?.preferences.learning_enabled {

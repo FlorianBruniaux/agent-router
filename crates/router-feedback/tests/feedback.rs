@@ -793,3 +793,48 @@ fn quarantine_is_explicit_signed_and_returns_to_the_accepted_predecessor() {
             .is_err()
     );
 }
+
+#[test]
+fn a_refused_proposal_gate_still_persists_expiry_and_stats_hash_matches_statistics() {
+    let (temp, store) = setup();
+    store
+        .configure(
+            FeedbackPreferences {
+                retention_seconds: 10,
+                ..prefs()
+            },
+            100,
+        )
+        .unwrap();
+    let old = store.record(input("old", 101), 101).unwrap();
+    store
+        .register_baseline(PhasePolicy::default(), 101)
+        .unwrap();
+    let candidate = PhasePolicy {
+        version: "offline-v1".into(),
+        cost_weight: 2,
+        ..Default::default()
+    };
+    let strict = LearningRules {
+        minimum_verified_samples: 5,
+        ..rules()
+    };
+    // The only event has expired by 200: the gate refuses, and the expiry it
+    // computed is committed and scrubbed anyway.
+    assert!(matches!(
+        store.propose_policy(candidate.clone(), strict, 200),
+        Err(FeedbackError::Gate("insufficient verified samples"))
+    ));
+    let db = fs::read(temp.path().join("feedback/feedback.sqlite3")).unwrap();
+    assert!(
+        !db.windows(old.event_hash.len())
+            .any(|w| w == old.event_hash.as_bytes())
+    );
+    // Accepted proposals commit to the statistics the gate counted.
+    store.record(input("fresh", 201), 201).unwrap();
+    let proposal = store.propose_policy(candidate, rules(), 202).unwrap();
+    assert_eq!(
+        proposal.statistics_hash.as_deref(),
+        Some(store.statistics(202).unwrap().content_hash.as_str())
+    );
+}

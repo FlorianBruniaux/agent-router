@@ -179,6 +179,11 @@ fn symlink_parents_leaf_and_private_permissions_fail_closed() {
             .filter(|c| c.kind == DoctorArtifactKind::ManagedFile)
             .all(|c| c.configuration == DiagnosticState::Fail && c.content_sha256.is_none())
     );
+    assert_eq!(
+        check(&report, "parent/secret").code,
+        DoctorCode::PathRejected
+    );
+    assert_eq!(check(&report, "leaf").code, DoctorCode::PathRejected);
     fs::write(temp.path().join("auth"), "UNREAD_CREDENTIAL").unwrap();
     fs::set_permissions(temp.path().join("auth"), fs::Permissions::from_mode(0o644)).unwrap();
     let request = request(
