@@ -377,7 +377,7 @@ L'[index complet de la documentation](docs/README.fr.md) classe tous les guides 
 
 | Pour commencer | Pour aller plus loin |
 | --- | --- |
-| [Install Agent Router](docs/install.fr.md) | [Changelog](CHANGELOG.md) |
+| [Installer Agent Router](docs/install.fr.md) | [Changelog](CHANGELOG.md) |
 | [Serve the local route API](docs/local-api.md) | [Build a verifiable local release](docs/release-local.md) |
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
 | [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |

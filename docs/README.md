@@ -2,7 +2,8 @@
 
 English | [Français](README.fr.md)
 
-Every page under `docs/`, grouped by what you want to do. Pages marked (FR) are
+Every guide, specification and reference page under `docs/`, grouped by what
+you want to do. Pages marked (FR) are
 written in French.
 
 ## Get started

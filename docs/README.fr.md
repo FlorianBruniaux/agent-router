@@ -2,7 +2,8 @@
 
 [English](README.md) | Français
 
-Toutes les pages de `docs/`, classées par besoin. Les pages sont en anglais,
+Tous les guides, spécifications et pages de référence de `docs/`, classés par
+besoin. Les pages sont en anglais,
 sauf celles marquées (FR).
 
 ## Démarrer

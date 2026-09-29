@@ -89,7 +89,7 @@ Puis routez une fixture et lisez l'explication :
   --decision "${TMPDIR:-/tmp}/agent-router-decision.json"
 ```
 
-Sortie attendue, hors ligne du hash de décision :
+Sortie attendue, à l'exception de la ligne du hash de décision :
 
 ```text
 Preset: plan-execute-verify
@@ -99,8 +99,7 @@ Missing evidence: 0
 ```
 
 `route` sort en `0` pour une sélection, `3` pour un résultat valide sans route,
-`2` pour une entrée invalide et `4` pour une erreur interne. La table complète
-des codes de sortie est dans [la sortie de la CLI](cli-output.md).
+`2` pour une entrée invalide et `4` pour une erreur interne.
 
 ### Diagnostic
 
@@ -168,6 +167,12 @@ paquets avec `-p`.
 
 `semantic-ranking` est une option de la bibliothèque `router-retrieval`, pas de
 la CLI. La CLI l'expose sous le nom `semantic-retrieval`.
+
+Confirmé sur une compilation de ce dépôt : `agent-router serve --help` existe
+avec `--features local-api` (options `--state-dir`, `--max-connections`,
+`--request-deadline-ms`). Les autres compilations avec options n'ont pas été
+lancées pour cette page ; leurs effets viennent du manifeste Cargo et des guides
+ci-dessus.
 
 ## Désinstaller
 
