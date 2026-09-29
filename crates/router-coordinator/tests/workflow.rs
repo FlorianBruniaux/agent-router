@@ -1197,3 +1197,250 @@ async fn semantic_step_binds_secondary_and_reopens_without_rerouting_baseline() 
             .is_empty()
     );
 }
+
+fn control_states(f: &Fixture) -> Vec<String> {
+    let db =
+        rusqlite::Connection::open(f.temp.path().join("coordinator/coordinator.sqlite3")).unwrap();
+    let mut query = db
+        .prepare("SELECT state FROM controls ORDER BY rowid")
+        .unwrap();
+    query
+        .query_map([], |r| r.get::<_, String>(0))
+        .unwrap()
+        .map(|r| r.unwrap())
+        .collect()
+}
+
+#[tokio::test]
+async fn rejected_control_can_be_requested_again() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let root = f.temp.path().join("coordinator");
+    let instance = &f.definition.execution.instance_id;
+    let id = request_approval(&root, instance, "plan", 0, pending.approval_digest()).unwrap();
+    // The control ended rejected, for example after a transient service error.
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute("UPDATE controls SET state='rejected'", [])
+        .unwrap();
+    assert_eq!(coordinator.service_controls(&f.definition).unwrap(), 0);
+    let again = request_approval(&root, instance, "plan", 0, pending.approval_digest()).unwrap();
+    assert_eq!(again, id);
+    assert_eq!(control_states(&f), ["pending"]);
+    assert_eq!(coordinator.service_controls(&f.definition).unwrap(), 1);
+    assert_eq!(control_states(&f), ["applied"]);
+    assert_eq!(
+        runtime.summary(&pending.summary().run_id).unwrap().state,
+        RunState::Queued
+    );
+}
+
+#[tokio::test]
+async fn approval_applied_before_a_crash_is_not_recorded_as_rejected() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let root = f.temp.path().join("coordinator");
+    request_approval(
+        &root,
+        &f.definition.execution.instance_id,
+        "plan",
+        0,
+        pending.approval_digest(),
+    )
+    .unwrap();
+    // The approval and the run happen, but the control was never settled.
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute("UPDATE controls SET state='pending'", [])
+        .unwrap();
+    let outcome = run(&coordinator, &f.definition, &pending, PLAN, &FakeSupervisor).await;
+    assert_eq!(outcome.run.state, RunState::Verifying);
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute("UPDATE controls SET state='pending'", [])
+        .unwrap();
+    assert_eq!(coordinator.service_controls(&f.definition).unwrap(), 1);
+    assert_eq!(control_states(&f), ["applied"]);
+}
+
+#[tokio::test]
+async fn definition_rejects_producer_outputs_above_the_consumer_input_limit() {
+    let f = Fixture::new().await;
+    let mut definition = f.definition.clone();
+    // execute consumes plan output (max_bytes 8192) plus nothing else.
+    definition.max_input_bytes = 8191;
+    definition.definition_sha256.clear();
+    assert!(matches!(
+        seal_definition(definition.clone()),
+        Err(CoordinatorError::Invalid("input bytes"))
+    ));
+    definition.max_input_bytes = 32 * 1024;
+    seal_definition(definition).unwrap();
+}
+
+#[tokio::test]
+async fn material_limit_is_checked_before_side_effects_and_terminal_steps_release_it() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone()).with_material_limit(1);
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let (context, request) = f.material("second");
+    let proof = f
+        .router
+        .validate_receipt(&context, &f.router.route(&context).unwrap())
+        .unwrap();
+    let refused = c
+        .review_step(
+            &f.definition,
+            "second",
+            0,
+            &f.router,
+            &context,
+            &proof,
+            request,
+        )
+        .await;
+    assert!(matches!(refused, Err(CoordinatorError::Limit)));
+    let status = c.status(&f.definition).unwrap();
+    let second = status.nodes.iter().find(|n| n.node_id == "second").unwrap();
+    assert_eq!((second.run_id.clone(), second.state), (None, None));
+    // A verified (terminal) step releases its material.
+    run(&c, &f.definition, &first, PLAN, &FakeSupervisor).await;
+    c.verify_step(&f.definition, &first, record(&runtime, &first))
+        .unwrap();
+    f.review(&c, "second").await;
+}
+
+fn reset_controls_pending(f: &Fixture) {
+    rusqlite::Connection::open(f.temp.path().join("coordinator/coordinator.sqlite3"))
+        .unwrap()
+        .execute("UPDATE controls SET state='pending'", [])
+        .unwrap();
+}
+
+#[tokio::test]
+async fn terminal_step_without_material_settles_its_controls() {
+    // Approve control on a run cancelled before approval: rejected.
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let root = f.temp.path().join("coordinator");
+    request_approval(
+        &root,
+        &f.definition.execution.instance_id,
+        "plan",
+        0,
+        pending.approval_digest(),
+    )
+    .unwrap();
+    router_runtime::request_cancel(runtime.storage_root(), &pending.summary().run_id).unwrap();
+    assert_eq!(
+        runtime.summary(&pending.summary().run_id).unwrap().state,
+        RunState::Cancelled
+    );
+    drop(coordinator);
+    let reopened = f.coordinator(runtime.clone());
+    assert_eq!(reopened.retained_materials(), 0);
+    assert_eq!(reopened.service_controls(&f.definition).unwrap(), 0);
+    assert_eq!(control_states(&f), ["rejected"]);
+}
+
+#[tokio::test]
+async fn verified_step_without_material_settles_a_recorded_verification_as_applied() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let planner = f.review(&coordinator, "plan").await;
+    run(&coordinator, &f.definition, &planner, PLAN, &FakeSupervisor).await;
+    let root = f.temp.path().join("coordinator");
+    let verification = record(&runtime, &planner);
+    request_verification(
+        &root,
+        &f.definition.execution.instance_id,
+        "plan",
+        0,
+        planner.approval_digest(),
+        verification.clone(),
+    )
+    .unwrap();
+    coordinator
+        .verify_step(&f.definition, &planner, verification)
+        .unwrap();
+    // Reset whatever the live loop settled, as if the owner crashed first.
+    reset_controls_pending(&f);
+    drop(coordinator);
+    let reopened = f.coordinator(runtime.clone());
+    assert_eq!(reopened.service_controls(&f.definition).unwrap(), 1);
+    assert_eq!(control_states(&f), ["applied"]);
+}
+
+#[tokio::test]
+async fn unreadable_run_does_not_abort_the_other_controls() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let root = f.temp.path().join("coordinator");
+    // A control row whose run the runtime cannot read, older than the real one.
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute(
+            "INSERT INTO controls VALUES('bogus',?1,'wf-missing',?2,'pending')",
+            rusqlite::params![
+                f.definition.execution.instance_id,
+                r#"{"kind":"approve","digest":"x"}"#
+            ],
+        )
+        .unwrap();
+    coordinator.service_controls(&f.definition).unwrap();
+    drop(coordinator);
+    let coordinator = f.coordinator(runtime.clone());
+    let pending = {
+        // Reconstruct material by reviewing the identical step again.
+        let again = f.review(&coordinator, "plan").await;
+        assert_eq!(again.summary().run_id, pending.summary().run_id);
+        again
+    };
+    request_approval(
+        &root,
+        &f.definition.execution.instance_id,
+        "plan",
+        0,
+        pending.approval_digest(),
+    )
+    .unwrap();
+    assert_eq!(coordinator.service_controls(&f.definition).unwrap(), 1);
+    assert_eq!(control_states(&f), ["pending", "applied"]);
+}
+
+#[tokio::test]
+async fn terminal_steps_release_their_material() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone());
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let second = f.review(&c, "second").await;
+    assert_eq!(c.retained_materials(), 2);
+    run(&c, &f.definition, &first, PLAN, &FakeSupervisor).await;
+    assert_eq!(c.retained_materials(), 2, "Verifying is not terminal");
+    c.verify_step(&f.definition, &first, record(&runtime, &first))
+        .unwrap();
+    assert_eq!(c.retained_materials(), 1, "verified step released");
+    let failed = run(&c, &f.definition, &second, "exit 3", &FakeSupervisor).await;
+    assert!(failed.run.state.terminal());
+    assert_eq!(c.retained_materials(), 0, "failed wave step released");
+}

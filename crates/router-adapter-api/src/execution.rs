@@ -198,15 +198,7 @@ pub fn classify_native_failure(
         let root = if matches!(protocol, NativeFailureProtocol::Copilot) {
             copilot_root_event(&value)
         } else {
-            ["parent_tool_use_id", "agentId", "subagent_type"]
-                .iter()
-                .all(|key| value.get(key).is_none_or(|v| v.is_null()))
-                && ["/data/initiator", "/data/parentToolCallId"]
-                    .iter()
-                    .all(|key| value.pointer(key).is_none())
-                && value.pointer("/data/interactionType").is_none_or(|v| {
-                    matches!(v.as_str(), Some("conversation-agent" | "conversation-user"))
-                })
+            native_root_event(&value)
         };
         if !root {
             continue;
@@ -576,6 +568,11 @@ fn validate_request(request: &ExecutionRequest) -> Result<(), AdapterError> {
             || !Path::new(scope)
                 .components()
                 .all(|part| matches!(part, Component::Normal(_)))
+            // Path::components() normalizes `a//b`, `a/./b` and `a/`; only the
+            // canonical spelling is accepted so the duplicate check is exact.
+            || scope
+                .split('/')
+                .any(|part| part.is_empty() || part == "." || part == "..")
             || !scopes.insert(scope)
         {
             return Err(AdapterError::Invalid("scope"));
@@ -737,6 +734,25 @@ pub fn prepared_run(
     })
 }
 
+/// True unless the native event belongs to a subagent, task or sampling turn.
+pub fn native_root_event(value: &serde_json::Value) -> bool {
+    ["parent_tool_use_id", "agentId", "subagent_type"]
+        .iter()
+        .all(|key| value.get(key).is_none_or(|v| v.is_null()))
+        && ["/data/initiator", "/data/parentToolCallId"]
+            .iter()
+            .all(|key| value.pointer(key).is_none())
+        && value
+            .pointer("/data/interactionType")
+            .is_none_or(|v| matches!(v.as_str(), Some("conversation-agent" | "conversation-user")))
+}
+
+/// True only when `line` is the segment that ends `bytes`. A content match such
+/// as `bad\nbad` must not excuse an earlier malformed line.
+fn is_final_segment(bytes: &[u8], line: &[u8]) -> bool {
+    line.as_ptr() as usize + line.len() == bytes.as_ptr() as usize + bytes.len()
+}
+
 #[derive(Clone, Copy)]
 pub enum StreamDialect {
     Codex,
@@ -771,7 +787,7 @@ pub fn decode_transport(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && bytes.ends_with(line) =>
+                    && is_final_segment(bytes, line) =>
             {
                 stream_complete = false;
                 break;
@@ -802,7 +818,9 @@ pub fn decode_transport(
                 TransportEventKind::SessionStarted
             }
             (StreamDialect::Claude, "assistant") => {
-                if value.pointer("/message/role").and_then(|v| v.as_str()) == Some("assistant")
+                // A subagent's model is never attributed to the root worker.
+                if native_root_event(&value)
+                    && value.pointer("/message/role").and_then(|v| v.as_str()) == Some("assistant")
                     && value.pointer("/message/type").and_then(|v| v.as_str()) == Some("message")
                 {
                     if let Some(model) = value

@@ -58,30 +58,42 @@ pub(crate) fn rank_plans(
         }
     }
 
+    // The verify-below-execute exclusion depends only on the (execute, verify)
+    // pair; record it once instead of once per plan-stage model.
+    let below_execute = |execute: &StageCandidate, verify: &StageCandidate| {
+        matches!(risk, RiskLevel::High | RiskLevel::Critical)
+            && verify.model.quality_micros < execute.model.quality_micros
+    };
+    for execute in &stages[1] {
+        for verify in &stages[2] {
+            if required_verify_quality.is_some_and(|quality| verify.model.quality_micros < quality)
+                || !below_execute(execute, verify)
+            {
+                continue;
+            }
+            exclusions.push(Exclusion {
+                stage: StageKind::Verify,
+                model: verify.model.id.clone(),
+                code: "verification.quality.below_execute".into(),
+                evidence: format!(
+                    "verify model '{}' quality {} is below execute model '{}' quality {}",
+                    verify.model.id,
+                    verify.model.quality_micros,
+                    execute.model.id,
+                    execute.model.quality_micros
+                ),
+            });
+        }
+    }
+
     let mut plans = Vec::with_capacity(4);
     for plan in &stages[0] {
         for execute in &stages[1] {
             for verify in &stages[2] {
                 if required_verify_quality
                     .is_some_and(|quality| verify.model.quality_micros < quality)
+                    || below_execute(execute, verify)
                 {
-                    continue;
-                }
-                if matches!(risk, RiskLevel::High | RiskLevel::Critical)
-                    && verify.model.quality_micros < execute.model.quality_micros
-                {
-                    exclusions.push(Exclusion {
-                        stage: StageKind::Verify,
-                        model: verify.model.id.clone(),
-                        code: "verification.quality.below_execute".into(),
-                        evidence: format!(
-                            "verify model '{}' quality {} is below execute model '{}' quality {}",
-                            verify.model.id,
-                            verify.model.quality_micros,
-                            execute.model.id,
-                            execute.model.quality_micros
-                        ),
-                    });
                     continue;
                 }
                 plans.push(to_ranked_plan([plan, execute, verify], risk)?);
@@ -285,6 +297,59 @@ mod tests {
             "provider-model-00\0provider-model-00\0provider-model-00"
         );
         assert_eq!(rank_keys(&first), rank_keys(&second));
+    }
+
+    #[test]
+    fn high_risk_below_execute_exclusion_is_recorded_once_per_execute_verify_pair() {
+        let stages = candidate_stages(64);
+        let mut exclusions = vec![];
+
+        let plans = rank_plans(
+            &stages,
+            TaskKind::Implement,
+            RiskLevel::High,
+            &mut exclusions,
+        )
+        .unwrap();
+
+        // Quality falls with the model index, so verify is below execute for
+        // every pair with verify index greater than execute index.
+        let pairs = 64 * 63 / 2;
+        assert_eq!(exclusions.len(), pairs);
+        // Same set as the naive plan x execute x verify oracle after dedup.
+        let mut oracle = Vec::new();
+        for _plan in &stages[0] {
+            for execute in &stages[1] {
+                for verify in &stages[2] {
+                    if verify.model.quality_micros < execute.model.quality_micros {
+                        oracle.push((
+                            verify.model.id.clone(),
+                            format!(
+                                "verify model '{}' quality {} is below execute model '{}' quality {}",
+                                verify.model.id,
+                                verify.model.quality_micros,
+                                execute.model.id,
+                                execute.model.quality_micros
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+        oracle.sort();
+        oracle.dedup();
+        let mut actual = exclusions
+            .iter()
+            .map(|e| (e.model.clone(), e.evidence.clone()))
+            .collect::<Vec<_>>();
+        actual.sort();
+        assert_eq!(actual, oracle);
+        assert!(
+            exclusions
+                .iter()
+                .all(|e| e.code == "verification.quality.below_execute")
+        );
+        assert_eq!(plans.len(), 3);
     }
 
     #[test]

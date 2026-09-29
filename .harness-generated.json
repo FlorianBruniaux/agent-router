@@ -18,7 +18,7 @@
     ".claude/agents/rust-implementer.md": "5fcbf62582d826dc37b277314c4a0ecdfb660e6d135dff11aa2f25c6217b7970",
     ".claude/agents/rust-security-reviewer.md": "59587da1bef8ce7668bfcd06092e441aeed9a8f63fdd92e1f83e97c61fa69b5f",
     ".claude/agents/rust-test-engineer.md": "ad2adba6107e6fb00c8f782efcb2cfabe7049a29b6a8387300bcf4599eb11f17",
-    ".claude/settings.json": "3cc3d6927a28d6b8a89555fee39b9dc4317c44220375ce15465da1a4019592f6",
+    ".claude/settings.json": "c4f0b5cdcfac66c1b05de6eecc056d38aa026488e80da98dc0efee60ec94cc9c",
     ".claude/skills/ar-contract-tests/SKILL.md": "5af940d2f80321bb88a7b68a9275fc465e570192c4163a0e495d7028236bb05d",
     ".claude/skills/ar-contract-tests/evals/scenarios.json": "45c22dadb5b3b6a5f3e7570ff8e09ccfec0b84b1cb0702eba2032391c5cd742e",
     ".claude/skills/ar-contracts/SKILL.md": "d5f8069b1ce0873cd2cd69b802388c01e8d672bd13f847dc046a0979d97022e7",
@@ -37,7 +37,7 @@
     ".codex/agents/rust-security-reviewer.toml": "18608d159695de965072e906e6207f8c815ff8eb9ca845ae3dba0ca7f82ed747",
     ".codex/agents/rust-test-engineer.toml": "e2caa220a1e53bd9f656ad700fcb6170d91451ddd7b6ed8cba5f7abf93782018",
     ".codex/config.toml": "32718eeef1f9dc0de9b4892ee19e1cda684d18095b2137166ac2653bc6bca885",
-    ".codex/hooks.json": "6ab4648dfa4dbdd4ae1b649006c1ea28e1a984de06597f92599d93d30c4da7b0",
+    ".codex/hooks.json": "e22f69f35abf9043d6953ea520f1d9daf5a3f1291cc0c303397406cd79775033",
     "AGENTS.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564",
     "CLAUDE.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564"
   }

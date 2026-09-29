@@ -321,3 +321,17 @@ fn version_parser_matches_exact_commander_template_without_scanning_substrings()
     }
     assert!(adapter_copilot::parse_version(&[b'1'; 257]).is_err());
 }
+
+#[test]
+fn malformed_tail_must_be_the_last_line_not_merely_equal_to_it() {
+    assert_eq!(
+        adapter()
+            .decode_stream(
+                b"bad\nbad",
+                outcome(TransportTermination::Cancelled, None),
+                8192
+            )
+            .unwrap_err(),
+        AdapterError::Protocol
+    );
+}

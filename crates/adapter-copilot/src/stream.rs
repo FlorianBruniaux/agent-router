@@ -48,7 +48,8 @@ fn parse(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && bytes.ends_with(line) =>
+                    && line.as_ptr() as usize + line.len()
+                        == bytes.as_ptr() as usize + bytes.len() =>
             {
                 truncated = true;
                 break;

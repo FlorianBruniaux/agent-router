@@ -17,7 +17,19 @@ unchanged v1 plan, its separately sealed execution-instance contract, declared
 outputs, explicit artifact edges, context-size ceiling and failure policy.
 Each node output must be declared exactly once. Every non-task input must resolve
 to a declared output of an actual dependency. A hash cannot make an invalid graph,
-out-of-scope writer, missing output, or unsafe artifact edge valid.
+out-of-scope writer, missing output, or unsafe artifact edge valid. The declared
+`max_bytes` of the producer outputs on a node's input edges must sum to at most
+`max_input_bytes`, so a legal producer can never exceed the consumer's limit at
+run time. This applies to every `validate_definition` call, so a stored
+definition that sums above its `max_input_bytes` now fails with
+`coordinator.invalid: input bytes` when reopened; raise `max_input_bytes` or
+lower the declared `max_bytes` and re-seal it.
+
+Execution request scope entries (`ExecutionRequest.scope`, validated by
+`router-adapter-api` before any adapter prepares a run) must be canonical
+relative paths. `src/`, `a//b`, `a/./b`, `./a` and `..` are refused with
+`Invalid("scope")`, so the duplicate check cannot be bypassed by a spelling
+that normalizes to an existing entry.
 
 `register` binds the definition hash and runtime storage to an instance ID.
 `review_step` computes the current input grants, includes their canonical JSON
@@ -77,12 +89,20 @@ One coordinator owns its storage through a file lock. One runtime owns its
 supervision database. SQLite WAL readers and durable control requests work while
 that owner is executing children. Coordinator migrations, controls and events are
 transactional; events are append-only and chained by hash. Control IDs hash their
-full record, so repeating a request is idempotent.
+full record, so repeating a request is idempotent. A control that ended
+`rejected` is terminal, but repeating the same request revalidates it and makes it
+`pending` again. A control whose approval was already applied (the run moved past
+approval before the control was settled, for example after a crash) is recorded as
+`applied`, never `rejected`. A control whose step is terminal and whose material was
+released is settled by `service_controls` instead of waiting.
 
 `request_approval` and `request_verification` accept the exact run approval digest.
 `service_controls` processes them only when the owner has reconstructed the
 matching confidential `PendingStep`. A queued control with missing material waits
-for reconstruction. Verification can therefore be recorded while another node is
+for reconstruction. At most 320 step materials are held in memory
+(`with_material_limit` can only lower that); the limit is checked before a review
+or reopen has any runtime or store side effect, and a terminal step releases its
+material. Verification can therefore be recorded while another node is
 running. `request_cancel` immediately cancels unstarted runs and sends durable
 requests to active owners without signalling stored PIDs.
 
