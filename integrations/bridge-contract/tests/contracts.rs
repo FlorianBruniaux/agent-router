@@ -62,3 +62,35 @@ fn every_extra_surface_is_explicitly_unknown_and_layered() {
         }
     }
 }
+
+#[test]
+fn only_the_final_segment_can_be_a_truncated_tail() {
+    let cut = TransportOutcome {
+        termination: TransportTermination::TimedOut,
+        exit_code: None,
+        elapsed_ms: 1,
+    };
+    // A malformed line equal to the tail, but not the tail: a protocol error,
+    // not a cut stream.
+    assert!(matches!(
+        CopilotAdapter.decode_stream(b"bad\nbad", cut.clone(), 8192),
+        Err(AdapterError::Protocol)
+    ));
+    assert!(matches!(
+        OpenAiResponsesAdapter.decode_stream(b"data: bad\n\ndata: bad", cut.clone(), 8192),
+        Err(BridgeError::Adapter(AdapterError::Protocol))
+    ));
+    // The same malformed text as the real tail is still a cut stream.
+    let copilot = CopilotAdapter
+        .decode_stream(b"{\"type\":\"session.start\"}\nbad", cut.clone(), 8192)
+        .unwrap();
+    assert!(!copilot.stream_complete);
+    let openai = OpenAiResponsesAdapter
+        .decode_stream(
+            b"data: {\"type\":\"response.created\"}\n\ndata: {\"type\":\"resp",
+            cut,
+            8192,
+        )
+        .unwrap();
+    assert!(!openai.stream_complete);
+}

@@ -41,7 +41,12 @@ pub(crate) fn decode_sse(
         if frame.len() > 256 * 1024 || events.len() >= MAX_TRANSPORT_EVENTS {
             return Err(AdapterError::OutputLimit);
         }
-        let final_unterminated = !text.ends_with("\n\n") && text.ends_with(frame);
+        // Position, not content: an earlier frame equal to the tail is not final.
+        let final_unterminated = !text.ends_with("\n\n")
+            && text
+                .rsplit("\n\n")
+                .next()
+                .is_some_and(|last| std::ptr::eq(last, frame));
         if final_unterminated {
             partial = true;
         }
@@ -205,7 +210,9 @@ pub(crate) fn decode(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && bytes.ends_with(line) =>
+                    && bytes.rsplit(|b| *b == b'\n').next().is_some_and(|last| {
+                        std::ptr::eq(last.as_ptr(), line.as_ptr()) && last.len() == line.len()
+                    }) =>
             {
                 truncated = true;
                 break;
