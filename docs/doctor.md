@@ -173,8 +173,11 @@ agent-router doctor --runtime-root /absolute/private/runtime --json
 
 `--runtime-root` is exclusive with `--request` and `--deep`. Without `--json`,
 the same report is rendered for humans. Exit codes are 0 for passing storage
-checks, 2 for a failed check or refusal, and 3 for warnings or an `unknown`
-overall state (including a partial report, see below). This command never
+checks, 2 for a failed check or refused input, and 3 for warnings or an
+`unknown` overall state (including a partial report, see below). Errors follow
+the CLI [exit classes](cli-output.md#exit-codes-and-error-codes): 5 for
+contention, 6 for an unknown outcome and 7 for an integrity failure such as
+`doctor.audit.integrity`. This command never
 calls `Runtime::open`, runs migrations, recovers interrupted runs, resolves a
 lease, releases reservations, repairs a database or starts a host process.
 It neither creates a missing runtime nor reads stored prompts into its output.

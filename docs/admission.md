@@ -108,7 +108,7 @@ owners are refused.
 The runtime writer lock compares workspaces and scopes lexically (slashes and `.`
 components); `..` is refused, and symlinked or nested workspaces are not detected.
 Upgrade effect: a `writer_locks` row persisted by an older build with `..` in its
-workspace makes every new writer lock fail with `runtime.integrity: writer lock
+workspace makes every new writer lock fail (CLI exit 7) with `runtime.integrity: writer lock
 workspace` until that row is released.
 
 The registry schema is version 3 (per-session `budget_folded` totals and a bounded
