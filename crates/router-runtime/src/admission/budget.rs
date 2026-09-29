@@ -89,6 +89,13 @@ pub fn session_budget_policy_hash(p: &SessionBudgetPolicy) -> Result<String> {
     digest("session-budget-policy-v1", p)
 }
 pub(super) fn read_policy(db: &Connection) -> Result<Option<SessionBudgetPolicy>> {
+    read_policy_json(db)?
+        .as_deref()
+        .map(parse_policy)
+        .transpose()
+}
+/// Raw persisted policy JSON, bounded; `None` for a registry without budgets.
+pub(super) fn read_policy_json(db: &Connection) -> Result<Option<String>> {
     let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
     if version == 1 {
         return Ok(None);
@@ -104,12 +111,15 @@ pub(super) fn read_policy(db: &Connection) -> Result<Option<SessionBudgetPolicy>
     if json.len() > 128 * 1024 {
         return Err(RuntimeError::Limit);
     }
-    let policy = serde_json::from_str(&json)?;
+    Ok(Some(json))
+}
+pub(super) fn parse_policy(json: &str) -> Result<SessionBudgetPolicy> {
+    let policy = serde_json::from_str(json)?;
     session_budget_policy_hash(&policy)?;
     if json != serde_json::to_string(&policy)? {
         return Err(BudgetError::Policy.into());
     }
-    Ok(Some(policy))
+    Ok(policy)
 }
 impl AdmissionStore {
     /// Initializes only an empty domain with no live runtime owner. No zero backfill.
@@ -129,6 +139,7 @@ impl AdmissionStore {
             .map(|id| self.files.owner(id))
             .collect::<Result<_>>()?;
         let _exclusive = self.files.budget_guard(false)?;
+        let canonical = serde_json::to_string(policy)?;
         {
             let mut db = self.lock()?;
             let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
@@ -140,10 +151,7 @@ impl AdmissionStore {
             tx.execute_batch("CREATE TABLE budget_policy(id INTEGER PRIMARY KEY CHECK(id=1),json TEXT NOT NULL);CREATE TABLE budget_sessions(id TEXT PRIMARY KEY,json TEXT NOT NULL);CREATE TABLE budget_reservations(ticket TEXT PRIMARY KEY REFERENCES tickets(id),session TEXT NOT NULL REFERENCES budget_sessions(id),state TEXT NOT NULL CHECK(state IN ('reserved','committed','released')),amount TEXT NOT NULL);CREATE TABLE budget_events(sequence INTEGER PRIMARY KEY,session TEXT NOT NULL,kind TEXT NOT NULL,ticket TEXT,previous_hash TEXT NOT NULL,state TEXT NOT NULL,event_hash TEXT NOT NULL);PRAGMA user_version=2;")?;
             tx.execute_batch(budget_store::CREATE_FOLDED)?;
             tx.execute_batch("PRAGMA user_version=3;")?;
-            tx.execute(
-                "INSERT INTO budget_policy VALUES(1,?1)",
-                [serde_json::to_string(policy)?],
-            )?;
+            tx.execute("INSERT INTO budget_policy VALUES(1,?1)", [&canonical])?;
             for (id, r) in &policy.sessions {
                 let state = SessionBudgetStatus {
                     schema_version: 1,
@@ -167,6 +175,7 @@ impl AdmissionStore {
             tx.commit()?;
         }
         self.budget_policy = Some(policy.clone());
+        self.budget_fp = Some(registry::fingerprint(&canonical));
         Ok(hash)
     }
     pub(super) fn budget_binding(&self, runtime: &str) -> Result<Option<SessionBudgetBinding>> {

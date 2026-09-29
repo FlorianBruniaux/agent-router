@@ -13,8 +13,8 @@ use std::{path::Path, time::Duration};
 const CURRENT_SCHEMA: u32 = store::SCHEMA_VERSION;
 /// No writer bounds `runs`, `events` or lease rows per store, so a row count
 /// is not a health signal. Work is bounded by the snapshot byte cap (4 MiB,
-/// enforced before any inspection), the per-cell length cap and the SQLite work
-/// budget; events are verified as a stream and leases inspected once per row.
+/// enforced before any inspection; a larger database yields a partial report),
+/// the per-cell length cap and the SQLite work budget; events are verified as a stream and leases inspected once per row.
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -31,6 +31,16 @@ pub enum RuntimeSchemaState {
     MigrationRequired,
     FutureVersion,
     InvalidLayout,
+    /// The database was not read, see `RuntimeStorageReport::partial_reason`.
+    NotInspected,
+}
+/// Why a report is partial. Absent on a complete inspection.
+#[derive(Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RuntimeStoragePartialReason {
+    /// The database exceeds the inspection cap and was not inspected. Checks
+    /// that do not read it (owner lock) are still reported.
+    DatabaseExceedsInspectionLimit,
 }
 #[derive(Debug, Serialize)]
 pub struct RuntimeStorageCounts {
@@ -55,8 +65,9 @@ pub struct RuntimeStorageReport {
     pub schema_version: u32,
     pub observed_at_unix_seconds: u64,
     pub overall: DiagnosticState,
-    pub database: DatabaseSnapshotReport,
-    pub storage_schema_version: u32,
+    pub partial_reason: Option<RuntimeStoragePartialReason>,
+    pub database: Option<DatabaseSnapshotReport>,
+    pub storage_schema_version: Option<u32>,
     pub supported_storage_schema_version: u32,
     pub schema_layout: RuntimeSchemaState,
     pub journal_integrity: DiagnosticState,
@@ -84,6 +95,9 @@ struct Inspection {
 pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageReport> {
     let files = files::Files::open(root)?;
     let owner_lock = files.owner()?;
+    if files.database_oversized() {
+        return Ok(partial_report(now, owner_lock));
+    }
     let source = Connection::open_with_flags(
         files.path.join("runtime.sqlite3"),
         OpenFlags::SQLITE_OPEN_READ_ONLY
@@ -94,9 +108,16 @@ pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageR
     source
         .busy_timeout(Duration::ZERO)
         .map_err(|_| DoctorError::Read)?;
-    files.check()?;
-    let (database, inspected) = diagnose_database_snapshot_with(&source, inspect)?;
-    files.check()?;
+    // Only "too big to copy" becomes a partial report. Hostile-input limits
+    // (long cells, copy deadline, SQL work budget) stay `DoctorError::Limit`.
+    let captured = files
+        .check()
+        .and_then(|()| diagnose_database_snapshot_with(&source, inspect))
+        .and_then(|captured| files.check().map(|()| captured));
+    let (database, inspected) = match captured {
+        Err(DoctorError::DatabaseTooLarge) => return Ok(partial_report(now, owner_lock)),
+        other => other?,
+    };
     // Keep SQLite's own descriptor lifetime intact, including during checks.
     drop(source);
     let leases = inspected.counts.as_ref().map(|_| {
@@ -142,11 +163,12 @@ pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageR
         DiagnosticState::Pass
     };
     Ok(RuntimeStorageReport {
-        schema_version: 1,
+        schema_version: 2,
         observed_at_unix_seconds: now,
         overall,
-        database,
-        storage_schema_version: inspected.version,
+        partial_reason: None,
+        database: Some(database),
+        storage_schema_version: Some(inspected.version),
         supported_storage_schema_version: CURRENT_SCHEMA,
         schema_layout: inspected.layout,
         journal_integrity: inspected.journal,
@@ -159,6 +181,30 @@ pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageR
         process_liveness: DiagnosticState::Unknown,
         cleanup_authority: DiagnosticState::Unknown,
     })
+}
+
+/// Report for a database over the inspection cap: nothing read from it is
+/// claimed, so `overall` is unknown rather than a pass or a failure.
+fn partial_report(now: u64, owner_lock: OwnerLockState) -> RuntimeStorageReport {
+    RuntimeStorageReport {
+        schema_version: 2,
+        observed_at_unix_seconds: now,
+        overall: DiagnosticState::Unknown,
+        partial_reason: Some(RuntimeStoragePartialReason::DatabaseExceedsInspectionLimit),
+        database: None,
+        storage_schema_version: None,
+        supported_storage_schema_version: CURRENT_SCHEMA,
+        schema_layout: RuntimeSchemaState::NotInspected,
+        journal_integrity: DiagnosticState::Unknown,
+        journal_authenticity: DiagnosticState::Unknown,
+        shared_admission_accounting: DiagnosticState::Unknown,
+        owner_lock,
+        counts: None,
+        leases: None,
+        database_and_leases_atomic: false,
+        process_liveness: DiagnosticState::Unknown,
+        cleanup_authority: DiagnosticState::Unknown,
+    }
 }
 
 fn inspect(db: &Connection, queries: &mut usize) -> Result<Inspection> {

@@ -611,3 +611,22 @@ fn armed_release_without_reservation_stays_unknown_unless_the_ticket_was_pruned(
     ));
     assert_eq!(status(&s, &h).committed_allocation, amount(20));
 }
+#[test]
+fn budget_policy_row_mutated_after_open_is_refused_at_the_next_lock() {
+    let (t, s, _) = setup();
+    s.status().unwrap();
+    let other =
+        rusqlite::Connection::open(t.path().join("registry").join("admission.sqlite3")).unwrap();
+    let mut changed = policy();
+    changed.sessions.get_mut("session").unwrap().initial_limit = amount(1);
+    other
+        .execute(
+            "UPDATE budget_policy SET json=?1",
+            [serde_json::to_string(&changed).unwrap()],
+        )
+        .unwrap();
+    assert!(matches!(
+        s.status(),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
+}

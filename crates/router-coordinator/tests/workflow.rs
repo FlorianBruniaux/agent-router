@@ -10,6 +10,7 @@ use router_types::*;
 use std::{
     collections::BTreeMap,
     fs,
+    os::unix::fs::{DirBuilderExt, PermissionsExt},
     path::{Path, PathBuf},
     process::Command,
     sync::Arc,
@@ -1443,4 +1444,244 @@ async fn terminal_steps_release_their_material() {
     let failed = run(&c, &f.definition, &second, "exit 3", &FakeSupervisor).await;
     assert!(failed.run.state.terminal());
     assert_eq!(c.retained_materials(), 0, "failed wave step released");
+}
+
+const SLOW_PLAN: &str = "sleep 1; printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"agent_message\",\"text\":\"Proposal: change src/base.txt; validate changed content.\"}}' '{\"type\":\"turn.completed\"}'";
+
+#[tokio::test]
+async fn supervision_ticks_validate_the_definition_once_per_wave() {
+    let f = Fixture::new().await;
+    let coordinator = f.coordinator(f.runtime());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let approved = coordinator
+        .approve_step(&f.definition, pending.clone(), pending.approval_digest())
+        .unwrap();
+    let before = validations_on_this_thread();
+    let started = std::time::Instant::now();
+    let wave = coordinator
+        .run_ready(
+            &f.definition,
+            vec![StepExecution {
+                step: approved,
+                adapter: &FakeAdapter(SLOW_PLAN),
+                supervisor: &FakeSupervisor,
+            }],
+        )
+        .await
+        .unwrap();
+    let validations = validations_on_this_thread() - before;
+    // One second at a 20 ms tick is dozens of ticks; none may re-hash.
+    assert!(started.elapsed() >= Duration::from_millis(900));
+    assert_eq!(wave.completions[0].run.state, RunState::Verifying);
+    assert_eq!(validations, 1);
+}
+
+#[tokio::test]
+async fn altered_definition_is_refused_by_every_entry_point() {
+    let f = Fixture::new().await;
+    let coordinator = f.coordinator(f.runtime());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let approved = coordinator
+        .approve_step(&f.definition, pending.clone(), pending.approval_digest())
+        .unwrap();
+    // Structurally valid but not the sealed bytes: the hash no longer matches.
+    let mut altered = f.definition.clone();
+    altered.max_input_bytes -= 1;
+    assert!(matches!(
+        validate_definition(&altered),
+        Err(CoordinatorError::Integrity)
+    ));
+    assert!(matches!(
+        coordinator.service_controls(&altered),
+        Err(CoordinatorError::Integrity)
+    ));
+    assert!(matches!(
+        coordinator
+            .run_ready(
+                &altered,
+                vec![StepExecution {
+                    step: approved,
+                    adapter: &FakeAdapter(PLAN),
+                    supervisor: &FakeSupervisor,
+                }],
+            )
+            .await,
+        Err(CoordinatorError::Integrity)
+    ));
+    // The sealed definition is still accepted.
+    assert!(validate_definition(&f.definition).is_ok());
+}
+
+#[tokio::test]
+async fn control_request_does_not_hold_the_coordinator_lock_while_observing_the_runtime() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let pending = f.review(&coordinator, "plan").await;
+    let root = f.temp.path().join("coordinator");
+    // Point the instance at a private copy of the runtime store, then lock the
+    // copy so the runtime observation blocks (the live runtime owner would
+    // otherwise keep its own locks on the original).
+    let copy = f.temp.path().join("runtime-copy");
+    fs::DirBuilder::new().mode(0o700).create(&copy).unwrap();
+    rusqlite::Connection::open(runtime.storage_root().join("runtime.sqlite3"))
+        .unwrap()
+        .execute(
+            "VACUUM INTO ?1",
+            [copy.join("runtime.sqlite3").to_str().unwrap()],
+        )
+        .unwrap();
+    fs::set_permissions(
+        copy.join("runtime.sqlite3"),
+        fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute(
+            "UPDATE workflows SET runtime_root=?1",
+            [copy.to_str().unwrap()],
+        )
+        .unwrap();
+    let blocker = rusqlite::Connection::open(copy.join("runtime.sqlite3")).unwrap();
+    // BEGIN EXCLUSIVE blocks readers only outside WAL; VACUUM INTO does not keep WAL.
+    assert_eq!(
+        blocker
+            .pragma_query_value(None, "journal_mode", |r| r.get::<_, String>(0))
+            .unwrap(),
+        "delete"
+    );
+    blocker.execute_batch("BEGIN EXCLUSIVE;").unwrap();
+    let request = {
+        let root = root.clone();
+        let instance = f.definition.execution.instance_id.clone();
+        let digest = pending.approval_digest().to_owned();
+        std::thread::spawn(move || request_approval(&root, &instance, "plan", 0, &digest))
+    };
+    // The blocker holds the copy for 1.5 s (busy timeout 2 s): the request must
+    // still be inside the runtime observation when the probe runs.
+    std::thread::sleep(Duration::from_millis(400));
+    assert!(
+        !request.is_finished(),
+        "request must be blocked in the observation before the probe"
+    );
+    let probe = rusqlite::Connection::open(root.join("coordinator.sqlite3")).unwrap();
+    probe.busy_timeout(Duration::ZERO).unwrap();
+    probe
+        .execute_batch("BEGIN IMMEDIATE; ROLLBACK;")
+        .expect("coordinator write lock must be free while the runtime is observed");
+    assert!(
+        !request.is_finished(),
+        "request must still be blocked after the probe"
+    );
+    std::thread::sleep(Duration::from_millis(1100));
+    blocker.execute_batch("ROLLBACK").unwrap();
+    drop(blocker);
+    request.join().unwrap().unwrap();
+    assert_eq!(control_states(&f), ["pending"]);
+}
+
+#[tokio::test]
+async fn request_cancel_leaves_runs_that_cannot_be_cancelled_untouched() {
+    let f = Fixture::new().await;
+    let runtime = f.runtime();
+    let coordinator = f.coordinator(runtime.clone());
+    coordinator.register(&f.definition).unwrap();
+    let planner = f.review(&coordinator, "plan").await;
+    let outcome = run(&coordinator, &f.definition, &planner, PLAN, &FakeSupervisor).await;
+    assert_eq!(outcome.run.state, RunState::Verifying);
+    let root = f.temp.path().join("coordinator");
+    request_cancel(&root, &f.definition.execution.instance_id).unwrap();
+    assert_eq!(
+        runtime.summary(&planner.summary().run_id).unwrap().state,
+        RunState::Verifying
+    );
+    assert!(coordinator.status(&f.definition).unwrap().cancelled);
+}
+
+#[tokio::test]
+async fn cancel_skips_a_verifying_run_and_cancels_the_queued_one() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone());
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let second = f.review(&c, "second").await;
+    let outcome = run(&c, &f.definition, &first, PLAN, &FakeSupervisor).await;
+    assert_eq!(outcome.run.state, RunState::Verifying);
+    c.approve_step(&f.definition, second.clone(), second.approval_digest())
+        .unwrap();
+    assert_eq!(
+        runtime.summary(&second.summary().run_id).unwrap().state,
+        RunState::Queued
+    );
+    let root = f.temp.path().join("coordinator");
+    request_cancel(&root, &f.definition.execution.instance_id).unwrap();
+    assert_eq!(
+        runtime.summary(&first.summary().run_id).unwrap().state,
+        RunState::Verifying
+    );
+    assert_eq!(
+        runtime.summary(&second.summary().run_id).unwrap().state,
+        RunState::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn cancel_succeeds_next_to_verified_and_failed_runs() {
+    for (script, verify) in [(PLAN, true), ("exit 9", false)] {
+        let mut f = Fixture::new().await;
+        parallel_definition(&mut f);
+        let runtime = f.runtime();
+        let c = f.coordinator(runtime.clone());
+        c.register(&f.definition).unwrap();
+        let first = f.review(&c, "first").await;
+        let second = f.review(&c, "second").await;
+        run(&c, &f.definition, &first, script, &FakeSupervisor).await;
+        if verify {
+            c.verify_step(&f.definition, &first, record(&runtime, &first))
+                .unwrap();
+        }
+        let terminal = runtime.summary(&first.summary().run_id).unwrap().state;
+        assert!(terminal.terminal(), "{terminal:?}");
+        let root = f.temp.path().join("coordinator");
+        request_cancel(&root, &f.definition.execution.instance_id).unwrap();
+        assert_eq!(
+            runtime.summary(&first.summary().run_id).unwrap().state,
+            terminal
+        );
+        assert_eq!(
+            runtime.summary(&second.summary().run_id).unwrap().state,
+            RunState::Cancelled
+        );
+    }
+}
+
+#[tokio::test]
+async fn cancel_continues_after_a_failing_run_and_returns_the_first_error() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone());
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let root = f.temp.path().join("coordinator");
+    let instance = &f.definition.execution.instance_id;
+    // A registered run the runtime does not know sorts before the real ones.
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute(
+            "INSERT INTO steps VALUES(?1,'aaa',0,'missing-run','x',0,0)",
+            [instance],
+        )
+        .unwrap();
+    assert!(request_cancel(&root, instance).is_err());
+    assert_eq!(
+        runtime.summary(&first.summary().run_id).unwrap().state,
+        RunState::Cancelled
+    );
 }

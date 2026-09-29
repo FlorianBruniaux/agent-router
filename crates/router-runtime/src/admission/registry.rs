@@ -9,7 +9,34 @@ pub struct AdmissionStore {
     pub(super) policy_hash: String,
     pub(super) registry_hash: String,
     pub(super) budget_policy: Option<SessionBudgetPolicy>,
+    /// Digests of the persisted JSON pinned at load, so a poll compares the
+    /// stored row without deserializing and reserializing the policy.
+    pub(super) config_fp: String,
+    pub(super) budget_fp: Option<String>,
     pub(super) retain_released: u32,
+}
+enum Outcome {
+    /// The ticket already holds its grant: nothing to decide or write.
+    Granted,
+    Queued(Vec<AdmissionQueueReason>),
+    Grant,
+}
+struct Evaluation {
+    /// Waiting rows whose owner lock is gone, to be released under the write lock.
+    dead: Vec<String>,
+    outcome: Outcome,
+}
+impl Evaluation {
+    fn reasons(self) -> Vec<AdmissionQueueReason> {
+        match self.outcome {
+            Outcome::Queued(reasons) => reasons,
+            Outcome::Granted | Outcome::Grant => Vec::new(),
+        }
+    }
+}
+pub(super) fn fingerprint(json: &str) -> String {
+    use sha2::{Digest, Sha256};
+    hex::encode(Sha256::digest(json.as_bytes()))
 }
 impl AdmissionStore {
     /// Explicitly initializes an empty private registry; never imports legacy runs.
@@ -69,7 +96,12 @@ impl AdmissionStore {
         if policy_hash != expected || json != serde_json::to_string(&policy)? {
             return Err(RuntimeError::Approval);
         }
-        let budget_policy = budget::read_policy(&db)?;
+        let budget_json = budget::read_policy_json(&db)?;
+        let budget_policy = budget_json
+            .as_deref()
+            .map(budget::parse_policy)
+            .transpose()?;
+        let budget_fp = budget_json.as_deref().map(fingerprint);
         if budget_policy
             .as_ref()
             .is_some_and(|p| p.runtime_sessions.keys().ne(policy.runtimes.keys()))
@@ -85,6 +117,8 @@ impl AdmissionStore {
             policy_hash,
             registry_hash,
             budget_policy,
+            config_fp: fingerprint(&json),
+            budget_fp,
             retain_released: MAX_RETAINED_RELEASED,
         })
     }
@@ -124,10 +158,10 @@ impl AdmissionStore {
             [],
             |r| r.get(0),
         )?;
-        if json != serde_json::to_string(&self.policy)? {
+        if fingerprint(&json) != self.config_fp {
             return Err(RuntimeError::Approval);
         }
-        if budget::read_policy(&db)? != self.budget_policy {
+        if budget::read_policy_json(&db)?.as_deref().map(fingerprint) != self.budget_fp {
             return Err(BudgetError::Authority.into());
         }
         Ok(db)
@@ -184,10 +218,50 @@ impl AdmissionStore {
     }
     /// Entire capacity vector is reserved in one immediate transaction. Only the
     /// polling owner can grant its own ticket; abandoned waiters cannot block it.
+    /// A first deferred read decides whether anything must be granted or released;
+    /// only then is the write lock taken, and the decision is made again inside
+    /// it. A poll with nothing to change never holds the write lock.
     pub(crate) fn poll(&self, ticket: &Ticket) -> Result<Vec<AdmissionQueueReason>> {
         self.validate_ticket(ticket)?;
         let mut db = self.lock()?;
+        {
+            let tx = db.transaction_with_behavior(TransactionBehavior::Deferred)?;
+            let seen = self.evaluate(&tx, ticket)?;
+            if seen.dead.is_empty() && !matches!(seen.outcome, Outcome::Grant) {
+                return Ok(seen.reasons());
+            }
+        }
         let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let now = self.evaluate(&tx, ticket)?;
+        for id in &now.dead {
+            tx.execute(
+                "UPDATE tickets SET state='released' WHERE id=?1 AND state='waiting'",
+                [id],
+            )?;
+        }
+        if matches!(now.outcome, Outcome::Grant) {
+            if let Some(policy) = &self.budget_policy {
+                budget_store::reserve(&tx, ticket, policy, &self.registry_hash)?;
+            }
+            tx.execute(
+                "UPDATE tickets SET state='granted' WHERE id=?1 AND state='waiting'",
+                [&ticket.id],
+            )?;
+            tx.execute("UPDATE clock SET tick=tick+1 WHERE id=1", [])?;
+            tx.execute(
+                "UPDATE groups SET turn=(SELECT tick FROM clock WHERE id=1) WHERE id=?1",
+                [&ticket.group],
+            )?;
+        }
+        if matches!(now.outcome, Outcome::Granted) {
+            // Nothing was decided: earlier releases in this pass are dropped.
+            return Ok(vec![]);
+        }
+        tx.commit()?;
+        Ok(now.reasons())
+    }
+    /// Read-only decision over the live rows. Writes are returned, not applied.
+    fn evaluate(&self, tx: &Connection, ticket: &Ticket) -> Result<Evaluation> {
         let live: u32 = tx.query_row(
             "SELECT count(*) FROM tickets WHERE state!='released'",
             [],
@@ -216,6 +290,7 @@ impl AdmissionStore {
         }
         let mut granted = Vec::new();
         let mut waiting = Vec::new();
+        let mut dead = Vec::new();
         let mut found = false;
         for (id, state, json) in rows {
             if json.len() > 16384 {
@@ -232,7 +307,10 @@ impl AdmissionStore {
                     return Err(RuntimeError::Approval);
                 }
                 if state == "granted" {
-                    return Ok(vec![]);
+                    return Ok(Evaluation {
+                        dead: Vec::new(),
+                        outcome: Outcome::Granted,
+                    });
                 }
             }
             if state == "granted" {
@@ -242,10 +320,7 @@ impl AdmissionStore {
             {
                 waiting.push(item);
             } else {
-                tx.execute(
-                    "UPDATE tickets SET state='released' WHERE id=?1 AND state='waiting'",
-                    [id],
-                )?;
+                dead.push(id);
             }
         }
         if !found || !waiting.iter().any(|t| t.id == ticket.id) {
@@ -254,37 +329,27 @@ impl AdmissionStore {
         if granted.len() > self.policy.global_limit as usize {
             return Err(RuntimeError::Integrity("admission overcapacity"));
         }
-        let states = self.budget_states(&tx)?;
+        let states = self.budget_states(tx)?;
         let reasons = self.reasons(ticket, &granted, &states);
         if !reasons.is_empty() {
-            tx.commit()?;
-            return Ok(reasons);
+            return Ok(Evaluation {
+                dead,
+                outcome: Outcome::Queued(reasons),
+            });
         }
         let mut groups = BTreeSet::new();
-        if waiting
+        let outcome = if waiting
             .iter()
             .filter(|t| groups.insert(&t.group))
             .find(|t| self.reasons(t, &granted, &states).is_empty())
             .map(|t| &t.id)
             != Some(&ticket.id)
         {
-            tx.commit()?;
-            return Ok(vec![AdmissionQueueReason::FairTurn]);
-        }
-        if let Some(policy) = &self.budget_policy {
-            budget_store::reserve(&tx, ticket, policy, &self.registry_hash)?;
-        }
-        tx.execute(
-            "UPDATE tickets SET state='granted' WHERE id=?1 AND state='waiting'",
-            [&ticket.id],
-        )?;
-        tx.execute("UPDATE clock SET tick=tick+1 WHERE id=1", [])?;
-        tx.execute(
-            "UPDATE groups SET turn=(SELECT tick FROM clock WHERE id=1) WHERE id=?1",
-            [&ticket.group],
-        )?;
-        tx.commit()?;
-        Ok(vec![])
+            Outcome::Queued(vec![AdmissionQueueReason::FairTurn])
+        } else {
+            Outcome::Grant
+        };
+        Ok(Evaluation { dead, outcome })
     }
     fn reasons(
         &self,

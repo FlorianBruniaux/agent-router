@@ -25,6 +25,17 @@ definition that sums above its `max_input_bytes` now fails with
 `coordinator.invalid: input bytes` when reopened; raise `max_input_bytes` or
 lower the declared `max_bytes` and re-seal it.
 
+`validate_definition` returns a `ValidatedDefinition`, a borrow that only that
+function can construct. `run_ready_decisions` validates once per wave and its
+20 ms supervision ticks reuse that value. Each tick still compares the stored
+definition hash and cancellation flag through the store, so a definition that
+differs from the registered one is refused. `request_approval` and
+`request_verification` observe the runtime store before opening the coordinator
+write transaction, then recheck the workflow, run and control rows inside it.
+`request_cancel` observes each registered run and cancels only those still
+cancellable. It visits every run even after a failure, then returns the first
+error, because the workflow is already marked cancelled.
+
 Execution request scope entries (`ExecutionRequest.scope`, validated by
 `router-adapter-api` before any adapter prepares a run) must be canonical
 relative paths. `src/`, `a//b`, `a/./b`, `./a` and `..` are refused with

@@ -431,20 +431,29 @@ pub fn request_cancel(root: &Path, instance: &str) -> Result<()> {
     }
     let registered = steps(&tx, instance)?;
     tx.commit()?;
+    // `cancelled=1` is already committed, so one failing run must not leave the
+    // later runs uncancelled: visit every run and report the first error.
+    let mut first_error = None;
     for (_, _, run) in registered {
-        let current = router_runtime::observe(Path::new(&runtime), &run)?;
-        if matches!(
-            current.state,
-            RunState::Planned
-                | RunState::AwaitingApproval
-                | RunState::Queued
-                | RunState::Preparing
-                | RunState::Running
-        ) {
-            match router_runtime::request_cancel(Path::new(&runtime), &run) {
-                Ok(()) | Err(router_runtime::RuntimeError::Transition) => {}
-                Err(e) => return Err(e.into()),
-            }
+        if let Err(error) = cancel_run(Path::new(&runtime), &run) {
+            first_error.get_or_insert(error);
+        }
+    }
+    first_error.map_or(Ok(()), Err)
+}
+fn cancel_run(runtime: &Path, run: &str) -> Result<()> {
+    let current = router_runtime::observe(runtime, run)?;
+    if matches!(
+        current.state,
+        RunState::Planned
+            | RunState::AwaitingApproval
+            | RunState::Queued
+            | RunState::Preparing
+            | RunState::Running
+    ) {
+        match router_runtime::request_cancel(runtime, run) {
+            Ok(()) | Err(router_runtime::RuntimeError::Transition) => {}
+            Err(e) => return Err(e.into()),
         }
     }
     Ok(())
@@ -531,6 +540,34 @@ pub(crate) enum Control {
         record: VerificationRecord,
     },
 }
+fn control_target(
+    db: &Connection,
+    instance: &str,
+    node: &str,
+    generation: u32,
+) -> Result<(String, String)> {
+    let (runtime, cancelled): (String, bool) = db.query_row(
+        "SELECT runtime_root,cancelled FROM workflows WHERE instance=?1",
+        [instance],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if cancelled {
+        return Err(CoordinatorError::Cancelled);
+    }
+    let run: String = db.query_row(
+        "SELECT run_id FROM steps WHERE instance=?1 AND node=?2 AND generation=?3",
+        params![instance, node, generation],
+        |r| r.get(0),
+    )?;
+    Ok((runtime, run))
+}
+fn control_state(db: &Connection, id: &str) -> Result<Option<String>> {
+    Ok(db
+        .query_row("SELECT state FROM controls WHERE id=?1", [id], |row| {
+            row.get(0)
+        })
+        .optional()?)
+}
 fn request_control(
     root: &Path,
     instance: &str,
@@ -539,74 +576,77 @@ fn request_control(
     control: Control,
 ) -> Result<String> {
     let mut db = control_connection(root)?;
-    let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-    let (runtime, cancelled): (String, bool) = tx.query_row(
-        "SELECT runtime_root,cancelled FROM workflows WHERE instance=?1",
-        [instance],
-        |r| Ok((r.get(0)?, r.get(1)?)),
-    )?;
-    if cancelled {
-        return Err(CoordinatorError::Cancelled);
-    }
-    let run: String = tx.query_row(
-        "SELECT run_id FROM steps WHERE instance=?1 AND node=?2 AND generation=?3",
-        params![instance, node, generation],
-        |r| r.get(0),
-    )?;
     let serialized = serde_json::to_string(&control)?;
     if serialized.len() > 4096 {
         return Err(CoordinatorError::Limit);
     }
-    let id = hash("coordinator-control-v1", &(instance, &run, &control))?;
-    let existing: Option<String> = tx
-        .query_row("SELECT state FROM controls WHERE id=?1", [&id], |row| {
-            row.get(0)
-        })
-        .optional()?;
-    // A rejected control is terminal: the same request is a new attempt and is
-    // validated again below instead of returning the dead id.
-    if existing.as_deref().is_some_and(|state| state != "rejected") {
-        return Ok(id);
-    }
-    let current = router_runtime::observe(Path::new(&runtime), &run)?;
     let digest = match &control {
         Control::Approve { digest } | Control::Verify { digest, .. } => digest,
     };
-    if digest != &current.approval_digest
-        || !matches!(
-            (&control, current.state),
-            (
-                Control::Approve { .. },
-                RunState::AwaitingApproval | RunState::Queued
-            ) | (Control::Verify { .. }, RunState::Verifying)
-        )
-    {
-        return Err(CoordinatorError::Invalid("control authority or state"));
+    let mut observed: Option<RunSummary> = None;
+    for _ in 0..2 {
+        // The runtime store is another database with a whole-chain check, so it
+        // is observed before the coordinator write transaction, never inside
+        // it. The observation is a snapshot either way: the owner checks digest
+        // and state again when it applies the control.
+        let (runtime, run) = control_target(&db, instance, node, generation)?;
+        let id = hash("coordinator-control-v1", &(instance, &run, &control))?;
+        // A rejected control is terminal: the same request is a new attempt and
+        // is validated again below instead of returning the dead id.
+        let live = |state: &Option<String>| state.as_deref().is_some_and(|s| s != "rejected");
+        if observed.is_none() && !live(&control_state(&db, &id)?) {
+            observed = Some(router_runtime::observe(Path::new(&runtime), &run)?);
+        }
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        // Under the write lock, confirm what the snapshot above relied on.
+        if control_target(&tx, instance, node, generation)? != (runtime, run.clone()) {
+            return Err(CoordinatorError::Integrity);
+        }
+        let existing = control_state(&tx, &id)?;
+        if live(&existing) {
+            return Ok(id);
+        }
+        let Some(current) = observed.as_ref() else {
+            // The control was rejected after the snapshot: observe, then retry.
+            continue;
+        };
+        if digest != &current.approval_digest
+            || !matches!(
+                (&control, current.state),
+                (
+                    Control::Approve { .. },
+                    RunState::AwaitingApproval | RunState::Queued
+                ) | (Control::Verify { .. }, RunState::Verifying)
+            )
+        {
+            return Err(CoordinatorError::Invalid("control authority or state"));
+        }
+        let pending: u32 = tx.query_row(
+            "SELECT count(*) FROM controls WHERE instance=?1 AND state='pending'",
+            [instance],
+            |r| r.get(0),
+        )?;
+        if pending >= 64 {
+            return Err(CoordinatorError::Limit);
+        }
+        let changed = if existing.is_some() {
+            tx.execute(
+                "UPDATE controls SET state='pending' WHERE id=?1 AND state='rejected'",
+                [&id],
+            )?
+        } else {
+            tx.execute(
+                "INSERT OR IGNORE INTO controls VALUES(?1,?2,?3,?4,'pending')",
+                params![id, instance, run, serialized],
+            )?
+        };
+        if changed > 0 {
+            append(&tx, instance, "control.requested", &id)?;
+        }
+        tx.commit()?;
+        return Ok(id);
     }
-    let pending: u32 = tx.query_row(
-        "SELECT count(*) FROM controls WHERE instance=?1 AND state='pending'",
-        [instance],
-        |r| r.get(0),
-    )?;
-    if pending >= 64 {
-        return Err(CoordinatorError::Limit);
-    }
-    let changed = if existing.is_some() {
-        tx.execute(
-            "UPDATE controls SET state='pending' WHERE id=?1 AND state='rejected'",
-            [&id],
-        )?
-    } else {
-        tx.execute(
-            "INSERT OR IGNORE INTO controls VALUES(?1,?2,?3,?4,'pending')",
-            params![id, instance, run, serialized],
-        )?
-    };
-    if changed > 0 {
-        append(&tx, instance, "control.requested", &id)?;
-    }
-    tx.commit()?;
-    Ok(id)
+    Err(CoordinatorError::Locked)
 }
 fn control_connection(root: &Path) -> Result<Connection> {
     control(root, true)
