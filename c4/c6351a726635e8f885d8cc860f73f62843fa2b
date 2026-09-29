@@ -1,0 +1,44 @@
+docs/install.md
+  s_00c6bf8ee605be::t_0533519565d207 1-207
+  s_00c6bf8ee605be::t_447d8ecd688df0 208
+README.md
+  s_00c6bf8ee605be::t_492746f0b81888 51-62
+  s_00c6bf8ee605be::t_bc17b2bcf60d88 179-184,187-236
+  s_00c6bf8ee605be::t_8e698b2a933d14 266-267
+  s_00c6bf8ee605be::t_eee95703c66edd 87
+  s_00c6bf8ee605be::t_77936960220a8c 86,88-100
+  s_00c6bf8ee605be::t_35af9ec600ff1d 111-112
+docs/completion.md
+  s_00c6bf8ee605be::t_2d82f624c56647 318-320
+  s_2b47aafd5c6e51::t_19b1c258d2f8c2 21,281-317,321
+CHANGELOG.md
+  s_00c6bf8ee605be::t_f4b4b20bc5edc4 1-76
+docs/media/routing-demo-transcript.json
+  s_00c6bf8ee605be::t_7e2f336e449401 4
+docs/remaining-acceptance.md
+  s_00c6bf8ee605be::t_bddd7b2bfd1dd8 91-92,115-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "c4c6351a726635e8f885d8cc860f73f62843fa2b",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
