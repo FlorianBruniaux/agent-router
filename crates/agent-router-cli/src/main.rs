@@ -152,8 +152,9 @@ enum ExitClass {
 }
 
 /// Codes whose effect may already have happened; retrying blindly could repeat it.
-const OUTCOME_UNKNOWN_CODES: [&str; 2] = [
+const OUTCOME_UNKNOWN_CODES: [&str; 3] = [
     "backend_store.published_durability_unknown",
+    "runtime.approval_key.published_durability_unknown",
     "runtime.cleanup.unknown",
 ];
 
@@ -643,6 +644,10 @@ mod exit_class_tests {
             ("feedback.storage_locked", Retryable),
             ("backend_store.published_durability_unknown", OutcomeUnknown),
             ("runtime.cleanup.unknown", OutcomeUnknown),
+            (
+                "runtime.approval_key.published_durability_unknown",
+                OutcomeUnknown,
+            ),
             ("runtime.integrity", Integrity),
             ("coordinator.integrity", Integrity),
             ("backend_store.integrity", Integrity),
@@ -697,8 +702,21 @@ mod exit_class_tests {
         }
     }
 
+    /// `main.rs` without the classification tables and the test module.
+    fn emitted_part_of_main(text: &str) -> String {
+        let tables = text
+            .find("/// Codes whose effect may already have happened")
+            .expect("classification tables start");
+        let classifier = text.find("fn exit_class(").expect("classifier");
+        let tests = text
+            .find("#[cfg(test)]\nmod exit_class_tests")
+            .expect("test module");
+        assert!(tables < classifier && classifier < tests);
+        format!("{}{}", &text[..tables], &text[classifier..tests])
+    }
+
     /// String literals shaped like a dotted error code, e.g. `"runtime.busy"`.
-    fn quoted_codes(text: &str) -> Vec<&str> {
+    fn quoted_codes(text: &str) -> std::vec::IntoIter<&str> {
         let bytes = text.as_bytes();
         let mut codes = Vec::new();
         for (start, _) in text.match_indices('"') {
@@ -715,22 +733,32 @@ mod exit_class_tests {
                 codes.push(code);
             }
         }
-        codes
+        codes.into_iter()
     }
 
     #[test]
     fn every_emitted_integrity_contention_or_durability_code_has_its_class() {
-        let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
         let mut texts = Vec::new();
-        for entry in std::fs::read_dir(&source).unwrap() {
-            let path = entry.unwrap().path();
-            if path.extension().is_some_and(|e| e == "rs") {
-                texts.push(std::fs::read_to_string(&path).unwrap());
+        let mut pending = vec![Path::new(env!("CARGO_MANIFEST_DIR")).join("src")];
+        while let Some(directory) = pending.pop() {
+            for entry in std::fs::read_dir(&directory).unwrap() {
+                let path = entry.unwrap().path();
+                if path.is_dir() {
+                    pending.push(path);
+                } else if path.extension().is_some_and(|e| e == "rs") {
+                    texts.push((path.clone(), std::fs::read_to_string(&path).unwrap()));
+                }
             }
         }
         let mut emitted = std::collections::BTreeSet::new();
-        for text in &texts {
-            emitted.extend(quoted_codes(text));
+        for (path, text) in &texts {
+            if path.file_name().is_some_and(|name| name == "main.rs") {
+                // The classification tables and these tests would otherwise
+                // count their own literals as emitted codes.
+                emitted.extend(quoted_codes(&emitted_part_of_main(text)).map(str::to_owned));
+            } else {
+                emitted.extend(quoted_codes(text).map(str::to_owned));
+            }
         }
         let mut checked = 0;
         for code in &emitted {
@@ -749,7 +777,7 @@ mod exit_class_tests {
         assert!(checked >= 15, "scanner found only {checked} codes");
         // A typo in a table would silently leave the real code in class 2.
         for code in INTEGRITY_CODES.iter().chain(&OUTCOME_UNKNOWN_CODES) {
-            assert!(emitted.contains(code), "{code} is not emitted by the CLI");
+            assert!(emitted.contains(*code), "{code} is not emitted by the CLI");
         }
     }
 }

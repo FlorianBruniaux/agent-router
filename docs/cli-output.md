@@ -58,7 +58,7 @@ command shares the same classes.
 | `3` | Valid request, outcome not final (clarification, abstention, `no_route`, pending dependencies, failed or unverified run). | Read the JSON result. | none: a command result, not an error line |
 | `4` | Internal failure, including unreadable host output. | Report it; retrying the same input is not expected to help. | `route.internal`, `decision.render`, `*.serialization`, `*.json`, `*.storage`, `*.storage_database` |
 | `5` | Transient contention. | Relaunch the same command unchanged. | `*.busy`, `*.locked`, `*.storage_locked` |
-| `6` | Outcome unknown. | Inspect the state before any retry; the effect may already exist. | `backend_store.published_durability_unknown`, `runtime.cleanup.unknown` |
+| `6` | Outcome unknown. | Inspect the state before any retry; the effect may already exist. | `backend_store.published_durability_unknown`, `runtime.approval_key.published_durability_unknown`, `runtime.cleanup.unknown` |
 | `7` | Integrity failure: a stored record, a hash chain or a signature no longer matches. | Treat the store or sealed input as altered; do not retry blindly. | `*.integrity`, `*.storage_corrupt`, `policy.store.invalid`, `feedback.store.invalid`, `feedback.policy.signature`, `assets.review.trust_mismatch`, `backend_store.anchor` |
 | `130` | `serve` forced to stop by a second signal. | Restart; the next start replaces the stale socket. | none: a command result |
 

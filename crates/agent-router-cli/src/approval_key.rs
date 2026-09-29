@@ -15,6 +15,10 @@ pub(crate) const KEY_BYTES: usize = 32;
 const UNSAFE: CliError = CliError::Product("runtime.approval_key.unsafe");
 const UNAVAILABLE: CliError = CliError::Product("runtime.approval_key.unavailable");
 const INTEGRITY: CliError = CliError::Product("runtime.approval_key.integrity");
+/// The key is published but the store directory could not be synced: it may
+/// not survive a crash, which would only make the new approval stale.
+const DURABILITY_UNKNOWN: CliError =
+    CliError::Product("runtime.approval_key.published_durability_unknown");
 
 /// Never serialized, displayed or logged.
 pub(crate) struct ApprovalKey([u8; KEY_BYTES]);
@@ -104,7 +108,10 @@ fn create(store: &Path, path: &Path) -> Result<(), CliError> {
     })();
     let _ = fs::remove_file(&temporary);
     match written {
-        Ok(()) => Ok(()),
+        // Persist the new directory entry (and the temporary's removal).
+        Ok(()) => File::open(store)
+            .and_then(|directory| directory.sync_all())
+            .map_err(|_| DURABILITY_UNKNOWN),
         // Another approval published its key first; read that one.
         Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(()),
         Err(_) => Err(UNAVAILABLE),

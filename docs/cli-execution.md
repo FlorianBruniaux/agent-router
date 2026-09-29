@@ -193,13 +193,21 @@ approval digest is meant to be displayed and pasted and all its other inputs
 are known: with a plain hash, whoever sees the digest could confirm a guessed
 API key offline. The key is created by the first review or approval that binds
 a secret value, as a private file (mode 0600, created exclusively, never through a
-symlink) published atomically, and it is read again at every approval. A key
-that is not a regular private file of the current user, or a store directory
-that is not private, is refused with `runtime.approval_key.unsafe`; a key of the
-wrong length is refused with `runtime.approval_key.integrity`. Deleting or
-replacing the key makes every pending approval that binds a secret value stale:
-the next review or approval creates or reads another key, so review again for
-a new digest. A digest that binds no secret value never reads the key.
+symlink) published atomically, and it is read again at every approval. After
+publication the store directory is synced; if that sync fails, the command
+stops with `runtime.approval_key.published_durability_unknown` (exit `6`): the
+key exists but may not survive a crash, so check that `approval.key` is present
+before approving. A key that is not a regular private file of the current
+user, or a store directory that is not private, is refused with
+`runtime.approval_key.unsafe` (exit `2`).
+
+A key of the wrong length, for example an empty or truncated file, is refused
+with `runtime.approval_key.integrity` (exit `7`) at every review and approval
+that binds a secret value, until the file is deleted by hand. Nothing repairs
+or replaces it automatically. Deleting or replacing the key makes every pending
+approval that binds a secret value stale: the next review or approval creates
+or reads another key, so review again for a new digest. A digest that binds no
+secret value never reads the key.
 
 Two optional fields control private recording:
 
