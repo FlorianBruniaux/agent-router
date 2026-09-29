@@ -501,7 +501,7 @@ fn execution_contract_seals_instances_and_review_binds_generation() {
         .args(["--approve", review["approval_digest"].as_str().unwrap()])
         .assert()
         .code(7)
-        .stderr("error: runtime.integrity\n");
+        .stderr("{\"schema_version\":1,\"error\":\"runtime.integrity\"}\n");
 }
 
 /// Rewrites the fixture into the execute node of a plan/execute/verify
@@ -1018,7 +1018,7 @@ fn approval_binds_environment_values_without_exposing_secrets() {
         assert_eq!(outcome.status.code(), Some(2), "{outcome:?}");
         assert_eq!(
             outcome.stderr,
-            b"error: runtime.approval.required_or_changed\n"
+            b"{\"schema_version\":1,\"error\":\"runtime.approval.required_or_changed\"}\n"
         );
         observed.push(outcome);
     }
@@ -1048,7 +1048,7 @@ fn approval_binds_environment_values_without_exposing_secrets() {
     assert_eq!(rekeyed.status.code(), Some(2), "{rekeyed:?}");
     assert_eq!(
         rekeyed.stderr,
-        b"error: runtime.approval.required_or_changed\n"
+        b"{\"schema_version\":1,\"error\":\"runtime.approval.required_or_changed\"}\n"
     );
     fs::write(&key_path, &key).unwrap();
     assert_eq!(approve().status.code(), Some(3));
@@ -1107,7 +1107,7 @@ fn definition_naming_policy_file_and_policy_store_is_refused() {
         .assert()
         .code(2)
         .stdout(predicates::str::is_empty())
-        .stderr("error: policy.composition.denied\n");
+        .stderr("{\"schema_version\":1,\"error\":\"policy.composition.denied\"}\n");
     assert!(!f.store.exists());
 }
 
@@ -1129,7 +1129,7 @@ fn broken_event_chain_exits_with_the_integrity_class() {
         .assert()
         .code(7)
         .stdout(predicates::str::is_empty())
-        .stderr("error: runtime.integrity\n");
+        .stderr("{\"schema_version\":1,\"error\":\"runtime.integrity\"}\n");
 }
 
 #[test]
@@ -1150,7 +1150,7 @@ fn sqlite_contention_exits_with_the_retryable_class() {
         .assert()
         .code(5)
         .stdout(predicates::str::is_empty())
-        .stderr("error: runtime.busy\n");
+        .stderr("{\"schema_version\":1,\"error\":\"runtime.busy\"}\n");
     holder.execute_batch("ROLLBACK").unwrap();
     // Relaunching once the contention is gone succeeds.
     cancel().assert().success();
@@ -1175,5 +1175,5 @@ fn a_store_database_that_is_not_sqlite_exits_with_the_integrity_class() {
         .assert()
         .code(7)
         .stdout(predicates::str::is_empty())
-        .stderr("error: runtime.storage_corrupt\n");
+        .stderr("{\"schema_version\":1,\"error\":\"runtime.storage_corrupt\"}\n");
 }

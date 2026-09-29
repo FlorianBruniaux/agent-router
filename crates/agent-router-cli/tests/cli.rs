@@ -75,14 +75,16 @@ fn version_is_rendered_by_clap_on_stdout_with_success() {
 }
 
 #[test]
-fn invalid_command_remains_an_opaque_syntax_error() {
-    let mut command = command();
-    command
-        .arg("not-a-command")
-        .assert()
-        .code(2)
-        .stdout(predicate::str::is_empty())
-        .stderr("error: cli.invalid\n");
+fn invalid_command_keeps_the_stable_first_error_line() {
+    let output = command().arg("not-a-command").output().unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(output.stdout.is_empty());
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert_eq!(
+        stderr.lines().next(),
+        Some("error: cli.invalid"),
+        "{stderr}"
+    );
 }
 
 #[test]
@@ -117,7 +119,9 @@ fn malformed_request_returns_code_two_and_keeps_its_body_off_stderr() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr(predicate::str::contains("error: request.json.invalid\n"))
+        .stderr(predicate::str::contains(
+            "{\"schema_version\":1,\"error\":\"request.json.invalid\"}\n",
+        ))
         .stderr(predicate::str::contains(secret).not());
 }
 
@@ -142,7 +146,7 @@ fn invalid_embedded_skill_candidates_return_request_invalid() {
             .assert()
             .code(2)
             .stdout(predicate::str::is_empty())
-            .stderr("error: request.invalid\n");
+            .stderr("{\"schema_version\":1,\"error\":\"request.invalid\"}\n");
     }
 }
 
@@ -158,7 +162,7 @@ fn combined_routing_work_limit_returns_request_invalid() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr("error: request.invalid\n");
+        .stderr("{\"schema_version\":1,\"error\":\"request.invalid\"}\n");
 }
 
 #[test]
@@ -172,7 +176,7 @@ fn oversized_request_is_rejected_before_json_parsing() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr("error: request.too_large\n");
+        .stderr("{\"schema_version\":1,\"error\":\"request.too_large\"}\n");
 }
 
 #[test]
@@ -186,7 +190,7 @@ fn oversized_catalog_is_rejected_before_json_parsing() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr("error: catalog.too_large\n");
+        .stderr("{\"schema_version\":1,\"error\":\"catalog.too_large\"}\n");
 }
 
 #[test]
@@ -214,7 +218,7 @@ fn invalid_catalog_returns_code_two_and_a_single_concise_error_line() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr("error: catalog.invalid\n");
+        .stderr("{\"schema_version\":1,\"error\":\"catalog.invalid\"}\n");
 }
 
 #[test]
@@ -467,4 +471,255 @@ fn a_broken_stdout_pipe_fails_without_panicking_or_reporting_success() {
     assert_eq!(output.status.code(), Some(4), "{stderr}");
     assert!(stderr.contains("route.internal"), "{stderr}");
     assert!(!stderr.contains("panicked"), "{stderr}");
+}
+
+fn stderr_text(output: &std::process::Output) -> String {
+    String::from_utf8(output.stderr.clone()).expect("stderr is UTF-8")
+}
+
+#[test]
+fn usage_errors_keep_the_stable_first_line_then_name_the_problem_and_the_help_command() {
+    let cases: [(&[&str], &str, &str); 5] = [
+        (&["not-a-command"], "not-a-command", "agent-router --help"),
+        (
+            &["route", "--bogus-option"],
+            "--bogus-option",
+            "agent-router route --help",
+        ),
+        (
+            &["route", "--catalog", "catalog.json"],
+            "--request",
+            "agent-router route --help",
+        ),
+        (
+            &["catalog", "show", "--catalog", "c.json"],
+            "--id",
+            "agent-router catalog show --help",
+        ),
+        (&["catalog"], "subcommand", "agent-router catalog --help"),
+    ];
+    for (args, named, help) in cases {
+        let output = command().args(args).output().unwrap();
+        let stderr = stderr_text(&output);
+        assert_eq!(output.status.code(), Some(2), "{args:?}: {stderr}");
+        assert!(output.stdout.is_empty(), "{args:?}");
+        assert_eq!(
+            stderr.lines().next(),
+            Some("error: cli.invalid"),
+            "{args:?}: {stderr}"
+        );
+        assert!(stderr.contains(named), "{args:?}: {stderr}");
+        assert!(
+            stderr.ends_with(&format!("Run '{help}' for usage.\n")),
+            "{args:?}: {stderr}"
+        );
+        // Only the first line carries the stable `error:` prefix scripts match.
+        assert_eq!(
+            stderr.lines().filter(|l| l.starts_with("error:")).count(),
+            1,
+            "{args:?}: {stderr}"
+        );
+    }
+}
+
+#[test]
+fn a_bare_invocation_is_a_usage_error_with_a_pointer_to_help() {
+    let output = command().output().unwrap();
+    let stderr = stderr_text(&output);
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert!(output.stdout.is_empty());
+    assert_eq!(stderr.lines().next(), Some("error: cli.invalid"));
+    assert!(
+        stderr.ends_with("Run 'agent-router --help' for usage.\n"),
+        "{stderr}"
+    );
+    // The short form never dumps the whole command list.
+    assert!(stderr.lines().count() <= 6, "{stderr}");
+}
+
+#[test]
+fn with_json_every_error_is_one_json_line_on_stderr_and_stdout_stays_empty() {
+    let temporary = TempDir::new().unwrap();
+    let request = temporary.path().join("request.json");
+    let secret = "DO_NOT_LEAK_REQUEST_BODY";
+    fs::write(
+        &request,
+        format!("{{\"task\":{{\"objective\":\"{secret}\"}}}}"),
+    )
+    .unwrap();
+    let product = command()
+        .args(route_args(request, catalog_path()))
+        .output()
+        .unwrap();
+    // A clap failure is detected from the raw `--json` argument.
+    let usage = command()
+        .args(["route", "--json", "--bogus-option"])
+        .output()
+        .unwrap();
+    let missing = command()
+        .args(["catalog", "list", "--json"])
+        .output()
+        .unwrap();
+    for (output, code) in [
+        (product, "request.json.invalid"),
+        (usage, "cli.invalid"),
+        (missing, "cli.invalid"),
+    ] {
+        let stderr = stderr_text(&output);
+        assert_eq!(output.status.code(), Some(2), "{stderr}");
+        assert!(output.stdout.is_empty(), "{stderr}");
+        assert_eq!(stderr.lines().count(), 1, "{stderr}");
+        let value: serde_json::Value = serde_json::from_str(&stderr).expect("stderr is JSON");
+        assert_eq!(
+            value,
+            serde_json::json!({"schema_version": 1, "error": code}),
+            "{stderr}"
+        );
+        assert!(!stderr.contains(secret));
+    }
+}
+
+#[test]
+fn an_argument_after_the_separator_does_not_switch_errors_to_json() {
+    let output = command()
+        .args(["not-a-command", "--", "--json"])
+        .output()
+        .unwrap();
+    assert_eq!(
+        stderr_text(&output).lines().next(),
+        Some("error: cli.invalid")
+    );
+}
+
+#[test]
+fn top_level_help_describes_every_subcommand() {
+    let output = command().arg("--help").output().unwrap();
+    assert!(output.status.success());
+    let help = String::from_utf8(output.stdout).unwrap();
+    let commands: Vec<&str> = help
+        .lines()
+        .skip_while(|line| *line != "Commands:")
+        .skip(1)
+        .take_while(|line| !line.trim().is_empty())
+        .collect();
+    assert!(commands.len() >= 30, "{help}");
+    for line in commands {
+        assert!(
+            line.split_whitespace().count() >= 2,
+            "subcommand without description: {line:?}"
+        );
+    }
+}
+
+#[test]
+fn every_nested_subcommand_has_a_description() {
+    // Walks the whole command tree through `--help`, at every depth.
+    let subcommands = |path: &[String]| -> Vec<(String, String)> {
+        let mut args = path.to_vec();
+        args.push("--help".into());
+        let output = command().args(&args).output().unwrap();
+        assert!(output.status.success(), "{path:?}");
+        String::from_utf8(output.stdout)
+            .unwrap()
+            .lines()
+            .skip_while(|line| *line != "Commands:")
+            .skip(1)
+            .take_while(|line| !line.trim().is_empty())
+            .map(|line| {
+                let name = line.split_whitespace().next().unwrap_or_default();
+                (name.to_owned(), line.to_owned())
+            })
+            .filter(|(name, _)| name != "help")
+            .collect()
+    };
+    let mut pending = vec![Vec::<String>::new()];
+    let mut visited = 0;
+    while let Some(path) = pending.pop() {
+        for (name, line) in subcommands(&path) {
+            assert!(
+                line.split_whitespace().count() >= 2,
+                "{path:?}: subcommand without description: {line:?}"
+            );
+            let mut child = path.clone();
+            child.push(name);
+            pending.push(child);
+            visited += 1;
+        }
+    }
+    assert!(visited >= 80, "only {visited} subcommands visited");
+}
+
+#[test]
+fn common_options_and_examples_are_documented_in_help() {
+    let help = |args: &[&str]| {
+        let output = command().args(args).output().unwrap();
+        assert!(output.status.success(), "{args:?}");
+        String::from_utf8(output.stdout).unwrap()
+    };
+    let route = help(&["route", "--help"]);
+    assert!(
+        route.contains("Required: route prints only JSON"),
+        "{route}"
+    );
+    let run = help(&["run", "--help"]);
+    assert!(run.contains("Without --approve"), "{run}");
+    assert!(run.contains("Unix seconds") || run.contains("--store <STORE>"));
+    for command in ["route", "explain", "plan", "run", "doctor"] {
+        let text = help(&[command, "--help"]);
+        assert!(text.contains("Example:"), "{command}: {text}");
+        assert!(
+            text.contains(&format!("agent-router {command} ")),
+            "{command}"
+        );
+    }
+    for (command, option, word) in [
+        ("plan", "--json", "JSON"),
+        ("doctor", "--now", "Unix seconds"),
+        ("status", "--store", "store"),
+        ("run", "--approve", "digest"),
+        ("run", "--sandbox", "sandbox"),
+    ] {
+        let text = help(&[command, "--help"]);
+        let line = text
+            .lines()
+            .skip_while(|line| !line.trim_start().starts_with(option))
+            .take(3)
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(line.contains(word), "{command} {option}: {line:?}");
+    }
+}
+
+#[test]
+fn catalog_commands_render_a_human_view_without_json() {
+    // `structured_output` forces JSON for every catalog subcommand before
+    // `catalogs::run`, so no catalog path can report `cli.json.required`.
+    let catalog = catalog_path();
+    let catalog = catalog.to_str().unwrap();
+    for args in [
+        vec!["catalog", "validate", "--catalog", catalog],
+        vec!["catalog", "list", "--catalog", catalog],
+        vec![
+            "catalog",
+            "show",
+            "--catalog",
+            catalog,
+            "--id",
+            "gpt-5.6-terra",
+        ],
+    ] {
+        let output = command().args(&args).output().unwrap();
+        let stdout = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            output.status.success(),
+            "{args:?}: {}",
+            stderr_text_of(&output.stderr)
+        );
+        assert!(stdout.starts_with("Catalog\n"), "{args:?}: {stdout}");
+        assert!(output.stderr.is_empty(), "{args:?}");
+    }
+}
+
+fn stderr_text_of(stderr: &[u8]) -> String {
+    String::from_utf8_lossy(stderr).into_owned()
 }

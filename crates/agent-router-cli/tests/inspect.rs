@@ -93,7 +93,7 @@ fn auto_requires_a_host_marker_and_explicit_version_mismatch_is_rejected() {
         .args(["inspect", "--host", "auto", "--json"])
         .assert()
         .code(2)
-        .stderr("error: host.unknown\n");
+        .stderr("{\"schema_version\":1,\"error\":\"host.unknown\"}\n");
     let dir = TempDir::new().unwrap();
     let source = dir.path().join("cache.json");
     fs::write(&source, serde_json::to_vec(&cache()).unwrap()).unwrap();
@@ -101,11 +101,11 @@ fn auto_requires_a_host_marker_and_explicit_version_mismatch_is_rejected() {
         .args(["--observed-version", "0.154.0"])
         .assert()
         .code(2)
-        .stderr("error: probe.version.mismatch\n");
+        .stderr("{\"schema_version\":1,\"error\":\"probe.version.mismatch\"}\n");
     inspect(&source, "86401")
         .assert()
         .code(2)
-        .stderr("error: snapshot.source.stale\n");
+        .stderr("{\"schema_version\":1,\"error\":\"snapshot.source.stale\"}\n");
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn corrupted_snapshot_fails_before_routing_and_provenance_changes_identity() {
         .assert()
         .code(2)
         .stdout(predicate::str::is_empty())
-        .stderr("error: snapshot.hash.invalid\n");
+        .stderr("{\"schema_version\":1,\"error\":\"snapshot.hash.invalid\"}\n");
 }
 
 #[cfg(unix)]
@@ -205,12 +205,12 @@ fn snapshot_special_files_and_symlinks_fail_without_waiting() {
         .timeout(Duration::from_secs(2))
         .assert()
         .code(2)
-        .stderr("error: snapshot.read\n");
+        .stderr("{\"schema_version\":1,\"error\":\"snapshot.read\"}\n");
     route(&request, Path::new("/dev/zero"))
         .timeout(Duration::from_secs(2))
         .assert()
         .code(2)
-        .stderr("error: snapshot.read\n");
+        .stderr("{\"schema_version\":1,\"error\":\"snapshot.read\"}\n");
     let target = dir.path().join("snapshot.json");
     fs::write(&target, "{}").unwrap();
     let link = dir.path().join("link.json");
@@ -218,5 +218,5 @@ fn snapshot_special_files_and_symlinks_fail_without_waiting() {
     route(&request, &link)
         .assert()
         .code(2)
-        .stderr("error: snapshot.read\n");
+        .stderr("{\"schema_version\":1,\"error\":\"snapshot.read\"}\n");
 }

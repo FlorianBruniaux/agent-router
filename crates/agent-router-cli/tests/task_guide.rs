@@ -456,7 +456,7 @@ fn zero_time_or_tokens_and_unsafe_scope_do_not_become_valid_tasks() {
         assert!(output.stdout.is_empty());
         assert_eq!(
             String::from_utf8_lossy(&output.stderr),
-            "error: workflow.invalid\n"
+            "{\"schema_version\":1,\"error\":\"workflow.invalid\"}\n"
         );
         assert!(!out.exists());
     }

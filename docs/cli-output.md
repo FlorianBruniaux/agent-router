@@ -19,8 +19,27 @@ cannot yet be planned. They do not infer a budget or permission from task text.
 New normalization and plan envelopes use schema 2; historical workflow plans
 remain readable. An assessment is an explanation, not an approval.
 
+`route` is the exception: it prints only the decision JSON and requires
+`--json`; without it the command fails with `cli.json.required` (exit `2`).
+Read a saved decision with `explain --decision decision.json`.
+
+The human view starts with a summary of the outcome when the result has one:
+`Status` (from `status`, `state`, `overall` or `outcome`, or from the nested
+`run` state; for a phase decision, `selected` or `abstained`), `Selected` with
+the candidate and its `model/effort`, or `Abstention` with its reason,
+`Executed`, and the full `Approval digest`. The detail follows, with the decided
+side of a selection first, then every other field. Top-level hashes and digests
+(`*_hash`, `*_sha256`, `*_digest`) are grouped at the end under `Hashes:`; in
+nested objects they follow their sibling fields. An array element is named by
+its `id` (or `name`, `candidate_id`, `run_id` and similar), and by its
+candidate for a selection, instead of a position; an element without such a
+field keeps its `[n]` position.
+
 Human output preserves full receipt and approval identifiers. `UNKNOWN` stays
-unknown; JSON null is displayed as `not set (null)`, never as false or zero.
+unknown; JSON null is displayed as `not set (null)`, never as false or zero,
+because a null field can mean an unknown value. The one omission is the null
+side of a decided pair: once `selected` is set, a null `abstention` is not
+displayed, and the reverse. When both are null, both are displayed.
 Control characters and bidirectional control marks in external text are escaped
 so they cannot issue terminal commands or conceal adjacent fields.
 
@@ -33,8 +52,10 @@ not undo or repeat that write.
 `config --layers` accepts strict bounded JSON, TOML and YAML; see
 [configuration layer formats](configuration-formats.md) for the supported schema
 and refusal rules. Task input and other product manifests retain their JSON
-contracts. An interactive task questionnaire is not implemented by the output
-renderer.
+contracts. The output renderer never asks questions. `task-guide --interactive`
+is a separate, opt-in question loop: it writes its prompts to stderr, reads the
+answers from stdin, and leaves stdout for the final report in either format
+(see [guided task intake](task-guide.md)).
 
 `escalation bound` displays an accounting preview; only its explicit approval
 persists a parent-attested ceiling. `escalation propose` displays an inert,
@@ -50,6 +71,29 @@ stable dotted identifier such as `runtime.approval.required_or_changed`. Its
 exit status comes from one table in the CLI (`exit_class` in
 `crates/agent-router-cli/src/main.rs`), keyed on the code alone, so every
 command shares the same classes.
+
+When `--json` appears among the arguments (before any `--` separator), the
+error line is JSON instead, with the same body as the
+[local API](local-api.md): `{"schema_version":1,"error":"<code>"}`. It is one
+line on stderr, stdout stays empty and the exit status is unchanged. The
+argument is detected before parsing, so an invalid command line that includes
+`--json` also reports `{"schema_version":1,"error":"cli.invalid"}`. Only the
+code is written, never an input value. Breaking change: before this rule, an
+error was always the text line, even with `--json`.
+
+An invalid command line without `--json` (unknown subcommand or option, missing
+argument, invalid value, bare `agent-router`) exits `2`. Its first line stays
+`error: cli.invalid`; the following lines give the parser's short explanation,
+which quotes only the arguments passed, and end with
+`Run 'agent-router <command> --help' for usage.` Scripts should match the first
+line only. `--help` and `--version` print to stdout and exit `0`.
+
+```text
+error: cli.invalid
+unexpected argument '--bogus-option' found
+Usage: agent-router route [OPTIONS] --request <REQUEST> --catalog <CATALOG>
+Run 'agent-router route --help' for usage.
+```
 
 | Status | Meaning | What to do | Codes |
 | --- | --- | --- | --- |

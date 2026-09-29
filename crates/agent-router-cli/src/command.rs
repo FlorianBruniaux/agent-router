@@ -2,6 +2,28 @@ use std::path::PathBuf;
 
 use clap::{Args, Subcommand, ValueEnum};
 
+const ROUTE_AFTER_HELP: &str = "\
+Example:
+  agent-router route --request tests/fixtures/requests/codex-implementation.json \\
+    --catalog assets/catalogs/codex-core-v1.json --json > decision.json
+  agent-router explain --decision decision.json";
+const EXPLAIN_AFTER_HELP: &str = "\
+Example:
+  agent-router explain --decision decision.json";
+const PLAN_AFTER_HELP: &str = "\
+Example:
+  agent-router plan --task task.json --risk-context risk-context.json
+  agent-router plan --task task.json --risk-context risk-context.json --json";
+const RUN_AFTER_HELP: &str = "\
+Example:
+  agent-router run --definition prepared/definition.json --store runtime --sandbox sandbox.json
+  agent-router run --definition prepared/definition.json --store runtime --sandbox sandbox.json \\
+    --approve DIGEST_FROM_REVIEW";
+const DOCTOR_AFTER_HELP: &str = "\
+Example:
+  agent-router doctor --request manifest.json
+  agent-router doctor --runtime-root /absolute/private/runtime --json";
+
 #[derive(Clone, Copy, ValueEnum)]
 pub enum HostChoice {
     Auto,
@@ -11,12 +33,16 @@ pub enum HostChoice {
 
 #[derive(Args)]
 pub struct PhaseArgs {
+    /// Phase routing context JSON.
     #[arg(long)]
     pub context: PathBuf,
+    /// Host snapshot JSON, as printed by `inspect`.
     #[arg(long)]
     pub host_snapshot: PathBuf,
+    /// Model and skill catalog JSON.
     #[arg(long)]
     pub catalog: PathBuf,
+    /// Routing policy JSON; overrides --policy-store.
     #[arg(long)]
     pub policy: Option<PathBuf>,
     /// Use the explicitly selected store's active offline policy unless --policy overrides it.
@@ -25,8 +51,10 @@ pub struct PhaseArgs {
     /// Independently pinned model/skill contracts and fresh native availability.
     #[arg(long)]
     pub asset_authority: Option<PathBuf>,
+    /// Current time override, in Unix seconds (for fixtures and replays).
     #[arg(long)]
     pub now: Option<u64>,
+    /// Maximum accepted host snapshot age, in seconds.
     #[arg(long, default_value_t = 86400)]
     pub snapshot_max_age_seconds: u64,
 }
@@ -35,6 +63,7 @@ pub struct PhaseArgs {
 pub enum Commands {
     /// Configure and inspect an explicitly shared concurrency domain.
     Admission {
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
@@ -42,6 +71,7 @@ pub enum Commands {
     },
     /// Explicit standard-sidecar capability and single-event export commands.
     Sidecar {
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
@@ -49,6 +79,7 @@ pub enum Commands {
     },
     /// Review accounting bounds and propose durable attempt-based escalation.
     Escalation {
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
@@ -56,46 +87,66 @@ pub enum Commands {
     },
     /// Generate a bounded global plan from eligible metadata only.
     GeneratePlan {
+        /// Plan generation manifest JSON.
         #[arg(long)]
         manifest: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
     /// Manage signed, explicitly approved semantic backend activation.
     BackendActivation {
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
         command: crate::backend_activation::Command,
     },
+    /// Seal, review, run and control a multi-node workflow.
     Coordinate {
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
         command: CoordinateCommand,
     },
+    /// Review asset contracts and skill bodies without granting approval.
     Assets {
         #[command(subcommand)]
         command: AssetCommand,
     },
+    /// Assemble one workflow node into a private request bundle; starts no process.
     Prepare {
+        /// Preparation manifest JSON.
         #[arg(long)]
         manifest: PathBuf,
+        /// New private directory for the bundle; an existing path is refused.
         #[arg(long)]
         output_directory: Option<PathBuf>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
     /// Review or execute one immutable workflow node.
+    ///
+    /// Without --approve, run only reviews: it prints the request preview and
+    /// its approval digest, and starts no host process. Pass that exact digest
+    /// with --approve to execute.
+    #[command(after_help = RUN_AFTER_HELP)]
     Run {
+        /// Run definition written by `prepare --output-directory`.
         #[arg(long)]
         definition: PathBuf,
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Sandbox and privacy configuration JSON.
         #[arg(long)]
         sandbox: PathBuf,
+        /// Approval digest printed by the review; without it nothing executes.
         #[arg(long)]
         approve: Option<String>,
         /// Retry a failed or timed-out run. Alone it previews the retry and its
@@ -103,121 +154,173 @@ pub enum Commands {
         /// it performs the transition, then executes.
         #[arg(long)]
         retry: bool,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Show the stored state and cleanup evidence of one run.
     Status {
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Run identifier.
         #[arg(long)]
         run_id: String,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Request cancellation of one run.
     Cancel {
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Run identifier.
         #[arg(long)]
         run_id: String,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// List the hash-chained events of one run.
     Events {
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Run identifier.
         #[arg(long)]
         run_id: String,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Report the Git source state of a workspace.
     SourceState {
+        /// Workspace (Git repository) directory.
         #[arg(long)]
         workspace: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Validate a workflow plan and seal or verify its execution contract.
     Workflow {
+        /// Workflow plan JSON.
         #[arg(long)]
         plan: PathBuf,
+        /// Execution contract JSON for every plan node.
         #[arg(long)]
         execution_contract: Option<PathBuf>,
+        /// Compute the contract hash instead of verifying an existing one; grants no approval.
         #[arg(long, requires = "execution_contract")]
         seal_contract: bool,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Record explicit verifier evidence for one run.
     Verify {
+        /// Run definition JSON.
         #[arg(long)]
         definition: PathBuf,
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Verification evidence JSON.
         #[arg(long)]
         evidence: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Preview, apply, keep or discard the result of one run.
     Artifacts {
+        /// Run definition JSON.
         #[arg(long)]
         definition: PathBuf,
+        /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
         command: ArtifactCommand,
     },
+    /// Record and export consented, redacted local feedback.
     Feedback {
+        /// Private feedback store directory (mode 0700).
         #[arg(long)]
         store: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long, global = true)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
         command: FeedbackCommand,
     },
+    /// Manage offline routing policies in the feedback store.
     Policy {
+        /// Private feedback store directory (mode 0700).
         #[arg(long)]
         store: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long, global = true)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
         #[command(subcommand)]
         command: PolicyCommand,
     },
+    /// Diagnose routing inputs or a runtime store without changing them.
+    #[command(after_help = DOCTOR_AFTER_HELP)]
     Doctor {
+        /// Diagnostics manifest JSON.
         #[arg(
             long,
             required_unless_present = "runtime_root",
             conflicts_with = "runtime_root"
         )]
         request: Option<PathBuf>,
+        /// Runtime store directory to inspect passively.
         #[arg(long, conflicts_with_all = ["request", "deep"])]
         runtime_root: Option<PathBuf>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Also validate catalog, index and body bindings named by the manifest.
         #[arg(long)]
         deep: bool,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Export or verify a redacted audit bundle.
     Audit {
         #[command(subcommand)]
         command: AuditCommand,
     },
+    /// Resolve explicit configuration layers into the effective configuration.
     Config {
+        /// Configuration layers file (.json, .toml, .yaml or .yml).
         #[arg(long)]
         layers: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Route one phase from a context, a host snapshot and a catalog.
     RoutePhase {
         #[command(flatten)]
         inputs: PhaseArgs,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Run a decision backend in shadow mode beside the deterministic phase route.
     Backend {
         #[command(flatten)]
         inputs: PhaseArgs,
@@ -237,42 +340,62 @@ pub enum Commands {
         timeout_ms: u64,
         #[arg(long, default_value_t = 800000)]
         minimum_confidence_micros: u32,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Replay a sealed routing record under a named policy.
     Replay {
+        /// Sealed replay record JSON.
         #[arg(long)]
         record: PathBuf,
+        /// Policy name to replay under.
         #[arg(long)]
         policy: String,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
         #[arg(long, default_value_t = 86400)]
         snapshot_max_age_seconds: u64,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Evaluate routing policies on sealed replay records.
     Eval {
         #[command(subcommand)]
         command: EvalCommand,
     },
+    /// Validate, list, show or refresh a model and skill catalog.
     Catalog {
         #[command(subcommand)]
         command: CatalogCommand,
     },
+    /// Route a task across plan, execute and verify; prints decision JSON only.
+    ///
+    /// route has no human view: --json is required. Read a saved decision
+    /// with `explain`.
+    #[command(after_help = ROUTE_AFTER_HELP)]
     Route {
+        /// Route request JSON.
         #[arg(long)]
         request: PathBuf,
+        /// Catalog JSON (schema 1, or a generated schema 2 catalog).
         #[arg(long)]
         catalog: PathBuf,
+        /// Host snapshot JSON; replaces the request's host and capabilities.
         #[arg(long)]
         host_snapshot: Option<PathBuf>,
+        /// Metadata index whose matches become the request's skill candidates.
         #[arg(long)]
         retrieval: Option<PathBuf>,
+        /// Maximum accepted host snapshot age, in seconds.
         #[arg(long, default_value_t = 86400)]
         snapshot_max_age_seconds: u64,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Required: route prints only JSON and fails with `cli.json.required` without it.
         #[arg(long)]
         json: bool,
     },
@@ -287,7 +410,9 @@ pub enum Commands {
         #[arg(long, default_value_t = 10_000)]
         request_deadline_ms: u64,
     },
+    /// Observe the current host and print a validated host snapshot.
     Inspect {
+        /// Host to observe; `auto` requires a detected Codex session.
         #[arg(long, value_enum, default_value = "auto")]
         host: HostChoice,
         #[arg(long)]
@@ -298,16 +423,21 @@ pub enum Commands {
         observed_at: Option<u64>,
         #[arg(long)]
         observed_version: Option<String>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Search indexed asset metadata by text or by a context query.
     Search {
+        /// Metadata index JSON, as written by `index`.
         #[arg(long)]
         metadata: PathBuf,
         #[arg(long)]
         catalog: Option<PathBuf>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
         #[arg(
@@ -324,18 +454,23 @@ pub enum Commands {
         kind: Option<String>,
         #[arg(long, default_value_t = 5)]
         top_k: usize,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Build a metadata index bound to a catalog.
     Index {
+        /// Asset metadata JSON.
         #[arg(long)]
         metadata: PathBuf,
         #[arg(long)]
         signals: Option<PathBuf>,
         #[arg(long)]
         catalog: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
@@ -349,10 +484,12 @@ pub enum Commands {
         expected_source_hash: String,
         #[arg(long)]
         catalog: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
         #[arg(long)]
         output: Option<PathBuf>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
@@ -360,21 +497,29 @@ pub enum Commands {
     TaskGuide {
         #[command(flatten)]
         args: crate::task_guide::GuideArgs,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Normalize a task and classify its risk; plans and approves nothing.
     Normalize {
+        /// Task input JSON.
         #[arg(long)]
         task: PathBuf,
         /// Explicit parent facts about environment, reversibility and operations.
         #[arg(long)]
         risk_context: Option<PathBuf>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Build a workflow plan for a task; an assessment is not an approval.
+    #[command(after_help = PLAN_AFTER_HELP)]
     Plan {
+        /// Task input JSON.
         #[arg(long)]
         task: PathBuf,
+        /// Explicit parent facts about environment, reversibility and operations.
         #[arg(long)]
         risk_context: Option<PathBuf>,
         #[arg(long, default_value = "plan-execute-verify", value_parser = ["direct-safe", "plan-execute-verify", "explore-then-build", "fanout-review", "incident", "migration", "security-readonly", "bulk-mechanical"])]
@@ -385,10 +530,14 @@ pub enum Commands {
         max_depth: usize,
         #[arg(long, default_value_t = 0)]
         reserve_cost_microusd: u64,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Explain a saved `route` decision in plain text.
+    #[command(after_help = EXPLAIN_AFTER_HELP)]
     Explain {
+        /// Decision JSON written by `route --json`.
         #[arg(long)]
         decision: PathBuf,
     },
@@ -396,6 +545,7 @@ pub enum Commands {
 
 #[derive(Subcommand)]
 pub enum AssetCommand {
+    /// Review the exact assets a phase would use, as digests without bodies.
     Review {
         #[arg(long)]
         manifest: PathBuf,
@@ -403,6 +553,7 @@ pub enum AssetCommand {
         inputs: PhaseArgs,
         #[arg(long = "skill", required = true)]
         skills: Vec<String>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
@@ -410,22 +561,26 @@ pub enum AssetCommand {
 
 #[derive(Subcommand)]
 pub enum CoordinateCommand {
+    /// Validate and hash a proposed workflow definition; grants no approval.
     Seal {
         #[arg(long)]
         definition: PathBuf,
     },
+    /// Show the state of every run in the workflow.
     Status {
         #[arg(long)]
         definition: PathBuf,
         #[arg(long)]
         store: PathBuf,
     },
+    /// Request cancellation of the workflow's runs.
     Cancel {
         #[arg(long)]
         definition: PathBuf,
         #[arg(long)]
         store: PathBuf,
     },
+    /// Review one node and write a private bundle with its approval digest.
     Review {
         #[arg(long)]
         definition: PathBuf,
@@ -442,6 +597,7 @@ pub enum CoordinateCommand {
         #[arg(long)]
         output_directory: PathBuf,
     },
+    /// Execute one wave of reviewed steps, each with its own approval.
     RunWave {
         #[arg(long)]
         definition: PathBuf,
@@ -450,6 +606,7 @@ pub enum CoordinateCommand {
         #[arg(long)]
         store: PathBuf,
     },
+    /// Queue an explicit verification control for a reviewed step.
     Verify {
         #[arg(long)]
         bundle: PathBuf,
@@ -460,6 +617,7 @@ pub enum CoordinateCommand {
         #[arg(long)]
         approval: String,
     },
+    /// Restore reviewed step material after a restart and process queued controls.
     Service {
         #[arg(long)]
         definition: PathBuf,
@@ -468,6 +626,7 @@ pub enum CoordinateCommand {
         #[arg(long)]
         store: PathBuf,
     },
+    /// Preview, apply or discard the artifacts of a reviewed step.
     Artifacts {
         #[arg(long)]
         bundle: PathBuf,
@@ -480,45 +639,62 @@ pub enum CoordinateCommand {
 
 #[derive(Subcommand)]
 pub enum ArtifactCommand {
+    /// Show the integration preview and its approval digest.
     Preview,
+    /// List retained output metadata.
     Outputs,
+    /// List declared result metadata.
     Declared,
+    /// Remove one owned declared result.
     PurgeDeclared {
         #[arg(long)]
         id: String,
     },
+    /// Delete the registered private output files of one attempt.
     PurgeOutputs {
         #[arg(long)]
         attempt: u32,
     },
+    /// Integrate the reviewed patch into the source workspace.
     Apply {
+        /// Exact approval digest printed by `preview`.
         #[arg(long)]
         approve: String,
     },
+    /// Remove the owned worktree after a terminal state.
     Discard {
+        /// Exact run approval digest.
         #[arg(long)]
         approve: String,
     },
+    /// Keep the worktree for manual inspection.
     Keep,
 }
 
 #[derive(Subcommand)]
 pub enum FeedbackCommand {
+    /// Show the current consent state.
     Consent,
+    /// Set collection and learning consent from explicit preferences.
     Configure {
         #[arg(long)]
         preferences: PathBuf,
     },
+    /// Record one redacted observation.
     Record {
         #[arg(long)]
         input: PathBuf,
     },
+    /// Export the retained events.
     Export,
+    /// Build the statistics report; requires learning consent.
     Statistics,
+    /// Delete retained events, or only the expired ones.
     Purge {
         #[arg(long)]
         expired_only: bool,
     },
+    /// Report drift against explicit rules.
     Drift {
         #[arg(long)]
         rules: PathBuf,
@@ -527,24 +703,27 @@ pub enum FeedbackCommand {
 
 #[derive(Subcommand)]
 pub enum PolicyCommand {
+    /// Register the baseline policy.
     Baseline {
         #[arg(long)]
         policy: PathBuf,
     },
+    /// Propose a candidate policy under explicit rules.
     Propose {
         #[arg(long)]
         policy: PathBuf,
         #[arg(long)]
         rules: PathBuf,
     },
+    /// List stored policy artifacts.
     List,
+    /// Show the active policy.
     Active,
-    Show {
-        id: String,
-    },
-    Digest {
-        id: String,
-    },
+    /// Show one policy artifact.
+    Show { id: String },
+    /// Print the promotion gate digest of one policy.
+    Digest { id: String },
+    /// Evaluate a proposal on replay records against explicit criteria.
     Evaluate {
         id: String,
         #[arg(long, required = true, num_args = 1..)]
@@ -558,15 +737,18 @@ pub enum PolicyCommand {
         #[arg(long, default_value_t = 86400)]
         snapshot_max_age_seconds: u64,
     },
+    /// Record trial evidence for a proposal.
     Trial {
         id: String,
         #[arg(long)]
         evidence: PathBuf,
     },
+    /// Print the exact bytes an external signer must sign.
     SigningPayload {
         #[arg(long)]
         approval: PathBuf,
     },
+    /// Apply an externally signed policy action.
     Apply {
         #[arg(long)]
         approval: PathBuf,
@@ -577,17 +759,21 @@ pub enum PolicyCommand {
 
 #[derive(Subcommand)]
 pub enum AuditCommand {
+    /// Build a redacted audit bundle from the listed inputs.
     Export {
         #[arg(long)]
         inputs: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Verify the hashes of an audit bundle; signatures are not verified.
     Verify {
         #[arg(long)]
         bundle: PathBuf,
         #[arg(long)]
         expected_root: Option<String>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
@@ -595,28 +781,35 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    /// Compare pinned policies: descriptive regret and quality/cost frontier.
     Tradeoffs {
         #[arg(long)]
         cohort: PathBuf,
         #[arg(long, required = true, num_args = 1..)]
         records: Vec<PathBuf>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Descriptive cohort metrics over replay records.
     Metrics {
         #[arg(long)]
         cohort: PathBuf,
         #[arg(long, required = true, num_args = 1..)]
         records: Vec<PathBuf>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Seal a replay record.
     Seal {
         #[arg(long)]
         input: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Compare a baseline and a candidate policy over replay records.
     Compare {
         #[arg(long, required = true, num_args = 1..)]
         records: Vec<PathBuf>,
@@ -626,16 +819,20 @@ pub enum EvalCommand {
         candidate: String,
         #[arg(long)]
         criteria: Option<PathBuf>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
         #[arg(long, default_value_t = 86400)]
         snapshot_max_age_seconds: u64,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Validate and hash a candidate corpus.
     Corpus {
         #[arg(long)]
         corpus: PathBuf,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
@@ -643,22 +840,29 @@ pub enum EvalCommand {
 
 #[derive(Subcommand)]
 pub enum CatalogCommand {
+    /// Validate a catalog and print its content hash.
     Validate {
         #[arg(long)]
         catalog: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// List catalog assets.
     List {
         #[arg(long)]
         catalog: PathBuf,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Show one catalog asset.
     Show {
         #[arg(long)]
         catalog: PathBuf,
@@ -666,11 +870,14 @@ pub enum CatalogCommand {
         id: String,
         #[arg(long, default_value = "model", value_parser = ["model", "agent", "skill", "prompt", "tool"])]
         kind: String,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },
+    /// Generate a catalog from a host snapshot and a prior catalog.
     Refresh {
         #[arg(long)]
         host_snapshot: PathBuf,
@@ -678,8 +885,10 @@ pub enum CatalogCommand {
         prior: PathBuf,
         #[arg(long)]
         registry: Option<PathBuf>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
         #[arg(long)]
         now: Option<u64>,
+        /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
     },

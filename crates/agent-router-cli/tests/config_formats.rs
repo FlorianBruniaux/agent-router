@@ -558,5 +558,5 @@ fn a_fifo_with_a_valid_extension_is_rejected_without_waiting_for_a_writer() {
         .assert()
         .code(2)
         .stdout("")
-        .stderr("error: configuration.read\n");
+        .stderr("{\"schema_version\":1,\"error\":\"configuration.read\"}\n");
 }

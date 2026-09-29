@@ -29,13 +29,14 @@ mod sidecar;
 mod task_guide;
 
 use std::{
+    ffi::OsString,
     fs::OpenOptions,
     io::{self, Read, Write},
     path::Path,
     process::ExitCode,
 };
 
-use clap::{Parser, error::ErrorKind};
+use clap::{CommandFactory, Parser, error::ErrorKind};
 use cli::Cli;
 use command::Commands;
 use router_adapter_api::ValidatedHostObservation;
@@ -48,16 +49,25 @@ const MAX_CATALOG_BYTES: usize = 4 * 1024 * 1024;
 const MAX_DECISION_BYTES: usize = 8 * 1024 * 1024;
 
 fn main() -> ExitCode {
+    // Read before parsing so that a usage error is reported in the requested format.
+    let arguments: Vec<OsString> = std::env::args_os().skip(1).collect();
+    let json = json_requested(&arguments);
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(error) => match error.kind() {
             ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
                 return match error.print() {
                     Ok(()) => ExitCode::SUCCESS,
-                    Err(_) => report_error(CliError::Internal),
+                    Err(_) => report_error(CliError::Internal, json),
                 };
             }
-            _ => return report_error(CliError::InvalidCommand),
+            _ if json => return report_error(CliError::InvalidCommand, json),
+            kind => {
+                let text = usage_error(kind, &error.render().to_string(), &arguments);
+                // A closed stderr must not turn a reported error into a panic.
+                let _ = io::stderr().write_all(text.as_bytes());
+                return CliError::InvalidCommand.exit_code();
+            }
         },
     };
 
@@ -66,11 +76,78 @@ fn main() -> ExitCode {
             match write_stdout(&outcome.output) {
                 Ok(()) => outcome.exit_code,
                 // A failed write must never report success, nor panic.
-                Err(_) => report_error(CliError::Internal),
+                Err(_) => report_error(CliError::Internal, json),
             }
         }
-        Err(error) => report_error(error),
+        Err(error) => report_error(error, json),
     }
+}
+
+/// `--json` among the raw arguments, before any `--` separator. Detected
+/// without clap so that a parse failure honors the requested format too.
+fn json_requested(arguments: &[OsString]) -> bool {
+    arguments
+        .iter()
+        .take_while(|argument| *argument != "--")
+        .any(|argument| argument == "--json")
+}
+
+/// The deepest known subcommand path named by the raw arguments, for errors
+/// whose clap report carries no usage line (an invalid option value).
+fn subcommand_path(arguments: &[OsString]) -> String {
+    let mut command = Cli::command();
+    let mut path = vec![command.get_name().to_owned()];
+    for argument in arguments.iter().take_while(|argument| *argument != "--") {
+        let Some(name) = argument.to_str().filter(|name| !name.starts_with('-')) else {
+            continue;
+        };
+        let Some(subcommand) = command.find_subcommand(name).cloned() else {
+            continue;
+        };
+        path.push(subcommand.get_name().to_owned());
+        command = subcommand;
+    }
+    path.join(" ")
+}
+
+/// Text report of a clap usage failure. The first line stays the stable
+/// `error: cli.invalid` scripts match; clap's account follows (it quotes only
+/// arguments the caller passed), then where to read the full usage.
+fn usage_error(kind: ErrorKind, rendered: &str, arguments: &[OsString]) -> String {
+    let usage = rendered.lines().find(|line| line.starts_with("Usage: "));
+    let mut text = format!("error: {}\n", CliError::InvalidCommand.code());
+    if kind == ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand {
+        // clap rendered the whole help here; keep the short form.
+        text.push_str("a subcommand or required arguments are missing\n");
+        if let Some(usage) = usage {
+            text.push_str(&format!("{}\n", human::escaped(usage)));
+        }
+    } else {
+        for line in rendered.lines() {
+            if line.trim().is_empty() || line.starts_with("For more information") {
+                continue;
+            }
+            let line = line.strip_prefix("error: ").unwrap_or(line);
+            text.push_str(&format!("{}\n", human::escaped(line)));
+        }
+    }
+    // `Usage: agent-router catalog show [OPTIONS] --id <ID>` names the command path.
+    let path = usage
+        .and_then(|usage| usage.strip_prefix("Usage: "))
+        .map(|usage| {
+            usage
+                .split_whitespace()
+                .take_while(|word| !word.starts_with(['[', '<', '-']))
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .filter(|path| path.starts_with("agent-router"))
+        .unwrap_or_else(|| subcommand_path(arguments));
+    text.push_str(&format!(
+        "Run '{} --help' for usage.\n",
+        human::escaped(&path)
+    ));
+    text
 }
 
 struct Outcome {
@@ -195,9 +272,28 @@ fn exit_class(code: &str) -> ExitClass {
     }
 }
 
-fn report_error(error: CliError) -> ExitCode {
+/// The `--json` error line, with the same body as the local API.
+#[derive(serde::Serialize)]
+struct ErrorLine {
+    schema_version: u32,
+    error: &'static str,
+}
+
+/// Writes one line to stderr: `error: <code>`, or with `--json`
+/// `{"schema_version":1,"error":"<code>"}`. Only the stable code is written.
+fn report_error(error: CliError, json: bool) -> ExitCode {
+    let text = format!("error: {}", error.code());
+    let line = if json {
+        serde_json::to_string(&ErrorLine {
+            schema_version: 1,
+            error: error.code(),
+        })
+        .unwrap_or(text)
+    } else {
+        text
+    };
     // A closed stderr must not turn a reported error into a panic.
-    let _ = writeln!(io::stderr(), "error: {}", error.code());
+    let _ = writeln!(io::stderr(), "{line}");
     error.exit_code()
 }
 
