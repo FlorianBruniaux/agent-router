@@ -65,6 +65,10 @@ pub enum RunFailure {
     Interrupted,
     OutputLimit,
     Spawn,
+    /// The outcome could not be classified (adapter classification error, or
+    /// output known to be incomplete). Never retryable and never attributed to
+    /// the candidate model. Additive serialized value: `unclassified`.
+    Unclassified,
 }
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]

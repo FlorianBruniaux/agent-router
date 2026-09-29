@@ -3,7 +3,7 @@ use std::{
     collections::BTreeSet,
     fs::{self, OpenOptions},
     io::{Read, Write},
-    os::unix::fs::{DirBuilderExt, OpenOptionsExt, PermissionsExt},
+    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
     path::{Component, Path, PathBuf},
 };
 use tokio::process::Command;
@@ -135,7 +135,8 @@ pub(crate) fn safe_scope(root: &Path, scope: &[String]) -> Result<()> {
             || !Path::new(relative)
                 .components()
                 .all(|c| matches!(c, Component::Normal(_)))
-            || relative.split('/').any(|s| s == ".git")
+            // APFS and other default filesystems fold case: `.GIT` is `.git`.
+            || relative.split('/').any(|s| s.eq_ignore_ascii_case(".git"))
         {
             return Err(RuntimeError::Scope);
         }
@@ -207,6 +208,9 @@ pub(crate) async fn patch_observed(
         &[
             "diff",
             "--name-only",
+            // Rename detection would list only the destination, leaving the
+            // out-of-scope source of a rename unchecked.
+            "--no-renames",
             "--no-ext-diff",
             "--no-textconv",
             "-z",
@@ -236,6 +240,7 @@ pub(crate) async fn patch_observed(
         &[
             "diff",
             "--binary",
+            "--no-renames",
             "--no-ext-diff",
             "--no-textconv",
             base,
@@ -252,11 +257,26 @@ pub(crate) fn write_artifact(storage: &Path, run_id: &str, bytes: &[u8]) -> Resu
         return Err(RuntimeError::Limit);
     }
     let parent = storage.join("artifacts");
-    if !parent.exists() {
-        fs::DirBuilder::new().mode(0o700).create(&parent)?;
+    match fs::symlink_metadata(&parent) {
+        Ok(_) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+            fs::DirBuilder::new().mode(0o700).create(&parent)?;
+        }
+        Err(e) => return Err(e.into()),
+    }
+    // Same guarantee as read_artifact: a real, private directory we own.
+    let meta = fs::symlink_metadata(&parent)?;
+    if !meta.is_dir()
+        || meta.file_type().is_symlink()
+        || meta.permissions().mode() & 0o077 != 0
+        || meta.uid() != rustix::process::geteuid().as_raw()
+    {
+        return Err(RuntimeError::Integrity("artifact directory"));
     }
     let path = parent.join(format!("{run_id}.patch"));
     let temp = parent.join(format!("{run_id}.tmp"));
+    // A temp file left by a crashed write must not block this run id forever.
+    crate::stale::remove_stale(&temp)?;
     let mut file = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -358,5 +378,111 @@ mod observer_tests {
         assert!(!marker.exists());
         assert_eq!(observer.starts.load(Ordering::SeqCst), 0);
         assert_eq!(observer.returns.load(Ordering::SeqCst), 0);
+    }
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+
+    #[test]
+    fn git_components_are_rejected_in_every_case() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        for bad in [".git", ".GIT", ".Git", "src/.gIt/hooks", "a/b/.GIT"] {
+            assert!(
+                matches!(safe_scope(&root, &[bad.into()]), Err(RuntimeError::Scope)),
+                "{bad} must be refused"
+            );
+        }
+        safe_scope(&root, &["src/.github".into(), "gitignore".into()]).unwrap();
+    }
+
+    async fn repo() -> (tempfile::TempDir, PathBuf, String) {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        fs::create_dir_all(root.join("secret")).unwrap();
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(
+            root.join("secret/token.txt"),
+            "not for the worker\n".repeat(20),
+        )
+        .unwrap();
+        fs::write(root.join("src/base.txt"), "base\n").unwrap();
+        for args in [
+            vec!["init", "-q"],
+            vec!["add", "."],
+            vec![
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                "commit",
+                "-q",
+                "--no-gpg-sign",
+                "-m",
+                "fixture",
+            ],
+        ] {
+            assert!(
+                std::process::Command::new("/usr/bin/git")
+                    .arg("-C")
+                    .arg(&root)
+                    .args(args)
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+        }
+        let head = git(&root, &["rev-parse", "HEAD"], vec![]).await.unwrap();
+        let head = String::from_utf8(head).unwrap().trim().to_owned();
+        (temp, root, head)
+    }
+
+    #[tokio::test]
+    async fn renaming_an_out_of_scope_file_into_scope_is_rejected() {
+        let (_temp, root, head) = repo().await;
+        fs::rename(root.join("secret/token.txt"), root.join("src/token.txt")).unwrap();
+        assert!(matches!(
+            patch(&root, &["src".into()], &head).await,
+            Err(RuntimeError::Scope)
+        ));
+    }
+
+    #[tokio::test]
+    async fn in_scope_change_still_yields_a_patch() {
+        let (_temp, root, head) = repo().await;
+        fs::write(root.join("src/new.txt"), "new\n").unwrap();
+        let (patch, paths) = patch(&root, &["src".into()], &head).await.unwrap();
+        assert_eq!(paths, ["src/new.txt"]);
+        assert!(!patch.is_empty());
+    }
+
+    #[test]
+    fn write_artifact_refuses_unsafe_directories_and_replaces_a_stale_temp() {
+        use std::os::unix::fs::symlink;
+        let temp = tempfile::tempdir().unwrap();
+        let storage = fs::canonicalize(temp.path()).unwrap();
+        let elsewhere = storage.join("elsewhere");
+        fs::create_dir(&elsewhere).unwrap();
+        symlink(&elsewhere, storage.join("artifacts")).unwrap();
+        assert!(matches!(
+            write_artifact(&storage, "run", b"patch"),
+            Err(RuntimeError::Integrity("artifact directory"))
+        ));
+        assert!(fs::read_dir(&elsewhere).unwrap().next().is_none());
+        fs::remove_file(storage.join("artifacts")).unwrap();
+        fs::DirBuilder::new()
+            .mode(0o755)
+            .create(storage.join("artifacts"))
+            .unwrap();
+        assert!(matches!(
+            write_artifact(&storage, "run", b"patch"),
+            Err(RuntimeError::Integrity("artifact directory"))
+        ));
+        fs::set_permissions(storage.join("artifacts"), fs::Permissions::from_mode(0o700)).unwrap();
+        fs::write(storage.join("artifacts/run.tmp"), b"crashed").unwrap();
+        let path = write_artifact(&storage, "run", b"patch").unwrap();
+        assert_eq!(fs::read(path).unwrap(), b"patch");
     }
 }

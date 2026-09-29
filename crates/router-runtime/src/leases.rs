@@ -211,3 +211,37 @@ fn observe_lease_checked(
         LeaseObservation::Ambiguous
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // router-sandbox-helper cannot depend on this crate, and this crate cannot
+    // link the helper binary, so the two spellings are pinned against each
+    // other by reading the helper source.
+    const HELPER: &str = include_str!("../../router-sandbox-helper/src/watchdog.rs");
+
+    fn literal(marker: &[u8]) -> String {
+        format!(
+            "b\"{}\"",
+            std::str::from_utf8(marker).unwrap().replace('\n', "\\n")
+        )
+    }
+    #[test]
+    fn helper_lease_markers_equal_the_runtime_markers() {
+        for (name, marker) in [
+            ("PENDING", PENDING),
+            ("GROUP_CLEAN", GROUP_CLEAN),
+            ("NAMESPACE_CLEAN", NAMESPACE_CLEAN),
+        ] {
+            assert!(
+                HELPER.contains(&literal(marker)),
+                "helper watchdog no longer spells {name} as {}",
+                literal(marker)
+            );
+        }
+        // The active marker exists only in the helper, but must stay in the
+        // same versioned family as the markers the runtime reads.
+        assert!(HELPER.contains(&literal(b"router-runtime-lease-v1:active\n")));
+    }
+}

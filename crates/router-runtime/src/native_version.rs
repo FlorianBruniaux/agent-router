@@ -20,6 +20,13 @@ static PROBE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 const TIMEOUT_MS: u64 = 5_000;
 const MAX_BYTES: usize = 8_192;
 
+struct ProbeDirectory(std::path::PathBuf);
+impl Drop for ProbeDirectory {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.0);
+    }
+}
+
 /// Deliberately not serializable or Debug: a hostile version command may print
 /// sensitive data. Only a host-specific strict parser should inspect stdout.
 pub struct NativeVersionProbe {
@@ -88,6 +95,9 @@ async fn probe_native_version_inner(
     // child can read this empty working directory, not the runtime store root.
     let cwd = private_dir.join(&id);
     fs::DirBuilder::new().mode(0o700).create(&cwd)?;
+    // Removed on every exit, including errors and a dropped future. The
+    // unique name means only this call ever creates or reads it.
+    let _cwd_guard = ProbeDirectory(cwd.clone());
     let mut run = prepared.clone();
     run.argv = vec!["--version".into()];
     run.stdin = PreparedInput::new(Vec::new());
