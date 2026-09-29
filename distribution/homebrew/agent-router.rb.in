@@ -1,0 +1,26 @@
+class AgentRouter < Formula
+  desc "Provider-neutral Agent Router command-line tool"
+  homepage "https://github.com/FlorianBruniaux/agent-router"
+  url {{ARCHIVE_URL_JSON}}
+  sha256 "{{ARCHIVE_SHA256}}"
+  version {{VERSION_JSON}}
+
+  # Bound by the signed local release manifest. These are comments because
+  # Homebrew's formula DSL has no target or features directive.
+  # target: {{TARGET_JSON}}
+  # features: {{FEATURES_JSON}}
+
+  # Homebrew enters the archive's single top-level directory, so paths here
+  # are relative to it (agent-router-binary/ in the archive).
+  def install
+    bin.install "bin/agent-router"
+    doc.install "LICENSE", "LICENSE-APACHE", "THIRD_PARTY_NOTICES.md",
+                "LICENSE-INVENTORY.json", "BUILD-SBOM.json"
+    doc.install "SOURCE-SBOM.spdx.json" if File.exist?("SOURCE-SBOM.spdx.json")
+    doc.install "licenses" if File.directory?("licenses")
+  end
+
+  test do
+    system bin/"agent-router", "--help"
+  end
+end
