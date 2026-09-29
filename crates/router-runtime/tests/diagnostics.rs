@@ -82,7 +82,7 @@ fn cold_and_owned_runtime_can_be_inspected_without_taking_ownership() {
     assert_eq!(cold.overall, DiagnosticState::Pass);
     assert_eq!(cold.owner_lock, OwnerLockState::Available);
     assert_eq!(cold.schema_layout, RuntimeSchemaState::RecognizedReadLayout);
-    assert_eq!(cold.database.database_queries, 69);
+    assert_eq!(cold.database.unwrap().database_queries, 69);
     let runtime = Runtime::open(&f.root, RuntimeLimits::default()).unwrap();
     let live = diagnose_runtime_storage(&f.root, 101).unwrap();
     assert_eq!(live.owner_lock, OwnerLockState::Busy);
@@ -192,7 +192,7 @@ fn broken_chain_and_foreign_keys_fail_separately_without_echoing_data() {
     assert_eq!(report.overall, DiagnosticState::Fail);
     assert_eq!(report.journal_integrity, DiagnosticState::Fail);
     assert_eq!(
-        report.database.integrity,
+        report.database.as_ref().unwrap().integrity,
         router_types::DeepDoctorCode::DatabaseIntegrityValidated
     );
     assert!(!serde_json::to_string(&report).unwrap().contains("PRIVATE_"));
@@ -204,6 +204,7 @@ fn broken_chain_and_foreign_keys_fail_separately_without_echoing_data() {
         diagnose_runtime_storage(&f.root, 100)
             .unwrap()
             .database
+            .unwrap()
             .integrity,
         router_types::DeepDoctorCode::DatabaseIntegrityFailed
     );
@@ -298,10 +299,12 @@ fn many_small_rows_are_inspected_and_snapshot_size_is_the_bound() {
     assert_eq!(report.counts.unwrap().runs, 4097);
     // Rows under the per-field cap can still exceed the 4 MiB snapshot cap.
     db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;").unwrap();
-    assert!(matches!(
-        diagnose_runtime_storage(&f.root, 100),
-        Err(DoctorError::Limit)
-    ));
+    let report = serde_json::to_value(diagnose_runtime_storage(&f.root, 100).unwrap()).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
     assert_eq!(
         db.query_row("SELECT count(*) FROM runs", [], |r| r.get::<_, u64>(0))
             .unwrap(),
@@ -414,6 +417,109 @@ fn oversized_fields_and_source_files_are_bounded() {
         .open(f.root.join("runtime.sqlite3"))
         .unwrap();
     file.set_len((router_doctor::MAX_FILE_BYTES + 1) as u64)
+        .unwrap();
+    let report = serde_json::to_value(diagnose_runtime_storage(&f.root, 100).unwrap()).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
+}
+
+#[test]
+fn snapshot_over_the_cap_through_the_wal_is_partial_while_the_main_file_is_small() {
+    let f = Fixture::new();
+    let db = f.db();
+    let mode: String = db
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(mode, "wal");
+    // Keep growth in the WAL: no automatic checkpoint while `db` is open.
+    db.pragma_update(None, "wal_autocheckpoint", 0).unwrap();
+    db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;").unwrap();
+    let main = fs::metadata(f.root.join("runtime.sqlite3")).unwrap().len();
+    let wal = fs::metadata(f.root.join("runtime.sqlite3-wal"))
+        .unwrap()
+        .len();
+    let cap = router_doctor::MAX_FILE_BYTES as u64;
+    assert!(main < cap && main + wal > cap, "{main} {wal}");
+    assert!(wal < router_doctor::MAX_TOTAL_BYTES as u64);
+    let report = serde_json::to_value(diagnose_runtime_storage(&f.root, 5).unwrap()).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
+    assert_eq!(report["database"], serde_json::Value::Null);
+    assert_eq!(report["schema_version"], 2);
+}
+
+#[test]
+fn oversized_main_file_that_is_a_link_or_broad_is_a_path_error_not_partial() {
+    let large = |f: &Fixture| {
+        fs::OpenOptions::new()
+            .write(true)
+            .open(f.root.join("runtime.sqlite3"))
+            .unwrap()
+            .set_len((router_doctor::MAX_FILE_BYTES + 1) as u64)
+            .unwrap();
+    };
+    let f = Fixture::new();
+    large(&f);
+    let db = f.root.join("runtime.sqlite3");
+    fs::set_permissions(&db, fs::Permissions::from_mode(0o644)).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+    fs::set_permissions(&db, fs::Permissions::from_mode(0o600)).unwrap();
+    fs::hard_link(&db, f.root.join("alias.sqlite3")).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+    let f = Fixture::new();
+    let target = f.root.join("target.sqlite3");
+    fs::rename(f.root.join("runtime.sqlite3"), &target).unwrap();
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&target)
+        .unwrap()
+        .set_len((router_doctor::MAX_FILE_BYTES + 1) as u64)
+        .unwrap();
+    symlink(&target, f.root.join("runtime.sqlite3")).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+}
+
+#[test]
+fn database_over_the_inspection_cap_gives_a_partial_unknown_report() {
+    let f = Fixture::new();
+    let db = f.db();
+    db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;").unwrap();
+    let size = fs::metadata(f.root.join("runtime.sqlite3")).unwrap().len();
+    assert!(size > router_doctor::MAX_FILE_BYTES as u64, "{size}");
+    // Not a copy of a cap-sized file: a much larger database is partial too.
+    let report = serde_json::to_value(diagnose_runtime_storage(&f.root, 7).unwrap()).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
+    assert_eq!(report["schema_layout"], "not_inspected");
+    assert_eq!(report["database"], serde_json::Value::Null);
+    assert_eq!(report["counts"], serde_json::Value::Null);
+    assert_eq!(report["journal_integrity"], "unknown");
+    assert_eq!(report["observed_at_unix_seconds"], 7);
+    // The owner lock does not depend on the snapshot and is still reported.
+    assert_eq!(report["owner_lock"], "available");
+    // Hostile-input limits stay errors: a small database with one huge cell.
+    let f = Fixture::new();
+    let db = f.db();
+    run(&db);
+    db.execute("UPDATE runs SET summary=?1", ["x".repeat(65537)])
         .unwrap();
     assert!(matches!(
         diagnose_runtime_storage(&f.root, 100),

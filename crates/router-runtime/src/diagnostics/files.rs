@@ -19,6 +19,8 @@ pub(super) struct Files {
     pub root: File,
     pub path: PathBuf,
     initial: [Option<Stat>; 4],
+    /// The main database file was already over the inspection cap when opened.
+    oversized: bool,
 }
 impl Files {
     pub fn open(path: &Path) -> Result<Self> {
@@ -41,10 +43,12 @@ impl Files {
         // substituted final directory when resolving the SQLite pathname.
         let path = path.canonicalize().map_err(|_| DoctorError::Path)?;
         let initial = Self::inspect(&root)?;
+        let oversized = initial[0].as_ref().is_some_and(is_oversized);
         let files = Self {
             root,
             path,
             initial,
+            oversized,
         };
         files.check()?;
         Ok(files)
@@ -59,6 +63,12 @@ impl Files {
                 Ok(stat) => {
                     private_regular(&stat)?;
                     let length = u64::try_from(stat.st_size).map_err(|_| DoctorError::Limit)?;
+                    // An oversized main file is reported by the caller as a partial
+                    // result; it is never read, so it does not count toward the total.
+                    if index == 0 && is_oversized(&stat) {
+                        found[index] = Some(stat);
+                        continue;
+                    }
                     let limit = if index == 0 {
                         MAX_FILE_BYTES
                     } else {
@@ -92,6 +102,9 @@ impl Files {
             return Err(DoctorError::Path);
         }
         let now = Self::inspect(&self.root)?;
+        if !self.oversized && now[0].as_ref().is_some_and(is_oversized) {
+            return Err(DoctorError::DatabaseTooLarge);
+        }
         for (before, after) in self.initial.iter().zip(now.iter()) {
             if let Some(before) = before {
                 let after = after.as_ref().ok_or(DoctorError::Path)?;
@@ -101,6 +114,9 @@ impl Files {
             }
         }
         Ok(())
+    }
+    pub fn database_oversized(&self) -> bool {
+        self.oversized
     }
     pub fn owner(&self) -> Result<OwnerLockState> {
         let stat = match statat(&self.root, "runtime.lock", AtFlags::SYMLINK_NOFOLLOW) {
@@ -135,6 +151,10 @@ impl Files {
 #[allow(clippy::unnecessary_cast)] // Stat integer widths differ on Linux/macOS.
 fn stat_identity(stat: &Stat) -> (u64, u64) {
     (stat.st_dev as u64, stat.st_ino as u64)
+}
+
+fn is_oversized(stat: &Stat) -> bool {
+    u64::try_from(stat.st_size).map_or(true, |length| length > MAX_FILE_BYTES as u64)
 }
 
 fn private_regular(stat: &Stat) -> Result<()> {

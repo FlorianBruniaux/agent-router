@@ -16,6 +16,7 @@ fn error(error: DoctorError) -> CliError {
         DoctorError::Path => "doctor.path.rejected",
         DoctorError::Read => "doctor.file.unavailable",
         DoctorError::Limit => "doctor.input.limit",
+        DoctorError::DatabaseTooLarge => "doctor.database.too_large",
         DoctorError::Schema => "doctor.schema.invalid",
         DoctorError::Integrity => "doctor.audit.integrity",
         DoctorError::Unsupported => "doctor.platform.unsupported",

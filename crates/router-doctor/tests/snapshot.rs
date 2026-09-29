@@ -69,7 +69,7 @@ fn oversized_snapshot_is_refused_and_the_source_transaction_is_released() {
         .unwrap();
     assert!(matches!(
         diagnose_database_snapshot(&source),
-        Err(DoctorError::Limit)
+        Err(DoctorError::DatabaseTooLarge)
     ));
     assert!(source.is_autocommit());
     assert_eq!(

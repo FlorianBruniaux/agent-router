@@ -173,7 +173,8 @@ agent-router doctor --runtime-root /absolute/private/runtime --json
 
 `--runtime-root` is exclusive with `--request` and `--deep`. Without `--json`,
 the same report is rendered for humans. Exit codes are 0 for passing storage
-checks, 2 for a failed check or refusal, and 3 for warnings. This command never
+checks, 2 for a failed check or refusal, and 3 for warnings or an `unknown`
+overall state (including a partial report, see below). This command never
 calls `Runtime::open`, runs migrations, recovers interrupted runs, resolves a
 lease, releases reservations, repairs a database or starts a host process.
 It neither creates a missing runtime nor reads stored prompts into its output.
@@ -198,6 +199,33 @@ The report keeps these observations separate:
 | `owner_lock` | Shared-lock attempt was available, busy, missing or unknown | No PID lookup, orphan inference or recovery authority |
 | `leases` | Later held, pending, cleanup-marked, missing or ambiguous observations | Markers are not opaque cleanup proofs; this observation is not atomic with the database copy |
 
+A runtime database larger than the 4 MiB inspection cap is not an error. The
+cap stays, no snapshot is copied, and the report is partial:
+`overall` is `unknown`, `partial_reason` is `database_exceeds_inspection_limit`,
+`database`, `storage_schema_version`, `counts` and `leases` are `null`,
+`schema_layout` is `not_inspected` and `journal_integrity` is `unknown`. Checks
+that do not read the database, such as `owner_lock`, are still reported. The
+runtime never purges `runtime.sqlite3`, so this state is reached by normal
+growth. It applies to a main file over the cap, and to a snapshot whose page
+count times page size exceeds the cap (for example a large WAL). The two routes
+differ in what is touched: a main file over the cap is never opened by SQLite;
+in the page-count route the database is opened read-only and a read transaction
+is held only long enough to read the page count and page size, and nothing is
+copied. A main file of any size, even a hostile one, that is a regular private
+single-link file now yields `unknown` (exit 3) instead of `Limit` (exit 2);
+a symlink, broad mode or extra hard link is still refused as `doctor.path.rejected`. Other limits
+still fail with `doctor.input.limit` and exit 2: a cell over 64 KiB, the 250 ms
+copy deadline, the SQL work budget, sidecars over the 16 MiB total and an
+unrepresentable size. Those signal hostile or unbounded input, not size alone.
+The report is `schema_version` 2: `database`, `storage_schema_version`,
+`counts` and `leases` are nullable, `partial_reason` is present (`null` on a
+complete report) and `schema_layout` may be `not_inspected`. A complete report
+keeps every v1 field with the same meaning.
+A partial report of a healthy but large database must not be read as a pass.
+The library API `diagnose_database_snapshot` returns the typed error
+`doctor.database.too_large` (`DoctorError::DatabaseTooLarge`) for the same size
+condition instead of `Limit`.
+
 Older schemas return `migration_required` without migration. Future versions or
 missing expected tables/columns fail the check; counts and lease observations
 are omitted for these layouts. A corrupted journal fails separately from SQLite
@@ -214,8 +242,9 @@ it for recovery or creating the two schema-9 tables.
 The operator-selected runtime and its ancestors must remain under the operator's
 control. The final directory is pinned, private and owned by the current user.
 The database, existing SQLite sidecars and owner lock must be regular private
-files with one link and the same owner. The main file is limited to 4 MiB; all
-SQLite files together to 16 MiB. Identities are checked before and after capture;
+files with one link and the same owner. The main file is limited to 4 MiB for
+inspection (larger gives the partial report above); the sidecars are bounded
+and count with the main file toward a 16 MiB total. Identities are checked before and after capture;
 new sidecars created by SQLite are checked too. Substitution or disappearance of
 an initially present sidecar is refused. These checks do not protect against a
 malicious actor with the same user privileges replacing ancestors between calls.
