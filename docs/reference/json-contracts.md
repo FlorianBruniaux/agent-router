@@ -222,6 +222,17 @@ distinguished by the `no_route` variant.
 }
 ```
 
+## Advisory decision cache entry
+
+`router-advisory-cache` writes one private file per key, named
+`<64 hex>.json`. Fields: `schema_version` (1), `key`, `created_unix`,
+`expires_unix`, `proposal` (a `BackendProposal`), `mac` (hex HMAC-SHA256 over the
+length-prefixed key, both timestamps and the serialized proposal). Unknown
+fields are rejected. The entry is advisory: it names an alias that the caller
+must resolve through a fresh `BoundedDecisionContext`, and it never contains
+task text, prompts, receipts or grants. Any invalid entry is a cache miss. See
+`docs/adr/0011-advisory-decision-cache.md`.
+
 ## Deterministic ordering
 
 For identical request and catalog bytes, routing emits byte-identical JSON.

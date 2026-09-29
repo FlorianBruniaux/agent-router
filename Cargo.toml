@@ -6,6 +6,7 @@ members = [
     "crates/router-backend-policy",
     "crates/router-execution-decision",
     "crates/router-backend-store",
+    "crates/router-advisory-cache",
     "crates/router-types",
     "crates/router-workflow",
     "crates/router-eval",
@@ -41,6 +42,7 @@ serde_json = "1"
 thiserror = "2"
 clap = { version = "4", features = ["derive"] }
 sha2 = "0.10"
+hmac = "0.12"
 hex = "0.4"
 assert_cmd = "2"
 predicates = "3"

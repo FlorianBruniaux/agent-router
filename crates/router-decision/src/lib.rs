@@ -147,6 +147,20 @@ impl BoundedDecisionContext {
     pub fn baseline(&self) -> &PhaseReceipt {
         &self.baseline
     }
+    /// Digest of the alias to candidate and score table. Aliases are regenerated
+    /// per context, so a redacted request alone does not identify what `c00` names.
+    pub fn alias_digest(&self) -> Result<String> {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(b"backend-alias-table-v1\0");
+        for (id, selection) in &self.selections {
+            let bytes = serde_json::to_vec(&(id, &selection.candidate, &selection.score))
+                .map_err(|_| BackendError::Schema)?;
+            hasher.update((bytes.len() as u64).to_be_bytes());
+            hasher.update(bytes);
+        }
+        Ok(hex::encode(hasher.finalize()))
+    }
 
     /// Resolve a structurally valid proposal into this context's already
     /// constrained selection. This read-only lookup is not activation authority.
@@ -373,4 +387,89 @@ pub fn validate_proposal(
         return Err(BackendError::LowConfidence);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+    use router_catalog::Catalog;
+
+    fn context() -> BoundedDecisionContext {
+        let request = serde_json::from_str(include_str!(
+            "../../../fixtures/examples/phase-request.json"
+        ))
+        .unwrap();
+        let snapshot = ValidatedHostObservation::from_json(
+            include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
+            SnapshotValidation {
+                now_unix_seconds: 100,
+                max_age_seconds: 60,
+            },
+        )
+        .unwrap();
+        let catalog = Catalog::from_json(include_bytes!(
+            "../../../fixtures/examples/phase-catalog.json"
+        ))
+        .unwrap();
+        let router = PhaseRouter::stable_v2();
+        let phase = router.context(request, &snapshot, &catalog).unwrap();
+        BoundedDecisionContext::from_phase(&router, &phase).unwrap()
+    }
+
+    // Through the public API the redacted request and the alias table move
+    // together, because the artifact digest covers the whole phase request. The
+    // alias digest is a second binding that must still notice a table that
+    // differs behind an identical redacted request.
+    #[test]
+    fn alias_digest_changes_when_only_the_alias_table_changes() {
+        let original = context();
+        assert_eq!(
+            original.alias_digest().unwrap(),
+            context().alias_digest().unwrap()
+        );
+        let mut swapped = original.clone();
+        let candidate = |context: &mut BoundedDecisionContext, id: &str| {
+            context
+                .selections
+                .get_mut(id)
+                .unwrap()
+                .candidate
+                .estimated_cost_microusd += 1;
+        };
+        candidate(&mut swapped, "c00");
+        assert_eq!(swapped.redacted_request(), original.redacted_request());
+        assert_ne!(
+            swapped.alias_digest().unwrap(),
+            original.alias_digest().unwrap()
+        );
+
+        // Same encoded length, so a length-only digest could not tell them apart.
+        let mut rescored = original.clone();
+        rescored
+            .selections
+            .get_mut("c00")
+            .unwrap()
+            .score
+            .utility_micros += 1;
+        assert_eq!(rescored.redacted_request(), original.redacted_request());
+        assert_ne!(
+            rescored.alias_digest().unwrap(),
+            original.alias_digest().unwrap()
+        );
+
+        // Exchanging what two aliases name is also a different table.
+        let mut exchanged = original.clone();
+        let (first, second) = (
+            exchanged.selections["c00"].clone(),
+            exchanged.selections["c01"].clone(),
+        );
+        exchanged.selections.insert("c00".into(), second);
+        exchanged.selections.insert("c01".into(), first);
+        assert_eq!(exchanged.redacted_request(), original.redacted_request());
+        assert_ne!(
+            exchanged.alias_digest().unwrap(),
+            original.alias_digest().unwrap()
+        );
+    }
 }
