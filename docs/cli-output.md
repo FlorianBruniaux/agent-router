@@ -42,3 +42,36 @@ source-pinned proposal, and ordinary `prepare` / `run` perform the separate run
 review and approval. See [durable escalation and CLI boundaries](escalation.md).
 The run view distinguishes `decision_origin`, `escalation_decision` and the
 unchanged `baseline_receipt_id`; changing the output format adds no authority.
+
+## Exit codes and error codes
+
+A failed command writes one line, `error: <code>`, to stderr. The code is a
+stable dotted identifier such as `runtime.approval.required_or_changed`. Its
+exit status comes from one table in the CLI (`exit_class` in
+`crates/agent-router-cli/src/main.rs`), keyed on the code alone, so every
+command shares the same classes.
+
+| Status | Meaning | What to do | Codes |
+| --- | --- | --- | --- |
+| `0` | Success. | Nothing. | none |
+| `2` | Invalid input or policy refusal. | Change the input or obtain the missing authority. | every code not listed below, including `*.io` |
+| `3` | Valid request, outcome not final (clarification, abstention, `no_route`, pending dependencies, failed or unverified run). | Read the JSON result. | none: a command result, not an error line |
+| `4` | Internal failure. | Report it; retrying the same input is not expected to help. | `route.internal`, `decision.render`, `*.serialization`, `*.json`, `*.storage`, `*.storage_database` |
+| `5` | Transient contention. | Relaunch the same command unchanged. | `*.busy`, `*.locked`, `*.storage_locked` |
+| `6` | Outcome unknown. | Inspect the state before any retry; the effect may already exist. | `backend_store.published_durability_unknown`, `runtime.cleanup.unknown` |
+| `7` | Integrity failure: a hash chain, digest or file no longer matches its record. | Treat the input or store as altered; do not retry blindly. | `*.integrity` |
+| `130` | `serve` forced to stop by a second signal. | Restart; the next start replaces the stale socket. | none: a command result |
+
+`*` matches the namespace, compared on the last dotted segment: `runtime.busy`
+and `backend_store.busy` are both `5`, while `snapshot.json.invalid` is `2`.
+Outcome-unknown codes are an explicit list; other codes ending in `unknown`
+(for example `task.budget.unknown`) are refusals. `*.io` stays `2` because a
+missing or unreadable caller path reaches it. SQLite `SQLITE_BUSY` and
+`SQLITE_LOCKED` on the runtime and coordinator stores map to `runtime.busy` and
+`coordinator.busy`.
+
+Breaking change: before this table, every product error exited `2`, including
+contention, unknown outcomes and integrity failures; only `route.internal` and
+`decision.render` exited `4`. Scripts that treated any `2` as "fix the input"
+now receive `5`, `6` or `7` for those cases.
+

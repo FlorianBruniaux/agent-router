@@ -91,6 +91,7 @@ enum CliError {
     DecisionRead,
     DecisionTooLarge,
     DecisionJsonInvalid,
+    DecisionSchema,
     DecisionRender,
     SnapshotRead,
     SnapshotTooLarge,
@@ -116,6 +117,7 @@ impl CliError {
             Self::DecisionRead => "decision.read",
             Self::DecisionTooLarge => "decision.too_large",
             Self::DecisionJsonInvalid => "decision.json.invalid",
+            Self::DecisionSchema => "decision.schema.unsupported",
             Self::DecisionRender => "decision.render",
             Self::SnapshotRead => "snapshot.read",
             Self::SnapshotTooLarge => "snapshot.too_large",
@@ -127,10 +129,47 @@ impl CliError {
     }
 
     fn exit_code(self) -> ExitCode {
-        match self {
-            Self::Internal | Self::DecisionRender => ExitCode::from(4),
-            _ => ExitCode::from(2),
+        ExitCode::from(exit_class(self.code()) as u8)
+    }
+}
+
+/// Exit status of a failed command. Status 0 (success), 3 (valid but not final
+/// outcome) and 130 (interruption) are chosen by the command itself, never here.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[repr(u8)]
+enum ExitClass {
+    /// Invalid input or a policy refusal: change the input before retrying.
+    Invalid = 2,
+    /// Internal serialization, storage or invariant failure.
+    Internal = 4,
+    /// Transient contention: the same command may be relaunched unchanged.
+    Retryable = 5,
+    /// The outcome is unknown: inspect the state before any retry.
+    OutcomeUnknown = 6,
+    /// A hash chain, digest or stored file no longer matches its record.
+    Integrity = 7,
+}
+
+/// Codes whose effect may already have happened; retrying blindly could repeat it.
+const OUTCOME_UNKNOWN_CODES: [&str; 2] = [
+    "backend_store.published_durability_unknown",
+    "runtime.cleanup.unknown",
+];
+
+/// The single classification of every stable error code into an exit status.
+/// It reads only the code, so a new mapper inherits its class from the suffix.
+/// `*.io` stays invalid input: a missing or unreadable caller path reaches it.
+fn exit_class(code: &str) -> ExitClass {
+    if OUTCOME_UNKNOWN_CODES.contains(&code) {
+        return ExitClass::OutcomeUnknown;
+    }
+    match code.rsplit('.').next().unwrap_or(code) {
+        "busy" | "locked" | "storage_locked" => ExitClass::Retryable,
+        "integrity" => ExitClass::Integrity,
+        "internal" | "render" | "serialization" | "json" | "storage" | "storage_database" => {
+            ExitClass::Internal
         }
+        _ => ExitClass::Invalid,
     }
 }
 
@@ -486,6 +525,9 @@ fn explain(decision_path: &Path) -> Result<Outcome, CliError> {
     )?;
     let decision = serde_json::from_slice::<DecisionEnvelope>(&bytes)
         .map_err(|_| CliError::DecisionJsonInvalid)?;
+    if !decision.has_supported_schema() {
+        return Err(CliError::DecisionSchema);
+    }
     Ok(Outcome {
         output: render::explain(&decision),
         exit_code: ExitCode::SUCCESS,
@@ -518,6 +560,19 @@ fn read_bounded(
     read_error: CliError,
     too_large: CliError,
 ) -> Result<Vec<u8>, CliError> {
+    let file = open_regular(path, read_error)?;
+    let mut bytes = Vec::new();
+    file.take(max_bytes as u64 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| read_error)?;
+    if bytes.len() > max_bytes {
+        return Err(too_large);
+    }
+    Ok(bytes)
+}
+
+/// Opens a regular file without following a final symlink or blocking on a FIFO.
+fn open_regular(path: &Path, read_error: CliError) -> Result<std::fs::File, CliError> {
     let mut options = OpenOptions::new();
     options.read(true);
     #[cfg(unix)]
@@ -529,12 +584,79 @@ fn read_bounded(
     if !file.metadata().map_err(|_| read_error)?.is_file() {
         return Err(read_error);
     }
-    let mut bytes = Vec::new();
-    file.take(max_bytes as u64 + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|_| read_error)?;
-    if bytes.len() > max_bytes {
-        return Err(too_large);
+    Ok(file)
+}
+
+#[cfg(test)]
+mod exit_class_tests {
+    use super::*;
+
+    #[test]
+    fn every_exit_class_is_reached_by_real_error_codes() {
+        use ExitClass::*;
+        for (code, class) in [
+            ("cli.invalid", Invalid),
+            ("request.json.invalid", Invalid),
+            ("decision.schema.unsupported", Invalid),
+            ("policy.composition.denied", Invalid),
+            ("runtime.approval.required_or_changed", Invalid),
+            ("runtime.sandbox.unknown_or_unsafe", Invalid),
+            ("runtime.io", Invalid),
+            ("runtime.not_found", Invalid),
+            ("session_budget.accounting.unknown", Invalid),
+            ("snapshot.json.invalid", Invalid),
+            ("route.internal", Internal),
+            ("decision.render", Internal),
+            ("phase.serialization", Internal),
+            ("feedback.serialization", Internal),
+            ("runtime.json", Internal),
+            ("coordinator.json", Internal),
+            ("runtime.storage", Internal),
+            ("coordinator.storage", Internal),
+            ("feedback.storage_database", Internal),
+            ("runtime.busy", Retryable),
+            ("coordinator.busy", Retryable),
+            ("backend_store.busy", Retryable),
+            ("runtime.locked", Retryable),
+            ("coordinator.locked", Retryable),
+            ("feedback.storage_locked", Retryable),
+            ("backend_store.published_durability_unknown", OutcomeUnknown),
+            ("runtime.cleanup.unknown", OutcomeUnknown),
+            ("runtime.integrity", Integrity),
+            ("coordinator.integrity", Integrity),
+            ("backend_store.integrity", Integrity),
+            ("feedback.integrity", Integrity),
+            ("retrieval.integrity", Integrity),
+            ("workflow.integrity", Integrity),
+            ("eval.integrity", Integrity),
+            ("phase.catalog.integrity", Integrity),
+            ("doctor.audit.integrity", Integrity),
+        ] {
+            assert_eq!(exit_class(code), class, "{code}");
+        }
     }
-    Ok(bytes)
+
+    #[test]
+    fn fixed_cli_errors_keep_their_documented_status() {
+        for (error, status) in [
+            (CliError::InvalidCommand, 2),
+            (CliError::RequestTooLarge, 2),
+            (CliError::DecisionSchema, 2),
+            (CliError::Internal, 4),
+            (CliError::DecisionRender, 4),
+            (CliError::Product("runtime.busy"), 5),
+            (CliError::Product("runtime.cleanup.unknown"), 6),
+            (CliError::Product("runtime.integrity"), 7),
+        ] {
+            assert_eq!(exit_class(error.code()) as u8, status, "{}", error.code());
+        }
+    }
+
+    #[test]
+    fn the_outcome_unknown_list_is_not_matched_by_suffix() {
+        // Only listed codes are unknown outcomes; other `unknown` suffixes are refusals.
+        for code in ["task.budget.unknown", "risk.environment.unknown"] {
+            assert_eq!(exit_class(code), ExitClass::Invalid, "{code}");
+        }
+    }
 }

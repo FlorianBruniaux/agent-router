@@ -36,7 +36,7 @@ pub enum RuntimeError {
     Adapter(#[from] router_adapter_api::AdapterError),
     #[error("runtime.process.failed")]
     Process,
-    #[error("runtime.process.cleanup_unknown")]
+    #[error("runtime.cleanup.unknown")]
     CleanupUnknown,
     #[error("runtime.limit")]
     Limit,

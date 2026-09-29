@@ -43,7 +43,7 @@ pub enum CoordinatorError {
     Storage(#[from] rusqlite::Error),
     #[error("coordinator.io")]
     Io(#[from] std::io::Error),
-    #[error("coordinator.serialization")]
+    #[error("coordinator.json")]
     Json(#[from] serde_json::Error),
 }
 pub type Result<T> = std::result::Result<T, CoordinatorError>;

@@ -47,10 +47,14 @@ leave a private partial directory; `definition.json` is written last and no
 process is started. Request files contain the assembled private prompt, so treat
 the bundle as sensitive.
 
-An explicit policy file overrides a policy store. When the store supplies the
-policy, the generated definition preserves its artifact identity and checks that
-it remains active before fresh execution. Policy source changes invalidate the
-CLI approval. Historical inspection reconstructs the exact existing definition.
+In a preparation manifest, an explicit policy file overrides a policy store.
+When the store supplies the policy, the generated definition preserves its
+artifact identity and checks that it remains active before fresh execution.
+The generated definition names exactly one policy source. An execution
+definition that names both `policy` and `policy_store`/`policy_artifact_id` is
+refused with `policy.composition.denied`, instead of silently ignoring the store.
+Policy source changes invalidate the CLI approval. Historical inspection
+reconstructs the exact existing definition.
 
 An optional `receipt` path selects a previously computed fallback receipt. The
 entire receipt is reproduced from the immutable context, including the explicit
@@ -169,6 +173,19 @@ the preview. Binaries, helper and native sandbox wrapper are hashed in the
 approval and rechecked by the supervisor. Paths remain subject to the documented
 hash-to-exec race boundary in [runtime.md](runtime.md).
 
+The approval also binds each named variable as read by the invoking process.
+`HOME`, `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and `SSL_CERT_FILE` are bound by
+value. Every other name, API keys included, is bound only by a SHA-256 of
+`agent-router.approval.environment-value.v1`, a zero byte, the name, a zero
+byte and the value; the value itself never enters the digest input, the output
+or an error. An unset variable is bound as absent, distinct from an empty value.
+Review and `--approve` must therefore run with the same values: any change,
+removal or addition refuses the launch with
+`runtime.approval.required_or_changed`. This binding is approval format v4
+(`runtime-cli-approval-v4`, `-v4-backend`, `-v4-escalation`). Digests produced
+by earlier versions (v1, v2 and v3) are stale: review the run again for a new
+digest. The same applies to `coordinate` review, wave and verification digests.
+
 Two optional fields control private recording:
 
 - `feedback_store`: an explicit existing feedback store. Collection requires its
@@ -204,7 +221,11 @@ Status separately reports `cleanup_evidence`: `not_started`,
 `group_terminated`, `namespace_terminated`, or `unknown`. Group termination
 does not prove termination of a descendant that created a separate session.
 An unresolved attempt lease prevents recovery from releasing writer locks;
-the CLI reports `runtime.cleanup.unknown` instead of authorizing a new run.
+the CLI reports `runtime.cleanup.unknown` (exit `6`, inspect before any retry)
+instead of authorizing a new run. SQLite contention on the runtime or
+coordinator store is reported as `runtime.busy` or `coordinator.busy` (exit
+`5`); the same command can be relaunched unchanged. See
+[exit codes and error codes](cli-output.md#exit-codes-and-error-codes).
 The runtime isolates dependencies by workflow instance and contract. A premature
 step stays queued and can be cancelled or resumed with its existing exact
 approval. Normal edges require `verified`; an explicitly independent verifier

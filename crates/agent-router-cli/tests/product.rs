@@ -179,7 +179,7 @@ fn doctor_and_audit_never_echo_private_artifact_content() {
         .arg("0".repeat(64))
         .arg("--json")
         .assert()
-        .code(2)
+        .code(7)
         .stderr(predicates::str::contains("doctor.audit.integrity"));
 }
 
@@ -575,7 +575,8 @@ fn eval_seal_replay_compare_never_treats_synthetic_input_as_a_promotion() {
         .arg(&record_path)
         .args(["--policy", "baseline", "--now", "100", "--json"])
         .assert()
-        .code(2);
+        .code(7)
+        .stderr("error: eval.integrity\n");
 }
 #[cfg(feature = "claude")]
 #[test]
