@@ -88,7 +88,8 @@ Les PR #34 à #42 sont réunies localement sur `codex/project-integration`.
 Le code à `1acec1d` passe 905 tests, sans échec, et six canaris macOS séparés.
 Les 34 tests ignorés de la suite générale ne sont pas comptés comme réussis.
 Les contrôles GitHub restent bloqués par la facturation, donc aucune livraison
-fusionnée de ce candidat n'est revendiquée.
+fusionnée de ce candidat n'est revendiquée (état au 28 septembre ; le candidat
+est fusionné le 29 via #43, voir plus bas).
 
 - **R12 / O3** : admission partagée, équité et allocations cumulées conservatrices
   implémentées ; la reprise conserve les engagements et les plafonds approuvés.
@@ -110,6 +111,97 @@ fusionnée de ce candidat n'est revendiquée.
   passent aussi leurs suites hors ligne. Ces preuves sont locales à macOS.
   La reproduction finale par plateforme, la release signée et P3/P6 restent
   ouverts.
+
+### Mises à jour du 29 septembre
+
+Le candidat combiné est fusionné par la PR #43 (`cc312f4`) sur preuve locale
+seule, comme l'indique son message de merge. Les PR #44 à #56 sont fusionnées le
+même jour, chacune après revue indépendante et gates locales (fmt, clippy
+`-D warnings`, tests du workspace, `xtask check`). La CI GitHub n'a pas tourné
+(annotation « The job was not started because recent account payments have
+failed ») : l'exécution Linux et la validation distante restent non vérifiées
+(P6). Aucune release finale n'est déclarée ; P1 reste ouvert et aucun gain
+produit n'est affirmé. Le détail par PR est dans le
+[registre de complétion](completion.md#merges-of-september-29).
+
+Un lot partiellement livré reste partiel. Pour chaque lot touché, l'ancien
+statut est celui des sections ci-dessus.
+
+- **R02, partiel (PR #51, `76b0ced`)** : `rank_semantic` calcule un classement
+  local en entiers à partir de vecteurs fournis par l'appelant, derrière la
+  feature `semantic-ranking` (`crates/router-retrieval/src/vectors.rs`,
+  `docs/retrieval.md`). Reste : aucun fournisseur d'embeddings n'est exécuté,
+  la provenance n'est pas validée par `rank_semantic`, P1 reste ouvert.
+- **R04, partiel (PR #55, `06c77db`)** : `review_plan_proposal` relit un plan
+  proposé par un modèle, avec rapport de divergence face au plan local
+  (`crates/router-workflow/src/proposal.rs`, `docs/plan-proposals.md`). C'est
+  l'entrée stricte du critère « un plan complexe proposé par modèle passe
+  schéma, portée et approbation ». Reste : aucune CLI, `is_approved()` vaut
+  toujours `false`, aucun digest d'approbation ni exécution, texte libre du
+  proposeur non filtré.
+- **R06, borne durcie (PR #46, `266a1ea`, BREAKING)** : les sources de
+  provenance signées n'acceptent plus qu'une URL `https://` ou un identifiant
+  nu ; chemins locaux, `owner/repo` et `scheme:id` échouent en `Invalid` au
+  scellement et à la vérification (`docs/signed-catalogs.md`). Un catalogue
+  déjà signé avec une telle source doit être rescellé et resigné. La CLI de
+  catalogue actif et le dispatch signé restent ouverts.
+- **R07, partiel (PR #56, `e456214`)** : contrats typés d'entrée image, audio et
+  fichier et de sortie JSON (`crates/router-asset-contracts/src/modality.rs`).
+  Ce sont des contrôles d'octets : le type de média est déclaré et non lu dans
+  le contenu, la sortie n'est pas validée par schéma, rien n'est transporté.
+  Les critères de schéma transmis à l'adaptateur réel, de flux tronqués et de
+  preuve native par modèle/host/version restent ouverts. L'exécution reste
+  refusée tant que `ExecutionRequest` ne porte que du texte.
+- **R10, non livré** : R10-a (transport HTTP loopback) est décidé et en cours
+  d'implémentation ; le numéro d'ADR 0014 est réservé et aucun fichier
+  `docs/adr/0014-*` n'existe à `e456214`. Aucun critère R10 n'est clos.
+- **R13, partiel (PR #52, `3db0b69`)** : `router-validation` évalue des
+  assertions typées (égalité sur pointeur JSON) et produit un rapport
+  déterministe, sans I/O (`docs/adr/0015-structured-validation.md`,
+  `docs/structured-validation.md`). R13-b reste : runner à commandes argv
+  confinées et lien du résultat à l'artefact réel. `objective` reste UNKNOWN
+  et un rapport n'atteste pas l'arbre de travail.
+- **R18, partiel (PR #44 `9fa75a2`, PR #50 `b657257`)** : la commande
+  `agent-router eval tradeoffs` couvre le regret descriptif et la frontière
+  qualité/coût (`docs/evaluation.md`). Le cache est livré comme bibliothèque
+  consultative (`router-advisory-cache`, `docs/adr/0011-advisory-decision-cache.md`) :
+  clé complète, entrées authentifiées par HMAC, un échec de lecture vaut
+  absence. Restent : acceptation du premier plan, faux positifs du scanner,
+  raccord CLI du cache, données P1. Les hashes de provenance et d'usage du
+  rapport sont déclarés par l'appelant.
+- **R19, partiel (PR #48, `8011bac`)** : `agent-router serve` derrière la
+  feature `local-api`, avec `GET /v1/health`, `GET /v1/capabilities` et
+  `POST /v1/route` sur socket Unix 0600 et jeton (`docs/adr/0012-local-route-api.md`,
+  `docs/local-api.md`). Restent : execute, plan, events, outcome, feedback,
+  artifacts, TCP loopback opt-in, SSE et reprise. Pas de contrôle `SO_PEERCRED`.
+- **R21, partiel (PR #49, `007fb6e`)** : `scripts/release-local.py` prépare un
+  manifeste, vérifie une signature Ed25519 avec clé épinglée hors du dépôt et
+  rend une formule Homebrew (`docs/release-local.md`). L'installation Homebrew
+  n'a pas été exercée (`UNKNOWN`) ; seul `ruby -c` a été lancé sur une formule
+  rendue, et les archives de test sont synthétiques. Restent : archives par
+  plateforme sur le SHA livré, garde de clé, publication après P3.
+- **R22, différé** : aucune preuve Windows n'est possible ici.
+- **R23, partiel (PR #47, `5866b0e`)** : `router-import` produit un candidat
+  de catalogue non signé, `untrusted`, permission `UNKNOWN`
+  (`docs/adr/0013-inert-importer.md`, `docs/importer.md`). Restent : sous-commande
+  CLI, signature, surface TUI ou web, packs signés, rollback. Les scripts sont
+  refusés et renvoyés à R08.
+- **Tests instables (PR #45, `a364ca9`)** : correction de deux tests dépendants
+  de l'environnement (publication atomique du résultat dans `budget_tests`,
+  capture de stdout dans les tests de limites du helper sandbox). Modifie
+  uniquement des tests ; aucun lot n'est concerné.
+
+Compléments Omnigent : **O2-a** (PR #53, `89e100c`) restreint les arêtes de
+revue aux fournisseurs déclarés distincts (`crates/router-policy/src/review_separation.rs`,
+`docs/review-separation.md`). C'est de la planification en bibliothèque, sans
+CLI ni gate runtime ; le fournisseur est une chaîne déclarée, l'identité prouvée
+et le comportement sans reviewer indépendant restent ouverts. **O6-a**
+(PR #54, `abecb75`) valide les descripteurs d'adaptateurs comme données inertes
+(`docs/adr/0016-adapter-descriptor-registry.md`) : `activation` doit valoir
+`none` et aucune capacité `supported` n'est acceptée. La signature, l'installation
+réversible et la preuve native restent ouvertes. Pour O3, les allocations
+cumulées conservatrices de #35 et #40 sont sur `main` via #43 (`cc312f4`) ; ce
+qui reste d'O3 (coûts observés, aujourd'hui UNKNOWN) est différé, comme O4 et O5.
 
 Le [registre de complétion](completion.md#combined-local-candidate-september-28)
 détaille les résultats et les limites. La table suivante reste le constat

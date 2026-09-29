@@ -48,6 +48,18 @@ to own its interaction, credentials and native permissions.
 The demo uses bundled synthetic fixtures and actual CLI output. It makes no
 model call. Model names in those fixtures are examples, not availability claims.
 
+## What Agent Router is, and what it is not
+
+| Agent Router is | Agent Router is not |
+| --- | --- |
+| A local decision layer: it picks the model, effort and skills for each phase of a coding task and explains why. | A coding agent. Your host (Claude Code, Codex, OpenCode, Copilot) still does the work. |
+| Constraint-first: permissions, budgets, risk and missing evidence filter candidates before any score is computed. | A score-only ranker. A higher score never makes an inadmissible candidate valid. |
+| Deterministic and replayable: the same inputs give the same decision, receipt and explanation. | A learned black box. Semantic proposals stay optional, advisory and inside the admissible pool. |
+| Review before execution: a run needs an approved digest, fresh capability evidence and a verified OS sandbox. | An autonomous runner. It never bypasses a host's own permission system or runs with approvals turned off. |
+| Explicit about uncertainty: unknown host capabilities, costs and identities stay `UNKNOWN`. | A source of claims it cannot prove. It does not report a gain, a support level or a model identity without evidence. |
+| Local and offline for routing: no provider call, daemon or network access is needed to route. | A hosted gateway, a model proxy or a credential broker. No provider transport is wired into execution today. |
+| A set of bounded Rust libraries plus one CLI, with versioned JSON contracts. | A package that installs hooks, skills or global configuration on your machine. |
+
 ## Features
 
 | Capability | What you can do | Interface / guide |
@@ -71,6 +83,21 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Diagnostics and audit** | Inspect configuration and active runtime storage without recovery; keep process and cleanup authority unknown, and export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
 | **Separate distributions** | Export source workspaces or build a local native binary with verified licenses, inventories and reproducibility checks. | [Distribution](docs/distribution.md) |
 | **Dependency checks** | Verify source license evidence and audit the committed dependency lock against a fresh RustSec database in CI. | [License evidence](docs/distribution.md#continuous-integration-license-evidence-gate), [security audit](docs/dependency-audit.md) |
+| **Local route-only API** | Serve route decisions over a private Unix socket with a token; no execution, feedback or activation endpoint. Opt-in build feature. | `serve` (`--features local-api`), [local API](docs/local-api.md) |
+| **Verifiable local release** | Bind source and binary archives to a canonical manifest, verify an externally produced Ed25519 signature and render a Homebrew formula. It never signs, publishes or installs; the Homebrew install itself is not yet tested. | [Local release](docs/release-local.md) |
+
+### Library building blocks, not yet wired into the CLI
+
+| Capability | What it does | Guide |
+| --- | --- | --- |
+| **Advisory decision cache** | Stores backend proposals authenticated with HMAC; a cached entry is advice, never authority. | [ADR 0011](docs/adr/0011-advisory-decision-cache.md) |
+| **Inert importer** | Turns a directory of Markdown agents and skills into an unsigned catalog candidate and a report; signs and activates nothing. | [Importer](docs/importer.md) |
+| **Local vector ranking** | Ranks assets from caller-supplied fixed-point vectors in exact integer arithmetic, behind the `semantic-ranking` feature. | [Retrieval](docs/retrieval.md) |
+| **Plan proposals** | Reviews a plan proposed by a model against the caller's task and limits, and reports its divergence from the baseline; never approves it. | [Plan proposals](docs/plan-proposals.md) |
+| **Review separation** | Restricts producer to reviewer edges to distinct declared providers. | [Review separation](docs/review-separation.md) |
+| **Structured validation** | Evaluates typed validation contracts over a caller-supplied view and returns a digest-bound report. | [Structured validation](docs/structured-validation.md) |
+| **Adapter descriptors** | Validates `adapter.json` descriptors inertly: reserved names, bound entry points, no activation. | [Descriptor format](integrations/README.md) |
+| **Multimodal contracts** | Types and bounds image, audio, file inputs and JSON outputs; nothing is transported. | [JSON contracts](docs/reference/json-contracts.md) |
 
 The project is under active development. Human validation of the evaluation
 corpus, the full startup target and additional native host evidence remain open.
@@ -81,7 +108,8 @@ for acceptance criteria. Public release is still gated by license and security r
 
 ### Build from source
 
-Use Rust 1.85 or newer. The repository pins the development toolchain in
+The [installation guide](docs/install.md) covers prerequisites, optional build
+features, the verifiable local release and uninstalling. Use Rust 1.85 or newer. The repository pins the development toolchain in
 [`rust-toolchain.toml`](rust-toolchain.toml). Clone access is required while the
 repository is private.
 
@@ -148,16 +176,64 @@ verification of the task's result.
 
 ## How it works
 
+### Where it sits
+
+You keep working in your coding host or terminal. Agent Router answers one
+question, which model, effort and skills for each phase, and hands back a
+decision you can read before anything runs.
+
 ```mermaid
 flowchart LR
-    T[Task and constraints] --> C[Catalog and host evidence]
-    C --> F[Filter admissible candidates]
-    F --> R[Score and explain]
-    R --> P[Prepare and review]
-    P --> A{Exact approval}
-    A --> E[Sandboxed execution]
-    E --> V[Independent verification]
-    V --> I[Explicit patch integration]
+    U([You]) -->|task| H[Claude Code, Codex<br/>or your terminal]
+    H -->|route / plan| AR[Agent Router CLI<br/>or local route API]
+    AR -->|decision + explanation| U
+    U -->|approve exact digest| RT[Supervised runtime]
+    RT -->|sandboxed host process<br/>in a Git worktree| W[(Workspace)]
+    RT -->|artifacts to verify| V[Verification]
+    V -->|preview, apply or discard| U
+```
+
+### How a decision is made
+
+Constraints come first. Scoring only ranks candidates that are already
+admissible, and every exclusion is kept in the explanation.
+
+```mermaid
+flowchart TD
+    T[Task, risk and budget] --> N[Normalize and clarify missing facts]
+    C[Current signed catalog] --> F
+    E[Fresh host evidence<br/>UNKNOWN stays unknown] --> F
+    N --> F[Filter: permissions, budgets,<br/>risk floor, asset contracts]
+    F -->|admissible pool| S[Retrieve and score per phase]
+    S -. optional, advisory .-> B[Semantic proposal<br/>stays inside the pool]
+    B -.-> D
+    S --> D[Decision receipt:<br/>plan, execute, verify]
+    F -->|exclusions and missing evidence| X[Explanation]
+    D --> X
+```
+
+### What must hold before anything runs
+
+Routing and preparation never execute anything. A run starts only when every
+check passes at launch time.
+
+```mermaid
+sequenceDiagram
+    actor U as You
+    participant CLI as agent-router
+    participant RT as Runtime
+    participant SB as OS sandbox
+    participant Host as Host CLI
+    CLI->>U: prepared request and its execution digest
+    U->>CLI: approve that exact digest
+    CLI->>RT: run
+    RT->>RT: recheck digest, asset authority,<br/>fresh evidence, helper binary hash
+    RT->>SB: probe the sandbox and resource limits
+    SB-->>RT: verified, or refuse and stop
+    RT->>Host: launch inside the sandbox<br/>(writing runs use a Git worktree)
+    Host-->>RT: exit status and declared artifacts
+    RT->>U: verification result, patch to preview
+    U->>RT: apply or discard
 ```
 
 The deterministic receipt records the decision and its evidence. An optional
@@ -187,6 +263,8 @@ an existing parent conversation.
 
 | Start here | Go deeper |
 | --- | --- |
+| [Install Agent Router](docs/install.md) | [Changelog](CHANGELOG.md) |
+| [Serve the local route API](docs/local-api.md) | [Build a verifiable local release](docs/release-local.md) |
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
 | [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |
 | [Coordinate a workflow](docs/coordinator.md) | [JSON contracts](docs/reference/json-contracts.md) |

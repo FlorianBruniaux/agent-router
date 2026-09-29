@@ -18,7 +18,7 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #7 | Thin Codex and Claude adapters | Complete within the issue scope | PR #15 merged at `8b36b07aff508410a764f8feeefc62eaa0512935`; native canaries use a fake host under real macOS/Linux isolation; actual model behavior remains UNKNOWN |
 | #1 | Durable isolated execution | Complete within the issue scope | PR #16 merged at `dfe7d9346093bf3b6bec4d423706301d1b7f1825` after 411 local tests and eight PR checks; watchdog, durable leases, coordination and native macOS/Linux SIGKILL recovery covered. PR #17 stabilizes the historical-expiry test |
 | #6 | Offline feedback and reversible policy | Complete within the issue scope | PR #15 merged with eight passing CI checks; consent-bound runtime recording, signed offline promotion and rollback tested; objective validation remains separate |
-| #8 | Distribution, licenses, notices, SBOM | Source license and advisory gates delivered; final release pending | PR #29 (`0fa3adf`) enforces real strict source exports and verification in CI; PR #32 (`e1e8fe0`) adds fresh RustSec audits. Local binary inventories are implemented in the integration candidate below; signed release artifacts and final release acceptance remain open |
+| #8 | Distribution, licenses, notices, SBOM | Source license and advisory gates delivered; final release pending | PR #29 (`0fa3adf`) enforces real strict source exports and verification in CI; PR #32 (`e1e8fe0`) adds fresh RustSec audits. Local binary inventories are implemented in the integration candidate below; signed release artifacts and final release acceptance remain open. PR #49 (`007fb6e`) adds a verifiable local release recipe, not a final release; see the September 29 merges below |
 | #11 | Roadmap acceptance | Pending | All dependencies and the gaps below have evidence/disposition |
 
 ## Specification coverage beyond issue titles
@@ -277,6 +277,47 @@ The [local dependency audit](dependency-audit.md#local-integration-audit-septemb
 also passed for the unchanged workspace and fuzz lockfiles with `cargo-audit`
 0.22.2 and RustSec revision `ef03605143a913024f864d2edf476adad5720c93`:
 no reported vulnerabilities or warnings. It does not replace the blocked CI.
+
+## Merges of September 29
+
+The combined candidate above was merged as PR #43 (`cc312f4`, 09:01 +0200) on
+local evidence only, as its merge message states: GitHub Actions jobs did not
+start because of the account billing restriction. PRs #44 to #56 then merged on
+the same day, each after an independent review and local gates (`cargo fmt`,
+strict Clippy, workspace tests, `xtask check`). The remote CI did not run for
+them either, with the same annotation, "The job was not started because recent
+account payments have failed". Linux execution and remote merge validation stay
+unverified (gate P6). No release is declared final, and P1 (human validation of
+the corpus) stays open: nothing below claims a product gain.
+
+| Lot | Delivered (PR, merge commit) | Remaining boundary |
+| --- | --- | --- |
+| R18, #44 (`9fa75a2`) | `router-eval` tradeoffs and `agent-router eval tradeoffs`: descriptive regret and quality/cost frontier over 2 to 8 pinned policies ([evaluation](evaluation.md#comparable-policy-tradeoffs)) | First-plan acceptance and scanner false-positive rates stay open. Provenance and usage hashes are caller declarations. The report does not certify that a policy produced an executed plan |
+| R18, #50 (`b657257`) | `router-advisory-cache` and [ADR 0011](adr/0011-advisory-decision-cache.md): opt-in, HMAC-authenticated cache of backend proposals; a miss never blocks routing | Library only, no CLI wiring (ADR status line). Advisory: a cached entry is never authority |
+| R02-a, #51 (`76b0ced`) | `router-retrieval` `rank_semantic` behind `semantic-ranking`: local integer cosine ranking from caller-supplied vectors ([retrieval](retrieval.md#local-ranking-from-caller-supplied-vectors)) | R02 stays partial: no embedding provider is run, the caller owns vector computation and provenance is not validated by `rank_semantic`. P1 stays open |
+| Catalog provenance, #46 (`266a1ea`), BREAKING | `router-catalog`: signed provenance sources accept only a lowercase `https://` URL or a bare identifier; local paths, `owner/repo` and `scheme:id` fail with `Invalid` when sealing and verifying ([signed catalogs](signed-catalogs.md)) | Catalogs already signed with such a source must be re-sealed and re-signed. No `Quarantined` state, no schema version bump |
+| R23-a, #47 (`5866b0e`) | `router-import` and [ADR 0013](adr/0013-inert-importer.md): inert importer producing an unsigned, `untrusted` catalog candidate with permission `UNKNOWN` ([importer](importer.md)) | R23 stays partial: no CLI subcommand, no signing, no TUI or web surface, no pack catalog or marketplace. The source directory is documented as non-concurrent. Scripts point to R08 |
+| R19-a, #48 (`8011bac`) | `router-local-api`, `agent-router serve` behind the default-off `local-api` feature and [ADR 0012](adr/0012-local-route-api.md): `GET /v1/health`, `GET /v1/capabilities`, `POST /v1/route` on a 0600 Unix socket with a bearer token ([local API](local-api.md)) | R19 stays partial: no execute, plan, events, outcome, feedback or artifacts endpoint, no TCP loopback, no SSE. No `SO_PEERCRED` check |
+| R21, #49 (`007fb6e`) | `scripts/release-local.py` with `scripts/test-release-local.py`: manifest, Ed25519 signature check with externally pinned key, Homebrew formula render ([local release](release-local.md)) | R21 stays partial. Homebrew installation was not exercised (`UNKNOWN`); only `ruby -c` was run on a rendered formula. Fixture archives are synthetic. Key custody, real platform archives and publication (P3) remain outside |
+| R13-a, #52 (`3db0b69`) | `router-validation` and [ADR 0015](adr/0015-structured-validation.md): pure library evaluating typed assertions (JSON pointer equality) into a deterministic report ([structured validation](structured-validation.md)) | R13-b remains: argv command runner and binding of the view to the real artifact. `objective` is fixed at UNKNOWN. A report is not an attestation of the working tree |
+| O2-a, #53 (`89e100c`) | `router-policy` `distinct_provider_pairs`: keeps only review edges whose declared providers differ ([review separation](review-separation.md)) | Planning only, library only, no CLI or runtime gate. The provider is a declared string, not an authenticated identity, so independence is not proven |
+| O6-a, #54 (`abecb75`) | `router-adapter-api` registry and [ADR 0016](adr/0016-adapter-descriptor-registry.md): strict, bounded, inert validation of adapter descriptors; `activation` must be `none` | Signature verification, installation and native proof remain. `host` is a label, not an identity. `requires` is declarative |
+| R04-b, #55 (`06c77db`) | `router-workflow` `review_plan_proposal`: strict intake of a model-proposed plan with a divergence report against the local baseline ([plan proposals](plan-proposals.md)) | Library only, no CLI entry point. `is_approved()` is always `false`; no approval digest or execution is produced. Free text from the proposer is not filtered |
+| R07-a, #56 (`e456214`) | `router-asset-contracts` `modality`: typed image, audio and file input contracts and a JSON output contract ([JSON contracts](reference/json-contracts.md)) | R07 stays partial: pure byte checks, media type declared and not read from content, output not schema-validated, nothing transported. Execution stays refused while `ExecutionRequest` carries text only |
+
+PR #45 (`a364ca9`) fixes two environment-dependent workspace tests: a budget
+test that could parse an empty result file (now published by staging and
+rename) and a sandbox-helper limits test whose inherited stdout could hit the
+1024-byte file-size limit. It changes tests only. Its commit message reports
+that the first failure was reproduced with an injected delay and that
+`budget_tests` passed 15/15 on three consecutive runs without it.
+
+Decided but not delivered: R10-a (loopback HTTP transport), whose
+ADR 0014 number is reserved and whose implementation is in progress;
+no ADR 0014 file exists in `docs/adr/` at `e456214`. Deferred by decision: R22 (no Windows
+evidence can be produced here), R13-b, the rest of O3 (its conservative
+allocations from #35 and #40 are on `main` through #43; observed costs stay
+UNKNOWN), O4, O5 and the O6 signature.
 
 ## Acceptance that automated implementation cannot manufacture
 
