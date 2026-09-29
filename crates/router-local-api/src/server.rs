@@ -115,9 +115,12 @@ impl<H: RouteHandler> Server<H> {
     }
 
     /// Serves until `shutdown` is set, then waits for in-flight connections and
-    /// removes the socket. Each connection is bounded by the request deadline
-    /// plus a fixed 2 s response budget and 200 ms drain budget, none of which a
-    /// slow peer can extend.
+    /// removes the socket. Reading a request is bounded by the request deadline,
+    /// then the response write by a fixed 2 s budget and the drain by a fixed
+    /// 200 ms, none of which a slow peer can extend. `RouteHandler::route` runs
+    /// between the read and the write, synchronously and outside those bounds:
+    /// the server does not interrupt it, so a slot is held for as long as the
+    /// handler runs.
     pub fn serve(self, shutdown: &AtomicBool) -> Result<(), Error> {
         let context = Context {
             token_digest: self.token_digest,
@@ -268,11 +271,11 @@ impl<H: RouteHandler> Context<'_, H> {
             if head.content_length.unwrap_or(0) != 0 || !rest.is_empty() {
                 return Err(Failure::new(400, "http.unexpected_body"));
             }
-            return Ok(if head.target == "/v1/health" {
-                b"{\"schema_version\":1,\"status\":\"ok\"}\n".to_vec()
+            return if head.target == "/v1/health" {
+                Ok(b"{\"schema_version\":1,\"status\":\"ok\"}\n".to_vec())
             } else {
                 self.capabilities()
-            });
+            };
         }
         let length = head
             .content_length
@@ -316,7 +319,7 @@ impl<H: RouteHandler> Context<'_, H> {
         }
     }
 
-    fn capabilities(&self) -> Vec<u8> {
+    fn capabilities(&self) -> Result<Vec<u8>, Failure> {
         let mut body = serde_json::to_vec(&serde_json::json!({
             "schema_version": 1,
             "api_version": "v1",
@@ -330,15 +333,15 @@ impl<H: RouteHandler> Context<'_, H> {
                 "request_deadline_ms": self.limits.request_deadline.as_millis() as u64,
             },
         }))
-        .unwrap_or_default();
+        .map_err(|_| Failure::new(500, "local_api.internal"))?;
         body.push(b'\n');
-        body
+        Ok(body)
     }
 }
 
 fn error_body(code: &str) -> Vec<u8> {
     let mut body = serde_json::to_vec(&serde_json::json!({"schema_version": 1, "error": code}))
-        .unwrap_or_default();
+        .unwrap_or_else(|_| b"{\"schema_version\":1,\"error\":\"local_api.internal\"}".to_vec());
     body.push(b'\n');
     body
 }

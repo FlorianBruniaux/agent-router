@@ -14,8 +14,8 @@ use router_adapter_api::{
     AdapterError, MAX_TRANSPORT_BYTES, ValidatedExecutionRequest, content_digest,
 };
 use router_types::{
-    PreparedProviderRequest, RuntimeEvidence, SupplementalBridgeKind, TransportOutcome,
-    TransportTermination,
+    PreparedProviderRequest, RuntimeEvidence, SupplementalBridgeKind, TransportEventKind,
+    TransportOutcome, TransportTermination,
 };
 use std::net::SocketAddr;
 use std::str::FromStr;
@@ -58,6 +58,10 @@ pub enum TransportError {
     SecretEcho,
     #[error("transport.io")]
     Io,
+    /// The provider ended the stream with a failure event (`response.failed`,
+    /// `response.incomplete`, Anthropic `error`).
+    #[error("transport.provider_failed")]
+    ProviderFailed,
 }
 
 /// An endpoint the supervising runtime approved for one provider. The signed
@@ -70,9 +74,13 @@ pub struct ApprovedEndpoint {
 }
 
 impl ApprovedEndpoint {
-    /// Loopback IP and a non-zero port only.
+    /// Loopback IP and a non-zero port only. An IPv6 scope id is refused: the
+    /// `Host` header would carry a raw `%`, and loopback needs no scope.
     pub fn new(provider: SupplementalBridgeKind, addr: SocketAddr) -> Result<Self, TransportError> {
         if !addr.ip().is_loopback() || addr.port() == 0 {
+            return Err(TransportError::Refused);
+        }
+        if matches!(addr, SocketAddr::V6(v6) if v6.scope_id() != 0) {
             return Err(TransportError::Refused);
         }
         Ok(Self { provider, addr })
@@ -135,13 +143,18 @@ impl CancelToken {
 pub struct ProviderTransport {
     endpoint: ApprovedEndpoint,
     credential: Secret,
+    /// Built once. `None` only if the credential patterns cannot be built, which
+    /// `execute` reports as `Credential`.
+    redactor: Option<Redactor>,
 }
 
 impl ProviderTransport {
     pub fn new(endpoint: ApprovedEndpoint, credential: Secret) -> Self {
+        let redactor = Redactor::new(&[credential.0.as_str()]).ok();
         Self {
             endpoint,
             credential,
+            redactor,
         }
     }
 
@@ -169,7 +182,7 @@ impl ProviderTransport {
             return Err(TransportError::Limit);
         }
         let deadline = started + Duration::from_millis(prepared.timeout_ms.min(MAX_TIMEOUT_MS));
-        let redactor = Redactor::new(&[self.credential.0.as_str()])?;
+        let redactor = self.redactor.as_ref().ok_or(TransportError::Credential)?;
         let (wire, body_at) = self.wire(prepared)?;
         // Revalidation sits directly before the connection. The wire bytes come
         // from the same immutable `prepared`, and their body part is hashed
@@ -180,30 +193,40 @@ impl ProviderTransport {
             return Err(TransportError::Envelope);
         }
         let mut session = http::Session::connect(self.endpoint.addr, deadline, cancel)?;
-        session.write_all(&wire)?;
+        let written = session.write_all(&wire);
         drop(wire);
-        let (head, pending) = session.read_head()?;
-        match head.status {
-            200 => {}
-            401 | 403 => return Err(TransportError::Unauthorized),
-            429 => {
-                return Err(TransportError::RateLimited {
-                    retry_after_secs: head.retry_after(),
-                });
+        if let Err(TransportError::Io) = written {
+            // A server that answers early and closes makes the write fail. The
+            // status it sent is still the better answer.
+            if let Ok((head, _)) = session.read_head() {
+                if head.status != 200 {
+                    return Err(status_error(&head));
+                }
             }
-            status @ 500..=599 => return Err(TransportError::ServerError { status }),
-            status @ 400..=499 => return Err(TransportError::Rejected { status }),
-            _ => return Err(TransportError::Malformed),
+        }
+        written?;
+        let (head, pending) = session.read_head()?;
+        if head.status != 200 {
+            return Err(status_error(&head));
         }
         let framing = head.success_framing(limit)?;
         let body = session.read_body(framing, pending, limit)?;
         if body.len() > limit {
             return Err(TransportError::Limit);
         }
-        if redactor.leaks_in_sse(&body) {
+        let check = || {
+            if cancel.is_cancelled() {
+                Err(TransportError::Cancelled)
+            } else if Instant::now() >= deadline {
+                Err(TransportError::Timeout)
+            } else {
+                Ok(())
+            }
+        };
+        if redactor.scan_sse(&body, &check)? {
             return Err(TransportError::SecretEcho);
         }
-        if !ends_with_blank_line(&body) {
+        if !crate::stream::ends_at_frame_boundary(&body) {
             return Err(TransportError::Truncated);
         }
         let outcome = TransportOutcome {
@@ -221,7 +244,15 @@ impl ProviderTransport {
         if !evidence.stream_complete {
             return Err(TransportError::Truncated);
         }
+        if evidence
+            .events
+            .iter()
+            .any(|event| event.kind == TransportEventKind::HostError)
+        {
+            return Err(TransportError::ProviderFailed);
+        }
         let printed = serde_json::to_vec(&evidence).map_err(|_| TransportError::Malformed)?;
+        check()?;
         if redactor.leaks(&printed) {
             return Err(TransportError::SecretEcho);
         }
@@ -280,12 +311,15 @@ impl ProviderTransport {
     }
 }
 
-fn ends_with_blank_line(body: &[u8]) -> bool {
-    body.iter()
-        .rev()
-        .filter(|b| **b != b'\r')
-        .take(2)
-        .filter(|b| **b == b'\n')
-        .count()
-        == 2
+/// Maps a non-200 status to its normalized error.
+fn status_error(head: &http::Head) -> TransportError {
+    match head.status {
+        401 | 403 => TransportError::Unauthorized,
+        429 => TransportError::RateLimited {
+            retry_after_secs: head.retry_after(),
+        },
+        status @ 500..=599 => TransportError::ServerError { status },
+        status @ 400..=499 => TransportError::Rejected { status },
+        _ => TransportError::Malformed,
+    }
 }

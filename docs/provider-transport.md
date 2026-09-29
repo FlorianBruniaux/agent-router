@@ -35,8 +35,11 @@ let evidence = transport.execute(&adapter, &prepared, &trusted_key, &validated, 
   deadline. The tests assert a return within 3 s, not a tighter bound.
 
 The result is `RuntimeEvidence` from the stream decoder. Provider text is
-discarded. A terminal provider error event is evidence (`HostError`), not a
-`TransportError`.
+discarded. A provider failure event (`response.failed`, `response.incomplete`,
+Anthropic `error`) is not a successful run: `execute` returns
+`ProviderFailed`. The last frame must end on a blank line once CRLF is read as
+LF; anything after it, even a space, is an unfinished frame (`Truncated`). The
+stream decoder and the transport apply that one rule.
 
 ## Trust boundary: what "loopback only" does not give
 
@@ -66,7 +69,7 @@ Steps 1 to 3 run before any connection. A refusal opens no socket.
 
 | Error | Cause |
 | --- | --- |
-| `Refused` | endpoint not loopback, port 0, host name, or approved for another provider |
+| `Refused` | endpoint not loopback, port 0, IPv6 scope id, host name, or approved for another provider |
 | `Credential` | credential shorter than 8 bytes, longer than 4096, or not visible ASCII |
 | `Envelope` | verification failed, or adapter and envelope providers differ |
 | `Unauthorized` | HTTP 401 or 403 |
@@ -77,9 +80,10 @@ Steps 1 to 3 run before any connection. A refusal opens no socket.
 | `Cancelled` | token set |
 | `Truncated` | body shorter than `Content-Length`, cut chunk, stream without a terminal event, or a last frame not ended by a blank line |
 | `Malformed` | bad status line or header, redirect, wrong content type, content encoding, both `Content-Length` and `Transfer-Encoding`, forged or ill-formed event |
-| `Limit` | headers over 16 KiB, body over `max_output_bytes`, too many events |
+| `Limit` | headers over 16 KiB, body over `max_output_bytes`, too many events, an SSE frame over 256 KiB, a JSON path over 1 KiB or over 1 MiB of distinct paths in one body |
 | `SecretEcho` | the response contains the credential in a covered form |
-| `Io` | other socket failure |
+| `ProviderFailed` | the stream ended with a provider failure event |
+| `Io` | other socket failure, including a reset before any response byte. After the first response byte a reset is `Truncated`. When the request write fails, an early status the server sent is read and reported instead |
 
 ### Status lines and framing
 
@@ -93,6 +97,9 @@ Steps 1 to 3 run before any connection. A refusal opens no socket.
 | chunk extension, trailer, non-hex or signed size, empty size line | `Malformed` |
 | chunk size line of 9 hex digits or more | `Malformed` |
 | chunk size of 8 hex digits above the response limit | `Limit` |
+| chunked body over `13 * max_output_bytes + 16 KiB` raw bytes | `Limit`. Every legal body within the limit fits, even one byte per chunk |
+| no `Content-Length`, not chunked | read until the server closes (HTTP/1.1). A server that keeps the connection open after a complete stream ends at the deadline with `Timeout`; nothing partial is returned |
+| `Content-Type` media type | compared ignoring ASCII case |
 | missing CRLF after chunk data, bytes after the last chunk | `Malformed` |
 
 Error messages are fixed strings. Error bodies are never read into an error.
@@ -115,6 +122,11 @@ not matter. The scan covers the credential as:
 - percent encoding (unreserved characters kept, or every byte), upper and lower
   hex;
 - hex, lower and upper case.
+
+Each scan pass is one linear multi-pattern search (Aho-Corasick), so the
+cost does not grow with the number of encoded forms. The deadline and the
+cancellation token are checked between passes, once per frame and per JSON
+string. The `Redactor` is built once, when the transport is created.
 
 Matching is a byte substring test. Every pattern except base64 ignores ASCII
 case, so upper, lower and mixed case hex, percent encoding and the raw value

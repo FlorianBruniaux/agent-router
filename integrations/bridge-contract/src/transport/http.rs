@@ -11,11 +11,16 @@ pub const MAX_RETRY_AFTER_SECS: u64 = 3600;
 /// Upper bound of one blocking socket call, so cancellation stays responsive.
 const POLL: Duration = Duration::from_millis(25);
 const MAX_CHUNK_LINE: usize = 32;
+/// Size line of 8 hex digits plus the two CRLF around a chunk.
+const MAX_CHUNK_OVERHEAD: usize = 8 + 2 + 2;
 
 pub struct Session<'a> {
     stream: TcpStream,
     deadline: Instant,
     cancel: &'a CancelToken,
+    /// True once one response byte was read. A socket error before that is
+    /// `Io`, after it the response was cut (`Truncated`).
+    received: bool,
 }
 
 pub struct Head {
@@ -26,6 +31,12 @@ pub struct Head {
 pub enum BodyFraming {
     Length(usize),
     Chunked,
+    /// No `Content-Length` and no chunking: the body ends when the server closes
+    /// the connection, which is correct HTTP/1.1 for such a response and the
+    /// request asks for it with `Connection: close`. A server that keeps the
+    /// connection open after a complete stream is stopped by the deadline
+    /// (`Timeout`), or by `Limit` if it keeps sending. Nothing partial is
+    /// returned in either case.
     UntilClose,
 }
 
@@ -61,7 +72,12 @@ impl Head {
         let content_type = self
             .single("content-type")?
             .ok_or(TransportError::Malformed)?;
-        if content_type.split(';').next().map(str::trim) != Some("text/event-stream") {
+        // Media types are case-insensitive (RFC 9110 8.3.1).
+        if !content_type
+            .split(';')
+            .next()
+            .is_some_and(|media| media.trim().eq_ignore_ascii_case("text/event-stream"))
+        {
             return Err(TransportError::Malformed);
         }
         let length = self.single("content-length")?;
@@ -96,6 +112,7 @@ impl<'a> Session<'a> {
             stream: connect(addr, deadline, cancel)?,
             deadline,
             cancel,
+            received: false,
         })
     }
 
@@ -135,10 +152,15 @@ impl<'a> Session<'a> {
                 .set_read_timeout(Some(wait))
                 .map_err(|_| TransportError::Io)?;
             match self.stream.read(buf) {
-                Ok(n) => return Ok(n),
+                Ok(n) => {
+                    self.received |= n > 0;
+                    return Ok(n);
+                }
                 Err(e) if retryable(&e) => {}
-                // A reset after the request was sent is a cut response.
-                Err(_) => return Err(TransportError::Truncated),
+                // A reset after part of the response was read is a cut
+                // response. Before any byte it is a socket failure.
+                Err(_) if self.received => return Err(TransportError::Truncated),
+                Err(_) => return Err(TransportError::Io),
             }
         }
     }
@@ -204,6 +226,7 @@ impl<'a> Session<'a> {
             BodyFraming::Chunked => {
                 let mut body = Vec::new();
                 let mut raw_total = pending.len();
+                let raw_cap = chunked_raw_cap(limit);
                 loop {
                     if dechunk(&mut pending, &mut body, limit)? {
                         return Ok(body);
@@ -213,7 +236,7 @@ impl<'a> Session<'a> {
                         return Err(TransportError::Truncated);
                     }
                     raw_total += n;
-                    if raw_total > limit.saturating_mul(4).saturating_add(MAX_HEADER_BYTES) {
+                    if raw_total > raw_cap {
                         return Err(TransportError::Limit);
                     }
                     pending.extend_from_slice(&chunk[..n]);
@@ -221,6 +244,17 @@ impl<'a> Session<'a> {
             }
         }
     }
+}
+
+/// Most raw bytes a chunked body may take on the wire. A decoded body of at
+/// most `limit` bytes needs at most one chunk per byte, and one chunk costs at
+/// most `MAX_CHUNK_OVERHEAD` bytes (an 8 digit size line, two CRLF), so this cap
+/// accepts every legal body within the limit. The terminal chunk fits in the
+/// slack.
+fn chunked_raw_cap(limit: usize) -> usize {
+    limit
+        .saturating_mul(1 + MAX_CHUNK_OVERHEAD)
+        .saturating_add(MAX_HEADER_BYTES)
 }
 
 /// Consumes whole chunks from `buf`. Returns true once the terminal chunk and

@@ -416,6 +416,7 @@ name = "router-workflow"
 version = "0.1.0"
 dependencies = [
  "hex",
+ "router-adapter-api",
  "router-types",
  "serde_json",
  "sha2",

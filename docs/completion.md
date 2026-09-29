@@ -304,6 +304,7 @@ the corpus) stays open: nothing below claims a product gain.
 | O6-a, #54 (`abecb75`) | `router-adapter-api` registry and [ADR 0016](adr/0016-adapter-descriptor-registry.md): strict, bounded, inert validation of adapter descriptors; `activation` must be `none` | Signature verification, installation and native proof remain. `host` is a label, not an identity. `requires` is declarative |
 | R04-b, #55 (`06c77db`) | `router-workflow` `review_plan_proposal`: strict intake of a model-proposed plan with a divergence report against the local baseline ([plan proposals](plan-proposals.md)) | Library only, no CLI entry point. `is_approved()` is always `false`; no approval digest or execution is produced. Free text from the proposer is not filtered |
 | R07-a, #56 (`e456214`) | `router-asset-contracts` `modality`: typed image, audio and file input contracts and a JSON output contract ([JSON contracts](reference/json-contracts.md)) | R07 stays partial: pure byte checks, media type declared and not read from content, output not schema-validated, nothing transported. Execution stays refused while `ExecutionRequest` carries text only |
+| R10-a, #58 (`6c9689d`) | `router-bridge-contract` `transport` behind `loopback-transport` and [ADR 0014](adr/0014-loopback-provider-transport.md): supervised HTTP/1.1 client to an approved loopback endpoint for a verified `PreparedProviderRequest`, with normalized errors and redaction by refusal ([provider transport](provider-transport.md)) | Library only, not wired into the CLI or the runtime. Loopback bounds where bytes go, not who listens; no TLS, no credential broker, no real canary. R10 stays partial |
 
 PR #45 (`a364ca9`) fixes two environment-dependent workspace tests: a budget
 test that could parse an empty result file (now published by staging and
@@ -312,9 +313,12 @@ rename) and a sandbox-helper limits test whose inherited stdout could hit the
 that the first failure was reproduced with an injected delay and that
 `budget_tests` passed 15/15 on three consecutive runs without it.
 
-Decided but not delivered: R10-a (loopback HTTP transport), whose
-ADR 0014 number is reserved and whose implementation is in progress;
-no ADR 0014 file exists in `docs/adr/` at `e456214`. Deferred by decision: R22 (no Windows
+R10-a (loopback HTTP transport) is delivered by #58 (`6c9689d`, merged as
+`ac24365`) as a library behind the default-off `loopback-transport` feature of
+`router-bridge-contract`, with [ADR 0014](adr/0014-loopback-provider-transport.md)
+and [provider transport](provider-transport.md). It is not wired into the CLI or
+the runtime, no real provider canary was run, and the other R10 criteria stay
+open. Deferred by decision: R22 (no Windows
 evidence can be produced here), R13-b, the rest of O3 (its conservative
 allocations from #35 and #40 are on `main` through #43; observed costs stay
 UNKNOWN), O4, O5 and the O6 signature.
