@@ -222,8 +222,10 @@ descriptor was read-only. SQLite owns all its database descriptor lifetimes.
 The passive lease reader uses a shared nonblocking lock, a 96-byte marker limit
 and the recorded identity. It never changes a pending marker to recovered.
 
-Inspection is limited to 4,096 rows per table and 64 KiB per field before journal
-parsing or lease materialization. SQLite VM/time limits remain active on the
+Inspection has no per-table row cap, because no writer bounds `runs`, `events` or
+lease rows and a row count is not a health signal. It is bounded by the 4 MiB
+snapshot size, checked before inspection, and by 64 KiB per field, before journal
+parsing or lease materialization. Events are verified as a stream. The lease observation loop opens one file per recorded lease and is bounded only by the number of rows that fit in the 4 MiB snapshot, not by SQLite VM or time limits. SQLite VM/time limits remain active on the
 copy. The `diagnose_database_snapshot_with` callback is trusted linked Rust code, not a sandbox for arbitrary SQL or Rust. It counts its statements and
 must preserve connection limits. A changed final fingerprint or an open
 transaction is rejected. The checks cannot detect a trusted callback changing
@@ -232,7 +234,7 @@ Rust computation. The historical snapshot wrapper and its JSON shape are unchang
 
 Tests cover committed WAL observations, unchanged reservation and pending-lease
 records, schema migration refusal, redaction, journal corruption, unsafe paths,
-row bounds and a second process remaining blocked by an existing SQLite writer
+snapshot size and field bounds, more than 4,096 healthy rows and a second process remaining blocked by an existing SQLite writer
 lock after inspection. Native host activation and orphan cleanup are not covered
 by these storage tests.
 

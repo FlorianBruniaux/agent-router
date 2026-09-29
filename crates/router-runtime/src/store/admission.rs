@@ -152,6 +152,23 @@ impl Store {
         tx.commit()?;
         Ok(intent.ticket)
     }
+    /// Undoes `arm_session_budget` after the registry refused the dispatch, so
+    /// the release refunds the reservation instead of committing it for a run
+    /// that never spawned. Safe when the registry did commit: release then reads
+    /// the committed reservation state, not this flag.
+    pub(crate) fn disarm_session_budget(&self, id: &str) -> Result<()> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        let mut intent = load(&tx, &run)?.ok_or(crate::admission::BudgetError::Unknown)?;
+        if intent.released || !intent.budget_armed {
+            return Ok(());
+        }
+        intent.budget_armed = false;
+        persist(&tx, &run, &intent)?;
+        tx.commit()?;
+        Ok(())
+    }
     pub(crate) fn admission_released(&self, ticket: &Ticket) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;

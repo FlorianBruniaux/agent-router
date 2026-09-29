@@ -72,3 +72,22 @@ Decided B. Published but not durable is its own outcome.
   designed (deferred).
 - Advisory cache: decided to sweep expired entries (other branch).
 - Runtime registry: decided to prune released tickets (other branch).
+
+## Runtime admission registry (implemented and tested in the runtime-store branch)
+
+- Released tickets beyond the 512 most recent are pruned inside the
+  transaction that enqueues a new ticket, so `MAX_TICKETS` bounds live
+  (waiting or granted) tickets instead of every ticket ever enqueued.
+- A ticket whose reservation is still `reserved` is never pruned. A
+  `committed` reservation is folded into a per-session total
+  (`budget_folded`) before deletion, and loading adds that total back, so
+  session accounting is unchanged.
+- The identifiers of the 4096 most recently pruned tickets are kept
+  (`budget_pruned`). Replaying an armed release for one of them is a no-op;
+  any other unknown ticket, including one older than that window, still
+  fails with `BudgetError::Unknown`.
+- These tables arrive with registry schema version 3 through an explicit
+  migration, re-checked inside the migration transaction so concurrent opens
+  of a version 2 registry both succeed; a future version is refused.
+- The budget event journal keeps its lifetime cap of 16384 events: it is
+  hash-chained, and compacting it needs an anchored checkpoint (deferred).

@@ -86,10 +86,27 @@ gates are checked again after queueing before a process can start.
 
 Registry and runtime files are private (`0700` directories, `0600` files), with
 no-follow opens and pinned directory/database identities. SQLite uses WAL,
-FULL synchronous commits and a 250 ms busy bound. Capacities are 1–32, mappings
-are bounded to 128 entries per category, and a registry retains at most 4096
-tickets. Exhaustion refuses new work; no silent history purge or capacity reset
-is provided. Duplicate runtime owners are refused.
+FULL synchronous commits and a 250 ms busy bound. A queued run retries a busy
+registry inside its wait, for at most 10 seconds of consecutive contention,
+before failing with `runtime.limit`. Capacities are 1–32, mappings
+are bounded to 128 entries per category, and a registry holds at most 4096 live
+(waiting or granted) tickets. Released tickets beyond the newest 512 are pruned
+inside the enqueue transaction, so the cap bounds live rows, not lifetime rows
+(docs/adr/0017-bounded-retention-and-publish-durability.md). Exhaustion of live
+capacity refuses new work; no capacity reset is provided. Duplicate runtime
+owners are refused.
+
+The runtime writer lock compares workspaces and scopes lexically (slashes and `.`
+components); `..` is refused, and symlinked or nested workspaces are not detected.
+Upgrade effect: a `writer_locks` row persisted by an older build with `..` in its
+workspace makes every new writer lock fail with `runtime.integrity: writer lock
+workspace` until that row is released.
+
+The registry schema is version 3 (per-session `budget_folded` totals and a bounded
+`budget_pruned` tombstone list of 4096 ids). Opening a version 2 registry migrates
+it under the write lock, so concurrent opens are safe; a future version is refused.
+A replayed armed release of a pruned ticket succeeds only while its tombstone is
+retained; otherwise it fails closed as `session_budget.accounting.unknown`.
 
 This is a local concurrency contract. Optional [session allocations](session-budgets.md)
 add persistent parent-declared cost/token reservations in the same registry.

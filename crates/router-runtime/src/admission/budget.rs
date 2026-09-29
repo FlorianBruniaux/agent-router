@@ -93,7 +93,7 @@ pub(super) fn read_policy(db: &Connection) -> Result<Option<SessionBudgetPolicy>
     if version == 1 {
         return Ok(None);
     }
-    if version != 2 {
+    if !(2..=3).contains(&version) {
         return Err(RuntimeError::Integrity("admission schema"));
     }
     let json: String = db.query_row(
@@ -138,6 +138,8 @@ impl AdmissionStore {
                 return Err(BudgetError::Authority.into());
             }
             tx.execute_batch("CREATE TABLE budget_policy(id INTEGER PRIMARY KEY CHECK(id=1),json TEXT NOT NULL);CREATE TABLE budget_sessions(id TEXT PRIMARY KEY,json TEXT NOT NULL);CREATE TABLE budget_reservations(ticket TEXT PRIMARY KEY REFERENCES tickets(id),session TEXT NOT NULL REFERENCES budget_sessions(id),state TEXT NOT NULL CHECK(state IN ('reserved','committed','released')),amount TEXT NOT NULL);CREATE TABLE budget_events(sequence INTEGER PRIMARY KEY,session TEXT NOT NULL,kind TEXT NOT NULL,ticket TEXT,previous_hash TEXT NOT NULL,state TEXT NOT NULL,event_hash TEXT NOT NULL);PRAGMA user_version=2;")?;
+            tx.execute_batch(budget_store::CREATE_FOLDED)?;
+            tx.execute_batch("PRAGMA user_version=3;")?;
             tx.execute(
                 "INSERT INTO budget_policy VALUES(1,?1)",
                 [serde_json::to_string(policy)?],

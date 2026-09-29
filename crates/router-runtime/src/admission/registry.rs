@@ -9,6 +9,7 @@ pub struct AdmissionStore {
     pub(super) policy_hash: String,
     pub(super) registry_hash: String,
     pub(super) budget_policy: Option<SessionBudgetPolicy>,
+    pub(super) retain_released: u32,
 }
 impl AdmissionStore {
     /// Explicitly initializes an empty private registry; never imports legacy runs.
@@ -39,8 +40,21 @@ impl AdmissionStore {
             tx.commit()?;
         }
         let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if ![1, 2].contains(&version) {
+        if ![1, 2, 3].contains(&version) {
             return Err(RuntimeError::Integrity("admission schema"));
+        }
+        if version == 2 {
+            // v3 adds the per-session total of pruned committed reservations.
+            // Another opener may migrate first: re-read under the write lock.
+            let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+            let current: u32 = tx.pragma_query_value(None, "user_version", |r| r.get(0))?;
+            if current == 2 {
+                tx.execute_batch(budget_store::CREATE_FOLDED)?;
+                tx.execute_batch("PRAGMA user_version=3;")?;
+            } else if current != 3 {
+                return Err(RuntimeError::Integrity("admission schema"));
+            }
+            tx.commit()?;
         }
         let json: String = db.query_row(
             "SELECT substr(json,1,131073) FROM config WHERE id=1",
@@ -71,6 +85,7 @@ impl AdmissionStore {
             policy_hash,
             registry_hash,
             budget_policy,
+            retain_released: MAX_RETAINED_RELEASED,
         })
     }
     pub fn policy(&self) -> &AdmissionPolicy {
@@ -146,8 +161,13 @@ impl AdmissionStore {
             }
             return Ok(());
         }
-        let count: u32 = tx.query_row("SELECT count(*) FROM tickets", [], |r| r.get(0))?;
-        if count >= MAX_TICKETS {
+        budget_store::prune_settled(&tx, self.retain_released, self.budget_policy.is_some())?;
+        let live: u32 = tx.query_row(
+            "SELECT count(*) FROM tickets WHERE state!='released'",
+            [],
+            |r| r.get(0),
+        )?;
+        if live >= MAX_TICKETS {
             return Err(RuntimeError::Limit);
         }
         let tick: i64 = tx.query_row("SELECT tick FROM clock WHERE id=1", [], |r| r.get(0))?;
@@ -168,8 +188,12 @@ impl AdmissionStore {
         self.validate_ticket(ticket)?;
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
-        let count: u32 = tx.query_row("SELECT count(*) FROM tickets", [], |r| r.get(0))?;
-        if count > MAX_TICKETS
+        let live: u32 = tx.query_row(
+            "SELECT count(*) FROM tickets WHERE state!='released'",
+            [],
+            |r| r.get(0),
+        )?;
+        if live > MAX_TICKETS
             || tx
                 .prepare("SELECT 1 FROM tickets WHERE length(record)>16384 LIMIT 1")?
                 .exists([])?

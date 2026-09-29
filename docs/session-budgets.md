@@ -81,11 +81,15 @@ Immediately before spawn, the runtime durably marks the exact intent as armed,
 then moves the full reservation to committed allocation. A shared budget guard
 protects the final current-limit check through `spawn`; limit changes require an
 exclusive guard. Authority and assets are revalidated after queueing as before.
+If the registry refuses that final commitment (for example after a limit
+reduction), the run never spawns: the runtime clears the armed marker, so the
+release refunds the reservation. A crash between the two commits still leaves
+the marker set and is charged conservatively, as the table below states.
 
 | Interrupted point | Recovery |
 | --- | --- |
 | Intent recorded, no registry grant | No allocation; release still requires exact cleanup evidence. |
-| Granted, not armed | Reserved until internal cleanup proof establishes no dispatch; then refunded. |
+| Granted, not armed, or armed then refused by the registry | Reserved until internal cleanup proof establishes no dispatch; then refunded. |
 | Armed, central commitment not recorded | Treat the dispatch window as ambiguous; commit the full allocation during proven cleanup. |
 | Committed, including spawn failure or supervisor death | Keep the full allocation permanently committed. |
 | Cleanup UNKNOWN | Retain capacity and the existing reserved or committed allocation. |
@@ -132,9 +136,16 @@ never launches a process or rewrites an execution approval.
 
 Policies allow at most 128 sessions and runtime mappings, eight sorted unique
 thresholds per session, and integer amounts at most `i64::MAX`. Inputs are strict
-bounded JSON: policy 128 KiB, new limit 2 KiB. The registry retains at most 4096
-tickets, 16384 budget events and 1024 limit revisions per session. Hitting a bound
-refuses work without silently deleting evidence. Hashes detect corruption and
+bounded JSON: policy 128 KiB, new limit 2 KiB. The registry holds at most 4096
+live tickets, 16384 budget events and 1024 limit revisions per session. Hitting a
+bound refuses work without silently deleting evidence. Released tickets beyond the
+newest 512 are pruned with their settled reservations
+(docs/adr/0017-bounded-retention-and-publish-durability.md): a committed
+reservation is first folded into a per-session `budget_folded` total, so counters
+stay verifiable. That table is registry schema version 3: opening a version 2
+registry migrates it, and a future version is refused. The budget event journal
+is hash-chained evidence and is not pruned, so its 16384 lifetime cap remains;
+anchored compaction is deferred (ADR 0017). Hashes detect corruption and
 bind projections; a hostile same-UID replacement of all history still requires
 an external anti-rollback anchor to detect.
 

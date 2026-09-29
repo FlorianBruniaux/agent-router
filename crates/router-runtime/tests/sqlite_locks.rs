@@ -167,7 +167,13 @@ fn database_symlinks_nonregular_files_and_public_modes_are_refused() {
             }
             _ => unreachable!(),
         }
-        assert!(owner_refused(&root), "{case} database must be refused");
+        assert!(
+            matches!(
+                open_refusal(&root),
+                router_runtime::RuntimeError::Invalid("private regular file")
+            ),
+            "{case} database must be refused as a non private regular file"
+        );
         if case == "symlink" {
             assert_eq!(fs::read(&outside).unwrap(), b"private sentinel");
         }
@@ -185,6 +191,9 @@ const DATABASE: &str = "runtime.sqlite3";
 fn open_owner(root: &Path) -> router_runtime::Runtime {
     router_runtime::Runtime::open(root, router_runtime::RuntimeLimits::default()).unwrap()
 }
-fn owner_refused(root: &Path) -> bool {
-    router_runtime::Runtime::open(root, router_runtime::RuntimeLimits::default()).is_err()
+fn open_refusal(root: &Path) -> router_runtime::RuntimeError {
+    match router_runtime::Runtime::open(root, router_runtime::RuntimeLimits::default()) {
+        Ok(_) => panic!("database must be refused"),
+        Err(error) => error,
+    }
 }
