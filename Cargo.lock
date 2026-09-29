@@ -87,6 +87,7 @@ dependencies = [
  "router-eval",
  "router-execution-decision",
  "router-feedback",
+ "router-local-api",
  "router-policy",
  "router-prepare",
  "router-retrieval",
@@ -1083,6 +1084,19 @@ dependencies = [
  "tempfile",
  "thiserror",
  "yaml-rust2",
+]
+
+[[package]]
+name = "router-local-api"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "rustix",
+ "serde_json",
+ "sha2",
+ "subtle",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]
