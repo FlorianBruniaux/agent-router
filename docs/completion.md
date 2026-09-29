@@ -323,6 +323,64 @@ evidence can be produced here), R13-b, the rest of O3 (its conservative
 allocations from #35 and #40 are on `main` through #43; observed costs stay
 UNKNOWN), O4, O5 and the O6 signature.
 
+### Global review, audit fixes and documentation, #59 to #80
+
+PRs #59 to #80 followed a global review and a quality and security audit of
+`main` at `ac24365`. Each merged on local gates only (`cargo fmt`, strict
+Clippy, workspace tests, `xtask check`) after an independent review, except
+where the table says otherwise. GitHub Actions did not run for any of them
+(account billing restriction), so remote validation is gate P6 and is not
+claimed.
+
+Two evidence notes apply to the code PRs. First, the workspace test run inside
+the local sandbox reports 13 known Unix socket tests failing, refused by the
+sandbox and not by the code. Outside the sandbox, the PR bodies of #61, #64,
+#67 and #75 report `router-local-api --test server` 10/10 and
+`agent-router-cli --features local-api --test local_api` 8/8 on the same
+commit, and the body of #70 reports the same two results on its diff. The
+bodies of the other code PRs record the same 13 failures in the sandbox and no
+outside run. Second, "Not verified" items are quoted from the PR bodies and
+stay open.
+
+| PR (merge commit) | Delivers | Evidence and limits |
+| --- | --- | --- |
+| #59 (`711ef1f`) | `docs/review-grid.md`, a 28-item Rust review checklist, and sharper `rust-code-reviewer` and `rust-security-reviewer` instructions | `xtask generate` then `check` passed, `xtask` tests 13 passed; fmt, Clippy and workspace tests not rerun, no Rust source change; independent review PASS. The grid is guidance, not enforcement; runtime effect of the edited agents UNKNOWN |
+| #60 (`73d1481`) | README folded into `<details>`, two infographics, French `README.fr.md` | Documentation only, gates not rerun. Independent parity recount (tables, fences, Mermaid blocks, link targets). Rendering on github.com not verified |
+| #61 (`86d26b1`) | Loopback transport (R10-a), decision client and local API hardening: linear bounded redaction, `ProviderFailed`, truncated tail by position, legacy entropy confidence refused; stale `fuzz/Cargo.lock` fixed | Local gates passed; 13 sandbox failures, 10/10 and 8/8 outside; `router-bridge-contract` and `router-decision` tests pass; independent security review. No real provider canary |
+| #62 (`f2048e0`) | Adapter streams, coordinator controls, routing exclusions, canonical scopes, harness generator | Local gates passed; 13 sandbox failures (branch does not touch the local API); fixes reverted and seen failing, except a documentation-only change; independent review |
+| #63 (`e81e3d4`) | Catalog store bounded retention behind a sealed anchor, reserved revocation, published-durability error, resumable `create` (ADR 0017) | Local gates passed; 13 sandbox failures compared by name with `main`; store tests pass. The byte budget is tested with a reduced limit, not at the real 64 MiB; independent review |
+| #64 (`4b4c8a5`) | **BREAKING** strict contracts (unknown keys refused), `public_source` refuses local and private literal hosts, linear duplicate and deprecation checks | Local gates passed; 13 sandbox failures, 10/10 and 8/8 outside; old quadratic checks measured at 48.2 s and 24.8 s; independent review. DNS names resolving to private ranges are not detected |
+| #65 (`88d8d13`) | Runtime admission registry pruning and schema v3, refund of a refused budget dispatch, orphan lease file, idempotent cancel, normalized writer locks | Local gates passed on the unstacked commit, then Clippy and crate tests after stacking on #63; 13 sandbox failures; independent review. A diagnostics test can hit its 250 ms budget under load |
+| #66 (`45f5357`) | Fail closed on incomplete output (`RunFailure::Unclassified`), Bubblewrap `.git` remount, Seatbelt DNS probe on demand | Local gates passed; 13 sandbox failures; independent review found one blocking issue, fixed and confirmed by a counter-review. Live DNS probe and live Seatbelt and Bubblewrap canaries not verified |
+| #67 (`eb85272`) | **BREAKING** CLI: read-only `run --retry` preview, exit 4 on stdout write failure, `explain` escaping, reachable read bounds | Local gates passed; 13 sandbox failures, 8/8 and 10/10 outside, `--no-default-features` absence test 1 passed; the EPIPE panic was reproduced before the fix; independent review |
+| #68 (`b166e81`) | **BREAKING** promotion guards every metric; advisory cache sweep; backend store durability error; doctor budget | Local gates passed on the unstacked commit, then crate tests after stacking on #63; 13 sandbox failures; the 64-promotion test is `#[ignore]` and passed once with `--ignored`; independent review |
+| #69 (`3563bb9`) | "Why it exists" section and flow diagram in both READMEs | fmt, Clippy and `xtask check` passed, workspace tests with only the 13 sandbox failures; independent review. Mermaid render not verified (`mmdc` could not run) |
+| #70 (`221e9a5`) | Refactor with no intended behavior change: shared stream, duplicate-element, bidi and event-lookup helpers | Local gates passed, 1317 workspace tests, 13 sandbox failures that pass outside; independent review, one blocking finding reverted |
+| #71 (`e423b87`) | Bilingual documentation index, French install guide, ADR status lines, single-user requirement of the loopback transport | `xtask check` passed, no code change; relative links and anchors checked by script; independent review |
+| #72 (`2feda02`) | Signed catalogs (8 MiB) and promotion documents (16 MiB) parsed up to their documented bounds | Local gates passed; two regression tests failed before the fix and pass after; 13 sandbox failures; independent review. A dense 8 MiB catalog was not measured |
+| #73 (`4232c79`) | Runtime state: orphan lease reclaim, atomic `record_verification`, run outcome kept on release failure, plan semaphores freed, deterministic recovery | Local gates passed; regression tests failed before each fix; 13 sandbox failures; independent review. The release-failure path has no test |
+| #74 (`67c443c`) | Backend store `review` refuses what `apply` refuses; every activation keeps room for its rollback | Local gates passed; the ignored 64-promotion test passed with `--ignored` (441 s); independent review. A real 64 MiB snapshot and a very long signer id not verified |
+| #75 (`09183a2`) | **BREAKING** CLI exit classes, approval digest v4 bound to the host environment, stricter inputs | Local gates passed; 13 sandbox failures, 10/10 and 8/8 outside; two independent reviews plus a security review of the approval key. Not verified: a real `SQLITE_CORRUPT` page, two processes creating `approval.key` at once, the directory sync failure path |
+| #76 (`81241f7`) | Coordinator validates the definition once per wave, observes the runtime outside its lock, cancels every run | Local gates passed; 13 sandbox failures; tests fail before the fix (55 validations before, 1 after); independent review. Wall-clock gain not verified |
+| #77 (`6161e27`) | Shared admission read-first polling, cached policy fingerprint, backoff capped at 100 ms | Local gates passed; 13 sandbox failures; independent review. Write transactions saved and real hand-off latency not measured |
+| #78 (`146a748`) | Runtime doctor returns a partial report (schema 2) over the 4 MiB inspection cap | Local gates passed; 13 sandbox failures; independent review. The `check()` path has no dedicated test; Linux not verified |
+| #79 (`a7896a6`) | Same canonical path guard for both sandboxes, `runtime.workspace.nested_git` refusal | Local gates passed; 13 sandbox failures; independent security review. Live Bubblewrap and Seatbelt canaries not verified |
+| #80 (`5e56cc8`) | Four guides aligned with the exit classes of #75 | Documentation only; the classes are checked against `exit_class` in `crates/agent-router-cli/src/main.rs`; the body states no independent review |
+
+Two more PRs merged before the tag:
+
+| PR | Delivers | Evidence and limits |
+| --- | --- | --- |
+| #81 (`76a6ae5`) | Incremental verification of the runtime event chain by the owner store (ADR 0018): only the tail after a remembered trust point is checked; opening, observers and `verify_integrity` keep the full replay, which must extend the trust point | Measured on one macOS machine, release build, 100 `verify_plan_pin` calls at 100 000 events: 11.5 s before, 2.4 ms then 1.2 ms after; tests that fail on the previous logic; security review with no blocking finding; local gates. Not verified: a failed commit after `verify_plan_pin`; `escalation_history` stays bound by `read_events` |
+| #82 (`6525e38`) | CLI usability (BREAKING in JSON mode): usage errors with the parser's explanation and a help pointer, errors as one JSON line under `--json`, help texts for every subcommand, summary-first human view | Tests that fail before; byte goldens show `--json` output unchanged; review with no blocking finding; local gates; socket tests outside the sandbox 10/10 and 8/8. Not verified: rendering in a colored terminal |
+
+### 0.0.1 tag
+
+The workspace version is `0.0.1`, set once in `[workspace.package]`, and a `v0.0.1` source tag marks this state. It is not
+a final release: nothing is published, signed or installed, and P1 to P6 stay
+open. Remote CI did not run for the tagged state, so every result above is a
+local macOS result. See the [changelog](../CHANGELOG.md).
+
 ## Acceptance that automated implementation cannot manufacture
 
 The specifications require 100 cases with human-validated expected decisions and

@@ -207,6 +207,126 @@ réversible et la preuve native restent ouvertes. Pour O3, les allocations
 cumulées conservatrices de #35 et #40 sont sur `main` via #43 (`cc312f4`) ; ce
 qui reste d'O3 (coûts observés, aujourd'hui UNKNOWN) est différé, comme O4 et O5.
 
+### Revue globale, audit et tag 0.0.1 (29-30 septembre)
+
+Les PR #59 à #80 suivent une revue globale et un audit qualité et sécurité de
+`main` à `ac24365`. Chacune est fusionnée sur gates locales (fmt, clippy
+`-D warnings`, tests du workspace, `xtask check`) après revue indépendante. La
+CI GitHub n'a pas tourné (restriction de facturation) : la validation distante
+reste P6 et n'est pas revendiquée. Dans le bac à sable local, 13 tests connus
+sur socket Unix échouent (refus du bac à sable) ; les corps des PR #61, #64,
+#67 et #75 rapportent leur réussite hors bac à sable (`router-local-api --test
+server` 10/10, `agent-router-cli --features local-api --test local_api` 8/8).
+Le détail par PR est dans le [registre de complétion](completion.md#global-review-audit-fixes-and-documentation-59-to-80).
+
+**Lots touchés.** Aucun lot n'est déclaré clos par cette série : chaque critère
+de la table ci-dessous garde ses parties ouvertes, donc chaque lot reste
+« partiel » ou conserve son statut précédent.
+
+- **R17, partiel (PR #78, `146a748`)** : `doctor --runtime-root` renvoie un
+  rapport partiel `overall` inconnu (code 3) au-delà de la borne d'inspection de
+  4 MiB, au lieu de `doctor.input.limit` sans rapport. Le rapport passe en
+  `schema_version` 2 (champs nullables, `partial_reason`). Restent : le chemin
+  `check()` n'a pas de test dédié, Linux n'est pas vérifié, et les diagnostics
+  actifs, la liveness et l'authenticité du journal restent UNKNOWN.
+- **R12 / O3, partiel (PR #65 `88d8d13`, PR #77 `6161e27`)** : le registre
+  d'admission passe au schéma v3 avec purge des tickets soldés (512 les plus
+  récents conservés, réservations engagées repliées par session, ADR 0017), et
+  un dispatch de budget refusé est remboursé. Le sondage d'attente lit d'abord
+  sans verrou d'écriture, compare une empreinte de politique en cache et espace
+  ses essais jusqu'à 100 ms. Un passage de relais ou une annulation peut être
+  observé jusqu'à 100 ms plus un sondage plus tard (20 ms avant). Restent : le
+  nombre de transactions d'écriture économisées et la latence réelle de
+  passage de relais ne sont pas mesurés ; le journal de budget garde son plafond
+  de 16384 événements (compaction ancrée différée) ; les coûts observés
+  restent UNKNOWN.
+- **R13, partiel (PR #66, `45f5357`)** : une sortie incomplète d'un processus
+  terminé donne `Failed`/`unclassified` (nouvelle variante `RunFailure::Unclassified`,
+  non rejouable, feedback `Unknown`), n'est pas décodée, et ses artefacts sont
+  marqués `truncated`. Restent : R13-b (runner argv confiné, lien du rapport à
+  l'artefact réel) ; les canaris vivants Seatbelt et Bubblewrap et la sonde DNS
+  réelle ne sont pas vérifiés.
+- **R10, partiel (PR #61 `86d26b1`, PR #71 `e423b87`)** : correctifs de revue du
+  transport loopback (rédaction linéaire et bornée, `ProviderFailed` pour un
+  flux en échec, coupure de queue décidée par position, cadres bornés à
+  256 KiB) et du client de décision (une confiance d'entropie héritée ne
+  remplace plus la probabilité de réponse). Le transport est documenté comme
+  pris en charge sur hôte mono-utilisateur uniquement (décision du 29
+  septembre, ADR 0014). Restent : aucun raccord CLI ni runtime, pas de TLS, pas
+  de broker de credentials, aucun canary réel.
+- **R06, partiel (PR #72 `2feda02`, PR #63 `e81e3d4`, PR #64 `4b4c8a5`)** :
+  les catalogues signés (8 MiB) et les documents de promotion (16 MiB) sont lus
+  jusqu'à leur borne documentée au lieu d'un refus `Invalid` dès 4 MiB. Le
+  stockage du catalogue actif élague son historique derrière une ancre scellée
+  (ADR 0017) et signale `published_durability_unknown`. Les contrats non signés
+  refusent les clés inconnues et `public_source` refuse les hôtes littéraux
+  locaux et privés (BREAKING : un manifeste concerné doit être rescellé et
+  resigné). Restent : la CLI de catalogue active et le dispatch signé ; un
+  nom DNS résolvant vers une plage privée n'est pas détecté ; la borne
+  d'octets n'est testée qu'avec une limite réduite, pas à 64 MiB ; un catalogue
+  dense de 8 MiB n'est pas mesuré.
+- **R05 / R14, corrections, statuts inchangés (PR #62 `f2048e0`, PR #73
+  `4232c79`, PR #76 `81241f7`, PR #74 `67c443c`)** : le coordinateur rejoue une
+  validation complète pour un contrôle rejeté puis redemandé, règle les
+  contrôles en attente des étapes terminales et annule toutes les runs. Il
+  valide la définition scellée une fois par vague (55 validations avant, 1
+  après) et observe le runtime hors de son verrou. Le runtime récupère un
+  fichier de lease orphelin prouvé, rend `record_verification` atomique et
+  conserve le résultat d'une run si la libération d'admission échoue. Le store
+  de backend refuse au `review` ce que `apply` refuserait et garde la place du
+  rollback. La PR #81 (`76a6ae5`) vérifie la chaîne d'événements par la seule
+  queue côté propriétaire (ADR 0018) : 100 appels à `verify_plan_pin` sur
+  100 000 événements passent de 11,5 s à 2,4 ms puis 1,2 ms (une machine macOS,
+  build release) ; l'ouverture, les observateurs et `verify_integrity` gardent
+  la relecture complète. Restent : le chemin d'échec de libération d'admission n'a
+  pas de test, le gain en temps réel du coordinateur n'est pas vérifié, un
+  snapshot réel de 64 MiB n'est pas vérifié.
+- **R16, partiel (PR #75 `09183a2`, PR #67 `eb85272`, PR #80 `5e56cc8`)** :
+  classes de sortie distinctes (4 interne, 5 contention, 6 issue inconnue à
+  inspecter, 7 intégrité ; BREAKING), digests d'approbation v4 liés aux valeurs
+  d'environnement transmises à l'hôte (clé HMAC `approval.key`), aperçu de
+  `run --retry` en lecture seule puis `--retry --approve <digest>`
+  (BREAKING), sortie 4 quand l'écriture sur stdout échoue. La PR #82
+  (`6525e38`) ajoute des erreurs d'usage explicites, des erreurs JSON sous
+  `--json` (BREAKING en mode JSON), des textes `--help` pour chaque
+  sous-commande et une vue humaine qui commence par un résumé. Restent : une
+  vraie page `SQLITE_CORRUPT`, deux processus
+  créant `approval.key` en même temps et l'échec de synchronisation du
+  répertoire ne sont pas vérifiés ; les autres formats de manifest et l'entrée
+  guidée restent séparés.
+- **Sécurité et sandbox (PR #79 `a7896a6`, PR #66, PR #75)** : Seatbelt refuse
+  désormais un répertoire de travail ou un chemin d'écriture atteint par lien
+  symbolique (parité avec Bubblewrap) ; une entrée `.git` imbriquée, autre que
+  celle de la racine, est refusée avant le premier `git` de l'hôte
+  (`runtime.workspace.nested_git`). Sous Seatbelt, un descendant détaché n'est
+  pas prouvé terminé avant ces commandes git ; la comparaison `.git` est
+  limitée à l'ASCII. Les canaris vivants Bubblewrap et Seatbelt ne sont pas
+  vérifiés. Ceci alimente P5 sans le clore.
+- **R18, correction (PR #68 `b166e81`)** : la promotion bloque une régression
+  sur toute métrique (BREAKING), le cache consultatif plein purge ses entrées
+  expirées, et le store de backend n'est pas élagué (plafond de 64 promotions,
+  compaction par point de contrôle signé différée). Aucun gain produit n'est
+  affirmé ; P1 reste ouvert.
+- **R19, précision (PR #61)** : la borne d'environ 12,2 s du serveur local
+  couvre la lecture, l'écriture et le drainage, pas le gestionnaire de route
+  synchrone. Le lot reste partiel.
+- **Documentation et refactor (PR #59, #60, #69, #70, #71, #80)** : grille de
+  revue, README pliés avec version française, section « Why it exists »,
+  index bilingue, guide d'installation français, statuts d'ADR alignés, et
+  refactor sans changement de comportement voulu (#70). Aucun lot n'est
+  concerné. Le rendu GitHub et le rendu Mermaid ne sont pas vérifiés.
+
+**Ce qui reste ouvert.** P1 à P6 restent ouverts : aucun label humain, aucune
+matrice d'hôtes réels, aucune validation finale de licences, le démarrage à
+froid mesuré dépasse toujours 150 ms (P4), la matrice Linux et la CI distante
+n'ont pas tourné (P5, P6). R22 reste différé, R13-b, R08 et R23 (CLI, signature,
+surfaces) restent à faire, et la conclusion de licence reste `NOASSERTION`.
+
+**Tag 0.0.1.** La version du workspace est `0.0.1` et un tag source `v0.0.1`
+marque cet état. Ce n'est pas une release finale : rien n'est publié, signé ni
+installé, et aucune release finale n'est déclarée. Les résultats ci-dessus sont
+des résultats locaux macOS.
+
 Le [registre de complétion](completion.md#combined-local-candidate-september-28)
 détaille les résultats et les limites. La table suivante reste le constat
 historique de départ ; ces compléments ne ferment pas les preuves externes.
