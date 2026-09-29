@@ -31,8 +31,9 @@ or activation code.
   uses it. YAML anchors, aliases, tags and directives are refused.
 - Output is deterministic and contains no source path. Files are created with
   create-new semantics, mode 0600, and never replaced.
-- The locator check is stricter than the catalog verifier's `public_source`,
-  which still accepts relative paths and `FILE:` (recorded in the importer doc).
+- The locator check was first stricter than the catalog verifier's
+  `public_source`. Since #64 the importer calls `router_catalog::public_source`
+  itself, which refuses paths and `file:` in any case (see the importer doc).
 - Source concurrency: no `openat` walk. The final file is opened with
   `O_NOFOLLOW | O_NONBLOCK` and directories are checked with `lstat`, so the
   source is documented as non-concurrent. Rationale: the importer is inert, its

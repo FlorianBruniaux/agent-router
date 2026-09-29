@@ -28,11 +28,6 @@ use std::{
 const MAX_DESCRIPTION_BYTES: usize = 2048;
 const MAX_ID_BYTES: usize = 96;
 
-/// Bidirectional controls can reorder rendered text; they are not `is_control`.
-pub(crate) fn is_bidi(c: char) -> bool {
-    matches!(c, '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
-}
-
 /// Report paths are operator-facing text: control and bidirectional characters
 /// are written as `\u{..}` and a literal backslash as `\\`, so a hostile file
 /// name cannot inject terminal escapes or reorder the rendered report.
@@ -41,7 +36,7 @@ pub(crate) fn escape_path(path: &str) -> String {
     for c in path.chars() {
         if c == '\\' {
             escaped.push_str("\\\\");
-        } else if c.is_control() || is_bidi(c) {
+        } else if c.is_control() || router_catalog::is_bidi_control(c) {
             escaped.push_str(&format!("\\u{{{:x}}}", u32::from(c)));
         } else {
             escaped.push(c);
@@ -335,7 +330,9 @@ fn parse_definition(bytes: &[u8]) -> Result<(String, String, BTreeSet<String>), 
         return Err(RefusalReason::MissingDescription);
     }
     if description.len() > MAX_DESCRIPTION_BYTES
-        || description.chars().any(|c| c.is_control() || is_bidi(c))
+        || description
+            .chars()
+            .any(|c| c.is_control() || router_catalog::is_bidi_control(c))
     {
         return Err(RefusalReason::InvalidDescription);
     }
@@ -461,7 +458,9 @@ fn validate_request(request: &ImportRequest) -> Result<(), ImportError> {
     need(&request.revision, 128, "revision")?;
     need(&request.license_expression, 256, "license expression")?;
     need(&request.source_locator, 512, "source locator")?;
-    if !public_locator(&request.source_locator) {
+    // The signed catalog verifier predicate, so a candidate cannot carry a
+    // locator that sealing would refuse.
+    if !router_catalog::public_source(&request.source_locator) {
         return Err(ImportError::Request(
             "source locator must be a public locator",
         ));
@@ -480,12 +479,4 @@ fn validate_request(request: &ImportRequest) -> Result<(), ImportError> {
         return Err(ImportError::Request("validity window"));
     }
     Ok(())
-}
-
-/// Same predicate as the signed catalog verifier (`public_source`): a public
-/// `https://` URL without credentials, query, fragment, dot segments or a
-/// loopback, private or link-local host, or a bare identifier. Local paths and
-/// `file:` locators in any case are refused.
-fn public_locator(value: &str) -> bool {
-    router_catalog::public_source(value)
 }

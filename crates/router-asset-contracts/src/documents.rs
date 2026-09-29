@@ -374,49 +374,8 @@ fn bounded<T: serde::Serialize>(value: &T) -> Result<()> {
     }
     Ok(())
 }
-/// Rejects a repeated element inside any array. Each value is reduced once,
-/// bottom-up, to a fixed-size structural digest, so the work stays linear in
-/// the document size instead of re-serializing every subtree at every level.
 fn distinct(value: &serde_json::Value) -> Result<()> {
-    distinct_digest(value).map(|_| ())
-}
-fn distinct_digest(value: &serde_json::Value) -> Result<[u8; 32]> {
-    use sha2::{Digest, Sha256};
-    fn frame(hasher: &mut Sha256, tag: u8, bytes: &[u8]) {
-        hasher.update([tag]);
-        hasher.update((bytes.len() as u64).to_be_bytes());
-        hasher.update(bytes);
-    }
-    let mut hasher = Sha256::new();
-    match value {
-        serde_json::Value::Null => hasher.update([0]),
-        serde_json::Value::Bool(value) => hasher.update([1, u8::from(*value)]),
-        serde_json::Value::Number(number) => frame(&mut hasher, 2, number.to_string().as_bytes()),
-        serde_json::Value::String(text) => frame(&mut hasher, 3, text.as_bytes()),
-        serde_json::Value::Array(values) => {
-            let mut seen = BTreeSet::new();
-            hasher.update([4]);
-            hasher.update((values.len() as u64).to_be_bytes());
-            for value in values {
-                let child = distinct_digest(value)?;
-                if !seen.insert(child) {
-                    return Err(ContractError::Schema);
-                }
-                hasher.update(child);
-            }
-        }
-        serde_json::Value::Object(values) => {
-            let mut fields: Vec<_> = values.iter().collect();
-            fields.sort_by(|a, b| a.0.cmp(b.0));
-            hasher.update([5]);
-            hasher.update((fields.len() as u64).to_be_bytes());
-            for (key, value) in fields {
-                frame(&mut hasher, 6, key.as_bytes());
-                hasher.update(distinct_digest(value)?);
-            }
-        }
-    }
-    Ok(hasher.finalize().into())
+    router_adapter_api::reject_duplicate_elements(value).map_err(|_| ContractError::Schema)
 }
 pub(crate) fn parse<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     if bytes.len() > MAX_DOCUMENT_BYTES {

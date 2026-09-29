@@ -163,6 +163,15 @@ fn folded_table_exists(db: &Connection) -> Result<bool> {
         |r| r.get(0),
     )?)
 }
+fn folded_amount((cost, tokens): (i64, i64)) -> Result<BudgetAmount> {
+    match (u64::try_from(cost), u64::try_from(tokens)) {
+        (Ok(cost_microusd), Ok(tokens)) => Ok(BudgetAmount {
+            cost_microusd,
+            tokens,
+        }),
+        _ => Err(RuntimeError::Integrity("budget folded amount")),
+    }
+}
 /// Committed allocation of pruned tickets, per session, bounded by the number
 /// of sessions. A missing table (registry without budgets) means none.
 fn folded_amounts(db: &Connection) -> Result<Vec<(String, Folded)>> {
@@ -184,17 +193,10 @@ fn folded_amounts(db: &Connection) -> Result<Vec<(String, Folded)>> {
     }
     rows.into_iter()
         .map(|(session, cost, tokens)| {
-            let (Ok(cost_microusd), Ok(tokens)) = (u64::try_from(cost), u64::try_from(tokens))
-            else {
-                return Err(RuntimeError::Integrity("budget folded amount"));
-            };
             Ok((
                 session,
                 Folded {
-                    committed: BudgetAmount {
-                        cost_microusd,
-                        tokens,
-                    },
+                    committed: folded_amount((cost, tokens))?,
                 },
             ))
         })
@@ -239,12 +241,15 @@ pub(super) fn prune_settled(tx: &Transaction<'_>, retain: u32, budget: bool) -> 
                     "committed" => (amount.cost_microusd, amount.tokens),
                     _ => (0, 0),
                 };
-                let prior = folded_amounts(tx)?
-                    .into_iter()
-                    .find(|(s, _)| *s == session)
-                    .map(|(_, f)| f);
+                let prior: Option<(i64, i64)> = tx
+                    .query_row(
+                        "SELECT cost,tokens FROM budget_folded WHERE session=?1",
+                        [&session],
+                        |r| Ok((r.get(0)?, r.get(1)?)),
+                    )
+                    .optional()?;
                 let total = add(
-                    prior.map_or_else(BudgetAmount::default, |f| f.committed),
+                    prior.map_or(Ok(BudgetAmount::default()), folded_amount)?,
                     BudgetAmount {
                         cost_microusd: cost,
                         tokens,

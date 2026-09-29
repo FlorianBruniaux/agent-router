@@ -123,7 +123,9 @@ fn walk(
             || name == "."
             || name == ".."
             || child.len() > MAX_RELATIVE_PATH_BYTES
-            || name.chars().any(|c| c.is_control() || crate::is_bidi(c))
+            || name
+                .chars()
+                .any(|c| c.is_control() || router_catalog::is_bidi_control(c))
         {
             refuse(scan, &child, RefusalReason::UnsafePath);
             continue;

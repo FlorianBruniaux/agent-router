@@ -570,9 +570,9 @@ impl Coordinator {
         Ok(applied)
     }
     fn approval_applied(&self, run_id: &str) -> Result<bool> {
-        Ok(self.runtime.events()?.iter().any(|e| {
-            e.run_id == run_id && e.kind == "transition" && e.detail == "explicit_approval"
-        }))
+        Ok(self
+            .runtime
+            .has_event(run_id, "transition", "explicit_approval")?)
     }
     pub async fn integration_preview(&self, pending: &PendingStep) -> Result<IntegrationPreview> {
         Ok(self.runtime.integration_preview(&pending.pending).await?)

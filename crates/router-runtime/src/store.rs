@@ -777,11 +777,9 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
-    pub fn retry(&self, id: &str, max: u32) -> Result<()> {
-        self.retry_expecting(id, max, None)
-    }
-    /// `retry`, refusing inside the same transaction (and persisting nothing)
-    /// when the resulting approval digest is not the one the caller approved.
+    /// Re-arms the run for a fresh approval. With `expected`, it refuses inside
+    /// the same transaction (and persists nothing) when the resulting approval
+    /// digest is not the one the caller approved.
     pub fn retry_expecting(&self, id: &str, max: u32, expected: Option<&str>) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -795,7 +793,7 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
-    /// The run exactly as `retry` would persist it, with the same guards and the
+    /// The run exactly as `retry_expecting` would persist it, with the same guards and the
     /// same approval digest, without writing anything.
     pub fn retry_preview(&self, id: &str, max: u32) -> Result<RunSummary> {
         let db = self.lock()?;
@@ -898,6 +896,14 @@ impl Store {
     }
     pub fn events(&self) -> Result<Vec<RuntimeEvent>> {
         read_events(&*self.lock()?)
+    }
+    /// Whether `run_id` recorded one event of this kind and detail, without
+    /// materializing the whole event log.
+    pub fn has_event(&self, run_id: &str, kind: &str, detail: &str) -> Result<bool> {
+        Ok(self
+            .lock()?
+            .prepare("SELECT 1 FROM events WHERE run_id=?1 AND kind=?2 AND detail=?3")?
+            .exists(params![run_id, kind, detail])?)
     }
     /// Writes through the real `append` in one transaction, so a test can
     /// cross a row cap without thousands of synchronous commits.
@@ -1817,7 +1823,10 @@ pub(crate) mod tests {
                     "{status}"
                 );
                 assert!(
-                    matches!(store.retry("run", 2), Err(RuntimeError::CleanupUnknown)),
+                    matches!(
+                        store.retry_expecting("run", 2, None),
+                        Err(RuntimeError::CleanupUnknown)
+                    ),
                     "{status}"
                 );
             }
