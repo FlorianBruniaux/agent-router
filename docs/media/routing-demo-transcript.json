@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source": "actual CLI stdout captured by render-readme-demo.py",
-  "binary_sha256": "86319d43bea69b84b7606642467ddf8ad47db544cd9e861c6735485c4e4c9437",
+  "binary_sha256": "b9392887bf0a76dbd08b8c2b419c15cfee83c4b7108e3a59b0f4b3a26c9addfe",
   "binary_version_stdout": "agent-router 0.1.0\n",
   "fixture_kind": "synthetic public engineering inputs; not provider availability",
   "path_mapping": "binary displayed as agent-router; output directory displayed as docs/media",
