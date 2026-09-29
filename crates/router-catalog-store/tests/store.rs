@@ -539,28 +539,154 @@ fn process_lock_helper() {
     }
 }
 #[test]
-fn document_and_history_limits_refuse_without_mutation() {
+fn document_cap_prunes_oldest_history_instead_of_dead_ending() {
     let f = Fixture::new();
-    for index in 0..MAX_DOCUMENTS {
+    let first = f.activate("version-0", 110);
+    for index in 1..MAX_DOCUMENTS {
         f.activate(&format!("version-{index}"), 110);
     }
-    let before = f.store.status().unwrap();
+    // A 17th distinct document is admitted: the oldest one is pruned.
+    let head = f.activate("overflow", 110);
+    assert_eq!(head.revision, MAX_DOCUMENTS as u64 + 1);
     assert!(matches!(
-        f.store
-            .review_activate(&document("overflow"), &f.roots, 110, 20),
-        Err(StoreError::Limit)
+        f.store.historical(&first.head_hash, &f.roots),
+        Err(StoreError::Missing)
     ));
-    assert_eq!(f.store.status().unwrap(), before);
-    for _ in MAX_DOCUMENTS..MAX_REVISIONS {
-        f.activate("version-0", 110);
+    let state: serde_json::Value =
+        serde_json::from_slice(&fs::read(f.path.join("state.json")).unwrap()).unwrap();
+    assert_eq!(state["documents"].as_object().unwrap().len(), MAX_DOCUMENTS);
+    assert!(state["anchor"].is_object());
+    CatalogStore::open(&f.path, f.store.config_hash(), Some(&head.head_hash)).unwrap();
+}
+
+#[test]
+fn revocation_stays_possible_after_more_changes_than_the_retention_bound() {
+    let f = Fixture::new();
+    let genesis = f.store.status().unwrap().head_hash;
+    let first = f.activate("version-0", 110);
+    let mut last = first.clone();
+    for index in 1..(MAX_REVISIONS + 2) {
+        last = f.activate(&format!("version-{}", index % 4), 110);
     }
-    let before = f.store.status().unwrap();
-    assert_eq!(before.revision, MAX_REVISIONS as u64);
+    assert_eq!(last.revision, (MAX_REVISIONS + 2) as u64);
+    let review = f.store.review_revoke(&f.roots, 110, 20).unwrap();
+    let revoked = f
+        .store
+        .apply(&review, review.approval_digest(), &f.roots, 110)
+        .unwrap();
+    assert_eq!(revoked.revision, last.revision + 1);
+    assert_eq!(revoked.previous_head, Some(last.head_hash.clone()));
+    let state: serde_json::Value =
+        serde_json::from_slice(&fs::read(f.path.join("state.json")).unwrap()).unwrap();
+    assert_eq!(state["events"].as_array().unwrap().len(), MAX_REVISIONS);
+    // The chain still verifies from the anchor: a fresh open validates it, and
+    // the trusted checkpoint at the tip and at the retained tail are accepted.
+    let reopened =
+        CatalogStore::open(&f.path, f.store.config_hash(), Some(&revoked.head_hash)).unwrap();
+    assert_eq!(reopened.status().unwrap(), revoked);
+    CatalogStore::open(&f.path, f.store.config_hash(), Some(&last.head_hash)).unwrap();
     assert!(matches!(
-        f.store.review_revoke(&f.roots, 110, 20),
-        Err(StoreError::Limit)
+        reopened.acquire_current(&revoked.head_hash, &f.roots, 111),
+        Err(StoreError::Revoked)
     ));
-    assert_eq!(f.store.status().unwrap(), before);
+    // Pruned heads are no longer reconstructible and no longer valid checkpoints.
+    assert!(matches!(
+        reopened.historical(&first.head_hash, &f.roots),
+        Err(StoreError::Missing)
+    ));
+    assert!(matches!(
+        CatalogStore::open(&f.path, f.store.config_hash(), Some(&first.head_hash)),
+        Err(StoreError::Conflict)
+    ));
+    // Once pruned, the genesis head is no longer in the chain.
+    assert!(matches!(
+        CatalogStore::open(&f.path, f.store.config_hash(), Some(&genesis)),
+        Err(StoreError::Conflict)
+    ));
+    // Tampering with the anchor fails the snapshot seal here; the sealed case
+    // is covered by a unit test in lib.rs.
+    let mut forged = state.clone();
+    forged["anchor"]["revision"] = json!(1);
+    fs::write(
+        f.path.join("state.json"),
+        serde_json::to_vec(&forged).unwrap(),
+    )
+    .unwrap();
+    assert!(matches!(reopened.status(), Err(StoreError::Integrity)));
+}
+
+#[test]
+fn create_resumes_after_a_partial_failure_but_never_adopts_foreign_or_published_state() {
+    let temp = tempfile::tempdir().unwrap();
+    let base = temp.path().canonicalize().unwrap();
+    // Crash after mkdir and lock creation, before state.json.
+    let partial = base.join("partial");
+    fs::create_dir(&partial).unwrap();
+    fs::set_permissions(&partial, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(partial.join("catalog.lock"), b"").unwrap();
+    fs::set_permissions(
+        partial.join("catalog.lock"),
+        fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    assert!(matches!(
+        CatalogStore::open(&partial, &"0".repeat(64), None),
+        Err(StoreError::Missing)
+    ));
+    let store = CatalogStore::create(&partial, "local-fixture", "example").unwrap();
+    assert_eq!(store.status().unwrap().revision, 0);
+    // Crash right after mkdir.
+    let bare = base.join("bare");
+    fs::create_dir(&bare).unwrap();
+    fs::set_permissions(&bare, fs::Permissions::from_mode(0o700)).unwrap();
+    CatalogStore::create(&bare, "local-fixture", "example").unwrap();
+    // Published store, foreign file, or non-private directory stay refused.
+    assert!(matches!(
+        CatalogStore::create(&partial, "local-fixture", "example"),
+        Err(StoreError::Exists)
+    ));
+    let foreign = base.join("foreign");
+    fs::create_dir(&foreign).unwrap();
+    fs::set_permissions(&foreign, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(foreign.join("notes.txt"), b"x").unwrap();
+    assert!(matches!(
+        CatalogStore::create(&foreign, "local-fixture", "example"),
+        Err(StoreError::Exists)
+    ));
+    let open_dir = base.join("open-dir");
+    fs::create_dir(&open_dir).unwrap();
+    fs::set_permissions(&open_dir, fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(matches!(
+        CatalogStore::create(&open_dir, "local-fixture", "example"),
+        Err(StoreError::Exists)
+    ));
+}
+
+#[test]
+fn error_codes_are_stable_and_io_carries_its_operation() {
+    assert_eq!(StoreError::Limit.code(), "limit");
+    assert_eq!(
+        StoreError::PublishedDurabilityUnknown.code(),
+        "published_durability_unknown"
+    );
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp
+        .path()
+        .canonicalize()
+        .unwrap()
+        .join("missing")
+        .join("store");
+    let error = CatalogStore::create(&path, "local-fixture", "example")
+        .err()
+        .unwrap();
+    assert_eq!(error.code(), "path");
+    assert!(matches!(
+        error,
+        StoreError::Path {
+            operation: Operation::Locator,
+            errno: Some(_)
+        }
+    ));
 }
 
 #[test]
@@ -644,4 +770,27 @@ fn active_guard_detects_lock_replacement_before_projection() {
         guard.access(&f.roots, 113).is_err(),
         "old held guard still projects A after lock replacement accepted revocation"
     );
+}
+
+#[test]
+fn approval_bound_to_a_pruned_head_is_still_rejected() {
+    let f = Fixture::new();
+    let stale = f.store.review_revoke(&f.roots, 110, 300).unwrap();
+    for index in 0..(MAX_REVISIONS + 2) {
+        f.activate(&format!("version-{}", index % 4), 110);
+    }
+    let state: serde_json::Value =
+        serde_json::from_slice(&fs::read(f.path.join("state.json")).unwrap()).unwrap();
+    assert!(state["anchor"].is_object());
+    let before = f.store.status().unwrap();
+    assert!(matches!(
+        f.store
+            .apply(&stale, stale.approval_digest(), &f.roots, 111),
+        Err(StoreError::Conflict)
+    ));
+    assert!(matches!(
+        f.store.reopen_revoke(stale.projection(), &f.roots, 111),
+        Err(StoreError::Conflict)
+    ));
+    assert_eq!(f.store.status().unwrap(), before);
 }
