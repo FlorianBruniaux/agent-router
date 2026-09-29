@@ -144,6 +144,39 @@ Inputs are limited to 1,000 cases, 1 MiB for the manifest, 4 MiB per record and
 latency and token sums use checked arithmetic. A manifest hash identifies an
 analysis definition; it is not an external trust anchor or preregistration proof.
 
-This R18 slice leaves comparable-plan regret, quality/cost frontier, first-plan
-acceptance, scanner false-positive rates and persistent caching open. Synthetic
-fixtures establish the calculations, not product gains or human evaluation.
+The tradeoff report closes the descriptive regret and quality/cost frontier
+calculation for supplied cohorts. First-plan acceptance, scanner false-positive
+rates and persistent caching remain open. Synthetic fixtures establish the
+calculations, not product gains or human evaluation.
+
+## Comparable policy tradeoffs
+
+`agent-router eval tradeoffs --cohort tradeoffs.json --records record-a.json record-b.json`
+compares the recorded observations for 2 to 8 pinned policies over the same
+exhaustive cases and per-case budgets. Each case fixes the policy selected for
+regret analysis and carries exactly one usage-completeness cell per policy.
+An incomplete observation stays in the denominator. Records must have the
+same policy and observation key sets as the cohort; policy hashes bind the
+serialized typed policies, not a route receipt. This input has no receipt for
+the plan actually executed, so the report does not certify that any compared
+policy produced an executed plan.
+The provenance and usage evidence hashes are caller declarations; the command
+checks their format and required presence but does not authenticate the source.
+
+The frontier uses functional successes and total cost, including failed cases.
+A policy dominates another only when its known complete point has at least as
+many successes, no more total cost, and a strict improvement on one axis.
+Exact ties remain on the frontier. Incomplete points are reported separately;
+their unknown outcomes or costs may change the frontier, so the report marks a
+partial frontier. Transport and functional outcomes remain separate evidence.
+
+Functional regret is the observed best success (1,000,000) minus the selected
+policy's success (0 or 1,000,000). A known success fixes the best value even if
+another policy is unknown. If all policies are known failures, the best is zero;
+otherwise it remains unknown. Cost regret is reported separately and is only
+known when the selected policy passes, all policy outcomes are known, and all
+successful alternatives have known costs. An unknown outcome or cost can hide a
+cheaper successful alternative, so exact cost regret remains unknown. A failed
+selected policy has cost regret `not_applicable`, distinct from unknown or zero.
+The report combines neither axis into an invented score and has no effect on
+promotion or activation.
