@@ -55,6 +55,12 @@ accepts connections on the approved address:
 There is no peer authentication and no check of who owns the port. The runtime
 that approves the address is responsible for choosing a port it controls.
 
+**Deployment requirement.** Use this transport only on a single-user host: no
+other local account, no untrusted process of the same account and no port
+forwarder may be able to bind or reach the approved port. On a shared machine,
+do not approve a loopback endpoint; a Unix socket with owner-only permissions
+would be required, and it is not implemented.
+
 ## What is checked, in order
 
 1. The adapter provider equals the envelope provider, and the endpoint was
