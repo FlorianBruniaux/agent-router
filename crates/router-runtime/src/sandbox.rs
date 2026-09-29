@@ -344,6 +344,10 @@ pub(crate) fn require_canonical_paths(
             match fs::canonicalize(existing) {
                 Ok(path) => break path,
                 Err(e) if !writes_exist && e.kind() == std::io::ErrorKind::NotFound => {
+                    // A dangling symlink also reads as NotFound; never climb past one.
+                    if fs::symlink_metadata(existing).is_ok() {
+                        return Err(RuntimeError::Sandbox);
+                    }
                     existing = existing.parent().ok_or(RuntimeError::Sandbox)?;
                 }
                 Err(e) => return Err(e.into()),
@@ -519,6 +523,12 @@ mod tests {
         let fresh = cwd.join("new/dir");
         require_canonical_paths(&[cwd.clone()], &[fresh.clone()], false).unwrap();
         assert!(require_canonical_paths(&[cwd], &[fresh], true).is_err());
+        // A dangling symlink component is refused, not treated as missing.
+        std::os::unix::fs::symlink(root.join("nowhere"), root.join("real/dangling")).unwrap();
+        assert!(matches!(
+            require_canonical_paths(&[], &[root.join("real/dangling/x")], false),
+            Err(RuntimeError::Sandbox)
+        ));
         // The alias is caught even when the missing tail hides behind it.
         assert!(matches!(
             require_canonical_paths(&[], &[aliased.join("new/dir")], false),

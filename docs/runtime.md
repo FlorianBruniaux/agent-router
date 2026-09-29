@@ -237,8 +237,14 @@ or `target`). Instead the host walks the produced worktree with
 `symlink_metadata` (no symlink followed) before its first git command and
 refuses any entry named `.git` in any case other than the worktree's own root
 `.git`, with `runtime.workspace.nested_git`. The walk is bounded to 500,000
-entries and depth 128 (`runtime.limit` beyond). Scope entries containing `.git` in any case (`.GIT`, `.Git`) are
-rejected on every platform. Its enforcement canary must run on
+entries and depth 128 (`runtime.limit` beyond). The root `.git` must not be a
+symlink. The name comparison is ASCII case-insensitive only: HFS and NTFS
+variants of `.git` are not matched. Residual limit under Seatbelt: the walk
+runs after the worker ends, but without a PID namespace a detached descendant
+(`setsid`) is not proven terminated and could write a nested `.git` between the
+walk and the host git commands. Bubblewrap `--unshare-all` (PID namespace)
+kills every descendant. Scope entries containing `.git` in any case (`.GIT`,
+`.Git`) are rejected on every platform. Its enforcement canary must run on
 Linux; compiling it on macOS is not runtime proof.
 
 `ResourceSupervisor::probe` wraps either native sandbox with the separately

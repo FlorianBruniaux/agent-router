@@ -183,6 +183,10 @@ pub(crate) fn refuse_nested_git(root: &Path) -> Result<()> {
                 .eq_ignore_ascii_case(b".git");
             if is_git {
                 if dir == root && entry.file_name() == ".git" {
+                    // The expected root entry must be a real file or directory.
+                    if fs::symlink_metadata(&path)?.file_type().is_symlink() {
+                        return Err(RuntimeError::NestedGit);
+                    }
                     continue;
                 }
                 return Err(RuntimeError::NestedGit);
@@ -237,7 +241,11 @@ pub(crate) async fn patch_observed(
     safe_scope(worktree, scope)?;
     // Before the first host git command: a worker-made nested repository must
     // not be read by git outside the sandbox.
-    refuse_nested_git(worktree)?;
+    // Synchronous filesystem walk of up to 500k entries: off the async workers.
+    let walked = worktree.to_path_buf();
+    tokio::task::spawn_blocking(move || refuse_nested_git(&walked))
+        .await
+        .map_err(|_| RuntimeError::Process)??;
     // The private worktree index is isolated from the user's repository index.
     // Intent-to-add permits binary/untracked additions in a reviewable patch.
     git_observed(
@@ -537,6 +545,13 @@ mod scope_tests {
         fs::create_dir(outside.path().join(".git")).unwrap();
         std::os::unix::fs::symlink(outside.path(), root.join("src/link")).unwrap();
         refuse_nested_git(&root).unwrap();
+        // A root `.git` that is a symlink is refused.
+        let linked = tempfile::tempdir().unwrap();
+        std::os::unix::fs::symlink(outside.path(), linked.path().join(".git")).unwrap();
+        assert!(matches!(
+            refuse_nested_git(linked.path()),
+            Err(RuntimeError::NestedGit)
+        ));
         // A root entry spelled in another case is not the expected `.git`.
         let other = tempfile::tempdir().unwrap();
         fs::create_dir(other.path().join(".GIT")).unwrap();
