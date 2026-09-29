@@ -1,7 +1,7 @@
 //! A durable cleanup claim never follows from a PID or a process-group signal.
 use crate::{Result, RuntimeError, digest, outputs::FileIdentity};
 use nix::fcntl::{Flock, FlockArg};
-use rustix::fs::{AtFlags, Mode, OFlags, mkdirat, openat, unlinkat};
+use rustix::fs::{AtFlags, Mode, OFlags, mkdirat, openat, statat, unlinkat};
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -115,6 +115,17 @@ impl LeaseStorage {
         let mut bytes = Vec::new();
         (&mut *lock).take(96).read_to_end(&mut bytes)?;
         if bytes != PENDING {
+            return Ok(false);
+        }
+        // The name must still designate the file we hold and locked.
+        let current = statat(&self.directory, &name, AtFlags::SYMLINK_NOFOLLOW)
+            .map_err(std::io::Error::from)?;
+        let same = FileIdentity {
+            device: current.st_dev as u64,
+            inode: current.st_ino as u64,
+        }
+        .matches(&lock)?;
+        if !same {
             return Ok(false);
         }
         unlinkat(&self.directory, &name, AtFlags::empty()).map_err(std::io::Error::from)?;

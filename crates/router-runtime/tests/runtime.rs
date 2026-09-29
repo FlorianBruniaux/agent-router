@@ -3156,7 +3156,7 @@ async fn incomplete_output_artifacts_are_marked_truncated() {
 }
 
 #[tokio::test]
-async fn a_second_verification_record_is_refused_and_the_first_stays_intact() {
+async fn inconclusive_verification_can_be_replaced_but_a_conclusive_one_cannot() {
     let fixture = Fixture::new(false).await;
     let runtime = fixture.runtime();
     let pending = fixture.review(&runtime).await;
@@ -3180,19 +3180,28 @@ async fn a_second_verification_record_is_refused_and_the_first_stays_intact() {
         validation: outcome,
         objective: outcome,
     };
-    // An inconclusive record leaves the run in Verifying, which is exactly
-    // where a second record used to overwrite the first.
     let first = record("a", VerificationOutcome::Unknown);
     runtime
         .record_verification(&pending, first.clone())
         .unwrap();
     assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verifying);
+    // Inconclusive, then conclusive: accepted, replaces, and transitions.
+    let second = record("b", VerificationOutcome::Passed);
+    let run = runtime
+        .record_verification(&pending, second.clone())
+        .unwrap();
+    assert_eq!(run.state, RunState::Verified);
+    assert_eq!(
+        runtime.verification_record("run-1").unwrap(),
+        Some(second.clone())
+    );
+    // A conclusive record is never replaced, and the first stays intact.
     assert!(matches!(
-        runtime.record_verification(&pending, record("b", VerificationOutcome::Passed)),
+        runtime.record_verification(&pending, record("c", VerificationOutcome::Failed)),
         Err(RuntimeError::Verification)
     ));
-    assert_eq!(runtime.verification_record("run-1").unwrap(), Some(first));
-    assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verifying);
+    assert_eq!(runtime.verification_record("run-1").unwrap(), Some(second));
+    assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verified);
 }
 
 #[tokio::test]

@@ -636,10 +636,10 @@ impl Store {
         Ok(run)
     }
     /// The verifier's record and the state change it implies commit together:
-    /// the state is checked, the record is inserted without replacing an
-    /// earlier one, and the transition (when `next` is set) is applied in one
-    /// IMMEDIATE transaction. A second record for the same run is refused and
-    /// the first stays intact.
+    /// the state is checked, the record is stored, and the transition (when
+    /// `next` is set) is applied in one IMMEDIATE transaction. Only an absent
+    /// or inconclusive earlier record can be replaced; a conclusive one is
+    /// refused and stays intact.
     pub fn record_verification(
         &self,
         id: &str,
@@ -658,13 +658,25 @@ impl Store {
         {
             return Err(RuntimeError::Transition);
         }
-        let inserted = tx.execute(
-            "INSERT OR IGNORE INTO verifications VALUES(?1,?2)",
+        // A conclusive record is never replaced. An inconclusive one may be, so
+        // a verifier that could not decide can record again while Verifying.
+        let existing: Option<String> = tx
+            .query_row(
+                "SELECT record FROM verifications WHERE run_id=?1",
+                [id],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if let Some(existing) = existing {
+            let old: router_types::VerificationRecord = serde_json::from_str(&existing)?;
+            if !is_inconclusive(&old) {
+                return Err(RuntimeError::Verification);
+            }
+        }
+        tx.execute(
+            "INSERT OR REPLACE INTO verifications VALUES(?1,?2)",
             params![id, serde_json::to_string(record)?],
         )?;
-        if inserted == 0 {
-            return Err(RuntimeError::Verification);
-        }
         append(&tx, &run, "verification.recorded", &record.evidence_sha256)?;
         if let Some((state, failure)) = next {
             apply_transition(&tx, &mut run, state, "explicit_verification", failure)?;
@@ -761,7 +773,9 @@ impl Store {
                 let bound = tx
                     .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND attempt=?2")?
                     .exists(params![id, attempt])?;
-                if bound || !self.leases.reclaim_uncommitted(id, attempt)? {
+                // Any doubt or failure while reclaiming keeps the original
+                // refusal, so the caller never treats the file as its own.
+                if bound || !matches!(self.leases.reclaim_uncommitted(id, attempt), Ok(true)) {
                     return Err(RuntimeError::Io(e));
                 }
                 append(
@@ -1046,6 +1060,13 @@ impl Store {
         drop(cleanup_locks);
         Ok(())
     }
+}
+/// Neither a pass on both axes nor a failure on either: no state change.
+fn is_inconclusive(record: &router_types::VerificationRecord) -> bool {
+    use router_types::VerificationOutcome::{Failed, Passed};
+    !(record.validation == Passed && record.objective == Passed)
+        && record.validation != Failed
+        && record.objective != Failed
 }
 /// The permitted-transition body shared by every state change: the caller has
 /// already checked `permits` inside the transaction it commits.
@@ -2251,6 +2272,12 @@ pub(crate) mod tests {
                     fs::read(&fresh).unwrap(),
                     b"router-runtime-lease-v1:pending\n"
                 );
+                assert!(store.events().unwrap().iter().any(|e| {
+                    e.run_id == "run"
+                        && e.kind == "attempt.lease_orphan_reclaimed"
+                        && e.detail == "1"
+                }));
+                store.verify_events().unwrap();
             } else {
                 assert!(
                     matches!(&result, Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists),
@@ -2260,6 +2287,36 @@ pub(crate) mod tests {
                 // The refused file is left exactly as found.
                 assert!(fs::symlink_metadata(&path).is_ok());
             }
+        }
+    }
+    #[test]
+    fn a_failing_reclaim_keeps_the_existing_file_and_the_original_error() {
+        use std::os::unix::fs::PermissionsExt;
+        for shape in ["unreadable", "directory", "unlink-denied"] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = temp.path().join("data");
+            let store = Store::open(&root).unwrap();
+            preparing_run(&store, "run");
+            let (_, path) = store.leases.create("run", 1).unwrap();
+            let leases = root.join("leases");
+            if shape == "unreadable" {
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+            } else if shape == "unlink-denied" {
+                // A provable orphan whose unlink then fails: the error must not
+                // leak out as anything but the original refusal.
+                fs::set_permissions(&leases, fs::Permissions::from_mode(0o500)).unwrap();
+            } else {
+                fs::remove_file(&path).unwrap();
+                fs::create_dir(&path).unwrap();
+            }
+            let result = store.attempt("run", 2, true);
+            fs::set_permissions(&leases, fs::Permissions::from_mode(0o700)).unwrap();
+            assert!(
+                matches!(&result, Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists),
+                "{shape}: {result:?}"
+            );
+            assert!(fs::symlink_metadata(&path).is_ok(), "{shape}: file removed");
+            assert_eq!(store.get("run").unwrap().attempts, 0);
         }
     }
     #[test]
