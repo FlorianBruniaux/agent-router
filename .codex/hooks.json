@@ -4,7 +4,7 @@
       {
         "hooks": [
           {
-            "command": "sh \"$(git rev-parse --show-toplevel)/harness/session-start.sh\" codex # launcher-sha256:f13b6b571bcd1911440c8c475ceb19543b77949e5b72cddea5470bc71a545a3b rust-sha256:f0c05b87bc38a63ea4fe93300beb68f8da63221d7721a22198a137d268114e9c",
+            "command": "sh \"$(git rev-parse --show-toplevel)/harness/session-start.sh\" codex # launcher-sha256:f13b6b571bcd1911440c8c475ceb19543b77949e5b72cddea5470bc71a545a3b rust-sha256:a25554ca24c10bd3369f5828963a056394518023645224b2d04dbc7fbae28344",
             "timeout": 10,
             "type": "command"
           }

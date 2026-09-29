@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "agent-router-fuzz"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "libfuzzer-sys",
  "router-adapter-api",
@@ -304,7 +304,7 @@ dependencies = [
 
 [[package]]
 name = "router-adapter-api"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "router-types",
@@ -316,7 +316,7 @@ dependencies = [
 
 [[package]]
 name = "router-asset-contracts"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "router-adapter-api",
@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "router-bridge-contract"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -344,7 +344,7 @@ dependencies = [
 
 [[package]]
 name = "router-catalog"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "ed25519-dalek",
  "hex",
@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "router-catalog-store"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "router-adapter-api",
@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "router-policy"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "router-adapter-api",
@@ -392,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "router-retrieval"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "libc",
@@ -405,7 +405,7 @@ dependencies = [
 
 [[package]]
 name = "router-types"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "serde",
  "thiserror",
@@ -413,7 +413,7 @@ dependencies = [
 
 [[package]]
 name = "router-workflow"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "hex",
  "router-adapter-api",
