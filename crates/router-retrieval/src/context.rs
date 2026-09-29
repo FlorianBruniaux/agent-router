@@ -427,7 +427,7 @@ impl Bm25Index {
             .map(|c| (c.asset.clone(), c))
             .collect();
         let anti = self.excluded_by_trigger(&query.query.text)?;
-        let phrases = tokenize::quoted_phrases(&query.query.text);
+        let phrases = tokenize::quoted_phrases(&query.query.text)?;
         let mut exclusions = Vec::new();
         let mut excluded_count = 0;
         let mut eligible = BTreeMap::new();

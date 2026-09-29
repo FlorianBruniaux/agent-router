@@ -175,7 +175,12 @@ fn response_length(header: &[u8]) -> Result<usize> {
                 if length.is_some() {
                     return Err(BackendError::Schema);
                 }
-                let parsed: usize = value.trim().parse().map_err(|_| BackendError::Schema)?;
+                // Digits only: `usize::from_str` also accepts a leading `+`.
+                let digits = value.trim();
+                if digits.is_empty() || !digits.bytes().all(|b| b.is_ascii_digit()) {
+                    return Err(BackendError::Schema);
+                }
+                let parsed: usize = digits.parse().map_err(|_| BackendError::Schema)?;
                 if parsed > MAX_RESPONSE_BYTES {
                     return Err(BackendError::Limit);
                 }
@@ -183,7 +188,10 @@ fn response_length(header: &[u8]) -> Result<usize> {
             }
             "content-type" => {
                 if content_type
-                    || value.split(';').next().map(str::trim) != Some("application/json")
+                    || !value
+                        .split(';')
+                        .next()
+                        .is_some_and(|media| media.trim().eq_ignore_ascii_case("application/json"))
                 {
                     return Err(BackendError::Schema);
                 }

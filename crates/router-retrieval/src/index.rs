@@ -2,6 +2,22 @@ use crate::*;
 use router_types::{SkillCandidate, SkillId, SkillTrust};
 use std::collections::{BTreeMap, BTreeSet};
 
+const BM25_K1: f64 = 1.2;
+const BM25_B: f64 = 0.75;
+
+/// Scoring parameters folded into the index hash, built from the constants the
+/// scorer uses so changing one moves the hash.
+fn scoring_parameters() -> String {
+    let boosts: Vec<String> = Field::ALL
+        .iter()
+        .map(|field| field.boost_millis().to_string())
+        .collect();
+    format!(
+        "k1={BM25_K1};b={BM25_B};positive-idf;boosts={}",
+        boosts.join(",")
+    )
+}
+
 type TermKey = (AssetKind, bool, Field, String);
 type GroupKey = (AssetKind, bool, Field);
 
@@ -90,7 +106,8 @@ impl Bm25Index {
         } else {
             INDEX_VERSION
         };
-        self.index_hash = digest(format!("{version}\0{}\0k1=1.2;b=0.75;positive-idf;boosts=8000,6000,5000,3000,2500,2000,2000", self.source_hash).as_bytes());
+        self.index_hash =
+            digest(format!("{version}\0{}\0{}", self.source_hash, scoring_parameters()).as_bytes());
     }
 
     fn insert_asset(&mut self, metadata: AssetMetadata) -> Result<()> {
@@ -411,7 +428,7 @@ impl Bm25Index {
             return Ok(result);
         }
         let anti = self.excluded_by_trigger(&query.text)?;
-        let required_phrases = tokenize::quoted_phrases(&query.text);
+        let required_phrases = tokenize::quoted_phrases(&query.text)?;
         let mut excluded = BTreeSet::new();
         for (i, asset) in self.assets.iter() {
             if query.kind.is_some_and(|kind| kind != asset.metadata.kind) {
@@ -462,8 +479,9 @@ impl Bm25Index {
                     }
                     let length = self.assets[&posting.asset].lengths[&field];
                     let tf = f64::from(posting.frequency);
-                    let score = idf * tf * 2.2
-                        / (tf + 1.2 * (0.25 + 0.75 * f64::from(length) / avg_length));
+                    let score = idf * tf * (BM25_K1 + 1.0)
+                        / (tf
+                            + BM25_K1 * ((1.0 - BM25_B) + BM25_B * f64::from(length) / avg_length));
                     let contribution =
                         (score * f64::from(field.boost_millis()) * 1000.0).round() as u64;
                     matches
@@ -878,4 +896,15 @@ fn context_source(envelope: MetadataEnvelopeV3) -> Result<CanonicalSource> {
         Some(envelope.catalog_content_sha256),
         Some(envelope.signals),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn scoring_parameters_match_the_historical_literal() {
+        assert_eq!(
+            super::scoring_parameters(),
+            "k1=1.2;b=0.75;positive-idf;boosts=8000,6000,5000,3000,2500,2000,2000"
+        );
+    }
 }

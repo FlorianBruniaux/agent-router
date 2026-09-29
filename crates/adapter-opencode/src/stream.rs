@@ -50,7 +50,8 @@ fn parse(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && bytes.ends_with(line) =>
+                    && line.as_ptr() as usize + line.len()
+                        == bytes.as_ptr() as usize + bytes.len() =>
             {
                 truncated = true;
                 break;
@@ -117,6 +118,10 @@ fn parse(
                 {
                     return Err(AdapterError::Protocol);
                 }
+                // Content after a terminal step_finish starts unclosed work; the
+                // earlier finish cannot authorize the stream or a final text.
+                terminal = false;
+                finished_message = None;
                 if collect_text && kind == "text" {
                     let message_id = part_id(&value, "messageID")?;
                     let text_id = part_id(&value, "id")?;

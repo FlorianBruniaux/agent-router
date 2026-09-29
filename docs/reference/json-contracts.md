@@ -5,6 +5,20 @@ It does not execute a model, call a host API, create a worktree, or install
 anything. A catalog or host configuration proves routing intent and declared
 capabilities, not actual model execution.
 
+## Unknown keys
+
+These serialized contracts reject unknown keys, at every level they define:
+
+- the unsigned catalog document (`schema_version`, `version`, `models`, `skills`);
+- `ModelSpec` and `SkillSpec`;
+- `RouteRequest`, `TaskContext`, `HostSnapshot` and `SkillCandidate`;
+- `EffectiveRestrictions`;
+- the BM25 candidate document and its candidates (see below).
+
+A document that carries an extra key is an error, never silently ignored. This is
+a breaking change for unsigned catalogs and route requests that carried extra
+keys; fix the producer, the rule is not configurable.
+
 ## Additional versioned contracts
 
 The v1 examples below remain supported. New commands use separate contracts:
@@ -130,6 +144,12 @@ The retrieval adapter accepts a separate versioned candidate document. Its
 skill IDs must be unique, scores are integers from 0 through 1,000,000,
 and the router attaches only catalog-compatible skills.
 
+Limits: 1 MiB per document (`retrieval.document.too_large`), 512 candidates
+(`retrieval.candidates.too_many`) and a source of at most 256 bytes
+(`retrieval.source.too_long`). Unknown keys are refused (`retrieval.json.invalid`).
+The one exception is a per-candidate `path`, which is accepted and never read:
+skill bodies are not loaded here.
+
 Only `builtin`, `trusted_local`, and `verified_third_party` catalog skills may
 attach to a plan or improve utility. `untrusted` and `blocked` skills are
 ignored by routing, even when retrieval returns them.
@@ -141,7 +161,8 @@ ignored by routing, even when retrieval returns them.
   "candidates": [
     {
       "skill": "example-skill",
-      "score_micros": 910000
+      "score_micros": 910000,
+      "path": "/not-loaded/skills/example-skill/SKILL.md"
     }
   ]
 }
@@ -291,4 +312,10 @@ normalization/plan envelopes and historical compatibility, and
 | `0` | A compatible route was selected. |
 | `2` | Command syntax, file limits, request semantics, input JSON, or catalog validation failed. |
 | `3` | The request was valid but produced `no_route`. |
-| `4` | An internal serialization or invariant failure occurred. |
+| `4` | An internal serialization or invariant failure occurred, including a failed write of the result to stdout (for example a closed pipe), reported as `route.internal`. |
+
+Every command, not only `route`, exits `4` with `error: route.internal` when
+writing its result to stdout fails (for example a closed pipe). The write
+failure is reported instead of a panic or a success status. For commands that
+persist state, such as `run`, the persisted result is unaffected: the failed
+write only loses the printed copy, so read it back with `status` or `events`.

@@ -33,6 +33,7 @@ pub enum CapabilitySupport {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct TaskContext {
     pub objective: String,
     pub kind: TaskKind,
@@ -42,6 +43,7 @@ pub struct TaskContext {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct RouteRequest {
     pub task: TaskContext,
     pub host: HostSnapshot,

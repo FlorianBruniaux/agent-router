@@ -20,7 +20,9 @@ by the caller. It performs no I/O, spawns no process and has no command runner.
 }
 ```
 
-Unknown fields, unknown kinds and versions other than 1 are rejected.
+Unknown fields (including on `changed_paths_within_scope`, which takes none),
+duplicate object keys at any depth (including inside a `json_pointer_equals`
+`value`), unknown kinds and versions other than 1 are rejected.
 `changed_paths_within_scope` requires a non-empty `scope`; a path is in scope
 when it equals a scope entry or lies below it on a `/` boundary.
 

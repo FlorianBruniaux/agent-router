@@ -51,6 +51,7 @@ fn validate_structure(definition: &WorkflowDefinition) -> Result<()> {
             }
         }
         let mut edges = BTreeSet::new();
+        let mut input_bytes = 0_usize;
         for edge in &declared.inputs {
             if !edges.insert((&edge.producer, &edge.label))
                 || !node.dependencies.contains(&edge.producer)
@@ -67,6 +68,14 @@ fn validate_structure(definition: &WorkflowDefinition) -> Result<()> {
                 .iter()
                 .find(|o| o.label == edge.label)
                 .ok_or(CoordinatorError::Invalid("output label"))?;
+            // The consumer refuses inputs above max_input_bytes at run time;
+            // a producer that may legally exceed it is a definition error.
+            input_bytes = input_bytes
+                .checked_add(output.max_bytes)
+                .ok_or(CoordinatorError::Limit)?;
+            if input_bytes > definition.max_input_bytes {
+                return Err(CoordinatorError::Invalid("input bytes"));
+            }
             if (edge.exposure == ArtifactExposure::ReadOnlyWorkspacePatch)
                 != (output.source == DeclaredOutputSource::Patch)
                 || (edge.exposure == ArtifactExposure::ReadOnlyWorkspacePatch

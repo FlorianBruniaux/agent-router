@@ -20,16 +20,19 @@ The operator supplies, never the files:
 - `catalog_id`, `catalog_version`, `revision`;
 - `license_expression` and `authors`;
 - `valid_from_unix_seconds` and `valid_until_unix_seconds`;
-- `source_locator`, either a lowercase `https://` URL with a non-empty host and
-  no `.` or `..` segment, or a bare identifier (`A-Za-z0-9`, `.`, `-`, `_`; no
-  `/` and no `:`). Absolute or relative paths, `file:` in any case, drive paths,
-  other schemes, credentials, queries, fragments and whitespace are refused.
+- `source_locator`, checked by the same predicate as the signed verifier
+  (`router_catalog::public_source`, see [signed catalogs](signed-catalogs.md)):
+  a lowercase `https://` URL with a public host, or a bare identifier.
+  Absolute or relative paths, `file:` in any case, drive paths, other schemes,
+  credentials, queries, fragments, whitespace and loopback, private or
+  link-local hosts are refused.
 
 ## Bounds
 
 - 256 KiB per file, 16 MiB of accepted bodies in total, 16 KiB frontmatter;
 - 512 entries per directory, 4096 entries in total, depth 4, 512 bytes per
-  relative path (names with control or bidirectional characters are refused);
+  relative path (names with control or bidirectional characters are refused, and
+  reported with those characters escaped as `\u{..}` and a backslash as `\\`);
 - at most 256 skills and 512 assets, enforced by `seal_signed_manifest`.
 
 YAML anchors, aliases, tags, directives, duplicate keys, more than 512 nodes and
@@ -96,9 +99,3 @@ Executable skills are not decided here (R08).
   modified during an import. Impact is bounded: the output holds only digests,
   descriptions and relative names, and a `.md` file with valid frontmatter is
   needed to be read at all.
-- **Known defect in the verifier, to fix separately.** `public_source` in
-  `crates/router-catalog/src/signed.rs` still accepts `../../home/me/pack`,
-  `Users/me/pack`, `FILE:///etc` and `https:///x` as provenance sources
-  (reproduced with `seal_signed_manifest` on 2026-09-29; lowercase `file:///etc` is
-  refused). The importer applies a stricter check before sealing and does not
-  modify the verifier. Other producers of manifests are not protected.

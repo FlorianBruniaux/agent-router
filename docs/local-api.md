@@ -61,7 +61,7 @@ Errors are `{"schema_version":1,"error":"<code>"}`.
 | 401 | Missing or wrong token |
 | 404 / 405 | Unknown path / wrong method (after authentication) |
 | 408 | Whole-request deadline exceeded |
-| 500 | Handler failure, including a panic (`local_api.handler_panic`) |
+| 500 | Handler failure, including a panic (`local_api.handler_panic`), or a response that cannot be serialized (`local_api.internal`) |
 | 411 / 413 / 415 | No length / body over 9 MiB / not `application/json` |
 | 431 | Request line and headers over 16 KiB |
 | 503 | Connection cap reached |
@@ -71,9 +71,13 @@ Per-document limits match the CLI: request 1 MiB, catalog 4 MiB, snapshot 4 MiB.
 
 ## Limits
 
-- Whole-request deadline (default 10 s), then a fixed 2 s to write the response
-  and 200 ms to discard unread bytes. None can be extended by a slow peer, so a
-  connection slot is held for at most about 12.2 s with the default deadline.
+- Whole-request deadline (default 10 s) for reading the request, then a fixed
+  2 s to write the response and 200 ms to discard unread bytes. A slow peer
+  cannot extend any of them, so the read, write and drain phases take at most
+  about 12.2 s with the default deadline. `RouteHandler::route` runs between the
+  read and the write, synchronously, and is not covered by that bound: the
+  server does not interrupt a handler, so a connection slot is held for the
+  handler's run time on top of it.
 - JSON nesting depth is 64 in the API. The CLI parses with serde_json's default
   limit, documented as 128 and not re-measured here, so a document nested
   between 65 and 128 levels is accepted by `route` and refused by the API.

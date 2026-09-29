@@ -66,14 +66,8 @@ fn digest(value: &impl serde::Serialize) -> Result<String, ()> {
         .map(|bytes| content_digest(&bytes))
         .map_err(|_| ())
 }
-fn feedback_input(
-    context: &ValidatedPhaseContext,
-    completion: &RunCompletion,
-    receipt: &PhaseReceipt,
-    selected: &PhaseCandidate,
-    now: u64,
-) -> Result<FeedbackInput, ()> {
-    let failure = match completion.run.failure {
+fn feedback_failure(failure: Option<RunFailure>, state: RunState) -> Option<FeedbackFailure> {
+    match failure {
         Some(RunFailure::Authentication) => Some(FeedbackFailure::Authentication),
         Some(RunFailure::RateLimit) => Some(FeedbackFailure::RateLimit),
         Some(RunFailure::Timeout) => Some(FeedbackFailure::Timeout),
@@ -81,10 +75,21 @@ fn feedback_input(
         Some(RunFailure::Network) => Some(FeedbackFailure::Network),
         Some(RunFailure::Policy) => Some(FeedbackFailure::Policy),
         Some(RunFailure::Verification) => Some(FeedbackFailure::Validation),
+        // An unclassified outcome says nothing about the candidate model.
+        Some(RunFailure::Unclassified) => Some(FeedbackFailure::Unknown),
         Some(_) => Some(FeedbackFailure::Unknown),
-        None if completion.run.state == RunState::Cancelled => Some(FeedbackFailure::Cancelled),
+        None if state == RunState::Cancelled => Some(FeedbackFailure::Cancelled),
         None => None,
-    };
+    }
+}
+fn feedback_input(
+    context: &ValidatedPhaseContext,
+    completion: &RunCompletion,
+    receipt: &PhaseReceipt,
+    selected: &PhaseCandidate,
+    now: u64,
+) -> Result<FeedbackInput, ()> {
+    let failure = feedback_failure(completion.run.failure, completion.run.state);
     Ok(FeedbackInput {
         schema_version: 1,
         observed_at_unix_seconds: now,
@@ -134,4 +139,21 @@ fn feedback_input(
         },
         comment_sha256: None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unclassified_failure_is_unknown_feedback_never_a_model_fault() {
+        assert!(matches!(
+            feedback_failure(Some(RunFailure::Unclassified), RunState::Failed),
+            Some(FeedbackFailure::Unknown)
+        ));
+        assert!(matches!(
+            feedback_failure(Some(RunFailure::Verification), RunState::VerificationFailed),
+            Some(FeedbackFailure::Validation)
+        ));
+    }
 }

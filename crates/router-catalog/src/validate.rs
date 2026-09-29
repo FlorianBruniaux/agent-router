@@ -9,6 +9,7 @@ use serde::Deserialize;
 use crate::{Catalog, CatalogError, MAX_CATALOG_MODELS, MAX_CATALOG_SKILLS};
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(super) struct RawCatalog {
     schema_version: u64,
     version: String,
@@ -17,6 +18,7 @@ pub(super) struct RawCatalog {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(super) struct RawModelSpec {
     id: String,
     stages: Vec<String>,
@@ -29,6 +31,7 @@ pub(super) struct RawModelSpec {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(super) struct RawSkillSpec {
     id: String,
     description: String,
@@ -50,6 +53,15 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
             "catalog.version.empty",
             "version",
             "catalog version must not be empty",
+        ));
+    }
+    if !plain_text(&raw.version, MAX_VERSION_BYTES) {
+        return Err(CatalogError::new(
+            "catalog.version.invalid",
+            "version",
+            format!(
+                "catalog version must be at most {MAX_VERSION_BYTES} bytes without control or bidirectional characters"
+            ),
         ));
     }
     if raw.models.is_empty() {
@@ -78,6 +90,22 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
     for (index, raw_model) in raw.models.into_iter().enumerate() {
         let path = format!("models[{index}]");
         let id = parse_model_id(&raw_model.id, &path)?;
+        if !identifier(id.as_str()) {
+            return Err(invalid_identifier(
+                "catalog.model.invalid_id",
+                &path,
+                "model",
+            ));
+        }
+        if !plain_text(&raw_model.source, MAX_SOURCE_BYTES) {
+            return Err(CatalogError::new(
+                "catalog.model.invalid_source",
+                format!("{path}.source"),
+                format!(
+                    "model source must be non-empty text of at most {MAX_SOURCE_BYTES} bytes without control or bidirectional characters"
+                ),
+            ));
+        }
         if models.contains_key(&id) {
             return Err(CatalogError::new(
                 "catalog.model.duplicate_id",
@@ -149,6 +177,22 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
                 error.to_string(),
             )
         })?;
+        if !identifier(id.as_str()) {
+            return Err(invalid_identifier(
+                "catalog.skill.invalid_id",
+                &path,
+                "skill",
+            ));
+        }
+        if !plain_text(&raw_skill.description, MAX_DESCRIPTION_BYTES) {
+            return Err(CatalogError::new(
+                "catalog.skill.invalid_description",
+                format!("{path}.description"),
+                format!(
+                    "skill description must be non-empty text of at most {MAX_DESCRIPTION_BYTES} bytes without control or bidirectional characters"
+                ),
+            ));
+        }
         if skills.contains_key(&id) {
             return Err(CatalogError::new(
                 "catalog.skill.duplicate_id",
@@ -178,6 +222,44 @@ pub(super) fn validate(raw: RawCatalog) -> Result<Catalog, CatalogError> {
         models,
         skills,
     })
+}
+
+const MAX_VERSION_BYTES: usize = 128;
+const MAX_SOURCE_BYTES: usize = 512;
+const MAX_DESCRIPTION_BYTES: usize = 8192;
+const MAX_IDENTIFIER_BYTES: usize = 128;
+
+/// Same charset and bound as the signed catalog label.
+fn identifier(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= MAX_IDENTIFIER_BYTES
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_.:/".contains(&b))
+}
+
+fn invalid_identifier(code: &'static str, path: &str, kind: &str) -> CatalogError {
+    CatalogError::new(
+        code,
+        format!("{path}.id"),
+        format!(
+            "{kind} id must be at most {MAX_IDENTIFIER_BYTES} bytes of ASCII letters, digits and - _ . : /"
+        ),
+    )
+}
+
+/// Non-blank text within `limit` bytes, without control or bidirectional
+/// formatting characters (the signed catalog text rule plus bidi controls).
+fn plain_text(value: &str, limit: usize) -> bool {
+    !value.trim().is_empty()
+        && value.len() <= limit
+        && !value.chars().any(|c| {
+            c.is_control()
+                || matches!(
+                    c,
+                    '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
+                )
+        })
 }
 
 fn parse_model_id(value: &str, path: &str) -> Result<ModelId, CatalogError> {

@@ -45,6 +45,8 @@ pub trait ActivationGuard: Send {
 /// Trusted integration boundary implemented by the runtime's opaque durable
 /// proof. The runtime must revalidate its own ledger and exclusive claim before
 /// accepting this decision. A serialized binding alone is never that proof.
+/// The trait is public so the runtime can implement it; the guarantee lives in
+/// the runtime ledger check, not in who can implement this trait.
 pub trait EscalationAuthority {
     fn escalation_binding(&self) -> &EscalationDecisionBinding;
 }
@@ -65,6 +67,12 @@ enum Source {
 }
 /// Opaque and deliberately non-deserializable. No constructor accepts an
 /// arbitrary candidate, a fabricated fallback, or a serialized audit binding.
+/// `escalated` is the one exception by design: it accepts any
+/// `EscalationAuthority`, and a trait cannot be sealed against implementers in
+/// other crates, so a decision built there proves only that the binding matches
+/// this context. The runtime revalidates its own ledger and exclusive claim
+/// before accepting an escalated decision; never treat one as authorization on
+/// its own.
 #[derive(Clone, Debug)]
 pub struct ExecutionDecision {
     source: Source,

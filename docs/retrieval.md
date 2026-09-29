@@ -115,6 +115,14 @@ uses `verified_successes * 1_000_000 / attempts`. These source-specific values
 order each source; RRF uses ranks. Each source contributes at most 200 candidates,
 then final results contain at most 50. Blocked/untrusted assets, anti-triggers,
 required phrases and tool exclusions apply before every source ranking.
+A query may hold at most `MAX_QUERY_PHRASES` (8) distinct quoted phrases;
+repeats collapse to their first occurrence. Queries with 9 or more distinct
+quoted phrases are refused with `Limit("query phrases")` (`retrieval.limit: query
+phrases`); this tightens the earlier behavior, which accepted up to the 64-word
+query limit.
+
+The index hash folds in the BM25 parameters and per-field boosts, derived from
+the constants the scorer uses, so changing one changes the hash.
 
 `fuse_rankings(sources, RrfConfig)` is also a standalone pure function. It accepts
 up to five `RankedSource` lists and deduplicates each canonical `(kind, id)` at its

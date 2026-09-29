@@ -267,3 +267,42 @@ fn version_parser_accepts_only_the_exact_bounded_yargs_line() {
     }
     assert!(adapter_opencode::parse_version(&[b'1'; 129]).is_err());
 }
+
+#[test]
+fn text_or_reasoning_after_terminal_finish_reopens_the_stream() {
+    let mut terminal = finish("stop");
+    terminal["part"]["messageID"] = json!("final-message");
+    for kind in ["text", "reasoning"] {
+        let early = event(
+            "text",
+            json!({"type":"text","sessionID":"session-main","messageID":"final-message","id":"t1","text":"EARLY","time":{"end":123}}),
+        );
+        // Same messageID as the finish: without the fix this text stays bound
+        // to the earlier terminal step_finish and is returned as final.
+        let late = event(
+            kind,
+            json!({"type":kind,"sessionID":"session-main","messageID":"final-message","id":"t9","text":"LATE","time":{"end":124}}),
+        );
+        let bytes = stream(&[start(), early, terminal.clone(), late]);
+        let evidence = adapter().decode_stream(&bytes, ok(), 8192).unwrap();
+        assert!(!evidence.stream_complete, "{kind}");
+        assert!(
+            evidence
+                .missing_evidence
+                .iter()
+                .any(|s| s == "stream.incomplete")
+        );
+        assert_eq!(adapter().final_text(&bytes, ok(), 8192).unwrap(), None);
+    }
+}
+
+#[test]
+fn malformed_tail_must_be_the_last_line_not_merely_equal_to_it() {
+    let cancelled = outcome(TransportTermination::Cancelled, None);
+    assert_eq!(
+        adapter()
+            .decode_stream(b"bad\nbad", cancelled, 8192)
+            .unwrap_err(),
+        AdapterError::Protocol
+    );
+}

@@ -94,6 +94,7 @@ dependencies = [
  "router-runtime",
  "router-types",
  "router-workflow",
+ "rusqlite",
  "serde",
  "serde_json",
  "tempfile",
@@ -908,6 +909,7 @@ dependencies = [
 name = "router-bridge-contract"
 version = "0.1.0"
 dependencies = [
+ "aho-corasick",
  "ed25519-dalek",
  "hex",
  "router-adapter-api",

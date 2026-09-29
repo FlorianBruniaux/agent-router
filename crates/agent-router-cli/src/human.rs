@@ -23,18 +23,29 @@ pub(crate) fn render(title: &str, document: &str) -> String {
     output
 }
 
-fn escaped(text: &str) -> String {
+/// Escapes control characters and Unicode format characters (bidi controls,
+/// zero-width and invisible marks) so untrusted text cannot rewrite the
+/// terminal or visually reorder a line. Shared by every human projection.
+pub(crate) fn escaped(text: &str) -> String {
     let mut output = String::new();
     for character in text.chars() {
-        if character.is_control()
-            || matches!(character, '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')
-        {
+        if character.is_control() || is_format(character) {
             output.extend(character.escape_default());
         } else {
             output.push(character);
         }
     }
     output
+}
+
+/// Unicode general category Cf (Unicode 16) plus the Zl/Zp line and paragraph
+/// separators, which also rewrite a terminal line.
+fn is_format(character: char) -> bool {
+    matches!(character as u32,
+        0xad | 0x600..=0x605 | 0x61c | 0x6dd | 0x70f | 0x890..=0x891 | 0x8e2 | 0x180e
+        | 0x200b..=0x200f | 0x2028..=0x202e | 0x2060..=0x2064 | 0x2066..=0x206f
+        | 0xfeff | 0xfff9..=0xfffb | 0x110bd | 0x110cd | 0x13430..=0x1343f
+        | 0x1bca0..=0x1bca3 | 0x1d173..=0x1d17a | 0xe0001 | 0xe0020..=0xe007f)
 }
 
 fn scalar(value: &Value) -> Option<String> {
@@ -121,5 +132,32 @@ mod tests {
         assert!(!output.contains('\u{1b}'));
         assert!(!output.contains('\u{202e}'));
         assert!(output.contains("\\n"));
+    }
+
+    #[test]
+    fn escapes_a_sample_of_every_format_block_and_line_separators() {
+        for code in [
+            0xad_u32, 0x600, 0x605, 0x6dd, 0x70f, 0x890, 0x891, 0x8e2, 0x180e, 0x200b, 0x2028,
+            0x2029, 0x2060, 0x2064, 0x206f, 0xfeff, 0xfff9, 0xfffb, 0x110bd, 0x110cd, 0x13430,
+            0x1343f, 0x1bca0, 0x1bca3, 0x1d173, 0x1d17a, 0xe0001, 0xe0020, 0xe007f,
+        ] {
+            let character = char::from_u32(code).unwrap();
+            let text = escaped(&format!("a{character}b"));
+            assert!(!text.contains(character), "U+{code:04X} leaked");
+            assert!(
+                text.contains(&format!("\\u{{{code:x}}}")),
+                "U+{code:04X}: {text}"
+            );
+        }
+    }
+
+    #[test]
+    fn escapes_unicode_format_characters() {
+        let text = escaped("a\u{200e}b\u{200f}c\u{61c}d\u{202e}e\u{2066}f\u{feff}g");
+        assert_eq!(
+            text,
+            "a\\u{200e}b\\u{200f}c\\u{61c}d\\u{202e}e\\u{2066}f\\u{feff}g"
+        );
+        assert_eq!(escaped("plain \u{e9}\u{4e2d}"), "plain \u{e9}\u{4e2d}");
     }
 }

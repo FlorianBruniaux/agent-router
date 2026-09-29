@@ -84,17 +84,16 @@ impl BubblewrapSandbox {
             })
             .collect::<Result<BTreeMap<_, _>>>()?;
         let probe = private_dir.join("bwrap-probe");
+        let secret = private_dir.join("bwrap-read-denied");
+        // Tracked before creation: every early return below still cleans up.
+        let mut scratch = crate::stale::Scratch::default();
+        scratch.claim(&probe)?;
+        scratch.claim(&secret)?;
         fs::create_dir(&probe)?;
         let allowed = probe.join("allowed");
         fs::create_dir(&allowed)?;
         fs::write(allowed.join("read"), b"read-control")?;
-        let secret = private_dir.join("bwrap-read-denied");
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&secret)?;
-        std::io::Write::write_all(&mut file, b"synthetic-read-canary")?;
-        drop(file);
+        crate::stale::create_canary(&secret, b"synthetic-read-canary")?;
         let check = async {
             for (program, arg, wanted) in [
                 ("/usr/bin/touch", allowed.join("yes"), true),
@@ -167,11 +166,9 @@ impl BubblewrapSandbox {
             Ok(())
         }
         .await;
-        let cleanup = fs::remove_dir_all(&probe);
-        let cleanup_file = fs::remove_file(&secret);
+        let cleanup = scratch.cleanup();
         check?;
         cleanup?;
-        cleanup_file?;
         Ok(Self {
             wrapper: wrapper.into(),
             wrapper_hash,
@@ -218,6 +215,33 @@ impl SandboxSupervisor for BubblewrapSandbox {
             &self.environment,
         )
     }
+}
+/// `.git` entries directly inside a writable scope root, compared ASCII
+/// case-insensitively, without following symlinks. Only the scope root is
+/// inspected: a recursive walk fails (or costs seconds) on scopes containing
+/// `node_modules` or `target`. A `.git` symlink is refused. Nested `.git`
+/// entries, and any created during the run, are not remounted; git never tracks
+/// a path named `.git` and the diff scope check rejects other-case spellings.
+fn git_entries(root: &Path) -> Result<Vec<PathBuf>> {
+    if !fs::symlink_metadata(root)?.is_dir() {
+        return Ok(vec![]);
+    }
+    let mut found = Vec::new();
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        if entry
+            .file_name()
+            .as_encoded_bytes()
+            .eq_ignore_ascii_case(b".git")
+        {
+            if entry.file_type()?.is_symlink() {
+                return Err(RuntimeError::Sandbox);
+            }
+            found.push(entry.path());
+        }
+    }
+    found.sort();
+    Ok(found)
 }
 #[allow(clippy::too_many_arguments)]
 fn wrap(
@@ -267,6 +291,11 @@ fn wrap(
             return Err(RuntimeError::Sandbox);
         }
         command.arg("--bind").arg(root).arg(root);
+        // Seatbelt denies writes to every `.git` path. Bubblewrap cannot deny
+        // by name, so remount a `.git` at the scope root read-only over the bind.
+        for git in git_entries(root)? {
+            command.arg("--ro-bind").arg(&git).arg(&git);
+        }
     }
     command
         .arg("--chdir")
@@ -280,4 +309,119 @@ fn wrap(
         command.env(key, value);
     }
     Ok(command)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn argv(command: &Command) -> Vec<String> {
+        command
+            .as_std()
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect()
+    }
+    fn tree() -> (tempfile::TempDir, PathBuf) {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        fs::create_dir_all(root.join("src/nested/.GIT")).unwrap();
+        fs::create_dir_all(root.join("src/.git")).unwrap();
+        fs::create_dir_all(root.join("src2/.GIT")).unwrap();
+        fs::create_dir_all(root.join("src/plain")).unwrap();
+        fs::create_dir_all(root.join("src/pkg")).unwrap();
+        fs::write(root.join("src/pkg/.Git"), b"gitdir: elsewhere").unwrap();
+        (temp, root)
+    }
+    #[test]
+    fn writable_binds_remount_a_scope_root_git_read_only_after_the_bind() {
+        let (_temp, root) = tree();
+        let (src, src2) = (root.join("src"), root.join("src2"));
+        let command = wrap(
+            Path::new("/usr/bin/bwrap"),
+            "/bin/true",
+            &[],
+            &root,
+            std::slice::from_ref(&root),
+            &[src.clone(), src2.clone()],
+            false,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let args = argv(&command);
+        let position = |flag: &str, path: &Path| {
+            let path = path.to_str().unwrap();
+            args.windows(3)
+                .position(|w| w[0] == flag && w[1] == path && w[2] == path)
+        };
+        for (write, git) in [(&src, src.join(".git")), (&src2, src2.join(".GIT"))] {
+            let bind = position("--bind", write).expect("writable bind");
+            let ro = position("--ro-bind", &git)
+                .unwrap_or_else(|| panic!("missing read-only remount of {}", git.display()));
+            assert!(ro > bind, "remount must follow the writable bind");
+        }
+        // Documented limit: nested entries are not walked or remounted.
+        assert!(position("--ro-bind", &src.join("nested/.GIT")).is_none());
+        assert!(position("--ro-bind", &src.join("pkg/.Git")).is_none());
+    }
+    #[test]
+    fn git_symlink_at_a_scope_root_is_refused_but_nested_ones_are_not_walked() {
+        let (_temp, root) = tree();
+        let write = root.join("src/plain");
+        std::os::unix::fs::symlink(root.join("src"), write.join(".git")).unwrap();
+        assert!(matches!(git_entries(&write), Err(RuntimeError::Sandbox)));
+        fs::create_dir(root.join("src/deep")).unwrap();
+        std::os::unix::fs::symlink(root.join("src"), root.join("src/deep/.git")).unwrap();
+        assert_eq!(
+            git_entries(&root.join("src")).unwrap(),
+            [root.join("src/.git")]
+        );
+    }
+    #[cfg(target_os = "linux")]
+    #[tokio::test]
+    async fn live_bubblewrap_denies_writes_below_git() {
+        let bwrap = Path::new("/usr/bin/bwrap");
+        if !bwrap.is_file() {
+            return;
+        }
+        let (_temp, root) = tree();
+        let write = root.join("src");
+        let run = |script: &str| {
+            wrap(
+                bwrap,
+                "/bin/sh",
+                &["-c".into(), script.into()],
+                &root,
+                std::slice::from_ref(&root),
+                std::slice::from_ref(&write),
+                false,
+                &BTreeMap::new(),
+            )
+        };
+        let control = crate::process::capture(
+            run("printf x > src/plain/ok").unwrap(),
+            vec![],
+            5_000,
+            4096,
+            0,
+            &Cancellation::default(),
+        )
+        .await
+        .unwrap();
+        if control.outcome.exit_code != Some(0) {
+            return; // user namespaces unavailable here; the argv test still holds
+        }
+        let denied = crate::process::capture(
+            run("printf x > src/.git/probe").unwrap(),
+            vec![],
+            5_000,
+            4096,
+            0,
+            &Cancellation::default(),
+        )
+        .await
+        .unwrap();
+        assert_ne!(denied.outcome.exit_code, Some(0));
+        assert!(!write.join(".git/probe").exists());
+    }
 }

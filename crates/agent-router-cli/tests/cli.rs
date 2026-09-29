@@ -389,3 +389,59 @@ fn write_work_limit_fixture(
     fs::write(catalog_path, serde_json::to_vec(&catalog).unwrap()).unwrap();
     fs::write(request_path, serde_json::to_vec(&request).unwrap()).unwrap();
 }
+
+#[test]
+fn explain_escapes_terminal_controls_and_bidi_marks_in_untrusted_decision_fields() {
+    let temporary = TempDir::new().unwrap();
+    let decision = temporary.path().join("no-route.json");
+    let output = command()
+        .args(route_args(no_route_request(), catalog_path()))
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(3));
+    let mut value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    value["decision_id"] = "id\u{1b}[2Jx".into();
+    let exclusion = &mut value["decision"]["no_route"]["exclusions"][0];
+    exclusion["code"] = "c\nfake: line\u{202e}".into();
+    exclusion["evidence"] = "e\u{200f}v\u{61c}i\u{200e}d".into();
+    fs::write(&decision, serde_json::to_vec(&value).unwrap()).unwrap();
+
+    let output = command()
+        .args(["explain", "--decision", decision.to_str().unwrap()])
+        .output()
+        .unwrap();
+    let text = String::from_utf8(output.stdout).unwrap();
+    for raw in ['\u{1b}', '\u{202e}', '\u{200f}', '\u{61c}', '\u{200e}'] {
+        assert!(!text.contains(raw), "{raw:?} leaked in {text:?}");
+    }
+    assert!(text.contains("id\\u{1b}[2Jx"), "{text}");
+    assert!(text.contains("c\\nfake: line\\u{202e}"), "{text}");
+    assert!(text.contains("e\\u{200f}v\\u{61c}i\\u{200e}d"), "{text}");
+    assert!(!text.lines().any(|line| line.starts_with("fake:")));
+}
+
+#[cfg(unix)]
+#[test]
+fn a_broken_stdout_pipe_fails_without_panicking_or_reporting_success() {
+    use std::process::{Command as Std, Stdio};
+    let bin = assert_cmd::cargo::cargo_bin("agent-router");
+    let args = route_args(implementation_request(), catalog_path());
+
+    // A closed stdout (`>&-`) is not testable here: the Rust runtime reopens fds
+    // 0-2 on /dev/null at startup, so the descriptor is valid and writes succeed.
+    // A pipe whose reader already exited: the write end stays open here, so the
+    // first write fails with EPIPE deterministically.
+    let mut reader = Std::new("true").stdin(Stdio::piped()).spawn().unwrap();
+    let broken = reader.stdin.take().unwrap();
+    reader.wait().unwrap();
+    let output = Std::new(&bin)
+        .args(&args)
+        .stdout(Stdio::from(broken))
+        .stderr(Stdio::piped())
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert_eq!(output.status.code(), Some(4), "{stderr}");
+    assert!(stderr.contains("route.internal"), "{stderr}");
+    assert!(!stderr.contains("panicked"), "{stderr}");
+}

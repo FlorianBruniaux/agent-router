@@ -778,39 +778,30 @@ impl Store {
         Ok(())
     }
     pub fn retry(&self, id: &str, max: u32) -> Result<()> {
+        self.retry_expecting(id, max, None)
+    }
+    /// `retry`, refusing inside the same transaction (and persisting nothing)
+    /// when the resulting approval digest is not the one the caller approved.
+    pub fn retry_expecting(&self, id: &str, max: u32, expected: Option<&str>) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        if cleanup_blocked(&tx, None)? {
-            return Err(RuntimeError::CleanupUnknown);
+        let run = retry_projection(retry_guard(&tx, id, max)?)?;
+        if expected.is_some_and(|digest| digest != run.approval_digest) {
+            return Err(RuntimeError::Approval);
         }
-        let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
-        admission::require_released(&tx, &run)?;
-        let obsolete = if let Some(binding) = &run.workflow {
-            workflow_node(&tx, &binding.instance_id, &run.node_id)?
-                .is_none_or(|(current, _, _)| current.run_id != run.run_id)
-        } else {
-            false
-        };
-        let claimed = tx
-            .prepare("SELECT 1 FROM events WHERE run_id=?1 AND kind='escalation.claim.v1'")?
-            .exists([id])?;
-        if !retryable(&run) || workflow_attempts(&tx, &run)? >= max || obsolete || claimed {
-            return Err(RuntimeError::Invalid(
-                "retry requires a bounded read-only attempt",
-            ));
-        }
-        run.state = RunState::AwaitingApproval;
-        run.failure = None;
-        run.approval_digest = digest(
-            "runtime-retry-approval-v1",
-            &(&run.run_id, &run.definition_hash, run.attempts),
-        )?;
         tx.execute("DELETE FROM control_requests WHERE run_id=?1", [id])?;
         save(&tx, &run)?;
         append(&tx, &run, "retry.awaiting_fresh_approval", "")?;
         tx.commit()?;
         Ok(())
     }
+    /// The run exactly as `retry` would persist it, with the same guards and the
+    /// same approval digest, without writing anything.
+    pub fn retry_preview(&self, id: &str, max: u32) -> Result<RunSummary> {
+        let db = self.lock()?;
+        retry_projection(retry_guard(&db, id, max)?)
+    }
+
     /// Workspaces and scopes are compared after LEXICAL normalization only:
     /// repeated or trailing slashes and `.` components. Symlinked workspaces or
     /// nested ones (`/repo` vs `/repo/sub`) are not detected, as before. `..` is
@@ -1395,6 +1386,37 @@ fn verify_authority_pins(db: &Connection, queries: &mut usize) -> Result<()> {
     Ok(())
 }
 
+fn retry_guard(db: &Connection, id: &str, max: u32) -> Result<RunSummary> {
+    if cleanup_blocked(db, None)? {
+        return Err(RuntimeError::CleanupUnknown);
+    }
+    let run = load_opt(db, id)?.ok_or(RuntimeError::NotFound)?;
+    admission::require_released(db, &run)?;
+    let obsolete = if let Some(binding) = &run.workflow {
+        workflow_node(db, &binding.instance_id, &run.node_id)?
+            .is_none_or(|(current, _, _)| current.run_id != run.run_id)
+    } else {
+        false
+    };
+    let claimed = db
+        .prepare("SELECT 1 FROM events WHERE run_id=?1 AND kind='escalation.claim.v1'")?
+        .exists([id])?;
+    if !retryable(&run) || workflow_attempts(db, &run)? >= max || obsolete || claimed {
+        return Err(RuntimeError::Invalid(
+            "retry requires a bounded read-only attempt",
+        ));
+    }
+    Ok(run)
+}
+fn retry_projection(mut run: RunSummary) -> Result<RunSummary> {
+    run.state = RunState::AwaitingApproval;
+    run.failure = None;
+    run.approval_digest = digest(
+        "runtime-retry-approval-v1",
+        &(&run.run_id, &run.definition_hash, run.attempts),
+    )?;
+    Ok(run)
+}
 fn retryable(run: &RunSummary) -> bool {
     matches!(run.state, RunState::Failed | RunState::TimedOut)
         && run.worktree.is_none()

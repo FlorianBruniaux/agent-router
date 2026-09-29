@@ -5,6 +5,9 @@ use serde::Deserialize;
 use thiserror::Error;
 
 const NORMALIZED_SCORE_MAX: i64 = 1_000_000;
+pub const MAX_CANDIDATE_DOCUMENT_BYTES: usize = 1024 * 1024;
+pub const MAX_CANDIDATES: usize = 512;
+pub const MAX_CANDIDATE_SOURCE_BYTES: usize = 256;
 
 pub trait SkillRetriever {
     fn retrieve(&self, task: &TaskContext) -> Result<Vec<SkillCandidate>, RetrievalError>;
@@ -54,6 +57,7 @@ impl RetrievalError {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct CandidateDocument {
     schema_version: String,
     source: String,
@@ -61,12 +65,25 @@ struct CandidateDocument {
 }
 
 #[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct RawCandidate {
     skill: String,
     score_micros: i64,
+    /// Accepted for the documented candidate format and never read: skill
+    /// bodies are not loaded here.
+    #[serde(default)]
+    #[allow(dead_code)]
+    path: Option<String>,
 }
 
 pub fn parse_candidate_document(bytes: &[u8]) -> Result<Vec<SkillCandidate>, RetrievalError> {
+    if bytes.len() > MAX_CANDIDATE_DOCUMENT_BYTES {
+        return Err(RetrievalError::new(
+            "retrieval.document.too_large",
+            "$",
+            format!("candidate document must be at most {MAX_CANDIDATE_DOCUMENT_BYTES} bytes"),
+        ));
+    }
     let document: CandidateDocument = serde_json::from_slice(bytes)
         .map_err(|error| RetrievalError::new("retrieval.json.invalid", "$", error.to_string()))?;
 
@@ -82,6 +99,20 @@ pub fn parse_candidate_document(bytes: &[u8]) -> Result<Vec<SkillCandidate>, Ret
             "retrieval.source.empty",
             "source",
             "candidate source must not be empty",
+        ));
+    }
+    if document.source.len() > MAX_CANDIDATE_SOURCE_BYTES {
+        return Err(RetrievalError::new(
+            "retrieval.source.too_long",
+            "source",
+            format!("candidate source must be at most {MAX_CANDIDATE_SOURCE_BYTES} bytes"),
+        ));
+    }
+    if document.candidates.len() > MAX_CANDIDATES {
+        return Err(RetrievalError::new(
+            "retrieval.candidates.too_many",
+            "candidates",
+            format!("candidate document must list at most {MAX_CANDIDATES} candidates"),
         ));
     }
 

@@ -700,7 +700,30 @@ pub(crate) fn run(
             .await
             .map_err(error)?;
         let pending = if retry {
-            runtime.retry(pending).map_err(error)?
+            // Read-only preview first: nothing is persisted until the caller
+            // presents the digest of this exact preview with `--approve`.
+            let preview = runtime.preview_retry(&pending).map_err(error)?;
+            match approve {
+                None => preview,
+                Some(approved) => {
+                    let (digest, _) =
+                        approval(&preview, &config, &definition, loaded.binding.as_ref())?;
+                    if approved != digest {
+                        return Err(CliError::Product("runtime.approval.required_or_changed"));
+                    }
+                    // The store re-checks the inner digest inside its transaction.
+                    let inner = preview.approval_digest().to_owned();
+                    runtime.retry_approved(pending, &inner).map_err(error)?
+                }
+            }
+        } else if approve.is_some()
+            && matches!(
+                pending.summary().state,
+                router_types::RunState::Failed | router_types::RunState::TimedOut
+            )
+        {
+            // A failed run needs a fresh approval: `--retry --approve <digest>`.
+            return Err(CliError::Product("runtime.retry.use_retry_approve"));
         } else {
             pending
         };

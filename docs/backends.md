@@ -41,9 +41,11 @@ and a bounded Content-Length. Compressed and chunked responses are rejected.
 The adapters use `POST /v1/systemone` with one choice question. This is the
 documented [Laya server contract](https://github.com/NandhaKishorM/laya/blob/main/laya/serve.py).
 The decoder accepts typed choice answers and optional action metadata. It uses
-`answer_confidence`, or the selected answer probability when available, before
-the legacy confidence field. Laya distinguishes that field from entropy in its
-[answer decoder](https://github.com/NandhaKishorM/laya/blob/main/laya/agent.py).
+`answer_confidence`, or the selected answer probability when available. It never
+uses the legacy confidence field, which Laya distinguishes as entropy in its
+[answer decoder](https://github.com/NandhaKishorM/laya/blob/main/laya/agent.py):
+a choice with neither value is refused as `backend.schema`, and an abstention
+without a choice reports a confidence of zero.
 Probabilities rounded to four decimal places have a bounded mass tolerance.
 Neither confidence nor a successful HTTP call establishes routing quality.
 

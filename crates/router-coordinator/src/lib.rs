@@ -54,10 +54,12 @@ fn hash<T: Serialize>(domain: &str, value: &T) -> Result<String> {
     hash.update(serde_json::to_vec(value)?);
     Ok(hex::encode(hash.finalize()))
 }
+const MAX_MATERIALS: usize = 320;
 pub struct Coordinator {
     store: store::Store,
     runtime: Arc<Runtime>,
     materials: Mutex<std::collections::BTreeMap<String, PendingStep>>,
+    material_limit: usize,
     review_admission: tokio::sync::Mutex<()>,
 }
 /// Contains confidential request text, intentionally not serializable or Debug.
@@ -107,11 +109,44 @@ impl Coordinator {
             store: store::Store::open(root)?,
             runtime,
             materials: Mutex::new(std::collections::BTreeMap::new()),
+            material_limit: MAX_MATERIALS,
             review_admission: tokio::sync::Mutex::new(()),
         })
     }
     pub fn runtime(&self) -> &Runtime {
         &self.runtime
+    }
+    /// Lowers the number of confidential step materials held in memory. The
+    /// built-in bound of 320 cannot be raised.
+    pub fn with_material_limit(mut self, limit: usize) -> Self {
+        self.material_limit = limit.min(MAX_MATERIALS);
+        self
+    }
+    /// Refuses a new step before any runtime or store side effect when its
+    /// material could not be retained. Terminal steps release their material.
+    fn reserve_material(&self, run_id: &str) -> Result<()> {
+        let mut materials = self
+            .materials
+            .lock()
+            .map_err(|_| CoordinatorError::Integrity)?;
+        if materials.len() >= self.material_limit && !materials.contains_key(run_id) {
+            materials.retain(|id, _| self.runtime.summary(id).is_ok_and(|s| !s.state.terminal()));
+            if materials.len() >= self.material_limit {
+                return Err(CoordinatorError::Limit);
+            }
+        }
+        Ok(())
+    }
+    /// Number of confidential step materials currently retained in memory.
+    pub fn retained_materials(&self) -> usize {
+        self.materials.lock().map_or(0, |m| m.len())
+    }
+    fn release_if_terminal(&self, run: &RunSummary) {
+        if run.state.terminal() {
+            if let Ok(mut materials) = self.materials.lock() {
+                materials.remove(&run.run_id);
+            }
+        }
     }
     pub fn register(&self, definition: &WorkflowDefinition) -> Result<()> {
         validate_definition(definition)?;
@@ -258,6 +293,7 @@ impl Coordinator {
         )
         .map_err(|_| CoordinatorError::Invalid("final input assets"))?;
         let run_id = run_id(definition, node, generation)?;
+        self.reserve_material(&run_id)?;
         if let Some(binding) = decision.escalation_binding() {
             let source = self.runtime.summary(&binding.source_run_id)?;
             if source.artifact_contract_sha256.as_deref()
@@ -321,7 +357,8 @@ impl Coordinator {
             .materials
             .lock()
             .map_err(|_| CoordinatorError::Integrity)?;
-        if materials.len() >= 320 && !materials.contains_key(&step.summary().run_id) {
+        if materials.len() >= self.material_limit && !materials.contains_key(&step.summary().run_id)
+        {
             return Err(CoordinatorError::Limit);
         }
         materials.insert(step.summary().run_id.clone(), step.clone());
@@ -357,6 +394,7 @@ impl Coordinator {
         request: ExecutionRequest,
         artifacts: RunArtifactContract,
     ) -> Result<PendingStep> {
+        self.reserve_material(&run_id(definition, node, generation)?)?;
         let pending = reopen_recorded_step(
             &self.store.root,
             &self.runtime,
@@ -381,7 +419,8 @@ impl Coordinator {
             .materials
             .lock()
             .map_err(|_| CoordinatorError::Integrity)?;
-        if materials.len() >= 320 && !materials.contains_key(&step.summary().run_id) {
+        if materials.len() >= self.material_limit && !materials.contains_key(&step.summary().run_id)
+        {
             return Err(CoordinatorError::Limit);
         }
         materials.insert(step.summary().run_id.clone(), step.clone());
@@ -439,6 +478,7 @@ impl Coordinator {
             self.runtime.read_declared_artifact(&artifact.artifact_id)?;
         }
         let run = self.runtime.record_verification(&pending.pending, record)?;
+        self.release_if_terminal(&run);
         self.store.event(
             &definition.execution.instance_id,
             "step.verification",
@@ -461,6 +501,32 @@ impl Coordinator {
                 .get(&run)
                 .cloned();
             let Some(pending) = pending else {
+                // Material is released once a step is terminal; nothing can
+                // apply this control any more, so settle it instead of leaving
+                // it pending forever. A run that cannot be read is skipped, as
+                // before, and never blocks the other controls.
+                if self
+                    .runtime
+                    .summary(&run)
+                    .is_ok_and(|current| current.state.terminal())
+                {
+                    let settled = match &control {
+                        store::Control::Approve { .. } => self.approval_applied(&run).ok(),
+                        store::Control::Verify { record, .. } => self
+                            .runtime
+                            .verification_record(&run)
+                            .ok()
+                            .map(|recorded| recorded.as_ref() == Some(record)),
+                    };
+                    if let Some(settled) = settled {
+                        self.store.finish_control(
+                            &definition.execution.instance_id,
+                            &id,
+                            settled,
+                        )?;
+                        applied += usize::from(settled);
+                    }
+                }
                 continue;
             };
             let current = self.runtime.summary(&run)?;
@@ -474,7 +540,17 @@ impl Coordinator {
             } else {
                 match control {
                     store::Control::Approve { digest } => {
-                        self.approve_step(definition, pending, &digest).map(|_| ())
+                        // A crash between approve_step and finish_control leaves
+                        // the control pending while the run moved past approval.
+                        // That approval was applied; it must not be recorded as
+                        // rejected.
+                        if !matches!(current.state, RunState::AwaitingApproval | RunState::Queued)
+                            && self.approval_applied(&run)?
+                        {
+                            Ok(())
+                        } else {
+                            self.approve_step(definition, pending, &digest).map(|_| ())
+                        }
                     }
                     store::Control::Verify { record, .. } => {
                         if self.runtime.verification_record(&run)?.as_ref() == Some(&record) {
@@ -492,6 +568,11 @@ impl Coordinator {
             }
         }
         Ok(applied)
+    }
+    fn approval_applied(&self, run_id: &str) -> Result<bool> {
+        Ok(self.runtime.events()?.iter().any(|e| {
+            e.run_id == run_id && e.kind == "transition" && e.detail == "explicit_approval"
+        }))
     }
     pub async fn integration_preview(&self, pending: &PendingStep) -> Result<IntegrationPreview> {
         Ok(self.runtime.integration_preview(&pending.pending).await?)
@@ -605,6 +686,7 @@ impl Coordinator {
                 drop(active.swap_remove(index));
                 match result {
                     Ok(completion) => {
+                        self.release_if_terminal(&completion.run);
                         let failed = completion.run.state.terminal()
                             && completion.run.state != RunState::Verified;
                         results.push(completion);

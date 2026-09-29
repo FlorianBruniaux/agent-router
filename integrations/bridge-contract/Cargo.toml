@@ -10,7 +10,7 @@ distribution = "integration"
 
 [features]
 # Supervised HTTP transport limited to loopback. Off by default; see docs/provider-transport.md.
-loopback-transport = []
+loopback-transport = ["dep:aho-corasick"]
 
 [dependencies]
 router-types = { path = "../../crates/router-types" }
@@ -21,6 +21,7 @@ serde_json.workspace = true
 serde.workspace = true
 hex.workspace = true
 ed25519-dalek = "=2.2.0"
+aho-corasick = { version = "1.1.5", optional = true }
 
 [dev-dependencies]
 router-catalog = { path = "../../crates/router-catalog" }

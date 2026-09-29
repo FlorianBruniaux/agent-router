@@ -207,7 +207,7 @@ impl GeneratedCatalog {
                     "observed effort is absent from policy prior",
                 ));
             }
-            if !valid_label(&policy.source) {
+            if !valid_source(&policy.source) {
                 return Err(error(
                     "catalog.source.invalid",
                     "model prior source is missing or invalid",
@@ -418,7 +418,7 @@ fn validate_registry(
     for asset in &registry.assets {
         if !valid_id(&asset.id)
             || !valid_label(&asset.version)
-            || !valid_label(&asset.source)
+            || !valid_source(&asset.source)
             || !valid_hash(&asset.content_sha256)
         {
             return Err(error(
@@ -572,6 +572,20 @@ fn valid_label(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_graphic() || byte == b' ')
+}
+/// A provenance label that never names a local absolute path: no leading
+/// separator, `~`, `file:` scheme or drive prefix, and no `..` component.
+fn valid_source(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    let drive = bytes.len() >= 2
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && bytes.get(2).is_none_or(|b| matches!(b, b'/' | b'\\'));
+    let local = drive
+        || value.starts_with(['/', '\\', '~'])
+        || value.to_ascii_lowercase().starts_with("file:")
+        || value.split(['/', '\\']).any(|part| part == "..");
+    valid_label(value) && !local
 }
 fn valid_id(value: &str) -> bool {
     !value.is_empty()

@@ -55,6 +55,7 @@ hex.workspace = true
 assert_cmd.workspace = true
 predicates.workspace = true
 tempfile.workspace = true
+rusqlite = { version = "=0.39.0", features = ["bundled", "fallible_uint"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

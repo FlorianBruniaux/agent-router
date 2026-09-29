@@ -641,3 +641,15 @@ mod target_identity_tests {
         assert!(validate_target_identity(&source, &target).is_ok());
     }
 }
+
+#[cfg(test)]
+mod retryable_tests {
+    use super::*;
+
+    #[test]
+    fn unclassified_and_verification_failures_are_never_retryable() {
+        assert!(!retryable(Some(RunFailure::Unclassified)));
+        assert!(!retryable(Some(RunFailure::Verification)));
+        assert!(retryable(Some(RunFailure::Crash)));
+    }
+}

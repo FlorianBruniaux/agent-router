@@ -393,7 +393,13 @@ fn reject_duplicate_sets(value: &serde_json::Value) -> Result<(), SnapshotError>
 
 /// Strict JSON also rejects repeated object keys, including inside typed maps.
 pub fn strict_json(bytes: &[u8]) -> Result<serde_json::Value, SnapshotError> {
-    if bytes.len() > MAX_SNAPSHOT_BYTES {
+    strict_json_limited(bytes, MAX_SNAPSHOT_BYTES)
+}
+
+/// Strict JSON with a caller-chosen byte bound. `strict_json` applies
+/// `MAX_SNAPSHOT_BYTES`; callers whose documented bound is larger pass it here.
+pub fn strict_json_limited(bytes: &[u8], limit: usize) -> Result<serde_json::Value, SnapshotError> {
+    if bytes.len() > limit {
         return Err(SnapshotError::TooLarge);
     }
     use serde::de::{MapAccess, SeqAccess, Visitor};
@@ -452,4 +458,32 @@ pub fn strict_json(bytes: &[u8]) -> Result<serde_json::Value, SnapshotError> {
     serde_json::from_slice::<StrictValue>(bytes)
         .map(|value| value.0)
         .map_err(|_| SnapshotError::InvalidJson)
+}
+
+#[cfg(test)]
+mod strict_json_limited_tests {
+    use super::*;
+
+    #[test]
+    fn honors_the_caller_limit_in_both_directions() {
+        let padded = format!("{{}}{}", " ".repeat(MAX_SNAPSHOT_BYTES));
+        assert!(matches!(
+            strict_json(padded.as_bytes()),
+            Err(SnapshotError::TooLarge)
+        ));
+        assert!(strict_json_limited(padded.as_bytes(), MAX_SNAPSHOT_BYTES + 2).is_ok());
+        assert!(matches!(
+            strict_json_limited(b"{\"a\":1}", 6),
+            Err(SnapshotError::TooLarge)
+        ));
+        assert!(strict_json_limited(b"{\"a\":1}", 7).is_ok());
+    }
+
+    #[test]
+    fn still_rejects_duplicate_keys_under_a_larger_limit() {
+        assert!(matches!(
+            strict_json_limited(b"{\"a\":1,\"a\":2}", 1024),
+            Err(SnapshotError::InvalidJson)
+        ));
+    }
 }
