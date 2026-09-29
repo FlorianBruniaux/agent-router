@@ -99,7 +99,8 @@ Missing evidence: 0
 ```
 
 `route` sort en `0` pour une sélection, `3` pour un résultat valide sans route,
-`2` pour une entrée invalide et `4` pour une erreur interne.
+`2` pour une entrée invalide, `4` pour une erreur interne et `7` pour une erreur
+d'intégrité ; voir les [codes de sortie](cli-output.md#exit-codes-and-error-codes).
 
 ### Diagnostic
 

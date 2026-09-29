@@ -280,7 +280,8 @@ fn a_second_server_on_the_same_state_dir_is_refused() {
         .arg(state_dir)
         .output()
         .expect("second serve");
-    assert_eq!(output.status.code(), Some(2));
+    // Contention class: retrying succeeds once the first server stops.
+    assert_eq!(output.status.code(), Some(5));
     assert!(String::from_utf8_lossy(&output.stderr).contains("local_api.state_dir.locked"));
     assert!(output.stdout.is_empty());
     assert!(service.socket.exists(), "the first server keeps its socket");
