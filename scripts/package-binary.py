@@ -307,7 +307,7 @@ def check_build_event_contract(exit_code: int, finished: list[bool], binaries: l
         raise PackageError("build.feature_set_mismatch")
     artifact["filenames"] = ["agent-router"]
     artifact.pop("filename_paths", None)
-    artifact["package_id"] = "path#agent-router-cli@0.1.0"
+    artifact["package_id"] = "path#agent-router-cli@0.0.1"
     return artifact
 
 

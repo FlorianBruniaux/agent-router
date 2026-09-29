@@ -70,7 +70,7 @@ fn version_is_rendered_by_clap_on_stdout_with_success() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("agent-router 0.1.0"))
+        .stdout(predicate::str::contains("agent-router 0.0.1"))
         .stderr(predicate::str::is_empty());
 }
 
