@@ -123,7 +123,8 @@ impl Sources {
                 path,
                 *length,
                 CliError::RequestRead,
-                CliError::RequestTooLarge,
+                // A source that grew past its captured length changed.
+                CliError::Product("generation.source.changed"),
             )?;
             if router_adapter_api::content_digest(&bytes) != *expected {
                 return Err(CliError::Product("generation.source.changed"));
@@ -346,7 +347,8 @@ pub(crate) fn load_decision(
         CliError::RequestTooLarge,
     )?;
     let document: Document = serde_json::from_value(
-        router_adapter_api::strict_json(&raw).map_err(|_| CliError::RequestJsonInvalid)?,
+        router_adapter_api::strict_json_limited(&raw, MAX_DOCUMENT)
+            .map_err(|_| CliError::RequestJsonInvalid)?,
     )
     .map_err(|_| CliError::RequestJsonInvalid)?;
     let now = inspect::current_time(None)?;
@@ -398,4 +400,23 @@ pub(crate) fn load_decision(
             source_sha256: loaded.source_sha256,
         }),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_captured_source_that_grew_is_reported_as_changed_not_too_large() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("source.json");
+        std::fs::write(&path, b"{}").unwrap();
+        let mut sources = Sources::default();
+        assert!(sources.capture(&path, 1024).is_ok());
+        std::fs::write(&path, b"{\"grown\":true}").unwrap();
+        match sources.verify() {
+            Err(CliError::Product(code)) => assert_eq!(code, "generation.source.changed"),
+            _ => panic!("expected generation.source.changed"),
+        }
+    }
 }

@@ -291,4 +291,10 @@ normalization/plan envelopes and historical compatibility, and
 | `0` | A compatible route was selected. |
 | `2` | Command syntax, file limits, request semantics, input JSON, or catalog validation failed. |
 | `3` | The request was valid but produced `no_route`. |
-| `4` | An internal serialization or invariant failure occurred. |
+| `4` | An internal serialization or invariant failure occurred, including a failed write of the result to stdout (for example a closed pipe), reported as `route.internal`. |
+
+Every command, not only `route`, exits `4` with `error: route.internal` when
+writing its result to stdout fails (for example a closed pipe). The write
+failure is reported instead of a panic or a success status. For commands that
+persist state, such as `run`, the persisted result is unaffected: the failed
+write only loses the printed copy, so read it back with `status` or `events`.

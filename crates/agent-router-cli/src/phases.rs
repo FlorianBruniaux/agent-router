@@ -18,8 +18,8 @@ pub(crate) fn read_json<T: serde::de::DeserializeOwned>(
         CliError::RequestRead,
         CliError::RequestTooLarge,
     )?;
-    let value =
-        router_adapter_api::strict_json(&bytes).map_err(|_| CliError::RequestJsonInvalid)?;
+    let value = router_adapter_api::strict_json_limited(&bytes, limit)
+        .map_err(|_| CliError::RequestJsonInvalid)?;
     serde_json::from_value(value).map_err(|_| CliError::RequestJsonInvalid)
 }
 pub(crate) fn error(error: PhaseRouteError) -> CliError {

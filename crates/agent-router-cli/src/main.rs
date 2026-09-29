@@ -27,7 +27,12 @@ mod session_budget;
 mod sidecar;
 mod task_guide;
 
-use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
+use std::{
+    fs::OpenOptions,
+    io::{self, Read, Write},
+    path::Path,
+    process::ExitCode,
+};
 
 use clap::{Parser, error::ErrorKind};
 use cli::Cli;
@@ -57,8 +62,11 @@ fn main() -> ExitCode {
 
     match run(cli.command) {
         Ok(outcome) => {
-            print!("{}", outcome.output);
-            outcome.exit_code
+            match write_stdout(&outcome.output) {
+                Ok(()) => outcome.exit_code,
+                // A failed write must never report success, nor panic.
+                Err(_) => report_error(CliError::Internal),
+            }
         }
         Err(error) => report_error(error),
     }
@@ -127,8 +135,17 @@ impl CliError {
 }
 
 fn report_error(error: CliError) -> ExitCode {
-    eprintln!("error: {}", error.code());
+    // A closed stderr must not turn a reported error into a panic.
+    let _ = writeln!(io::stderr(), "error: {}", error.code());
     error.exit_code()
+}
+
+/// Writes the whole output to stdout, surfacing every failure (EPIPE included)
+/// instead of panicking like `print!`.
+fn write_stdout(output: &str) -> io::Result<()> {
+    let mut stdout = io::stdout().lock();
+    stdout.write_all(output.as_bytes())?;
+    stdout.flush()
 }
 
 fn run(mut command: Commands) -> Result<Outcome, CliError> {
