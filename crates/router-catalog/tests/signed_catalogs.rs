@@ -1113,3 +1113,79 @@ fn operational_registry_refuses_unrepresentable_mutation_ceilings_even_with_pare
         assert_eq!(asset.maximum_sensitivity, DataSensitivity::Public);
     }
 }
+
+fn seal_with_source(source: &str) -> bool {
+    let (mut manifest, _) = fixture();
+    let entry = manifest
+        .assets
+        .iter_mut()
+        .find(|e| e.payload.kind() == CatalogAssetKind::Agent)
+        .unwrap();
+    entry.provenance.source = source.into();
+    seal_signed_manifest(manifest).is_ok()
+}
+#[test]
+fn provenance_source_accepts_only_public_locators_and_refuses_local_paths() {
+    for accepted in [
+        "https://host/path",
+        "https://host:8443/path",
+        "https://example.test/synthetic-catalog",
+        "https://host",
+        "https://host/",
+        "https://host/x/",
+        "https://Example.COM:65535/a/b_c~d.e-f",
+        "https://h.example:1/x",
+        "fixture-registry",
+        "builtin_policy.v1",
+    ] {
+        assert!(seal_with_source(accepted), "should accept {accepted}");
+    }
+    for refused in [
+        "/etc/passwd",
+        "../../home/me/pack",
+        "./pack",
+        "..",
+        ".",
+        "Users/me/pack",
+        "owner/repo",
+        "file:///etc",
+        "FILE:///etc",
+        "File:///etc",
+        "HTTP://host/path",
+        "http://host/path",
+        "HTTPS://host/path",
+        "https:///x",
+        "https://host/../x",
+        "https://host/./x",
+        "https://../x",
+        "C:\\Users\\me",
+        "C:/Users/me",
+        "c:/x",
+        "scheme:id",
+        "~/pack",
+        "https://user:secret@host/x",
+        "https://host/x?q=1",
+        "https://host/x#f",
+        "https://host with space/x",
+        "https://host/%2e%2e/x",
+        "https://host/a b",
+        "https://host/caf\u{e9}",
+        "https://host/a\u{202e}b",
+        "https://h\u{e9}st/x",
+        "https://host//x",
+        "https://host/x//y",
+        "https://host//",
+        "https://:",
+        "https://:8443/x",
+        "https://a:b:c",
+        "https://...",
+        "https://host:/x",
+        "https://host:0/x",
+        "https://host:65536/x",
+        "https://host:123456/x",
+        "https://host:+80/x",
+        "",
+    ] {
+        assert!(!seal_with_source(refused), "should refuse {refused:?}");
+    }
+}

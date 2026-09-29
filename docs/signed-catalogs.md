@@ -21,9 +21,26 @@ SHA-256 digest. Search metadata and typed signals are included in the signed
 manifest for the five retrieval families.
 
 Authors and licences are **signed declarations**. The verifier does not identify
-an author independently or issue a legal compatibility opinion. Sources must be
-bounded public locators or identifiers; credential-bearing URLs, URL query strings
-and absolute local paths are rejected. No machine configuration, environment
+an author independently or issue a legal compatibility opinion. A source is either a
+`https://` URL (lowercase scheme) or a bare identifier, at most 512 bytes.
+
+- URL authority: `host[:port]`. The host is ASCII `[A-Za-z0-9.-]` in any case, not
+  empty and not only dots. The port, if present, is 1 to 5 digits between 1 and 65535.
+- URL path: segments of `[A-Za-z0-9._~-]`. `.`/`..` segments, empty segments
+  (`//`), percent escapes, spaces, non-ASCII and bidi characters are refused. One
+  trailing slash is allowed.
+- Bare identifier: `[A-Za-z0-9._-]`, no `/` or `:`, not `.` or `..`.
+- Refused: credentials, query strings, fragments, backslashes, any other scheme in
+  any case (`file:`, `HTTP:`), absolute or relative paths, drive paths (`C:\`,
+  `C:/`) and `owner/repo` forms, since a relative path cannot be told apart from
+  `owner/repo`.
+
+Compatibility break: a catalog already signed with a source such as `owner/repo`,
+`scheme:id` or a path now fails with a hard `Invalid` error, both when sealing and
+when verifying, before the publisher lookup. There is no `Quarantined` state and no
+schema version bump (`schema_version` stays 1). Fix the source, re-seal and re-sign.
+
+No machine configuration, environment
 variable, credential store or private key is read to populate a manifest.
 
 Payloads reuse existing model/skill policy and agent/tool registry types. Host
