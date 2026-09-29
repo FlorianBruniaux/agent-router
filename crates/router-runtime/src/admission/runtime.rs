@@ -139,6 +139,7 @@ impl SharedAdmission {
             }
         }
         let mut previous = Vec::new();
+        let mut pause = POLL_MIN;
         loop {
             if cancel.is_cancelled() || store.cancel_requested(&ticket.run_id)? {
                 return Err(RuntimeError::Cancelled);
@@ -158,6 +159,7 @@ impl SharedAdmission {
                 return Ok(());
             }
             if reasons != previous {
+                pause = POLL_MIN;
                 store.event(
                     &ticket.run_id,
                     "admission.queued",
@@ -171,7 +173,8 @@ impl SharedAdmission {
             if reasons.contains(&AdmissionQueueReason::SessionTokenBudget) {
                 return Err(BudgetError::Tokens.into());
             }
-            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            tokio::time::sleep(pause).await;
+            pause = next_pause(pause);
         }
     }
     pub fn commit_budget(&self, store: &Store, id: &str) -> Result<Option<BudgetDispatchGuard>> {
@@ -217,6 +220,13 @@ impl SharedAdmission {
 /// contention the wait fails with `RuntimeError::Limit`, so a wedged registry
 /// still ends the run instead of hanging it.
 const BUSY_DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+/// Queue poll spacing: starts at `POLL_MIN`, doubles while the queue state is
+/// unchanged up to `POLL_MAX`, and returns to `POLL_MIN` when the reasons change.
+const POLL_MIN: std::time::Duration = std::time::Duration::from_millis(20);
+const POLL_MAX: std::time::Duration = std::time::Duration::from_millis(250);
+fn next_pause(pause: std::time::Duration) -> std::time::Duration {
+    (pause * 2).min(POLL_MAX)
+}
 const BUSY_PAUSE: std::time::Duration = std::time::Duration::from_millis(20);
 #[derive(Default)]
 struct BusyRetry(Option<std::time::Instant>);
@@ -424,6 +434,17 @@ mod tests {
             .await
             .unwrap();
         holder.join().unwrap();
+    }
+    #[test]
+    fn poll_pause_doubles_up_to_a_bound() {
+        let mut pause = POLL_MIN;
+        let mut seen = vec![pause];
+        for _ in 0..6 {
+            pause = next_pause(pause);
+            seen.push(pause);
+        }
+        let ms: Vec<u128> = seen.iter().map(|d| d.as_millis()).collect();
+        assert_eq!(ms, [20, 40, 80, 160, 250, 250, 250]);
     }
     #[test]
     fn busy_retry_is_bounded_and_ignores_other_errors() {

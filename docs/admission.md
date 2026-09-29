@@ -65,6 +65,12 @@ A single SQLite immediate transaction reserves global, runtime, provider,
 logical-agent and workflow capacities together. No partial permits are held.
 Workflow groups receive round-robin turns with FIFO ordering inside each group;
 a blocked head does not reserve capacity or block an eligible different group.
+A poll first reads the queue in a deferred transaction and takes the write lock
+only when it must grant its ticket or release a dead waiter; the decision is then
+made again inside the immediate transaction. The pinned policy and budget policy
+rows are compared by SHA-256 digest of the stored JSON, computed once at open. A
+waiting run polls every 20 ms, doubling up to 250 ms while its queue reasons are
+unchanged and returning to 20 ms when they change.
 Restrictions of active tickets cannot be enlarged by a later, less restrictive
 ticket. Queue events list the actual binding capacity dimensions or `fair_turn`.
 
