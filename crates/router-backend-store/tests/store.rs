@@ -717,3 +717,67 @@ fn promotions_reach_the_derived_bound_and_only_the_event_cap_remains() {
         Err(StoreError::Limit)
     ));
 }
+
+#[test]
+fn review_refuses_a_promotion_that_would_push_the_snapshot_over_its_bound() {
+    let fixture = Fixture::new();
+    let (_temp, root, store) = setup(&fixture);
+    let genesis = fs::metadata(root.join("state.json")).unwrap().len() as usize;
+    // Room for the empty snapshot but not for the retained promotion.
+    let tight = store.with_snapshot_limit(genesis + 1024);
+    let before = fs::read(root.join("state.json")).unwrap();
+    assert!(matches!(
+        tight.review(&fixture.artifact, &fixture.evidence, 120),
+        Err(StoreError::Limit)
+    ));
+    assert_eq!(before, fs::read(root.join("state.json")).unwrap());
+}
+
+#[test]
+fn reviewed_promotion_near_the_snapshot_bound_applies_and_can_always_roll_back() {
+    let fixture = Fixture::new();
+    let (_temp, root, store) = setup(&fixture);
+    activate(&store, &fixture);
+    let rolled = rollback(&store, &fixture, 120);
+    store.rollback(&rolled, 120).unwrap();
+    let raw = fs::read(root.join("state.json")).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&raw).unwrap();
+    let events = serde_json::to_vec(&value["events"]).unwrap().len();
+    // Snapshot with the promotion retained but no event yet.
+    let base = raw.len() - (events - 2);
+    let longest_id = "reviewer".len();
+    let one_event = 1024 + longest_id;
+    for event in value["events"].as_array().unwrap() {
+        assert!(serde_json::to_vec(event).unwrap().len() <= one_event);
+    }
+    // Two real events do not fit in one event's room: a reserve covering only
+    // the activation event would let rollback hit the bound.
+    assert!(events - 2 > one_event, "test must discriminate: {events}");
+    // Room for the activation event only: review must refuse rather than admit
+    // a promotion whose rollback could not be written.
+    let (_temp1, _root1, short) = setup(&fixture);
+    let short = short.with_snapshot_limit(base + one_event + 1);
+    assert!(matches!(
+        short.review(&fixture.artifact, &fixture.evidence, 120),
+        Err(StoreError::Limit)
+    ));
+    // Fresh store whose bound leaves exactly the two-event reserve spare.
+    let (_temp2, _root2, fresh) = setup(&fixture);
+    let fresh = fresh.with_snapshot_limit(base + 2 * one_event);
+    let review = fresh
+        .review(&fixture.artifact, &fixture.evidence, 120)
+        .unwrap();
+    let guard = fresh.read_guard(120).unwrap();
+    let approval = fixture.approval(
+        guard.state(),
+        ActivationAction::Activate,
+        &review.projection().promotion_hash,
+        120,
+        "1",
+    );
+    drop(guard);
+    fresh.activate(&approval, &review, 120).unwrap();
+    let rolled = rollback(&fresh, &fixture, 120);
+    let status = fresh.rollback(&rolled, 120).unwrap();
+    assert!(status.active_promotion_hash.is_none());
+}
