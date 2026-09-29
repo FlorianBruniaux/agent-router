@@ -500,12 +500,14 @@ fn execution_contract_seals_instances_and_review_binds_generation() {
     f.run()
         .args(["--approve", review["approval_digest"].as_str().unwrap()])
         .assert()
-        .code(2);
+        .code(7)
+        .stderr("error: runtime.integrity\n");
 }
 
-#[test]
-fn approved_dependency_wait_releases_cli_owner_and_stays_resumable() {
-    let f = Fixture::new();
+/// Rewrites the fixture into the execute node of a plan/execute/verify
+/// workflow, so an approved run stays queued behind its prerequisites and
+/// never reaches a native launch.
+fn queue_behind_dependencies(f: &Fixture) {
     let context: PhaseRouteRequest =
         serde_json::from_slice(&fs::read(f.root.join("context.json")).unwrap()).unwrap();
     let plan = build_plan(
@@ -558,6 +560,12 @@ fn approved_dependency_wait_releases_cli_owner_and_stays_resumable() {
     definition["workflow_contract"] = json!("contract.json");
     definition["generation"] = json!(0);
     write(&f.root.join("definition.json"), &definition);
+}
+
+#[test]
+fn approved_dependency_wait_releases_cli_owner_and_stays_resumable() {
+    let f = Fixture::new();
+    queue_behind_dependencies(&f);
     let review = output(f.run().assert().success());
     let approval = review["approval_digest"].as_str().unwrap();
     for _ in 0..2 {
@@ -938,4 +946,234 @@ fn retry_approve_with_a_digest_from_before_the_run_changed_is_refused() {
             "runtime.approval.required_or_changed",
         ));
     assert_eq!(store_state(&f), before);
+}
+
+#[test]
+fn approval_binds_environment_values_without_exposing_secrets() {
+    let f = Fixture::new();
+    queue_behind_dependencies(&f);
+    let mut config: Value =
+        serde_json::from_slice(&fs::read(f.root.join("sandbox.json")).unwrap()).unwrap();
+    config["environment_names"] = json!(["HOME", "SSL_CERT_FILE", "OPENAI_API_KEY"]);
+    write(&f.root.join("sandbox.json"), &config);
+    let home = f.root.join("home-a");
+    let certificates = f.root.join("certificates.pem");
+    let secret = "sk-fixture-secret-value-1";
+    let with = |home: &Path, key: Option<&str>, certificates: Option<&Path>| {
+        let mut command = f.run();
+        command.env("HOME", home);
+        match key {
+            Some(value) => command.env("OPENAI_API_KEY", value),
+            None => command.env_remove("OPENAI_API_KEY"),
+        };
+        match certificates {
+            Some(path) => command.env("SSL_CERT_FILE", path),
+            None => command.env_remove("SSL_CERT_FILE"),
+        };
+        command
+    };
+    let review = with(&home, Some(secret), Some(&certificates))
+        .output()
+        .unwrap();
+    assert!(review.status.success(), "{review:?}");
+    let digest = serde_json::from_slice::<Value>(&review.stdout).unwrap()["approval_digest"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The first secret binding creates the store's private approval key once.
+    let key_path = f.store.join("approval.key");
+    let key = fs::read(&key_path).unwrap();
+    assert_eq!(key.len(), 32);
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::symlink_metadata(&key_path)
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600);
+    }
+    let again = with(&home, Some(secret), Some(&certificates))
+        .output()
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&again.stdout).unwrap()["approval_digest"],
+        digest.as_str(),
+        "same environment and same key give the same digest"
+    );
+    assert_eq!(fs::read(&key_path).unwrap(), key, "the key is reused");
+    let mut observed = vec![review, again];
+    for changed in [
+        with(&f.root.join("home-b"), Some(secret), Some(&certificates)),
+        with(
+            &home,
+            Some("sk-fixture-secret-value-2"),
+            Some(&certificates),
+        ),
+        with(&home, None, Some(&certificates)),
+        with(&home, Some(secret), Some(&f.root.join("other.pem"))),
+        with(&home, Some(secret), None),
+    ] {
+        let mut changed = changed;
+        let outcome = changed.args(["--approve", &digest]).output().unwrap();
+        assert_eq!(outcome.status.code(), Some(2), "{outcome:?}");
+        assert_eq!(
+            outcome.stderr,
+            b"error: runtime.approval.required_or_changed\n"
+        );
+        observed.push(outcome);
+    }
+    // Positive control: the unchanged environment passes the approval check
+    // and queues behind its prerequisites without launching.
+    let queued = with(&home, Some(secret), Some(&certificates))
+        .args(["--approve", &digest])
+        .timeout(std::time::Duration::from_secs(10))
+        .output()
+        .unwrap();
+    assert_eq!(queued.status.code(), Some(3), "{queued:?}");
+    assert_eq!(
+        serde_json::from_slice::<Value>(&queued.stdout).unwrap()["dependencies_pending"],
+        true
+    );
+    observed.push(queued);
+    // Another key changes the digest, and the original key restores it.
+    let approve = || {
+        with(&home, Some(secret), Some(&certificates))
+            .args(["--approve", &digest])
+            .timeout(std::time::Duration::from_secs(10))
+            .output()
+            .unwrap()
+    };
+    fs::write(&key_path, [7u8; 32]).unwrap();
+    let rekeyed = approve();
+    assert_eq!(rekeyed.status.code(), Some(2), "{rekeyed:?}");
+    assert_eq!(
+        rekeyed.stderr,
+        b"error: runtime.approval.required_or_changed\n"
+    );
+    fs::write(&key_path, &key).unwrap();
+    assert_eq!(approve().status.code(), Some(3));
+    // Deleting the key creates a new one: pending approvals become stale.
+    fs::remove_file(&key_path).unwrap();
+    let deleted = approve();
+    assert_eq!(deleted.status.code(), Some(2), "{deleted:?}");
+    assert_ne!(fs::read(&key_path).unwrap(), key);
+    observed.extend([rekeyed, deleted]);
+    // Neither the value nor its per-variable HMAC is ever printed.
+    let mac = {
+        use hmac::{Hmac, Mac};
+        let mut mac = Hmac::<sha2::Sha256>::new_from_slice(&key).unwrap();
+        mac.update(b"agent-router.approval.environment-hmac.v1\0OPENAI_API_KEY\0");
+        mac.update(secret.as_bytes());
+        hex::encode(mac.finalize().into_bytes())
+    };
+    for outcome in &observed {
+        for stream in [&outcome.stdout, &outcome.stderr] {
+            assert!(!String::from_utf8_lossy(stream).contains(&mac));
+        }
+    }
+    for outcome in &observed {
+        for stream in [&outcome.stdout, &outcome.stderr] {
+            let text = String::from_utf8_lossy(stream);
+            assert!(!text.contains("sk-fixture-secret-value"), "{text}");
+        }
+    }
+    let events = output(
+        command()
+            .args(["events", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"])
+            .assert()
+            .success(),
+    );
+    assert!(!events.to_string().contains("sk-fixture-secret-value"));
+    assert!(!events.to_string().contains(&mac));
+}
+
+#[test]
+fn definition_naming_policy_file_and_policy_store_is_refused() {
+    let f = Fixture::new();
+    // A valid policy file: before the refusal, the store was silently ignored.
+    write(
+        &f.root.join("policy.json"),
+        &router_types::PhasePolicy::default(),
+    );
+    let mut definition: Value =
+        serde_json::from_slice(&fs::read(f.root.join("definition.json")).unwrap()).unwrap();
+    definition["policy"] = json!("policy.json");
+    definition["policy_store"] = json!("feedback");
+    definition["policy_artifact_id"] = json!("artifact-1");
+    write(&f.root.join("definition.json"), &definition);
+    f.run()
+        .assert()
+        .code(2)
+        .stdout(predicates::str::is_empty())
+        .stderr("error: policy.composition.denied\n");
+    assert!(!f.store.exists());
+}
+
+#[test]
+fn broken_event_chain_exits_with_the_integrity_class() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    rusqlite::Connection::open(f.store.join("runtime.sqlite3"))
+        .unwrap()
+        .execute_batch(
+            "DROP TRIGGER events_no_update;
+             UPDATE events SET detail='tampered' WHERE sequence=(SELECT MIN(sequence) FROM events);",
+        )
+        .unwrap();
+    command()
+        .args(["status", "--store"])
+        .arg(&f.store)
+        .args(["--run-id", "cli-run", "--json"])
+        .assert()
+        .code(7)
+        .stdout(predicates::str::is_empty())
+        .stderr("error: runtime.integrity\n");
+}
+
+#[test]
+fn sqlite_contention_exits_with_the_retryable_class() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    let holder = rusqlite::Connection::open(f.store.join("runtime.sqlite3")).unwrap();
+    holder.execute_batch("BEGIN IMMEDIATE").unwrap();
+    let cancel = || {
+        let mut command = command();
+        command
+            .args(["cancel", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"]);
+        command
+    };
+    cancel()
+        .assert()
+        .code(5)
+        .stdout(predicates::str::is_empty())
+        .stderr("error: runtime.busy\n");
+    holder.execute_batch("ROLLBACK").unwrap();
+    // Relaunching once the contention is gone succeeds.
+    cancel().assert().success();
+}
+
+#[test]
+fn a_store_database_that_is_not_sqlite_exits_with_the_integrity_class() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    for suffix in ["-wal", "-shm"] {
+        let _ = fs::remove_file(f.store.join(format!("runtime.sqlite3{suffix}")));
+    }
+    // Overwriting keeps the private 0600 mode; only the content is replaced.
+    let noise: Vec<u8> = (0..8192u32)
+        .map(|i| (i.wrapping_mul(2_654_435_761) >> 13) as u8)
+        .collect();
+    fs::write(f.store.join("runtime.sqlite3"), noise).unwrap();
+    command()
+        .args(["status", "--store"])
+        .arg(&f.store)
+        .args(["--run-id", "cli-run", "--json"])
+        .assert()
+        .code(7)
+        .stdout(predicates::str::is_empty())
+        .stderr("error: runtime.storage_corrupt\n");
 }

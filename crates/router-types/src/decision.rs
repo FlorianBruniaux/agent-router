@@ -48,6 +48,9 @@ pub enum RouteDecision {
     },
 }
 
+/// The only decision envelope schema this version reads and writes.
+const DECISION_SCHEMA_VERSION: &str = "1";
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DecisionEnvelope {
     pub schema_version: String,
@@ -60,6 +63,12 @@ pub struct DecisionEnvelope {
 }
 
 impl DecisionEnvelope {
+    /// Deserialization accepts any version string; a reader must refuse an
+    /// envelope whose schema it does not implement instead of guessing.
+    pub fn has_supported_schema(&self) -> bool {
+        self.schema_version == DECISION_SCHEMA_VERSION
+    }
+
     pub fn selected_plan(&self) -> Option<&ExecutionPlan> {
         match &self.decision {
             RouteDecision::Selected { plan, .. } => Some(plan),
@@ -71,6 +80,31 @@ impl DecisionEnvelope {
         match &self.decision {
             RouteDecision::Selected { exclusions, .. }
             | RouteDecision::NoRoute { exclusions, .. } => exclusions,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_the_implemented_decision_schema_is_supported() {
+        let mut envelope = DecisionEnvelope {
+            schema_version: "1".into(),
+            decision_id: "decision".into(),
+            host_snapshot_hash: None,
+            catalog_version: "catalog".into(),
+            policy_version: "policy".into(),
+            decision: RouteDecision::NoRoute {
+                exclusions: vec![],
+                missing_evidence: vec![],
+            },
+        };
+        assert!(envelope.has_supported_schema());
+        for version in ["2", "", "01", " 1", "1.0"] {
+            envelope.schema_version = version.into();
+            assert!(!envelope.has_supported_schema(), "{version:?}");
         }
     }
 }
