@@ -1,0 +1,259 @@
+.claude/agents/rust-code-reviewer.md
+  s_00c6bf8ee605be::t_6e93cecab98234 15-22,31-32
+.claude/agents/rust-security-reviewer.md
+  s_00c6bf8ee605be::t_c9a99e8558f89f 15-20
+.claude/settings.json
+  s_00c6bf8ee605be::t_788374f4615341 7
+.codex/agents/rust-code-reviewer.toml
+  s_00c6bf8ee605be::t_73a0753714c524 7
+.codex/agents/rust-security-reviewer.toml
+  s_00c6bf8ee605be::t_13b122611c4cc2 7
+.codex/hooks.json
+  s_00c6bf8ee605be::t_aeeef129a014cb 7
+.github/workflows/ci.yml
+  s_00c6bf8ee605be::t_452f80542f9a47 30-31
+.harness-generated.json
+  s_00c6bf8ee605be::t_07a88a9251e497 16,19,21,34,37,40
+CHANGELOG.md
+  s_00c6bf8ee605be::t_305d8ccdd8a11d 16-19,25,48,75
+Cargo.lock
+  s_00c6bf8ee605be::t_1019166dc1ee47 97,912
+README.fr.md
+  s_00c6bf8ee605be::t_c9453ca82128d1 1-383
+README.md
+  s_00c6bf8ee605be::t_21d585173fa4df 30,35-36,56-64,75-76,79-94,119-122,135-136,158-160,167-168,193-195,212-213,224-229,236-238,250-251,257-259,274-275,281-283,303,307-311,323-324,331-335,352-353
+crates/adapter-claude/src/probe.rs
+  s_00c6bf8ee605be::t_3ce9c6dfbde36e 8-9,66,68-72,86-88
+crates/adapter-claude/tests/conformance.rs
+  s_00c6bf8ee605be::t_38227d1fbaf1db 594-634
+crates/adapter-copilot/src/stream.rs
+  s_00c6bf8ee605be::t_9efdc5599fed0d 51-52
+crates/adapter-copilot/tests/stream.rs
+  s_00c6bf8ee605be::t_ed2c38fc86ba94 324-337
+crates/adapter-opencode/src/stream.rs
+  s_00c6bf8ee605be::t_2a5071eeb60b4c 53-54,121-124
+crates/adapter-opencode/tests/stream.rs
+  s_00c6bf8ee605be::t_fd4e3cf6013a07 270-308
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_26c3013d3d461e 58
+crates/agent-router-cli/src/command.rs
+  s_00c6bf8ee605be::t_82dea98fbf67d8 101-104
+crates/agent-router-cli/src/execution.rs
+  s_00c6bf8ee605be::t_669ccaf16edb38 703-726
+crates/agent-router-cli/src/execution_feedback.rs
+  s_00c6bf8ee605be::t_74f12a5eb32454 69-70,78-79,81,83-92,143-159
+crates/agent-router-cli/src/generation.rs
+  s_00c6bf8ee605be::t_9b9d0e6362a669 126-127,350-351,404-422
+crates/agent-router-cli/src/human.rs
+  s_00c6bf8ee605be::t_fb6b7c92f83bc0 26-29,32,41-50,136-162
+crates/agent-router-cli/src/main.rs
+  s_00c6bf8ee605be::t_49482dc9a94791 30-35,65-69,138-139,143-150
+crates/agent-router-cli/src/phases.rs
+  s_00c6bf8ee605be::t_d2e6cf817a57a7 21-22
+crates/agent-router-cli/src/render.rs
+  s_00c6bf8ee605be::t_59efb0d684fa13 1,11-14,23,27-33,48-53
+crates/agent-router-cli/tests/catalog_active_closed.rs
+  s_00c6bf8ee605be::t_5c9f2eaeb90744 1-36
+crates/agent-router-cli/tests/cli.rs
+  s_00c6bf8ee605be::t_da48ce40267a51 392-447
+crates/agent-router-cli/tests/execution.rs
+  s_00c6bf8ee605be::t_04cb3eb6742042 817-941
+crates/agent-router-cli/tests/product.rs
+  s_00c6bf8ee605be::t_a2b6ab666d9a7b 186-217
+crates/router-adapter-api/src/execution.rs
+  s_00c6bf8ee605be::t_10716600e0025a 201,571-575,737-755,790,821-823
+crates/router-adapter-api/src/lib.rs
+  s_00c6bf8ee605be::t_a1e6fe9e162b84 396-402,462-489
+crates/router-adapter-api/tests/execution_input.rs
+  s_00c6bf8ee605be::t_b56cc933d43368 1-155
+crates/router-asset-contracts/src/documents.rs
+  s_00c6bf8ee605be::t_c2e94a4ed8f12a 377-388,390-403,405,407-415,419-425,429-462
+crates/router-catalog/src/generated.rs
+  s_00c6bf8ee605be::t_f0fb0b704a52e0 210,421,576-589
+crates/router-catalog/src/signed.rs
+  s_00c6bf8ee605be::t_8a5e417a87be58 894,901,903,1160-1163,1171-1175,1184,1195-1230,1286-1311,1313-1322,1324-1327,1330-1331,1333-1334,1337,1341-1347,1351,1369-1451
+crates/router-catalog/src/validate.rs
+  s_00c6bf8ee605be::t_c1ef134f6ac638 12,21,34,58-66,93-108,180-195,227-264
+crates/router-catalog/tests/catalog_validation.rs
+  s_00c6bf8ee605be::t_c8e8ef4b4fbffd 338-444
+crates/router-catalog/tests/generated_catalogs.rs
+  s_00c6bf8ee605be::t_03516dcf6e144c 443-471
+crates/router-catalog/tests/signed_catalogs.rs
+  s_00c6bf8ee605be::t_d51215e0865ac6 1138-1140,1190-1211
+crates/router-coordinator/src/definition.rs
+  s_00c6bf8ee605be::t_8872e0047ff055 54,71-78
+crates/router-coordinator/src/lib.rs
+  s_00c6bf8ee605be::t_d6074a1dfffa89 57,62,112,119-150,296,360-361,397,422-423,481,504-529,543-553,572-576,689
+crates/router-coordinator/src/store.rs
+  s_00c6bf8ee605be::t_edda086b76f60c 561-563,565-568,594-605
+crates/router-coordinator/tests/generated_decision.rs
+  s_00c6bf8ee605be::t_60896e174803ba 1-276
+crates/router-coordinator/tests/workflow.rs
+  s_00c6bf8ee605be::t_b43483c115f448 1200-1446
+crates/router-decision/src/http.rs
+  s_00c6bf8ee605be::t_3c86efca3aa33c 178-183,191-194
+crates/router-decision/src/sidecar.rs
+  s_00c6bf8ee605be::t_551ca436c28abf 69-81
+crates/router-decision/tests/backends.rs
+  s_00c6bf8ee605be::t_90ae493409becb 292-355
+crates/router-doctor/src/deep.rs
+  s_00c6bf8ee605be::t_42c583f358ccaf 274-275
+crates/router-execution-decision/src/lib.rs
+  s_00c6bf8ee605be::t_2d6e13042893fb 48-49,70-75
+crates/router-execution-decision/tests/authority.rs
+  s_00c6bf8ee605be::t_27b18fa227744a 1-159
+crates/router-import/src/lib.rs
+  s_00c6bf8ee605be::t_7a411be17d9791 36-52,247,270,485-488,490
+crates/router-import/src/scan.rs
+  s_00c6bf8ee605be::t_ee618c45365869 88
+crates/router-import/tests/import.rs
+  s_00c6bf8ee605be::t_40a6d51da0a4f2 292-302,628,632,635-642
+crates/router-local-api/src/server.rs
+  s_00c6bf8ee605be::t_8261a0e30eee40 118-123,274-275,278,322,336,338,344
+crates/router-policy/src/constraint.rs
+  s_00c6bf8ee605be::t_c2197a30b9ac71 172-174,188,214
+crates/router-policy/src/retrieval.rs
+  s_00c6bf8ee605be::t_2eea34d91ed599 8-10,60,68,72-76,80-86,104-117
+crates/router-policy/src/score.rs
+  s_00c6bf8ee605be::t_c904f329d4f385 61-88,95,302-354
+crates/router-policy/tests/constraints.rs
+  s_00c6bf8ee605be::t_56968cfb560881 144-171
+crates/router-policy/tests/retrieval.rs
+  s_00c6bf8ee605be::t_aafa9dc20ff371 89-130
+crates/router-retrieval/src/context.rs
+  s_00c6bf8ee605be::t_e87a3fa4bc0fee 430
+crates/router-retrieval/src/index.rs
+  s_00c6bf8ee605be::t_256aea24b4c43c 5-20,109-110,431,482-484,900-910
+crates/router-retrieval/src/lib.rs
+  s_00c6bf8ee605be::t_476dff1f640850 29
+crates/router-retrieval/src/tokenize.rs
+  s_00c6bf8ee605be::t_dc6576872d3dd6 32-46
+crates/router-retrieval/src/types.rs
+  s_00c6bf8ee605be::t_526afae53419b8 92-102
+crates/router-retrieval/tests/retrieval.rs
+  s_00c6bf8ee605be::t_ae4991d83e4951 561-598
+crates/router-runtime/src/bubblewrap.rs
+  s_00c6bf8ee605be::t_2b328520c89b93 87-91,96,169,219-245,294-298,313-427
+crates/router-runtime/src/escalation.rs
+  s_00c6bf8ee605be::t_18b478d258f2b8 644-655
+crates/router-runtime/src/leases.rs
+  s_00c6bf8ee605be::t_621277274374fa 214-247
+crates/router-runtime/src/lib.rs
+  s_00c6bf8ee605be::t_38f6e00cec265f 17,35,833-866,877,1192,1195-1200,1209-1230,1246-1247,1256-1259,1288-1346,1383-1403
+crates/router-runtime/src/native_version.rs
+  s_00c6bf8ee605be::t_2bae1408484347 23-29,98-100
+crates/router-runtime/src/process.rs
+  s_00c6bf8ee605be::t_21de5634f9f360 10,53-55,80-115,124,127-134,200-201,222-225,235,257,261,270-272,278,317-367
+crates/router-runtime/src/resources.rs
+  s_00c6bf8ee605be::t_9a740403308646 61-66
+crates/router-runtime/src/sandbox.rs
+  s_00c6bf8ee605be::t_e4a374114f4f45 50-105,108-125,175-179,184,269-270,279,383-387,405-406,442-518
+crates/router-runtime/src/stale.rs
+  s_00c6bf8ee605be::t_6adb36aa8ed961 1-131
+crates/router-runtime/src/store.rs
+  s_2b47aafd5c6e51::t_47a8f8cdc32765 781-785,788-790,798-804,1389-1419
+crates/router-runtime/src/workspace.rs
+  s_00c6bf8ee605be::t_bbcdaf720e555d 6,138-139,211-213,243,260-274,278-279,383-488
+crates/router-runtime/tests/native_version.rs
+  s_00c6bf8ee605be::t_a56e5196db48ed 553-628
+crates/router-runtime/tests/retry_preview.rs
+  s_00c6bf8ee605be::t_a129847cb9a9ad 1-310
+crates/router-runtime/tests/runtime.rs
+  s_00c6bf8ee605be::t_335fa1ff744558 2953-3156
+crates/router-types/src/asset.rs
+  s_00c6bf8ee605be::t_82392bda99b18d 140,150,163,173
+crates/router-types/src/runtime.rs
+  s_00c6bf8ee605be::t_2a8b738fd406a4 68-71
+crates/router-types/src/task.rs
+  s_00c6bf8ee605be::t_65db1fb4b3ef28 36,46
+crates/router-types/src/workflow.rs
+  s_00c6bf8ee605be::t_002be3b2c9efa5 175
+crates/router-types/tests/contracts.rs
+  s_00c6bf8ee605be::t_cccc278a4aa908 136-189
+crates/router-validation/src/lib.rs
+  s_00c6bf8ee605be::t_c34d54aedb6b60 71,96,132-134,143-201,220,507
+crates/router-validation/tests/validation.rs
+  s_00c6bf8ee605be::t_0096916177f97e 516-544
+docs/adr/0014-loopback-provider-transport.md
+  s_00c6bf8ee605be::t_71b84e2a7c4e21 31,47-50,53-56,59-60
+docs/asset-contracts.md
+  s_00c6bf8ee605be::t_085feaa14ea684 33-35
+docs/backends.md
+  s_00c6bf8ee605be::t_a83ee15fa4f511 44-48
+docs/cli-execution.md
+  s_00c6bf8ee605be::t_0cb8312b2c25c0 192-202
+docs/completion.md
+  s_00c6bf8ee605be::t_60353b6f4b845a 307,316-321
+docs/coordinator.md
+  s_00c6bf8ee605be::t_9d3702de3792c8 20-32,92-97,102-105
+docs/harness.md
+  s_00c6bf8ee605be::t_b5eba4818ad3e4 88-90
+docs/importer.md
+  s_00c6bf8ee605be::t_22ea83b08fb3bb 23-28,34-35
+docs/local-api.md
+  s_00c6bf8ee605be::t_a5c0296bce1498 64,74-80
+docs/provider-transport.md
+  s_00c6bf8ee605be::t_8af79a1fb150a8 38-42,72,83,85-86,100-102,126-130
+docs/reference/json-contracts.md
+  s_00c6bf8ee605be::t_39d4277fa2b185 8-21,147-152,164-165,315-321
+docs/remaining-acceptance.md
+  s_00c6bf8ee605be::t_19ad984c64d168 155-161,227
+docs/retrieval.md
+  s_00c6bf8ee605be::t_d516f67e413005 118-125
+docs/review-grid.md
+  s_00c6bf8ee605be::t_706e7051e4352b 1-58
+docs/runtime.md
+  s_00c6bf8ee605be::t_1798431b7812ab 74-93,196-202,207-219,221,227-233
+docs/signed-catalogs.md
+  s_00c6bf8ee605be::t_3506e05886b5da 28-34,38-39,45-50,55-57
+docs/structured-validation.md
+  s_00c6bf8ee605be::t_a4349c9043458b 23-25
+fuzz/Cargo.lock
+  s_00c6bf8ee605be::t_49f6960438731b 419
+harness/agents/rust-code-reviewer.md
+  s_00c6bf8ee605be::t_dc750ca8d80a37 7-14,23-24
+harness/agents/rust-security-reviewer.md
+  s_00c6bf8ee605be::t_dc33b86a41a42a 7-12
+integrations/bridge-contract/Cargo.toml
+  s_00c6bf8ee605be::t_e6e6e519a9d4c5 13,24
+integrations/bridge-contract/src/stream.rs
+  s_00c6bf8ee605be::t_782864a495af67 10-18,44-49,149-150,213-215
+integrations/bridge-contract/src/transport.rs
+  s_00c6bf8ee605be::t_f6aee535a800fe 17-18,61-64,77-78,83-85,146-148,153,157,185,196,198-204,206-210,217-226,229,247-253,255,314-324
+integrations/bridge-contract/src/transport/http.rs
+  s_00c6bf8ee605be::t_c4ed625c507273 14-15,21-23,34-39,75-80,115,155-158,160-163,229,239,249-259
+integrations/bridge-contract/src/transport/redact.rs
+  s_00c6bf8ee605be::t_5074e2909c4255 4,13-22,25,27-30,51-59,66-70,72,75,81,83,87-94,100-106,109,112,114-117,134-135,140-141,144-149,152-158,161-162,164-165,168-170,172-191,193-210,212-224,226-234
+integrations/bridge-contract/tests/contracts.rs
+  s_00c6bf8ee605be::t_e00406d7d54155 65-96
+integrations/bridge-contract/tests/loopback.rs
+  s_00c6bf8ee605be::t_4d938c8f78d196 1471-1696
+xtask/src/transaction.rs
+  s_00c6bf8ee605be::t_8b7c983dd8bebf 100-105,138-144
+xtask/tests/harness.rs
+  s_00c6bf8ee605be::t_b04bdbf6bf81bf 86-93,97-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ab72c916e9f4edd0e89eafdd0e490c71eca4a8fe",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
