@@ -217,6 +217,11 @@ not proof of absence) or `Unknown` (control failed). It is evidence only and
 never fails a probe or a run. A mach service allowlist is deferred to a native
 canary.
 
+Both native sandboxes share one guard: the working directory, readable roots
+and writable scope paths must already be canonical (no symlink or alias), and
+`/` is never readable. Seatbelt tolerates a write path that does not exist yet
+if its deepest existing ancestor is canonical; bubblewrap requires it to exist.
+
 Writes are limited to approved scope paths and `/dev/null`, with Git metadata
 writes denied for every case spelling of `.git`. Network access requires the explicit routed network capability.
 
@@ -228,9 +233,18 @@ worktree so they can be mounted precisely. A `.git` entry (any case)
 directly inside a writable scope root is remounted read-only; a `.git` symlink
 there is refused. Nested `.git` entries, and any the child creates during the
 run, are not remounted (a recursive walk fails on scopes holding `node_modules`
-or `target`): git never tracks a path named `.git`, so they cannot reach the
-captured diff. Scope entries containing `.git` in any case (`.GIT`, `.Git`) are
-rejected on every platform. Its enforcement canary must run on
+or `target`). Instead the host walks the produced worktree with
+`symlink_metadata` (no symlink followed) before its first git command and
+refuses any entry named `.git` in any case other than the worktree's own root
+`.git`, with `runtime.workspace.nested_git`. The walk is bounded to 500,000
+entries and depth 128 (`runtime.limit` beyond). The root `.git` must not be a
+symlink. The name comparison is ASCII case-insensitive only: HFS and NTFS
+variants of `.git` are not matched. Residual limit under Seatbelt: the walk
+runs after the worker ends, but without a PID namespace a detached descendant
+(`setsid`) is not proven terminated and could write a nested `.git` between the
+walk and the host git commands. Bubblewrap `--unshare-all` (PID namespace)
+kills every descendant. Scope entries containing `.git` in any case (`.GIT`,
+`.Git`) are rejected on every platform. Its enforcement canary must run on
 Linux; compiling it on macOS is not runtime proof.
 
 `ResourceSupervisor::probe` wraps either native sandbox with the separately
