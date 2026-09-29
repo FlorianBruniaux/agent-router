@@ -6,6 +6,7 @@ mod generator;
 mod phases;
 mod preset;
 mod retrieval;
+mod review_separation;
 mod route;
 mod score;
 mod signed_phases;
@@ -26,6 +27,10 @@ pub use phases::{
 };
 pub use retrieval::{
     RetrievalError, SkillRetriever, StaticSkillRetriever, parse_candidate_document,
+};
+pub use review_separation::{
+    CandidateProviders, PairSeparation, ReviewSeparation, ReviewSeparationError,
+    ReviewSeparationVerdict, candidate_providers, distinct_provider_pairs,
 };
 pub use route::{PolicyConfig, RouteError, Router};
 pub use signed_phases::SignedPhaseInputs;
