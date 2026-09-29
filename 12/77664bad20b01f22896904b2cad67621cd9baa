@@ -1,0 +1,47 @@
+Cargo.lock
+  s_8fd89c0518bd58::t_f148c4ced7df7b 1146-1156
+Cargo.toml
+  s_8fd89c0518bd58::t_5fa7b92de005f8 28
+crates/router-validation/Cargo.toml
+  s_8fd89c0518bd58::t_63a30506f82be9 1-13
+crates/router-validation/src/lib.rs
+  s_00c6bf8ee605be::t_3062458bac1ad6 1-506
+crates/router-validation/tests/validation.rs
+  s_c33adcccf5d7e1::t_43d6c2f9977ef5 1-515
+docs/adr/0015-structured-validation.md
+  s_00c6bf8ee605be::t_c66e24c9179938 1-29
+docs/structured-validation.md
+  s_00c6bf8ee605be::t_4f6ff0fe092300 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1277664bad20b01f22896904b2cad67621cd9baa",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_8fd89c0518bd58": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fbc7c70e-4130-43bd-bc2a-5d5e2682eaff",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_c33adcccf5d7e1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2d0d8ee4-ae1b-4183-aace-257e53d5fd17",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
