@@ -10,8 +10,11 @@ use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 use std::{path::Path, time::Duration};
 
-const CURRENT_SCHEMA: u32 = 9;
-const MAX_ROWS: u64 = 4096;
+const CURRENT_SCHEMA: u32 = store::SCHEMA_VERSION;
+/// No writer bounds `runs`, `events` or lease rows per store, so a row count
+/// is not a health signal. Work is bounded by the snapshot byte cap (4 MiB,
+/// enforced before any inspection), the per-cell length cap and the SQLite work
+/// budget; events are verified as a stream and leases inspected once per row.
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
@@ -211,14 +214,14 @@ fn inspect(db: &Connection, queries: &mut usize) -> Result<Inspection> {
             .collect::<Vec<_>>()
             .join(",");
         *queries += 1;
-        let (count, longest): (u64, u64) = db
+        let (_count, longest): (u64, u64) = db
             .query_row(
                 &format!("SELECT count(*),coalesce(max(max(0,{lengths})),0) FROM {table}"),
                 [],
                 |r| Ok((r.get(0)?, r.get(1)?)),
             )
             .map_err(sql_error)?;
-        if count > MAX_ROWS || longest > 65536 {
+        if longest > 65536 {
             return Err(DoctorError::Limit);
         }
     }
@@ -252,6 +255,15 @@ fn sql_error(error: rusqlite::Error) -> DoctorError {
             if error.code == rusqlite::ErrorCode::OperationInterrupted =>
         {
             DoctorError::Limit
+        }
+        // A concurrent writer is not evidence about the layout.
+        rusqlite::Error::SqliteFailure(error, _)
+            if matches!(
+                error.code,
+                rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked
+            ) =>
+        {
+            DoctorError::Read
         }
         _ => DoctorError::Schema,
     }
@@ -316,3 +328,103 @@ const TABLES: &[(&str, &[&str])] = &[
     ("admission_binding", &["id", "binding"]),
     ("admission_intents", &["run_id", "record"]),
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::store::Store;
+    use std::collections::BTreeMap;
+
+    fn failure(code: std::ffi::c_int) -> rusqlite::Error {
+        rusqlite::Error::SqliteFailure(rusqlite::ffi::Error::new(code), None)
+    }
+    #[test]
+    fn sql_errors_keep_busy_locked_interrupted_and_layout_apart() {
+        assert!(matches!(
+            sql_error(failure(rusqlite::ffi::SQLITE_BUSY)),
+            DoctorError::Read
+        ));
+        assert!(matches!(
+            sql_error(failure(rusqlite::ffi::SQLITE_LOCKED)),
+            DoctorError::Read
+        ));
+        assert!(matches!(
+            sql_error(failure(rusqlite::ffi::SQLITE_INTERRUPT)),
+            DoctorError::Limit
+        ));
+        assert!(matches!(
+            sql_error(failure(rusqlite::ffi::SQLITE_ERROR)),
+            DoctorError::Schema
+        ));
+        assert!(matches!(
+            sql_error(rusqlite::Error::QueryReturnedNoRows),
+            DoctorError::Schema
+        ));
+    }
+    #[test]
+    fn doctor_tables_match_the_tables_the_migrations_create() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        drop(store);
+        let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
+        assert_eq!(
+            db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
+                .unwrap(),
+            CURRENT_SCHEMA
+        );
+        let mut names = db
+            .prepare(
+                "SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+            )
+            .unwrap();
+        let names = names
+            .query_map([], |r| r.get::<_, String>(0))
+            .unwrap()
+            .collect::<rusqlite::Result<Vec<_>>>()
+            .unwrap();
+        let mut migrated = BTreeMap::new();
+        for name in names {
+            let mut info = db.prepare(&format!("PRAGMA table_info({name})")).unwrap();
+            let columns = info
+                .query_map([], |r| r.get::<_, String>(1))
+                .unwrap()
+                .collect::<rusqlite::Result<Vec<_>>>()
+                .unwrap();
+            migrated.insert(name, columns);
+        }
+        let listed = TABLES
+            .iter()
+            .map(|(name, columns)| {
+                (
+                    name.to_string(),
+                    columns.iter().map(|c| c.to_string()).collect::<Vec<_>>(),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(listed.len(), TABLES.len(), "duplicate doctor table");
+        assert_eq!(listed, migrated);
+    }
+    #[test]
+    fn healthy_store_with_more_than_the_row_cap_of_events_is_inspected() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        store
+            .register(&crate::store::tests::summary("run"))
+            .unwrap();
+        store.append_events_for_test("run", 4096 + 200);
+        assert!(store.events().unwrap().len() as u64 > 4096);
+        // The snapshot copy has a 250 ms wall-clock budget that a loaded test
+        // machine can exceed; a row cap would fail every attempt, not one.
+        let report = (0..3)
+            .find_map(|_| match diagnose_runtime_storage(&root, 1) {
+                Err(DoctorError::Limit) => None,
+                other => Some(other),
+            })
+            .expect("three consecutive Limit results")
+            .unwrap();
+        assert_eq!(report.journal_integrity, DiagnosticState::Pass);
+        assert!(report.counts.unwrap().events > 4096);
+    }
+}

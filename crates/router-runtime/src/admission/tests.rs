@@ -137,15 +137,21 @@ fn stale_waiter_can_be_removed_but_granted_ticket_survives_owner_loss_and_reopen
 fn pins_identity_changes_duplicate_owners_and_private_modes_are_refused() {
     let (temp, s) = fixture();
     let owner = s.owner("one").unwrap();
-    assert!(s.owner("one").is_err());
-    assert!(AdmissionStore::open(&temp.path().join("registry"), &"f".repeat(64)).is_err());
+    assert!(matches!(s.owner("one"), Err(RuntimeError::Locked)));
+    assert!(matches!(
+        AdmissionStore::open(&temp.path().join("registry"), &"f".repeat(64)),
+        Err(RuntimeError::Approval)
+    ));
     let mut t = ticket(&s, "one", "a", "A", "invented-provider");
-    assert!(s.enqueue(&t).is_err());
+    assert!(matches!(s.enqueue(&t), Err(RuntimeError::Approval)));
     t.provider = "provider".into();
     t.seal().unwrap();
     s.enqueue(&t).unwrap();
     t.approval_digest = "c".repeat(64);
-    assert!(s.poll(&t).is_err());
+    assert!(matches!(
+        s.poll(&t),
+        Err(RuntimeError::Integrity("admission ticket"))
+    ));
     drop(owner);
     let _new_owner = s.owner("one").unwrap();
     use std::os::unix::fs::PermissionsExt;
@@ -154,26 +160,33 @@ fn pins_identity_changes_duplicate_owners_and_private_modes_are_refused() {
         std::fs::Permissions::from_mode(0o644),
     )
     .unwrap();
-    assert!(s.status().is_err());
+    assert!(matches!(
+        s.status(),
+        Err(RuntimeError::Invalid("admission private file"))
+    ));
 }
 #[test]
 fn registry_symlinks_and_auxiliary_symlinks_are_refused() {
     let (temp, s) = fixture();
     std::os::unix::fs::symlink(temp.path().join("registry"), temp.path().join("alias")).unwrap();
-    assert!(AdmissionStore::open(&temp.path().join("alias"), s.policy_hash()).is_err());
+    assert!(matches!(
+        AdmissionStore::open(&temp.path().join("alias"), s.policy_hash()),
+        Err(RuntimeError::Io(e))
+            if [Some(nix::libc::ELOOP), Some(nix::libc::ENOTDIR)].contains(&e.raw_os_error())
+    ));
     drop(s);
     let wal = temp.path().join("registry/admission.sqlite3-wal");
     if wal.exists() {
         std::fs::remove_file(&wal).unwrap();
     }
     std::os::unix::fs::symlink(temp.path().join("outside"), wal).unwrap();
-    assert!(
+    assert!(matches!(
         AdmissionStore::open(
             &temp.path().join("registry"),
             &admission_policy_hash(&policy()).unwrap()
-        )
-        .is_err()
-    );
+        ),
+        Err(RuntimeError::Invalid("admission private file"))
+    ));
 }
 #[test]
 fn subprocess_holder() {
@@ -332,4 +345,24 @@ fn competing_processes_never_grant_the_same_provider_slot_twice() {
         "same provider must have one reservation across distinct processes"
     );
     assert_eq!(s.status().unwrap().granted, 0);
+}
+#[test]
+fn lifetime_ticket_count_is_not_capped_because_settled_rows_are_pruned() {
+    let (_temp, s) = fixture();
+    s.lock()
+        .unwrap()
+        .pragma_update(None, "synchronous", "OFF")
+        .unwrap();
+    let _one = s.owner("one").unwrap();
+    for i in 0..(MAX_TICKETS as usize + 100) {
+        let t = ticket(&s, "one", &format!("run-{i}"), &format!("g{i}"), "other");
+        let _w = s.waiter(&t).unwrap();
+        s.enqueue(&t).unwrap();
+        assert!(s.poll(&t).unwrap().is_empty());
+        release(&s, &t);
+    }
+    let status = s.status().unwrap();
+    assert_eq!((status.waiting, status.granted), (0, 0));
+    // Pruned at enqueue, so the newest release is on top of the retained window.
+    assert_eq!(status.released, MAX_RETAINED_RELEASED + 1);
 }

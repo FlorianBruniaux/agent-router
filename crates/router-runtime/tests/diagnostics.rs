@@ -290,10 +290,14 @@ fn missing_and_held_lease_observations_do_not_resolve_cleanup() {
 }
 
 #[test]
-fn bounded_rows_refuse_without_modifying_source() {
+fn many_small_rows_are_inspected_and_snapshot_size_is_the_bound() {
     let f = Fixture::new();
     let db = f.db();
     db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<4097) INSERT INTO runs SELECT CAST(i AS TEXT),'p','n','{}' FROM n;").unwrap();
+    let report = diagnose_runtime_storage(&f.root, 100).unwrap();
+    assert_eq!(report.counts.unwrap().runs, 4097);
+    // Rows under the per-field cap can still exceed the 4 MiB snapshot cap.
+    db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;").unwrap();
     assert!(matches!(
         diagnose_runtime_storage(&f.root, 100),
         Err(DoctorError::Limit)
@@ -301,7 +305,7 @@ fn bounded_rows_refuse_without_modifying_source() {
     assert_eq!(
         db.query_row("SELECT count(*) FROM runs", [], |r| r.get::<_, u64>(0))
             .unwrap(),
-        4097
+        4197
     );
 }
 

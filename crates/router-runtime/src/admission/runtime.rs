@@ -129,13 +129,31 @@ impl SharedAdmission {
     }
     pub async fn wait(&self, store: &Store, ticket: &Ticket, cancel: &Cancellation) -> Result<()> {
         let _waiter = self.registry.waiter(ticket)?;
-        self.registry.enqueue(ticket)?;
+        let mut busy = BusyRetry::default();
+        loop {
+            match self.registry.enqueue(ticket) {
+                Err(error) if busy.retry(&error)? => {
+                    tokio::time::sleep(BUSY_PAUSE).await;
+                }
+                other => break other?,
+            }
+        }
         let mut previous = Vec::new();
         loop {
             if cancel.is_cancelled() || store.cancel_requested(&ticket.run_id)? {
                 return Err(RuntimeError::Cancelled);
             }
-            let reasons = self.registry.poll(ticket)?;
+            let reasons = match self.registry.poll(ticket) {
+                Ok(reasons) => {
+                    busy = BusyRetry::default();
+                    reasons
+                }
+                Err(error) if busy.retry(&error)? => {
+                    tokio::time::sleep(BUSY_PAUSE).await;
+                    continue;
+                }
+                Err(error) => return Err(error),
+            };
             if reasons.is_empty() {
                 return Ok(());
             }
@@ -161,7 +179,17 @@ impl SharedAdmission {
             return Ok(None);
         }
         let ticket = store.arm_session_budget(id)?;
-        self.registry.commit_budget(&ticket)
+        // Armed first so a crash between the two commits is recovered as a
+        // dispatch. A refusal is definite: the run never spawns, so disarm and
+        // let the release refund. If disarming fails the run stays armed, which
+        // over-charges rather than under-charges, and the refusal still surfaces.
+        match self.registry.commit_budget(&ticket) {
+            Ok(guard) => Ok(guard),
+            Err(error) => {
+                let _ = store.disarm_session_budget(id);
+                Err(error)
+            }
+        }
     }
     pub fn release(&self, store: &Store, ticket: &Ticket) -> Result<()> {
         let proof = store.admission_release_proof(ticket)?;
@@ -181,6 +209,38 @@ impl SharedAdmission {
             }
         }
         Ok(())
+    }
+}
+
+/// A registry writer held by another runtime is contention, not a failure of
+/// this queued run. Retry inside the wait; after this long of consecutive
+/// contention the wait fails with `RuntimeError::Limit`, so a wedged registry
+/// still ends the run instead of hanging it.
+const BUSY_DEADLINE: std::time::Duration = std::time::Duration::from_secs(10);
+const BUSY_PAUSE: std::time::Duration = std::time::Duration::from_millis(20);
+#[derive(Default)]
+struct BusyRetry(Option<std::time::Instant>);
+impl BusyRetry {
+    /// `Ok(true)` when `error` is busy contention still inside the deadline,
+    /// `Ok(false)` for any other error, and `Limit` once the deadline has
+    /// passed.
+    fn retry(&mut self, error: &RuntimeError) -> Result<bool> {
+        let busy = matches!(
+            error,
+            RuntimeError::Storage(rusqlite::Error::SqliteFailure(failure, _))
+                if matches!(
+                    failure.code,
+                    rusqlite::ErrorCode::DatabaseBusy | rusqlite::ErrorCode::DatabaseLocked
+                )
+        );
+        if !busy {
+            return Ok(false);
+        }
+        let since = *self.0.get_or_insert_with(std::time::Instant::now);
+        if since.elapsed() > BUSY_DEADLINE {
+            return Err(RuntimeError::Limit);
+        }
+        Ok(true)
     }
 }
 
@@ -214,5 +274,169 @@ mod group_tests {
             group_key("one", None, "run").unwrap(),
             group_key("two", None, "run").unwrap()
         );
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::admission::tests::{fixture, ticket};
+    use crate::store::tests::summary;
+    use router_types::{BudgetAmount, RunState, SessionBudgetPolicy, SessionBudgetRule};
+    use std::collections::BTreeMap;
+
+    fn amount(n: u64) -> BudgetAmount {
+        BudgetAmount {
+            cost_microusd: n,
+            tokens: n,
+        }
+    }
+    struct Fixture {
+        temp: tempfile::TempDir,
+        admission: SharedAdmission,
+        store: Store,
+        ticket: Ticket,
+        policy_hash: String,
+    }
+    fn setup() -> Fixture {
+        let (temp, mut registry) = fixture();
+        let policy = SessionBudgetPolicy {
+            schema_version: 1,
+            sessions: BTreeMap::from([(
+                "session".into(),
+                SessionBudgetRule {
+                    initial_limit: amount(100),
+                    parent_ceiling: amount(200),
+                    warning_basis_points: vec![],
+                },
+            )]),
+            runtime_sessions: BTreeMap::from([
+                ("one".into(), "session".into()),
+                ("two".into(), "session".into()),
+            ]),
+        };
+        let policy_hash = registry.initialize_session_budgets(&policy).unwrap();
+        let config = SessionBudgetConfig {
+            schema_version: 1,
+            expected_policy_sha256: session_budget_policy_hash(&policy).unwrap(),
+            session_id: "session".into(),
+            approved_limit: amount(100),
+            attempt_allocation: amount(60),
+        };
+        let store = Store::open(&temp.path().join("runtime")).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        let mut pending = ticket(&registry, "one", "run", "group", "other");
+        pending.session_budget = Some(config.clone());
+        pending.seal().unwrap();
+        let ticket = store.start_admission(pending).unwrap();
+        let admission = SharedAdmission {
+            binding: registry.binding("one").unwrap(),
+            budget: Some(config),
+            _owner: registry.owner("one").unwrap(),
+            registry,
+        };
+        Fixture {
+            temp,
+            admission,
+            store,
+            ticket,
+            policy_hash,
+        }
+    }
+    fn running(f: &Fixture) {
+        let prep = f.store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        f.store.attempt("run", 2, true).unwrap();
+        f.store
+            .transition("run", RunState::Running, "test", None)
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn refused_budget_dispatch_is_refunded_by_the_release() {
+        let f = setup();
+        f.admission
+            .wait(&f.store, &f.ticket, &Cancellation::default())
+            .await
+            .unwrap();
+        running(&f);
+        // Lowering the limit after the grant makes the registry refuse the commit.
+        let review = f
+            .admission
+            .registry
+            .review_session_limit("session", &f.policy_hash, amount(20))
+            .unwrap();
+        f.admission
+            .registry
+            .approve_session_limit(&review, review.approval_digest())
+            .unwrap();
+        assert!(matches!(
+            f.admission.commit_budget(&f.store, "run"),
+            Err(RuntimeError::Budget(BudgetError::Cost))
+        ));
+        f.store.confirm_attempt_cleanup("run").unwrap();
+        f.admission.release(&f.store, &f.ticket).unwrap();
+        let status = f
+            .admission
+            .registry
+            .session_budget_status("session", &f.policy_hash)
+            .unwrap();
+        assert_eq!(status.committed_allocation, amount(0));
+        assert_eq!(status.reserved_allocation, amount(0));
+    }
+    #[test]
+    fn budget_commit_still_charges_when_dispatch_is_accepted() {
+        let f = setup();
+        f.admission.registry.enqueue(&f.ticket).unwrap();
+        let _waiter = f.admission.registry.waiter(&f.ticket).unwrap();
+        assert!(f.admission.registry.poll(&f.ticket).unwrap().is_empty());
+        running(&f);
+        drop(f.admission.commit_budget(&f.store, "run").unwrap());
+        f.store.confirm_attempt_cleanup("run").unwrap();
+        f.admission.release(&f.store, &f.ticket).unwrap();
+        let status = f
+            .admission
+            .registry
+            .session_budget_status("session", &f.policy_hash)
+            .unwrap();
+        assert_eq!(status.committed_allocation, amount(60));
+    }
+    #[tokio::test]
+    async fn wait_retries_registry_busy_instead_of_failing_the_queued_run() {
+        let f = setup();
+        let registry_db = f.temp.path().join("registry").join("admission.sqlite3");
+        let (locked, ready) = std::sync::mpsc::channel();
+        let holder = std::thread::spawn(move || {
+            let db = rusqlite::Connection::open(registry_db).unwrap();
+            db.execute_batch("BEGIN IMMEDIATE").unwrap();
+            locked.send(()).unwrap();
+            // Longer than the registry's own 250 ms busy timeout.
+            std::thread::sleep(std::time::Duration::from_millis(700));
+            db.execute_batch("COMMIT").unwrap();
+        });
+        ready.recv().unwrap();
+        f.admission
+            .wait(&f.store, &f.ticket, &Cancellation::default())
+            .await
+            .unwrap();
+        holder.join().unwrap();
+    }
+    #[test]
+    fn busy_retry_is_bounded_and_ignores_other_errors() {
+        let busy = RuntimeError::Storage(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_BUSY),
+            None,
+        ));
+        let mut retry = BusyRetry::default();
+        assert!(retry.retry(&busy).unwrap());
+        assert!(!retry.retry(&RuntimeError::Locked).unwrap());
+        let mut expired = BusyRetry(Some(
+            std::time::Instant::now() - BUSY_DEADLINE - std::time::Duration::from_secs(1),
+        ));
+        assert!(matches!(expired.retry(&busy), Err(RuntimeError::Limit)));
     }
 }

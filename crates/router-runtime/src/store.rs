@@ -21,6 +21,10 @@ mod preparation;
 pub(crate) use escalation::EscalationHistory;
 pub(crate) use preparation::Preparation;
 
+/// Highest schema this build reads and writes. Migrations below end at this
+/// version; the passive doctor pins its table layout to the same value.
+pub(crate) const SCHEMA_VERSION: u32 = 9;
+
 pub(crate) struct Store {
     db: Mutex<Connection>,
     pub root: PathBuf,
@@ -53,7 +57,7 @@ impl Store {
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 9 {
+        if version > SCHEMA_VERSION {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -675,24 +679,58 @@ impl Store {
         }
         preparation::require_complete(&tx, &run)?;
         run.attempts += 1;
-        let lease = if supervised {
-            let (record, path) = self.leases.create(id, run.attempts)?;
+        let mut created = None;
+        let stored = (|| {
+            if supervised {
+                let (record, path) = match self.leases.create(id, run.attempts) {
+                    Ok(created) => created,
+                    Err(error) => {
+                        // O_EXCL may have succeeded before a later write or sync
+                        // failed. An already existing file is never ours to remove.
+                        let already = matches!(
+                            &error,
+                            RuntimeError::Io(e) if e.kind() == std::io::ErrorKind::AlreadyExists
+                        );
+                        if !already {
+                            self.remove_partial_lease(id, run.attempts);
+                        }
+                        return Err(error);
+                    }
+                };
+                created = Some(path);
+                tx.execute(
+                    "INSERT INTO attempt_leases(run_id,attempt,record) VALUES(?1,?2,?3)",
+                    params![id, run.attempts, serde_json::to_string(&record)?],
+                )?;
+            }
             tx.execute(
-                "INSERT INTO attempt_leases(run_id,attempt,record) VALUES(?1,?2,?3)",
-                params![id, run.attempts, serde_json::to_string(&record)?],
+                "INSERT INTO run_attempts VALUES(?1,?2,'started')",
+                params![id, run.attempts],
             )?;
-            Some(path)
-        } else {
-            None
+            save(&tx, &run)?;
+            append(&tx, &run, "attempt.started", "")?;
+            tx.commit()?;
+            Ok::<(), RuntimeError>(())
+        })();
+        // The lease file is created before the journal commits. A failed or
+        // rolled back attempt must not leave it, or the next attempt with the
+        // same number would fail with EEXIST forever. Fail closed: a missing
+        // file with a committed record reads as CleanupUnknown.
+        if let Err(error) = stored {
+            if let Some(path) = created {
+                let _ = fs::remove_file(path);
+            }
+            return Err(error);
+        }
+        Ok(created)
+    }
+    /// Best effort removal of a lease file left by a failed `LeaseStorage::create`,
+    /// only when it is a single-link regular file of this user.
+    fn remove_partial_lease(&self, id: &str, attempt: u32) {
+        let Ok(digest) = digest("runtime-lease-v1", &(id, attempt)) else {
+            return;
         };
-        tx.execute(
-            "INSERT INTO run_attempts VALUES(?1,?2,'started')",
-            params![id, run.attempts],
-        )?;
-        save(&tx, &run)?;
-        append(&tx, &run, "attempt.started", "")?;
-        tx.commit()?;
-        Ok(lease)
+        remove_owned_regular_file(&self.root.join("leases").join(format!("{digest}.lease")));
     }
     pub fn confirm_attempt_cleanup(&self, id: &str) -> Result<()> {
         let mut db = self.lock()?;
@@ -773,15 +811,31 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
+    /// Workspaces and scopes are compared after LEXICAL normalization only:
+    /// repeated or trailing slashes and `.` components. Symlinked workspaces or
+    /// nested ones (`/repo` vs `/repo/sub`) are not detected, as before. `..` is
+    /// refused. A `writer_locks` row persisted with `..` in its workspace (written
+    /// by an older build) now makes every new `writer_lock` fail with
+    /// `Integrity("writer lock workspace")` until that row is released.
     pub fn writer_lock(&self, id: &str, workspace: &str, scope: &[String]) -> Result<()> {
+        let workspace = lexical_path(workspace).ok_or(RuntimeError::Scope)?;
+        if scope.iter().any(|entry| lexical_path(entry).is_none()) {
+            return Err(RuntimeError::Scope);
+        }
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        let mut query =
-            tx.prepare("SELECT scope FROM writer_locks WHERE workspace=?1 AND run_id<>?2")?;
-        let scopes = query
-            .query_map(params![workspace, id], |r| r.get::<_, String>(0))?
+        let mut query = tx.prepare("SELECT workspace,scope FROM writer_locks WHERE run_id<>?1")?;
+        let rows = query
+            .query_map(params![id], |r| {
+                Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?))
+            })?
             .collect::<std::result::Result<Vec<_>, _>>()?;
-        for other in scopes {
+        for (other_workspace, other) in rows {
+            let other_workspace = lexical_path(&other_workspace)
+                .ok_or(RuntimeError::Integrity("writer lock workspace"))?;
+            if other_workspace != workspace {
+                continue;
+            }
             let other: Vec<String> = serde_json::from_str(&other)?;
             if scope.iter().any(|a| other.iter().any(|b| overlaps(a, b))) {
                 return Err(RuntimeError::Scope);
@@ -853,6 +907,20 @@ impl Store {
     }
     pub fn events(&self) -> Result<Vec<RuntimeEvent>> {
         read_events(&*self.lock()?)
+    }
+    /// Writes through the real `append` in one transaction, so a test can
+    /// cross a row cap without thousands of synchronous commits.
+    #[cfg(test)]
+    pub(crate) fn append_events_for_test(&self, id: &str, count: usize) {
+        let mut db = self.lock().unwrap();
+        let tx = db
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)
+            .unwrap();
+        let run = load_opt(&tx, id).unwrap().unwrap();
+        for _ in 0..count {
+            append(&tx, &run, "test.event", "").unwrap();
+        }
+        tx.commit().unwrap();
     }
     pub fn verify_events(&self) -> Result<()> {
         verify_events(&*self.lock()?)
@@ -1029,10 +1097,48 @@ fn event_digest(event: &RuntimeEvent) -> Result<String> {
         ),
     )
 }
+fn remove_owned_regular_file(path: &Path) {
+    use std::os::unix::fs::MetadataExt;
+    let Ok(meta) = fs::symlink_metadata(path) else {
+        return;
+    };
+    // Ownership is judged against the private lease directory holding the file.
+    let owner = path
+        .parent()
+        .and_then(|dir| fs::symlink_metadata(dir).ok())
+        .map(|dir| dir.uid());
+    if meta.is_file() && meta.nlink() == 1 && owner == Some(meta.uid()) {
+        let _ = fs::remove_file(path);
+    }
+}
+/// Lexical normal form: repeated and trailing slashes and `.` components
+/// vanish. `..` cannot be resolved without the filesystem, so it is refused.
+fn lexical_path(path: &str) -> Option<String> {
+    let mut parts = Vec::new();
+    for part in path.split('/') {
+        match part {
+            "" | "." => {}
+            ".." => return None,
+            other => parts.push(other),
+        }
+    }
+    let joined = parts.join("/");
+    Some(if path.starts_with('/') {
+        format!("/{joined}")
+    } else {
+        joined
+    })
+}
+/// Component-wise overlap: equal paths or one an ancestor of the other, after
+/// lexical normalization. A path that cannot be normalized overlaps everything.
 pub(crate) fn overlaps(a: &str, b: &str) -> bool {
-    a == b
-        || a.strip_prefix(b).is_some_and(|s| s.starts_with('/'))
-        || b.strip_prefix(a).is_some_and(|s| s.starts_with('/'))
+    let (Some(a), Some(b)) = (lexical_path(a), lexical_path(b)) else {
+        return true;
+    };
+    let a: Vec<_> = a.split('/').filter(|p| !p.is_empty()).collect();
+    let b: Vec<_> = b.split('/').filter(|p| !p.is_empty()).collect();
+    let shared = a.len().min(b.len());
+    a[..shared] == b[..shared]
 }
 // Closing any auxiliary FD for an existing database discards this process's
 // POSIX locks, including locks held by other live SQLite connections. Inspect
@@ -1136,8 +1242,9 @@ pub fn request_cancel(root: &Path, id: &str) -> Result<()> {
     ) {
         return Err(RuntimeError::Transition);
     }
-    tx.execute("INSERT OR IGNORE INTO control_requests VALUES(?1,1)", [id])?;
-    append(&tx, &run, "control.cancel_requested", "")?;
+    if tx.execute("INSERT OR IGNORE INTO control_requests VALUES(?1,1)", [id])? > 0 {
+        append(&tx, &run, "control.cancel_requested", "")?;
+    }
     if matches!(
         run.state,
         RunState::Planned | RunState::AwaitingApproval | RunState::Queued
@@ -1174,59 +1281,57 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2..=9
+        2..=SCHEMA_VERSION
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
     Ok(db)
 }
 
+fn event_from_row(r: &rusqlite::Row<'_>) -> Result<RuntimeEvent> {
+    Ok(RuntimeEvent {
+        sequence: r.get(0)?,
+        run_id: r.get(1)?,
+        kind: r.get(2)?,
+        state: serde_json::from_str(&r.get::<_, String>(3)?)?,
+        detail: r.get(4)?,
+        previous_hash: r.get(5)?,
+        event_hash: r.get(6)?,
+    })
+}
 fn read_events(db: &Connection) -> Result<Vec<RuntimeEvent>> {
     let mut q=db.prepare("SELECT sequence,run_id,kind,state,detail,previous_hash,event_hash FROM events ORDER BY sequence")?;
-    let rows = q
-        .query_map([], |r| {
-            Ok((
-                r.get::<_, u64>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, String>(2)?,
-                r.get::<_, String>(3)?,
-                r.get::<_, String>(4)?,
-                r.get::<_, String>(5)?,
-                r.get::<_, String>(6)?,
-            ))
-        })?
-        .collect::<std::result::Result<Vec<_>, _>>()?;
-    rows.into_iter()
-        .map(
-            |(sequence, run_id, kind, state, detail, previous_hash, event_hash)| {
-                Ok(RuntimeEvent {
-                    sequence,
-                    run_id,
-                    kind,
-                    state: serde_json::from_str(&state)?,
-                    detail,
-                    previous_hash,
-                    event_hash,
-                })
-            },
-        )
-        .collect()
+    let mut rows = q.query([])?;
+    let mut events = Vec::new();
+    while let Some(row) = rows.next()? {
+        events.push(event_from_row(row)?);
+    }
+    Ok(events)
 }
 fn verify_events(db: &Connection) -> Result<()> {
     verify_diagnostic_events(db, &mut 0)
 }
 pub(crate) fn verify_diagnostic_events(db: &Connection, queries: &mut usize) -> Result<()> {
     *queries += 1;
+    // Rows are verified as they stream out of SQLite: no row count is refused
+    // and memory stays constant. Work is bounded by the caller's snapshot size.
     let mut previous = String::new();
-    for (index, event) in read_events(db)?.iter().enumerate() {
-        if event.sequence != index as u64 + 1
+    let mut expected = 0u64;
+    let mut q=db.prepare("SELECT sequence,run_id,kind,state,detail,previous_hash,event_hash FROM events ORDER BY sequence")?;
+    let mut rows = q.query([])?;
+    while let Some(row) = rows.next()? {
+        let event = event_from_row(row)?;
+        expected += 1;
+        if event.sequence != expected
             || event.previous_hash != previous
-            || event.event_hash != event_digest(event)?
+            || event.event_hash != event_digest(&event)?
         {
             return Err(RuntimeError::Integrity("event chain"));
         }
-        previous = event.event_hash.clone();
+        previous = event.event_hash;
     }
+    drop(rows);
+    drop(q);
     // Older schemas have no generated authority. Their legacy records remain
     // readable; the v7 migration never infers a generated pin from mutable data.
     *queries += 1;
@@ -1388,9 +1493,9 @@ fn verify_plan_pin(
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
-    pub(super) fn summary(id: &str) -> RunSummary {
+    pub(crate) fn summary(id: &str) -> RunSummary {
         RunSummary {
             run_id: id.into(),
             definition_hash: "a".repeat(64),
@@ -1846,5 +1951,153 @@ mod tests {
         store
             .writer_lock("two", "/fixture/repo", &["tests".into()])
             .unwrap();
+    }
+    #[test]
+    fn writer_lock_compares_normalized_workspaces_and_component_scopes() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("data")).unwrap();
+        for id in ["one", "two", "three"] {
+            store.register(&summary(id)).unwrap();
+        }
+        store.writer_lock("one", "/repo", &["src/".into()]).unwrap();
+        for (workspace, scope) in [
+            ("/repo/", "src/a"),
+            ("/repo//", "src//x"),
+            ("/repo/./", "src/./x"),
+            ("/repo", "./src"),
+            ("/repo", "src"),
+        ] {
+            assert!(
+                matches!(
+                    store.writer_lock("two", workspace, &[scope.into()]),
+                    Err(RuntimeError::Scope)
+                ),
+                "{workspace} {scope}"
+            );
+        }
+        // A sibling that merely shares a string prefix is not an overlap.
+        store
+            .writer_lock("two", "/repo/", &["src2".into()])
+            .unwrap();
+        // Unresolvable components are refused rather than compared.
+        assert!(matches!(
+            store.writer_lock("three", "/repo", &["src/../tests".into()]),
+            Err(RuntimeError::Scope)
+        ));
+        assert!(matches!(
+            store.writer_lock("three", "/repo/../other", &["docs".into()]),
+            Err(RuntimeError::Scope)
+        ));
+        assert!(overlaps("src/", "src/a"));
+        assert!(!overlaps("src", "srcs"));
+    }
+    #[test]
+    fn partial_lease_removal_only_touches_owned_regular_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let file = temp.path().join("a.lease");
+        fs::write(&file, b"pending").unwrap();
+        remove_owned_regular_file(&file);
+        assert!(!file.exists());
+        let target = temp.path().join("target");
+        fs::write(&target, b"keep").unwrap();
+        let link = temp.path().join("b.lease");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+        remove_owned_regular_file(&link);
+        assert!(link.symlink_metadata().is_ok() && target.exists());
+        let dir = temp.path().join("c.lease");
+        fs::create_dir(&dir).unwrap();
+        remove_owned_regular_file(&dir);
+        assert!(dir.is_dir());
+        let first = temp.path().join("d.lease");
+        fs::write(&first, b"x").unwrap();
+        fs::hard_link(&first, temp.path().join("e.lease")).unwrap();
+        remove_owned_regular_file(&first);
+        assert!(first.exists());
+        remove_owned_regular_file(&temp.path().join("missing.lease"));
+    }
+    #[test]
+    fn existing_lease_file_is_not_removed_when_create_reports_exists() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap().join("data");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        let (_, path) = store.leases.create("run", 1).unwrap();
+        assert!(matches!(
+            store.attempt("run", 3, true),
+            Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists
+        ));
+        assert!(path.exists(), "a pre-existing lease must survive");
+    }
+    #[test]
+    fn repeated_cancel_request_appends_one_event() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap().join("data");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [
+            RunState::AwaitingApproval,
+            RunState::Queued,
+            RunState::Preparing,
+        ] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        request_cancel(&root, "run").unwrap();
+        let before = store.events().unwrap();
+        request_cancel(&root, "run").unwrap();
+        request_cancel(&root, "run").unwrap();
+        assert_eq!(store.events().unwrap(), before);
+        assert_eq!(
+            before
+                .iter()
+                .filter(|event| event.kind == "control.cancel_requested")
+                .count(),
+            1
+        );
+    }
+    #[test]
+    fn failed_attempt_commit_leaves_no_lease_file_and_can_be_retried() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().canonicalize().unwrap().join("data");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        // Fault injection: a conflicting row makes the INSERT that follows the
+        // lease creation fail, so the transaction rolls back after the file exists.
+        store
+            .lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO attempt_leases(run_id,attempt,record) VALUES('run',1,'{}')",
+                [],
+            )
+            .unwrap();
+        assert!(matches!(
+            store.attempt("run", 3, true),
+            Err(RuntimeError::Storage(_))
+        ));
+        let leftovers = fs::read_dir(root.join("leases")).unwrap().count();
+        assert_eq!(leftovers, 0, "rolled back attempt left a lease file");
+        assert_eq!(store.get("run").unwrap().attempts, 0);
+        store
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM attempt_leases", [])
+            .unwrap();
+        let path = store.attempt("run", 3, true).unwrap().unwrap();
+        assert!(path.exists());
+        assert_eq!(store.get("run").unwrap().attempts, 1);
     }
 }

@@ -121,11 +121,20 @@ fn exact_review_rejects_stale_state_replay_wrong_digest_and_parent_override() {
         s.approve_session_limit(&old, old.approval_digest()),
         Err(RuntimeError::Budget(BudgetError::Stale))
     ));
-    assert!(s.review_session_limit("session", &h, amount(201)).is_err());
+    assert!(matches!(
+        s.review_session_limit("session", &h, amount(201)),
+        Err(RuntimeError::Budget(BudgetError::Policy))
+    ));
     let r = s.review_session_limit("session", &h, amount(160)).unwrap();
-    assert!(s.approve_session_limit(&r, &"f".repeat(64)).is_err());
+    assert!(matches!(
+        s.approve_session_limit(&r, &"f".repeat(64)),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
     s.approve_session_limit(&r, r.approval_digest()).unwrap();
-    assert!(s.approve_session_limit(&r, r.approval_digest()).is_err());
+    assert!(matches!(
+        s.approve_session_limit(&r, r.approval_digest()),
+        Err(RuntimeError::Budget(BudgetError::Stale))
+    ));
 }
 #[test]
 fn increased_current_limit_never_enlarges_old_definition_authority() {
@@ -212,15 +221,24 @@ fn warnings_are_deduplicated_per_revision_and_observation_remains_unknown() {
 fn initialization_refuses_live_owner_history_and_missing_assignment() {
     let (_t, mut s) = fixture();
     let owner = s.owner("one").unwrap();
-    assert!(s.initialize_session_budgets(&policy()).is_err());
+    assert!(matches!(
+        s.initialize_session_budgets(&policy()),
+        Err(RuntimeError::Locked)
+    ));
     drop(owner);
     let a = ticket(&s, "one", "a", "a", "other");
     s.enqueue(&a).unwrap();
-    assert!(s.initialize_session_budgets(&policy()).is_err());
+    assert!(matches!(
+        s.initialize_session_budgets(&policy()),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
     let (_t, mut s) = fixture();
     let mut p = policy();
     p.runtime_sessions.remove("two");
-    assert!(s.initialize_session_budgets(&p).is_err());
+    assert!(matches!(
+        s.initialize_session_budgets(&p),
+        Err(RuntimeError::Budget(BudgetError::Policy))
+    ));
     assert!(s.budget_policy.is_none());
 }
 #[test]
@@ -228,16 +246,28 @@ fn unknown_session_absent_authority_and_stale_cached_domain_are_refused() {
     let (temp, mut s) = fixture();
     let stale = AdmissionStore::open(&temp.path().join("registry"), s.policy_hash()).unwrap();
     s.initialize_session_budgets(&policy()).unwrap();
-    assert!(stale.status().is_err());
-    assert!(s.validate_budget_config("one", None).is_err());
+    assert!(matches!(
+        stale.status(),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
+    assert!(matches!(
+        s.validate_budget_config("one", None),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
     let mut t = request(&s, "one", "a", 1);
     t.session_budget.as_mut().unwrap().session_id = "invented".into();
     t.seal().unwrap();
-    assert!(s.enqueue(&t).is_err());
+    assert!(matches!(
+        s.enqueue(&t),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
     let mut t = request(&s, "one", "b", 1);
     t.session_budget.as_mut().unwrap().expected_policy_sha256 = "f".repeat(64);
     t.seal().unwrap();
-    assert!(s.enqueue(&t).is_err());
+    assert!(matches!(
+        s.enqueue(&t),
+        Err(RuntimeError::Budget(BudgetError::Authority))
+    ));
 }
 #[test]
 fn projection_and_reservation_tampering_are_refused() {
@@ -245,7 +275,10 @@ fn projection_and_reservation_tampering_are_refused() {
     let db = s.lock().unwrap();
     db.execute("UPDATE budget_sessions SET json=replace(json,'\"limit_revision\":1','\"limit_revision\":2')",[]).unwrap();
     drop(db);
-    assert!(status_result(&s, &h).is_err());
+    assert!(matches!(
+        status_result(&s, &h),
+        Err(RuntimeError::Integrity(_))
+    ));
 }
 fn status_result(s: &AdmissionStore, h: &str) -> Result<SessionBudgetStatus> {
     s.session_budget_status("session", h)
@@ -267,10 +300,16 @@ fn token_dimension_and_numeric_bounds_are_independent() {
     assert_eq!(status(&s, &h).reserved_allocation, amount(0));
     let mut p = policy();
     p.sessions.get_mut("session").unwrap().parent_ceiling.tokens = u64::MAX;
-    assert!(session_budget_policy_hash(&p).is_err());
+    assert!(matches!(
+        session_budget_policy_hash(&p),
+        Err(RuntimeError::Budget(BudgetError::Policy))
+    ));
     p = policy();
     p.sessions.get_mut("session").unwrap().warning_basis_points = vec![5000, 5000];
-    assert!(session_budget_policy_hash(&p).is_err());
+    assert!(matches!(
+        session_budget_policy_hash(&p),
+        Err(RuntimeError::Budget(BudgetError::Policy))
+    ));
 }
 #[test]
 fn budget_subprocess_helper() {
@@ -404,4 +443,171 @@ fn closing_independent_observer_never_unlinks_a_live_writers_wal() {
         amount(60),
         "an observer must see the committed allocation from the still-live owner"
     );
+}
+#[test]
+fn budget_arithmetic_refuses_overflow_and_underflow_in_each_dimension() {
+    use super::budget::{add, sub};
+    let limit = i64::MAX as u64;
+    let both = |cost_microusd, tokens| BudgetAmount {
+        cost_microusd,
+        tokens,
+    };
+    assert_eq!(add(amount(1), amount(2)).unwrap(), amount(3));
+    assert_eq!(sub(amount(3), amount(2)).unwrap(), amount(1));
+    // u64 wraparound and the i64 storage ceiling are both refused, per dimension.
+    for (a, b) in [
+        (both(u64::MAX, 0), both(1, 0)),
+        (both(0, u64::MAX), both(0, 1)),
+        (both(limit, 0), both(1, 0)),
+        (both(0, limit), both(0, 1)),
+    ] {
+        assert!(matches!(add(a, b), Err(RuntimeError::Limit)));
+    }
+    assert_eq!(add(both(limit - 1, 0), both(1, 0)).unwrap(), both(limit, 0));
+    for (a, b) in [(both(0, 5), both(1, 0)), (both(5, 0), both(0, 1))] {
+        assert!(matches!(
+            sub(a, b),
+            Err(RuntimeError::Budget(BudgetError::Unknown))
+        ));
+    }
+}
+#[test]
+fn pruning_settled_tickets_keeps_committed_accounting_and_replayed_release() {
+    let (_t, mut s, h) = setup();
+    s.retain_released = 2;
+    let _o = s.owner("one").unwrap();
+    let mut first = None;
+    for i in 0..10 {
+        let t = request(&s, "one", &format!("r{i}"), 5);
+        let _w = s.waiter(&t).unwrap();
+        s.enqueue(&t).unwrap();
+        assert!(s.poll(&t).unwrap().is_empty());
+        // Every other cycle dispatches (committed), the rest never spawn (refunded).
+        if i % 2 == 0 {
+            drop(s.commit_budget(&t).unwrap());
+        }
+        let mut proof = ReleaseProof::checked(t.clone(), None);
+        proof.budget_armed = i % 2 == 0;
+        s.release(&proof).unwrap();
+        first.get_or_insert(t);
+        let status = status(&s, &h);
+        assert_eq!(status.committed_allocation, amount(5 * (i as u64 / 2 + 1)));
+        assert_eq!(status.reserved_allocation, amount(0));
+    }
+    assert_eq!(s.status().unwrap().released, 3);
+    // The oldest ticket is pruned; replaying its armed release is a no-op.
+    let first = first.unwrap();
+    let mut proof = ReleaseProof::checked(first, None);
+    proof.budget_armed = true;
+    s.release(&proof).unwrap();
+    assert_eq!(status(&s, &h).committed_allocation, amount(25));
+    // Reopening re-verifies counters against reservations plus folded rows.
+    let reopened =
+        AdmissionStore::open(_t.path().join("registry").as_path(), s.policy_hash()).unwrap();
+    assert_eq!(
+        reopened
+            .session_budget_status("session", &h)
+            .unwrap()
+            .committed_allocation,
+        amount(25)
+    );
+}
+#[test]
+fn version_two_registry_migrates_to_three_and_future_versions_are_refused() {
+    let (t, s, h) = setup();
+    let root = t.path().join("registry");
+    let version = |s: &AdmissionStore| {
+        s.db.lock()
+            .unwrap()
+            .pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))
+            .unwrap()
+    };
+    assert_eq!(version(&s), 3);
+    let pin = s.policy_hash().to_owned();
+    let v3 = AdmissionStore::open(&root, &pin).unwrap();
+    assert_eq!(
+        v3.session_budget_status("session", &h).unwrap().limit,
+        amount(100)
+    );
+    drop(v3);
+    let db = rusqlite::Connection::open(root.join("admission.sqlite3")).unwrap();
+    db.execute_batch("DROP TABLE budget_folded; DROP TABLE budget_pruned; PRAGMA user_version=2;")
+        .unwrap();
+    let migrated = AdmissionStore::open(&root, &pin).unwrap();
+    assert_eq!(version(&migrated), 3);
+    assert!(
+        db.query_row("SELECT count(*) FROM budget_folded", [], |r| r
+            .get::<_, u32>(0))
+            .is_ok()
+    );
+    assert_eq!(
+        migrated.session_budget_status("session", &h).unwrap().limit,
+        amount(100)
+    );
+    drop(migrated);
+    db.execute_batch("PRAGMA user_version=4;").unwrap();
+    assert!(matches!(
+        AdmissionStore::open(&root, &pin),
+        Err(RuntimeError::Integrity("admission schema"))
+    ));
+}
+#[test]
+fn concurrent_opens_of_a_version_two_registry_both_migrate() {
+    let (t, s, _h) = setup();
+    let root = t.path().join("registry");
+    let pin = s.policy_hash().to_owned();
+    drop(s);
+    let db = rusqlite::Connection::open(root.join("admission.sqlite3")).unwrap();
+    db.execute_batch("DROP TABLE budget_folded; DROP TABLE budget_pruned; PRAGMA user_version=2;")
+        .unwrap();
+    drop(db);
+    let barrier = std::sync::Arc::new(std::sync::Barrier::new(2));
+    let opens: Vec<_> = (0..2)
+        .map(|_| {
+            let (root, pin, barrier) = (root.clone(), pin.clone(), barrier.clone());
+            std::thread::spawn(move || {
+                barrier.wait();
+                AdmissionStore::open(&root, &pin).map(|_| ())
+            })
+        })
+        .collect();
+    for open in opens {
+        open.join().unwrap().unwrap();
+    }
+}
+#[test]
+fn armed_release_without_reservation_stays_unknown_unless_the_ticket_was_pruned() {
+    let (_t, mut s, h) = setup();
+    s.retain_released = 1;
+    let _o = s.owner("one").unwrap();
+    for i in 0..4 {
+        let t = request(&s, "one", &format!("r{i}"), 5);
+        let _w = s.waiter(&t).unwrap();
+        s.enqueue(&t).unwrap();
+        assert!(s.poll(&t).unwrap().is_empty());
+        drop(s.commit_budget(&t).unwrap());
+        let mut proof = ReleaseProof::checked(t, None);
+        proof.budget_armed = true;
+        s.release(&proof).unwrap();
+    }
+    let armed = |t: Ticket| {
+        let mut proof = ReleaseProof::checked(t, None);
+        proof.budget_armed = true;
+        proof
+    };
+    // Live ticket that never received a reservation.
+    let live = request(&s, "one", "live", 5);
+    let _w = s.waiter(&live).unwrap();
+    s.enqueue(&live).unwrap();
+    assert!(matches!(
+        s.release(&armed(live)),
+        Err(RuntimeError::Budget(BudgetError::Unknown))
+    ));
+    // Never registered ticket, in a session that does have folded rows.
+    let ghost = request(&s, "one", "ghost", 5);
+    assert!(matches!(
+        s.release(&armed(ghost)),
+        Err(RuntimeError::Budget(BudgetError::Unknown))
+    ));
+    assert_eq!(status(&s, &h).committed_allocation, amount(20));
 }

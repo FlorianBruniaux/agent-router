@@ -18,7 +18,12 @@ pub(crate) use runtime::SharedAdmission;
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, path::Path};
 
+/// Bounds LIVE (waiting or granted) tickets, not lifetime rows: settled rows are
+/// pruned past `MAX_RETAINED_RELEASED` inside the enqueue transaction. See
+/// docs/adr/0017-bounded-retention-and-publish-durability.md.
 const MAX_TICKETS: u32 = 4096;
+/// Most recent released tickets kept for status and idempotent reconciliation.
+const MAX_RETAINED_RELEASED: u32 = 512;
 const MAX_IDENTITIES: usize = 128;
 const MAX_CAPACITY: u32 = 32;
 

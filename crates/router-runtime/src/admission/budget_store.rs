@@ -85,7 +85,7 @@ pub(super) fn load(
         }
     }
     let count: u64 = db.query_row("SELECT count(*) FROM budget_reservations", [], |r| r.get(0))?;
-    if count > u64::from(MAX_TICKETS) {
+    if count > u64::from(MAX_TICKETS + MAX_RETAINED_RELEASED) {
         return Err(RuntimeError::Limit);
     }
     if db.prepare("SELECT 1 FROM budget_reservations WHERE length(ticket)>64 OR length(session)>160 OR length(state)>16 OR length(amount)>512 LIMIT 1")?.exists([])?{return Err(RuntimeError::Limit)}
@@ -131,6 +131,13 @@ pub(super) fn load(
     if seen != count {
         return Err(RuntimeError::Integrity("budget missing ticket"));
     }
+    for (session, folded) in folded_amounts(db)? {
+        if !states.contains_key(&session) {
+            return Err(RuntimeError::Integrity("budget folded session"));
+        }
+        let sum = sums.entry(session).or_default();
+        sum.1 = add(sum.1, folded.committed)?;
+    }
     for (id, state) in &states {
         let (reserved, committed) = sums.get(id).copied().unwrap_or_default();
         if state.reserved_allocation != reserved || state.committed_allocation != committed {
@@ -138,6 +145,128 @@ pub(super) fn load(
         }
     }
     Ok(states)
+}
+/// Registry schema v3. Committed allocation of pruned tickets, per session.
+/// `budget_pruned` remembers the newest pruned reservation ids, so a replayed
+/// release of a pruned ticket is told apart from a forged or lost reservation.
+pub(super) const CREATE_FOLDED: &str = "CREATE TABLE IF NOT EXISTS budget_folded(session TEXT PRIMARY KEY REFERENCES budget_sessions(id),cost INTEGER NOT NULL,tokens INTEGER NOT NULL);CREATE TABLE IF NOT EXISTS budget_pruned(n INTEGER PRIMARY KEY AUTOINCREMENT,ticket TEXT NOT NULL UNIQUE);";
+/// A replayed release needs its tombstone only across a crash window of a few
+/// runs; older ones fall out and fail closed with `BudgetError::Unknown`.
+const MAX_TOMBSTONES: i64 = 4096;
+struct Folded {
+    committed: BudgetAmount,
+}
+fn folded_table_exists(db: &Connection) -> Result<bool> {
+    Ok(db.query_row(
+        "SELECT count(*)=1 FROM sqlite_schema WHERE type='table' AND name='budget_folded'",
+        [],
+        |r| r.get(0),
+    )?)
+}
+/// Committed allocation of pruned tickets, per session, bounded by the number
+/// of sessions. A missing table (registry without budgets) means none.
+fn folded_amounts(db: &Connection) -> Result<Vec<(String, Folded)>> {
+    if !folded_table_exists(db)? {
+        return Ok(vec![]);
+    }
+    let mut q = db.prepare("SELECT session,cost,tokens FROM budget_folded LIMIT 129")?;
+    let rows = q
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, i64>(2)?,
+            ))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    if rows.len() > MAX_IDENTITIES {
+        return Err(RuntimeError::Limit);
+    }
+    rows.into_iter()
+        .map(|(session, cost, tokens)| {
+            let (Ok(cost_microusd), Ok(tokens)) = (u64::try_from(cost), u64::try_from(tokens))
+            else {
+                return Err(RuntimeError::Integrity("budget folded amount"));
+            };
+            Ok((
+                session,
+                Folded {
+                    committed: BudgetAmount {
+                        cost_microusd,
+                        tokens,
+                    },
+                },
+            ))
+        })
+        .collect()
+}
+fn was_pruned(tx: &Transaction<'_>, ticket: &str) -> Result<bool> {
+    Ok(tx
+        .prepare("SELECT 1 FROM budget_pruned WHERE ticket=?1")?
+        .exists([ticket])?)
+}
+/// Deletes released tickets older than the newest `retain`, in the caller's
+/// IMMEDIATE transaction, so live caps bound live rows. A committed reservation
+/// is folded into `budget_folded` first: counters stay verifiable. A ticket whose
+/// reservation is still `reserved` is never pruned. Rationale:
+/// docs/adr/0017-bounded-retention-and-publish-durability.md.
+pub(super) fn prune_settled(tx: &Transaction<'_>, retain: u32, budget: bool) -> Result<()> {
+    let released: u32 = tx.query_row(
+        "SELECT count(*) FROM tickets WHERE state='released'",
+        [],
+        |r| r.get(0),
+    )?;
+    if released <= retain {
+        return Ok(());
+    }
+    let ids = tx
+        .prepare("SELECT id FROM tickets WHERE state='released' ORDER BY sequence DESC LIMIT -1 OFFSET ?1")?
+        .query_map([retain], |r| r.get::<_, String>(0))?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    for id in ids {
+        if budget {
+            let reservation: Option<(String, String, String)> = tx
+                .query_row(
+                    "SELECT session,state,amount FROM budget_reservations WHERE ticket=?1",
+                    [&id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .optional()?;
+            if let Some((session, state, amount)) = reservation {
+                let amount: BudgetAmount = serde_json::from_str(&amount)?;
+                let (cost, tokens) = match state.as_str() {
+                    "reserved" => continue,
+                    "committed" => (amount.cost_microusd, amount.tokens),
+                    _ => (0, 0),
+                };
+                let prior = folded_amounts(tx)?
+                    .into_iter()
+                    .find(|(s, _)| *s == session)
+                    .map(|(_, f)| f);
+                let total = add(
+                    prior.map_or_else(BudgetAmount::default, |f| f.committed),
+                    BudgetAmount {
+                        cost_microusd: cost,
+                        tokens,
+                    },
+                )?;
+                tx.execute(
+                    "INSERT INTO budget_folded VALUES(?1,?2,?3) ON CONFLICT(session) DO UPDATE SET cost=excluded.cost,tokens=excluded.tokens",
+                    params![session, total.cost_microusd as i64, total.tokens as i64],
+                )?;
+                tx.execute("INSERT INTO budget_pruned(ticket) VALUES(?1)", [&id])?;
+                tx.execute("DELETE FROM budget_reservations WHERE ticket=?1", [&id])?;
+            }
+        }
+        tx.execute("DELETE FROM tickets WHERE id=?1", [&id])?;
+    }
+    if budget {
+        tx.execute(
+            "DELETE FROM budget_pruned WHERE n <= (SELECT max(n) FROM budget_pruned)-?1",
+            [MAX_TOMBSTONES],
+        )?;
+    }
+    Ok(())
 }
 pub(super) fn persist(
     tx: &Transaction<'_>,
@@ -345,6 +474,10 @@ pub(super) fn release(
     match status.as_deref() {
         Some("committed" | "released") => Ok(()),
         None if !proof.budget_armed => Ok(()),
+        // Pruned settled reservation, recorded in `budget_pruned`; its committed
+        // amount lives in `budget_folded`. Replay is a no-op. Any other missing
+        // reservation for an armed ticket stays Unknown.
+        None if was_pruned(tx, &ticket.id)? => Ok(()),
         Some("reserved") if proof.budget_armed => commit(tx, ticket, policy, registry, false),
         Some("reserved") => {
             tx.execute(
