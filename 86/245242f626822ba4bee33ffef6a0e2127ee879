@@ -1,0 +1,71 @@
+CHANGELOG.md
+  s_00c6bf8ee605be::t_7639bbaf2818f5 43,70
+Cargo.lock
+  s_00c6bf8ee605be::t_8e1cbaeb24f66e 911
+crates/router-decision/src/http.rs
+  s_00c6bf8ee605be::t_7d3233273476bd 178-183,191-194
+crates/router-decision/src/sidecar.rs
+  s_00c6bf8ee605be::t_9e5f671d7c51ee 69-81
+crates/router-decision/tests/backends.rs
+  s_00c6bf8ee605be::t_1fad8750f1f190 292-355
+crates/router-local-api/src/server.rs
+  s_00c6bf8ee605be::t_abefe269e2a552 118-123,274-275,278,322,336,338,344
+docs/adr/0014-loopback-provider-transport.md
+  s_00c6bf8ee605be::t_f402bb2a2dab11 31,47-50,53-56,59-60
+docs/backends.md
+  s_00c6bf8ee605be::t_a8e5d0e998f9c0 44-48
+docs/completion.md
+  s_00c6bf8ee605be::t_fd9ccf893f8034 307,316-321
+docs/local-api.md
+  s_00c6bf8ee605be::t_6345a7ec27411f 64,74-80
+docs/provider-transport.md
+  s_00c6bf8ee605be::t_34fbd79d1770dc 38-42,72,83,85-86,100-102,126-130
+docs/remaining-acceptance.md
+  s_00c6bf8ee605be::t_79a4273ed0d5ca 155-161,227
+fuzz/Cargo.lock
+  s_00c6bf8ee605be::t_cf5ba095dd24db 419
+integrations/bridge-contract/Cargo.toml
+  s_00c6bf8ee605be::t_06f68a7ecd81d8 13,24
+integrations/bridge-contract/src/stream.rs
+  s_c33adcccf5d7e1::t_417683a1a18c94 10-18,144-145
+integrations/bridge-contract/src/transport.rs
+  s_c33adcccf5d7e1::t_e5e402758ce1e2 17-18,61-64,77-78,83-85,146-148,153,157,185,196,198-204,206-210,217-226,229,247-253,255,314-324
+integrations/bridge-contract/src/transport/http.rs
+  s_c33adcccf5d7e1::t_74f4adcc251f42 14-15,21-23,34-39,75-80,115,155-158,160-163,229,239,249-259
+integrations/bridge-contract/src/transport/redact.rs
+  s_2b47aafd5c6e51::t_6165233dbf989b 4,13-22,25,27-30,51-59,66-70,72,75,81,83,87-94,100-106,109,112,114-117,134-135,140-141,144-149,152-158,161-162,164-165,168-170,172-191,193-210,212-224,226-234
+integrations/bridge-contract/tests/loopback.rs
+  s_00c6bf8ee605be::t_ebbeba64f4bf4d 1471-1696
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "86245242f626822ba4bee33ffef6a0e2127ee879",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_c33adcccf5d7e1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2d0d8ee4-ae1b-4183-aace-257e53d5fd17",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
