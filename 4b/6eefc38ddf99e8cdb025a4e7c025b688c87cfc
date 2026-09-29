@@ -1,0 +1,47 @@
+crates/router-runtime/src/admission/budget.rs
+  s_00c6bf8ee605be::t_f4869778201d82 96,141-142
+crates/router-runtime/src/admission/budget_store.rs
+  s_00c6bf8ee605be::t_36364cac872727 88,134-140,149-270,477-480
+crates/router-runtime/src/admission/budget_tests.rs
+  s_00c6bf8ee605be::t_1aaae92a847b65 124-127,129-132,134-137,224-227,231-234,238-241,249-256,260-263,267-270,278-281,303-306,309-312,447-613
+crates/router-runtime/src/admission/mod.rs
+  s_00c6bf8ee605be::t_ea444a2173d8cd 21-23,25-26
+crates/router-runtime/src/admission/registry.rs
+  s_00c6bf8ee605be::t_712c5038cb332a 12,43,46-58,88,164-170,191-196
+crates/router-runtime/src/admission/runtime.rs
+  s_00c6bf8ee605be::t_7daa3d8501d8be 132-140,146-156,182-192,215-246,279-442
+crates/router-runtime/src/admission/tests.rs
+  s_00c6bf8ee605be::t_0db29ea6b77d3e 140-144,146,151-154,163-166,172-176,183,187-189,349-368
+crates/router-runtime/src/diagnostics.rs
+  s_00c6bf8ee605be::t_ede7a6bc94bf7c 13-17,217,224,259-267,331-430
+crates/router-runtime/src/store.rs
+  s_00c6bf8ee605be::t_203ec470387bf8 24-27,60,682-705,707-708,710-731,733,814-819,821-824,827-831,833-838,911-924,1100-1133,1135-1141,1245-1247,1284,1291-1301,1304-1309,1316-1317,1319-1325,1327,1331,1333-1334,1496,1498,1955-2102
+crates/router-runtime/src/store/admission.rs
+  s_00c6bf8ee605be::t_3a2247fc8f1696 155-171
+crates/router-runtime/tests/diagnostics.rs
+  s_00c6bf8ee605be::t_32661c967058f9 293,297-300,308
+crates/router-runtime/tests/sqlite_locks.rs
+  s_00c6bf8ee605be::t_8c4526cf7fc977 170-176,194-198
+docs/admission.md
+  s_00c6bf8ee605be::t_c419a0b5012bf7 89-109
+docs/doctor.md
+  s_00c6bf8ee605be::t_e04054821d6775 225-228,237
+docs/session-budgets.md
+  s_00c6bf8ee605be::t_e9af0b2bfca7c1 84-87,92,139-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4b6eefc38ddf99e8cdb025a4e7c025b688c87cfc",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
