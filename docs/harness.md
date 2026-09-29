@@ -85,6 +85,9 @@ the recovery journal to get past a failure.
 | `rust-security-reviewer` | Read-only review of permissions, secrets, paths, subprocess and protocols |
 | `rust-code-reviewer` | Independent read-only defects and issue acceptance assessment |
 
+Both reviewers apply `docs/review-grid.md` when asked for a review broader
+than a diff.
+
 Codex agents use `gpt-6-astra`, with medium effort for exploration and high for
 the other roles, as supported by the task's active platform. This is declared
 configuration, not a provider call or availability probe. Claude agents use
