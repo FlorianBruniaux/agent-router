@@ -431,11 +431,27 @@ pub fn request_cancel(root: &Path, instance: &str) -> Result<()> {
     }
     let registered = steps(&tx, instance)?;
     tx.commit()?;
-    // The runtime refuses a run that is not cancellable with `Transition`, which
-    // is tolerated here, so a separate `observe` (a second connection and a
-    // second event-chain check per run) would only repeat that decision.
+    // `cancelled=1` is already committed, so one failing run must not leave the
+    // later runs uncancelled: visit every run and report the first error.
+    let mut first_error = None;
     for (_, _, run) in registered {
-        match router_runtime::request_cancel(Path::new(&runtime), &run) {
+        if let Err(error) = cancel_run(Path::new(&runtime), &run) {
+            first_error.get_or_insert(error);
+        }
+    }
+    first_error.map_or(Ok(()), Err)
+}
+fn cancel_run(runtime: &Path, run: &str) -> Result<()> {
+    let current = router_runtime::observe(runtime, run)?;
+    if matches!(
+        current.state,
+        RunState::Planned
+            | RunState::AwaitingApproval
+            | RunState::Queued
+            | RunState::Preparing
+            | RunState::Running
+    ) {
+        match router_runtime::request_cancel(runtime, run) {
             Ok(()) | Err(router_runtime::RuntimeError::Transition) => {}
             Err(e) => return Err(e.into()),
         }

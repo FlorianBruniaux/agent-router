@@ -22,8 +22,11 @@ impl std::ops::Deref for ValidatedDefinition<'_> {
 thread_local! {
     static VALIDATIONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
 }
-/// Number of full definition validations run by the current thread. Exposed
-/// only so tests can prove that supervision ticks do not re-hash the definition.
+/// Number of full definition validations run by the current thread. Reserved
+/// for tests, which use it to prove that supervision ticks do not re-hash the
+/// definition. It assumes a tokio current_thread runtime (the `#[tokio::test]`
+/// default): with a multi-thread runtime the validations may run on other
+/// threads and this count would miss them.
 #[doc(hidden)]
 pub fn validations_on_this_thread() -> u64 {
     VALIDATIONS.with(std::cell::Cell::get)

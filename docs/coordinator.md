@@ -32,8 +32,9 @@ definition hash and cancellation flag through the store, so a definition that
 differs from the registered one is refused. `request_approval` and
 `request_verification` observe the runtime store before opening the coordinator
 write transaction, then recheck the workflow, run and control rows inside it.
-`request_cancel` asks the runtime to cancel each registered run directly and
-tolerates a run that can no longer be cancelled.
+`request_cancel` observes each registered run and cancels only those still
+cancellable. It visits every run even after a failure, then returns the first
+error, because the workflow is already marked cancelled.
 
 Execution request scope entries (`ExecutionRequest.scope`, validated by
 `router-adapter-api` before any adapter prepares a run) must be canonical

@@ -1547,6 +1547,13 @@ async fn control_request_does_not_hold_the_coordinator_lock_while_observing_the_
         )
         .unwrap();
     let blocker = rusqlite::Connection::open(copy.join("runtime.sqlite3")).unwrap();
+    // BEGIN EXCLUSIVE blocks readers only outside WAL; VACUUM INTO does not keep WAL.
+    assert_eq!(
+        blocker
+            .pragma_query_value(None, "journal_mode", |r| r.get::<_, String>(0))
+            .unwrap(),
+        "delete"
+    );
     blocker.execute_batch("BEGIN EXCLUSIVE;").unwrap();
     let request = {
         let root = root.clone();
@@ -1554,12 +1561,23 @@ async fn control_request_does_not_hold_the_coordinator_lock_while_observing_the_
         let digest = pending.approval_digest().to_owned();
         std::thread::spawn(move || request_approval(&root, &instance, "plan", 0, &digest))
     };
+    // The blocker holds the copy for 1.5 s (busy timeout 2 s): the request must
+    // still be inside the runtime observation when the probe runs.
     std::thread::sleep(Duration::from_millis(400));
+    assert!(
+        !request.is_finished(),
+        "request must be blocked in the observation before the probe"
+    );
     let probe = rusqlite::Connection::open(root.join("coordinator.sqlite3")).unwrap();
     probe.busy_timeout(Duration::ZERO).unwrap();
     probe
         .execute_batch("BEGIN IMMEDIATE; ROLLBACK;")
         .expect("coordinator write lock must be free while the runtime is observed");
+    assert!(
+        !request.is_finished(),
+        "request must still be blocked after the probe"
+    );
+    std::thread::sleep(Duration::from_millis(1100));
     blocker.execute_batch("ROLLBACK").unwrap();
     drop(blocker);
     request.join().unwrap().unwrap();
@@ -1582,4 +1600,88 @@ async fn request_cancel_leaves_runs_that_cannot_be_cancelled_untouched() {
         RunState::Verifying
     );
     assert!(coordinator.status(&f.definition).unwrap().cancelled);
+}
+
+#[tokio::test]
+async fn cancel_skips_a_verifying_run_and_cancels_the_queued_one() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone());
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let second = f.review(&c, "second").await;
+    let outcome = run(&c, &f.definition, &first, PLAN, &FakeSupervisor).await;
+    assert_eq!(outcome.run.state, RunState::Verifying);
+    c.approve_step(&f.definition, second.clone(), second.approval_digest())
+        .unwrap();
+    assert_eq!(
+        runtime.summary(&second.summary().run_id).unwrap().state,
+        RunState::Queued
+    );
+    let root = f.temp.path().join("coordinator");
+    request_cancel(&root, &f.definition.execution.instance_id).unwrap();
+    assert_eq!(
+        runtime.summary(&first.summary().run_id).unwrap().state,
+        RunState::Verifying
+    );
+    assert_eq!(
+        runtime.summary(&second.summary().run_id).unwrap().state,
+        RunState::Cancelled
+    );
+}
+
+#[tokio::test]
+async fn cancel_succeeds_next_to_verified_and_failed_runs() {
+    for (script, verify) in [(PLAN, true), ("exit 9", false)] {
+        let mut f = Fixture::new().await;
+        parallel_definition(&mut f);
+        let runtime = f.runtime();
+        let c = f.coordinator(runtime.clone());
+        c.register(&f.definition).unwrap();
+        let first = f.review(&c, "first").await;
+        let second = f.review(&c, "second").await;
+        run(&c, &f.definition, &first, script, &FakeSupervisor).await;
+        if verify {
+            c.verify_step(&f.definition, &first, record(&runtime, &first))
+                .unwrap();
+        }
+        let terminal = runtime.summary(&first.summary().run_id).unwrap().state;
+        assert!(terminal.terminal(), "{terminal:?}");
+        let root = f.temp.path().join("coordinator");
+        request_cancel(&root, &f.definition.execution.instance_id).unwrap();
+        assert_eq!(
+            runtime.summary(&first.summary().run_id).unwrap().state,
+            terminal
+        );
+        assert_eq!(
+            runtime.summary(&second.summary().run_id).unwrap().state,
+            RunState::Cancelled
+        );
+    }
+}
+
+#[tokio::test]
+async fn cancel_continues_after_a_failing_run_and_returns_the_first_error() {
+    let mut f = Fixture::new().await;
+    parallel_definition(&mut f);
+    let runtime = f.runtime();
+    let c = f.coordinator(runtime.clone());
+    c.register(&f.definition).unwrap();
+    let first = f.review(&c, "first").await;
+    let root = f.temp.path().join("coordinator");
+    let instance = &f.definition.execution.instance_id;
+    // A registered run the runtime does not know sorts before the real ones.
+    rusqlite::Connection::open(root.join("coordinator.sqlite3"))
+        .unwrap()
+        .execute(
+            "INSERT INTO steps VALUES(?1,'aaa',0,'missing-run','x',0,0)",
+            [instance],
+        )
+        .unwrap();
+    assert!(request_cancel(&root, instance).is_err());
+    assert_eq!(
+        runtime.summary(&first.summary().run_id).unwrap().state,
+        RunState::Cancelled
+    );
 }
