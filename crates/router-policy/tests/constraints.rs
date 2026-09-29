@@ -142,6 +142,34 @@ fn unknown_high_risk_capability_closes_route() {
 }
 
 #[test]
+fn definite_unsupported_capability_is_not_hidden_by_an_earlier_unknown() {
+    let mut context = fixture_context(
+        "gpt-5.6-terra",
+        StageKind::Execute,
+        EffortLevel::High,
+        RiskLevel::High,
+    );
+    // Tools sorts before Vision: the Unknown is met first.
+    context.task.required_capabilities = BTreeSet::from([Capability::Tools, Capability::Vision]);
+    context.capabilities = CapabilityKnowledge::from(BTreeMap::from([
+        (Capability::Tools, Support::Unknown),
+        (Capability::Vision, Support::Unsupported),
+    ]));
+
+    let verdicts = ConstraintEngine::default().evaluate(&context);
+
+    assert_eq!(
+        evidence_for(&verdicts, "host.capability.missing"),
+        "host 'codex-host' is known not to support capability 'vision'"
+    );
+    assert!(
+        !verdicts
+            .iter()
+            .any(|verdict| verdict.code() == "host.capability.unknown_high_risk")
+    );
+}
+
+#[test]
 fn engine_preserves_every_verdict_in_fixed_constraint_order() {
     let context = fixture_context(
         "gpt-5.6-sol",

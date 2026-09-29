@@ -5,7 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use router_adapter_api::{
     ALL_CAPABILITIES, CapabilityEvidence, EvidenceKind, EvidenceSource, HostObservation, HostProbe,
-    MAX_TRANSPORT_BYTES, ProbeError, content_digest, safe_identifier, strict_json,
+    MAX_SNAPSHOT_MODELS, MAX_TRANSPORT_BYTES, ProbeError, content_digest, native_root_event,
+    safe_identifier, strict_json,
 };
 use router_types::{CapabilitySupport, HarnessId, HostSnapshot, ModelId};
 
@@ -62,11 +63,13 @@ impl HostProbe for ClaudeStreamProbe<'_> {
                         return Err(ProbeError::InvalidCache("native init"));
                     }
                 }
+                // Sidechain (subagent) models are not models the root host serves.
                 Some("assistant")
-                    if value
-                        .pointer("/message/role")
-                        .and_then(|value| value.as_str())
-                        == Some("assistant")
+                    if native_root_event(&value)
+                        && value
+                            .pointer("/message/role")
+                            .and_then(|value| value.as_str())
+                            == Some("assistant")
                         && value
                             .pointer("/message/type")
                             .and_then(|value| value.as_str())
@@ -80,6 +83,9 @@ impl HostProbe for ClaudeStreamProbe<'_> {
                         models.insert(
                             ModelId::parse(model).map_err(|_| ProbeError::InvalidCache("model"))?,
                         );
+                        if models.len() > MAX_SNAPSHOT_MODELS {
+                            return Err(ProbeError::InvalidCache("model bounds"));
+                        }
                     }
                 }
                 Some(_) => {}

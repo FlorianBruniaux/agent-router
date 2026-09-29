@@ -83,11 +83,38 @@ fn check_detects_drift_missing_and_stale_outputs() {
             _ => fs::write(dir.path().join(".codex/agents/obsolete.toml"), "old").unwrap(),
         }
         assert!(projection::check(dir.path()).is_err(), "{mutation}");
-        assert!(
-            transaction::apply(dir.path(), projection::render(dir.path()).unwrap()).is_err(),
-            "{mutation}"
-        );
+        let applied = transaction::apply(dir.path(), projection::render(dir.path()).unwrap());
+        if mutation == "missing" {
+            // A deleted inventoried file is recreated by generate.
+            assert_eq!(applied.unwrap(), 1);
+            projection::check(dir.path()).unwrap();
+        } else {
+            assert!(applied.is_err(), "{mutation}");
+        }
     }
+}
+
+#[test]
+fn generate_recreates_a_deleted_inventoried_file_but_refuses_changed_content() {
+    let dir = fixture();
+    install(dir.path());
+    let original = fs::read_to_string(dir.path().join("CLAUDE.md")).unwrap();
+    fs::remove_file(dir.path().join("CLAUDE.md")).unwrap();
+    assert_eq!(
+        transaction::apply(dir.path(), projection::render(dir.path()).unwrap()).unwrap(),
+        1
+    );
+    assert_eq!(
+        fs::read_to_string(dir.path().join("CLAUDE.md")).unwrap(),
+        original
+    );
+    projection::check(dir.path()).unwrap();
+    // Recreation does not extend to changed content.
+    fs::write(dir.path().join("CLAUDE.md"), "local edit").unwrap();
+    assert!(matches!(
+        transaction::apply(dir.path(), projection::render(dir.path()).unwrap()),
+        Err(xtask::Error::Drift(_))
+    ));
 }
 
 #[test]

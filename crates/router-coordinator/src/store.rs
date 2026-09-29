@@ -558,13 +558,14 @@ fn request_control(
         return Err(CoordinatorError::Limit);
     }
     let id = hash("coordinator-control-v1", &(instance, &run, &control))?;
-    if tx
-        .query_row("SELECT 1 FROM controls WHERE id=?1", [&id], |row| {
-            row.get::<_, u32>(0)
+    let existing: Option<String> = tx
+        .query_row("SELECT state FROM controls WHERE id=?1", [&id], |row| {
+            row.get(0)
         })
-        .optional()?
-        .is_some()
-    {
+        .optional()?;
+    // A rejected control is terminal: the same request is a new attempt and is
+    // validated again below instead of returning the dead id.
+    if existing.as_deref().is_some_and(|state| state != "rejected") {
         return Ok(id);
     }
     let current = router_runtime::observe(Path::new(&runtime), &run)?;
@@ -590,11 +591,18 @@ fn request_control(
     if pending >= 64 {
         return Err(CoordinatorError::Limit);
     }
-    if tx.execute(
-        "INSERT OR IGNORE INTO controls VALUES(?1,?2,?3,?4,'pending')",
-        params![id, instance, run, serialized],
-    )? > 0
-    {
+    let changed = if existing.is_some() {
+        tx.execute(
+            "UPDATE controls SET state='pending' WHERE id=?1 AND state='rejected'",
+            [&id],
+        )?
+    } else {
+        tx.execute(
+            "INSERT OR IGNORE INTO controls VALUES(?1,?2,?3,?4,'pending')",
+            params![id, instance, run, serialized],
+        )?
+    };
+    if changed > 0 {
         append(&tx, instance, "control.requested", &id)?;
     }
     tx.commit()?;

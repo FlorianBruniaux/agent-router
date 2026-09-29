@@ -591,3 +591,44 @@ fn passive_claude_probe_is_bounded_redacted_and_does_not_infer_effort_or_capabil
     );
     assert!(ClaudeStreamProbe::from_native_stream(b"{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"invented\",\"claude_code_version\":\"1\"}\n").probe(100).is_err());
 }
+
+#[test]
+fn probe_ignores_subagent_models_and_caps_observed_models() {
+    let init = "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-test-model\",\"claude_code_version\":\"1\"}\n";
+    let assistant = |model: &str, sub: bool| {
+        let parent = if sub {
+            ",\"parent_tool_use_id\":\"toolu_1\""
+        } else {
+            ""
+        };
+        format!(
+            "{{\"type\":\"assistant\"{parent},\"message\":{{\"role\":\"assistant\",\"type\":\"message\",\"model\":\"{model}\"}}}}\n"
+        )
+    };
+    let stream = format!(
+        "{init}{}{}",
+        assistant("claude-test-model", false),
+        assistant("subagent-model", true)
+    );
+    let observation = ClaudeStreamProbe::from_native_stream(stream.as_bytes())
+        .probe(100)
+        .unwrap();
+    let models: Vec<_> = observation
+        .host
+        .supported_models
+        .iter()
+        .map(|m| m.as_str().to_owned())
+        .collect();
+    assert_eq!(models, ["claude-test-model"]);
+
+    let mut many = format!("{init}{}", assistant("claude-test-model", false));
+    for i in 0..MAX_SNAPSHOT_MODELS {
+        many.push_str(&assistant(&format!("extra-model-{i}"), false));
+    }
+    assert!(matches!(
+        ClaudeStreamProbe::from_native_stream(many.as_bytes())
+            .probe(100)
+            .unwrap_err(),
+        ProbeError::InvalidCache("model bounds")
+    ));
+}

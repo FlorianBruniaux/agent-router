@@ -97,7 +97,12 @@ pub fn apply(root: &Path, desired: Files) -> Result<usize> {
         let before = existing(root, &path)?;
         let after = desired.get(&path).cloned();
         if let Some(hash) = old.get(&path) {
-            if before.as_ref().map(|s| digest(s.as_bytes())).as_ref() != Some(hash) {
+            // A deleted inventoried file is recreated (the path is owned and
+            // was resolved by safe_path above); changed content is drift.
+            if before
+                .as_ref()
+                .is_some_and(|s| digest(s.as_bytes()) != *hash)
+            {
                 return Err(Error::Drift(path));
             }
         } else if path != INVENTORY && before.is_some() && before != after {
@@ -130,13 +135,13 @@ pub fn apply(root: &Path, desired: Files) -> Result<usize> {
     for (path, change) in &journal.changes {
         write(root, path, change.after.as_deref())?;
     }
-    if !desired.is_empty() {
-        for (path, content) in &desired {
-            if existing(root, path)?.as_ref() != Some(content) {
-                return Err(Error::Invalid(
-                    "postimage mismatch; inspect journal and roll back",
-                ));
-            }
+    // Verify every written path, removals included: an empty desired set still
+    // has to prove that the owned files are gone.
+    for (path, change) in &journal.changes {
+        if existing(root, path)? != change.after {
+            return Err(Error::Invalid(
+                "postimage mismatch; inspect journal and roll back",
+            ));
         }
     }
     Ok(journal.changes.len())

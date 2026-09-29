@@ -169,6 +169,9 @@ pub struct CapabilitiesSatisfied;
 
 impl Constraint for CapabilitiesSatisfied {
     fn evaluate(&self, context: &EligibilityContext) -> ConstraintVerdict {
+        // A definite exclusion outranks an Unknown found earlier, so remember
+        // the first Unknown and keep scanning.
+        let mut unknown = None;
         for capability in &context.task.required_capabilities {
             match context.capabilities.support_for(*capability) {
                 Support::Unsupported => {
@@ -182,7 +185,7 @@ impl Constraint for CapabilitiesSatisfied {
                     );
                 }
                 Support::Unknown => {
-                    return unknown_capability(context, *capability);
+                    unknown.get_or_insert_with(|| unknown_capability(context, *capability));
                 }
                 Support::Supported if !context.host.capabilities.contains(capability) => {
                     return excluded(
@@ -208,7 +211,7 @@ impl Constraint for CapabilitiesSatisfied {
             }
         }
 
-        eligible("host.capability.satisfied")
+        unknown.unwrap_or_else(|| eligible("host.capability.satisfied"))
     }
 }
 
