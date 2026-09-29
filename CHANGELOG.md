@@ -16,7 +16,7 @@ reasons); every change was verified locally on macOS.
 
 Nothing yet.
 
-## [0.0.1] - 2026-09-30
+## [0.0.1] - 2026-09-29
 
 ### Breaking
 
@@ -85,7 +85,7 @@ Release and supply chain
 
 - Verifiable local release recipe: `scripts/release-local.py` binds source and binary archives to a manifest, verifies an externally produced signature and renders a Homebrew formula. It never generates a key, signs, publishes or installs. (#49)
 - CI verification of complete dependency license evidence for distribution exports. (#29)
-- The workspace version is `0.0.1`, set once in `[workspace.package]` and inherited by every crate. (RELEASE_PR)
+- The workspace version is `0.0.1`, set once in `[workspace.package]` and inherited by every crate.
 
 ### Changed
 
