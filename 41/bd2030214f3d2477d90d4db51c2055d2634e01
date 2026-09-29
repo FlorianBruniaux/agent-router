@@ -1,0 +1,33 @@
+crates/router-runtime/src/leases.rs
+  s_00c6bf8ee605be::t_4d8208f83ae415 4,86-123
+crates/router-runtime/src/lib.rs
+  s_2b47aafd5c6e51::t_1b2c5129f6fda7 932-941,944-968,1740-1747,1749-1752,1958-1989
+crates/router-runtime/src/store.rs
+  s_00c6bf8ee605be::t_74c592a3f14856 634-657,659-666,668-670,707,749-777,968,1050-1076,2129-2130,2202-2309
+crates/router-runtime/tests/runtime.rs
+  s_00c6bf8ee605be::t_ca2b8c7e0e3413 3157-3216
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "41bd2030214f3d2477d90d4db51c2055d2634e01",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
