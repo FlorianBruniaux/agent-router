@@ -23,7 +23,7 @@ impl PublisherPolicyAuthority {
     /// lock directory if absent. Writers must take its exclusive catalog lock.
     pub fn open(path: &Path) -> Result<Self> {
         if !path.is_absolute() || path.as_os_str().len() > 4096 {
-            return Err(StoreError::Path);
+            return Err(StoreError::path(crate::Operation::Locator));
         }
         let mut lock_path = path.as_os_str().to_os_string();
         lock_path.push(".authority");

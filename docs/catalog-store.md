@@ -10,10 +10,15 @@ prior, not signed execution authority.
 
 Create one store per catalog ID with
 `CatalogStore::create(canonical_absolute_path, store_id, catalog_id)`. Creation
-requires a new directory under an existing parent. Supply a unique store ID for
+requires an existing parent. Supply a unique store ID for
 each new store incarnation; there is no global ID registry. The store returns its public
 `StoreIdentity` and `config_hash()`. Store that expected digest independently of
-the directory. `open(path, expected_config_hash, checkpoint)` never takes its
+the directory. `create` no longer requires a new directory: it adopts an
+existing directory that is owned, `0700` and holds nothing but `catalog.lock`
+and at most one `state.pending`, so an empty private `0700` directory is
+accepted and a `create` that failed part way can be run again. A directory with
+a `state.json`, any other entry or other permissions still returns `Exists`.
+`open(path, expected_config_hash, checkpoint)` never takes its
 expected identity from the document it is supposed to validate.
 
 The identity binds schema, caller-provided store ID, catalog ID and SHA-256 of the
@@ -51,9 +56,15 @@ validates the current snapshot, checks compare-and-swap against the reviewed
 head and revalidates signature, current time and external grants. Stale approval,
 changed roots, expiry or a different store leaves state unchanged. Updates use
 write, file fsync, atomic rename and directory fsync, with an exact preimage
-comparison before publication. A returned I/O error after rename may mean the
-new snapshot is visible without confirmed durability; inspect status before
-retrying. An interrupted staging file is never read as committed state. A later
+comparison before publication. If the final directory fsync fails after the
+rename, `apply` returns `StoreError::PublishedDurabilityUnknown` (code
+`published_durability_unknown`): the new snapshot is visible but its durability
+is UNKNOWN. In `apply`, `Io` is a failure before publication; `Io` also covers
+reads and `create`.
+
+Never retry blindly after that error: read `status()` and re-review from the
+observed head. Apply revalidates the named directory and lock identity again
+just before publishing. An interrupted staging file is never read as committed state. A later
 approved update can replace only that verified private staging file under the
 exclusive lock.
 
@@ -63,9 +74,24 @@ grants fingerprint, application time and exact approval digest. Revisions grow
 monotonically. Returning A to service after A→B is another activation: A→B→A has
 three different heads even when A's signed document and catalog binding are
 identical. Old queued work must retain and compare the head, not only A's binding.
-All referenced canonical signed documents remain immutable in the bounded
-snapshot. Removal, replacement or an unreferenced document refuses validation.
-There is no implicit purge, compaction, watcher, installation or permission grant.
+Referenced canonical signed documents are immutable in the bounded snapshot.
+Removal, replacement or an unreferenced document refuses validation.
+
+The caps bound live rows, not lifetime changes. When a change would exceed 128
+retained events, 16 retained documents or the byte budget, the oldest events and
+the documents only they reference are pruned. The head of the last pruned event
+is stored as the snapshot `anchor`; retained events chain from it, and the
+anchor must be a sealed head of this store. Revisions keep growing across
+pruning. A pruned head can no longer be passed to `historical`, and a trusted
+checkpoint older than the retained window, including the genesis head once
+history is pruned, is refused with `Conflict`. Advance the external checkpoint
+at least once per 128 changes.
+
+An activation must leave 1 MiB of the snapshot budget free, so an active
+catalog can always be revoked. `review_*` runs the same staging on a scratch
+copy and decides on the exact encoded length, so it refuses with `Limit` what
+`apply` would refuse. There is no watcher, installation or permission grant.
+See ADR 0017.
 
 ## Current guard and historical reconstruction
 
@@ -115,9 +141,10 @@ local operator's activation history.
 | Bound | Maximum |
 | --- | ---: |
 | Encoded snapshot, checked during reads and serialization | 64 MiB |
-| Retained distinct signed documents | 16 |
+| Retained distinct signed documents (older ones pruned) | 16 |
 | Signed document | Existing 8 MiB verifier limit |
-| Committed changes | 128 |
+| Retained changes (older ones pruned behind the anchor) | 128 |
+| Free bytes reserved for revocation | 1 MiB |
 | Review lifetime | 300 seconds, expiration exclusive |
 | Store/catalog identifier | 128 ASCII letters, digits, dot, underscore or hyphen |
 | Canonical absolute path | 4096 bytes |
@@ -138,7 +165,9 @@ checkpoint rollback refusal; changed keys and grants; revocation and expiry;
 historical inspection; copied and replaced directories; held-guard refusal after
 lock/directory replacement and revocation through a new handle; altered or missing
 entries; duplicate JSON; private modes, symlinks and hardlinks; unpublished
-staging recovery; explicit byte/document/history limits; and a real subprocess
+staging recovery; retention pruning with an anchored chain and revocation
+after more than 128 changes; exact byte-budget boundaries; anchor validation;
+resumable `create`; the durability-unknown error; and a real subprocess
 contending with a reader's shared lock. These are local library tests, not CLI
 integration, host execution or real publisher approval.
 
