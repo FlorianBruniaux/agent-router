@@ -69,11 +69,14 @@ mod unix {
         /// serialized. An existing entry is kept unless it is unreadable or
         /// `may_replace` accepts it (expired, malformed or unauthenticated).
         /// A kept entry yields `Exists`, so a live entry is never overwritten.
+        /// When the directory is full, entries for which `is_stale(key, bytes)`
+        /// holds are removed first; only then is `Limit` reported.
         pub(crate) fn publish(
             &self,
             name: &str,
             bytes: &[u8],
             may_replace: &dyn Fn(&[u8]) -> bool,
+            is_stale: &dyn Fn(&str, &[u8]) -> bool,
         ) -> Result<()> {
             check_directory(&self.directory)?;
             if bytes.len() > MAX_ENTRY_BYTES {
@@ -94,7 +97,10 @@ mod unix {
                 Err(error) => return Err(error),
             };
             if !replacing && self.count()? >= MAX_ENTRIES {
-                return Err(CacheError::Limit);
+                self.sweep(is_stale)?;
+                if self.count()? >= MAX_ENTRIES {
+                    return Err(CacheError::Limit);
+                }
             }
             // Only the lock holder writes staging files, so any that remain
             // were orphaned by a crashed writer. unlinkat never follows a link.
@@ -182,6 +188,28 @@ mod unix {
                 count <= MAX_ENTRIES
             })?;
             Ok(count)
+        }
+        /// Removes entries `is_stale` rejects. Unreadable or unstale files stay.
+        fn sweep(&self, is_stale: &dyn Fn(&str, &[u8]) -> bool) -> Result<()> {
+            let mut names = Vec::new();
+            self.names(|name| {
+                if name.ends_with(".json") {
+                    names.push(name.to_owned());
+                }
+                names.len() <= MAX_ENTRIES
+            })?;
+            for name in names {
+                let Some(key) = name.strip_suffix(".json") else {
+                    continue;
+                };
+                if let Ok(Some(bytes)) = self.read(&name) {
+                    if is_stale(key, &bytes) {
+                        unlinkat(&self.directory, name.as_str(), AtFlags::empty())
+                            .map_err(|_| CacheError::Io)?;
+                    }
+                }
+            }
+            Ok(())
         }
         fn purge_staging(&self) -> Result<()> {
             let mut orphans = Vec::new();
@@ -274,7 +302,13 @@ impl Root {
     pub(crate) fn read(&self, _: &str) -> Result<Option<Vec<u8>>> {
         Err(CacheError::Unsupported)
     }
-    pub(crate) fn publish(&self, _: &str, _: &[u8], _: &dyn Fn(&[u8]) -> bool) -> Result<()> {
+    pub(crate) fn publish(
+        &self,
+        _: &str,
+        _: &[u8],
+        _: &dyn Fn(&[u8]) -> bool,
+        _: &dyn Fn(&str, &[u8]) -> bool,
+    ) -> Result<()> {
         Err(CacheError::Unsupported)
     }
 }

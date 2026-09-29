@@ -145,15 +145,29 @@ mod unix {
                     return Err(StoreError::Conflict);
                 }
             }
-            renameat(
-                &self.directory,
-                "state.pending",
-                &self.directory,
-                "state.json",
+            publish(
+                || {
+                    renameat(
+                        &self.directory,
+                        "state.pending",
+                        &self.directory,
+                        "state.json",
+                    )
+                    .map_err(|_| ())
+                },
+                || self.directory.sync_all().map_err(|_| ()),
             )
-            .map_err(|_| StoreError::Io)?;
-            self.directory.sync_all().map_err(|_| StoreError::Io)
         }
+    }
+    /// A failed rename published nothing (`Io`). Once the rename succeeded the new
+    /// head is visible, so a failed directory sync is `PublishedDurabilityUnknown`:
+    /// callers must reopen and inspect the head, never retry blindly.
+    fn publish(
+        rename: impl FnOnce() -> std::result::Result<(), ()>,
+        sync: impl FnOnce() -> std::result::Result<(), ()>,
+    ) -> Result<()> {
+        rename().map_err(|()| StoreError::Io)?;
+        sync().map_err(|()| StoreError::PublishedDurabilityUnknown)
     }
     fn traverse(path: &Path) -> Result<File> {
         if !path.is_absolute() || path.as_os_str().len() > 4096 {
@@ -260,6 +274,29 @@ mod unix {
             assert!(matches!(root.lock(false), Err(StoreError::Busy)));
             drop(writer);
             assert!(root.lock(false).is_ok());
+        }
+
+        #[test]
+        fn only_a_sync_failure_after_rename_is_durability_unknown() {
+            assert!(matches!(publish(|| Ok(()), || Ok(())), Ok(())));
+            assert!(matches!(
+                publish(|| Err(()), || Ok(())),
+                Err(StoreError::Io)
+            ));
+            assert!(matches!(
+                publish(|| Ok(()), || Err(())),
+                Err(StoreError::PublishedDurabilityUnknown)
+            ));
+            // A failed rename must never reach the directory sync.
+            let mut synced = false;
+            let _ = publish(
+                || Err(()),
+                || {
+                    synced = true;
+                    Ok(())
+                },
+            );
+            assert!(!synced);
         }
     }
 }

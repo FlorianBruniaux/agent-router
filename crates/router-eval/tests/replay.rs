@@ -657,3 +657,70 @@ fn replay_rejects_modified_receipts_before_using_their_cost_or_outcomes() {
         Err(EvalError::UnknownPolicy)
     ));
 }
+
+#[test]
+fn unlisted_metrics_still_block_regressions_and_only_a_recorded_allowance_waives_one() {
+    // Criteria list only RouteAccuracy (no regression) and Cost (gain).
+    let mut slower = input();
+    slower.observations.get_mut("semantic").unwrap().elapsed_ms = Some(20);
+    let pairs = [pair(slower.clone())];
+    let report = compare_shadow(&pairs, Some(&criteria(&pairs))).unwrap();
+    assert!(!report.semantic_enabled);
+    assert_eq!(
+        report.promotion_blockers,
+        ["promotion.metric_regression.Latency"]
+    );
+
+    let mut failing = input();
+    failing
+        .observations
+        .get_mut("baseline")
+        .unwrap()
+        .outcomes
+        .functional = ObservedOutcome::Passed;
+    failing
+        .observations
+        .get_mut("semantic")
+        .unwrap()
+        .outcomes
+        .functional = ObservedOutcome::Failed;
+    let pairs = [pair(failing)];
+    let report = compare_shadow(&pairs, Some(&criteria(&pairs))).unwrap();
+    assert!(!report.semantic_enabled);
+    assert_eq!(
+        report.promotion_blockers,
+        ["promotion.metric_regression.FunctionalSuccess"]
+    );
+
+    // The explicit rule is the recorded allowance: it lives in the criteria hash.
+    let pairs = [pair(slower)];
+    let mut allowed = criteria(&pairs);
+    allowed.rules.push(MetricRule {
+        metric: PromotionMetric::Latency,
+        minimum_improvement_micros: 0,
+        maximum_regression_micros: 1_000_000,
+    });
+    let report = compare_shadow(&pairs, Some(&allowed)).unwrap();
+    assert!(report.semantic_enabled, "{:?}", report.promotion_blockers);
+}
+
+#[test]
+fn an_unlisted_cost_regression_blocks_even_with_a_latency_gain() {
+    let mut input = input();
+    // Criteria: RouteAccuracy (no regression) and Latency (gain). Cost is unlisted.
+    input.observations.get_mut("semantic").unwrap().elapsed_ms = Some(5);
+    input.observations.get_mut("semantic").unwrap().usage[0].input_tokens = 1_000;
+    let pairs = [pair(input)];
+    let mut c = criteria(&pairs);
+    c.rules[1] = MetricRule {
+        metric: PromotionMetric::Latency,
+        minimum_improvement_micros: 100_000,
+        maximum_regression_micros: 0,
+    };
+    let report = compare_shadow(&pairs, Some(&c)).unwrap();
+    assert!(!report.semantic_enabled);
+    assert_eq!(
+        report.promotion_blockers,
+        ["promotion.metric_regression.Cost"]
+    );
+}

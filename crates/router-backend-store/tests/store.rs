@@ -333,6 +333,10 @@ fn status_and_errors_do_not_export_raw_evidence_or_key_material() {
     }
     assert_eq!(StoreError::Io.to_string(), "backend_store.io");
     assert_eq!(
+        StoreError::PublishedDurabilityUnknown.to_string(),
+        "backend_store.published_durability_unknown"
+    );
+    assert_eq!(
         StoreError::Promotion(PromotionError::Signature).to_string(),
         "backend_store.promotion"
     );
@@ -631,4 +635,85 @@ fn same_second_activation_and_rollback_preserve_head_order_for_history_only() {
             .acquire_dispatch(&fixture.router, &fixture.context, Some(&store), 120)
             .is_err()
     );
+}
+
+/// Activates and rolls back `count` distinct promotions, then reopens the store.
+fn cycle_promotions(count: usize) -> (tempfile::TempDir, BackendStore, u32) {
+    let first = Fixture::new();
+    let (temp, root, store) = setup(&first);
+    let mut nonce = 0u32;
+    let mut next_nonce = || {
+        nonce += 1;
+        format!("{nonce:02x}").repeat(32)
+    };
+    let mut head = String::new();
+    for i in 0..count {
+        let fixture = Fixture::with_version(&format!("test-v{i}"));
+        let review = store
+            .review(&fixture.artifact, &fixture.evidence, 120)
+            .unwrap();
+        let guard = store.read_guard(120).unwrap();
+        let approval = fixture.approval_with_nonce(
+            guard.state(),
+            ActivationAction::Activate,
+            &review.projection().promotion_hash,
+            120,
+            next_nonce(),
+        );
+        drop(guard);
+        store.activate(&approval, &review, 120).unwrap();
+        let guard = store.read_guard(120).unwrap();
+        let approval = fixture.approval_with_nonce(
+            guard.state(),
+            ActivationAction::Rollback,
+            fixture.context.policy_hash(),
+            120,
+            next_nonce(),
+        );
+        drop(guard);
+        head = store.rollback(&approval, 120).unwrap().state_hash;
+    }
+    let status = store.status(120).unwrap();
+    assert_eq!(status.promotion_count, count);
+    assert_eq!(status.event_count, count * 2);
+    // Every promotion is still replayable after a restart.
+    let reopened = BackendStore::open(&root, store.config_hash(), Some(&head)).unwrap();
+    let after = reopened.status(120).unwrap();
+    assert_eq!(after.state_hash, status.state_hash);
+    assert_eq!(after.promotion_count, count);
+    (temp, store, nonce)
+}
+
+#[test]
+fn more_promotions_than_the_old_cap_of_16_activate_roll_back_and_replay() {
+    use router_backend_store::MAX_PROMOTIONS;
+    assert_eq!(MAX_PROMOTIONS, router_backend_store::MAX_EVENTS / 2);
+    let (_temp, store, _) = cycle_promotions(17);
+    assert_eq!(store.status(120).unwrap().promotion_count, 17);
+}
+
+/// About five minutes in a debug build: every write re-verifies all promotions.
+/// Run with `cargo test -p router-backend-store -- --ignored`.
+#[test]
+#[ignore = "slow: activates the full derived bound of promotions"]
+fn promotions_reach_the_derived_bound_and_only_the_event_cap_remains() {
+    use router_backend_store::{MAX_EVENTS, MAX_PROMOTIONS};
+    let (_temp, store, nonce) = cycle_promotions(MAX_PROMOTIONS);
+    assert_eq!(store.status(120).unwrap().event_count, MAX_EVENTS);
+    // One more distinct promotion is refused by the event cap, nothing else.
+    let extra = Fixture::with_version("test-extra");
+    let review = store.review(&extra.artifact, &extra.evidence, 120).unwrap();
+    let guard = store.read_guard(120).unwrap();
+    let approval = extra.approval_with_nonce(
+        guard.state(),
+        ActivationAction::Activate,
+        &review.projection().promotion_hash,
+        120,
+        format!("{:02x}", nonce + 1).repeat(32),
+    );
+    drop(guard);
+    assert!(matches!(
+        store.activate(&approval, &review, 120),
+        Err(StoreError::Limit)
+    ));
 }

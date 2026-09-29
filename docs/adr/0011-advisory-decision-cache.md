@@ -77,10 +77,11 @@ state.
 - Not verified: multi-process contention (tests use threads, whose locks are
   separate open file descriptions like separate processes, but this was not run
   across processes), non-Unix platforms and crash recovery beyond orphan purge.
-- A directory full of expired entries under different keys refuses every new
-  key (`Limit`), since expired entries are removed only when their own key is
-  stored again.
-- A full directory refuses new entries until an operator clears it or an
-  expired entry's key is stored again.
+- When the directory holds 1,024 entries, a store first sweeps entries that are
+  authenticated and expired, or unauthenticated, and only then refuses with
+  `Limit`. Malformed or mismatched entries and live entries are never swept, so
+  a directory full of those still refuses new keys until an operator clears it.
+  An authenticated entry dated in the future (clock skew, `now < created_unix`)
+  decodes as expired and is swept too.
 - Confidentiality of proposals is not provided, only integrity and binding.
 - The cache is only as trustworthy as the key custody of its caller.

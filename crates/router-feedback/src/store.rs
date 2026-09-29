@@ -3,6 +3,7 @@ use std::{
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
     path::Path,
     sync::{Mutex, MutexGuard},
+    thread::ThreadId,
 };
 
 use nix::fcntl::{Flock, FlockArg};
@@ -18,6 +19,9 @@ use crate::{
 
 pub struct FeedbackStore {
     pub(crate) db: Mutex<Connection>,
+    /// Thread holding a `SidecarExportGuard`. Its own re-entry would block on
+    /// `db` forever, so `lock` refuses it with `Locked`.
+    pub(crate) export_holder: Mutex<Option<ThreadId>>,
     _lock: Flock<File>,
 }
 
@@ -94,12 +98,21 @@ impl FeedbackStore {
         }
         let store = Self {
             db: Mutex::new(db),
+            export_holder: Mutex::new(None),
             _lock: lock,
         };
         store.verify_storage()?;
         Ok(store)
     }
     pub(crate) fn lock(&self) -> Result<MutexGuard<'_, Connection>> {
+        if *self
+            .export_holder
+            .lock()
+            .map_err(|_| FeedbackError::Integrity("lock poisoned"))?
+            == Some(std::thread::current().id())
+        {
+            return Err(FeedbackError::Locked);
+        }
         self.db
             .lock()
             .map_err(|_| FeedbackError::Integrity("lock poisoned"))
@@ -229,16 +242,7 @@ impl FeedbackStore {
         timestamp(now)?;
         let mut db = self.lock()?;
         let tx = db.transaction()?;
-        let consent = read_consent(&tx)?;
-        if learning && !consent.preferences.learning_enabled {
-            return Err(FeedbackError::LearningDisabled);
-        }
-        ensure_clock(&tx, now)?;
-        if now < consent.updated_at_unix_seconds {
-            return Err(FeedbackError::Invalid("clock moved backwards"));
-        }
-        let removed = expire(&tx, &consent, now)?;
-        let events = read_events(&tx)?;
+        let (events, consent, removed) = snapshot_in(&tx, now, learning)?;
         tx.commit()?;
         if removed > 0 {
             scrub(&db)?;
@@ -321,6 +325,27 @@ impl FeedbackStore {
         crate::policy::verify_policies(&db)?;
         Ok(())
     }
+}
+
+/// Expires and reads events inside the caller's transaction, so a caller that
+/// then writes derives its decision from the same snapshot it commits against.
+/// The count of expired rows lets the caller `scrub` after commit.
+pub(crate) fn snapshot_in(
+    tx: &Transaction<'_>,
+    now: u64,
+    learning: bool,
+) -> Result<(Vec<FeedbackEvent>, FeedbackConsent, usize)> {
+    let consent = read_consent(tx)?;
+    if learning && !consent.preferences.learning_enabled {
+        return Err(FeedbackError::LearningDisabled);
+    }
+    ensure_clock(tx, now)?;
+    if now < consent.updated_at_unix_seconds {
+        return Err(FeedbackError::Invalid("clock moved backwards"));
+    }
+    let removed = expire(tx, &consent, now)?;
+    let events = read_events(tx)?;
+    Ok((events, consent, removed))
 }
 
 pub(crate) fn read_consent(db: &Connection) -> Result<FeedbackConsent> {
@@ -450,7 +475,7 @@ fn private_file(path: &Path) -> Result<File> {
     }
     Ok(file)
 }
-fn scrub(db: &Connection) -> Result<()> {
+pub(crate) fn scrub(db: &Connection) -> Result<()> {
     db.execute_batch("PRAGMA wal_checkpoint(TRUNCATE); VACUUM; PRAGMA wal_checkpoint(TRUNCATE);")?;
     Ok(())
 }

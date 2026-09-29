@@ -251,3 +251,58 @@ fn trusted_callback_drift_and_open_transactions_are_rejected() {
     );
     assert!(source.is_autocommit());
 }
+
+#[test]
+fn a_dense_valid_database_near_the_size_cap_is_not_refused_as_oversized() {
+    let temp = tempfile::tempdir().unwrap();
+    let path = temp.path().join("dense.db");
+    let source = Connection::open(&path).unwrap();
+    source
+        .execute_batch(
+            "PRAGMA page_size=4096; CREATE TABLE t(id INTEGER PRIMARY KEY, a TEXT, b TEXT); \
+             CREATE INDEX ia ON t(a); CREATE INDEX ib ON t(b);",
+        )
+        .unwrap();
+    let mut n = 0u64;
+    // Small indexed rows maximize integrity_check work per byte. Stop below the
+    // 4 MiB cap (1,024 pages of 4,096 bytes).
+    while source
+        .pragma_query_value(None, "page_count", |row| row.get::<_, u64>(0))
+        .unwrap()
+        < 1_000
+    {
+        let tx = source.unchecked_transaction().unwrap();
+        for _ in 0..200 {
+            tx.execute(
+                "INSERT INTO t(a,b) VALUES(?1,?2)",
+                (format!("{n:04}"), format!("{:x}", n * 7919)),
+            )
+            .unwrap();
+            n += 1;
+        }
+        tx.commit().unwrap();
+    }
+    // Guard the premise: this database needs more work than the former budget
+    // of 1,000 ticks (1,000 VDBE steps each) and less than the current 4,000.
+    let ticks = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let counter = ticks.clone();
+    source
+        .progress_handler(
+            1000,
+            Some(move || {
+                counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                false
+            }),
+        )
+        .unwrap();
+    let check: String = source
+        .query_row("PRAGMA integrity_check(1)", [], |row| row.get(0))
+        .unwrap();
+    source.progress_handler(1000, None::<fn() -> bool>).unwrap();
+    assert_eq!(check, "ok");
+    let ticks = ticks.load(std::sync::atomic::Ordering::Relaxed);
+    assert!((1_001..4_000).contains(&ticks), "{ticks} ticks");
+    let report = diagnose_database_snapshot(&source).unwrap();
+    assert_eq!(report.integrity, DeepDoctorCode::DatabaseIntegrityValidated);
+    assert!(report.snapshot_bytes > 3_900_000);
+}

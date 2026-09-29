@@ -20,8 +20,10 @@ use std::{
 };
 
 pub const MAX_SNAPSHOT_BYTES: usize = 64 * 1024 * 1024;
-pub const MAX_PROMOTIONS: usize = 16;
 pub const MAX_EVENTS: usize = router_backend_policy::MAX_ACTIVATION_EVENTS;
+/// Every activation must be rolled back before the next, so each promotion
+/// costs at least two events: the lifetime event cap is the binding limit.
+pub const MAX_PROMOTIONS: usize = MAX_EVENTS / 2;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -51,6 +53,11 @@ pub enum StoreError {
     Io,
     #[error("backend_store.clock")]
     Clock,
+    /// The snapshot rename succeeded but the directory sync failed: the new head
+    /// may already be published and its durability is UNKNOWN. Reopen and read
+    /// the head before any retry; never generate another approval blindly.
+    #[error("backend_store.published_durability_unknown")]
+    PublishedDurabilityUnknown,
     #[error("backend_store.platform.unsupported")]
     Unsupported,
     #[error("backend_store.promotion")]

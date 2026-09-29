@@ -102,7 +102,7 @@ impl ReadRoot {
                 ) {
                     Ok(file) => File::from(file),
                     Err(rustix::io::Errno::NOENT) => return Ok(None),
-                    Err(_) => return Err(DoctorError::Read),
+                    Err(error) => return Err(open_error(error, false)),
                 };
                 if !file.metadata().map_err(|_| DoctorError::Read)?.is_file() {
                     return Err(DoctorError::Path);
@@ -168,6 +168,27 @@ mod tests {
     }
 
     #[test]
+    fn symlinks_are_path_rejections_not_unreadable_files() {
+        let temp = tempfile::tempdir().unwrap();
+        let parent = temp.path().canonicalize().unwrap();
+        fs::create_dir(parent.join("real")).unwrap();
+        fs::write(parent.join("real/artifact"), "content").unwrap();
+        symlink(parent.join("real"), parent.join("linked")).unwrap();
+        symlink(parent.join("real/artifact"), parent.join("leaf")).unwrap();
+        let root = ReadRoot::open(parent.to_str().unwrap()).unwrap();
+        assert!(matches!(root.file("leaf"), Err(DoctorError::Path)));
+        assert!(matches!(
+            root.file("linked/artifact"),
+            Err(DoctorError::Path)
+        ));
+        assert!(matches!(
+            ReadRoot::open(parent.join("linked").to_str().unwrap()),
+            Err(DoctorError::Path)
+        ));
+        assert!(matches!(root.file("missing"), Err(DoctorError::Read)));
+    }
+
+    #[test]
     fn fifo_and_directory_are_rejected_without_waiting_for_a_writer() {
         use rustix::fs::{Mode, OFlags, openat};
         let temp = tempfile::tempdir().unwrap();
@@ -216,7 +237,19 @@ fn open_at(directory: &File, name: &std::ffi::OsStr, is_directory: bool) -> Resu
     // to File without raw descriptor conversion or unsafe application code.
     openat(directory, name, flags, Mode::empty())
         .map(File::from)
-        .map_err(|_| DoctorError::Read)
+        .map_err(|error| open_error(error, is_directory))
+}
+
+/// A symlink under `O_NOFOLLOW` is a rejected path, not an unreadable file.
+/// Linux reports a symlink opened with `O_DIRECTORY` as `ENOTDIR`.
+#[cfg(unix)]
+fn open_error(error: rustix::io::Errno, is_directory: bool) -> DoctorError {
+    use rustix::io::Errno;
+    if error == Errno::LOOP || (is_directory && error == Errno::NOTDIR) {
+        DoctorError::Path
+    } else {
+        DoctorError::Read
+    }
 }
 
 #[cfg(not(unix))]

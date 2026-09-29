@@ -696,3 +696,81 @@ fn a_held_lock_makes_store_busy_at_once_and_lookup_still_answers() {
         )
         .unwrap();
 }
+
+#[test]
+fn a_full_cache_sweeps_expired_entries_before_refusing() {
+    let fixture = fixture();
+    let context = context();
+    let fresh = proposal(&context, Some("c00"), 900_000);
+    for index in 0..router_advisory_cache::MAX_ENTRIES {
+        fixture
+            .cache
+            .store(&mac_key(), &format!("{index:064x}"), &fresh, NOW, 60)
+            .unwrap();
+    }
+    let key = cache_key(&binding(), &context).unwrap();
+    // Every entry is still live: the new key is refused and nothing is swept.
+    assert!(matches!(
+        fixture.cache.store(&mac_key(), &key, &fresh, NOW + 30, 600),
+        Err(CacheError::Limit)
+    ));
+    assert!(entry_path(&fixture, &format!("{:064x}", 0)).exists());
+    // Past the TTL every entry is expired and the new key fits.
+    fixture
+        .cache
+        .store(&mac_key(), &key, &fresh, NOW + 61, 600)
+        .unwrap();
+    assert_eq!(hit_id(&fixture, &key, NOW + 62).as_deref(), Some("c00"));
+    assert!(!entry_path(&fixture, &format!("{:064x}", 0)).exists());
+}
+
+#[test]
+fn a_sweep_removes_only_expired_and_unauthenticated_entries() {
+    let fixture = fixture();
+    let context = context();
+    let p = proposal(&context, Some("c00"), 900_000);
+    let other_key = MacKey::new(b"another-secret-key-000").unwrap();
+    let name = |n: usize| format!("{:064x}", n + 0xa0000);
+    let (live, expired, foreign, malformed, mismatch) =
+        (name(0), name(1), name(2), name(3), name(4));
+    let store = |key: &MacKey, id: &str, ttl: u64| {
+        fixture.cache.store(key, id, &p, NOW, ttl).unwrap();
+    };
+    store(&mac_key(), &live, 600);
+    store(&mac_key(), &expired, 60);
+    store(&other_key, &foreign, 600);
+    fs::write(entry_path(&fixture, &malformed), b"{not json").unwrap();
+    fs::set_permissions(
+        entry_path(&fixture, &malformed),
+        fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    // A valid entry stored under another key's file name: `Mismatch`.
+    fs::copy(entry_path(&fixture, &live), entry_path(&fixture, &mismatch)).unwrap();
+    fs::set_permissions(
+        entry_path(&fixture, &mismatch),
+        fs::Permissions::from_mode(0o600),
+    )
+    .unwrap();
+    // Authenticated but dated in the future (clock skew): not live, so swept.
+    let future = name(5);
+    fixture
+        .cache
+        .store(&mac_key(), &future, &p, NOW + 1_000, 600)
+        .unwrap();
+    for index in 6..router_advisory_cache::MAX_ENTRIES {
+        plant(&fixture.path, &format!("{:064x}.json", index + 0xb0000));
+    }
+    let key = cache_key(&binding(), &context).unwrap();
+    fixture
+        .cache
+        .store(&mac_key(), &key, &p, NOW + 61, 600)
+        .unwrap();
+    assert!(entry_path(&fixture, &live).exists());
+    assert!(entry_path(&fixture, &malformed).exists());
+    assert!(entry_path(&fixture, &mismatch).exists());
+    assert!(!entry_path(&fixture, &expired).exists());
+    assert!(!entry_path(&fixture, &foreign).exists());
+    assert!(!entry_path(&fixture, &future).exists());
+    assert_eq!(hit_id(&fixture, &live, NOW + 62).as_deref(), Some("c00"));
+}

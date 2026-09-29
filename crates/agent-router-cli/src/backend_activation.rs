@@ -100,6 +100,7 @@ fn error(error: StoreError) -> CliError {
         StoreError::Path => "backend_store.path",
         StoreError::Io => "backend_store.io",
         StoreError::Clock => "backend_store.clock",
+        StoreError::PublishedDurabilityUnknown => "backend_store.published_durability_unknown",
         StoreError::Unsupported => "backend_store.platform.unsupported",
         StoreError::Promotion(_) => "backend_store.promotion",
     })

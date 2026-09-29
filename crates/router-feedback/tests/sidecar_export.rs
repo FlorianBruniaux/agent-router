@@ -151,3 +151,45 @@ fn collection_without_learning_does_not_authorize_current_revision_export() {
         Err(router_feedback::FeedbackError::LearningDisabled)
     ));
 }
+
+#[test]
+fn reentry_from_the_guard_holding_thread_is_locked_not_a_deadlock() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = Arc::new(FeedbackStore::open(&dir.path().join("feedback")).unwrap());
+    store.configure(preferences(), 100).unwrap();
+    let event = store.record(input(100, false), 100).unwrap();
+    let (result_tx, result_rx) = mpsc::channel();
+    let worker = store.clone();
+    // A regression would deadlock, so the reentrant calls run on a thread that
+    // the test can give up on.
+    thread::spawn(move || {
+        let guard = worker
+            .authorize_sidecar_export(event.sequence, &event.event_hash, 1, 100)
+            .unwrap();
+        let configure = worker.configure(Default::default(), 101);
+        let consent = worker.consent();
+        let second = worker
+            .authorize_sidecar_export(event.sequence, &event.event_hash, 1, 100)
+            .map(|_| ());
+        drop(guard);
+        let after = worker.consent().map(|_| ());
+        result_tx
+            .send((configure.map(|_| ()), consent.map(|_| ()), second, after))
+            .unwrap();
+    });
+    let (configure, consent, second, after) =
+        result_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    assert!(matches!(
+        configure,
+        Err(router_feedback::FeedbackError::Locked)
+    ));
+    assert!(matches!(
+        consent,
+        Err(router_feedback::FeedbackError::Locked)
+    ));
+    assert!(matches!(
+        second,
+        Err(router_feedback::FeedbackError::Locked)
+    ));
+    assert!(after.is_ok());
+}

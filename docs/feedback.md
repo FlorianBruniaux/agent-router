@@ -146,7 +146,10 @@ Collection or learning consent alone never causes network transmission.
 `--allow-sidecar-export`, destination, artifact pin, event hash and current consent
 revision. They send exactly one retained event under a live consent guard; no
 runtime completion path invokes them. The projection removes free identifiers
-and keeps automated, human, validation and objective outcomes distinct.
+and keeps automated, human, validation and objective outcomes distinct. The guard
+holds the store lock across the exchange; any store call from the thread holding
+it returns `feedback.storage_locked` instead of deadlocking, and other threads wait
+until the guard drops.
 
 See [standard sidecar export](standard-sidecar.md) for the authority boundary,
 redaction, retention checks and `delivery_unknown` after an ambiguous POST. A

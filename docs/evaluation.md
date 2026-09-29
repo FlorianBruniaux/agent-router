@@ -70,7 +70,14 @@ generator and replay call no model or external provider.
 
 `compare_shadow` requires independent labels, matching held-out data,
 pre-registered criteria, observed gain, no route-accuracy regression and zero
-hard-constraint violations. Tests confirm that the generated held-out cases
+hard-constraint violations. Every metric guards against regression: a metric the
+criteria do not list may not regress at all, and only an explicit rule's recorded
+`maximum_regression_micros` allows a listed metric to regress. An unlisted metric
+that cannot be measured (unknown outcomes, missing latency) blocks nothing and is
+not reported: `ShadowReport` has no warnings list, and adding a serialized field
+is a contract change left to a decision. A listed one blocks as
+`promotion.metric_unknown.*`. Policy: ADR 0017
+(`docs/adr/0017-bounded-retention-and-publish-durability.md`). Tests confirm that the generated held-out cases
 cannot enable promotion. A passing evaluation is only evidence for the
 [separate signed activation protocol](feedback.md).
 
