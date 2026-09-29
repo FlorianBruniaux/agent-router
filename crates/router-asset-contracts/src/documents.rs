@@ -374,30 +374,89 @@ fn bounded<T: serde::Serialize>(value: &T) -> Result<()> {
     }
     Ok(())
 }
+/// Rejects a repeated element inside any array. Each value is reduced once,
+/// bottom-up, to a fixed-size structural digest, so the work stays linear in
+/// the document size instead of re-serializing every subtree at every level.
+fn distinct(value: &serde_json::Value) -> Result<()> {
+    distinct_digest(value).map(|_| ())
+}
+fn distinct_digest(value: &serde_json::Value) -> Result<[u8; 32]> {
+    use sha2::{Digest, Sha256};
+    fn frame(hasher: &mut Sha256, tag: u8, bytes: &[u8]) {
+        hasher.update([tag]);
+        hasher.update((bytes.len() as u64).to_be_bytes());
+        hasher.update(bytes);
+    }
+    let mut hasher = Sha256::new();
+    match value {
+        serde_json::Value::Null => hasher.update([0]),
+        serde_json::Value::Bool(value) => hasher.update([1, u8::from(*value)]),
+        serde_json::Value::Number(number) => frame(&mut hasher, 2, number.to_string().as_bytes()),
+        serde_json::Value::String(text) => frame(&mut hasher, 3, text.as_bytes()),
+        serde_json::Value::Array(values) => {
+            let mut seen = BTreeSet::new();
+            hasher.update([4]);
+            hasher.update((values.len() as u64).to_be_bytes());
+            for value in values {
+                let child = distinct_digest(value)?;
+                if !seen.insert(child) {
+                    return Err(ContractError::Schema);
+                }
+                hasher.update(child);
+            }
+        }
+        serde_json::Value::Object(values) => {
+            let mut fields: Vec<_> = values.iter().collect();
+            fields.sort_by(|a, b| a.0.cmp(b.0));
+            hasher.update([5]);
+            hasher.update((fields.len() as u64).to_be_bytes());
+            for (key, value) in fields {
+                frame(&mut hasher, 6, key.as_bytes());
+                hasher.update(distinct_digest(value)?);
+            }
+        }
+    }
+    Ok(hasher.finalize().into())
+}
 pub(crate) fn parse<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     if bytes.len() > MAX_DOCUMENT_BYTES {
         return Err(ContractError::Limit);
     }
     let value = strict_json(bytes).map_err(|_| ContractError::Schema)?;
-    fn distinct(value: &serde_json::Value) -> Result<()> {
-        match value {
-            serde_json::Value::Array(items) => {
-                let mut seen = BTreeSet::new();
-                for item in items {
-                    let encoded = serde_json::to_string(item).map_err(|_| ContractError::Schema)?;
-                    require(seen.insert(encoded))?;
-                    distinct(item)?;
-                }
-            }
-            serde_json::Value::Object(fields) => {
-                for item in fields.values() {
-                    distinct(item)?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
     distinct(&value)?;
     serde_json::from_value(value).map_err(|_| ContractError::Schema)
+}
+
+#[cfg(test)]
+mod distinct_tests {
+    use super::*;
+
+    #[test]
+    fn distinct_is_linear_on_deep_single_element_chains() {
+        // About 3.6 MB of leaf text under 120 single-element arrays. Serializing
+        // every element at every level would cost roughly 430 MB of work.
+        let leaf: Vec<serde_json::Value> = (0..3_600)
+            .map(|i| serde_json::Value::String(format!("{i:0>1000}")))
+            .collect();
+        let mut value = serde_json::Value::Array(leaf);
+        for _ in 0..120 {
+            value = serde_json::Value::Array(vec![value]);
+        }
+        let started = std::time::Instant::now();
+        assert!(distinct(&value).is_ok());
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(3),
+            "distinct took {:?}",
+            started.elapsed()
+        );
+    }
+
+    #[test]
+    fn distinct_still_rejects_repeats_at_every_depth() {
+        assert!(matches!(
+            distinct(&serde_json::json!({"a": [[1], [1]]})),
+            Err(ContractError::Schema)
+        ));
+        assert!(distinct(&serde_json::json!({"a": [[1, 2], [2, 1]]})).is_ok());
+    }
 }

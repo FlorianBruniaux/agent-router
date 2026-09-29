@@ -26,6 +26,7 @@ pub const MAX_LIST_ITEMS: usize = 32;
 pub const MAX_INDEX_TERMS: usize = 2_000_000;
 pub const MAX_QUERY_BYTES: usize = 4096;
 pub const MAX_QUERY_TERMS: usize = 64;
+pub const MAX_QUERY_PHRASES: usize = 8;
 pub const MAX_RESULTS: usize = 50;
 pub const MAX_QUERY_POSTINGS: usize = 2_000_000;
 pub const MAX_BODY_BYTES: usize = 1024 * 1024;

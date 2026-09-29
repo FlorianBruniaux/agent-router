@@ -33,6 +33,23 @@ pub(crate) fn is_bidi(c: char) -> bool {
     matches!(c, '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
 }
 
+/// Report paths are operator-facing text: control and bidirectional characters
+/// are written as `\u{..}` and a literal backslash as `\\`, so a hostile file
+/// name cannot inject terminal escapes or reorder the rendered report.
+pub(crate) fn escape_path(path: &str) -> String {
+    let mut escaped = String::with_capacity(path.len());
+    for c in path.chars() {
+        if c == '\\' {
+            escaped.push_str("\\\\");
+        } else if c.is_control() || is_bidi(c) {
+            escaped.push_str(&format!("\\u{{{:x}}}", u32::from(c)));
+        } else {
+            escaped.push(c);
+        }
+    }
+    escaped
+}
+
 /// Everything except the directory contents is supplied by the operator.
 /// Frontmatter `license`, `author`, `source` and similar keys are ignored.
 #[derive(Clone, Debug)]
@@ -227,7 +244,7 @@ pub fn import_directory(request: &ImportRequest) -> Result<ImportOutput, ImportE
         match parse_definition(&file.bytes) {
             Ok((id, description, ignored)) => parsed.push((file, id, description, ignored)),
             Err(reason) => report.refused.push(RefusedFile {
-                path: file.relative,
+                path: escape_path(&file.relative),
                 reason,
             }),
         }
@@ -250,7 +267,7 @@ pub fn import_directory(request: &ImportRequest) -> Result<ImportOutput, ImportE
         paths.sort();
         for path in &paths {
             report.refused.push(RefusedFile {
-                path: path.clone(),
+                path: escape_path(path),
                 reason: RefusalReason::DuplicateId,
             });
         }
@@ -465,31 +482,10 @@ fn validate_request(request: &ImportRequest) -> Result<(), ImportError> {
     Ok(())
 }
 
-/// Stricter than the signed catalog verifier. Accepts a lowercase `https://`
-/// URL with a non-empty host and no `.`/`..` segment, or a bare identifier with
-/// no separator and no scheme. Local paths (absolute, relative, `file:` in any
-/// case, drive paths), credentials, queries and fragments are refused.
+/// Same predicate as the signed catalog verifier (`public_source`): a public
+/// `https://` URL without credentials, query, fragment, dot segments or a
+/// loopback, private or link-local host, or a bare identifier. Local paths and
+/// `file:` locators in any case are refused.
 fn public_locator(value: &str) -> bool {
-    if value
-        .chars()
-        .any(|c| c.is_whitespace() || c.is_control() || is_bidi(c))
-        || value.contains(['@', '?', '#', '\\'])
-    {
-        return false;
-    }
-    let dotted = |part: &str| part == "." || part == "..";
-    if let Some(rest) = value.strip_prefix("https://") {
-        let mut parts = rest.split('/');
-        let host = parts.next().unwrap_or_default();
-        return !host.is_empty()
-            && !dotted(host)
-            && host
-                .bytes()
-                .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b':'))
-            && !parts.any(dotted);
-    }
-    !dotted(value)
-        && value
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
+    router_catalog::public_source(value)
 }

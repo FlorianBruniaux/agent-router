@@ -86,3 +86,45 @@ fn task_context() -> TaskContext {
         acceptance: Vec::new(),
     }
 }
+
+#[test]
+fn rejects_oversized_documents_and_too_many_candidates() {
+    let padding = " ".repeat(1024 * 1024 + 1);
+    let bytes = format!(r#"{{"schema_version":"1","source":"s","candidates":[]}}{padding}"#);
+    let error = parse_candidate_document(bytes.as_bytes()).unwrap_err();
+    assert_eq!(error.code(), "retrieval.document.too_large");
+
+    let entries = (0..513)
+        .map(|i| format!(r#"{{"skill":"skill-{i}","score_micros":1}}"#))
+        .collect::<Vec<_>>()
+        .join(",");
+    let bytes = format!(r#"{{"schema_version":"1","source":"s","candidates":[{entries}]}}"#);
+    let error = parse_candidate_document(bytes.as_bytes()).unwrap_err();
+    assert_eq!(error.code(), "retrieval.candidates.too_many");
+    assert_eq!(error.path(), "candidates");
+
+    let source = "s".repeat(257);
+    let bytes = format!(r#"{{"schema_version":"1","source":"{source}","candidates":[]}}"#);
+    let error = parse_candidate_document(bytes.as_bytes()).unwrap_err();
+    assert_eq!(error.code(), "retrieval.source.too_long");
+}
+
+#[test]
+fn rejects_unknown_fields_in_documents_and_candidates() {
+    let bytes = br#"{"schema_version":"1","source":"s","extra":1,"candidates":[]}"#;
+    let error = parse_candidate_document(bytes).unwrap_err();
+    assert_eq!(error.code(), "retrieval.json.invalid");
+    assert!(
+        error.to_string().contains("unknown field `extra`"),
+        "{error}"
+    );
+
+    let bytes =
+        br#"{"schema_version":"1","source":"s","candidates":[{"skill":"tdd","score_micros":1,"boost":9}]}"#;
+    let error = parse_candidate_document(bytes).unwrap_err();
+    assert_eq!(error.code(), "retrieval.json.invalid");
+    assert!(
+        error.to_string().contains("unknown field `boost`"),
+        "{error}"
+    );
+}

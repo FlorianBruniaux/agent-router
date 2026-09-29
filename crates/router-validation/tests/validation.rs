@@ -513,3 +513,32 @@ fn evidence_digest_covers_every_body_field() {
         assert!(!t.digest_is_consistent());
     }
 }
+
+#[test]
+fn unit_assertion_rejects_extra_fields_and_keeps_its_shape() {
+    let ok =
+        r#"{"version":1,"scope":["src"],"assertions":[{"kind":"changed_paths_within_scope"}]}"#;
+    let parsed = parse_contract(ok.as_bytes()).expect("bare unit assertion");
+    assert_eq!(
+        serde_json::to_string(&parsed.contract().assertions[0]).unwrap(),
+        r#"{"kind":"changed_paths_within_scope"}"#
+    );
+    let extra = r#"{"version":1,"scope":["src"],"assertions":[{"kind":"changed_paths_within_scope","path":"src"}]}"#;
+    match parse_contract(extra.as_bytes()) {
+        Err(ValidationError::InvalidContract(message)) => {
+            assert!(message.contains("unknown field"), "{message}");
+        }
+        other => panic!("expected InvalidContract, got {other:?}"),
+    }
+}
+
+#[test]
+fn duplicate_keys_inside_expected_value_are_rejected() {
+    let json = r#"{"version":1,"assertions":[{"kind":"json_pointer_equals","path":"a.json","pointer":"","value":{"k":1,"k":2}}]}"#;
+    match parse_contract(json.as_bytes()) {
+        Err(ValidationError::InvalidContract(message)) => {
+            assert!(message.contains("duplicate object key"), "{message}");
+        }
+        other => panic!("expected InvalidContract, got {other:?}"),
+    }
+}

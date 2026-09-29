@@ -30,8 +30,9 @@ document and passing it back as the expected hash does not establish authority.
 integrity only. All library errors have fixed codes and omit input text.
 
 Inputs use strict JSON with unknown fields, duplicate keys and duplicate array
-members rejected. Documents are limited to 4 MiB, 64 models/availability rows,
-256 skills and 64 evidence entries. Labels, collections, timestamps and numeric
+members rejected. Duplicate detection digests each value once, bottom-up, so its
+work is linear in the document size. Documents are limited to 4 MiB, 64
+models/availability rows, 256 skills and 64 evidence entries. Labels, collections, timestamps and numeric
 limits are bounded. License expressions have bounded boolean-expression syntax
 and must exactly match the caller's approved license allowlist. The library does
 not determine legal compatibility or infer a license from a repository URL.

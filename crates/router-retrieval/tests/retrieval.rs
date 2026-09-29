@@ -558,3 +558,41 @@ fn quoted_technical_terms_preserve_language_identity() {
     assert_eq!(result.candidates.len(), 1);
     assert_eq!(result.candidates[0].phrase_evidence[0].phrase, "c++");
 }
+
+#[test]
+fn repeated_quoted_phrases_collapse_and_distinct_phrases_are_capped() {
+    let index = index(vec![asset("rust-tests", "x regression fixtures")]);
+    let single = index.search(&SearchQuery::new("\"x\"")).unwrap();
+    let repeated = "\"x\" ".repeat(60);
+    let flooded = index.search(&SearchQuery::new(&repeated)).unwrap();
+    assert_eq!(flooded, single);
+    assert_eq!(flooded.candidates[0].phrase_evidence.len(), 1);
+
+    let phrases = |n: usize| {
+        (0..n)
+            .map(|i| format!("\"p{i}\""))
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    assert!(
+        index
+            .search(&SearchQuery::new(phrases(MAX_QUERY_PHRASES)))
+            .is_ok()
+    );
+    assert!(matches!(
+        index.search(&SearchQuery::new(phrases(MAX_QUERY_PHRASES + 1))),
+        Err(RetrievalError::Limit("query phrases"))
+    ));
+}
+
+#[test]
+fn index_hash_is_pinned_to_the_scoring_parameters() {
+    let index = index(vec![asset("rust-tests", "regression fixtures")]);
+    let result = index.search(&SearchQuery::new("regression")).unwrap();
+    // Recorded before the parameters were derived from constants: the value
+    // must not move unless a scoring parameter is deliberately changed.
+    assert_eq!(
+        result.index_hash,
+        "c13a41bf68bbeb2c800aa6a3f218996b373d3dffe4a73540e4b163793a750b22"
+    );
+}

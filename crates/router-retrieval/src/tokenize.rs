@@ -29,13 +29,21 @@ pub(crate) fn terms(text: &str) -> BTreeMap<String, u32> {
     result
 }
 
-pub(crate) fn quoted_phrases(text: &str) -> Vec<String> {
-    text.split('"')
-        .skip(1)
-        .step_by(2)
-        .map(phrase)
-        .filter(|p| !p.is_empty())
-        .collect()
+/// Distinct quoted phrases in first-occurrence order. More than
+/// `MAX_QUERY_PHRASES` distinct phrases is a limit error: every phrase is
+/// matched against every field of every candidate asset.
+pub(crate) fn quoted_phrases(text: &str) -> crate::Result<Vec<String>> {
+    let mut phrases: Vec<String> = Vec::new();
+    for candidate in text.split('"').skip(1).step_by(2).map(phrase) {
+        if candidate.is_empty() || phrases.contains(&candidate) {
+            continue;
+        }
+        if phrases.len() >= crate::MAX_QUERY_PHRASES {
+            return Err(crate::RetrievalError::Limit("query phrases"));
+        }
+        phrases.push(candidate);
+    }
+    Ok(phrases)
 }
 
 pub(crate) fn phrase(text: &str) -> String {

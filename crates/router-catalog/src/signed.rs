@@ -891,25 +891,16 @@ pub fn seal_signed_manifest(mut manifest: SignedCatalogManifest) -> Result<Signe
         }
         entry.payload_sha256 = digest(b"agent-router:signed-asset-payload:v1\0", &entry.payload)?;
     }
+    let mut edges = BTreeMap::new();
     for entry in &manifest.assets {
         if let Some(next) = &entry.deprecated_by {
             if next.kind != entry.payload.kind() || next == &entry.key() || !keys.contains(next) {
                 return Err(SignedCatalogError::Invalid);
             }
-            let mut cursor = Some(next);
-            let mut seen = BTreeSet::from([entry.key()]);
-            while let Some(key) = cursor {
-                if !seen.insert(key.clone()) {
-                    return Err(SignedCatalogError::Invalid);
-                }
-                cursor = manifest
-                    .assets
-                    .iter()
-                    .find(|e| e.key() == *key)
-                    .and_then(|e| e.deprecated_by.as_ref());
-            }
         }
+        edges.insert(entry.key(), entry.deprecated_by.clone());
     }
+    deprecation_walk(&edges)?;
     let model_ids: BTreeSet<_> = manifest
         .assets
         .iter()
@@ -1166,7 +1157,10 @@ fn label(value: &str) -> bool {
 fn text(value: &str, limit: usize) -> bool {
     !value.trim().is_empty() && value.len() <= limit && !value.chars().any(char::is_control)
 }
-fn public_source(value: &str) -> bool {
+/// Provenance locator accepted by the signed verifier: a public `https://` URL
+/// or a bare identifier, never a local path, credential, loopback, private or
+/// link-local host.
+pub fn public_source(value: &str) -> bool {
     if !text(value, 512) || value.contains(['@', '?', '#', '\\']) {
         return false;
     }
@@ -1174,10 +1168,11 @@ fn public_source(value: &str) -> bool {
         let (authority, path) = rest.split_once('/').unwrap_or((rest, ""));
         return public_authority(authority) && public_path(path);
     }
-    value != "."
-        && value != ".."
-        && value
-            .bytes()
+    let bytes = value.as_bytes();
+    bytes.first().is_some_and(u8::is_ascii_alphanumeric)
+        && bytes.last().is_some_and(u8::is_ascii_alphanumeric)
+        && bytes
+            .iter()
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'.' | b'-' | b'_'))
 }
 fn public_authority(value: &str) -> bool {
@@ -1186,6 +1181,7 @@ fn public_authority(value: &str) -> bool {
         None => (value, None),
     };
     !host.is_empty()
+        && !local_host(host)
         && host.bytes().any(|b| b != b'.')
         && host
             .bytes()
@@ -1195,6 +1191,42 @@ fn public_authority(value: &str) -> bool {
                 && port.bytes().all(|b| b.is_ascii_digit())
                 && port.parse::<u32>().is_ok_and(|p| (1..=65535).contains(&p))
         })
+}
+/// Loopback, private, link-local and otherwise non-public hosts. A host whose
+/// last label looks numeric must be a strict decimal dotted quad, so the
+/// integer and hexadecimal spellings of an address cannot bypass the ranges.
+fn local_host(host: &str) -> bool {
+    let lower = host.to_ascii_lowercase();
+    let name = lower.trim_end_matches('.');
+    if name == "localhost" || name.ends_with(".localhost") || name.ends_with(".local") {
+        return true;
+    }
+    let last = name.rsplit('.').next().unwrap_or("");
+    if !last.bytes().next().is_some_and(|b| b.is_ascii_digit()) {
+        return false;
+    }
+    let octets: Vec<Option<u8>> = name
+        .split('.')
+        .map(|part| {
+            (!part.is_empty()
+                && part.len() <= 3
+                && part.bytes().all(|b| b.is_ascii_digit())
+                && (part.len() == 1 || !part.starts_with('0')))
+            .then(|| part.parse().ok())
+            .flatten()
+        })
+        .collect();
+    let [Some(a), Some(b), Some(_), Some(_)] = octets[..] else {
+        return true;
+    };
+    a == 0
+        || a == 10
+        || a == 127
+        || (a == 169 && b == 254)
+        || (a == 172 && (16..=31).contains(&b))
+        || (a == 192 && b == 168)
+        || (a == 100 && (64..=127).contains(&b))
+        || a >= 224
 }
 /// Empty segments are refused except one trailing slash.
 fn public_path(path: &str) -> bool {
@@ -1251,26 +1283,72 @@ fn bounded_json(value: &impl Serialize) -> Result<Vec<u8>> {
 fn digest(domain: &[u8], value: &impl Serialize) -> Result<String> {
     Ok(crate::content_hash(domain, &bounded_json(value)?))
 }
+/// Rejects `deprecated_by` cycles. Every chain is walked once: a node already
+/// proven acyclic ends the walk, so total work is linear in the entry count.
+/// Returns the number of edge traversals so a test can bound the work.
+fn deprecation_walk(edges: &BTreeMap<SignedAssetKey, Option<SignedAssetKey>>) -> Result<usize> {
+    let mut acyclic: BTreeSet<&SignedAssetKey> = BTreeSet::new();
+    let mut steps = 0;
+    for start in edges.keys() {
+        let mut path: BTreeSet<&SignedAssetKey> = BTreeSet::new();
+        let mut cursor = Some(start);
+        while let Some(key) = cursor {
+            if acyclic.contains(key) {
+                break;
+            }
+            if !path.insert(key) {
+                return Err(SignedCatalogError::Invalid);
+            }
+            steps += 1;
+            cursor = edges.get(key).and_then(Option::as_ref);
+        }
+        acyclic.extend(path);
+    }
+    Ok(steps)
+}
+/// Rejects a repeated element inside any array. Each value is reduced once,
+/// bottom-up, to a fixed-size structural digest, so the work stays linear in
+/// the document size instead of re-serializing every subtree at every level.
 fn reject_duplicates(value: &serde_json::Value) -> Result<()> {
+    structural_digest(value).map(|_| ())
+}
+fn structural_digest(value: &serde_json::Value) -> Result<[u8; 32]> {
+    use sha2::{Digest, Sha256};
+    fn frame(hasher: &mut Sha256, tag: u8, bytes: &[u8]) {
+        hasher.update([tag]);
+        hasher.update((bytes.len() as u64).to_be_bytes());
+        hasher.update(bytes);
+    }
+    let mut hasher = Sha256::new();
     match value {
+        serde_json::Value::Null => hasher.update([0]),
+        serde_json::Value::Bool(value) => hasher.update([1, u8::from(*value)]),
+        serde_json::Value::Number(number) => frame(&mut hasher, 2, number.to_string().as_bytes()),
+        serde_json::Value::String(text) => frame(&mut hasher, 3, text.as_bytes()),
         serde_json::Value::Array(values) => {
             let mut seen = BTreeSet::new();
+            hasher.update([4]);
+            hasher.update((values.len() as u64).to_be_bytes());
             for value in values {
-                if !seen.insert(serde_json::to_vec(value).map_err(|_| SignedCatalogError::Invalid)?)
-                {
+                let child = structural_digest(value)?;
+                if !seen.insert(child) {
                     return Err(SignedCatalogError::Invalid);
                 }
-                reject_duplicates(value)?;
+                hasher.update(child);
             }
         }
         serde_json::Value::Object(values) => {
-            for value in values.values() {
-                reject_duplicates(value)?;
+            let mut fields: Vec<_> = values.iter().collect();
+            fields.sort_by(|a, b| a.0.cmp(b.0));
+            hasher.update([5]);
+            hasher.update((fields.len() as u64).to_be_bytes());
+            for (key, value) in fields {
+                frame(&mut hasher, 6, key.as_bytes());
+                hasher.update(structural_digest(value)?);
             }
         }
-        _ => {}
     }
-    Ok(())
+    Ok(hasher.finalize().into())
 }
 fn reject_unknown(input: &serde_json::Value, typed: &serde_json::Value) -> Result<()> {
     match (input, typed) {
@@ -1287,4 +1365,87 @@ fn reject_unknown(input: &serde_json::Value, typed: &serde_json::Value) -> Resul
         _ => {}
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod duplicate_tests {
+    use super::*;
+
+    fn deep_chain(depth: usize, leaf_items: usize) -> serde_json::Value {
+        let leaf: Vec<serde_json::Value> = (0..leaf_items)
+            .map(|i| serde_json::Value::String(format!("{i:0>1000}")))
+            .collect();
+        let mut value = serde_json::Value::Array(leaf);
+        for _ in 0..depth {
+            value = serde_json::Value::Array(vec![value]);
+        }
+        value
+    }
+
+    #[test]
+    fn duplicate_detection_is_linear_on_deep_single_element_chains() {
+        // About 3.6 MB of leaf text under 120 single-element arrays. Serializing
+        // every element at every level would cost roughly 430 MB of work.
+        let value = deep_chain(120, 3_600);
+        let started = std::time::Instant::now();
+        assert!(reject_duplicates(&value).is_ok());
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(3),
+            "duplicate detection took {:?}",
+            started.elapsed()
+        );
+    }
+
+    fn key(index: usize) -> SignedAssetKey {
+        SignedAssetKey {
+            kind: CatalogAssetKind::Skill,
+            id: format!("skill-{index}"),
+        }
+    }
+
+    #[test]
+    fn deprecation_walk_is_linear_on_a_512_entry_chain() {
+        let mut edges = BTreeMap::new();
+        for index in 0..512 {
+            edges.insert(key(index), (index + 1 < 512).then(|| key(index + 1)));
+        }
+        let steps = deprecation_walk(&edges).expect("acyclic chain");
+        assert!(steps <= 512, "walked {steps} edges for 512 entries");
+    }
+
+    #[test]
+    fn deprecation_walk_rejects_a_cycle_and_a_late_cycle() {
+        let mut edges = BTreeMap::new();
+        for index in 0..512 {
+            edges.insert(key(index), Some(key((index + 1) % 512)));
+        }
+        assert!(matches!(
+            deprecation_walk(&edges),
+            Err(SignedCatalogError::Invalid)
+        ));
+        let mut tail = BTreeMap::new();
+        tail.insert(key(0), Some(key(1)));
+        tail.insert(key(1), Some(key(2)));
+        tail.insert(key(2), Some(key(1)));
+        assert!(matches!(
+            deprecation_walk(&tail),
+            Err(SignedCatalogError::Invalid)
+        ));
+    }
+
+    #[test]
+    fn duplicates_are_still_found_at_every_depth() {
+        let repeated = serde_json::json!({"a": [[1], [1]]});
+        assert!(matches!(
+            reject_duplicates(&repeated),
+            Err(SignedCatalogError::Invalid)
+        ));
+        let reordered = serde_json::json!({"a": [[1, 2], [2, 1]], "b": [{"x": 1}, {"x": 1.0}]});
+        assert!(reject_duplicates(&reordered).is_ok());
+        let objects = serde_json::json!([{"k": [1, {"z": 0}]}, {"k": [1, {"z": 0}]}]);
+        assert!(matches!(
+            reject_duplicates(&objects),
+            Err(SignedCatalogError::Invalid)
+        ));
+    }
 }

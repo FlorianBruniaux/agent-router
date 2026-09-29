@@ -137,6 +137,7 @@ pub enum SkillTrust {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct HostSnapshot {
     pub id: String,
     pub harness: HarnessId,
@@ -146,6 +147,7 @@ pub struct HostSnapshot {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct ModelSpec {
     pub id: ModelId,
     pub stages: BTreeSet<StageKind>,
@@ -158,6 +160,7 @@ pub struct ModelSpec {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SkillSpec {
     pub id: SkillId,
     pub description: String,
@@ -167,6 +170,7 @@ pub struct SkillSpec {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
 pub struct SkillCandidate {
     pub skill: SkillId,
     pub source: String,
