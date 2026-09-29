@@ -33,7 +33,8 @@ const EVENT_FIXED_BYTES: usize = 1024;
 /// `review` keeps room for the activation event `apply` appends and for the
 /// rollback event that must always be able to revoke it. No approval exists at
 /// review time, so each event is bounded by its fixed part plus the longest
-/// configured signer id.
+/// configured signer id. `apply` re-checks the rollback room on every
+/// activation, because the snapshot may have grown since the review.
 const REVOCATION_EVENTS: usize = 2;
 
 #[derive(Debug, thiserror::Error)]
@@ -236,6 +237,7 @@ pub struct BackendStore {
     // may append, but a history that loses this checkpoint is rejected.
     anchor: Option<String>,
     snapshot_limit: usize,
+    promotion_limit: usize,
 }
 pub struct StoreGuard {
     _lock: files::Guard,
@@ -309,6 +311,7 @@ impl BackendStore {
             config_hash,
             anchor: None,
             snapshot_limit: MAX_SNAPSHOT_BYTES,
+            promotion_limit: MAX_PROMOTIONS,
         })
     }
     /// The expected config hash and optional history checkpoint come from
@@ -326,15 +329,24 @@ impl BackendStore {
             config_hash: expected_config_hash.into(),
             anchor: expected_head.map(str::to_owned),
             snapshot_limit: MAX_SNAPSHOT_BYTES,
+            promotion_limit: MAX_PROMOTIONS,
         };
         store.read_guard(now()?)?;
         Ok(store)
     }
-    /// Lowers the encoded snapshot bound enforced by `review` and `apply`. It
-    /// can never exceed `MAX_SNAPSHOT_BYTES`; reading is unaffected.
+    /// Lowers the encoded snapshot bound enforced by `review` and `apply`,
+    /// intended for tests. It only ever lowers: a later call cannot raise it
+    /// above the current bound or `MAX_SNAPSHOT_BYTES`. Reading is unaffected.
     #[must_use]
     pub fn with_snapshot_limit(mut self, limit: usize) -> Self {
-        self.snapshot_limit = limit.min(MAX_SNAPSHOT_BYTES);
+        self.snapshot_limit = self.snapshot_limit.min(limit);
+        self
+    }
+    /// Lowers the retained promotion count enforced by `review` and `apply`,
+    /// intended for tests. It only ever lowers, never above `MAX_PROMOTIONS`.
+    #[must_use]
+    pub fn with_promotion_limit(mut self, limit: usize) -> Self {
+        self.promotion_limit = self.promotion_limit.min(limit);
         self
     }
     pub fn config_hash(&self) -> &str {
@@ -455,7 +467,7 @@ impl BackendStore {
         // Refuse early: simulate the snapshot `apply` would encode with this
         // promotion retained, so no approval is signed for an unappliable change.
         if !snapshot.promotions.contains_key(accepted.promotion_hash()) {
-            if snapshot.promotions.len() >= MAX_PROMOTIONS {
+            if snapshot.promotions.len() >= self.promotion_limit {
                 return Err(StoreError::Limit);
             }
             let mut simulated = snapshot;
@@ -468,14 +480,7 @@ impl BackendStore {
                     promotion_hash: accepted.promotion_hash().into(),
                 },
             );
-            let longest_id = simulated
-                .config
-                .authorities
-                .iter()
-                .map(|key| key.id.len())
-                .max()
-                .unwrap_or(0);
-            let reserve = REVOCATION_EVENTS * (EVENT_FIXED_BYTES + longest_id);
+            let reserve = REVOCATION_EVENTS * event_room(&simulated.config);
             simulated.encode(self.snapshot_limit.saturating_sub(reserve))?;
         }
         drop(lock);
@@ -550,7 +555,7 @@ impl BackendStore {
                     return Err(StoreError::Integrity);
                 }
             } else {
-                if snapshot.promotions.len() >= MAX_PROMOTIONS {
+                if snapshot.promotions.len() >= self.promotion_limit {
                     return Err(StoreError::Limit);
                 }
                 let mut record = review.record.clone();
@@ -562,8 +567,16 @@ impl BackendStore {
         }
         snapshot.events = state.events().to_vec();
         snapshot.head = state.state_hash().into();
-        self.root
-            .commit(&snapshot.encode(self.snapshot_limit)?, Some(&before))?;
+        // An activation leaves room for its own rollback, whatever the review
+        // saw and whether or not the promotion was already retained. A rollback
+        // uses the full bound so revocation is never blocked by size.
+        let limit = if review.is_some() {
+            self.snapshot_limit
+                .saturating_sub(event_room(&snapshot.config))
+        } else {
+            self.snapshot_limit
+        };
+        self.root.commit(&snapshot.encode(limit)?, Some(&before))?;
         status(&snapshot, &state, &authorities, self.anchor.is_some(), now)
     }
     #[allow(clippy::type_complexity)]
@@ -674,6 +687,11 @@ fn status(
         active_expired: active.map(|p| p.expires_at_unix_seconds() <= now),
         external_anchor_checked: anchor,
     })
+}
+/// Bound of one serialized activation event under this configuration.
+fn event_room(config: &StoreConfig) -> usize {
+    let longest_id = config.authorities.iter().map(|key| key.id.len()).max();
+    EVENT_FIXED_BYTES + longest_id.unwrap_or(0)
 }
 fn valid_hash(value: &str) -> bool {
     value.len() == 64

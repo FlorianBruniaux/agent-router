@@ -110,12 +110,18 @@ with `backend_store.limit`. It does not bound their size: retained promotions
 can reach the 64 MiB snapshot bound first, so `review` simulates the snapshot
 with the new promotion retained, encodes it with the same function as `apply`,
 and refuses with `backend_store.limit` before any approval exists. It keeps
-room for two events, the activation event `apply` appends and the rollback
-event that must always be able to revoke it (`REVOCATION_EVENTS`). Each event is
+room for two events: the activation event `apply` appends and the rollback event
+that must always be able to revoke it (`REVOCATION_EVENTS`). Each event is
 bounded by 1 KiB plus the longest configured signer id, since the fixed part
-(five hashes, a signature, field names and integers) measures under 1 KiB. So a
-promotion admitted by `review` can always be activated and rolled back within
-the snapshot bound. `apply` keeps its own check. Nothing is pruned: replay from genesis needs every event
+(five hashes, a signature, field names and integers) measures under 1 KiB.
+
+The rollback room is checked twice. `review` checks it for a new promotion.
+`apply` checks it again on every activation, including the reactivation of an
+already retained promotion and an approval issued from a review that is now
+stale, because the snapshot may have grown in between. An activation is refused
+with `backend_store.limit` when its snapshot leaves less than one event of room.
+A rollback is encoded against the full bound, so revocation is never blocked by
+snapshot size. Nothing is pruned: replay from genesis needs every event
 and promotion to rebuild used nonces and artifact versions, and dropping either
 would reopen nonce and version replay. Checkpoint compaction (a signed restore
 from a snapshot with nonce and version carry-over) is deferred; see ADR 0017
