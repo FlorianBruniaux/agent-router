@@ -69,8 +69,11 @@ A poll first reads the queue in a deferred transaction and takes the write lock
 only when it must grant its ticket or release a dead waiter; the decision is then
 made again inside the immediate transaction. The pinned policy and budget policy
 rows are compared by SHA-256 digest of the stored JSON, computed once at open. A
-waiting run polls every 20 ms, doubling up to 250 ms while its queue reasons are
-unchanged and returning to 20 ms when they change.
+waiting run polls every 20 ms, doubling up to 100 ms while its queue reasons are
+unchanged and returning to 20 ms when they change. Trade-off: a waiter whose
+reasons stay constant is polled every 100 ms, so a hand-off between waiters and
+the observation of a cancellation can each be delayed by at most 100 ms (plus the
+cost of one poll), against 20 ms before.
 Restrictions of active tickets cannot be enlarged by a later, less restrictive
 ticket. Queue events list the actual binding capacity dimensions or `fair_turn`.
 
