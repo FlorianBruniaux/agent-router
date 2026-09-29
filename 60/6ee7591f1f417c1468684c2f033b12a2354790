@@ -1,0 +1,27 @@
+README.fr.md
+  s_00c6bf8ee605be::t_6654dd58b24206 380
+docs/README.fr.md
+  s_00c6bf8ee605be::t_c8d118886fedf6 5-6
+docs/README.md
+  s_00c6bf8ee605be::t_447351d85714f1 5-6
+docs/adr/0009-conservative-session-allocations.md
+  s_00c6bf8ee605be::t_bfa2e4dbfc5d5b 3
+docs/install.fr.md
+  s_00c6bf8ee605be::t_e0ee92ceb49d2d 92,102,171-176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "606ee7591f1f417c1468684c2f033b12a2354790",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
