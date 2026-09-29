@@ -29,6 +29,8 @@ pub(crate) struct Store {
     db: Mutex<Connection>,
     pub root: PathBuf,
     leases: LeaseStorage,
+    /// Trust point of the event chain, always locked after `db` (ADR 0018).
+    verified: Mutex<VerifiedChain>,
     _lock: Flock<File>,
 }
 
@@ -136,6 +138,7 @@ impl Store {
         let store = Self {
             db: Mutex::new(db),
             leases: LeaseStorage::open(&root)?,
+            verified: Mutex::new(VerifiedChain::default()),
             root,
             _lock: lock,
         };
@@ -148,12 +151,41 @@ impl Store {
         workflow: Option<&router_types::WorkflowRunBinding>,
         generated: Option<&router_types::GeneratedDecisionBinding>,
     ) -> Result<()> {
-        verify_plan_pin(&*self.lock()?, workflow, generated)
+        let db = self.lock()?;
+        let proof = verify_plan_pin(&db, &*self.verified()?, workflow, generated)?;
+        self.advance(proof)
     }
     fn lock(&self) -> Result<std::sync::MutexGuard<'_, Connection>> {
         self.db
             .lock()
             .map_err(|_| RuntimeError::Integrity("storage lock poisoned"))
+    }
+    fn verified(&self) -> Result<std::sync::MutexGuard<'_, VerifiedChain>> {
+        self.verified
+            .lock()
+            .map_err(|_| RuntimeError::Integrity("storage lock poisoned"))
+    }
+    /// Verifies the chain tail and moves the trust point. `db` must hold no
+    /// uncommitted write: the new point has to survive a rollback.
+    fn verify_committed_tail(&self, db: &Connection) -> Result<()> {
+        let proof = verify_tail(db, &*self.verified()?)?;
+        self.advance(Some(proof))
+    }
+    /// Callers hold `db` from verification to here, so no other proof can
+    /// have moved the point in between.
+    fn advance(&self, proof: Option<ChainProof>) -> Result<()> {
+        let Some(proof) = proof else {
+            return Ok(());
+        };
+        let mut verified = self.verified()?;
+        if verified.point.sequence != proof.base {
+            return Err(RuntimeError::Integrity("event chain"));
+        }
+        verified.point = proof.point;
+        for anchor in proof.anchors {
+            verified.anchors.insert(anchor.instance_id.clone(), anchor);
+        }
+        Ok(())
     }
     pub(crate) fn diagnose_snapshot(
         &self,
@@ -189,7 +221,15 @@ impl Store {
             if existing.definition_hash != summary.definition_hash {
                 return Err(RuntimeError::Integrity("definition changed"));
             }
-            verify_plan_pin(&tx, summary.workflow.as_ref(), generated)?;
+            // Nothing was written yet: the proof covers committed rows only.
+            let proof = verify_plan_pin(
+                &tx,
+                &*self.verified()?,
+                summary.workflow.as_ref(),
+                generated,
+            )?;
+            drop(tx);
+            self.advance(proof)?;
             return Ok(existing);
         }
         let mut initial_generated_pin = None;
@@ -297,8 +337,15 @@ impl Store {
                 &serde_json::to_string(&anchor)?,
             )?;
         }
-        verify_plan_pin(&tx, summary.workflow.as_ref(), generated)?;
+        // The tail includes this transaction's own events: advance after commit.
+        let proof = verify_plan_pin(
+            &tx,
+            &*self.verified()?,
+            summary.workflow.as_ref(),
+            generated,
+        )?;
         tx.commit()?;
+        self.advance(proof)?;
         Ok(summary.clone())
     }
     pub fn get(&self, id: &str) -> Result<RunSummary> {
@@ -972,8 +1019,15 @@ impl Store {
         }
         tx.commit().unwrap();
     }
+    /// Full replay of the chain, which also resets the owner's trust point.
     pub fn verify_events(&self) -> Result<()> {
-        verify_events(&*self.lock()?)
+        let db = self.lock()?;
+        // One read snapshot: the new point is the last row this replay saw.
+        let tx = db.unchecked_transaction()?;
+        let verified = verify_chain(&tx, &mut 0)?;
+        drop(tx);
+        *self.verified()? = verified;
+        Ok(())
     }
     fn recover(&self) -> Result<()> {
         let mut db = self.lock()?;
@@ -1392,38 +1446,132 @@ fn read_events(db: &Connection) -> Result<Vec<RuntimeEvent>> {
     }
     Ok(events)
 }
+#[cfg(test)]
+thread_local! {
+    static VERIFIED_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+/// Test-only count of event rows read by chain verification on this thread.
+fn count_verified_row() {
+    #[cfg(test)]
+    VERIFIED_ROWS.with(|rows| rows.set(rows.get() + 1));
+}
 fn verify_events(db: &Connection) -> Result<()> {
-    verify_diagnostic_events(db, &mut 0)
+    verify_chain(db, &mut 0).map(drop)
 }
 pub(crate) fn verify_diagnostic_events(db: &Connection, queries: &mut usize) -> Result<()> {
+    verify_chain(db, queries).map(drop)
+}
+const EVENT_COLUMNS: &str =
+    "SELECT sequence,run_id,kind,state,detail,previous_hash,event_hash FROM events";
+/// Full replay from the first event. Returns the last verified event and the
+/// plan authority anchors, so the owner can continue from there.
+fn verify_chain(db: &Connection, queries: &mut usize) -> Result<VerifiedChain> {
     *queries += 1;
-    // Rows are verified as they stream out of SQLite: no row count is refused
-    // and memory stays constant. Work is bounded by the caller's snapshot size.
-    let mut previous = String::new();
-    let mut expected = 0u64;
-    let mut q=db.prepare("SELECT sequence,run_id,kind,state,detail,previous_hash,event_hash FROM events ORDER BY sequence")?;
-    let mut rows = q.query([])?;
-    while let Some(row) = rows.next()? {
-        let event = event_from_row(row)?;
-        expected += 1;
-        if event.sequence != expected
-            || event.previous_hash != previous
-            || event.event_hash != event_digest(&event)?
-        {
-            return Err(RuntimeError::Integrity("event chain"));
-        }
-        previous = event.event_hash;
-    }
-    drop(rows);
+    let mut q = db.prepare(&format!("{EVENT_COLUMNS} ORDER BY sequence"))?;
+    let point = verify_rows(q.query([])?, ChainPoint::default(), None)?;
     drop(q);
     // Older schemas have no generated authority. Their legacy records remain
     // readable; the v7 migration never infers a generated pin from mutable data.
     *queries += 1;
-    if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 7 {
-        verify_authority_pins(db, queries)?;
-    }
-    Ok(())
+    let anchors = if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 7 {
+        verify_authority_pins(db, queries)?
+    } else {
+        std::collections::BTreeMap::new()
+    };
+    Ok(VerifiedChain { point, anchors })
 }
+/// Rows are verified as they stream out of SQLite: no row count is refused
+/// and memory stays constant. Work is bounded by the caller's snapshot size.
+fn verify_rows(
+    mut rows: rusqlite::Rows<'_>,
+    mut point: ChainPoint,
+    mut anchors: Option<&mut Vec<PlanAuthorityAnchor>>,
+) -> Result<ChainPoint> {
+    while let Some(row) = rows.next()? {
+        count_verified_row();
+        let event = event_from_row(row)?;
+        if Some(event.sequence) != point.sequence.checked_add(1)
+            || event.previous_hash != point.hash
+            || event.event_hash != event_digest(&event)?
+        {
+            return Err(RuntimeError::Integrity("event chain"));
+        }
+        if event.kind == AUTHORITY_ANCHOR {
+            if let Some(anchors) = anchors.as_deref_mut() {
+                anchors.push(parse_anchor(&event.detail)?);
+            }
+        }
+        point = ChainPoint {
+            sequence: event.sequence,
+            hash: event.event_hash,
+        };
+    }
+    Ok(point)
+}
+/// Verifies only what follows the owner's trust point. The trust point row is
+/// reread and rehashed, so rewriting it or truncating through it fails, and
+/// the chain start is checked so rows cannot be slipped in before sequence 1.
+/// Rows before the trust point are not reread: see ADR 0018.
+fn verify_tail(db: &Connection, verified: &VerifiedChain) -> Result<ChainProof> {
+    let base = &verified.point;
+    if base.sequence > 0 {
+        let mut q = db.prepare(&format!("{EVENT_COLUMNS} WHERE sequence=?1"))?;
+        let mut rows = q.query([base.sequence])?;
+        let Some(row) = rows.next()? else {
+            return Err(RuntimeError::Integrity("event chain"));
+        };
+        count_verified_row();
+        let event = event_from_row(row)?;
+        if event.event_hash != base.hash || event_digest(&event)? != base.hash {
+            return Err(RuntimeError::Integrity("event chain"));
+        }
+    }
+    let first: Option<i64> = db.query_row("SELECT min(sequence) FROM events", [], |r| r.get(0))?;
+    if first.is_some_and(|first| first != 1) {
+        return Err(RuntimeError::Integrity("event chain"));
+    }
+    let mut anchors = Vec::new();
+    let mut q = db.prepare(&format!(
+        "{EVENT_COLUMNS} WHERE sequence>?1 ORDER BY sequence"
+    ))?;
+    let point = verify_rows(q.query([base.sequence])?, base.clone(), Some(&mut anchors))?;
+    for (index, anchor) in anchors.iter().enumerate() {
+        if verified.anchors.contains_key(&anchor.instance_id)
+            || anchors[..index]
+                .iter()
+                .any(|other| other.instance_id == anchor.instance_id)
+        {
+            return Err(RuntimeError::Integrity("workflow plan authority anchor"));
+        }
+    }
+    Ok(ChainProof {
+        base: base.sequence,
+        point,
+        anchors,
+    })
+}
+
+#[derive(Clone, Default)]
+struct ChainPoint {
+    sequence: u64,
+    hash: String,
+}
+/// The last event the flock owner has verified, with the plan authority
+/// anchors recorded up to it. Observers have no such point.
+#[derive(Default)]
+struct VerifiedChain {
+    point: ChainPoint,
+    anchors: std::collections::BTreeMap<String, PlanAuthorityAnchor>,
+}
+/// A verified tail not yet applied to the owner's `VerifiedChain`. Apply it
+/// only once every row it covers is committed.
+struct ChainProof {
+    base: u64,
+    point: ChainPoint,
+    anchors: Vec<PlanAuthorityAnchor>,
+}
+
+const AUTHORITY_ANCHOR: &str = "workflow.plan.authority.v1";
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1434,30 +1582,52 @@ struct PlanAuthorityAnchor {
     pin: String,
 }
 
-fn verify_authority_pins(db: &Connection, queries: &mut usize) -> Result<()> {
+fn parse_anchor(detail: &str) -> Result<PlanAuthorityAnchor> {
+    if detail.len() > 2048 {
+        return Err(RuntimeError::Limit);
+    }
+    let anchor: PlanAuthorityAnchor = serde_json::from_str(detail)
+        .map_err(|_| RuntimeError::Integrity("workflow plan authority anchor"))?;
+    if anchor.schema_version != 1
+        || anchor.pin == "legacy"
+        || !router_adapter_api::is_digest(&anchor.pin)
+        || !router_adapter_api::is_digest(&anchor.contract_sha256)
+    {
+        return Err(RuntimeError::Integrity("workflow plan authority anchor"));
+    }
+    Ok(anchor)
+}
+/// One workflow instance row against its event anchor.
+fn authority_matches(
+    contract: &str,
+    pin: Option<&str>,
+    anchor: Option<&PlanAuthorityAnchor>,
+) -> bool {
+    match (pin, anchor) {
+        (Some("legacy"), None) => true,
+        (Some(pin), Some(anchor)) => pin == anchor.pin && contract == anchor.contract_sha256,
+        _ => false,
+    }
+}
+
+fn verify_authority_pins(
+    db: &Connection,
+    queries: &mut usize,
+) -> Result<std::collections::BTreeMap<String, PlanAuthorityAnchor>> {
     *queries += 1;
     let mut anchors = std::collections::BTreeMap::new();
-    let mut query = db.prepare(
-        "SELECT detail FROM events WHERE kind='workflow.plan.authority.v1' ORDER BY sequence",
-    )?;
+    let mut query = db.prepare(&format!(
+        "SELECT detail FROM events WHERE kind='{AUTHORITY_ANCHOR}' ORDER BY sequence"
+    ))?;
     for row in query.query_map([], |r| r.get::<_, String>(0))? {
-        let detail = row?;
-        if detail.len() > 2048 {
-            return Err(RuntimeError::Limit);
-        }
-        let anchor: PlanAuthorityAnchor = serde_json::from_str(&detail)
-            .map_err(|_| RuntimeError::Integrity("workflow plan authority anchor"))?;
-        if anchor.schema_version != 1
-            || anchor.pin == "legacy"
-            || !router_adapter_api::is_digest(&anchor.pin)
-            || !router_adapter_api::is_digest(&anchor.contract_sha256)
-            || anchors.insert(anchor.instance_id.clone(), anchor).is_some()
-        {
+        let anchor = parse_anchor(&row?)?;
+        if anchors.insert(anchor.instance_id.clone(), anchor).is_some() {
             return Err(RuntimeError::Integrity("workflow plan authority anchor"));
         }
     }
     *queries += 1;
     let mut query = db.prepare("SELECT w.instance_id,w.contract_hash,p.pin FROM workflow_instances w LEFT JOIN workflow_plan_authority p ON p.instance_id=w.instance_id")?;
+    let mut matched = 0usize;
     for row in query.query_map([], |r| {
         Ok((
             r.get::<_, String>(0)?,
@@ -1466,17 +1636,17 @@ fn verify_authority_pins(db: &Connection, queries: &mut usize) -> Result<()> {
         ))
     })? {
         let (instance, contract, pin) = row?;
-        match (pin.as_deref(), anchors.remove(&instance)) {
-            (Some("legacy"), None) => {}
-            (Some(pin), Some(anchor))
-                if pin == anchor.pin && contract == anchor.contract_sha256 => {}
-            _ => return Err(RuntimeError::Integrity("workflow plan authority changed")),
+        let anchor = anchors.get(&instance);
+        if !authority_matches(&contract, pin.as_deref(), anchor) {
+            return Err(RuntimeError::Integrity("workflow plan authority changed"));
         }
+        matched += usize::from(anchor.is_some());
     }
-    if !anchors.is_empty() {
+    // Instance IDs are unique, so every anchor must have matched one instance.
+    if matched != anchors.len() {
         return Err(RuntimeError::Integrity("workflow plan authority changed"));
     }
-    Ok(())
+    Ok(anchors)
 }
 
 fn retry_guard(db: &Connection, id: &str, max: u32) -> Result<RunSummary> {
@@ -1575,14 +1745,18 @@ fn plan_pin(generated: Option<&router_types::GeneratedDecisionBinding>) -> Resul
         )
     })
 }
+/// The owner's plan pin check. It verifies the chain tail and then the one
+/// instance it authorizes, the instance-scoped form of `verify_authority_pins`.
+/// Other instances are checked at the next full verification (ADR 0018).
 fn verify_plan_pin(
     db: &Connection,
+    verified: &VerifiedChain,
     workflow: Option<&router_types::WorkflowRunBinding>,
     generated: Option<&router_types::GeneratedDecisionBinding>,
-) -> Result<()> {
+) -> Result<Option<ChainProof>> {
     let Some(workflow) = workflow else {
         return if generated.is_none() {
-            Ok(())
+            Ok(None)
         } else {
             Err(RuntimeError::Integrity("generated plan missing instance"))
         };
@@ -1600,11 +1774,27 @@ fn verify_plan_pin(
             |r| r.get(0),
         )
         .optional()?;
-    verify_events(db)?;
-    if pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
+    let proof = verify_tail(db, verified)?;
+    let contract: Option<String> = db
+        .query_row(
+            "SELECT contract_hash FROM workflow_instances WHERE instance_id=?1",
+            [&workflow.instance_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let anchor = proof
+        .anchors
+        .iter()
+        .find(|anchor| anchor.instance_id == workflow.instance_id)
+        .or_else(|| verified.anchors.get(&workflow.instance_id));
+    let authority = match &contract {
+        Some(contract) => authority_matches(contract, pin.as_deref(), anchor),
+        None => anchor.is_none(),
+    };
+    if !authority || pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
         return Err(RuntimeError::Integrity("workflow plan authority changed"));
     }
-    Ok(())
+    Ok(Some(proof))
 }
 
 #[cfg(test)]
@@ -2363,5 +2553,171 @@ pub(crate) mod tests {
             .map(|e| e.run_id)
             .collect();
         assert_eq!(order, ["run-a", "run-b", "run-c"]);
+    }
+
+    fn verified_rows() -> u64 {
+        VERIFIED_ROWS.with(std::cell::Cell::get)
+    }
+    /// A legacy workflow instance, so `verify_plan_pin` checks the chain.
+    fn legacy_instance(store: &Store) -> router_types::WorkflowRunBinding {
+        store
+            .lock()
+            .unwrap()
+            .execute_batch("INSERT INTO workflow_instances VALUES('instance','contract','{}'); INSERT INTO workflow_plan_authority VALUES('instance','legacy');")
+            .unwrap();
+        router_types::WorkflowRunBinding {
+            instance_id: "instance".into(),
+            contract_sha256: "contract".into(),
+            generation: 0,
+        }
+    }
+    fn tamper(store: &Store, sql: &str) {
+        Connection::open(store.root.join("runtime.sqlite3"))
+            .unwrap()
+            .execute_batch(sql)
+            .unwrap();
+    }
+    #[test]
+    fn owner_chain_checks_do_not_reread_verified_history() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("data")).unwrap();
+        let binding = legacy_instance(&store);
+        store.register(&summary("bulk")).unwrap();
+        store.register(&summary("run")).unwrap();
+        store.append_events_for_test("bulk", 10_000);
+        // The first check after the bulk append reads each new row once.
+        store.verify_plan_pin(Some(&binding), None).unwrap();
+        let before = verified_rows();
+        for i in 0..20 {
+            store.register(&summary(&format!("next-{i}"))).unwrap();
+            store.verify_plan_pin(Some(&binding), None).unwrap();
+            store.escalation_history("run").unwrap();
+        }
+        // Per iteration: the trust point row twice plus one new event.
+        let read = verified_rows() - before;
+        assert!(read <= 20 * 3, "20 checks reread {read} rows");
+        // The public full verification still replays the whole chain.
+        let before = verified_rows();
+        store.verify_events().unwrap();
+        assert!(verified_rows() - before >= 10_022);
+    }
+    #[test]
+    fn owner_detects_rewrite_of_its_last_verified_event() {
+        for recompute in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = Store::open(&temp.path().join("data")).unwrap();
+            store.register(&summary("run")).unwrap();
+            store.escalation_history("run").unwrap();
+            let mut last = store.events().unwrap().pop().unwrap();
+            last.detail = "tampered".into();
+            // A recomputed digest keeps the rewritten last row self-consistent:
+            // only the trust point's remembered hash can refuse it.
+            let hash = if recompute {
+                event_digest(&last).unwrap()
+            } else {
+                last.event_hash.clone()
+            };
+            tamper(
+                &store,
+                &format!(
+                    "DROP TRIGGER events_no_update; UPDATE events SET detail='tampered',event_hash='{hash}' WHERE sequence={};",
+                    last.sequence
+                ),
+            );
+            assert!(matches!(
+                store.escalation_history("run"),
+                Err(RuntimeError::Integrity("event chain"))
+            ));
+        }
+    }
+    #[test]
+    fn owner_detects_truncation_insertion_and_reordering() {
+        for sql in [
+            "DROP TRIGGER events_no_delete; DELETE FROM events WHERE sequence=2;",
+            "DROP TRIGGER events_no_delete; DELETE FROM events;",
+            "INSERT INTO events SELECT 0,run_id,kind,state,detail,previous_hash,event_hash FROM events WHERE sequence=1;",
+            "DROP TRIGGER events_no_update; UPDATE events SET sequence=sequence+100 WHERE sequence>2; UPDATE events SET sequence=CASE sequence WHEN 103 THEN 4 ELSE 3 END WHERE sequence>100;",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = Store::open(&temp.path().join("data")).unwrap();
+            store.register(&summary("run")).unwrap();
+            store.register(&summary("other")).unwrap();
+            store.escalation_history("run").unwrap();
+            // Two unverified rows after the trust point at sequence 2.
+            store.register(&summary("third")).unwrap();
+            store.register(&summary("fourth")).unwrap();
+            tamper(&store, sql);
+            assert!(
+                matches!(
+                    store.escalation_history("run"),
+                    Err(RuntimeError::Integrity("event chain"))
+                ),
+                "{sql}"
+            );
+        }
+    }
+    #[test]
+    fn old_event_rewrite_is_found_by_full_verification_and_reopen() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        for id in ["run", "other", "third"] {
+            store.register(&summary(id)).unwrap();
+        }
+        store.escalation_history("run").unwrap();
+        tamper(
+            &store,
+            "DROP TRIGGER events_no_update; UPDATE events SET detail='tampered' WHERE sequence=1;",
+        );
+        // ADR 0018: rows before the trust point are not reread by the owner.
+        store.escalation_history("run").unwrap();
+        // `Runtime::verify_integrity` delegates to this full replay.
+        assert!(matches!(
+            store.verify_events(),
+            Err(RuntimeError::Integrity("event chain"))
+        ));
+        drop(store);
+        assert!(matches!(
+            Store::open(&root),
+            Err(RuntimeError::Integrity("event chain"))
+        ));
+    }
+    #[test]
+    #[ignore = "timing measurement: cargo test -p router-runtime --lib measure_owner -- --ignored --nocapture"]
+    fn measure_owner_chain_checks_against_history() {
+        for history in [1_000, 10_000, 100_000] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = Store::open(&temp.path().join("data")).unwrap();
+            let binding = legacy_instance(&store);
+            store.register(&summary("bulk")).unwrap();
+            store.register(&summary("run")).unwrap();
+            store.append_events_for_test("bulk", history);
+            store.verify_plan_pin(Some(&binding), None).unwrap();
+            let start = std::time::Instant::now();
+            for _ in 0..100 {
+                store.verify_plan_pin(Some(&binding), None).unwrap();
+            }
+            let pin = start.elapsed();
+            let start = std::time::Instant::now();
+            for i in 0..100 {
+                store.register(&summary(&format!("next-{i}"))).unwrap();
+                store.verify_plan_pin(Some(&binding), None).unwrap();
+            }
+            let register = start.elapsed();
+            let start = std::time::Instant::now();
+            for _ in 0..100 {
+                store.escalation_history("run").unwrap();
+            }
+            let escalation = start.elapsed();
+            // `history` still materializes every event before filtering by run.
+            let start = std::time::Instant::now();
+            for _ in 0..100 {
+                store.events().unwrap();
+            }
+            let events = start.elapsed();
+            eprintln!(
+                "history={history} verify_plan_pin x100={pin:?} (register+verify_plan_pin) x100={register:?} escalation_history x100={escalation:?} events x100={events:?}"
+            );
+        }
     }
 }

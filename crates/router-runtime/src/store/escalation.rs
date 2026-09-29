@@ -56,6 +56,7 @@ impl Store {
     pub(crate) fn escalation_history(&self, id: &str) -> Result<EscalationHistory> {
         let mut db = self.lock()?;
         let tx = db.transaction()?;
+        self.verify_committed_tail(&tx)?;
         let snapshot = history(&tx, id, &self.root)?;
         tx.commit()?;
         Ok(snapshot)
@@ -71,6 +72,7 @@ impl Store {
     ) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        self.verify_committed_tail(&tx)?;
         let previous = history(&tx, id, &self.root)?;
         if previous.ledger_hash != ledger {
             return Err(RuntimeError::Approval);
@@ -103,8 +105,8 @@ fn last_hash(db: &Connection) -> Result<String> {
         |r| r.get(0),
     )?)
 }
+/// Callers verify the event chain in the same transaction first.
 fn history(db: &Connection, id: &str, root: &Path) -> Result<EscalationHistory> {
-    verify_events(db)?;
     let source = load_opt(db, id)?.ok_or(RuntimeError::NotFound)?;
     let runs = if let Some(binding) = &source.workflow {
         let mut q = db.prepare("SELECT r.summary FROM runs r JOIN workflow_node_runs n ON r.run_id=n.run_id WHERE n.instance_id=?1 AND n.node_id=?2 AND n.generation<=?3 ORDER BY n.generation LIMIT 7")?;
