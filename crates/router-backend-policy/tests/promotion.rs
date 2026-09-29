@@ -860,6 +860,31 @@ fn role_reassignment_unknown_json_fields_and_duplicate_keys_never_create_authori
 }
 
 #[test]
+fn documents_between_snapshot_and_policy_bounds_parse_and_larger_are_limited() {
+    // The JSON parser's default bound is 4 MiB; the policy bound is 16 MiB.
+    let fixture = Fixture::new();
+    let state =
+        BackendActivationState::new(fixture.context.policy_hash(), &"9".repeat(64)).unwrap();
+    let promotion = fixture.promotion();
+    let approval = fixture.approval(
+        &state,
+        ActivationAction::Activate,
+        promotion.promotion_hash(),
+        120,
+        "1",
+    );
+    let compact = serde_json::to_vec(&approval).unwrap();
+    let mut padded = vec![compact[0]];
+    padded.resize(1 + 5 * 1024 * 1024, b' ');
+    padded.extend_from_slice(&compact[1..]);
+    let parsed = parse_document::<Signed<ActivationApproval>>(&padded).unwrap();
+    assert_eq!(serde_json::to_vec(&parsed).unwrap(), compact);
+    assert!(matches!(
+        parse_document::<Signed<ActivationApproval>>(&vec![b' '; MAX_DOCUMENT_BYTES + 1]),
+        Err(PromotionError::Limit)
+    ));
+}
+#[test]
 fn baseline_policy_is_pinned_before_inactive_active_and_rollback_fallback() {
     let fixture = Fixture::new();
     let roots = fixture.keys.authorities();
