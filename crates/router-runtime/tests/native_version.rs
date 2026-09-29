@@ -550,3 +550,79 @@ async fn native_version_probe_rejects_timeout_output_overflow_stderr_and_cancell
         );
     }
 }
+
+fn probe_directories(root: &Path) -> Vec<String> {
+    fs::read_dir(root)
+        .unwrap()
+        .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+        .filter(|name| name.starts_with("version-"))
+        .collect()
+}
+#[tokio::test]
+async fn version_probe_working_directory_is_removed_on_every_error_path() {
+    let temp = private_dir();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let supervisor = InspectSupervisor {
+        resources: true,
+        lifetime: true,
+        calls: AtomicUsize::new(0),
+    };
+    assert!(matches!(
+        probe_native_version(
+            &supervisor,
+            &prepared(&root),
+            &root,
+            &Cancellation::default()
+        )
+        .await,
+        Err(RuntimeError::Invalid("inspected without launch"))
+    ));
+    assert_eq!(supervisor.calls.load(Ordering::SeqCst), 1);
+    assert_eq!(probe_directories(&root), Vec::<String>::new());
+    assert!(matches!(
+        probe_native_version(
+            &UnprovedCleanup,
+            &prepared(&root),
+            &root,
+            &Cancellation::default()
+        )
+        .await,
+        Err(RuntimeError::CleanupUnknown)
+    ));
+    assert_eq!(probe_directories(&root), Vec::<String>::new());
+}
+
+struct HeldPipeVersion;
+impl SandboxSupervisor for HeldPipeVersion {
+    fn resource_limits_enforced(&self) -> bool {
+        true
+    }
+    fn parent_lifetime_enforced(&self) -> bool {
+        true
+    }
+    fn command(&self, run: &PreparedRun, _: &SandboxPolicy) -> Result<tokio::process::Command> {
+        // Test-only peer: a clean lease and a version line, but a background
+        // holder keeps stdout open, so the captured bytes may be a prefix.
+        let mut c = tokio::process::Command::new("/bin/sh");
+        c.args(["-c", "printf 'router-runtime-lease-v1:group-clean\\n' > \"$ROUTER_RUNTIME_LEASE\"; printf '1.2.3\\n'; /bin/sleep 4 2>/dev/null & exit 0"])
+            .env_clear()
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1")
+            .current_dir(&run.cwd);
+        Ok(c)
+    }
+}
+#[tokio::test]
+async fn version_probe_rejects_a_stdout_prefix_when_a_stream_stays_open() {
+    let temp = private_dir();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    assert!(matches!(
+        probe_native_version(
+            &HeldPipeVersion,
+            &prepared(&root),
+            &root,
+            &Cancellation::default()
+        )
+        .await,
+        Err(RuntimeError::Process)
+    ));
+}

@@ -4,7 +4,6 @@ use router_types::{ExecutionSandbox, PreparedRun};
 use std::{
     collections::BTreeMap,
     fs,
-    io::Write,
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
@@ -48,8 +47,82 @@ pub struct SeatbeltSandbox {
     program_hashes: BTreeMap<String, String>,
     read_roots: Vec<PathBuf>,
     environment: BTreeMap<String, String>,
+    dns_resolution: DnsEvidence,
+}
+/// Whether a name lookup through the system resolver worked from inside a
+/// `network: false` profile. Evidence only: it never fails a probe or a run.
+/// `Resolved` shows that `mach-lookup` reaches the resolver daemon, so
+/// `network: false` does not prove the absence of DNS or LaunchServices channels.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DnsEvidence {
+    /// The control lookup resolved but the sandboxed one did not. One failed
+    /// lookup, not proof that no DNS channel exists.
+    NotResolvedUnderProfile,
+    Resolved,
+    /// Not run (the default), the control lookup failed, or the check could not run.
+    Unknown,
+}
+fn classify_dns(control: Option<bool>, sandboxed: Option<bool>) -> DnsEvidence {
+    match (control, sandboxed) {
+        (Some(true), Some(true)) => DnsEvidence::Resolved,
+        (Some(true), Some(false)) => DnsEvidence::NotResolvedUnderProfile,
+        _ => DnsEvidence::Unknown,
+    }
+}
+const DNS_TIMEOUT_MS: u64 = 2_000;
+async fn dns_evidence(wrapper_hash: &str, profile: &str) -> DnsEvidence {
+    let args: Vec<String> = ["-q", "host", "-a", "name", "example.com"]
+        .map(String::from)
+        .into();
+    let resolves = |command: Result<Command>| async move {
+        let mut command = command.ok()?;
+        command.env_clear();
+        let output = capture(
+            command,
+            vec![],
+            DNS_TIMEOUT_MS,
+            16_384,
+            0,
+            &Cancellation::default(),
+        )
+        .await
+        .ok()?;
+        Some(
+            output.outcome.exit_code == Some(0)
+                && String::from_utf8_lossy(&output.stdout).contains("ip_address"),
+        )
+    };
+    let mut control = Command::new("/usr/bin/dscacheutil");
+    control.args(&args);
+    let control = resolves(Ok(control)).await;
+    let sandboxed = resolves(checked_seatbelt_command(
+        wrapper_hash,
+        profile,
+        "/usr/bin/dscacheutil",
+        &args,
+    ))
+    .await;
+    classify_dns(control, sandboxed)
 }
 impl SeatbeltSandbox {
+    /// DNS evidence for the `network: false` profile. `Unknown` until
+    /// `probe_dns_resolution` has been called; the normal probe never runs it.
+    pub fn dns_resolution(&self) -> DnsEvidence {
+        self.dns_resolution
+    }
+    /// On demand only. Performs ONE real outbound DNS query (`example.com`)
+    /// outside the sandbox as a control and one inside the `network: false`
+    /// profile, each bounded to 2 s. `/usr/bin/dscacheutil` is a system binary
+    /// outside the approved-binary hash table, so this is evidence, never an
+    /// authorization input. Records and returns the result.
+    pub async fn probe_dns_resolution(&mut self) -> DnsEvidence {
+        let profile = seatbelt_profile(&[], &[], false);
+        self.dns_resolution = match profile {
+            Ok(profile) => dns_evidence(&self.wrapper_hash, &profile).await,
+            Err(_) => DnsEvidence::Unknown,
+        };
+        self.dns_resolution
+    }
     pub async fn probe(
         private_dir: &Path,
         programs: BTreeMap<String, PathBuf>,
@@ -99,18 +172,16 @@ impl SeatbeltSandbox {
             })
             .collect::<Result<BTreeMap<_, _>>>()?;
         let probe = private_dir.join("sandbox-probe");
+        let denied_read = private_dir.join("sandbox-canary-read");
+        // Tracked before creation: every early return below still cleans up.
+        let mut scratch = crate::stale::Scratch::default();
+        scratch.claim(&probe)?;
+        scratch.claim(&denied_read)?;
         fs::create_dir(&probe)?;
         let allowed = probe.join("allowed");
         fs::create_dir(&allowed)?;
         let denied = probe.join("denied");
-        let denied_read = private_dir.join("sandbox-canary-read");
-        let mut denied_file = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(&denied_read)?;
-        denied_file.write_all(b"synthetic-read-canary")?;
-        drop(denied_file);
+        crate::stale::create_canary(&denied_read, b"synthetic-read-canary")?;
         fs::write(allowed.join("read"), b"read-control")?;
         let profile = seatbelt_profile(&[probe.clone()], &[allowed.clone()], false)?;
         let check = async {
@@ -195,18 +266,17 @@ impl SeatbeltSandbox {
             Ok(())
         }
         .await;
-        // Only the probe directory created by this call is removed.
-        let cleanup = fs::remove_dir_all(&probe);
-        let cleanup_file = fs::remove_file(&denied_read);
+        // Only the probe paths claimed by this call are removed.
+        let cleanup = scratch.cleanup();
         check?;
         cleanup?;
-        cleanup_file?;
         Ok(Self {
             wrapper_hash,
             programs,
             program_hashes,
             read_roots,
             environment,
+            dns_resolution: DnsEvidence::Unknown,
         })
     }
 }
@@ -310,6 +380,11 @@ pub(crate) fn check_expected(
     }
     Ok(())
 }
+// LIMIT: `mach-lookup` is allowed globally because the loader and system
+// libraries need several services. `network: false` therefore proves only that
+// socket networking is denied, not the absence of DNS (mDNSResponder) or
+// LaunchServices channels; `SeatbeltSandbox::dns_resolution` records what the
+// probe observed. A mach service allowlist is deferred to a native canary.
 fn seatbelt_profile(reads: &[PathBuf], writes: &[PathBuf], network: bool) -> Result<String> {
     let mut profile = String::from(
         "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\") (literal \"/private/etc/resolv.conf\") (literal \"/private/etc/hosts\"))\n(allow file-write* (literal \"/dev/null\"))\n",
@@ -327,7 +402,8 @@ fn seatbelt_profile(reads: &[PathBuf], writes: &[PathBuf], network: bool) -> Res
         ));
     }
     // A child may read Git metadata but may never redirect its private .git file.
-    profile.push_str("(deny file-write* (regex #\"(^|/)\\.git(/|$)\"))\n");
+    // Default APFS folds case, so every spelling of `.git` is denied.
+    profile.push_str("(deny file-write* (regex #\"(^|/)\\.[Gg][Ii][Tt](/|$)\"))\n");
     if network {
         profile.push_str("(allow network*)\n");
     }
@@ -362,4 +438,81 @@ pub(crate) fn validate_configuration(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dns_evidence_is_unknown_unless_the_control_resolved() {
+        use DnsEvidence::*;
+        assert_eq!(classify_dns(Some(true), Some(true)), Resolved);
+        assert_eq!(
+            classify_dns(Some(true), Some(false)),
+            NotResolvedUnderProfile
+        );
+        assert_eq!(classify_dns(Some(true), None), Unknown);
+        assert_eq!(classify_dns(Some(false), Some(false)), Unknown);
+        assert_eq!(classify_dns(None, Some(true)), Unknown);
+    }
+    #[test]
+    fn quote_escapes_and_refuses_unsafe_paths() {
+        assert_eq!(quote(Path::new("/a b/c")).unwrap(), "\"/a b/c\"");
+        assert_eq!(
+            quote(Path::new("/a\"(allow default)\\")).unwrap(),
+            "\"/a\\\"(allow default)\\\\\""
+        );
+        for bad in ["relative", "/a\nb", "/a\rb", "/a\0b"] {
+            assert!(
+                matches!(quote(Path::new(bad)), Err(RuntimeError::Sandbox)),
+                "{bad:?}"
+            );
+        }
+    }
+    #[test]
+    fn profile_grants_only_listed_paths_and_network_on_request() {
+        let profile = seatbelt_profile(&["/r".into()], &["/w".into()], false).unwrap();
+        assert!(profile.starts_with("(version 1)\n(deny default)\n"));
+        assert!(profile.contains("(allow file-read* (literal \"/r\") (subpath \"/r\"))\n"));
+        assert!(profile.contains("(allow file-write* (literal \"/w\") (subpath \"/w\"))\n"));
+        assert!(!profile.contains("network"));
+        assert!(!profile.contains("(allow file-write* (literal \"/r\")"));
+        let online = seatbelt_profile(&[], &[], true).unwrap();
+        assert!(online.ends_with("(allow network*)\n"));
+        assert!(online.contains("(deny file-write* (regex"));
+    }
+    #[test]
+    fn profile_rejects_a_path_that_would_break_out_of_its_literal() {
+        assert!(seatbelt_profile(&["rel".into()], &[], false).is_err());
+        assert!(seatbelt_profile(&[], &["/w\n(allow default)".into()], false).is_err());
+    }
+    #[test]
+    fn profile_documents_the_global_mach_lookup_allowance() {
+        let profile = seatbelt_profile(&[], &[], false).unwrap();
+        assert!(profile.contains("mach-lookup"));
+    }
+
+    #[test]
+    fn profile_denies_writes_below_git_in_every_case() {
+        let profile = seatbelt_profile(&[], &["/w/src".into()], false).unwrap();
+        let line = profile
+            .lines()
+            .find(|l| l.starts_with("(deny file-write* (regex"))
+            .expect("git write denial");
+        for spelling in [".git", ".GIT", ".Git", ".gIT"] {
+            assert!(
+                spelling.chars().skip(1).all(|c| line.contains(&format!(
+                    "[{}{}]",
+                    c.to_ascii_uppercase(),
+                    c.to_ascii_lowercase()
+                )) || line.contains(&format!(
+                    "[{}{}]",
+                    c.to_ascii_lowercase(),
+                    c.to_ascii_uppercase()
+                ))),
+                "{spelling} is not covered by {line}"
+            );
+        }
+    }
 }

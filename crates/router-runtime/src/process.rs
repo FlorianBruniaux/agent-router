@@ -7,7 +7,7 @@ use router_types::{TransportOutcome, TransportTermination};
 use std::{
     process::Stdio,
     sync::{
-        Arc,
+        Arc, Mutex,
         atomic::{AtomicBool, AtomicUsize, Ordering},
     },
     time::{Duration, Instant},
@@ -50,6 +50,9 @@ pub(crate) struct Capture {
     pub stderr: Vec<u8>,
     pub outcome: TransportOutcome,
     pub output_limited: bool,
+    /// A stream reader had not finished when collection gave up, so the bytes
+    /// above may be a prefix of what the process wrote.
+    pub output_incomplete: bool,
 }
 struct GroupGuard(Option<u32>);
 impl GroupGuard {
@@ -74,6 +77,42 @@ impl Drop for InputGuard {
     }
 }
 
+// Bytes live in shared storage so that an aborted reader still leaves every
+// byte it had already read. Dropping the guard aborts the task, which releases
+// the pipe even when the surrounding future is dropped abruptly.
+struct StreamReader {
+    bytes: Arc<Mutex<Vec<u8>>>,
+    task: tokio::task::JoinHandle<std::io::Result<()>>,
+}
+impl StreamReader {
+    fn spawn(
+        read: impl AsyncRead + Unpin + Send + 'static,
+        count: Arc<AtomicUsize>,
+        limit: usize,
+        overflow: Cancellation,
+    ) -> Self {
+        let bytes = Arc::new(Mutex::new(Vec::new()));
+        let task = tokio::spawn(read_bounded(read, bytes.clone(), count, limit, overflow));
+        Self { bytes, task }
+    }
+    /// Never fails: a reader that is stuck, failed or panicked is aborted and
+    /// reported as incomplete, keeping what it captured.
+    async fn finish(&mut self, wait: Duration) -> (Vec<u8>, bool) {
+        let complete = matches!(
+            tokio::time::timeout(wait, &mut self.task).await,
+            Ok(Ok(Ok(())))
+        );
+        self.task.abort();
+        let bytes = std::mem::take(&mut *self.bytes.lock().unwrap_or_else(|e| e.into_inner()));
+        (bytes, complete)
+    }
+}
+impl Drop for StreamReader {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+
 pub(crate) async fn capture(
     command: Command,
     input: Vec<u8>,
@@ -82,10 +121,17 @@ pub(crate) async fn capture(
     grace_ms: u64,
     cancel: &Cancellation,
 ) -> Result<Capture> {
-    capture_guarded(
+    let captured = capture_guarded(
         command, input, timeout_ms, max_bytes, grace_ms, cancel, None, None,
     )
-    .await
+    .await?;
+    // Only the run path tolerates incomplete output, and records it. Every other
+    // caller (git, probes, version checks) would otherwise parse or hash a
+    // prefix as if it were the whole stream.
+    if captured.output_incomplete {
+        return Err(RuntimeError::Process);
+    }
+    Ok(captured)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -151,13 +197,8 @@ pub(crate) async fn capture_guarded(
     }));
     let count = Arc::new(AtomicUsize::new(0));
     let overflow = Cancellation::default();
-    let out_task = tokio::spawn(read_bounded(
-        stdout,
-        count.clone(),
-        max_bytes,
-        overflow.clone(),
-    ));
-    let err_task = tokio::spawn(read_bounded(stderr, count, max_bytes, overflow.clone()));
+    let mut out_reader = StreamReader::spawn(stdout, count.clone(), max_bytes, overflow.clone());
+    let mut err_reader = StreamReader::spawn(stderr, count, max_bytes, overflow.clone());
     let termination = tokio::select! {
         status=wait_without_reaping(child_id)=> {status?; TransportTermination::Exited},
         _=tokio::time::sleep(Duration::from_millis(timeout_ms))=>TransportTermination::TimedOut,
@@ -178,14 +219,10 @@ pub(crate) async fn capture_guarded(
     let status = tokio::time::timeout(Duration::from_millis(grace_ms + 3_000), child.wait())
         .await
         .map_err(|_| RuntimeError::Process)??;
-    let stdout = tokio::time::timeout(Duration::from_secs(2), out_task)
-        .await
-        .map_err(|_| RuntimeError::Process)?
-        .map_err(|_| RuntimeError::Process)??;
-    let stderr = tokio::time::timeout(Duration::from_secs(2), err_task)
-        .await
-        .map_err(|_| RuntimeError::Process)?
-        .map_err(|_| RuntimeError::Process)??;
+    // A descendant that outlives the leader can hold a pipe open. That must not
+    // replace the observed termination or discard the bytes already captured.
+    let (stdout, stdout_complete) = out_reader.finish(Duration::from_secs(2)).await;
+    let (stderr, stderr_complete) = err_reader.finish(Duration::from_secs(2)).await;
     Ok(Capture {
         stdout,
         stderr,
@@ -195,6 +232,7 @@ pub(crate) async fn capture_guarded(
             elapsed_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
         },
         output_limited: overflow.is_cancelled(),
+        output_incomplete: !(stdout_complete && stderr_complete),
     })
 }
 async fn wait_without_reaping(id: u32) -> Result<()> {
@@ -216,11 +254,11 @@ async fn wait_without_reaping(id: u32) -> Result<()> {
 
 async fn read_bounded(
     mut read: impl AsyncRead + Unpin,
+    sink: Arc<Mutex<Vec<u8>>>,
     count: Arc<AtomicUsize>,
     limit: usize,
     overflow: Cancellation,
-) -> std::io::Result<Vec<u8>> {
-    let mut result = Vec::new();
+) -> std::io::Result<()> {
     let mut buffer = [0; 8192];
     loop {
         let n = read.read(&mut buffer).await?;
@@ -229,13 +267,15 @@ async fn read_bounded(
         }
         let before = count.fetch_add(n, Ordering::SeqCst);
         let keep = limit.saturating_sub(before).min(n);
-        result.extend_from_slice(&buffer[..keep]);
+        sink.lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .extend_from_slice(&buffer[..keep]);
         if keep < n {
             overflow.cancel();
             break;
         }
     }
-    Ok(result)
+    Ok(())
 }
 
 #[cfg(test)]
@@ -273,6 +313,57 @@ mod tests {
         task.abort();
         let _ = task.await;
         assert_stopped(&temp.path().join("heartbeat")).await;
+    }
+    #[tokio::test]
+    async fn stuck_stream_reader_keeps_the_observed_outcome_and_captured_bytes() {
+        // Supervised mode: no group signal, so the background holder survives
+        // the leader and keeps stdout open past the collection deadline.
+        let mut command = Command::new("/bin/sh");
+        command
+            .arg("-c")
+            .arg("printf partial; /bin/sleep 4 2>/dev/null & exit 0")
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1");
+        let started = Instant::now();
+        let out = capture_guarded(
+            command,
+            vec![],
+            30_000,
+            1024,
+            0,
+            &Cancellation::default(),
+            None,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(out.outcome.termination, TransportTermination::Exited);
+        assert_eq!(out.outcome.exit_code, Some(0));
+        assert_eq!(out.stdout, b"partial");
+        assert!(out.output_incomplete);
+        assert!(!out.output_limited);
+        assert!(started.elapsed() < Duration::from_secs(4));
+    }
+    #[tokio::test]
+    async fn plain_capture_fails_closed_when_a_stream_is_incomplete() {
+        let mut command = Command::new("/bin/sh");
+        command
+            .arg("-c")
+            .arg("printf partial; /bin/sleep 4 2>/dev/null & exit 0")
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1");
+        assert!(matches!(
+            capture(command, vec![], 30_000, 1024, 0, &Cancellation::default()).await,
+            Err(RuntimeError::Process)
+        ));
+    }
+    #[tokio::test]
+    async fn complete_streams_are_not_marked_incomplete() {
+        let mut command = Command::new("/bin/sh");
+        command.arg("-c").arg("printf done");
+        let out = capture(command, vec![], 30_000, 1024, 0, &Cancellation::default())
+            .await
+            .unwrap();
+        assert_eq!(out.stdout, b"done");
+        assert!(!out.output_incomplete);
     }
     async fn assert_stopped(path: &std::path::Path) {
         tokio::time::sleep(Duration::from_millis(30)).await;

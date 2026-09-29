@@ -58,7 +58,12 @@ impl ResourceLimits {
     }
 }
 /// Probe-bound wrapper around a native sandbox. The helper binary is trusted
-/// integration code; its bytes are rechecked immediately before each launch.
+/// integration code. Its bytes are hashed just before each launch, but the
+/// process is then started by path, so hash and exec are separate steps: a
+/// principal able to write the helper file or its directory can swap it in
+/// between (TOCTOU). The check detects an earlier replacement, not a racing
+/// one; install the helper (and native binaries, hashed the same way by the
+/// sandboxes) where the workload and other users cannot write.
 pub struct ResourceSupervisor<S> {
     inner: S,
     helper: PathBuf,

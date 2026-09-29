@@ -14,6 +14,7 @@ mod outputs;
 mod process;
 mod resources;
 mod sandbox;
+mod stale;
 mod store;
 mod workflow;
 mod workspace;
@@ -31,7 +32,7 @@ pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
 pub use native_version::{NativeVersionProbe, probe_native_version};
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
-pub use sandbox::{DenySandbox, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
+pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
 pub use store::{observe, observe_cleanup, observe_events, request_cancel};
 pub use workspace::source_state;
 
@@ -1159,8 +1160,15 @@ impl Runtime {
                 return Err(error);
             }
         };
+        let mut unclassified = false;
         let (state, failure) = if output.output_limited {
             (RunState::Failed, Some(RunFailure::OutputLimit))
+        } else if output.output_incomplete
+            && output.outcome.termination == TransportTermination::Exited
+        {
+            // A stream reader missed its deadline, so stdout may be a prefix.
+            // Never hash, classify or decode it as a completed transport.
+            (RunState::Failed, Some(RunFailure::Unclassified))
         } else {
             match output.outcome.termination {
                 TransportTermination::Cancelled => (RunState::Cancelled, None),
@@ -1169,14 +1177,28 @@ impl Runtime {
                     (RunState::SucceededTransport, None)
                 }
                 TransportTermination::Exited if output.outcome.exit_code.is_some() => {
-                    let native = adapter
-                        .classify_failure(
-                            &output.stdout,
-                            output.outcome.clone(),
-                            run.max_output_bytes,
-                        )
-                        .ok()
-                        .flatten();
+                    let native = match adapter.classify_failure(
+                        &output.stdout,
+                        output.outcome.clone(),
+                        run.max_output_bytes,
+                    ) {
+                        Ok(native) => native,
+                        // Unparseable native output keeps the generic crash
+                        // classification of a nonzero exit.
+                        Err(router_adapter_api::AdapterError::Protocol) => None,
+                        Err(_) => {
+                            // The adapter could not classify this failure at
+                            // all. Do not call it a retryable crash: record
+                            // it as a non-retryable unclassified failure.
+                            self.store.event(
+                                id,
+                                "failure.classification_error",
+                                "adapter_classification_failed",
+                            )?;
+                            unclassified = true;
+                            None
+                        }
+                    };
                     let failure = if let Some(evidence) = native {
                         self.store.event(
                             id,
@@ -1192,6 +1214,8 @@ impl Runtime {
                             }
                             router_adapter_api::NativeFailureKind::Network => RunFailure::Network,
                         }
+                    } else if unclassified {
+                        RunFailure::Unclassified
                     } else {
                         RunFailure::Crash
                     };
@@ -1200,6 +1224,10 @@ impl Runtime {
                 _ => (RunState::Failed, Some(RunFailure::Crash)),
             }
         };
+        if output.output_incomplete {
+            self.store
+                .event(id, "output.incomplete", "stream_reader_deadline")?;
+        }
         self.store.observed_attempt(AttemptEvidence {
             schema_version: 1,
             identity: AttemptIdentity {
@@ -1228,36 +1256,65 @@ impl Runtime {
             finished_event_hash: String::new(),
             transition_event_hash: String::new(),
         })?;
-        let output_artifacts =
-            if let OutputRetentionPolicy::PrivateArtifacts { retention_seconds } =
-                self.limits.output_retention
-            {
-                let metadata = self.output_store.metadata(
-                    id,
-                    self.store.get(id)?.attempts,
-                    now()?,
-                    retention_seconds,
-                    (&output.stdout, &output.stderr),
-                    output.output_limited,
-                )?;
-                self.store.reserve_output_artifacts(&metadata)?;
-                self.output_store.write(
-                    &metadata,
-                    &output.stdout,
-                    &output.stderr,
-                    |stream, identity| {
-                        self.store
-                            .register_output_file(id, metadata.attempt, stream, &identity)
-                    },
-                )?;
-                Some(self.store.output_artifacts_state(
-                    id,
-                    metadata.attempt,
-                    OutputArtifactsState::Retained,
-                )?)
-            } else {
-                None
-            };
+        let retained = (|| -> Result<Option<router_types::OutputArtifacts>> {
+            Ok(
+                if let OutputRetentionPolicy::PrivateArtifacts { retention_seconds } =
+                    self.limits.output_retention
+                {
+                    let metadata = self.output_store.metadata(
+                        id,
+                        self.store.get(id)?.attempts,
+                        now()?,
+                        retention_seconds,
+                        (&output.stdout, &output.stderr),
+                        // A prefix is marked truncated, whether the byte budget or
+                        // a stream reader deadline cut it short.
+                        output.output_limited || output.output_incomplete,
+                    )?;
+                    self.store.reserve_output_artifacts(&metadata)?;
+                    self.output_store.write(
+                        &metadata,
+                        &output.stdout,
+                        &output.stderr,
+                        |stream, identity| {
+                            self.store
+                                .register_output_file(id, metadata.attempt, stream, &identity)
+                        },
+                    )?;
+                    Some(self.store.output_artifacts_state(
+                        id,
+                        metadata.attempt,
+                        OutputArtifactsState::Retained,
+                    )?)
+                } else {
+                    None
+                },
+            )
+        })();
+        let output_artifacts = match retained {
+            Ok(artifacts) => artifacts,
+            Err(error) => {
+                // The run is already persisted as a successful transport.
+                // Retention failing means its payload is not durable: fail the
+                // run explicitly instead of leaving it looking complete. Any
+                // other state is already terminal and keeps its own failure.
+                if state == RunState::SucceededTransport {
+                    self.store.transition(
+                        id,
+                        RunState::Verifying,
+                        "output_retention_check",
+                        None,
+                    )?;
+                    self.store.transition(
+                        id,
+                        RunState::VerificationFailed,
+                        "output_retention_failed",
+                        Some(RunFailure::Verification),
+                    )?;
+                }
+                return Err(error);
+            }
+        };
         if state == RunState::SucceededTransport {
             if run.sandbox == ExecutionSandbox::WorkspaceWrite {
                 let capture = self.capture_artifact(&pending, Path::new(&run.cwd)).await;
@@ -1294,22 +1351,27 @@ impl Runtime {
             )?;
         }
         // Native stdout may describe an outcome, but never sets verification.
-        let decoded =
-            adapter.decode_stream(&output.stdout, output.outcome.clone(), run.max_output_bytes);
-        self.store.event(
-            id,
-            "protocol.observed",
-            if decoded.is_ok() {
-                "decoded_not_verified"
-            } else {
-                "unrecognized_not_verified"
-            },
-        )?;
-        let runtime_evidence = decoded.ok().map(|mut evidence| {
-            evidence.validation = VerificationOutcome::Unknown;
-            evidence.objective = VerificationOutcome::Unknown;
-            evidence
-        });
+        // A prefix of the stream is never decoded.
+        let runtime_evidence = if output.output_incomplete {
+            None
+        } else {
+            let decoded =
+                adapter.decode_stream(&output.stdout, output.outcome.clone(), run.max_output_bytes);
+            self.store.event(
+                id,
+                "protocol.observed",
+                if decoded.is_ok() {
+                    "decoded_not_verified"
+                } else {
+                    "unrecognized_not_verified"
+                },
+            )?;
+            decoded.ok().map(|mut evidence| {
+                evidence.validation = VerificationOutcome::Unknown;
+                evidence.objective = VerificationOutcome::Unknown;
+                evidence
+            })
+        };
         Ok(RunCompletion {
             run: self.store.get(id)?,
             transport: output.outcome,

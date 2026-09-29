@@ -2950,3 +2950,207 @@ async fn native_durable_cancel_during_version_probe_waits_for_cleanup_and_never_
     }
     runtime.verify_integrity().unwrap();
 }
+
+struct ClassifierFailsAdapter;
+impl HarnessAdapter for ClassifierFailsAdapter {
+    fn host(&self) -> &'static str {
+        "codex"
+    }
+    fn prepare(
+        &self,
+        request: &ValidatedExecutionRequest,
+    ) -> std::result::Result<PreparedRun, AdapterError> {
+        prepared_run(
+            request,
+            "/bin/sh",
+            vec!["-c".into(), "exit 3".into()],
+            vec![],
+        )
+    }
+    fn classify_failure(
+        &self,
+        _: &[u8],
+        _: TransportOutcome,
+        _: usize,
+    ) -> std::result::Result<Option<router_adapter_api::NativeFailureEvidence>, AdapterError> {
+        Err(AdapterError::Unsupported("classifier-fixture"))
+    }
+    fn decode_stream(
+        &self,
+        _: &[u8],
+        _: TransportOutcome,
+        _: usize,
+    ) -> std::result::Result<RuntimeEvidence, AdapterError> {
+        Err(AdapterError::Protocol)
+    }
+}
+
+#[tokio::test]
+async fn adapter_classification_error_is_not_a_retryable_crash() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let completion = runtime
+        .execute(
+            approved,
+            &ClassifierFailsAdapter,
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(completion.run.state, RunState::Failed);
+    assert_eq!(completion.run.failure, Some(RunFailure::Unclassified));
+    assert!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "failure.classification_error")
+    );
+}
+
+#[tokio::test]
+async fn output_retention_failure_fails_the_run_explicitly() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new(false).await;
+    let runtime = retaining_runtime(&fixture);
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    // A foreign file owns the stdout artifact name, so retention cannot write.
+    let outputs = fixture.temp.path().join("runtime/outputs");
+    fs::create_dir(&outputs).unwrap();
+    fs::set_permissions(&outputs, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(
+        outputs.join(format!(
+            "{}-1-stdout.bin",
+            router_adapter_api::content_digest(b"run-1")
+        )),
+        b"foreign",
+    )
+    .unwrap();
+    let result = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf payload"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await;
+    assert!(matches!(
+        result,
+        Err(RuntimeError::Io(ref e)) if e.kind() == std::io::ErrorKind::AlreadyExists
+    ));
+    let run = runtime.summary("run-1").unwrap();
+    assert_eq!(run.state, RunState::VerificationFailed);
+    assert_eq!(run.failure, Some(RunFailure::Verification));
+    assert!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.detail == "output_retention_failed")
+    );
+}
+
+#[cfg(target_os = "macos")]
+#[tokio::test]
+async fn stale_seatbelt_probe_scratch_neither_blocks_nor_survives_a_probe() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let programs = || BTreeMap::from([("touch".into(), PathBuf::from("/usr/bin/touch"))]);
+    // Leftovers of a killed probe: a directory with content and a world-readable canary.
+    fs::create_dir_all(root.join("sandbox-probe/allowed")).unwrap();
+    fs::write(root.join("sandbox-probe/allowed/yes"), b"old").unwrap();
+    fs::write(root.join("sandbox-canary-read"), b"old").unwrap();
+    // The probe may report the OS sandbox unavailable in a nested sandbox; it
+    // must never fail on its own leftovers, and must leave nothing behind.
+    let result = SeatbeltSandbox::probe(&root, programs(), vec![], BTreeMap::new()).await;
+    assert!(
+        !matches!(result, Err(RuntimeError::Io(_))),
+        "stale scratch blocked the probe"
+    );
+    assert!(!root.join("sandbox-probe").exists());
+    assert!(!root.join("sandbox-canary-read").exists());
+    // A planted symlink is refused and never followed.
+    let target = root.join("target");
+    fs::write(&target, b"keep").unwrap();
+    std::os::unix::fs::symlink(&target, root.join("sandbox-canary-read")).unwrap();
+    assert!(matches!(
+        SeatbeltSandbox::probe(&root, programs(), vec![], BTreeMap::new()).await,
+        Err(RuntimeError::Integrity("stale scratch entry"))
+    ));
+    assert_eq!(fs::read(&target).unwrap(), b"keep");
+}
+
+// Test-only: marks the command as supervised so the leader's group is not
+// signalled and a background holder keeps stdout open past the reader deadline.
+struct HeldPipeSupervisor;
+impl SandboxSupervisor for HeldPipeSupervisor {
+    fn resource_limits_enforced(&self) -> bool {
+        true
+    }
+    fn command(&self, run: &PreparedRun, p: &SandboxPolicy) -> Result<tokio::process::Command> {
+        let mut command = FakeSupervisor.command(run, p)?;
+        command.env("ROUTER_RUNTIME_SUPERVISION", "framed-v1");
+        Ok(command)
+    }
+}
+
+#[tokio::test]
+async fn incomplete_output_never_ends_as_a_succeeded_transport() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let completion = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf partial; /bin/sleep 4 2>/dev/null & exit 0"),
+            &HeldPipeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        completion.transport.termination,
+        TransportTermination::Exited
+    );
+    assert_eq!(completion.run.state, RunState::Failed);
+    assert_eq!(completion.run.failure, Some(RunFailure::Unclassified));
+    // A prefix is never decoded, and its bytes are reported as captured only.
+    assert!(completion.runtime_evidence.is_none());
+    assert_eq!(completion.stdout_bytes, b"partial".len());
+    let events = runtime.events().unwrap();
+    assert!(events.iter().any(|e| e.kind == "output.incomplete"));
+    assert!(!events.iter().any(|e| e.kind == "protocol.observed"));
+}
+
+#[tokio::test]
+async fn incomplete_output_artifacts_are_marked_truncated() {
+    let fixture = Fixture::new(false).await;
+    let runtime = retaining_runtime(&fixture);
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let completion = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf partial; /bin/sleep 4 2>/dev/null & exit 0"),
+            &HeldPipeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    let artifacts = completion.output_artifacts.unwrap();
+    assert!(artifacts.truncated);
+    assert_eq!(fs::read(&artifacts.stdout.path).unwrap(), b"partial");
+}

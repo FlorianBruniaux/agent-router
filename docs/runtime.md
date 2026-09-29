@@ -71,6 +71,26 @@ it never sends a signal using an already reaped leader's PID.
 stdout and stderr share a byte budget. Their hashes and counts survive;
 their full payloads and prompts are not retained by default.
 
+A stream reader that has not finished two seconds after termination (for
+example a descendant still holding the pipe) is aborted. For a run, the observed
+termination and the bytes already captured are kept and an `output.incomplete`
+event is recorded; the failure is not reclassified as a spawn error.
+A nonzero exit whose adapter classification fails with an error other than a
+protocol mismatch records `failure.classification_error` and the non-retryable
+`RunFailure::Unclassified` (serialized `unclassified`, an additive contract
+value; feedback treats it as `Unknown`, never as a model fault). A run whose
+process exited but whose output is incomplete also ends `failed` with
+`unclassified`, never `succeeded_transport`. Such a prefix is never decoded:
+`runtime_evidence` is `None` and no `protocol.observed` event is written. The
+`RunCompletion` digests and byte counts describe the captured bytes only (as
+they already do on output overflow; the fields are not optional, so omitting
+them would be a contract change), and retained output artifacts are marked
+`truncated: true`. Every other capture caller (git,
+probes, version checks) fails closed with `runtime.process.failed` when a
+stream is incomplete.
+If retaining output fails after a successful transport, the run moves through
+`verifying` to `verification_failed` instead of staying `succeeded_transport`.
+
 Schema 6 adds per-attempt cleanup leases and persistent cleanup quarantine.
 Before spawn, the runtime creates a private, never-overwritten lease, binds its
 inode to the attempt transaction, and passes its path only to the trusted helper.
@@ -173,19 +193,44 @@ allowed and denied writes, and a denied connection to a loopback listener.
 The positive controls must also succeed. A failed or unavailable probe cannot
 produce a supervisor. Programs, extra readable roots and environment values
 are explicit trusted integration inputs. No home directory or environment is
-inherited implicitly. Native program hashes are rechecked before launch.
+inherited implicitly. Native program hashes are checked before launch, but the
+program is then executed by path, so the check is not race-free: a principal who
+can write the binary or its directory can swap it after the hash (TOCTOU).
+Install approved binaries and the helper where the workload cannot write.
+Probe scratch files use fixed names below the private directory; stale entries
+from a killed probe are removed if owned and not symlinks, and every path is
+removed on every exit.
 
 The macOS profile denies access by default. It permits required system reads,
 the repository and approved readable roots. The loader also requires reading
 the `/` directory itself; this is a literal rule, not a subtree permission.
+`mach-lookup` is allowed globally (the loader and system libraries need
+several services). `network: false` therefore proves only that socket
+networking is denied, not the absence of DNS or LaunchServices channels.
+`SeatbeltSandbox::dns_resolution()` is `Unknown` unless the caller invokes
+`probe_dns_resolution()`, which the normal probe never does. That call performs
+one real outbound DNS query (`example.com`) outside the sandbox as a control
+and one under the `network: false` profile, each bounded to 2 s, through
+`/usr/bin/dscacheutil` (a system binary outside the approved-binary hash
+table). The result is `Resolved`, `NotResolvedUnderProfile` (one failed lookup,
+not proof of absence) or `Unknown` (control failed). It is evidence only and
+never fails a probe or a run. A mach service allowlist is deferred to a native
+canary.
+
 Writes are limited to approved scope paths and `/dev/null`, with Git metadata
-writes denied. Network access requires the explicit routed network capability.
+writes denied for every case spelling of `.git`. Network access requires the explicit routed network capability.
 
 `BubblewrapSandbox::probe` provides the Linux implementation. It creates mount,
 PID and network namespaces, drops capabilities and uses read-only mounts plus
 the selected writable scope. It requires an available bubblewrap binary and
 working unprivileged namespaces. Linux write scopes must already exist in the
-worktree so they can be mounted precisely. Its enforcement canary must run on
+worktree so they can be mounted precisely. A `.git` entry (any case)
+directly inside a writable scope root is remounted read-only; a `.git` symlink
+there is refused. Nested `.git` entries, and any the child creates during the
+run, are not remounted (a recursive walk fails on scopes holding `node_modules`
+or `target`): git never tracks a path named `.git`, so they cannot reach the
+captured diff. Scope entries containing `.git` in any case (`.GIT`, `.Git`) are
+rejected on every platform. Its enforcement canary must run on
 Linux; compiling it on macOS is not runtime proof.
 
 `ResourceSupervisor::probe` wraps either native sandbox with the separately
