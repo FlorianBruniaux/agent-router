@@ -68,6 +68,8 @@ pub(crate) fn load_bytes(
     }
 }
 
+/// Always called with `json` forced on by `Commands::structured_output`, which
+/// renders the human view from this JSON result: no `--json` guard applies here.
 pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
     let max_age = router_adapter_api::DEFAULT_MAX_AGE_SECONDS;
     match command {
@@ -76,11 +78,8 @@ pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
             prior,
             registry,
             now,
-            json,
+            json: _,
         } => {
-            if !json {
-                return Err(CliError::JsonOutputRequired);
-            }
             let snapshot = inspect::read_snapshot(&host_snapshot, now, max_age)?;
             let prior = read_catalog(&prior)?;
             let config = registry
@@ -100,10 +99,7 @@ pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
             .map_err(|_| CliError::Internal)?;
             json_output(&document, ExitCode::SUCCESS)
         }
-        CatalogCommand::Validate { catalog, now, json } => {
-            if !json {
-                return Err(CliError::JsonOutputRequired);
-            }
+        CatalogCommand::Validate { catalog, now, .. } => {
             let bytes = bytes(&catalog)?;
             let (version, hash, schema) = if let Some(generated) = generated(&bytes, now, max_age)?
             {
@@ -127,10 +123,7 @@ pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
                 ExitCode::SUCCESS,
             )
         }
-        CatalogCommand::List { catalog, now, json } => {
-            if !json {
-                return Err(CliError::JsonOutputRequired);
-            }
+        CatalogCommand::List { catalog, now, .. } => {
             let bytes = bytes(&catalog)?;
             if let Some(generated) = generated(&bytes, now, max_age)? {
                 json_output(
@@ -159,11 +152,8 @@ pub(crate) fn run(command: CatalogCommand) -> Result<Outcome, CliError> {
             id,
             kind,
             now,
-            json,
+            json: _,
         } => {
-            if !json {
-                return Err(CliError::JsonOutputRequired);
-            }
             let bytes = bytes(&catalog)?;
             let kind: AssetKind = serde_json::from_value(serde_json::json!(kind))
                 .map_err(|_| CliError::InvalidCommand)?;

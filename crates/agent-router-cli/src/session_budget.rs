@@ -6,10 +6,12 @@ use router_types::{BudgetAmount, SessionBudgetPolicy};
 use std::{path::PathBuf, process::ExitCode};
 #[derive(Subcommand)]
 pub(crate) enum Command {
+    /// Validate and hash a session budget policy without opening a registry.
     PolicyHash {
         #[arg(long)]
         policy: PathBuf,
     },
+    /// Add session budgets to an empty shared registry.
     Init {
         #[arg(long)]
         registry: PathBuf,
@@ -18,6 +20,7 @@ pub(crate) enum Command {
         #[arg(long)]
         policy: PathBuf,
     },
+    /// Report reserved and committed allocations of one session.
     Status {
         #[arg(long)]
         registry: PathBuf,

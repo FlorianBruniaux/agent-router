@@ -128,6 +128,67 @@ fn phase_decision_human_view_keeps_receipt_identity_and_uncertainty() {
     assert!(text.contains(value["receipt_id"].as_str().unwrap()));
     assert!(text.contains("no runtime cost is asserted"));
     assert!(!text.trim_start().starts_with('{'));
+    // The summary leads: status and the selection, before any detail or hash.
+    let lines: Vec<&str> = text.lines().collect();
+    assert_eq!(lines[1], "Status: selected", "{text}");
+    assert_eq!(
+        lines[2], "Selected: primary (fixture-best/medium)",
+        "{text}"
+    );
+    // The null counterpart of a selection is not rendered as a field.
+    assert!(!text.contains("Abstention"), "{text}");
+    // Array items are named, not numbered.
+    assert!(
+        text.contains("- secondary (fixture-second/medium)"),
+        "{text}"
+    );
+    assert!(text.contains("- fixture-best\n"), "{text}");
+    assert!(!text.contains("- [1]"), "{text}");
+    // Top-level hashes are grouped after the detail, each still complete.
+    let hashes = lines
+        .iter()
+        .position(|l| *l == "Hashes:")
+        .expect("hash group");
+    let selected = lines
+        .iter()
+        .position(|l| *l == "Selected:")
+        .expect("detail");
+    assert!(selected < hashes, "{text}");
+    for key in [
+        "catalog_hash",
+        "context_hash",
+        "policy_hash",
+        "pool_hash",
+        "registry_hash",
+        "snapshot_hash",
+    ] {
+        let hash = value[key].as_str().unwrap();
+        let at = lines.iter().position(|l| l.ends_with(hash)).expect(key);
+        assert!(at > hashes, "{key}: {text}");
+    }
+}
+
+#[test]
+fn phase_decision_json_is_byte_identical_to_the_pinned_receipt() {
+    let output = command()
+        .args(["route-phase", "--context"])
+        .arg(fixture("phase-request.json"))
+        .arg("--host-snapshot")
+        .arg(fixture("phase-snapshot.json"))
+        .arg("--catalog")
+        .arg(fixture("phase-catalog.json"))
+        .args(["--now", "100", "--json"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let golden =
+        fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/route-phase-plan.json"))
+            .unwrap();
+    assert_eq!(
+        String::from_utf8(output.stdout).unwrap(),
+        String::from_utf8(golden).unwrap()
+    );
 }
 
 #[test]
