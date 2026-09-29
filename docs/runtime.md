@@ -43,6 +43,10 @@ the corresponding crates.
 Events form a SHA-256 chain and SQL triggers reject updates and deletions. An
 invalid state transition fails and records an integrity event. Hashes detect
 changes; they do not authenticate a writer who controls the private storage.
+Opening the store and `verify_integrity` replay the whole chain. Afterwards the
+lock owner verifies only the events after the last one it verified, and
+rehashes that one. Observation and cancellation connections replay the whole
+chain. See [ADR 0018](adr/0018-incremental-event-chain-verification.md).
 
 One supervisor holds an exclusive advisory file lock. A second supervisor
 cannot bypass its concurrency limits. `observe`, `observe_events` and

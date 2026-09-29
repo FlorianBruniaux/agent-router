@@ -55,8 +55,8 @@ impl Store {
     }
     pub(crate) fn escalation_history(&self, id: &str) -> Result<EscalationHistory> {
         let mut db = self.lock()?;
-        let tx = db.transaction()?;
-        let snapshot = history(&tx, id, &self.root)?;
+        let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Deferred)?;
+        let snapshot = history(&tx, id, &self.root, &self.verified()?.anchors)?;
         tx.commit()?;
         Ok(snapshot)
     }
@@ -70,8 +70,8 @@ impl Store {
         detail: &str,
     ) -> Result<()> {
         let mut db = self.lock()?;
-        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        let previous = history(&tx, id, &self.root)?;
+        let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Immediate)?;
+        let previous = history(&tx, id, &self.root, &self.verified()?.anchors)?;
         if previous.ledger_hash != ledger {
             return Err(RuntimeError::Approval);
         }
@@ -103,9 +103,18 @@ fn last_hash(db: &Connection) -> Result<String> {
         |r| r.get(0),
     )?)
 }
-fn history(db: &Connection, id: &str, root: &Path) -> Result<EscalationHistory> {
-    verify_events(db)?;
+/// Callers verify the event chain in the same transaction first and pass the
+/// owner's verified anchors.
+fn history(
+    db: &Connection,
+    id: &str,
+    root: &Path,
+    anchors: &std::collections::BTreeMap<String, PlanAuthorityAnchor>,
+) -> Result<EscalationHistory> {
     let source = load_opt(db, id)?.ok_or(RuntimeError::NotFound)?;
+    if let Some(binding) = &source.workflow {
+        verify_instance_authority(db, &binding.instance_id, anchors.get(&binding.instance_id))?;
+    }
     let runs = if let Some(binding) = &source.workflow {
         let mut q = db.prepare("SELECT r.summary FROM runs r JOIN workflow_node_runs n ON r.run_id=n.run_id WHERE n.instance_id=?1 AND n.node_id=?2 AND n.generation<=?3 ORDER BY n.generation LIMIT 7")?;
         q.query_map(
