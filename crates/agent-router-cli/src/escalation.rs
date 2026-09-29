@@ -181,13 +181,19 @@ fn open_source(
     };
     // Observe first so review/proposal never creates a missing source store.
     let summary = router_runtime::observe(store, &run_id).map_err(execution::error)?;
-    Runtime::open(
+    let admission = if let Some(bundle) = bundle {
+        crate::coordinator::bundle_admission(bundle)?
+    } else {
+        definition(path.ok_or(CliError::InvalidCommand)?)?.admission
+    };
+    crate::admission::open(
         store,
         RuntimeLimits {
             max_attempts,
             output_retention: summary.output_retention,
             ..RuntimeLimits::default()
         },
+        admission.as_ref(),
     )
     .map_err(execution::error)
 }

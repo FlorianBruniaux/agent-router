@@ -349,6 +349,30 @@ pub(super) fn no_model_started(db: &Connection, run: &RunSummary) -> Result<bool
     }
 }
 
+/// A ticket pins the next preparation cycle, not merely the next model attempt.
+pub(super) fn next_sequence(db: &Connection, run: &RunSummary) -> Result<u32> {
+    let n = cycle(db, run)?.map_or(1, |c| c.sequence + 1);
+    if n > MAX_CYCLES {
+        return Err(RuntimeError::Limit);
+    }
+    Ok(n)
+}
+pub(super) fn safe_admission_cycle(
+    db: &Connection,
+    run: &RunSummary,
+    sequence: u32,
+    attempt: u32,
+) -> Result<bool> {
+    match cycle(db, run)? {
+        Some(c) if c.sequence == sequence => Ok(c.next_attempt == attempt && settled(&c)),
+        Some(c) if c.sequence.checked_add(1) == Some(sequence) => {
+            Ok(run.attempts.checked_add(1) == Some(attempt) && settled(&c))
+        }
+        None => Ok(sequence == 1 && run.attempts == 0 && attempt == 1 && terminal_safe(db, run)?),
+        _ => Ok(false),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -743,7 +767,7 @@ mod tests {
             .unwrap();
         drop(store);
         let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
-        db.execute_batch("DROP TABLE preparation_cycles; PRAGMA user_version=7;")
+        db.execute_batch("DROP TABLE admission_intents; DROP TABLE admission_binding; DROP TABLE preparation_cycles; PRAGMA user_version=7;")
             .unwrap();
         drop(db);
         let store = Store::open(&root).unwrap();
@@ -752,7 +776,7 @@ mod tests {
         assert_eq!(
             db.pragma_query_value::<u32, _>(None, "user_version", |r| r.get(0))
                 .unwrap(),
-            8
+            9
         );
         assert_eq!(
             db.query_row::<u32, _, _>("SELECT count(*) FROM preparation_cycles", [], |r| r.get(0))

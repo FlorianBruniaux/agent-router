@@ -1413,3 +1413,128 @@ fn coordinator_source_origins_are_rejected_before_following_decision_files() {
         );
     }
 }
+
+#[test]
+#[ignore = "real native sandbox; shared session allocations across workflow handoff and escalation"]
+fn native_coordinator_session_budget_charges_predecessor_failures_and_escalated_target() {
+    let f = CoordinatedFixture::new(true);
+    let root = &f.base.files.root;
+    let runtime_root = f.base.files.store.join("runtime");
+    use std::os::unix::fs::DirBuilderExt;
+    fs::DirBuilder::new()
+        .mode(0o700)
+        .recursive(true)
+        .create(&runtime_root)
+        .unwrap();
+    let workflow: WorkflowDefinition = read(&f.workflow);
+    let policy = AdmissionPolicy {
+        schema_version: 1,
+        global_limit: 4,
+        runtimes: BTreeMap::from([(
+            "fixture".into(),
+            AdmissionRuntimePolicy {
+                root_sha256: router_runtime::admission_runtime_root_hash(&runtime_root).unwrap(),
+                limit: 4,
+            },
+        )]),
+        providers: BTreeMap::from([("synthetic-provider".into(), 4)]),
+        agents: BTreeMap::from([("workers".into(), 4)]),
+        agent_mappings: workflow
+            .plan
+            .nodes
+            .iter()
+            .map(|n| AdmissionAgentMapping {
+                runtime_id: "fixture".into(),
+                plan_owner: n.owner.clone(),
+                candidate_agent: None,
+                quota_id: "workers".into(),
+            })
+            .collect(),
+    };
+    let registry = root.join("session-registry");
+    let hash = router_runtime::admission_policy_hash(&policy).unwrap();
+    let mut store = router_runtime::AdmissionStore::create(&registry, &policy).unwrap();
+    let amount = |cost, tokens| BudgetAmount {
+        cost_microusd: cost,
+        tokens,
+    };
+    let budget = SessionBudgetPolicy {
+        schema_version: 1,
+        sessions: BTreeMap::from([(
+            "session".into(),
+            SessionBudgetRule {
+                initial_limit: amount(400, 20000),
+                parent_ceiling: amount(400, 20000),
+                warning_basis_points: vec![5000, 9000],
+            },
+        )]),
+        runtime_sessions: BTreeMap::from([("fixture".into(), "session".into())]),
+    };
+    let bh = store.initialize_session_budgets(&budget).unwrap();
+    drop(store);
+    let config = AdmissionConfig {
+        schema_version: 1,
+        registry: registry.clone(),
+        expected_policy_sha256: hash.clone(),
+        runtime_id: "fixture".into(),
+        session_budget: Some(SessionBudgetConfig {
+            schema_version: 1,
+            expected_policy_sha256: bh.clone(),
+            session_id: "session".into(),
+            approved_limit: amount(400, 20000),
+            attempt_allocation: amount(100, 4500),
+        }),
+    };
+    for path in [
+        "co-source/definition.json",
+        "co-plan/definition.json",
+        "co-prepare.json",
+    ] {
+        let path = root.join(path);
+        let mut v: Value = read(&path);
+        v["admission"] = json!(config);
+        write(&path, &v);
+    }
+    let (parent, _) = f.failed_sources();
+    let status = || {
+        router_runtime::AdmissionStore::open(&registry, &hash)
+            .unwrap()
+            .session_budget_status("session", &bh)
+            .unwrap()
+    };
+    assert_eq!(
+        status().committed_allocation,
+        amount(300, 13500),
+        "small parent bounds for failures do not refund committed allocations"
+    );
+    let mut manifest: Value = read(&root.join("co-prepare.json"));
+    manifest["escalation_decision"] = json!("co-proposal.json");
+    manifest["generation"] = json!(2);
+    manifest["run_id"] = json!("co-target");
+    write(&root.join("co-target-prepare.json"), &manifest);
+    checked(&mut f.prepare_target(), 0);
+    assert_eq!(
+        read::<Value>(&root.join("co-target/definition.json"))["admission"],
+        json!(config)
+    );
+    let reviewed = f.review("execute", 2, "co-target/definition.json", "budget-target");
+    let done = f.wave(
+        "budget-target/bundle.json",
+        reviewed["approval_digest"].as_str().unwrap(),
+        0,
+    );
+    assert_eq!(done["wave"]["completions"][0]["run"]["state"], "verifying");
+    let end = status();
+    assert_eq!(end.committed_allocation, amount(400, 18000));
+    assert_eq!(end.reserved_allocation, amount(0, 0));
+    assert_eq!(end.observed_cost_microusd, None);
+    assert_eq!(end.observed_tokens, None);
+    let parent_id = parent["run"]["run_id"].as_str().unwrap();
+    assert_eq!(
+        router_runtime::observe(&runtime_root, parent_id)
+            .unwrap()
+            .attempts,
+        1,
+        "verified predecessor must not be executed again"
+    );
+}

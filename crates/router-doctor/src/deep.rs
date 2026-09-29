@@ -1,5 +1,5 @@
 use crate::{
-    DoctorError, MAX_ARTIFACTS, MAX_FILE_BYTES, MAX_TOTAL_BYTES, Result, database, diagnose,
+    DoctorError, MAX_ARTIFACTS, MAX_FILE_BYTES, MAX_TOTAL_BYTES, Result, diagnose,
     files::{ReadRoot, relative},
 };
 use router_adapter_api::{SnapshotValidation, content_digest, strict_json};
@@ -90,23 +90,14 @@ pub fn diagnose_deep(request: &DeepDoctorRequest, now: u64) -> Result<DeepDoctor
             );
         }
         if artifact.kind == DoctorArtifactKind::Database {
-            let outcome = state.read(artifact).and_then(|(mut file, bytes)| {
-                if database_sidecars(state.root, artifact)? {
-                    return Ok((DeepDoctorCode::DatabaseSnapshotRequired, None));
-                }
-                let code = database::inspect(&file, &bytes, &mut state.queries)?;
-                // Descriptor and named input must still identify the original
-                // bytes; a concurrently changing database is never certified.
-                let after = read_file(&mut file, &mut state.total)?;
-                let (_, named) = state.read(artifact)?;
-                if bytes != after || bytes != named {
-                    return Err(DoctorError::Integrity);
-                }
-                if database_sidecars(state.root, artifact)? {
-                    return Ok((DeepDoctorCode::DatabaseSnapshotRequired, None));
-                }
-                Ok((code, Some(content_digest(&bytes))))
-            });
+            let outcome = crate::diagnose::inspect_database(state.root, artifact).and_then(
+                |(configuration, _, _)| {
+                    if configuration == DiagnosticState::Fail {
+                        return Err(DoctorError::Path);
+                    }
+                    Ok((DeepDoctorCode::DatabaseSnapshotRequired, None))
+                },
+            );
             state.record(&format!("database:{}", artifact.id), outcome);
         }
     }
@@ -151,18 +142,6 @@ pub fn diagnose_deep(request: &DeepDoctorRequest, now: u64) -> Result<DeepDoctor
         examined_body_count,
         database_queries,
     })
-}
-
-fn database_sidecars(root: &ReadRoot, artifact: &DoctorArtifact) -> Result<bool> {
-    for suffix in ["-wal", "-shm", "-journal"] {
-        if root
-            .optional_file(&format!("{}{suffix}", artifact.relative_path))?
-            .is_some()
-        {
-            return Ok(true);
-        }
-    }
-    Ok(false)
 }
 
 fn validate_request(request: &DeepDoctorRequest) -> Result<()> {

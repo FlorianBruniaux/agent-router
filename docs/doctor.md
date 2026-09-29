@@ -21,7 +21,7 @@ Paths, user labels and file contents do not appear in diagnostics or errors.
 | Hook or plugin | Bounded content, JSON structure for plugin, optional expected hash | Hook invocation/trust and plugin loading remain unknown |
 | Authentication marker | File presence and private permissions only; content is never read or hashed | Credentials are not tested |
 | Executable | Regular-file presence and Unix executable permission | No `--version` process is launched; host versions may be supplied in snapshots |
-| Database | SQLite header only | Integrity, migrations, locks and live health remain unknown |
+| Database | Regular-file metadata only | `database_snapshot_required`; content, hash, integrity and live health remain unknown |
 | Lease | PID shape, heartbeat timestamp and bounded expiry | Staleness does not prove an orphan; no process is killed |
 | Backend status | Bounded supplied JSON | Health and liveness remain unknown without an independent observation |
 | Sandbox evidence | Bounded supplied JSON | A JSON claim does not establish enforcement |
@@ -92,34 +92,31 @@ bodies to 1 MiB, body reads to 128 and retrieval bindings to 16. A limit is a
 failed check, never a silently truncated success. Between-pass hash changes
 are reported as `input_changed`.
 
-Database artifacts additionally receive SQLite `integrity_check(1)` and
-`foreign_key_check`. Opening uses an already validated descriptor with
-`mode=ro`, `immutable=1`, `SQLITE_OPEN_READ_ONLY` and `SQLITE_OPEN_NOFOLLOW`.
-The connection confirms its read-only state; it has no create flag, extension
-loading, migrations, writes or checkpoint step. Trusted schema, views and
-triggers are disabled; temporary storage is memory-only. The report counts
-three connection-local PRAGMAs and up to two integrity queries. No SQL error
-text, table name, row content or database version is exported.
+Artifacts declared `database` now receive only descriptor-relative `statat`
+checks of their path, regular-file type, requested private permissions and size.
+Neither the main file nor its sidecars are opened by this path. Both ordinary
+and deep reports return `database_snapshot_required` with configuration
+`unknown`, no content hash and zero database queries. Missing, unsafe,
+over-permissive or oversized entries remain explicit failures. An expected
+digest is not validated, and no header or secret scan is claimed. This is a
+visible change from the previous header check and macOS `/dev/fd` integrity
+inspection, including for an apparently offline database.
 
-This descriptor technique is verified on macOS fdescfs, including replacement
-of the original pathname after opening. On platforms where `/dev/fd` resolves
-through symlinks, including ordinary Linux procfs layouts, it returns
-`database_read_only_unsupported` and does not reopen the original pathname.
-That boundary preserves the no-follow guarantee rather than claiming portable
-SQLite proof. SQL length, column count, expression depth, compiled operations,
-attached databases and worker counts are bounded. A progress callback stops
-after approximately one million VM operations or 250 ms, checked each 1,000
-operations. This is cooperative work control, not an OS deadline or memory
-sandbox.
+The reason is process-wide POSIX locking: closing an auxiliary descriptor can
+release another SQLite connection's locks even when that connection remains
+active. Checking the WAL header after opening cannot prevent this effect. The
+public `diagnose_database_snapshot(&Connection)` API below retains the actual
+integrity checks through SQLite's own connection and snapshot machinery.
+SQL length, columns, expression depth, VM work and elapsed cooperative work
+limits remain applied there; no pathname-based integrity result is fabricated.
 
-WAL-mode headers or any `-wal`, `-shm` or `-journal` sidecar yield
-`database_snapshot_required` before SQLite opens. A clean, externally produced
-consistent export is required for those databases; doctor does not make that
-export itself. Descriptor bytes, the named file and sidecar presence are checked
-again after inspection. This detects observed changes but cannot establish an
-atomic snapshot against an adversarial concurrent writer. A passing local
-result is not a migration compatibility, lock availability, liveness or future
-health claim.
+This protection applies to artifacts declared `database`. Callers must not
+misclassify a live SQLite file or sidecar as `managed_file`, JSON or another
+ordinary byte-readable kind. Those readers do not promise preservation of
+SQLite locks for incorrectly typed inputs. Deep schema bindings cannot change
+a `database` artifact into `managed_file`; such bindings are rejected before
+the base diagnostic. Metadata is an observation, not an atomic filesystem
+snapshot or evidence of lock availability, service liveness or authenticity.
 
 ### Coherent snapshots from an owned connection
 
@@ -127,7 +124,7 @@ health claim.
 `Runtime::diagnose_storage()` uses it under the mutex of its already owned SQLite
 connection. It accepts no pathname, reopens no file, starts no process and creates
 no on-disk export. It neither opens a new runtime nor runs migrations. The existing
-file-based deep diagnostic retains its WAL and unsafe `/dev/fd` refusals.
+file-based diagnostic requires this explicit connection-based path for integrity.
 
 The API explicitly starts a deferred read transaction, irrespective of the
 caller's default transaction mode, checks the source page count and size, then
@@ -154,13 +151,90 @@ and SQLite's internal backup operations are not query-count entries. The digest
 identifies the captured bytes, not the current live database after the call.
 Integrity does not authenticate the runtime journal, certify schema compatibility,
 prove process liveness or authorize execution. `Runtime::verify_integrity()` and
-host evidence remain separate checks. A CLI snapshot command and active native
-host/hook diagnostics are not implemented by this library change.
+host evidence remain separate checks. The passive runtime CLI below adds a
+bounded journal and read-layout inspection. Active native host/hook diagnostics
+remain outside these APIs.
 
 Tests cover committed WAL foreign-key violations, uncommitted writes, preservation
 of source permissions and active caller transactions, size/page-size limits,
 copy-deadline refusal, lock contention, recovery after refusal and runtime ownership.
 Linux evidence comes from the same tests in CI, not from the macOS result.
+
+### Passive runtime storage diagnostics
+
+```sh
+agent-router doctor --runtime-root /absolute/private/runtime --json
+```
+
+`--runtime-root` is exclusive with `--request` and `--deep`. Without `--json`,
+the same report is rendered for humans. Exit codes are 0 for passing storage
+checks, 2 for a failed check or refusal, and 3 for warnings. This command never
+calls `Runtime::open`, runs migrations, recovers interrupted runs, resolves a
+lease, releases reservations, repairs a database or starts a host process.
+It neither creates a missing runtime nor reads stored prompts into its output.
+
+It opens the existing private database with SQLite's ordinary read-only flags
+and takes the coherent memory snapshot described above. It deliberately avoids
+`immutable=1`: cancellation can write through another connection even while the
+runtime owner lock is available. SQLite may create or update its WAL-index and
+read marks, including internal WAL-index recovery after a crash. This is **not**
+a zero-filesystem-write guarantee. No application recovery or explicit checkpoint
+is requested. See [SQLite read-only WAL](https://sqlite.org/wal.html#read_only_databases)
+and [immutable semantics](https://sqlite.org/uri.html#uriimmutable).
+
+The report keeps these observations separate:
+
+| Field | Meaning | Limit |
+| --- | --- | --- |
+| `database` | Integrity, fingerprint and size of the committed copy | Does not authenticate its source |
+| `schema_layout` | Expected version-9 tables and ordered columns are present | A recognized read layout does not prove every write constraint or authenticate schema SQL |
+| `journal_integrity` | Event hash-chain and workflow authority-pin consistency on the same copy | A self-consistent replacement journal is not authenticated |
+| `counts` | Runs, events, writer reservations, cleanup blocks, preparation cycles and recorded leases | Aggregates of persisted records, not proof of current execution |
+| `owner_lock` | Shared-lock attempt was available, busy, missing or unknown | No PID lookup, orphan inference or recovery authority |
+| `leases` | Later held, pending, cleanup-marked, missing or ambiguous observations | Markers are not opaque cleanup proofs; this observation is not atomic with the database copy |
+
+Older schemas return `migration_required` without migration. Future versions or
+missing expected tables/columns fail the check; counts and lease observations
+are omitted for these layouts. A corrupted journal fails separately from SQLite
+integrity. Cleanup blocks, pending/missing/ambiguous leases and missing owner
+locks produce a warning. A busy owner is normal and does not prevent inspection.
+`shared_admission_accounting`, `journal_authenticity`, `process_liveness` and
+`cleanup_authority` remain `unknown`
+on every successful report, including one whose scoped storage checks pass.
+The runtime admission binding and intent tables are included in layout/size checks,
+but the separate admission registry and session counters are not inspected.
+In particular, a schema-8 runtime is reported as needing migration without opening
+it for recovery or creating the two schema-9 tables.
+
+The operator-selected runtime and its ancestors must remain under the operator's
+control. The final directory is pinned, private and owned by the current user.
+The database, existing SQLite sidecars and owner lock must be regular private
+files with one link and the same owner. The main file is limited to 4 MiB; all
+SQLite files together to 16 MiB. Identities are checked before and after capture;
+new sidecars created by SQLite are checked too. Substitution or disappearance of
+an initially present sidecar is refused. These checks do not protect against a
+malicious actor with the same user privileges replacing ancestors between calls.
+POSIX mode checks do not certify platform ACLs.
+
+Database checks use `statat` without opening extra DB/SHM descriptors. Closing an
+auxiliary descriptor can release SQLite's process-wide POSIX locks, even if that
+descriptor was read-only. SQLite owns all its database descriptor lifetimes.
+The passive lease reader uses a shared nonblocking lock, a 96-byte marker limit
+and the recorded identity. It never changes a pending marker to recovered.
+
+Inspection is limited to 4,096 rows per table and 64 KiB per field before journal
+parsing or lease materialization. SQLite VM/time limits remain active on the
+copy. The `diagnose_database_snapshot_with` callback is trusted linked Rust code, not a sandbox for arbitrary SQL or Rust. It counts its statements and
+must preserve connection limits. A changed final fingerprint or an open
+transaction is rejected. The checks cannot detect a trusted callback changing
+and rolling back data before returning a misleading value, nor bound arbitrary
+Rust computation. The historical snapshot wrapper and its JSON shape are unchanged.
+
+Tests cover committed WAL observations, unchanged reservation and pending-lease
+records, schema migration refusal, redaction, journal corruption, unsafe paths,
+row bounds and a second process remaining blocked by an existing SQLite writer
+lock after inspection. Native host activation and orphan cleanup are not covered
+by these storage tests.
 
 Deep mode launches no `--version`, authentication or status commands. Supplied
 host snapshots retain their own source/freshness checks. An executable's name or
@@ -173,7 +247,8 @@ without separately observed evidence. No model call or active hook is used.
 
 Tests cover all component validators, generated and legacy catalog bindings,
 trust escalation, same-version content drift, changed bodies, absent databases,
-foreign-key violations, WAL/journal refusal, descriptor replacement, symlinks,
+foreign-key violations through owned snapshots, database-path refusal,
+same-process main/SHM lock preservation, descriptor traversal, symlinks,
 bounds, redaction and unchanged database files. Existing audit v2 tests remain
 part of the same package gate.
 

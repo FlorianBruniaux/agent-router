@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod admission;
 mod assets;
 mod backend_activation;
 mod catalogs;
@@ -20,7 +21,9 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+mod session_budget;
 mod sidecar;
+mod task_guide;
 
 use std::{fs::OpenOptions, io::Read, path::Path, process::ExitCode};
 
@@ -144,6 +147,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         Commands::Sidecar { command, json } => sidecar::run(command, json),
         Commands::BackendActivation { command, json } => backend_activation::run(command, json),
         Commands::Escalation { command, json } => escalation::run(command, json),
+        Commands::Admission { command, json } => admission::run(command, json),
         Commands::Coordinate { command, json } => coordinator::run(command, json),
         Commands::Assets { command } => match command {
             command::AssetCommand::Review {
@@ -222,10 +226,11 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         } => feedback::policy(&store, now, json, command),
         Commands::Doctor {
             request,
+            runtime_root,
             now,
             deep,
             json,
-        } => diagnostics::doctor(&request, now, deep, json),
+        } => diagnostics::doctor(request.as_deref(), runtime_root.as_deref(), now, deep, json),
         Commands::Audit { command } => diagnostics::audit(command),
         Commands::Config { layers, json } => product::configuration(&layers, json),
         Commands::RoutePhase { inputs, json } => phases::route(inputs, json),
@@ -343,6 +348,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             output.as_deref(),
             json,
         ),
+        Commands::TaskGuide { args, json } => task_guide::run(args, json),
         Commands::Normalize {
             task,
             risk_context,

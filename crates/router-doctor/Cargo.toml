@@ -12,7 +12,7 @@ router-catalog = { path = "../router-catalog" }
 router-retrieval = { path = "../router-retrieval" }
 router-policy = { path = "../router-policy" }
 router-workflow = { path = "../router-workflow" }
-rusqlite = { version = "0.32.1", features = ["bundled", "hooks", "limits", "backup", "serialize"] }
+rusqlite = { version = "=0.39.0", features = ["bundled", "hooks", "limits", "backup", "serialize", "fallible_uint"] }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

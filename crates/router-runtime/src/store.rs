@@ -15,6 +15,7 @@ use std::{
     sync::Mutex,
 };
 
+mod admission;
 mod escalation;
 mod preparation;
 pub(crate) use escalation::EscalationHistory;
@@ -45,15 +46,14 @@ impl Store {
         let lock = Flock::lock(lock_file, FlockArg::LockExclusiveNonblock)
             .map_err(|_| RuntimeError::Locked)?;
         let path = root.join("runtime.sqlite3");
-        let file = private_file(&path)?;
-        drop(file);
+        private_database(&path)?;
         let mut db = Connection::open(&path)?;
         db.busy_timeout(std::time::Duration::from_secs(2))?;
         db.pragma_update(None, "journal_mode", "WAL")?;
         db.pragma_update(None, "foreign_keys", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |row| row.get(0))?;
-        if version > 8 {
+        if version > 9 {
             return Err(RuntimeError::Integrity("future schema"));
         }
         if version == 0 {
@@ -116,6 +116,11 @@ impl Store {
         if version < 8 {
             let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
             tx.execute_batch("CREATE TABLE preparation_cycles(run_id TEXT NOT NULL REFERENCES runs(run_id), sequence INTEGER NOT NULL, record TEXT NOT NULL, PRIMARY KEY(run_id,sequence)); PRAGMA user_version=8;")?;
+            tx.commit()?;
+        }
+        if version < 9 {
+            let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+            tx.execute_batch("CREATE TABLE admission_binding(id INTEGER PRIMARY KEY CHECK(id=1),binding TEXT NOT NULL); CREATE TABLE admission_intents(run_id TEXT PRIMARY KEY REFERENCES runs(run_id),record TEXT NOT NULL); PRAGMA user_version=9;")?;
             tx.commit()?;
         }
         for suffix in ["", "-wal", "-shm"] {
@@ -627,7 +632,8 @@ impl Store {
         save(&tx, &run)?;
         append(&tx, &run, "transition", detail)?;
         if next.terminal()
-            && (!preparation::terminal_safe(&tx, &run)?
+            && ((!preparation::terminal_safe(&tx, &run)?
+                || !admission::finalization_safe(&tx, &run)?)
                 || tx
                     .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
                     .exists([id])?)
@@ -740,6 +746,7 @@ impl Store {
             return Err(RuntimeError::CleanupUnknown);
         }
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        admission::require_released(&tx, &run)?;
         let obsolete = if let Some(binding) = &run.workflow {
             workflow_node(&tx, &binding.instance_id, &run.node_id)?
                 .is_none_or(|(current, _, _)| current.run_id != run.run_id)
@@ -896,7 +903,8 @@ impl Store {
                     // cycle gate separately proves every earlier child.
                     preparation::no_model_started(&tx, &run)?
                 };
-                let safe = preparation_safe && model_safe;
+                let safe =
+                    preparation_safe && model_safe && admission::finalization_safe(&tx, &run)?;
                 let interrupted = matches!(run.state, RunState::Preparing | RunState::Running);
                 if interrupted {
                     run.state = RunState::Failed;
@@ -963,7 +971,11 @@ fn save(tx: &Transaction<'_>, run: &RunSummary) -> Result<()> {
 fn append(tx: &Transaction<'_>, run: &RunSummary, kind: &str, detail: &str) -> Result<()> {
     let max_detail = if matches!(
         kind,
-        "attempt.evidence.v1" | "attempt.bound.v1" | "escalation.claim.v1" | "preparation.cycle.v1"
+        "attempt.evidence.v1"
+            | "attempt.bound.v1"
+            | "escalation.claim.v1"
+            | "preparation.cycle.v1"
+            | "admission.intent.v1"
     ) {
         16_384
     } else {
@@ -1022,6 +1034,28 @@ pub(crate) fn overlaps(a: &str, b: &str) -> bool {
         || a.strip_prefix(b).is_some_and(|s| s.starts_with('/'))
         || b.strip_prefix(a).is_some_and(|s| s.starts_with('/'))
 }
+// Closing any auxiliary FD for an existing database discards this process's
+// POSIX locks, including locks held by other live SQLite connections. Inspect
+// existing inodes without opening them; create_new can only create a new inode.
+fn private_database(path: &Path) -> Result<()> {
+    let meta = match fs::symlink_metadata(path) {
+        Ok(meta) => meta,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+            .open(path)?
+            .metadata()?,
+        Err(error) => return Err(error.into()),
+    };
+    if !meta.is_file() || meta.file_type().is_symlink() || meta.permissions().mode() & 0o077 != 0 {
+        return Err(RuntimeError::Invalid("private regular file"));
+    }
+    Ok(())
+}
+
 pub(crate) fn private_file(path: &Path) -> Result<File> {
     let file = OpenOptions::new()
         .read(true)
@@ -1058,6 +1092,8 @@ fn cleanup_evidence(db: &Connection, id: &str) -> Result<router_types::ProcessCl
     if cleanup_blocked(db, Some(id))?
         || (db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 8
             && !preparation::terminal_safe(db, &run)?)
+        || (db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 9
+            && !admission::finalization_safe(db, &run)?)
     {
         return Ok(router_types::ProcessCleanupEvidence::Unknown);
     }
@@ -1138,7 +1174,7 @@ fn control_connection(root: &Path, writable: bool) -> Result<Connection> {
     db.busy_timeout(std::time::Duration::from_secs(2))?;
     if !matches!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))?,
-        2..=8
+        2..=9
     ) {
         return Err(RuntimeError::Integrity("control schema"));
     }
@@ -1177,6 +1213,10 @@ fn read_events(db: &Connection) -> Result<Vec<RuntimeEvent>> {
         .collect()
 }
 fn verify_events(db: &Connection) -> Result<()> {
+    verify_diagnostic_events(db, &mut 0)
+}
+pub(crate) fn verify_diagnostic_events(db: &Connection, queries: &mut usize) -> Result<()> {
+    *queries += 1;
     let mut previous = String::new();
     for (index, event) in read_events(db)?.iter().enumerate() {
         if event.sequence != index as u64 + 1
@@ -1189,8 +1229,9 @@ fn verify_events(db: &Connection) -> Result<()> {
     }
     // Older schemas have no generated authority. Their legacy records remain
     // readable; the v7 migration never infers a generated pin from mutable data.
+    *queries += 1;
     if db.pragma_query_value(None, "user_version", |r| r.get::<_, u32>(0))? >= 7 {
-        verify_authority_pins(db)?;
+        verify_authority_pins(db, queries)?;
     }
     Ok(())
 }
@@ -1204,7 +1245,8 @@ struct PlanAuthorityAnchor {
     pin: String,
 }
 
-fn verify_authority_pins(db: &Connection) -> Result<()> {
+fn verify_authority_pins(db: &Connection, queries: &mut usize) -> Result<()> {
+    *queries += 1;
     let mut anchors = std::collections::BTreeMap::new();
     let mut query = db.prepare(
         "SELECT detail FROM events WHERE kind='workflow.plan.authority.v1' ORDER BY sequence",
@@ -1225,6 +1267,7 @@ fn verify_authority_pins(db: &Connection) -> Result<()> {
             return Err(RuntimeError::Integrity("workflow plan authority anchor"));
         }
     }
+    *queries += 1;
     let mut query = db.prepare("SELECT w.instance_id,w.contract_hash,p.pin FROM workflow_instances w LEFT JOIN workflow_plan_authority p ON p.instance_id=w.instance_id")?;
     for row in query.query_map([], |r| {
         Ok((
@@ -1416,7 +1459,7 @@ mod tests {
         drop(store);
         let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
         db.execute_batch("PRAGMA foreign_keys=OFF;
-            DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
+            DROP TABLE admission_intents; DROP TABLE admission_binding; DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; DROP TABLE attempt_leases; DROP TABLE cleanup_blocks; DROP TABLE declared_artifacts; DROP TABLE workflow_node_runs; DROP TABLE workflow_instances;
             CREATE TABLE old_runs(run_id TEXT PRIMARY KEY, plan_id TEXT NOT NULL, node_id TEXT NOT NULL, summary TEXT NOT NULL, UNIQUE(plan_id,node_id));
             INSERT INTO old_runs SELECT * FROM runs; DROP TABLE runs; ALTER TABLE old_runs RENAME TO runs;
             PRAGMA user_version=3;").unwrap();

@@ -386,29 +386,25 @@ fn database_missing_or_header_only_is_not_integrity_proof_and_never_created() {
     fs::write(temp.path().join("runtime.db"), b"SQLite format 3\0").unwrap();
     assert!(has(
         &diagnose_deep(&input, 110).unwrap(),
-        DeepDoctorCode::DatabaseIntegrityFailed
+        DeepDoctorCode::DatabaseSnapshotRequired
     ));
 }
 
 #[test]
-fn database_integrity_and_foreign_keys_are_read_only_without_migration() {
+fn pathname_database_integrity_requires_an_owned_connection_without_migration() {
     for invalid_fk in [false, true] {
         let temp = tempfile::tempdir().unwrap();
         create_database(temp.path(), invalid_fk);
         let before = fs::read(temp.path().join("runtime.db")).unwrap();
         let report = diagnose_deep(&database_request(temp.path()), 110).unwrap();
-        #[cfg(target_os = "macos")]
-        {
-            let expected = if invalid_fk {
-                DeepDoctorCode::DatabaseIntegrityFailed
-            } else {
-                DeepDoctorCode::DatabaseIntegrityValidated
-            };
-            assert!(has(&report, expected), "{report:?}");
-            assert_eq!(report.database_queries, 5);
-        }
-        #[cfg(not(target_os = "macos"))]
-        assert!(has(&report, DeepDoctorCode::DatabaseReadOnlyUnsupported));
+        assert!(has(&report, DeepDoctorCode::DatabaseSnapshotRequired));
+        assert_eq!(report.database_queries, 0);
+        assert!(
+            report
+                .checks
+                .iter()
+                .all(|check| check.content_sha256.is_none())
+        );
         assert_eq!(before, fs::read(temp.path().join("runtime.db")).unwrap());
         assert_eq!(fs::read_dir(temp.path()).unwrap().count(), 1);
         assert_eq!(

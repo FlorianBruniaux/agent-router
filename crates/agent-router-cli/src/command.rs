@@ -33,6 +33,13 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Configure and inspect an explicitly shared concurrency domain.
+    Admission {
+        #[arg(long, global = true)]
+        json: bool,
+        #[command(subcommand)]
+        command: crate::admission::Command,
+    },
     /// Explicit standard-sidecar capability and single-event export commands.
     Sidecar {
         #[arg(long, global = true)]
@@ -177,8 +184,14 @@ pub enum Commands {
         command: PolicyCommand,
     },
     Doctor {
-        #[arg(long)]
-        request: PathBuf,
+        #[arg(
+            long,
+            required_unless_present = "runtime_root",
+            conflicts_with = "runtime_root"
+        )]
+        request: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["request", "deep"])]
+        runtime_root: Option<PathBuf>,
         #[arg(long)]
         now: Option<u64>,
         #[arg(long)]
@@ -326,6 +339,13 @@ pub enum Commands {
         now: Option<u64>,
         #[arg(long)]
         output: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Collect explicit task facts and clarify unknowns without executing anything.
+    TaskGuide {
+        #[command(flatten)]
+        args: crate::task_guide::GuideArgs,
         #[arg(long)]
         json: bool,
     },
@@ -561,6 +581,14 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    Metrics {
+        #[arg(long)]
+        cohort: PathBuf,
+        #[arg(long, required = true, num_args = 1..)]
+        records: Vec<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     Seal {
         #[arg(long)]
         input: PathBuf,
@@ -642,6 +670,7 @@ impl Commands {
         let (json, title) = match self {
             Self::GeneratePlan { json, .. } => (json, "Generated plan"),
             Self::Escalation { json, .. } => (json, "Escalation"),
+            Self::Admission { json, .. } => (json, "Shared admission"),
             Self::Sidecar { json, .. } => (json, "Sidecar exchange"),
             Self::BackendActivation { json, .. } => (json, "Backend activation"),
             Self::Coordinate { json, .. } => (json, "Workflow coordination"),
@@ -665,6 +694,7 @@ impl Commands {
             Self::Search { json, .. } => (json, "Search results"),
             Self::Index { json, .. } => (json, "Metadata index"),
             Self::Refresh { json, .. } => (json, "Index update"),
+            Self::TaskGuide { json, .. } => (json, "Task guide"),
             Self::Normalize { json, .. } => (json, "Task normalization"),
             Self::Plan { json, .. } => (json, "Workflow plan"),
             Self::Assets {
@@ -676,7 +706,8 @@ impl Commands {
                 }
             },
             Self::Eval { command } => match command {
-                EvalCommand::Seal { json, .. }
+                EvalCommand::Metrics { json, .. }
+                | EvalCommand::Seal { json, .. }
                 | EvalCommand::Compare { json, .. }
                 | EvalCommand::Corpus { json, .. } => (json, "Evaluation"),
             },

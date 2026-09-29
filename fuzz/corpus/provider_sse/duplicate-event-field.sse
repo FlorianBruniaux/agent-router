@@ -1,0 +1,4 @@
+event: response.created
+event: response.created
+data: {"type":"response.created"}
+

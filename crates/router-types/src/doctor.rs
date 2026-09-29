@@ -63,6 +63,7 @@ pub enum DoctorCode {
     AuthPresenceOnly,
     ExecutablePresenceOnly,
     DatabaseHeaderOnly,
+    DatabaseSnapshotRequired,
     HookNotInvoked,
     PluginNotLoaded,
     ManagedFilePresent,

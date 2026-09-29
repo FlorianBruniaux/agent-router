@@ -36,7 +36,7 @@ impl Store {
             FlockArg::LockExclusiveNonblock,
         )
         .map_err(|_| CoordinatorError::Locked)?;
-        drop(private_file(&root.join("coordinator.sqlite3"))?);
+        private_database(&root.join("coordinator.sqlite3"))?;
         let mut db = Connection::open(root.join("coordinator.sqlite3"))?;
         db.busy_timeout(std::time::Duration::from_secs(2))?;
         db.pragma_update(None, "journal_mode", "WAL")?;
@@ -355,6 +355,28 @@ fn private_dir(path: &Path) -> Result<()> {
     }
     Ok(())
 }
+// Closing any auxiliary FD for an existing database discards this process's
+// POSIX locks, including locks held by other live SQLite connections. Inspect
+// existing inodes without opening them; create_new can only create a new inode.
+fn private_database(path: &Path) -> Result<()> {
+    let meta = match fs::symlink_metadata(path) {
+        Ok(meta) => meta,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+            .open(path)?
+            .metadata()?,
+        Err(error) => return Err(error.into()),
+    };
+    if !meta.is_file() || meta.file_type().is_symlink() || meta.permissions().mode() & 0o077 != 0 {
+        return Err(CoordinatorError::Invalid("private file"));
+    }
+    Ok(())
+}
+
 fn private_file(path: &Path) -> Result<File> {
     let file = OpenOptions::new()
         .read(true)

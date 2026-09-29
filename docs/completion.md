@@ -18,7 +18,7 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 | #7 | Thin Codex and Claude adapters | Complete within the issue scope | PR #15 merged at `8b36b07aff508410a764f8feeefc62eaa0512935`; native canaries use a fake host under real macOS/Linux isolation; actual model behavior remains UNKNOWN |
 | #1 | Durable isolated execution | Complete within the issue scope | PR #16 merged at `dfe7d9346093bf3b6bec4d423706301d1b7f1825` after 411 local tests and eight PR checks; watchdog, durable leases, coordination and native macOS/Linux SIGKILL recovery covered. PR #17 stabilizes the historical-expiry test |
 | #6 | Offline feedback and reversible policy | Complete within the issue scope | PR #15 merged with eight passing CI checks; consent-bound runtime recording, signed offline promotion and rollback tested; objective validation remains separate |
-| #8 | Distribution, licenses, notices, SBOM | Source license and advisory gates delivered; final release pending | PR #29 (`0fa3adf`) enforces real strict source exports and verification in CI; PR #32 (`e1e8fe0`) adds fresh RustSec audits. Binary SBOM, signed release artifacts and final extracted-workspace validation remain open |
+| #8 | Distribution, licenses, notices, SBOM | Source license and advisory gates delivered; final release pending | PR #29 (`0fa3adf`) enforces real strict source exports and verification in CI; PR #32 (`e1e8fe0`) adds fresh RustSec audits. Local binary inventories are implemented in the integration candidate below; signed release artifacts and final release acceptance remain open |
 | #11 | Roadmap acceptance | Pending | All dependencies and the gaps below have evidence/disposition |
 
 ## Specification coverage beyond issue titles
@@ -58,11 +58,13 @@ Closing an issue is a result of evidence, not a substitute for delivery.
 - The watchdog distinguishes process-group termination from Linux namespace
   termination. Detached descendants are outside the macOS group-only proof.
   Missing, corrupt or unresolved leases block recovery and retain writer locks.
-- Deep diagnostics check bounded component schemas, catalog/body bindings
-  and SQLite integrity without writes. PR #26 adds a bounded in-memory snapshot
-  from an already-owned connection, including committed WAL contents. The path
-  diagnostic still refuses WAL and unsafe descriptor access. Host activation and authentication
-  remain distinct observations, never inferred from file presence.
+- Deep diagnostics check bounded component schemas and catalog/body bindings.
+  Declared database paths now receive metadata checks and an explicit snapshot
+  requirement, without opening their SQLite files. PR #26 supplies bounded
+  in-memory inspection from an already-owned connection, including committed
+  WAL contents. The runtime observer uses SQLite read-only coordination, which
+  can update WAL-index/read marks; zero filesystem writes are not promised.
+  Host activation and authentication remain separate observations.
 - The measured NFR-003 first-launch startup target is not met: 524.315 ms and
   620.105 ms were observed against a 150 ms requirement. Decision p95 up to
   0.476 ms and hot-index retrieval p95 up to 10.789 ms meet their measured
@@ -213,6 +215,68 @@ translation with ten tests and independent review. It only recommends a pair
 that Omnigent offered and the local router validates. It starts no session and
 does not enforce Omnigent's fallback behavior; an HTTP endpoint and native
 integration evidence remain open. See [the bridge contract](../integrations/omnigent.md).
+
+## Combined local candidate, September 28
+
+The integration branch combines PRs #34 through #42. Its code at `1acec1d`
+passed 905 workspace tests with all features, zero failures and 34 explicitly
+ignored native tests. Six relevant native macOS canaries passed separately:
+shared admission, queued cancellation, source changes, session allocations,
+SIGKILL recovery and coordinator handoff/escalation. Providers in these canaries
+are synthetic. Formatting, strict workspace/core Clippy, the harness, 38
+packaging tests, workflow syntax and the source secret scan passed.
+
+| Lot | Implemented in this candidate | Remaining boundary |
+| --- | --- | --- |
+| R12 / O3, PRs #35 and #40 | Shared capacity, fairness, atomic conservative cost/token reservation, durable pre-dispatch commitment and state-bound limit review | Allocations are not measured billing; unknown cleanup retains capacity and allocation |
+| R16, PR #38 | Guided task intake and bounded, explicit export | Export is atomic per file, not as a directory transaction |
+| R17, PR #39 | Passive runtime storage observation, integrated with schema 9 | Process liveness, journal authenticity, cleanup authority and separate admission accounting stay UNKNOWN |
+| R18, PR #36 | Cohort-bound success under budget, cost/time per success, Brier and calibration metrics | Human evidence, observed gain, frontier/regret metrics and durable cache remain open |
+| R06, PR #37 | Library guards for publisher policy and reconstruction of approval reviews | The signed catalog CLI and runtime dispatch remain unimplemented |
+| R20, PRs #34, #41 and #42 | Three bounded parser fuzz targets, SQLite 3.51.3 and local binary export with license texts and build inventories | Combined macOS fuzz smokes passed; platform evidence and release/security gates remain separately tracked |
+
+Integration reproduced a POSIX-lock defect independently of the upstream
+SQLite WAL-reset issue: opening and closing an auxiliary descriptor could
+release another connection's process-wide locks. Runtime and coordinator now
+inspect existing database metadata without that auxiliary open/close. Doctor
+path inspection requires an owned SQLite snapshot instead of reading database
+bytes. Native child-process regressions observed the failures before the fixes
+and preservation afterward; they do not establish that corruption occurred.
+Correct handling requires database artifacts to be declared as `Database`.
+
+The binary recipe produced two identical native binaries and normalized archives
+from source `1cf033e`, with all 276 referenced license texts. Independent
+extraction and fixture routing passed. That source predates this combined
+candidate and its additional lock fixes; its binary is local packaging evidence,
+not a release artifact for `1acec1d`.
+
+The pull requests remain drafts. GitHub Actions on PR #42 head `668a001` did
+not execute any step because of the account payment/spending restriction.
+[The recorded job](https://github.com/FlorianBruniaux/agent-router/actions/runs/36465499224/job/109074428992)
+is distinct from local checks. Linux execution and remote merge validation for
+this candidate remain unverified.
+
+Extracted workspaces passed offline with Rust 1.85.1: core 875 tests (34
+ignored), integrations 359 and minimal CLI 125, with zero failures. Final
+exports from clean `b38b860` preserve exactly the tested sources, tests,
+manifests, lockfiles, notices and license inventories; only provenance metadata
+differs. Their SHA-256 digests are
+`d5a27bad0f24a23ff228a59f195467f66e25119cfaff9c7b997a6cc5afc536f3`
+(core) and
+`0c846641452dae256afd1f49b661369ffbd982a206e7dc271870975ce282f2e4`
+(integrations).
+
+Three instrumented macOS fuzz smokes on the exact `b38b860` source archive
+passed: 213,730 host snapshot inputs, 20,971 provider streams and 172,412 phase
+scopes. Both lockfiles and the tracked seed corpus remained unchanged. These
+bounded runs do not establish exhaustive coverage or Linux behavior. Their
+proof manifest SHA-256 is
+`a7164d0954ac8825af3e3497a1261d0becdec6aeec2c96067788434740b42a77`.
+
+The [local dependency audit](dependency-audit.md#local-integration-audit-september-28)
+also passed for the unchanged workspace and fuzz lockfiles with `cargo-audit`
+0.22.2 and RustSec revision `ef03605143a913024f864d2edf476adad5720c93`:
+no reported vulnerabilities or warnings. It does not replace the blocked CI.
 
 ## Acceptance that automated implementation cannot manufacture
 

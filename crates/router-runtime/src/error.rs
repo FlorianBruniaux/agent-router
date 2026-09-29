@@ -1,5 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeError {
+    #[error(transparent)]
+    Budget(#[from] crate::admission::BudgetError),
     #[error("runtime.decision: {0}")]
     Decision(#[from] router_execution_decision::DecisionError),
     #[error("runtime.invalid: {0}")]

@@ -2,11 +2,13 @@
 
 mod candidate_replay;
 mod corpus;
+mod metrics;
 mod promotion;
 mod replay;
 
 pub use candidate_replay::{CandidateReplay, ProposedDecision};
 pub use corpus::{CandidateCase, CandidateCorpus};
+pub use metrics::*;
 pub use promotion::{
     EvaluationMetrics, MetricRule, OutcomeCounts, PairedTrace, PromotionCriteria, PromotionMetric,
     ShadowReport, compare_shadow, dataset_hash,

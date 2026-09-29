@@ -4,7 +4,7 @@ use crate::{DoctorError, MAX_FILE_BYTES, Result, database};
 use router_adapter_api::content_digest;
 use router_types::DeepDoctorCode;
 use rusqlite::{
-    Connection, DatabaseName, Transaction, TransactionBehavior,
+    Connection, Transaction, TransactionBehavior,
     backup::{Backup, StepResult},
 };
 use serde::Serialize;
@@ -28,22 +28,48 @@ pub struct DatabaseSnapshotReport {
 /// Copy work is checked between batches; this is not an OS execution deadline.
 /// An existing transaction is refused without modifying or rolling it back.
 pub fn diagnose_database_snapshot(source: &Connection) -> Result<DatabaseSnapshotReport> {
+    diagnose_database_snapshot_with(source, |_, _| Ok(())).map(|(report, ())| report)
+}
+
+/// Inspect the same hardened in-memory copy used by the integrity report.
+/// `inspect` is trusted, linked Rust code, not a sandbox for user SQL or code.
+/// It must count its SQL statements in `queries` and preserve connection limits.
+/// The callback shares the SQLite work budget; arbitrary Rust work is not timed.
+/// Persistent changes or an open transaction are refused before returning data.
+pub fn diagnose_database_snapshot_with<T>(
+    source: &Connection,
+    inspect: impl FnOnce(&Connection, &mut usize) -> Result<T>,
+) -> Result<(DatabaseSnapshotReport, T)> {
     let snapshot = capture(source, COPY_BUDGET)?;
-    let mut queries = 3; // source page size/count and destination page size.
+    let mut queries = 3;
     let integrity = database::inspect_connection(&snapshot, &mut queries)?;
-    let bytes = snapshot
-        .serialize(DatabaseName::Main)
+    let (snapshot_sha256, snapshot_bytes) = fingerprint(&snapshot)?;
+    let value = inspect(&snapshot, &mut queries)?;
+    if !snapshot.is_autocommit()
+        || fingerprint(&snapshot)? != (snapshot_sha256.clone(), snapshot_bytes)
+    {
+        return Err(DoctorError::Integrity);
+    }
+    Ok((
+        DatabaseSnapshotReport {
+            schema_version: 1,
+            integrity,
+            snapshot_sha256,
+            snapshot_bytes,
+            database_queries: queries,
+        },
+        value,
+    ))
+}
+
+fn fingerprint(connection: &Connection) -> Result<(String, usize)> {
+    let bytes = connection
+        .serialize("main")
         .map_err(|_| DoctorError::Read)?;
     if bytes.len() > MAX_FILE_BYTES {
         return Err(DoctorError::Limit);
     }
-    Ok(DatabaseSnapshotReport {
-        schema_version: 1,
-        integrity,
-        snapshot_sha256: content_digest(&bytes),
-        snapshot_bytes: bytes.len(),
-        database_queries: queries,
-    })
+    Ok((content_digest(&bytes), bytes.len()))
 }
 
 fn capture(source: &Connection, budget: Duration) -> Result<Connection> {

@@ -13,11 +13,15 @@ use std::{
 };
 mod files;
 mod json;
+mod publisher_policy;
+
+pub use publisher_policy::{PublisherPolicyAuthority, PublisherPolicyGuard};
 
 pub const MAX_SNAPSHOT_BYTES: usize = 64 * 1024 * 1024;
 pub const MAX_DOCUMENTS: usize = 16;
 pub const MAX_REVISIONS: usize = 128;
 pub const MAX_REVIEW_SECONDS: u64 = 300;
+pub const MAX_PUBLISHER_POLICY_BYTES: usize = 64 * 1024;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
@@ -384,6 +388,71 @@ impl CatalogStore {
         ttl_seconds: u64,
     ) -> Result<CatalogReview> {
         self.review(CatalogChange::Revoke, None, publishers, now, ttl_seconds)
+    }
+    /// Reconstruct the opaque activation review from its exported projection
+    /// and the exact signed document bytes, rechecking current roots and time.
+    pub fn reopen_activate(
+        &self,
+        projection: &ReviewProjection,
+        bytes: &[u8],
+        publishers: &TrustedCatalogPublishers,
+        now: u64,
+    ) -> Result<CatalogReview> {
+        let document = SignedCatalogDocument::from_json(bytes)?;
+        if document.manifest.id != self.identity.catalog_id {
+            return Err(StoreError::Authority);
+        }
+        let original = verified(&document, publishers, projection.reviewed_at_unix_seconds)?;
+        let current = verified(&document, publishers, now)?;
+        let change = CatalogChange::Activate {
+            document_sha256: content_digest(&document.canonical_json()?),
+            binding_hash: original.binding_hash().into(),
+        };
+        if current.binding_hash() != original.binding_hash() || projection.change != change {
+            return Err(StoreError::Authority);
+        }
+        self.reopen(projection, change, Some(document), publishers, now)
+    }
+    /// Reconstruct a revoke review without trusting serialized review status.
+    pub fn reopen_revoke(
+        &self,
+        projection: &ReviewProjection,
+        publishers: &TrustedCatalogPublishers,
+        now: u64,
+    ) -> Result<CatalogReview> {
+        self.reopen(projection, CatalogChange::Revoke, None, publishers, now)
+    }
+    fn reopen(
+        &self,
+        projection: &ReviewProjection,
+        change: CatalogChange,
+        document: Option<SignedCatalogDocument>,
+        publishers: &TrustedCatalogPublishers,
+        now: u64,
+    ) -> Result<CatalogReview> {
+        let _lock = self.root.lock(false)?;
+        let (state, _) = self.read()?;
+        validate_review(projection, &self.identity, &state.head, now)?;
+        let reconstructed = ReviewProjection {
+            schema_version: 1,
+            identity: self.identity.clone(),
+            config_hash: self.config_hash.clone(),
+            expected_head_hash: state.head.head_hash.clone(),
+            expected_revision: state.head.revision,
+            grants_hash: publishers.fingerprint()?,
+            change,
+            reviewed_at_unix_seconds: projection.reviewed_at_unix_seconds,
+            expires_at_unix_seconds: projection.expires_at_unix_seconds,
+        };
+        if &reconstructed != projection {
+            return Err(StoreError::Authority);
+        }
+        let approval_digest = hash("catalog-store-approval-v1", projection)?;
+        Ok(CatalogReview {
+            projection: projection.clone(),
+            document,
+            approval_digest,
+        })
     }
     fn review(
         &self,
