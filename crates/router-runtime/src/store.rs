@@ -165,11 +165,18 @@ impl Store {
             .lock()
             .map_err(|_| RuntimeError::Integrity("storage lock poisoned"))
     }
-    /// Verifies the chain tail and moves the trust point. `db` must hold no
-    /// uncommitted write: the new point has to survive a rollback.
-    fn verify_committed_tail(&self, db: &Connection) -> Result<()> {
-        let proof = verify_tail(db, &*self.verified()?)?;
-        self.advance(Some(proof))
+    /// Opens a transaction and verifies the chain tail before returning it,
+    /// so no write of the transaction precedes the check. The trust point
+    /// moves at once: it covers committed rows only and survives a rollback.
+    fn verified_transaction<'db>(
+        &self,
+        db: &'db mut Connection,
+        behavior: rusqlite::TransactionBehavior,
+    ) -> Result<Transaction<'db>> {
+        let tx = db.transaction_with_behavior(behavior)?;
+        let proof = verify_tail(&tx, &*self.verified()?)?;
+        self.advance(Some(proof))?;
+        Ok(tx)
     }
     /// Callers hold `db` from verification to here, so no other proof can
     /// have moved the point in between.
@@ -1019,14 +1026,37 @@ impl Store {
         }
         tx.commit().unwrap();
     }
-    /// Full replay of the chain, which also resets the owner's trust point.
+    /// Full replay of the chain. It must extend the owner's trust point
+    /// before it replaces it.
     pub fn verify_events(&self) -> Result<()> {
         let db = self.lock()?;
         // One read snapshot: the new point is the last row this replay saw.
         let tx = db.unchecked_transaction()?;
-        let verified = verify_chain(&tx, &mut 0)?;
+        let replayed = verify_chain(&tx, &mut 0)?;
+        let mut verified = self.verified()?;
+        // A consistent replay can still be a recomputed rewrite, or a
+        // truncation below the point: the verified row must keep its hash.
+        if verified.point.sequence > 0 {
+            let hash: Option<String> = tx
+                .query_row(
+                    "SELECT event_hash FROM events WHERE sequence=?1",
+                    [verified.point.sequence],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            if hash.as_deref() != Some(verified.point.hash.as_str()) {
+                return Err(RuntimeError::Integrity("event chain"));
+            }
+        }
+        if verified
+            .anchors
+            .iter()
+            .any(|(instance, anchor)| replayed.anchors.get(instance) != Some(anchor))
+        {
+            return Err(RuntimeError::Integrity("workflow plan authority changed"));
+        }
         drop(tx);
-        *self.verified()? = verified;
+        *verified = replayed;
         Ok(())
     }
     fn recover(&self) -> Result<()> {
@@ -1543,6 +1573,8 @@ fn verify_tail(db: &Connection, verified: &VerifiedChain) -> Result<ChainProof> 
         {
             return Err(RuntimeError::Integrity("workflow plan authority anchor"));
         }
+        // The full replay refuses an anchor without its matching instance.
+        verify_instance_authority(db, &anchor.instance_id, Some(anchor))?;
     }
     Ok(ChainProof {
         base: base.sequence,
@@ -1573,7 +1605,7 @@ struct ChainProof {
 
 const AUTHORITY_ANCHOR: &str = "workflow.plan.authority.v1";
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct PlanAuthorityAnchor {
     schema_version: u8,
@@ -1608,6 +1640,30 @@ fn authority_matches(
         (Some(pin), Some(anchor)) => pin == anchor.pin && contract == anchor.contract_sha256,
         _ => false,
     }
+}
+/// The instance-scoped form of `verify_authority_pins`, for one instance and
+/// the anchor the owner holds for it. Other instances are checked at the next
+/// full verification (ADR 0018).
+fn verify_instance_authority(
+    db: &Connection,
+    instance: &str,
+    anchor: Option<&PlanAuthorityAnchor>,
+) -> Result<()> {
+    let row: Option<(String, Option<String>)> = db
+        .query_row(
+            "SELECT w.contract_hash,p.pin FROM workflow_instances w LEFT JOIN workflow_plan_authority p ON p.instance_id=w.instance_id WHERE w.instance_id=?1",
+            [instance],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .optional()?;
+    let authority = match &row {
+        Some((contract, pin)) => authority_matches(contract, pin.as_deref(), anchor),
+        None => anchor.is_none(),
+    };
+    if !authority {
+        return Err(RuntimeError::Integrity("workflow plan authority changed"));
+    }
+    Ok(())
 }
 
 fn verify_authority_pins(
@@ -1745,9 +1801,8 @@ fn plan_pin(generated: Option<&router_types::GeneratedDecisionBinding>) -> Resul
         )
     })
 }
-/// The owner's plan pin check. It verifies the chain tail and then the one
-/// instance it authorizes, the instance-scoped form of `verify_authority_pins`.
-/// Other instances are checked at the next full verification (ADR 0018).
+/// The owner's plan pin check: the chain tail, then the authority of the one
+/// instance it authorizes.
 fn verify_plan_pin(
     db: &Connection,
     verified: &VerifiedChain,
@@ -1775,23 +1830,13 @@ fn verify_plan_pin(
         )
         .optional()?;
     let proof = verify_tail(db, verified)?;
-    let contract: Option<String> = db
-        .query_row(
-            "SELECT contract_hash FROM workflow_instances WHERE instance_id=?1",
-            [&workflow.instance_id],
-            |r| r.get(0),
-        )
-        .optional()?;
     let anchor = proof
         .anchors
         .iter()
         .find(|anchor| anchor.instance_id == workflow.instance_id)
         .or_else(|| verified.anchors.get(&workflow.instance_id));
-    let authority = match &contract {
-        Some(contract) => authority_matches(contract, pin.as_deref(), anchor),
-        None => anchor.is_none(),
-    };
-    if !authority || pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
+    verify_instance_authority(db, &workflow.instance_id, anchor)?;
+    if pin.as_deref() != Some(plan_pin(generated)?.as_str()) {
         return Err(RuntimeError::Integrity("workflow plan authority changed"));
     }
     Ok(Some(proof))
@@ -2680,6 +2725,186 @@ pub(crate) mod tests {
         assert!(matches!(
             Store::open(&root),
             Err(RuntimeError::Integrity("event chain"))
+        ));
+    }
+    /// Recomputes every event hash after `edit`, so the whole chain replays.
+    fn rewrite_chain(store: &Store, edit: impl Fn(&mut RuntimeEvent)) {
+        let db = Connection::open(store.root.join("runtime.sqlite3")).unwrap();
+        let mut events = read_events(&db).unwrap();
+        let mut previous = String::new();
+        for event in &mut events {
+            edit(event);
+            event.previous_hash = previous;
+            event.event_hash = event_digest(event).unwrap();
+            previous = event.event_hash.clone();
+        }
+        db.execute_batch("DROP TRIGGER IF EXISTS events_no_update;")
+            .unwrap();
+        for event in &events {
+            db.execute(
+                "UPDATE events SET detail=?2,previous_hash=?3,event_hash=?4 WHERE sequence=?1",
+                params![
+                    event.sequence,
+                    event.detail,
+                    event.previous_hash,
+                    event.event_hash
+                ],
+            )
+            .unwrap();
+        }
+    }
+    #[test]
+    fn full_verification_refuses_a_chain_that_lost_the_trust_point() {
+        for truncate in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = Store::open(&temp.path().join("data")).unwrap();
+            for id in ["run", "other", "third"] {
+                store.register(&summary(id)).unwrap();
+            }
+            store.escalation_history("run").unwrap();
+            if truncate {
+                // Rows 1 and 2 still replay; the trust point row is gone.
+                tamper(
+                    &store,
+                    "DROP TRIGGER events_no_delete; DELETE FROM events WHERE sequence=3;",
+                );
+            } else {
+                rewrite_chain(&store, |event| {
+                    if event.sequence == 1 {
+                        event.detail = "tampered".into();
+                    }
+                });
+            }
+            // A consistent replay must not replace the remembered point.
+            for _ in 0..2 {
+                assert!(matches!(
+                    store.verify_events(),
+                    Err(RuntimeError::Integrity("event chain"))
+                ));
+            }
+            assert!(store.escalation_history("run").is_err());
+        }
+    }
+    const CONTRACT: &str = "1111111111111111111111111111111111111111111111111111111111111111";
+    const PIN: &str = "2222222222222222222222222222222222222222222222222222222222222222";
+    fn append_anchor(store: &Store, instance: &str) {
+        let mut db = store.lock().unwrap();
+        let tx = db.transaction().unwrap();
+        let run = load_opt(&tx, "run").unwrap().unwrap();
+        let anchor = PlanAuthorityAnchor {
+            schema_version: 1,
+            instance_id: instance.into(),
+            contract_sha256: CONTRACT.into(),
+            pin: PIN.into(),
+        };
+        append(
+            &tx,
+            &run,
+            AUTHORITY_ANCHOR,
+            &serde_json::to_string(&anchor).unwrap(),
+        )
+        .unwrap();
+        tx.commit().unwrap();
+    }
+    fn anchored_instance(store: &Store, instance: &str) {
+        store
+            .lock()
+            .unwrap()
+            .execute_batch(&format!("INSERT INTO workflow_instances VALUES('{instance}','{CONTRACT}','{{}}'); INSERT INTO workflow_plan_authority VALUES('{instance}','{PIN}');"))
+            .unwrap();
+        append_anchor(store, instance);
+    }
+    #[test]
+    fn tail_refuses_duplicate_and_orphan_authority_anchors() {
+        type Setup = fn(&Store);
+        let cases: [(&str, Setup, &str); 3] = [
+            (
+                "duplicate in the tail",
+                |store| {
+                    anchored_instance(store, "gen");
+                    append_anchor(store, "gen");
+                },
+                "workflow plan authority anchor",
+            ),
+            (
+                "duplicate of a remembered anchor",
+                |store| {
+                    anchored_instance(store, "gen");
+                    store.escalation_history("run").unwrap();
+                    append_anchor(store, "gen");
+                },
+                "workflow plan authority anchor",
+            ),
+            (
+                "anchor without an instance",
+                |store| append_anchor(store, "orphan"),
+                "workflow plan authority changed",
+            ),
+        ];
+        for (name, setup, error) in cases {
+            let temp = tempfile::tempdir().unwrap();
+            let store = Store::open(&temp.path().join("data")).unwrap();
+            store.register(&summary("run")).unwrap();
+            store.escalation_history("run").unwrap();
+            setup(&store);
+            let result = store.escalation_history("run");
+            assert!(
+                matches!(result, Err(RuntimeError::Integrity(found)) if found == error),
+                "{name}: {:?}",
+                result.map(|_| ())
+            );
+            // The full replay refuses the same chain.
+            assert!(store.verify_events().is_err(), "{name}");
+        }
+    }
+    /// A run bound to the legacy workflow instance of `legacy_instance`.
+    fn workflow_run(store: &Store, id: &str) {
+        let mut run = summary(id);
+        run.workflow = Some(legacy_instance(store));
+        let mut db = store.lock().unwrap();
+        let tx = db.transaction().unwrap();
+        tx.execute(
+            "INSERT INTO runs(run_id,plan_id,node_id,summary) VALUES(?1,?2,?3,?4)",
+            params![
+                id,
+                run.plan_id,
+                run.node_id,
+                serde_json::to_string(&run).unwrap()
+            ],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO workflow_node_runs VALUES('instance',?1,0,?2,'\"model\"',NULL)",
+            params![run.node_id, id],
+        )
+        .unwrap();
+        append(&tx, &run, "planned", "").unwrap();
+        tx.commit().unwrap();
+    }
+    #[test]
+    fn escalation_refuses_a_changed_pin_of_its_instance_before_claiming() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = Store::open(&temp.path().join("data")).unwrap();
+        workflow_run(&store, "run");
+        let ledger = store.escalation_history("run").unwrap().ledger_hash;
+        tamper(
+            &store,
+            &format!(
+                "UPDATE workflow_plan_authority SET pin='{PIN}' WHERE instance_id='instance';"
+            ),
+        );
+        assert!(matches!(
+            store.escalation_event("run", &ledger, "escalation.claim.v1", "claim"),
+            Err(RuntimeError::Integrity("workflow plan authority changed"))
+        ));
+        assert!(
+            !store
+                .has_event("run", "escalation.claim.v1", "claim")
+                .unwrap()
+        );
+        assert!(matches!(
+            store.escalation_history("run"),
+            Err(RuntimeError::Integrity("workflow plan authority changed"))
         ));
     }
     #[test]

@@ -36,17 +36,25 @@ memory: the sequence and hash of the last event it verified, and the plan
 authority anchors recorded up to it.
 
 - Opening the store and the public `verify_events` (`Runtime::verify_integrity`)
-  still replay the whole chain, in one read snapshot, and reset the trust point
-  to the last row that replay saw.
+  still replay the whole chain, in one read snapshot. A replay can only extend
+  the trust point: the row at the remembered sequence must still carry the
+  remembered hash, and every remembered anchor must be replayed with equal
+  values. Otherwise the replay fails with an integrity error and the trust point
+  is kept. On success the trust point moves to the last row that replay saw.
 - Every other owner check verifies only the tail after the trust point. It
   rereads and rehashes the trust point row and compares it with the remembered
   hash, and it requires the chain to start at sequence 1.
-- The owner's plan pin check compares the one instance it authorizes with its
-  event anchor, taken from the tail or from the remembered anchors. The full
-  replay compares every instance.
+- Every plan authority anchor found in the tail must match its instance row
+  (contract and pin), as in the full replay.
+- The owner's plan pin check, and the escalation history for its source run's
+  instance, compare that one instance with its event anchor, taken from the
+  tail or from the remembered anchors. The full replay compares every instance.
 - The trust point advances after a successful check, never after an append. A
   check that reads the transaction's own uncommitted events advances the point
-  only after commit, so a rollback cannot leave a point on a missing row.
+  only after commit, so a rollback cannot leave a point on a missing row. The
+  escalation paths open their transaction through a helper that verifies the
+  tail before returning it, so no write of that transaction can precede the
+  check.
 
 Connections without the flock have no trust point and keep the full replay:
 `observe`, `observe_cleanup`, `observe_events`, `request_cancel` and the passive
@@ -61,13 +69,20 @@ diagnostics.
 - Truncation that removes the trust point row, including deletion of the whole
   table. The previous full replay accepted an empty table.
 - A row with a sequence below 1.
-- A duplicate plan authority anchor in the tail, and a pin or contract change
-  for the instance being authorized.
+- A duplicate plan authority anchor in the tail or against a remembered anchor,
+  and a tail anchor without a matching instance row.
+- A pin or contract change for the instance being authorized, or for the
+  instance of the source run of an escalation history or claim.
+- On `verify_integrity` during the owner's lifetime, a whole chain rewritten
+  with recomputed hashes, or truncated below the trust point: the replay is
+  consistent but no longer extends the trust point. After a reopen there is no
+  trust point, and such a rewrite stays undetectable as before this decision.
 
 ## What it no longer detects before the next open or `verify_integrity`
 
 - A rewrite, deletion or reordering of rows strictly before the trust point
-  that keeps the trust point row and the chain start intact.
+  that keeps the trust point row and a row at sequence 1. The trust point row
+  itself is rehashed, and its hash covers its previous hash.
 - A changed pin or contract row for a workflow instance other than the one the
   check authorizes. Using that instance fails its own check.
 
@@ -84,7 +99,8 @@ outside this local integrity model. The undetected cases need such a process to
 rewrite an old row during the owner's lifetime; that same process could rewrite
 the whole database and its hashes. The full replay at every open and on
 `verify_integrity` still catches the old-row rewrites that leave the chain
-inconsistent.
+inconsistent, and during the owner's lifetime also those that recompute every
+later hash.
 
 ## Consequences
 
