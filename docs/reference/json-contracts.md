@@ -34,6 +34,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
 | Feedback | v1 private consent/events, signed policy changes with externally trusted keys; no online exploration |
+| Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
 `PhaseCandidate.tool_policy` defaults to `restricted` and is omitted when

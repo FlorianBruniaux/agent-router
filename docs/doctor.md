@@ -200,17 +200,27 @@ The report keeps these observations separate:
 | `leases` | Later held, pending, cleanup-marked, missing or ambiguous observations | Markers are not opaque cleanup proofs; this observation is not atomic with the database copy |
 
 A runtime database larger than the 4 MiB inspection cap is not an error. The
-cap stays, the database is not copied or read, and the report is partial:
+cap stays, no snapshot is copied, and the report is partial:
 `overall` is `unknown`, `partial_reason` is `database_exceeds_inspection_limit`,
 `database`, `storage_schema_version`, `counts` and `leases` are `null`,
 `schema_layout` is `not_inspected` and `journal_integrity` is `unknown`. Checks
 that do not read the database, such as `owner_lock`, are still reported. The
 runtime never purges `runtime.sqlite3`, so this state is reached by normal
 growth. It applies to a main file over the cap, and to a snapshot whose page
-count times page size exceeds the cap (for example a large WAL). Other limits
+count times page size exceeds the cap (for example a large WAL). The two routes
+differ in what is touched: a main file over the cap is never opened by SQLite;
+in the page-count route the database is opened read-only and a read transaction
+is held only long enough to read the page count and page size, and nothing is
+copied. A main file of any size, even a hostile one, that is a regular private
+single-link file now yields `unknown` (exit 3) instead of `Limit` (exit 2);
+a symlink, broad mode or extra hard link is still refused as `doctor.path.rejected`. Other limits
 still fail with `doctor.input.limit` and exit 2: a cell over 64 KiB, the 250 ms
 copy deadline, the SQL work budget, sidecars over the 16 MiB total and an
 unrepresentable size. Those signal hostile or unbounded input, not size alone.
+The report is `schema_version` 2: `database`, `storage_schema_version`,
+`counts` and `leases` are nullable, `partial_reason` is present (`null` on a
+complete report) and `schema_layout` may be `not_inspected`. A complete report
+keeps every v1 field with the same meaning.
 A partial report of a healthy but large database must not be read as a pass.
 The library API `diagnose_database_snapshot` returns the typed error
 `doctor.database.too_large` (`DoctorError::DatabaseTooLarge`) for the same size

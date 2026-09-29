@@ -163,7 +163,7 @@ pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageR
         DiagnosticState::Pass
     };
     Ok(RuntimeStorageReport {
-        schema_version: 1,
+        schema_version: 2,
         observed_at_unix_seconds: now,
         overall,
         partial_reason: None,
@@ -187,7 +187,7 @@ pub fn diagnose_runtime_storage(root: &Path, now: u64) -> Result<RuntimeStorageR
 /// claimed, so `overall` is unknown rather than a pass or a failure.
 fn partial_report(now: u64, owner_lock: OwnerLockState) -> RuntimeStorageReport {
     RuntimeStorageReport {
-        schema_version: 1,
+        schema_version: 2,
         observed_at_unix_seconds: now,
         overall: DiagnosticState::Unknown,
         partial_reason: Some(RuntimeStoragePartialReason::DatabaseExceedsInspectionLimit),

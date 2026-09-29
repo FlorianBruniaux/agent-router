@@ -427,6 +427,74 @@ fn oversized_fields_and_source_files_are_bounded() {
 }
 
 #[test]
+fn snapshot_over_the_cap_through_the_wal_is_partial_while_the_main_file_is_small() {
+    let f = Fixture::new();
+    let db = f.db();
+    let mode: String = db
+        .query_row("PRAGMA journal_mode", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(mode, "wal");
+    // Keep growth in the WAL: no automatic checkpoint while `db` is open.
+    db.pragma_update(None, "wal_autocheckpoint", 0).unwrap();
+    db.execute_batch("WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHERE i<100) INSERT INTO runs SELECT 'big'||i,'p','n',zeroblob(60000) FROM n;").unwrap();
+    let main = fs::metadata(f.root.join("runtime.sqlite3")).unwrap().len();
+    let wal = fs::metadata(f.root.join("runtime.sqlite3-wal"))
+        .unwrap()
+        .len();
+    let cap = router_doctor::MAX_FILE_BYTES as u64;
+    assert!(main < cap && main + wal > cap, "{main} {wal}");
+    assert!(wal < router_doctor::MAX_TOTAL_BYTES as u64);
+    let report = serde_json::to_value(diagnose_runtime_storage(&f.root, 5).unwrap()).unwrap();
+    assert_eq!(report["overall"], "unknown");
+    assert_eq!(
+        report["partial_reason"],
+        "database_exceeds_inspection_limit"
+    );
+    assert_eq!(report["database"], serde_json::Value::Null);
+    assert_eq!(report["schema_version"], 2);
+}
+
+#[test]
+fn oversized_main_file_that_is_a_link_or_broad_is_a_path_error_not_partial() {
+    let large = |f: &Fixture| {
+        fs::OpenOptions::new()
+            .write(true)
+            .open(f.root.join("runtime.sqlite3"))
+            .unwrap()
+            .set_len((router_doctor::MAX_FILE_BYTES + 1) as u64)
+            .unwrap();
+    };
+    let f = Fixture::new();
+    large(&f);
+    let db = f.root.join("runtime.sqlite3");
+    fs::set_permissions(&db, fs::Permissions::from_mode(0o644)).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+    fs::set_permissions(&db, fs::Permissions::from_mode(0o600)).unwrap();
+    fs::hard_link(&db, f.root.join("alias.sqlite3")).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+    let f = Fixture::new();
+    let target = f.root.join("target.sqlite3");
+    fs::rename(f.root.join("runtime.sqlite3"), &target).unwrap();
+    fs::OpenOptions::new()
+        .write(true)
+        .open(&target)
+        .unwrap()
+        .set_len((router_doctor::MAX_FILE_BYTES + 1) as u64)
+        .unwrap();
+    symlink(&target, f.root.join("runtime.sqlite3")).unwrap();
+    assert!(matches!(
+        diagnose_runtime_storage(&f.root, 0),
+        Err(DoctorError::Path)
+    ));
+}
+
+#[test]
 fn database_over_the_inspection_cap_gives_a_partial_unknown_report() {
     let f = Fixture::new();
     let db = f.db();
