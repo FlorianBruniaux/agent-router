@@ -36,6 +36,11 @@ fn error(error: CoordinatorError) -> CliError {
         {
             CliError::Product("coordinator.busy")
         }
+        CoordinatorError::Storage(e)
+            if execution::corruption(e.sqlite_error().map(|f| f.extended_code)) =>
+        {
+            CliError::Product("coordinator.storage_corrupt")
+        }
         CoordinatorError::Storage(_) => CliError::Product("coordinator.storage"),
         CoordinatorError::Io(_) => CliError::Product("coordinator.io"),
         CoordinatorError::Json(_) => CliError::Product("coordinator.json"),
@@ -459,6 +464,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &config,
                 &source,
                 loaded.binding.as_ref(),
+                &store.join("runtime"),
             )?;
             let bundle = Bundle {
                 schema_version: 1,
@@ -560,6 +566,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     &config,
                     &source,
                     loaded.binding.as_ref(),
+                    &store.join("runtime"),
                 )?;
                 if approval != digest {
                     return Err(CliError::Product(
@@ -684,6 +691,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &config,
                 &source,
                 binding.as_ref(),
+                &store.join("runtime"),
             )?;
             if approval != digest {
                 return Err(CliError::Product(

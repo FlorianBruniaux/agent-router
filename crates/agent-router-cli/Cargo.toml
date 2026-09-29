@@ -47,6 +47,7 @@ router-workflow = { path = "../router-workflow" }
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
+hmac.workspace = true
 toml = { version = "=0.8.23", default-features = false, features = ["parse"] }
 yaml-rust2 = { version = "=0.13.0", default-features = false }
 
@@ -60,3 +61,4 @@ rusqlite = { version = "=0.39.0", features = ["bundled", "fallible_uint"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+rustix = { version = "=1.1.4", features = ["process"] }

@@ -311,12 +311,12 @@ normalization/plan envelopes and historical compatibility, and
 | Code | Meaning |
 | --- | --- |
 | `0` | A compatible route was selected. |
-| `2` | Command syntax, file limits, request semantics, input JSON, catalog validation or a policy refusal failed. |
+| `2` | Command syntax, file limits, request semantics, input JSON, catalog validation or a refusal failed, including input that drifted after approval (`*.changed`). |
 | `3` | The request was valid but produced `no_route`. |
 | `4` | An internal serialization, storage or invariant failure occurred, including a failed write of the result to stdout (for example a closed pipe), reported as `route.internal`. |
 | `5` | Transient contention (`*.busy`, `*.locked`); the same command may be relaunched. |
 | `6` | The outcome is unknown (`backend_store.published_durability_unknown`, `runtime.cleanup.unknown`); inspect before retrying. |
-| `7` | An integrity check failed (`*.integrity`): a hash chain, digest or file no longer matches its record. |
+| `7` | An integrity check failed: a stored record, a hash chain or a signature no longer matches (`*.integrity`, `*.storage_corrupt` and a short explicit list). |
 
 The status is derived from the stable error code alone; the complete table and
 its matching rules are in

@@ -980,7 +980,28 @@ fn approval_binds_environment_values_without_exposing_secrets() {
         .as_str()
         .unwrap()
         .to_owned();
-    let mut observed = vec![review];
+    // The first secret binding creates the store's private approval key once.
+    let key_path = f.store.join("approval.key");
+    let key = fs::read(&key_path).unwrap();
+    assert_eq!(key.len(), 32);
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = fs::symlink_metadata(&key_path)
+            .unwrap()
+            .permissions()
+            .mode();
+        assert_eq!(mode & 0o777, 0o600);
+    }
+    let again = with(&home, Some(secret), Some(&certificates))
+        .output()
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&again.stdout).unwrap()["approval_digest"],
+        digest.as_str(),
+        "same environment and same key give the same digest"
+    );
+    assert_eq!(fs::read(&key_path).unwrap(), key, "the key is reused");
+    let mut observed = vec![review, again];
     for changed in [
         with(&f.root.join("home-b"), Some(secret), Some(&certificates)),
         with(
@@ -1014,6 +1035,42 @@ fn approval_binds_environment_values_without_exposing_secrets() {
         true
     );
     observed.push(queued);
+    // Another key changes the digest, and the original key restores it.
+    let approve = || {
+        with(&home, Some(secret), Some(&certificates))
+            .args(["--approve", &digest])
+            .timeout(std::time::Duration::from_secs(10))
+            .output()
+            .unwrap()
+    };
+    fs::write(&key_path, [7u8; 32]).unwrap();
+    let rekeyed = approve();
+    assert_eq!(rekeyed.status.code(), Some(2), "{rekeyed:?}");
+    assert_eq!(
+        rekeyed.stderr,
+        b"error: runtime.approval.required_or_changed\n"
+    );
+    fs::write(&key_path, &key).unwrap();
+    assert_eq!(approve().status.code(), Some(3));
+    // Deleting the key creates a new one: pending approvals become stale.
+    fs::remove_file(&key_path).unwrap();
+    let deleted = approve();
+    assert_eq!(deleted.status.code(), Some(2), "{deleted:?}");
+    assert_ne!(fs::read(&key_path).unwrap(), key);
+    observed.extend([rekeyed, deleted]);
+    // Neither the value nor its per-variable HMAC is ever printed.
+    let mac = {
+        use hmac::{Hmac, Mac};
+        let mut mac = Hmac::<sha2::Sha256>::new_from_slice(&key).unwrap();
+        mac.update(b"agent-router.approval.environment-hmac.v1\0OPENAI_API_KEY\0");
+        mac.update(secret.as_bytes());
+        hex::encode(mac.finalize().into_bytes())
+    };
+    for outcome in &observed {
+        for stream in [&outcome.stdout, &outcome.stderr] {
+            assert!(!String::from_utf8_lossy(stream).contains(&mac));
+        }
+    }
     for outcome in &observed {
         for stream in [&outcome.stdout, &outcome.stderr] {
             let text = String::from_utf8_lossy(stream);
@@ -1029,6 +1086,7 @@ fn approval_binds_environment_values_without_exposing_secrets() {
             .success(),
     );
     assert!(!events.to_string().contains("sk-fixture-secret-value"));
+    assert!(!events.to_string().contains(&mac));
 }
 
 #[test]
@@ -1096,4 +1154,26 @@ fn sqlite_contention_exits_with_the_retryable_class() {
     holder.execute_batch("ROLLBACK").unwrap();
     // Relaunching once the contention is gone succeeds.
     cancel().assert().success();
+}
+
+#[test]
+fn a_store_database_that_is_not_sqlite_exits_with_the_integrity_class() {
+    let f = Fixture::new();
+    output(f.run().assert().success());
+    for suffix in ["-wal", "-shm"] {
+        let _ = fs::remove_file(f.store.join(format!("runtime.sqlite3{suffix}")));
+    }
+    // Overwriting keeps the private 0600 mode; only the content is replaced.
+    let noise: Vec<u8> = (0..8192u32)
+        .map(|i| (i.wrapping_mul(2_654_435_761) >> 13) as u8)
+        .collect();
+    fs::write(f.store.join("runtime.sqlite3"), noise).unwrap();
+    command()
+        .args(["status", "--store"])
+        .arg(&f.store)
+        .args(["--run-id", "cli-run", "--json"])
+        .assert()
+        .code(7)
+        .stdout(predicates::str::is_empty())
+        .stderr("error: runtime.storage_corrupt\n");
 }

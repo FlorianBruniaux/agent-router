@@ -118,6 +118,9 @@ pub(crate) fn error(error: RuntimeError) -> CliError {
         RuntimeError::Storage(e) if contention(e.sqlite_error().map(|f| f.extended_code)) => {
             "runtime.busy"
         }
+        RuntimeError::Storage(e) if corruption(e.sqlite_error().map(|f| f.extended_code)) => {
+            "runtime.storage_corrupt"
+        }
         RuntimeError::Storage(_) => "runtime.storage",
         RuntimeError::Json(_) => "runtime.json",
         RuntimeError::Integrity(_) => "runtime.integrity",
@@ -144,6 +147,11 @@ pub(crate) fn error(error: RuntimeError) -> CliError {
 /// primary byte of its extended result code. Relaunching may then succeed.
 pub(crate) fn contention(extended_code: Option<i32>) -> bool {
     extended_code.is_some_and(|code| matches!(code & 0xff, 5 | 6))
+}
+/// SQLITE_CORRUPT (11) or SQLITE_NOTADB (26): the stored database is damaged
+/// or replaced, an integrity failure rather than an internal one.
+pub(crate) fn corruption(extended_code: Option<i32>) -> bool {
+    extended_code.is_some_and(|code| matches!(code & 0xff, 11 | 26))
 }
 pub(crate) fn block<T>(future: impl Future<Output = Result<T, CliError>>) -> Result<T, CliError> {
     tokio::runtime::Builder::new_multi_thread()
@@ -486,8 +494,15 @@ fn approval(
     config: &SandboxConfig,
     definition: &Definition,
     backend: Option<&crate::generation::SourceBinding>,
+    store: &Path,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
-    approval_for_digest(pending.approval_digest(), config, definition, backend)
+    approval_for_digest(
+        pending.approval_digest(),
+        config,
+        definition,
+        backend,
+        store,
+    )
 }
 
 const BINARY_LIMIT: u64 = 256 * 1024 * 1024;
@@ -497,7 +512,7 @@ const BINARY_LIMIT: u64 = 256 * 1024 * 1024;
 /// digest as `content_digest` of the whole content.
 fn binary_digest(path: &Path, limit: u64) -> Result<String, CliError> {
     use sha2::{Digest, Sha256};
-    use std::{fmt::Write as _, io::Read as _};
+    use std::io::Read as _;
     let mut file = crate::open_regular(path, CliError::RequestRead)?.take(limit + 1);
     let mut hasher = Sha256::new();
     let mut block = vec![0; 64 * 1024];
@@ -515,76 +530,105 @@ fn binary_digest(path: &Path, limit: u64) -> Result<String, CliError> {
         }
         hasher.update(&block[..read]);
     }
-    let mut digest = String::with_capacity(64);
-    for byte in hasher.finalize() {
+    Ok(hex(&hasher.finalize()))
+}
+fn hex(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
         // Writing to a String cannot fail.
-        let _ = write!(digest, "{byte:02x}");
+        let _ = write!(text, "{byte:02x}");
     }
-    Ok(digest)
+    text
 }
 
 /// Configuration variables bound by value. Every other named variable, API
-/// keys included, is bound only through a digest of its value.
+/// keys included, is bound only through a keyed MAC of its value.
 const PLAIN_ENVIRONMENT: [&str; 4] = ["HOME", "CODEX_HOME", "CLAUDE_CONFIG_DIR", "SSL_CERT_FILE"];
-const ENVIRONMENT_VALUE_DOMAIN: &[u8] = b"agent-router.approval.environment-value.v1";
+const ENVIRONMENT_VALUE_DOMAIN: &[u8] = b"agent-router.approval.environment-hmac.v1";
 
 /// What the approval binds for one named variable. A secret value never
-/// appears here, only its domain-separated SHA-256.
+/// appears here, only its HMAC-SHA256 under the runtime store's approval key:
+/// the displayed digest cannot confirm a guessed key without that file.
 #[derive(Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "state", rename_all = "snake_case")]
 enum EnvironmentBinding {
     Absent,
     Value { value: String },
-    Sha256 { sha256: String },
+    HmacSha256 { hmac_sha256: String },
 }
 
-fn environment_value_digest(name: &str, value: &[u8]) -> String {
-    let mut input =
-        Vec::with_capacity(ENVIRONMENT_VALUE_DOMAIN.len() + name.len() + value.len() + 2);
-    input.extend_from_slice(ENVIRONMENT_VALUE_DOMAIN);
-    input.push(0);
-    input.extend_from_slice(name.as_bytes());
-    input.push(0);
-    input.extend_from_slice(value);
-    content_digest(&input)
+fn environment_value_mac(
+    key: &crate::approval_key::ApprovalKey,
+    name: &str,
+    value: &[u8],
+) -> Result<String, CliError> {
+    use hmac::{Hmac, Mac};
+    let mut mac =
+        Hmac::<sha2::Sha256>::new_from_slice(key.bytes()).map_err(|_| CliError::Internal)?;
+    mac.update(ENVIRONMENT_VALUE_DOMAIN);
+    mac.update(&[0]);
+    mac.update(name.as_bytes());
+    mac.update(&[0]);
+    mac.update(value);
+    Ok(hex(&mac.finalize().into_bytes()))
 }
 
+/// The approval key is loaded (or created) only when a secret value is bound.
 fn environment_binding(
     names: &[String],
     lookup: impl Fn(&str) -> Option<OsString>,
-) -> BTreeMap<&str, EnvironmentBinding> {
-    names
-        .iter()
-        .map(|name| {
-            let binding = match lookup(name).map(OsString::into_string) {
-                None => EnvironmentBinding::Absent,
-                Some(Ok(value)) if PLAIN_ENVIRONMENT.contains(&name.as_str()) => {
-                    EnvironmentBinding::Value { value }
-                }
-                Some(Ok(value)) => EnvironmentBinding::Sha256 {
-                    sha256: environment_value_digest(name, value.as_bytes()),
-                },
-                // Not launchable either; bound so that any later change differs.
-                Some(Err(value)) => EnvironmentBinding::Sha256 {
-                    sha256: environment_value_digest(name, value.as_encoded_bytes()),
-                },
-            };
-            (name.as_str(), binding)
-        })
-        .collect()
+    key: impl FnOnce() -> Result<crate::approval_key::ApprovalKey, CliError>,
+) -> Result<BTreeMap<&str, EnvironmentBinding>, CliError> {
+    let mut source = Some(key);
+    let mut loaded = None;
+    let mut bound = BTreeMap::new();
+    for name in names {
+        let value = match lookup(name).map(OsString::into_string) {
+            None => {
+                bound.insert(name.as_str(), EnvironmentBinding::Absent);
+                continue;
+            }
+            Some(Ok(value)) if PLAIN_ENVIRONMENT.contains(&name.as_str()) => {
+                bound.insert(name.as_str(), EnvironmentBinding::Value { value });
+                continue;
+            }
+            Some(Ok(value)) => value.into_bytes(),
+            // Not launchable either; bound so that any later change differs.
+            Some(Err(value)) => value.into_encoded_bytes(),
+        };
+        if loaded.is_none() {
+            let load = source.take().ok_or(CliError::Internal)?;
+            loaded = Some(load()?);
+        }
+        let key = loaded.as_ref().ok_or(CliError::Internal)?;
+        let hmac_sha256 = environment_value_mac(key, name, &value)?;
+        bound.insert(
+            name.as_str(),
+            EnvironmentBinding::HmacSha256 { hmac_sha256 },
+        );
+    }
+    Ok(bound)
 }
 
 /// The launch reads the named variables from this same process environment,
 /// so a value changed between review and `--approve` changes the digest.
+/// `store` is the runtime store directory holding the approval key.
 pub(crate) fn approval_for_digest(
     inner_digest: &str,
     config: &SandboxConfig,
     definition: &Definition,
     backend: Option<&crate::generation::SourceBinding>,
+    store: &Path,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
-    approval_with_environment(inner_digest, config, definition, backend, |name| {
-        std::env::var_os(name)
-    })
+    approval_with_environment(
+        inner_digest,
+        config,
+        definition,
+        backend,
+        |name| std::env::var_os(name),
+        || crate::approval_key::load_or_create(store),
+    )
 }
 fn approval_with_environment(
     inner_digest: &str,
@@ -592,8 +636,9 @@ fn approval_with_environment(
     definition: &Definition,
     backend: Option<&crate::generation::SourceBinding>,
     lookup: impl Fn(&str) -> Option<OsString>,
+    key: impl FnOnce() -> Result<crate::approval_key::ApprovalKey, CliError>,
 ) -> Result<(String, BTreeMap<PathBuf, String>), CliError> {
-    let environment = environment_binding(&config.environment_names, lookup);
+    let environment = environment_binding(&config.environment_names, lookup, key)?;
     let mut hashes = BTreeMap::new();
     for path in config
         .programs
@@ -809,7 +854,13 @@ pub(crate) fn run(
             // Read-only preview first: nothing is persisted until the caller
             // presents the digest of this exact preview with `--approve`.
             let preview = runtime.preview_retry(&pending).map_err(error)?;
-            let computed = approval(&preview, &config, &definition, loaded.binding.as_ref())?;
+            let computed = approval(
+                &preview,
+                &config,
+                &definition,
+                loaded.binding.as_ref(),
+                store,
+            )?;
             match approve {
                 None => (preview, computed),
                 Some(approved) => {
@@ -835,7 +886,13 @@ pub(crate) fn run(
             // A failed run needs a fresh approval: `--retry --approve <digest>`.
             return Err(CliError::Product("runtime.retry.use_retry_approve"));
         } else {
-            let computed = approval(&pending, &config, &definition, loaded.binding.as_ref())?;
+            let computed = approval(
+                &pending,
+                &config,
+                &definition,
+                loaded.binding.as_ref(),
+                store,
+            )?;
             (pending, computed)
         };
         let Some(approved) = approve else {
@@ -1048,6 +1105,7 @@ pub(crate) fn artifacts(
 #[cfg(test)]
 mod adapter_configuration_tests {
     use super::*;
+    use crate::approval_key::ApprovalKey;
     use serde_json::json;
 
     fn config_value() -> serde_json::Value {
@@ -1105,11 +1163,13 @@ mod adapter_configuration_tests {
                 .unwrap_or_else(|_| panic!("valid adapter config"))
                 .requires_native_version()
         );
-        let before = approval_for_digest(&"a".repeat(64), &original, &definition(), None)
+        // No secret variable is named, so the store key is never read.
+        let store = Path::new("/nonexistent/runtime");
+        let before = approval_for_digest(&"a".repeat(64), &original, &definition(), None, store)
             .unwrap_or_else(|_| panic!("valid approval fixture"));
         value[host]["expected_cli_version"] = json!("1.0.1-fixture");
         let changed: SandboxConfig = serde_json::from_value(value).unwrap();
-        let after = approval_for_digest(&"a".repeat(64), &changed, &definition(), None)
+        let after = approval_for_digest(&"a".repeat(64), &changed, &definition(), None, store)
             .unwrap_or_else(|_| panic!("valid changed fixture"));
         assert_eq!(
             before.1, after.1,
@@ -1125,7 +1185,7 @@ mod adapter_configuration_tests {
         move |name| values.get(name).map(OsString::from)
     }
     #[test]
-    fn approval_binds_plain_values_and_secret_digests_of_the_environment() {
+    fn approval_binds_plain_values_and_keyed_macs_of_secret_values() {
         let mut value = config_value();
         value["environment_names"] = json!(["HOME", "SSL_CERT_FILE", "OPENAI_API_KEY"]);
         value["output_retention"] =
@@ -1137,18 +1197,21 @@ mod adapter_configuration_tests {
             ("SSL_CERT_FILE", "/etc/a.pem"),
             ("OPENAI_API_KEY", secret),
         ];
-        let digest = |pairs: &[(&'static str, &'static str)]| {
+        let keyed = |pairs: &[(&'static str, &'static str)], key: u8| {
             approval_with_environment(
                 &"a".repeat(64),
                 &config,
                 &definition(),
                 None,
                 environment(pairs),
+                || Ok(ApprovalKey::fixed(key)),
             )
             .unwrap_or_else(|_| panic!("valid approval fixture"))
         };
+        let digest = |pairs: &[(&'static str, &'static str)]| keyed(pairs, 1);
         let reference = digest(&base);
-        assert_eq!(reference, digest(&base), "same environment, same approval");
+        assert_eq!(reference, digest(&base), "same environment and key");
+        assert_ne!(reference.0, keyed(&base, 2).0, "another store key");
         let mut changed = Vec::new();
         for (index, replacement) in [
             (0, Some("/home/b")),
@@ -1176,32 +1239,64 @@ mod adapter_configuration_tests {
         changed.dedup();
         assert_eq!(changed.len(), 6, "absent and empty values are distinct");
 
-        let binding = serde_json::to_string(&environment_binding(
-            &config.environment_names,
-            environment(&base),
-        ))
+        let binding = serde_json::to_string(
+            &environment_binding(&config.environment_names, environment(&base), || {
+                Ok(ApprovalKey::fixed(1))
+            })
+            .unwrap_or_else(|_| panic!("binding")),
+        )
         .unwrap();
         assert!(binding.contains("/home/a") && binding.contains("/etc/a.pem"));
         assert!(!binding.contains(secret), "{binding}");
-        assert!(binding.contains(&environment_value_digest(
-            "OPENAI_API_KEY",
-            secret.as_bytes()
-        )));
+        let mac = |key: u8, name: &str| {
+            environment_value_mac(&ApprovalKey::fixed(key), name, secret.as_bytes())
+                .unwrap_or_else(|_| panic!("mac"))
+        };
+        assert!(binding.contains(&mac(1, "OPENAI_API_KEY")));
+        assert!(
+            !binding.contains(&content_digest(secret.as_bytes())),
+            "keyed"
+        );
         assert_ne!(
-            environment_value_digest("OPENAI_API_KEY", secret.as_bytes()),
-            content_digest(secret.as_bytes()),
-            "domain separated"
+            mac(1, "OPENAI_API_KEY"),
+            mac(1, "ANTHROPIC_API_KEY"),
+            "name bound"
+        );
+        assert_ne!(
+            mac(1, "OPENAI_API_KEY"),
+            mac(2, "OPENAI_API_KEY"),
+            "key bound"
         );
     }
     #[test]
-    fn unknown_names_are_bound_by_digest_and_absence_is_explicit() {
+    fn the_store_key_is_read_only_when_a_secret_value_is_bound() {
+        let names = vec!["HOME".to_owned(), "OPENAI_API_KEY".to_owned()];
+        let unavailable = || Err(CliError::Product("runtime.approval_key.unavailable"));
+        assert!(environment_binding(&names, environment(&[("HOME", "/h")]), unavailable).is_ok());
+        assert_eq!(
+            environment_binding(&names, environment(&[("OPENAI_API_KEY", "k")]), unavailable)
+                .map(|_| ())
+                .map_err(CliError::code),
+            Err("runtime.approval_key.unavailable")
+        );
+    }
+    #[test]
+    fn unknown_names_are_bound_by_mac_and_absence_is_explicit() {
         let names = vec!["HOME".to_owned(), "CUSTOM_TOKEN".to_owned()];
-        let bound = environment_binding(&names, environment(&[("CUSTOM_TOKEN", "t0ken")]));
+        let bound = environment_binding(&names, environment(&[("CUSTOM_TOKEN", "t0ken")]), || {
+            Ok(ApprovalKey::fixed(1))
+        })
+        .unwrap_or_else(|_| panic!("binding"));
         assert_eq!(bound["HOME"], EnvironmentBinding::Absent);
         assert_eq!(
             bound["CUSTOM_TOKEN"],
-            EnvironmentBinding::Sha256 {
-                sha256: environment_value_digest("CUSTOM_TOKEN", b"t0ken")
+            EnvironmentBinding::HmacSha256 {
+                hmac_sha256: environment_value_mac(
+                    &ApprovalKey::fixed(1),
+                    "CUSTOM_TOKEN",
+                    b"t0ken"
+                )
+                .unwrap_or_else(|_| panic!("mac"))
             }
         );
     }
@@ -1276,6 +1371,9 @@ mod adapter_configuration_tests {
         assert!(contention(Some(5)) && contention(Some(6)));
         assert!(contention(Some(5 | (1 << 8))), "SQLITE_BUSY_RECOVERY");
         assert!(!contention(Some(11)) && !contention(None));
+        assert!(corruption(Some(11)) && corruption(Some(26)));
+        assert!(corruption(Some(11 | (1 << 8))), "SQLITE_CORRUPT_VTAB");
+        assert!(!corruption(Some(5)) && !corruption(None));
     }
     #[test]
     fn runtime_display_codes_match_the_cli_codes() {

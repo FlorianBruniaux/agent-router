@@ -21,6 +21,11 @@ fn error(error: FeedbackError) -> CliError {
         FeedbackError::Gate(_) => "feedback.policy.gate",
         FeedbackError::Signature => "feedback.policy.signature",
         FeedbackError::Io(_) => "feedback.storage_io",
+        FeedbackError::Database(e)
+            if crate::execution::corruption(e.sqlite_error().map(|f| f.extended_code)) =>
+        {
+            "feedback.storage_corrupt"
+        }
         FeedbackError::Database(_) => "feedback.storage_database",
         FeedbackError::Json(_) => "feedback.serialization",
         FeedbackError::Evaluation(_) => "feedback.evaluation",
@@ -186,8 +191,9 @@ pub(crate) fn policy(
             trusted_keys,
         } => {
             let keys: BTreeSet<String> = read_json(&trusted_keys, 16 * 1024)?;
+            // A bad key set is invalid input, not a signature that stopped matching.
             if keys.is_empty() || keys.len() > 32 {
-                return Err(CliError::Product("feedback.policy.signature"));
+                return Err(CliError::Product("feedback.invalid"));
             }
             json_output(
                 &store

@@ -294,6 +294,20 @@ fn feedback_requires_consent_and_policy_baseline_is_explicit() {
             .success(),
     );
     assert!(before["active"].is_null());
+    // An empty trusted-key set is invalid input (2), not a signature mismatch (7).
+    let keys = directory.join("trusted-keys.json");
+    write(&keys, &json!([]));
+    command()
+        .args(["policy", "--store"])
+        .arg(&store)
+        .args(["apply", "--approval"])
+        .arg(&keys)
+        .arg("--trusted-keys")
+        .arg(&keys)
+        .args(["--now", "100", "--json"])
+        .assert()
+        .code(2)
+        .stderr("error: feedback.invalid\n");
     command()
         .args(["policy", "--store"])
         .arg(&store)

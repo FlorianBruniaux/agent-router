@@ -175,16 +175,31 @@ hash-to-exec race boundary in [runtime.md](runtime.md).
 
 The approval also binds each named variable as read by the invoking process.
 `HOME`, `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and `SSL_CERT_FILE` are bound by
-value. Every other name, API keys included, is bound only by a SHA-256 of
-`agent-router.approval.environment-value.v1`, a zero byte, the name, a zero
-byte and the value; the value itself never enters the digest input, the output
-or an error. An unset variable is bound as absent, distinct from an empty value.
+value. Every other name, API keys included, is bound only by an HMAC-SHA256,
+keyed by the runtime store's approval key, of
+`agent-router.approval.environment-hmac.v1`, a zero byte, the name, a zero
+byte and the value. Neither the value nor its HMAC appears in the output or an
+error. An unset variable is bound as absent, distinct from an empty value.
 Review and `--approve` must therefore run with the same values: any change,
 removal or addition refuses the launch with
 `runtime.approval.required_or_changed`. This binding is approval format v4
 (`runtime-cli-approval-v4`, `-v4-backend`, `-v4-escalation`). Digests produced
 by earlier versions (v1, v2 and v3) are stale: review the run again for a new
 digest. The same applies to `coordinate` review, wave and verification digests.
+
+The approval key is 32 random bytes in `approval.key` inside the runtime store
+(`--store` for `run`, `STORE/runtime` for `coordinate`). It exists because the
+approval digest is meant to be displayed and pasted and all its other inputs
+are known: with a plain hash, whoever sees the digest could confirm a guessed
+API key offline. The key is created by the first review or approval that binds
+a secret value, as a private file (mode 0600, created exclusively, never through a
+symlink) published atomically, and it is read again at every approval. A key
+that is not a regular private file of the current user, or a store directory
+that is not private, is refused with `runtime.approval_key.unsafe`; a key of the
+wrong length is refused with `runtime.approval_key.integrity`. Deleting or
+replacing the key makes every pending approval that binds a secret value stale:
+the next review or approval creates or reads another key, so review again for
+a new digest. A digest that binds no secret value never reads the key.
 
 Two optional fields control private recording:
 

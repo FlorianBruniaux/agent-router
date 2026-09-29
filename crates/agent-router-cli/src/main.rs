@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod admission;
+mod approval_key;
 mod assets;
 mod backend_activation;
 mod catalogs;
@@ -146,7 +147,7 @@ enum ExitClass {
     Retryable = 5,
     /// The outcome is unknown: inspect the state before any retry.
     OutcomeUnknown = 6,
-    /// A hash chain, digest or stored file no longer matches its record.
+    /// A stored record, hash chain, digest or signature no longer matches.
     Integrity = 7,
 }
 
@@ -156,12 +157,32 @@ const OUTCOME_UNKNOWN_CODES: [&str; 2] = [
     "runtime.cleanup.unknown",
 ];
 
+/// Integrity codes without the `integrity` suffix: a stored record, a hash
+/// chain or a signature no longer matches (alteration or corruption).
+const INTEGRITY_CODES: [&str; 8] = [
+    "assets.review.trust_mismatch",
+    "backend_store.anchor",
+    "coordinator.storage_corrupt",
+    "feedback.policy.signature",
+    "feedback.storage_corrupt",
+    "feedback.store.invalid",
+    "policy.store.invalid",
+    "runtime.storage_corrupt",
+];
+
 /// The single classification of every stable error code into an exit status.
-/// It reads only the code, so a new mapper inherits its class from the suffix.
-/// `*.io` stays invalid input: a missing or unreadable caller path reaches it.
+/// It reads only the code: explicit tables first, then the last dotted segment.
+/// `7` is an altered stored record, chain or signature, and `*.integrity` also
+/// covers a sealed input edited after approval; `2` covers every refusal,
+/// including user input that drifted after approval (`*.changed`).
+/// `*.io` and `*.storage_io` stay invalid input: a missing or unreadable
+/// caller path reaches them.
 fn exit_class(code: &str) -> ExitClass {
     if OUTCOME_UNKNOWN_CODES.contains(&code) {
         return ExitClass::OutcomeUnknown;
+    }
+    if INTEGRITY_CODES.contains(&code) {
+        return ExitClass::Integrity;
     }
     match code.rsplit('.').next().unwrap_or(code) {
         "busy" | "locked" | "storage_locked" => ExitClass::Retryable,
@@ -631,6 +652,22 @@ mod exit_class_tests {
             ("eval.integrity", Integrity),
             ("phase.catalog.integrity", Integrity),
             ("doctor.audit.integrity", Integrity),
+            ("runtime.approval_key.integrity", Integrity),
+            ("runtime.storage_corrupt", Integrity),
+            ("coordinator.storage_corrupt", Integrity),
+            ("feedback.storage_corrupt", Integrity),
+            ("policy.store.invalid", Integrity),
+            ("feedback.store.invalid", Integrity),
+            ("feedback.policy.signature", Integrity),
+            ("assets.review.trust_mismatch", Integrity),
+            ("backend_store.anchor", Integrity),
+            ("backend_store.conflict", Invalid),
+            ("feedback.storage_io", Invalid),
+            ("policy.active.changed", Invalid),
+            ("escalation.source.changed", Invalid),
+            ("generation.context.changed", Invalid),
+            ("runtime.approval_key.unsafe", Invalid),
+            ("runtime.approval_key.unavailable", Invalid),
         ] {
             assert_eq!(exit_class(code), class, "{code}");
         }
@@ -657,6 +694,62 @@ mod exit_class_tests {
         // Only listed codes are unknown outcomes; other `unknown` suffixes are refusals.
         for code in ["task.budget.unknown", "risk.environment.unknown"] {
             assert_eq!(exit_class(code), ExitClass::Invalid, "{code}");
+        }
+    }
+
+    /// String literals shaped like a dotted error code, e.g. `"runtime.busy"`.
+    fn quoted_codes(text: &str) -> Vec<&str> {
+        let bytes = text.as_bytes();
+        let mut codes = Vec::new();
+        for (start, _) in text.match_indices('"') {
+            let body = &text[start + 1..];
+            let length = body
+                .bytes()
+                .take_while(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b"_.".contains(b))
+                .count();
+            let code = &body[..length];
+            if bytes.get(start + 1 + length) == Some(&b'"')
+                && code.contains('.')
+                && code.starts_with(|c: char| c.is_ascii_lowercase())
+            {
+                codes.push(code);
+            }
+        }
+        codes
+    }
+
+    #[test]
+    fn every_emitted_integrity_contention_or_durability_code_has_its_class() {
+        let source = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let mut texts = Vec::new();
+        for entry in std::fs::read_dir(&source).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().is_some_and(|e| e == "rs") {
+                texts.push(std::fs::read_to_string(&path).unwrap());
+            }
+        }
+        let mut emitted = std::collections::BTreeSet::new();
+        for text in &texts {
+            emitted.extend(quoted_codes(text));
+        }
+        let mut checked = 0;
+        for code in &emitted {
+            let expected = if code.contains("durability") {
+                ExitClass::OutcomeUnknown
+            } else if code.contains("integrity") || code.contains("corrupt") {
+                ExitClass::Integrity
+            } else if code.contains("busy") || code.contains("locked") {
+                ExitClass::Retryable
+            } else {
+                continue;
+            };
+            checked += 1;
+            assert_eq!(exit_class(code), expected, "{code}");
+        }
+        assert!(checked >= 15, "scanner found only {checked} codes");
+        // A typo in a table would silently leave the real code in class 2.
+        for code in INTEGRITY_CODES.iter().chain(&OUTCOME_UNKNOWN_CODES) {
+            assert!(emitted.contains(code), "{code} is not emitted by the CLI");
         }
     }
 }
