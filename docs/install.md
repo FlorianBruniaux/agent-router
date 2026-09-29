@@ -96,7 +96,8 @@ Missing evidence: 0
 ```
 
 `route` exits `0` for a selection, `3` for a valid no-route result, `2` for
-invalid input and `4` for an internal error.
+invalid input, `4` for an internal error and `7` for an integrity error; see
+[exit codes](cli-output.md#exit-codes-and-error-codes).
 
 ### Diagnostics
 

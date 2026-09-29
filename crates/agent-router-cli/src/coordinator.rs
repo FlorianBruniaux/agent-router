@@ -31,6 +31,16 @@ fn error(error: CoordinatorError) -> CliError {
         }
         CoordinatorError::Cancelled => CliError::Product("coordinator.cancelled"),
         CoordinatorError::Workflow(_) => CliError::Product("coordinator.workflow.invalid"),
+        CoordinatorError::Storage(e)
+            if execution::contention(e.sqlite_error().map(|f| f.extended_code)) =>
+        {
+            CliError::Product("coordinator.busy")
+        }
+        CoordinatorError::Storage(e)
+            if execution::corruption(e.sqlite_error().map(|f| f.extended_code)) =>
+        {
+            CliError::Product("coordinator.storage_corrupt")
+        }
         CoordinatorError::Storage(_) => CliError::Product("coordinator.storage"),
         CoordinatorError::Io(_) => CliError::Product("coordinator.io"),
         CoordinatorError::Json(_) => CliError::Product("coordinator.json"),
@@ -454,6 +464,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &config,
                 &source,
                 loaded.binding.as_ref(),
+                &store.join("runtime"),
             )?;
             let bundle = Bundle {
                 schema_version: 1,
@@ -555,6 +566,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     &config,
                     &source,
                     loaded.binding.as_ref(),
+                    &store.join("runtime"),
                 )?;
                 if approval != digest {
                     return Err(CliError::Product(
@@ -679,6 +691,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 &config,
                 &source,
                 binding.as_ref(),
+                &store.join("runtime"),
             )?;
             if approval != digest {
                 return Err(CliError::Product(
@@ -805,5 +818,28 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             };
             json_output(&value, ExitCode::SUCCESS)
         }),
+    }
+}
+
+#[cfg(test)]
+mod code_alignment_tests {
+    use super::*;
+
+    #[test]
+    fn coordinator_display_codes_match_the_cli_codes() {
+        use CoordinatorError::*;
+        let json = serde_json::from_str::<u8>("x").unwrap_err();
+        for variant in [
+            Integrity,
+            Limit,
+            Locked,
+            DependenciesPending,
+            Cancelled,
+            Io(std::io::Error::other("fixture")),
+            Json(json),
+        ] {
+            let display = variant.to_string();
+            assert_eq!(error(variant).code(), display);
+        }
     }
 }

@@ -70,7 +70,7 @@ fn tradeoffs_cli_emits_stable_descriptive_frontier_without_promotion_fields() {
         .arg(dir.path().join("record.json"))
         .args(["--json"])
         .assert()
-        .code(2);
+        .code(7);
     assert!(rejected.get_output().stdout.is_empty());
     assert!(String::from_utf8_lossy(&rejected.get_output().stderr).contains("eval.integrity"));
 }
