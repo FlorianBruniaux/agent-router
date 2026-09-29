@@ -698,22 +698,181 @@ fn more_promotions_than_the_old_cap_of_16_activate_roll_back_and_replay() {
 #[ignore = "slow: activates the full derived bound of promotions"]
 fn promotions_reach_the_derived_bound_and_only_the_event_cap_remains() {
     use router_backend_store::{MAX_EVENTS, MAX_PROMOTIONS};
-    let (_temp, store, nonce) = cycle_promotions(MAX_PROMOTIONS);
+    let (_temp, store, _nonce) = cycle_promotions(MAX_PROMOTIONS);
     assert_eq!(store.status(120).unwrap().event_count, MAX_EVENTS);
-    // One more distinct promotion is refused by the event cap, nothing else.
+    // One more distinct promotion is refused at review, before any approval.
     let extra = Fixture::with_version("test-extra");
-    let review = store.review(&extra.artifact, &extra.evidence, 120).unwrap();
+    assert!(matches!(
+        store.review(&extra.artifact, &extra.evidence, 120),
+        Err(StoreError::Limit)
+    ));
+}
+
+const EVENT_ROOM: usize = 1024 + "reviewer".len();
+fn nonce_hex(n: u32) -> String {
+    format!("{n:02x}").repeat(32)
+}
+fn act(
+    store: &BackendStore,
+    fixture: &Fixture,
+    review: &router_backend_store::ReviewedPromotion,
+    nonce: u32,
+) -> std::result::Result<router_backend_store::StoreStatus, StoreError> {
     let guard = store.read_guard(120).unwrap();
-    let approval = extra.approval_with_nonce(
+    let approval = fixture.approval_with_nonce(
         guard.state(),
         ActivationAction::Activate,
         &review.projection().promotion_hash,
         120,
-        format!("{:02x}", nonce + 1).repeat(32),
+        nonce_hex(nonce),
     );
     drop(guard);
+    store.activate(&approval, review, 120)
+}
+fn roll(store: &BackendStore, fixture: &Fixture, nonce: u32) -> router_backend_store::StoreStatus {
+    let guard = store.read_guard(120).unwrap();
+    let approval = fixture.approval_with_nonce(
+        guard.state(),
+        ActivationAction::Rollback,
+        fixture.context.policy_hash(),
+        120,
+        nonce_hex(nonce),
+    );
+    drop(guard);
+    store.rollback(&approval, 120).unwrap()
+}
+fn state_len(root: &Path) -> usize {
+    fs::metadata(root.join("state.json")).unwrap().len() as usize
+}
+
+#[test]
+fn review_refuses_beyond_the_promotion_count_but_accepts_a_retained_promotion() {
+    let first = Fixture::new();
+    let (_temp, _root, store) = setup(&first);
+    let store = store.with_promotion_limit(1);
+    let review = store.review(&first.artifact, &first.evidence, 120).unwrap();
+    act(&store, &first, &review, 1).unwrap();
+    roll(&store, &first, 2);
+    let second = Fixture::with_version("test-second");
     assert!(matches!(
-        store.activate(&approval, &review, 120),
+        store.review(&second.artifact, &second.evidence, 120),
         Err(StoreError::Limit)
     ));
+    // Review is idempotent for a promotion the store already retains.
+    store.review(&first.artifact, &first.evidence, 120).unwrap();
+}
+
+#[test]
+fn stale_double_review_cannot_activate_without_room_for_its_own_rollback() {
+    let (f1, f2) = (Fixture::new(), Fixture::with_version("test-second"));
+    // Probe with the default bound: size after R1 cycle and R2 activation.
+    let (_t, probe_root, probe) = setup(&f1);
+    let r1 = probe.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    let r2 = probe.review(&f2.artifact, &f2.evidence, 120).unwrap();
+    act(&probe, &f1, &r1, 1).unwrap();
+    roll(&probe, &f1, 2);
+    act(&probe, &f2, &r2, 3).unwrap();
+    let full = state_len(&probe_root);
+    // One byte short of leaving room for R2's rollback.
+    let (_t2, _root, store) = setup(&f1);
+    let store = store.with_snapshot_limit(full + EVENT_ROOM - 1);
+    let r1 = store.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    let r2 = store.review(&f2.artifact, &f2.evidence, 120).unwrap();
+    act(&store, &f1, &r1, 1).unwrap();
+    roll(&store, &f1, 2);
+    assert!(matches!(act(&store, &f2, &r2, 3), Err(StoreError::Limit)));
+    assert_eq!(store.status(120).unwrap().active_promotion_hash, None);
+}
+
+#[test]
+fn reactivating_a_retained_promotion_near_the_bound_keeps_rollback_possible() {
+    let f1 = Fixture::new();
+    let (_t, probe_root, probe) = setup(&f1);
+    let r = probe.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    act(&probe, &f1, &r, 1).unwrap();
+    roll(&probe, &f1, 2);
+    act(&probe, &f1, &r, 3).unwrap();
+    let full = state_len(&probe_root);
+    // Refused when the bound leaves no room for the rollback event.
+    let (_t2, _root, store) = setup(&f1);
+    let store = store.with_snapshot_limit(full + EVENT_ROOM - 1);
+    let r = store.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    act(&store, &f1, &r, 1).unwrap();
+    roll(&store, &f1, 2);
+    let r = store.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    assert!(matches!(act(&store, &f1, &r, 3), Err(StoreError::Limit)));
+    // Accepted with exactly that room, and the rollback then always writes.
+    let (_t3, _root3, store) = setup(&f1);
+    let store = store.with_snapshot_limit(full + EVENT_ROOM);
+    let r = store.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    act(&store, &f1, &r, 1).unwrap();
+    roll(&store, &f1, 2);
+    let r = store.review(&f1.artifact, &f1.evidence, 120).unwrap();
+    act(&store, &f1, &r, 3).unwrap();
+    let status = roll(&store, &f1, 4);
+    assert!(status.active_promotion_hash.is_none());
+}
+
+#[test]
+fn review_refuses_a_promotion_that_would_push_the_snapshot_over_its_bound() {
+    let fixture = Fixture::new();
+    let (_temp, root, store) = setup(&fixture);
+    let genesis = fs::metadata(root.join("state.json")).unwrap().len() as usize;
+    // Room for the empty snapshot but not for the retained promotion.
+    let tight = store.with_snapshot_limit(genesis + 1024);
+    let before = fs::read(root.join("state.json")).unwrap();
+    assert!(matches!(
+        tight.review(&fixture.artifact, &fixture.evidence, 120),
+        Err(StoreError::Limit)
+    ));
+    assert_eq!(before, fs::read(root.join("state.json")).unwrap());
+}
+
+#[test]
+fn reviewed_promotion_near_the_snapshot_bound_applies_and_can_always_roll_back() {
+    let fixture = Fixture::new();
+    let (_temp, root, store) = setup(&fixture);
+    activate(&store, &fixture);
+    let rolled = rollback(&store, &fixture, 120);
+    store.rollback(&rolled, 120).unwrap();
+    let raw = fs::read(root.join("state.json")).unwrap();
+    let value: serde_json::Value = serde_json::from_slice(&raw).unwrap();
+    let events = serde_json::to_vec(&value["events"]).unwrap().len();
+    // Snapshot with the promotion retained but no event yet.
+    let base = raw.len() - (events - 2);
+    let longest_id = "reviewer".len();
+    let one_event = 1024 + longest_id;
+    for event in value["events"].as_array().unwrap() {
+        assert!(serde_json::to_vec(event).unwrap().len() <= one_event);
+    }
+    // Two real events do not fit in one event's room: a reserve covering only
+    // the activation event would let rollback hit the bound.
+    assert!(events - 2 > one_event, "test must discriminate: {events}");
+    // Room for the activation event only: review must refuse rather than admit
+    // a promotion whose rollback could not be written.
+    let (_temp1, _root1, short) = setup(&fixture);
+    let short = short.with_snapshot_limit(base + one_event + 1);
+    assert!(matches!(
+        short.review(&fixture.artifact, &fixture.evidence, 120),
+        Err(StoreError::Limit)
+    ));
+    // Fresh store whose bound leaves exactly the two-event reserve spare.
+    let (_temp2, _root2, fresh) = setup(&fixture);
+    let fresh = fresh.with_snapshot_limit(base + 2 * one_event);
+    let review = fresh
+        .review(&fixture.artifact, &fixture.evidence, 120)
+        .unwrap();
+    let guard = fresh.read_guard(120).unwrap();
+    let approval = fixture.approval(
+        guard.state(),
+        ActivationAction::Activate,
+        &review.projection().promotion_hash,
+        120,
+        "1",
+    );
+    drop(guard);
+    fresh.activate(&approval, &review, 120).unwrap();
+    let rolled = rollback(&fresh, &fixture, 120);
+    let status = fresh.rollback(&rolled, 120).unwrap();
+    assert!(status.active_promotion_hash.is_none());
 }

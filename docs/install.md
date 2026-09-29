@@ -1,5 +1,7 @@
 # Installation
 
+English | [Français](install.fr.md)
+
 Agent Router is built from source. There is no published package-manager
 install and no automatic global configuration step. Installing it never enables
 a host integration, a hook or a permission (see [What installation does not
@@ -94,7 +96,8 @@ Missing evidence: 0
 ```
 
 `route` exits `0` for a selection, `3` for a valid no-route result, `2` for
-invalid input and `4` for an internal error.
+invalid input, `4` for an internal error and `7` for an integrity error; see
+[exit codes](cli-output.md#exit-codes-and-error-codes).
 
 ### Diagnostics
 

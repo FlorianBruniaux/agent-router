@@ -46,8 +46,9 @@ or native permission enforcement.
 Commands taking an active policy store bind the selected policy content.
 Generated execution bundles preserve the store and artifact identity so a later
 quarantine, rollback or activation is detected before fresh execution. Explicit
-policy files override store selection. A change of authority source also changes
-the CLI approval digest.
+policy files override store selection when a command accepts both; an execution
+definition naming both is refused with `policy.composition.denied`. A change of
+authority source also changes the CLI approval digest.
 
 ## Catalog
 
@@ -311,9 +312,18 @@ normalization/plan envelopes and historical compatibility, and
 | Code | Meaning |
 | --- | --- |
 | `0` | A compatible route was selected. |
-| `2` | Command syntax, file limits, request semantics, input JSON, or catalog validation failed. |
+| `2` | Command syntax, file limits, request semantics, input JSON, catalog validation or a refusal failed, including input that drifted after approval (`*.changed`). |
 | `3` | The request was valid but produced `no_route`. |
-| `4` | An internal serialization or invariant failure occurred, including a failed write of the result to stdout (for example a closed pipe), reported as `route.internal`. |
+| `4` | An internal serialization, storage or invariant failure occurred, including a failed write of the result to stdout (for example a closed pipe), reported as `route.internal`. |
+| `5` | Transient contention (`*.busy`, `*.locked`); the same command may be relaunched. |
+| `6` | The outcome is unknown (`backend_store.published_durability_unknown`, `runtime.approval_key.published_durability_unknown`, `runtime.cleanup.unknown`); inspect before retrying. |
+| `7` | An integrity check failed: a stored record, a hash chain or a signature no longer matches (`*.integrity`, `*.storage_corrupt` and a short explicit list). |
+
+The status is derived from the stable error code alone; the complete table and
+its matching rules are in
+[exit codes and error codes](../cli-output.md#exit-codes-and-error-codes).
+`explain` refuses a decision whose `schema_version` is not `"1"` with
+`decision.schema.unsupported` (exit `2`) instead of rendering it.
 
 Every command, not only `route`, exits `4` with `error: route.internal` when
 writing its result to stdout fails (for example a closed pipe). The write

@@ -105,8 +105,23 @@ another approval. Policy: ADR 0017
 Bounds: `MAX_EVENTS` (128) is a lifetime cap on activation events, and
 `MAX_PROMOTIONS` is derived as `MAX_EVENTS / 2` (64). An activation requires no
 active promotion, so each promotion costs at least an activate and a rollback
-event; the event cap is the binding limit and refuses further activations with
-`backend_store.limit`. Nothing is pruned: replay from genesis needs every event
+event; the event cap bounds promotions by count and refuses further activations
+with `backend_store.limit`. It does not bound their size: retained promotions
+can reach the 64 MiB snapshot bound first, so `review` simulates the snapshot
+with the new promotion retained, encodes it with the same function as `apply`,
+and refuses with `backend_store.limit` before any approval exists. It keeps
+room for two events: the activation event `apply` appends and the rollback event
+that must always be able to revoke it (`REVOCATION_EVENTS`). Each event is
+bounded by 1 KiB plus the longest configured signer id, since the fixed part
+(five hashes, a signature, field names and integers) measures under 1 KiB.
+
+The rollback room is checked twice. `review` checks it for a new promotion.
+`apply` checks it again on every activation, including the reactivation of an
+already retained promotion and an approval issued from a review that is now
+stale, because the snapshot may have grown in between. An activation is refused
+with `backend_store.limit` when its snapshot leaves less than one event of room.
+A rollback is encoded against the full bound, so revocation is never blocked by
+snapshot size. Nothing is pruned: replay from genesis needs every event
 and promotion to rebuild used nonces and artifact versions, and dropping either
 would reopen nonce and version replay. Checkpoint compaction (a signed restore
 from a snapshot with nonce and version carry-over) is deferred; see ADR 0017
@@ -120,7 +135,7 @@ purge or history reset is implicit.
 ## Verification, bounds and trust limits
 
 Snapshot JSON rejects unknown fields and duplicate keys, including nested maps.
-Limits are 64 MiB per snapshot, 16 retained promotions and **128 signed events**.
+Limits are 64 MiB per snapshot, 64 retained promotions and **128 signed events**.
 Hitting a limit fails without dropping old evidence or reusing nonce space.
 Promotion documents retain the promotion library's bounds. Restoring a snapshot
 replays signatures and gates for every retained promotion at its original
@@ -189,7 +204,7 @@ wall time before applying the signature. Reusing a stale approval fails CAS.
 
 Input reads are bounded and reject final symlinks and nonregular files. Config
 and artifact inputs are limited to 64 KiB, approvals to 16 KiB; evidence is also
-subject to the strict promotion parser's effective 4 MiB JSON limit. Raw input,
+subject to the promotion library's 16 MiB (`MAX_DOCUMENT_BYTES`) document limit. Raw input,
 prompts and key material never appear in CLI success output or error text. A
 successful activation stores authority for the explicit semantic execution path;
 it does not start a process or remove any runtime approval or asset gate.

@@ -54,7 +54,8 @@ pub fn parse_document<T: DeserializeOwned>(bytes: &[u8]) -> Result<T> {
     if bytes.len() > MAX_DOCUMENT_BYTES {
         return Err(PromotionError::Limit);
     }
-    let value = router_adapter_api::strict_json(bytes).map_err(|_| PromotionError::Invalid)?;
+    let value = router_adapter_api::strict_json_limited(bytes, MAX_DOCUMENT_BYTES)
+        .map_err(|_| PromotionError::Invalid)?;
     serde_json::from_value(value).map_err(|_| PromotionError::Invalid)
 }
 pub(crate) fn digest<T: Serialize>(domain: &str, value: &T) -> Result<String> {
