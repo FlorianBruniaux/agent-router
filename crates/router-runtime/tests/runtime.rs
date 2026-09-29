@@ -3154,3 +3154,72 @@ async fn incomplete_output_artifacts_are_marked_truncated() {
     assert!(artifacts.truncated);
     assert_eq!(fs::read(&artifacts.stdout.path).unwrap(), b"partial");
 }
+
+#[tokio::test]
+async fn inconclusive_verification_can_be_replaced_but_a_conclusive_one_cannot() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let output = runtime
+        .execute(
+            approved,
+            &FakeAdapter("exit 0"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(output.run.state, RunState::Verifying);
+    let record = |evidence: &str, outcome| VerificationRecord {
+        verifier: "independent-test".into(),
+        evidence_sha256: evidence.repeat(64),
+        artifact_sha256: None,
+        validation: outcome,
+        objective: outcome,
+    };
+    let first = record("a", VerificationOutcome::Unknown);
+    runtime
+        .record_verification(&pending, first.clone())
+        .unwrap();
+    assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verifying);
+    // Inconclusive, then conclusive: accepted, replaces, and transitions.
+    let second = record("b", VerificationOutcome::Passed);
+    let run = runtime
+        .record_verification(&pending, second.clone())
+        .unwrap();
+    assert_eq!(run.state, RunState::Verified);
+    assert_eq!(
+        runtime.verification_record("run-1").unwrap(),
+        Some(second.clone())
+    );
+    // A conclusive record is never replaced, and the first stays intact.
+    assert!(matches!(
+        runtime.record_verification(&pending, record("c", VerificationOutcome::Failed)),
+        Err(RuntimeError::Verification)
+    ));
+    assert_eq!(runtime.verification_record("run-1").unwrap(), Some(second));
+    assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verified);
+}
+
+#[tokio::test]
+async fn a_finished_standalone_run_leaves_no_plan_semaphore_behind() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    runtime
+        .execute(
+            approved,
+            &FakeAdapter("exit 0"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(runtime.plan_slots_held(), 0);
+}

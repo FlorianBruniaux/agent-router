@@ -929,11 +929,43 @@ impl Runtime {
                 }
                 Err(e) => Err(e),
             };
-            shared.release(&self.store, &ticket)?;
+            // The run's outcome is never replaced by a release failure. The
+            // failure is journaled instead, and the retained admission keeps
+            // later runs fail-closed through the durable release proof.
+            if shared.release(&self.store, &ticket).is_err() {
+                let _ = self.store.event(
+                    &ticket.run_id,
+                    "admission.release_failed",
+                    "authority_retained",
+                );
+            }
             result
         } else {
-            self.execute_decision_inner(approved, adapter, supervisor, cancel, authority)
-                .await
+            let standalone = approved.pending.run.workflow.is_none();
+            let run_id = approved.pending.run.run_id.clone();
+            let result = self
+                .execute_decision_inner(approved, adapter, supervisor, cancel, authority)
+                .await;
+            if standalone {
+                self.forget_plan_slot(&run_id);
+            }
+            result
+        }
+    }
+    /// Number of plan semaphores currently retained. Observability for tests.
+    #[doc(hidden)]
+    pub fn plan_slots_held(&self) -> usize {
+        self.plans.lock().map_or(0, |plans| plans.len())
+    }
+    /// A run outside a workflow keys its plan semaphore by `run_id`, which no
+    /// later run shares. Dropping the entry when the run ends keeps the map
+    /// from reaching its cap after 1024 distinct runs. An entry still held by
+    /// a permit or a concurrent caller is left in place.
+    fn forget_plan_slot(&self, run_id: &str) {
+        if let Ok(mut plans) = self.plans.lock() {
+            if plans.get(run_id).is_some_and(|s| Arc::strong_count(s) == 1) {
+                plans.remove(run_id);
+            }
         }
     }
     async fn execute_decision_inner(
@@ -1705,28 +1737,19 @@ impl Runtime {
         {
             return Err(RuntimeError::Verification);
         }
-        self.store.verification(&run.run_id, &record)?;
-        if record.validation == VerificationOutcome::Passed
-            && record.objective == VerificationOutcome::Passed
-        {
-            self.store.transition(
-                &run.run_id,
-                RunState::Verified,
-                "explicit_verification",
-                None,
-            )
-        } else if record.validation == VerificationOutcome::Failed
-            || record.objective == VerificationOutcome::Failed
-        {
-            self.store.transition(
-                &run.run_id,
-                RunState::VerificationFailed,
-                "explicit_verification",
-                Some(RunFailure::Verification),
-            )
+        let passed = record.validation == VerificationOutcome::Passed
+            && record.objective == VerificationOutcome::Passed;
+        let failed = record.validation == VerificationOutcome::Failed
+            || record.objective == VerificationOutcome::Failed;
+        let next = if passed {
+            Some((RunState::Verified, None))
+        } else if failed {
+            Some((RunState::VerificationFailed, Some(RunFailure::Verification)))
         } else {
-            Ok(run)
-        }
+            None
+        };
+        // State check, insert and transition are one store transaction.
+        self.store.record_verification(&run.run_id, &record, next)
     }
     pub async fn integration_preview(&self, pending: &PendingRun) -> Result<IntegrationPreview> {
         let run = self.store.get(&pending.run.run_id)?;
@@ -1931,4 +1954,36 @@ fn digest(domain: &str, value: &impl Serialize) -> Result<String> {
     hash.update([0]);
     hash.update(serde_json::to_vec(value)?);
     Ok(hex::encode(hash.finalize()))
+}
+
+#[cfg(test)]
+mod plan_slot_tests {
+    use super::*;
+
+    // Only Runtime::open is needed: the map cap is exercised through the same
+    // helpers execute uses, with no run fixture (1030 real runs take minutes).
+    #[test]
+    fn more_than_the_cap_of_standalone_runs_never_hit_the_limit() {
+        let temp = tempfile::tempdir().unwrap();
+        let runtime =
+            Runtime::open(&temp.path().join("runtime"), RuntimeLimits::default()).unwrap();
+        for n in 0..1100 {
+            let id = format!("run-{n}");
+            semaphore(&runtime.plans, &id, 1).unwrap();
+            runtime.forget_plan_slot(&id);
+        }
+        assert_eq!(runtime.plan_slots_held(), 0);
+    }
+    #[test]
+    fn a_slot_still_held_by_a_permit_is_kept() {
+        let temp = tempfile::tempdir().unwrap();
+        let runtime =
+            Runtime::open(&temp.path().join("runtime"), RuntimeLimits::default()).unwrap();
+        let held = semaphore(&runtime.plans, "run", 1).unwrap();
+        runtime.forget_plan_slot("run");
+        assert_eq!(runtime.plan_slots_held(), 1);
+        drop(held);
+        runtime.forget_plan_slot("run");
+        assert_eq!(runtime.plan_slots_held(), 0);
+    }
 }
