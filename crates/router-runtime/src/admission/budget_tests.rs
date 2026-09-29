@@ -307,11 +307,10 @@ fn budget_subprocess_helper() {
     std::fs::write(root.join(format!("ready-{owner}")), b"ready").unwrap();
     wait_file(&root.join("go"));
     let reasons = s.poll(&t).unwrap();
-    std::fs::write(
-        root.join(format!("result-{owner}")),
-        serde_json::to_vec(&reasons).unwrap(),
-    )
-    .unwrap();
+    // Publish atomically: the parent treats existence as "result ready".
+    let staging = root.join(format!("result-{owner}.staging"));
+    std::fs::write(&staging, serde_json::to_vec(&reasons).unwrap()).unwrap();
+    std::fs::rename(staging, root.join(format!("result-{owner}"))).unwrap();
     wait_file(&root.join("finish"));
     std::process::exit(0);
 }
