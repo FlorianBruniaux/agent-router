@@ -307,7 +307,7 @@ fn feedback_requires_consent_and_policy_baseline_is_explicit() {
         .args(["--now", "100", "--json"])
         .assert()
         .code(2)
-        .stderr("error: feedback.invalid\n");
+        .stderr("{\"schema_version\":1,\"error\":\"feedback.invalid\"}\n");
     command()
         .args(["policy", "--store"])
         .arg(&store)
@@ -590,7 +590,7 @@ fn eval_seal_replay_compare_never_treats_synthetic_input_as_a_promotion() {
         .args(["--policy", "baseline", "--now", "100", "--json"])
         .assert()
         .code(7)
-        .stderr("error: eval.integrity\n");
+        .stderr("{\"schema_version\":1,\"error\":\"eval.integrity\"}\n");
 }
 #[cfg(feature = "claude")]
 #[test]

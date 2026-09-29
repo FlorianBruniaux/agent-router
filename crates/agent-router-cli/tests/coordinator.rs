@@ -213,7 +213,10 @@ fn coordinator_reopen_rejects_changed_final_prompt_and_seal_rejects_unknown_fiel
         .unwrap();
     // The changed final request no longer matches the stored run: integrity class.
     assert_eq!(changed.status.code(), Some(7));
-    assert_eq!(changed.stderr, b"error: runtime.integrity\n");
+    assert_eq!(
+        changed.stderr,
+        b"{\"schema_version\":1,\"error\":\"runtime.integrity\"}\n"
+    );
     assert!(!String::from_utf8_lossy(&changed.stderr).contains("changed-after-approval"));
     assert!(!f.native.store.join("runtime/worktrees").exists());
     let mut definition: Value = serde_json::from_slice(&fs::read(&f.definition).unwrap()).unwrap();

@@ -339,11 +339,10 @@ impl<H: RouteHandler> Context<'_, H> {
     }
 }
 
+/// `schema_version` first, as documented; `json!` would sort the keys.
 fn error_body(code: &str) -> Vec<u8> {
-    let mut body = serde_json::to_vec(&serde_json::json!({"schema_version": 1, "error": code}))
-        .unwrap_or_else(|_| b"{\"schema_version\":1,\"error\":\"local_api.internal\"}".to_vec());
-    body.push(b'\n');
-    body
+    let code = serde_json::to_string(code).unwrap_or_else(|_| "\"local_api.internal\"".into());
+    format!("{{\"schema_version\":1,\"error\":{code}}}\n").into_bytes()
 }
 
 fn extra_header(status: u16) -> Option<&'static str> {
@@ -462,6 +461,14 @@ mod tests {
     //! code as a bound socket without needing to bind one.
     use super::*;
     use std::{collections::VecDeque, sync::Mutex};
+
+    #[test]
+    fn error_body_keeps_the_documented_field_order() {
+        assert_eq!(
+            error_body("local_api.unauthorized"),
+            b"{\"schema_version\":1,\"error\":\"local_api.unauthorized\"}\n".to_vec()
+        );
+    }
 
     struct Echo(AtomicUsize);
 

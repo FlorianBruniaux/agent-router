@@ -325,8 +325,11 @@ its matching rules are in
 `explain` refuses a decision whose `schema_version` is not `"1"` with
 `decision.schema.unsupported` (exit `2`) instead of rendering it.
 
-Every command, not only `route`, exits `4` with `error: route.internal` when
-writing its result to stdout fails (for example a closed pipe). The write
+Every command, not only `route`, exits `4` with `error: route.internal` (with
+`--json`: `{"schema_version":1,"error":"route.internal"}` on stderr) when
+writing its result to stdout fails (for example a closed pipe). With `--json`,
+every error is that single JSON line on stderr, with the same exit status; the
+local API uses the same body and field order. The write
 failure is reported instead of a panic or a success status. For commands that
 persist state, such as `run`, the persisted result is unaffected: the failed
 write only loses the printed copy, so read it back with `status` or `events`.
