@@ -6,6 +6,8 @@ mod harness;
 pub mod omnigent;
 mod provider;
 mod stream;
+#[cfg(feature = "loopback-transport")]
+pub mod transport;
 pub use harness::{CopilotAdapter, OpenCodeAdapter};
 pub use provider::{
     AnthropicMessagesAdapter, EnvelopeAuthority, OpenAiResponsesAdapter, ProviderAdapter,
