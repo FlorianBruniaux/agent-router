@@ -1,5 +1,7 @@
 # Installation
 
+English | [Français](install.fr.md)
+
 Agent Router is built from source. There is no published package-manager
 install and no automatic global configuration step. Installing it never enables
 a host integration, a hook or a permission (see [What installation does not
