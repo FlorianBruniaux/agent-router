@@ -1,0 +1,69 @@
+crates/agent-router-cli/src/backend_activation.rs
+  s_2b47aafd5c6e51::t_a44c73877132b3 103
+crates/router-advisory-cache/src/files.rs
+  s_2b47aafd5c6e51::t_29e3b33eb994b8 72-73,79,100-103,192-213,305-311
+crates/router-advisory-cache/src/lib.rs
+  s_2b47aafd5c6e51::t_c7fe0b618446c5 161-162,240-253
+crates/router-advisory-cache/tests/advisory_cache.rs
+  s_2b47aafd5c6e51::t_1083d1132a17ae 699-776
+crates/router-backend-store/src/files.rs
+  s_2b47aafd5c6e51::t_32051bb93661a6 148-158,162-171,278-300
+crates/router-backend-store/src/lib.rs
+  s_2b47aafd5c6e51::t_274c1c569bb2bb 24-26,56-60
+crates/router-backend-store/tests/store.rs
+  s_2b47aafd5c6e51::t_4f63acf46a5cca 335-338,639-719
+crates/router-backend-store/tests/support/fixture.rs
+  s_2b47aafd5c6e51::t_d1363076962e44 114-120,151,362-371,382
+crates/router-doctor/src/database.rs
+  s_2b47aafd5c6e51::t_8de6ac76370b8b 5-13,21,52
+crates/router-doctor/src/files.rs
+  s_2b47aafd5c6e51::t_320d94b7d2e535 105,170-190,240-252
+crates/router-doctor/tests/deep.rs
+  s_2b47aafd5c6e51::t_3c26385c44c833 356-357
+crates/router-doctor/tests/diagnostics.rs
+  s_2b47aafd5c6e51::t_a183dda48007aa 182-186
+crates/router-doctor/tests/snapshot.rs
+  s_2b47aafd5c6e51::t_04a28f8484b127 254-308
+crates/router-eval/src/promotion.rs
+  s_2b47aafd5c6e51::t_f2191710f74236 26-55,194-199,412-478
+crates/router-eval/src/tradeoffs.rs
+  s_2b47aafd5c6e51::t_983a0717b70619 5,10-11,340,352,367,371,373,376,444-526
+crates/router-eval/tests/replay.rs
+  s_2b47aafd5c6e51::t_bc2fa5db6e34bc 660-726
+crates/router-feedback/src/policy.rs
+  s_2b47aafd5c6e51::t_4ac3390a74c23a 9,185-200
+crates/router-feedback/src/sidecar_export.rs
+  s_2b47aafd5c6e51::t_4cbcc5969cac4b 12,21-28,41-42,113-117,119
+crates/router-feedback/src/store.rs
+  s_2b47aafd5c6e51::t_f382ee5c8decff 6,22-24,101,108-115,245,330-350,478
+crates/router-feedback/tests/feedback.rs
+  s_2b47aafd5c6e51::t_da0e73b3c81f59 796-840
+crates/router-feedback/tests/sidecar_export.rs
+  s_2b47aafd5c6e51::t_025824055b5a93 154-195
+docs/adr/0011-advisory-decision-cache.md
+  s_2b47aafd5c6e51::t_b64704ac71310c 80-85
+docs/backend-store.md
+  s_2b47aafd5c6e51::t_93b9237a17a0e1 97-113
+docs/doctor.md
+  s_2b47aafd5c6e51::t_8f556d35700bfe 32-33,146-150
+docs/evaluation.md
+  s_2b47aafd5c6e51::t_5ebcb8b651a06e 73-80
+docs/feedback.md
+  s_2b47aafd5c6e51::t_b687d9b4221304 149-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "25b1b5931f3284e1bce4d259a452a01716137c10",
+  "prompts": {},
+  "sessions": {
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
