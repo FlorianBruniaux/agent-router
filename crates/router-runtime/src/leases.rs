@@ -1,7 +1,7 @@
 //! A durable cleanup claim never follows from a PID or a process-group signal.
 use crate::{Result, RuntimeError, digest, outputs::FileIdentity};
 use nix::fcntl::{Flock, FlockArg};
-use rustix::fs::{Mode, OFlags, mkdirat, openat};
+use rustix::fs::{AtFlags, Mode, OFlags, mkdirat, openat, unlinkat};
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Seek, SeekFrom, Write},
@@ -82,6 +82,44 @@ impl LeaseStorage {
             },
             self.path.join(name),
         ))
+    }
+    /// Removes the lease file of `(id, attempt)` only when it is provably a
+    /// lease created and never committed: a regular, single-link, private file
+    /// of this user, holding exactly the pending marker, with no other holder.
+    /// The caller must hold the journal write transaction and have observed no
+    /// `attempt_leases` row, so no helper can have been handed this file.
+    /// Anything else, including a lookup failure, is left untouched.
+    pub fn reclaim_uncommitted(&self, id: &str, attempt: u32) -> Result<bool> {
+        let name = Self::name(id, attempt)?;
+        let Ok(fd) = openat(
+            &self.directory,
+            &name,
+            OFlags::RDWR | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) else {
+            return Ok(false);
+        };
+        let file = File::from(fd);
+        let meta = file.metadata()?;
+        if !meta.is_file()
+            || meta.nlink() != 1
+            || meta.mode() & 0o077 != 0
+            || meta.uid() != rustix::process::getuid().as_raw()
+            || meta.len() != PENDING.len() as u64
+        {
+            return Ok(false);
+        }
+        let Ok(mut lock) = Flock::lock(file, FlockArg::LockExclusiveNonblock) else {
+            return Ok(false);
+        };
+        let mut bytes = Vec::new();
+        (&mut *lock).take(96).read_to_end(&mut bytes)?;
+        if bytes != PENDING {
+            return Ok(false);
+        }
+        unlinkat(&self.directory, &name, AtFlags::empty()).map_err(std::io::Error::from)?;
+        self.directory.sync_all()?;
+        Ok(true)
     }
     /// The caller retains this lock through the durable terminal transition.
     /// Invalidating pending under the lock prevents a delayed helper spawning.

@@ -631,21 +631,43 @@ impl Store {
             tx.commit()?;
             return Err(RuntimeError::Transition);
         }
-        run.state = next;
-        run.failure = failure;
-        save(&tx, &run)?;
-        append(&tx, &run, "transition", detail)?;
-        if next.terminal()
-            && ((!preparation::terminal_safe(&tx, &run)?
-                || !admission::finalization_safe(&tx, &run)?)
-                || tx
-                    .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
-                    .exists([id])?)
-        {
-            tx.execute("INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)", [id])?;
+        apply_transition(&tx, &mut run, next, detail, failure)?;
+        tx.commit()?;
+        Ok(run)
+    }
+    /// The verifier's record and the state change it implies commit together:
+    /// the state is checked, the record is inserted without replacing an
+    /// earlier one, and the transition (when `next` is set) is applied in one
+    /// IMMEDIATE transaction. A second record for the same run is refused and
+    /// the first stays intact.
+    pub fn record_verification(
+        &self,
+        id: &str,
+        record: &router_types::VerificationRecord,
+        next: Option<(RunState, Option<RunFailure>)>,
+    ) -> Result<RunSummary> {
+        let mut db = self.lock()?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        if run.state != RunState::Verifying || record.artifact_sha256 != run.artifact_sha256 {
+            return Err(RuntimeError::Verification);
         }
-        if next.terminal() && !cleanup_blocked(&tx, Some(id))? {
-            tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [id])?;
+        if next
+            .as_ref()
+            .is_some_and(|(state, _)| !run.state.permits(*state))
+        {
+            return Err(RuntimeError::Transition);
+        }
+        let inserted = tx.execute(
+            "INSERT OR IGNORE INTO verifications VALUES(?1,?2)",
+            params![id, serde_json::to_string(record)?],
+        )?;
+        if inserted == 0 {
+            return Err(RuntimeError::Verification);
+        }
+        append(&tx, &run, "verification.recorded", &record.evidence_sha256)?;
+        if let Some((state, failure)) = next {
+            apply_transition(&tx, &mut run, state, "explicit_verification", failure)?;
         }
         tx.commit()?;
         Ok(run)
@@ -682,7 +704,7 @@ impl Store {
         let mut created = None;
         let stored = (|| {
             if supervised {
-                let (record, path) = match self.leases.create(id, run.attempts) {
+                let (record, path) = match self.create_lease(&tx, id, run.attempts) {
                     Ok(created) => created,
                     Err(error) => {
                         // O_EXCL may have succeeded before a later write or sync
@@ -723,6 +745,35 @@ impl Store {
             return Err(error);
         }
         Ok(created)
+    }
+    /// Creates the lease file. `EEXIST` with no committed row for the pair is
+    /// the residue of a crash between the file create and the journal commit
+    /// of an earlier try; it is reclaimed once, only when provably unbound and
+    /// unused. Every other existing file keeps the refusal.
+    fn create_lease(
+        &self,
+        tx: &Transaction<'_>,
+        id: &str,
+        attempt: u32,
+    ) -> Result<(LeaseRecord, PathBuf)> {
+        match self.leases.create(id, attempt) {
+            Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                let bound = tx
+                    .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND attempt=?2")?
+                    .exists(params![id, attempt])?;
+                if bound || !self.leases.reclaim_uncommitted(id, attempt)? {
+                    return Err(RuntimeError::Io(e));
+                }
+                append(
+                    tx,
+                    &load_opt(tx, id)?.ok_or(RuntimeError::NotFound)?,
+                    "attempt.lease_orphan_reclaimed",
+                    &attempt.to_string(),
+                )?;
+                self.leases.create(id, attempt)
+            }
+            other => other,
+        }
     }
     /// Best effort removal of a lease file left by a failed `LeaseStorage::create`,
     /// only when it is a single-link regular file of this user.
@@ -872,18 +923,6 @@ impl Store {
             .optional()?;
         value.map(|v| Ok(serde_json::from_str(&v)?)).transpose()
     }
-    pub fn verification(&self, id: &str, record: &router_types::VerificationRecord) -> Result<()> {
-        let mut db = self.lock()?;
-        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
-        tx.execute(
-            "INSERT OR REPLACE INTO verifications VALUES(?1,?2)",
-            params![id, serde_json::to_string(record)?],
-        )?;
-        append(&tx, &run, "verification.recorded", &record.evidence_sha256)?;
-        tx.commit()?;
-        Ok(())
-    }
     fn mutate(&self, id: &str, kind: &str, f: impl FnOnce(&mut RunSummary)) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
@@ -926,7 +965,7 @@ impl Store {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let values = {
-            let mut q = tx.prepare("SELECT summary FROM runs")?;
+            let mut q = tx.prepare("SELECT summary FROM runs ORDER BY run_id")?;
             q.query_map([], |r| r.get::<_, String>(0))?
                 .collect::<std::result::Result<Vec<_>, _>>()?
         };
@@ -1007,6 +1046,33 @@ impl Store {
         drop(cleanup_locks);
         Ok(())
     }
+}
+/// The permitted-transition body shared by every state change: the caller has
+/// already checked `permits` inside the transaction it commits.
+fn apply_transition(
+    tx: &Transaction<'_>,
+    run: &mut RunSummary,
+    next: RunState,
+    detail: &str,
+    failure: Option<RunFailure>,
+) -> Result<()> {
+    let id = run.run_id.clone();
+    run.state = next;
+    run.failure = failure;
+    save(tx, run)?;
+    append(tx, run, "transition", detail)?;
+    if next.terminal()
+        && ((!preparation::terminal_safe(tx, run)? || !admission::finalization_safe(tx, run)?)
+            || tx
+                .prepare("SELECT 1 FROM attempt_leases WHERE run_id=?1 AND resolved=0")?
+                .exists([&id])?)
+    {
+        tx.execute("INSERT OR IGNORE INTO cleanup_blocks VALUES(?1)", [&id])?;
+    }
+    if next.terminal() && !cleanup_blocked(tx, Some(&id))? {
+        tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [&id])?;
+    }
+    Ok(())
 }
 fn cleanup_blocked(db: &Connection, id: Option<&str>) -> Result<bool> {
     Ok(match id {
@@ -2060,6 +2126,8 @@ pub(crate) mod tests {
         prep.complete().unwrap();
         drop(prep);
         let (_, path) = store.leases.create("run", 1).unwrap();
+        // Not a pending marker, so it is not a provable uncommitted orphan.
+        fs::write(&path, b"router-runtime-lease-v1:active\n").unwrap();
         assert!(matches!(
             store.attempt("run", 3, true),
             Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists
@@ -2130,5 +2198,113 @@ pub(crate) mod tests {
         let path = store.attempt("run", 3, true).unwrap().unwrap();
         assert!(path.exists());
         assert_eq!(store.get("run").unwrap().attempts, 1);
+    }
+    fn preparing_run(store: &Store, id: &str) {
+        store.register(&summary(id)).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition(id, state, "", None).unwrap();
+        }
+        let prep = store.begin_preparation(id).unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+    }
+    #[test]
+    fn retry_reclaims_a_proven_orphan_lease_but_refuses_anything_else() {
+        use std::os::unix::fs::symlink;
+        for shape in ["orphan", "wrong-content", "hard-linked", "symlink", "held"] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = temp.path().join("data");
+            let store = Store::open(&root).unwrap();
+            preparing_run(&store, "run");
+            // A kill between the O_EXCL create and the SQLite commit leaves a
+            // lease file for attempt 1 and no attempt_leases row.
+            let (_, path) = store.leases.create("run", 1).unwrap();
+            let mut held = None;
+            match shape {
+                "orphan" => {}
+                "wrong-content" => fs::write(&path, b"router-runtime-lease-v1:active\n").unwrap(),
+                "hard-linked" => fs::hard_link(&path, temp.path().join("alias")).unwrap(),
+                "symlink" => {
+                    fs::remove_file(&path).unwrap();
+                    symlink(temp.path().join("elsewhere"), &path).unwrap();
+                }
+                _ => {
+                    held = Some(
+                        Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock)
+                            .unwrap(),
+                    )
+                }
+            }
+            let result = store.attempt("run", 2, true);
+            drop(held);
+            if shape == "orphan" {
+                let fresh = result.unwrap().unwrap();
+                assert_eq!(fresh, path);
+                assert_eq!(store.get("run").unwrap().attempts, 1);
+                let rows: i64 = store
+                    .lock()
+                    .unwrap()
+                    .query_row("SELECT COUNT(*) FROM attempt_leases", [], |r| r.get(0))
+                    .unwrap();
+                assert_eq!(rows, 1);
+                assert_eq!(
+                    fs::read(&fresh).unwrap(),
+                    b"router-runtime-lease-v1:pending\n"
+                );
+            } else {
+                assert!(
+                    matches!(&result, Err(RuntimeError::Io(e)) if e.kind() == std::io::ErrorKind::AlreadyExists),
+                    "{shape}: {result:?}"
+                );
+                assert_eq!(store.get("run").unwrap().attempts, 0);
+                // The refused file is left exactly as found.
+                assert!(fs::symlink_metadata(&path).is_ok());
+            }
+        }
+    }
+    #[test]
+    fn a_committed_lease_row_is_never_reclaimed_as_an_orphan() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        preparing_run(&store, "run");
+        let path = store.attempt("run", 3, true).unwrap().unwrap();
+        // Rewind the counter so attempt 1 is requested again while its row exists.
+        {
+            let mut db = store.lock().unwrap();
+            let tx = db.transaction().unwrap();
+            let mut run = load_opt(&tx, "run").unwrap().unwrap();
+            run.attempts = 0;
+            save(&tx, &run).unwrap();
+            tx.commit().unwrap();
+        }
+        store.attempt("run", 3, true).unwrap_err();
+        assert!(path.exists());
+    }
+    #[test]
+    fn recovery_visits_runs_in_run_id_order_not_insertion_order() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("data");
+        let store = Store::open(&root).unwrap();
+        for id in ["run-c", "run-a", "run-b"] {
+            store.register(&summary(id)).unwrap();
+            for state in [
+                RunState::AwaitingApproval,
+                RunState::Queued,
+                RunState::Preparing,
+            ] {
+                store.transition(id, state, "", None).unwrap();
+            }
+        }
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        let order: Vec<String> = store
+            .events()
+            .unwrap()
+            .into_iter()
+            .filter(|e| e.kind == "recovery.interrupted")
+            .map(|e| e.run_id)
+            .collect();
+        assert_eq!(order, ["run-a", "run-b", "run-c"]);
     }
 }
