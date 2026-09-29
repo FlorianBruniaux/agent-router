@@ -16,7 +16,7 @@ reasons); every change was verified locally on macOS.
 
 Nothing yet.
 
-## [0.0.1] - 2026-09-29
+## [0.0.1] - 2026-09-30
 
 ### Breaking
 
