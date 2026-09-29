@@ -66,7 +66,8 @@ unchanged `baseline_receipt_id`; changing the output format adds no authority.
 
 ## Exit codes and error codes
 
-A failed command writes one line, `error: <code>`, to stderr. The code is a
+A failed command writes `error: <code>` as the first line on stderr (the only
+line for every error except an invalid command line, see below). The code is a
 stable dotted identifier such as `runtime.approval.required_or_changed`. Its
 exit status comes from one table in the CLI (`exit_class` in
 `crates/agent-router-cli/src/main.rs`), keyed on the code alone, so every
@@ -77,21 +78,23 @@ error line is JSON instead, with the same body as the
 [local API](local-api.md): `{"schema_version":1,"error":"<code>"}`. It is one
 line on stderr, stdout stays empty and the exit status is unchanged. The
 argument is detected before parsing, so an invalid command line that includes
-`--json` also reports `{"schema_version":1,"error":"cli.invalid"}`. Only the
-code is written, never an input value. Breaking change: before this rule, an
+`--json` also reports `{"schema_version":1,"error":"cli.invalid"}`. In JSON
+mode only the code is written, never an input value. Breaking change: before this rule, an
 error was always the text line, even with `--json`.
 
 An invalid command line without `--json` (unknown subcommand or option, missing
 argument, invalid value, bare `agent-router`) exits `2`. Its first line stays
 `error: cli.invalid`; the following lines give the parser's short explanation,
-which quotes only the arguments passed, and end with
+indented by two spaces, and end with
 `Run 'agent-router <command> --help' for usage.` Scripts should match the first
-line only. `--help` and `--version` print to stdout and exit `0`.
+line only. The explanation quotes the offending argument as typed, so a secret
+passed to the wrong option appears on stderr; use `--json` where stderr is
+captured. `--help` and `--version` print to stdout and exit `0`.
 
 ```text
 error: cli.invalid
-unexpected argument '--bogus-option' found
-Usage: agent-router route [OPTIONS] --request <REQUEST> --catalog <CATALOG>
+  unexpected argument '--bogus-option' found
+  Usage: agent-router route [OPTIONS] --request <REQUEST> --catalog <CATALOG>
 Run 'agent-router route --help' for usage.
 ```
 

@@ -523,6 +523,33 @@ fn usage_errors_keep_the_stable_first_line_then_name_the_problem_and_the_help_co
 }
 
 #[test]
+fn a_quoted_argument_with_a_newline_cannot_forge_an_error_line() {
+    let output = command()
+        .args([
+            "route",
+            "--bogus\nerror: forged\nUsage: agent-router doctor",
+        ])
+        .output()
+        .unwrap();
+    let stderr = stderr_text(&output);
+    assert_eq!(output.status.code(), Some(2), "{stderr}");
+    assert_eq!(
+        stderr.lines().next(),
+        Some("error: cli.invalid"),
+        "{stderr}"
+    );
+    assert_eq!(
+        stderr.lines().filter(|l| l.starts_with("error:")).count(),
+        1,
+        "{stderr}"
+    );
+    assert!(
+        stderr.ends_with("Run 'agent-router route --help' for usage.\n"),
+        "{stderr}"
+    );
+}
+
+#[test]
 fn a_bare_invocation_is_a_usage_error_with_a_pointer_to_help() {
     let output = command().output().unwrap();
     let stderr = stderr_text(&output);

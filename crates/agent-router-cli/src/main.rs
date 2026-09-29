@@ -92,8 +92,7 @@ fn json_requested(arguments: &[OsString]) -> bool {
         .any(|argument| argument == "--json")
 }
 
-/// The deepest known subcommand path named by the raw arguments, for errors
-/// whose clap report carries no usage line (an invalid option value).
+/// The deepest known subcommand path named by the raw arguments.
 fn subcommand_path(arguments: &[OsString]) -> String {
     let mut command = Cli::command();
     let mut path = vec![command.get_name().to_owned()];
@@ -111,41 +110,27 @@ fn subcommand_path(arguments: &[OsString]) -> String {
 }
 
 /// Text report of a clap usage failure. The first line stays the stable
-/// `error: cli.invalid` scripts match; clap's account follows (it quotes only
-/// arguments the caller passed), then where to read the full usage.
+/// `error: cli.invalid` scripts match; clap's account follows, indented so no
+/// quoted argument can forge another `error:` line (clap quotes the arguments
+/// the caller passed), then where to read the full usage. The command path
+/// comes from the raw arguments, never from clap's text.
 fn usage_error(kind: ErrorKind, rendered: &str, arguments: &[OsString]) -> String {
-    let usage = rendered.lines().find(|line| line.starts_with("Usage: "));
     let mut text = format!("error: {}\n", CliError::InvalidCommand.code());
     if kind == ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand {
         // clap rendered the whole help here; keep the short form.
-        text.push_str("a subcommand or required arguments are missing\n");
-        if let Some(usage) = usage {
-            text.push_str(&format!("{}\n", human::escaped(usage)));
-        }
+        text.push_str("  a subcommand or required arguments are missing\n");
     } else {
         for line in rendered.lines() {
             if line.trim().is_empty() || line.starts_with("For more information") {
                 continue;
             }
             let line = line.strip_prefix("error: ").unwrap_or(line);
-            text.push_str(&format!("{}\n", human::escaped(line)));
+            text.push_str(&format!("  {}\n", human::escaped(line)));
         }
     }
-    // `Usage: agent-router catalog show [OPTIONS] --id <ID>` names the command path.
-    let path = usage
-        .and_then(|usage| usage.strip_prefix("Usage: "))
-        .map(|usage| {
-            usage
-                .split_whitespace()
-                .take_while(|word| !word.starts_with(['[', '<', '-']))
-                .collect::<Vec<_>>()
-                .join(" ")
-        })
-        .filter(|path| path.starts_with("agent-router"))
-        .unwrap_or_else(|| subcommand_path(arguments));
     text.push_str(&format!(
         "Run '{} --help' for usage.\n",
-        human::escaped(&path)
+        human::escaped(&subcommand_path(arguments))
     ));
     text
 }
