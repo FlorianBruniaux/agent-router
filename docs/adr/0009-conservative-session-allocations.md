@@ -1,6 +1,6 @@
 # ADR 0009: Conservative shared session allocations
 
-Status: accepted for implementation.
+Status: implemented (`router-runtime` admission budgets, see [session budgets](../session-budgets.md)).
 
 ## Context
 
