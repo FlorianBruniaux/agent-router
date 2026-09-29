@@ -1,6 +1,8 @@
 # ADR 0006: Persistent current signed-catalog selection
 
-Status: Accepted for the isolated library boundary; application integration pending.
+Status: Accepted. Library consumers exist: signed routing
+(`router-policy::signed_phases`) and signed preparation (`router-prepare`)
+take the current guard. CLI and runtime dispatch integration is pending.
 
 ## Problem
 

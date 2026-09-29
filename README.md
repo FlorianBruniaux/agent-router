@@ -370,7 +370,7 @@ an existing parent conversation.
 
 ## Documentation
 
-Guides for installing, routing, execution, release and the development harness are indexed in the table below.
+The [full documentation index](docs/README.md) lists every guide by task. The most used ones are below.
 
 <details>
 <summary>Documentation index</summary>
