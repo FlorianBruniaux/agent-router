@@ -1,0 +1,89 @@
+Cargo.lock
+  s_00c6bf8ee605be::t_70a1edb359dd9c 7,17,31,42,67,826,838,858,872,891,913,929,945,962,990,1005,1023,1039,1058,1078,1096,1109,1129,1153,1167,1198,1206,1215,1226,1740
+Cargo.toml
+  s_00c6bf8ee605be::t_2a4b02809fbde2 37
+crates/adapter-claude/Cargo.toml
+  s_00c6bf8ee605be::t_bab8b74692689a 3
+crates/adapter-codex/Cargo.toml
+  s_00c6bf8ee605be::t_45e296368af93e 3
+crates/adapter-copilot/Cargo.toml
+  s_00c6bf8ee605be::t_c19c7bb3016806 3
+crates/adapter-opencode/Cargo.toml
+  s_00c6bf8ee605be::t_2a774986dac890 3
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_bb9dbfb5f83039 3
+crates/agent-router-cli/tests/cli.rs
+  s_00c6bf8ee605be::t_60cfa26107f0cc 73
+crates/router-adapter-api/Cargo.toml
+  s_00c6bf8ee605be::t_090b557c781bd3 3
+crates/router-advisory-cache/Cargo.toml
+  s_00c6bf8ee605be::t_98f070824dd382 3
+crates/router-asset-contracts/Cargo.toml
+  s_00c6bf8ee605be::t_e9c9a5080af8ff 3
+crates/router-backend-policy/Cargo.toml
+  s_00c6bf8ee605be::t_619e7ac4574e04 3
+crates/router-backend-store/Cargo.toml
+  s_00c6bf8ee605be::t_9c598799799ab7 3
+crates/router-catalog-store/Cargo.toml
+  s_00c6bf8ee605be::t_8bc99ee5164355 3
+crates/router-catalog/Cargo.toml
+  s_00c6bf8ee605be::t_1d7c99237e7a25 3
+crates/router-coordinator/Cargo.toml
+  s_00c6bf8ee605be::t_d7be1cecc19ff5 3
+crates/router-decision/Cargo.toml
+  s_00c6bf8ee605be::t_e44b0416e44f11 3
+crates/router-doctor/Cargo.toml
+  s_00c6bf8ee605be::t_3f79fd92c28625 3
+crates/router-eval/Cargo.toml
+  s_00c6bf8ee605be::t_8c0379dc9ec0a6 3
+crates/router-execution-decision/Cargo.toml
+  s_00c6bf8ee605be::t_6eeb8907000d59 3
+crates/router-feedback/Cargo.toml
+  s_00c6bf8ee605be::t_2ebbd37bc76a18 3
+crates/router-import/Cargo.toml
+  s_00c6bf8ee605be::t_96195d86efc86a 3
+crates/router-local-api/Cargo.toml
+  s_00c6bf8ee605be::t_8a3b3186813832 3
+crates/router-policy/Cargo.toml
+  s_00c6bf8ee605be::t_a770b6db87c2ad 3
+crates/router-prepare/Cargo.toml
+  s_00c6bf8ee605be::t_5dff42fde85a36 3
+crates/router-retrieval/Cargo.toml
+  s_00c6bf8ee605be::t_8554c7e0c468fb 3
+crates/router-runtime/Cargo.toml
+  s_00c6bf8ee605be::t_c34967d1a8e6fb 3
+crates/router-sandbox-helper/Cargo.toml
+  s_00c6bf8ee605be::t_de3b94012035b7 3
+crates/router-types/Cargo.toml
+  s_00c6bf8ee605be::t_a2b1e30fb210ec 3
+crates/router-validation/Cargo.toml
+  s_00c6bf8ee605be::t_9c331d1045d792 3
+crates/router-workflow/Cargo.toml
+  s_00c6bf8ee605be::t_1ad9d8f43d636e 3
+fuzz/Cargo.lock
+  s_00c6bf8ee605be::t_118a628852ef11 7,307,319,333,347,363,377,395,408,416
+fuzz/Cargo.toml
+  s_00c6bf8ee605be::t_452d0ab75b3cb9 3
+integrations/bridge-contract/Cargo.toml
+  s_00c6bf8ee605be::t_462f7e7c710d06 3
+scripts/package-binary.py
+  s_00c6bf8ee605be::t_c63c2a2292390a 310
+xtask/Cargo.toml
+  s_00c6bf8ee605be::t_ab39bb919b1e96 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "778c3ef567c5bc846794e9cb914667f0f40798c5",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
