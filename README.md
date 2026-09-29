@@ -24,6 +24,7 @@
 </p>
 
 <p align="center">
+  <a href="#why-it-exists">Why</a> &middot;
   <a href="#quick-start">Quick start</a> &middot;
   <a href="#features">Features</a> &middot;
   <a href="#how-it-works">How it works</a> &middot;
@@ -50,6 +51,46 @@ to own its interaction, credentials and native permissions.
 
 The demo uses bundled synthetic fixtures and actual CLI output. It makes no
 model call. Model names in those fixtures are examples, not availability claims.
+
+## Why it exists
+
+**The problem.** A coding host such as Claude Code or Codex uses one model and
+effort setting per session unless you switch by hand. Picking a stronger model
+for planning, a cheaper one for a routine edit, or the right skills for the task
+is left to habit. Nothing records why a choice was made, and permission or
+budget limits may only show up once the agent is already working.
+
+**What you get.**
+
+- **A choice per phase**: plan, execute and verify can each get their own model,
+  effort and skills, instead of one default for everything.
+- **Limits checked first**: permissions, budget, risk and missing host evidence
+  remove candidates before any score is computed.
+- **A decision you can read**: every choice and every exclusion is explained,
+  and the same inputs replay to the same receipt.
+- **Nothing runs unapproved**: you approve one exact digest; the run is
+  sandboxed, any write goes to a Git worktree, and you preview the patch before
+  applying it.
+
+No measured cost or quality gain is claimed yet: the human-labelled evaluation
+corpus is still open work.
+
+```mermaid
+sequenceDiagram
+    actor U as You
+    participant AR as Agent Router
+    participant H as Claude Code / Codex CLI
+    U->>AR: task, risk, budget
+    AR-->>U: model + effort + skills per phase, and why
+    U->>AR: approve the exact digest
+    AR->>H: launch each approved node with its model and effort<br/>(OS sandbox, Git worktree for writes)
+    H-->>AR: exit status and declared artifacts
+    AR-->>U: verified patch to preview, apply or discard
+```
+
+You call Agent Router from a terminal, or from a host through the opt-in local
+route API. It does not switch the model of the conversation you are in: each
+approved phase runs as a separate host process.
 
 ## What Agent Router is, and what it is not
 

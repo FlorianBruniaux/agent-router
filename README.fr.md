@@ -24,6 +24,7 @@
 </p>
 
 <p align="center">
+  <a href="#pourquoi-il-existe">Pourquoi</a> &middot;
   <a href="#démarrage-rapide">Démarrage rapide</a> &middot;
   <a href="#fonctionnalités">Fonctionnalités</a> &middot;
   <a href="#fonctionnement">Fonctionnement</a> &middot;
@@ -50,6 +51,47 @@ propriétaire de son interaction, de ses identifiants et de ses permissions nati
 
 La démo utilise des fixtures synthétiques fournies avec le projet et la sortie réelle de la CLI. Elle n'effectue
 aucun appel à un modèle. Les noms de modèles dans ces fixtures sont des exemples, pas des affirmations de disponibilité.
+
+## Pourquoi il existe
+
+**Le problème.** Un hôte de code comme Claude Code ou Codex utilise un seul
+modèle et un seul niveau d'effort par session, sauf changement manuel. Prendre un modèle
+plus fort pour planifier, un modèle moins cher pour une modification de routine
+ou les bonnes skills pour la tâche relève de l'habitude. Rien n'enregistre la
+raison d'un choix, et les limites de permissions ou de budget peuvent
+n'apparaître qu'une fois l'agent déjà au travail.
+
+**Ce que vous y gagnez.**
+
+- **Un choix par phase** : planification, exécution et vérification reçoivent
+  chacune leur modèle, leur effort et leurs skills, au lieu d'un réglage unique.
+- **Les limites d'abord** : permissions, budget, risque et preuves d'hôte
+  manquantes écartent des candidats avant tout calcul de score.
+- **Une décision lisible** : chaque choix et chaque exclusion sont expliqués, et
+  les mêmes entrées rejouent le même reçu.
+- **Rien ne tourne sans approbation** : vous approuvez un digest exact ;
+  l'exécution est confinée, toute écriture va dans un worktree Git et vous
+  prévisualisez le patch avant de l'appliquer.
+
+Aucun gain mesuré de coût ou de qualité n'est encore revendiqué : le corpus
+d'évaluation annoté par des humains reste à constituer.
+
+```mermaid
+sequenceDiagram
+    actor U as Vous
+    participant AR as Agent Router
+    participant H as CLI Claude Code / Codex
+    U->>AR: tâche, risque, budget
+    AR-->>U: modèle + effort + skills par phase, et pourquoi
+    U->>AR: approbation du digest exact
+    AR->>H: lance chaque nœud approuvé avec son modèle et son effort<br/>(bac à sable OS, worktree Git pour les écritures)
+    H-->>AR: code de sortie et artefacts déclarés
+    AR-->>U: patch vérifié à prévisualiser, appliquer ou rejeter
+```
+
+Vous appelez Agent Router depuis un terminal, ou depuis un hôte via l'API de
+routage locale optionnelle. Il ne change pas le modèle de la conversation en
+cours : chaque phase approuvée tourne dans un processus hôte séparé.
 
 ## Ce qu'est Agent Router, et ce qu'il n'est pas
 
