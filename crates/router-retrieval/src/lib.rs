@@ -8,11 +8,15 @@ mod fusion;
 mod index;
 mod tokenize;
 mod types;
+#[cfg(feature = "semantic-ranking")]
+mod vectors;
 
 pub use context::*;
 pub use fusion::*;
 pub use index::Bm25Index;
 pub use types::*;
+#[cfg(feature = "semantic-ranking")]
+pub use vectors::*;
 
 pub const MAX_DOCUMENT_BYTES: usize = 32 * 1024 * 1024;
 pub const MAX_ASSETS: usize = 20_000;

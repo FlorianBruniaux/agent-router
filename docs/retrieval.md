@@ -149,6 +149,33 @@ wrong requested family invalidate the list; known but ineligible candidates
 remain excluded. The caller owns any external embedding computation and must
 separately authorize its data policy. No automatic semantic promotion occurs.
 
+### Local ranking from caller-supplied vectors
+
+With `semantic-ranking` enabled, `rank_semantic(index, query, asset_vectors, query_vector,
+provenance)` computes a `SemanticRanking` locally from fixed-point integer vectors. It
+performs no I/O, network access or provider call, and uses no floating point. The
+caller owns embedding computation and its data policy.
+
+- `AssetVectorSet` binds the exact `index_hash`; `QueryVector` binds
+  `ContextSearchQuery::content_hash`. `rank_semantic` returns `SemanticInvalid` for:
+  a schema version other than 1, another `index_hash` or `query_hash`, a dimension
+  of 0 or above 1024, a vector length differing from `dimension`, a component out of
+  range, a zero vector, and an unknown or duplicate asset. An error from
+  `ContextSearchQuery::content_hash` (`Invalid` or `Limit`) is propagated as is, and
+  more than `MAX_ASSETS` vectors return `Limit("asset vectors")`.
+- Bounds: dimension `1..=1024`, components in `-32767..=32767`, at most `MAX_ASSETS`
+  vectors. A dot product then stays below 2^40 and the scaled numerator below 2^120,
+  so all arithmetic is exact in `u128`. Checked operations return
+  `Limit("vector arithmetic")` as a defense that the bounds make unreachable.
+- Score: `floor(cosine * 1_000_000)` computed as
+  `isqrt(dot^2 * 10^12 / (|a|^2 * |b|^2))`. Non-positive cosines are omitted. Ties
+  use canonical `AssetKey` order, so input order does not matter. At most 200 hits
+  are kept, and a query restricted to one asset kind ignores other kinds.
+- The result is an ordinary `SemanticRanking`. The provenance is supplied by the
+  caller and is not validated by `rank_semantic`; `search_contextual_with_semantic`
+  applies its existing provenance, freshness and eligibility validation.
+- Without the feature, neither `rank_semantic` nor the vector types exist.
+
 ## Atomic incremental refresh
 
 `refresh_from_json(successor, expected_source_hash)` accepts a complete successor
