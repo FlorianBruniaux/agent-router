@@ -28,6 +28,7 @@ members = [
     "crates/adapter-copilot",
     "crates/router-retrieval",
     "crates/router-import",
+    "crates/router-validation",
     "xtask",
 ]
 resolver = "2"
