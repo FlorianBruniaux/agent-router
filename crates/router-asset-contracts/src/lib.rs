@@ -4,12 +4,18 @@
 
 mod documents;
 mod gate;
+mod modality;
 mod review;
 
 pub use documents::{ValidatedAvailability, ValidatedContracts, seal_availability, seal_contracts};
 pub use gate::{
     EligibleAssetPlan, GatedAssets, SkillBody, gate, parse_gate_policy, parse_gate_request,
     preflight,
+};
+pub use modality::{
+    DigestCheckedJsonObject, FILE_MEDIA_TYPES, InputContract, JsonOutputContract,
+    MAX_JSON_OUTPUT_BYTES, MAX_MEDIA_TYPE_LEN, MAX_MEDIA_TYPES, MAX_MODALITY_BYTES, Modality,
+    ValidatedInput, parse_input_contract, parse_json_output_contract,
 };
 pub use review::{PendingSkillReview, SkillApproval, approve_review, review_skill, scan_skill};
 
