@@ -1,0 +1,67 @@
+Cargo.lock
+  s_00c6bf8ee605be::t_0e25da9009203d 100
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_991cab2cc2ac54 49
+crates/agent-router-cli/src/coordinator.rs
+  s_00c6bf8ee605be::t_1ec1bdfd5f20d8 34-38,815-837
+crates/agent-router-cli/src/execution.rs
+  s_d38bf717899c1d::t_563665a94cd69e 17,118-120,143-147,200-204,492-578,585-596,604,609-610,612,616,618,624,629,634,807-808,812,814,816,821-826,838-839,1123-1305
+crates/agent-router-cli/src/main.rs
+  s_00c6bf8ee605be::t_92580ee889f529 94,120,132-170,172,528-530,563-575,587-660
+crates/agent-router-cli/tests/cli.rs
+  s_00c6bf8ee605be::t_49e4926f7ac21e 298-320
+crates/agent-router-cli/tests/coordinator.rs
+  s_2b47aafd5c6e51::t_f16387b492ff95 214-216
+crates/agent-router-cli/tests/evaluation_tradeoffs.rs
+  s_00c6bf8ee605be::t_01573a5668e080 73
+crates/agent-router-cli/tests/execution.rs
+  s_00c6bf8ee605be::t_fc5da6a693fb38 503-504,507-510,563-568,950-1099
+crates/agent-router-cli/tests/product.rs
+  s_00c6bf8ee605be::t_d4bedd1818ef1c 182,578-579
+crates/agent-router-cli/tests/session_budgets.rs
+  s_00c6bf8ee605be::t_9de3d3d854491b 86-88,92,152-153
+crates/router-coordinator/src/lib.rs
+  s_00c6bf8ee605be::t_4d81178d29574c 46
+crates/router-runtime/src/error.rs
+  s_00c6bf8ee605be::t_4d4342e9a0948c 39
+crates/router-types/src/decision.rs
+  s_00c6bf8ee605be::t_f625ed188235fe 51-53,66-71,86-110
+docs/cli-execution.md
+  s_00c6bf8ee605be::t_afd6bfb44ba305 50-57,176-188,224-228
+docs/cli-output.md
+  s_00c6bf8ee605be::t_a630310e46d461 45-77
+docs/reference/json-contracts.md
+  s_00c6bf8ee605be::t_1eba9b4dd60477 48-50,314,316-325
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b3a3018883e8bb8e9c3e4eb6b94c981858517fb5",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_d38bf717899c1d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1753373b-a5de-48ae-816b-e780e1200349",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
