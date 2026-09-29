@@ -207,18 +207,18 @@ fn inspect(db: &Connection, queries: &mut usize) -> Result<Inspection> {
         if names.iter().map(String::as_str).collect::<Vec<_>>() != *columns {
             return Ok(result);
         }
-        // Bound materialized rows and each cell before deserializing or hashing.
+        // Bound each cell before deserializing or hashing.
         let lengths = columns
             .iter()
             .map(|c| format!("coalesce(length(CAST({c} AS BLOB)),0)"))
             .collect::<Vec<_>>()
             .join(",");
         *queries += 1;
-        let (_count, longest): (u64, u64) = db
+        let longest: u64 = db
             .query_row(
-                &format!("SELECT count(*),coalesce(max(max(0,{lengths})),0) FROM {table}"),
+                &format!("SELECT coalesce(max(max(0,{lengths})),0) FROM {table}"),
                 [],
-                |r| Ok((r.get(0)?, r.get(1)?)),
+                |r| r.get(0),
             )
             .map_err(sql_error)?;
         if longest > 65536 {

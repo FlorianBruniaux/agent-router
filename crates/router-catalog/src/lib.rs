@@ -18,6 +18,11 @@ pub use generated::{
 };
 pub use signed::*;
 
+/// Bidirectional controls can reorder rendered text; they are not `is_control`.
+pub fn is_bidi_control(c: char) -> bool {
+    matches!(c, '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}')
+}
+
 /// Maximum number of model rows accepted by the MVP catalog parser.
 pub const MAX_CATALOG_MODELS: usize = 64;
 /// Maximum number of skill rows accepted by the MVP catalog parser.

@@ -6,7 +6,7 @@ use router_types::{
 };
 use serde::Deserialize;
 
-use crate::{Catalog, CatalogError, MAX_CATALOG_MODELS, MAX_CATALOG_SKILLS};
+use crate::{Catalog, CatalogError, MAX_CATALOG_MODELS, MAX_CATALOG_SKILLS, is_bidi_control};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -253,13 +253,7 @@ fn invalid_identifier(code: &'static str, path: &str, kind: &str) -> CatalogErro
 fn plain_text(value: &str, limit: usize) -> bool {
     !value.trim().is_empty()
         && value.len() <= limit
-        && !value.chars().any(|c| {
-            c.is_control()
-                || matches!(
-                    c,
-                    '\u{061C}' | '\u{200E}' | '\u{200F}' | '\u{202A}'..='\u{202E}' | '\u{2066}'..='\u{2069}'
-                )
-        })
+        && !value.chars().any(|c| c.is_control() || is_bidi_control(c))
 }
 
 fn parse_model_id(value: &str, path: &str) -> Result<ModelId, CatalogError> {

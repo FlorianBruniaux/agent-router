@@ -749,7 +749,7 @@ pub fn native_root_event(value: &serde_json::Value) -> bool {
 
 /// True only when `line` is the segment that ends `bytes`. A content match such
 /// as `bad\nbad` must not excuse an earlier malformed line.
-fn is_final_segment(bytes: &[u8], line: &[u8]) -> bool {
+pub fn is_final_segment(bytes: &[u8], line: &[u8]) -> bool {
     line.as_ptr() as usize + line.len() == bytes.as_ptr() as usize + bytes.len()
 }
 

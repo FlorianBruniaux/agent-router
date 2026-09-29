@@ -591,7 +591,7 @@ mod tests {
         store
             .transition("run", RunState::Failed, "", Some(RunFailure::Crash))
             .unwrap();
-        store.retry("run", 3).unwrap();
+        store.retry_expecting("run", 3, None).unwrap();
         store.transition("run", RunState::Queued, "", None).unwrap();
         let prep2 = store.begin_preparation("run").unwrap();
         prep2.no_child_yet().unwrap();
@@ -709,7 +709,7 @@ mod tests {
         drop(store);
         let store = Store::open(&root).unwrap();
         store.require_cleanup_complete().unwrap();
-        store.retry("run", 2).unwrap();
+        store.retry_expecting("run", 2, None).unwrap();
         store.transition("run", RunState::Queued, "", None).unwrap();
         let second = store.begin_preparation("run").unwrap();
         second.no_child_yet().unwrap();

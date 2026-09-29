@@ -194,6 +194,9 @@ impl Runtime {
     pub fn events(&self) -> Result<Vec<RuntimeEvent>> {
         self.store.events()
     }
+    pub fn has_event(&self, run_id: &str, kind: &str, detail: &str) -> Result<bool> {
+        self.store.has_event(run_id, kind, detail)
+    }
     pub fn verify_integrity(&self) -> Result<()> {
         self.store.verify_events()
     }
@@ -840,16 +843,8 @@ impl Runtime {
     }
     fn retry_checked(&self, mut pending: PendingRun, expected: Option<&str>) -> Result<PendingRun> {
         self.retry_guards(&pending)?;
-        match expected {
-            None => self
-                .store
-                .retry(&pending.run.run_id, self.limits.max_attempts)?,
-            Some(digest) => self.store.retry_expecting(
-                &pending.run.run_id,
-                self.limits.max_attempts,
-                Some(digest),
-            )?,
-        }
+        self.store
+            .retry_expecting(&pending.run.run_id, self.limits.max_attempts, expected)?;
         pending.run = self.store.get(&pending.run.run_id)?;
         Ok(pending)
     }

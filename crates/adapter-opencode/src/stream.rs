@@ -1,5 +1,6 @@
 use router_adapter_api::{
-    AdapterError, MAX_TRANSPORT_BYTES, MAX_TRANSPORT_EVENTS, safe_identifier, strict_json,
+    AdapterError, MAX_TRANSPORT_BYTES, MAX_TRANSPORT_EVENTS, is_final_segment, safe_identifier,
+    strict_json,
 };
 use router_types::{
     RuntimeEvidence, TransportEvent, TransportEventKind, TransportOutcome, TransportTermination,
@@ -50,8 +51,7 @@ fn parse(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && line.as_ptr() as usize + line.len()
-                        == bytes.as_ptr() as usize + bytes.len() =>
+                    && is_final_segment(bytes, line) =>
             {
                 truncated = true;
                 break;

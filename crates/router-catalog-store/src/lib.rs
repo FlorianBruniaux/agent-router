@@ -951,14 +951,12 @@ fn encoded_len(state: &Snapshot) -> Result<usize> {
 }
 fn check_checkpoint(state: &Snapshot, checkpoint: Option<&str>) -> Result<()> {
     if let Some(expected) = checkpoint {
-        // Once history is pruned the genesis head is no longer in the chain.
-        if (state.anchor.is_some() || genesis(&state.identity)?.head_hash != expected)
-            && state
-                .anchor
-                .as_ref()
-                .is_none_or(|a| a.head_hash != expected)
-            && !state.events.iter().any(|e| e.head.head_hash == expected)
-        {
+        // Once history is pruned the chain starts at the anchor, not genesis.
+        let root = match &state.anchor {
+            Some(anchor) => anchor.head_hash.clone(),
+            None => genesis(&state.identity)?.head_hash,
+        };
+        if root != expected && !state.events.iter().any(|e| e.head.head_hash == expected) {
             return Err(StoreError::Conflict);
         }
     }

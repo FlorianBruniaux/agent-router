@@ -1,6 +1,6 @@
 use router_adapter_api::{
-    AdapterError, MAX_TRANSPORT_BYTES, MAX_TRANSPORT_EVENTS, content_digest, safe_identifier,
-    strict_json,
+    AdapterError, MAX_TRANSPORT_BYTES, MAX_TRANSPORT_EVENTS, content_digest, is_final_segment,
+    safe_identifier, strict_json,
 };
 use router_types::{
     ModelId, ObservedModel, RuntimeEvidence, TransportEvent, TransportEventKind, TransportOutcome,
@@ -210,9 +210,7 @@ pub(crate) fn decode(
             Err(_)
                 if outcome.termination != TransportTermination::Exited
                     && !bytes.ends_with(b"\n")
-                    && bytes.rsplit(|b| *b == b'\n').next().is_some_and(|last| {
-                        std::ptr::eq(last.as_ptr(), line.as_ptr()) && last.len() == line.len()
-                    }) =>
+                    && is_final_segment(bytes, line) =>
             {
                 truncated = true;
                 break;
