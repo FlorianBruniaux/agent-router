@@ -105,3 +105,28 @@ unknown evidence, tool subset handling, explicit degradation, input redaction,
 instruction trust/hash checks, timeout, cancellation, truncation, malformed
 JSON, bounds and forged assistant text. These checks do not invoke a paid model
 or prove that a deployment's hooks, permissions or sandbox are active.
+
+## Descriptor format (`adapter.json`)
+
+Each `adapter.json` is validated by `router_adapter_api::AdapterDescriptor`
+(ADR 0016). Validation is inert: it reads bytes supplied by the caller and never
+loads, resolves or executes anything.
+
+| Field | Rule |
+| --- | --- |
+| `schema_version` | `1` |
+| `kind` | `agent-router-adapter-descriptor` |
+| `contract` | `HarnessAdapter` |
+| `host`, `crate` | lowercase letters, digits, `-`, `_`; start with a letter; at most 64 bytes; not reserved; `-` and `_` are equivalent for conflicts |
+| `observed_client_version` | non-empty printable ASCII, at most 128 bytes |
+| `entry_point` | `crate_name::Item` path of identifiers; first segment equals `crate` with `-` as `_`; text only |
+| `modes` | non-empty, unique, among `dry_run`, `shadow`, `execute` |
+| `target` | `external_worker` |
+| `activation` | exactly `none` |
+| `native_plugin_manifest` | exactly `false` |
+| `requires` | unique, at most 16, includes `validated-phase-receipt`, `bound-authorization`, `supervised-sandbox`; declarative |
+| `capabilities` | optional; only `unknown` values; the matrix is UNKNOWN by default |
+
+Unknown fields and duplicate JSON keys are refused. A document is at most 16384
+bytes and a set at most 32 documents. `host` is a label, not an identity:
+signatures are out of scope.

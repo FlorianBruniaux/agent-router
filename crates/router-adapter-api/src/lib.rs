@@ -2,6 +2,8 @@
 
 mod execution;
 pub use execution::*;
+mod registry;
+pub use registry::*;
 
 use std::collections::{BTreeMap, BTreeSet};
 
