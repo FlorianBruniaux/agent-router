@@ -27,9 +27,12 @@
   <a href="#quick-start">Quick start</a> &middot;
   <a href="#features">Features</a> &middot;
   <a href="#how-it-works">How it works</a> &middot;
+  <a href="#host-support">Host support</a> &middot;
   <a href="#documentation">Documentation</a> &middot;
   <a href="https://github.com/FlorianBruniaux/agent-router/issues/11">Roadmap</a>
 </p>
+
+English | [Français](README.fr.md)
 
 Agent Router is a local Rust CLI for routing coding work across models, agents,
 skills and tools. It checks constraints before scoring, explains its choices,
@@ -50,6 +53,15 @@ model call. Model names in those fixtures are examples, not availability claims.
 
 ## What Agent Router is, and what it is not
 
+Agent Router is a local, deterministic decision layer: it picks the model, effort and skills for each phase of a coding task and explains why. It is not a coding agent, a hosted gateway or an autonomous runner; your host still does the work.
+
+<!-- infographic:is-isnt -->
+<p align="center"><img src="docs/media/readme-is-isnt.jpg" alt="What Agent Router is and is not" width="820"></p>
+<!-- /infographic:is-isnt -->
+
+<details>
+<summary>Show the full "is / is not" table</summary>
+
 | Agent Router is | Agent Router is not |
 | --- | --- |
 | A local decision layer: it picks the model, effort and skills for each phase of a coding task and explains why. | A coding agent. Your host (Claude Code, Codex, OpenCode, Copilot) still does the work. |
@@ -60,7 +72,25 @@ model call. Model names in those fixtures are examples, not availability claims.
 | Local and offline for routing: no provider call, daemon or network access is needed to route. | A hosted gateway, a model proxy or a credential broker. No provider transport is wired into execution today. |
 | A set of bounded Rust libraries plus one CLI, with versioned JSON contracts. | A package that installs hooks, skills or global configuration on your machine. |
 
+</details>
+
 ## Features
+
+- **Route and explain**: select a model and effort for plan, execute and verify, and inspect exclusions and missing evidence (`route`, `route-phase`, `explain`, `inspect`).
+- **Catalogs and search**: search five asset families with BM25, contextual signals, deterministic rank fusion and checked incremental updates (`catalog`, `index`, `search`, `refresh`). Signed asset preparation is available through the library; signed CLI execution remains open work.
+- **Plan and intake**: apply a risk floor, build one of eight presets and rank bounded global assignments under cumulative budgets; collect missing facts with guided task intake (`normalize`, `plan`, `workflow`, `generate-plan`, `task-guide`).
+- **Review before execution**: prepare a request, bind selected assets and approve the exact execution digest (`assets`, `prepare`, `run`).
+- **Durable, coordinated execution**: track runs, cancel, recover and isolate writes in Git worktrees; run approved waves; preview, apply or discard a verified patch; reserve shared capacity and session budgets.
+- **Evaluate and optional semantics**: replay decisions, evaluate explicit cohorts and retain consented feedback locally; compare optional semantic proposals and local ranking sidecar outcomes (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
+- **Output, configuration and diagnostics**: human and `--json` output, layered configuration, `doctor` and a redacted `audit` trail.
+- **Distribution and release**: source workspaces, local native binary, dependency checks, an opt-in local route-only API (`serve`) and a verifiable local release that never signs, publishes or installs (the Homebrew install itself is not yet tested).
+
+<!-- infographic:features -->
+<p align="center"><img src="docs/media/readme-features.jpg" alt="Agent Router capabilities at a glance" width="820"></p>
+<!-- /infographic:features -->
+
+<details>
+<summary>Full capability table</summary>
 
 | Capability | What you can do | Interface / guide |
 | --- | --- | --- |
@@ -86,7 +116,10 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Local route-only API** | Serve route decisions over a private Unix socket with a token; no execution, feedback or activation endpoint. Opt-in build feature. | `serve` (`--features local-api`), [local API](docs/local-api.md) |
 | **Verifiable local release** | Bind source and binary archives to a canonical manifest, verify an externally produced Ed25519 signature and render a Homebrew formula. It never signs, publishes or installs; the Homebrew install itself is not yet tested. | [Local release](docs/release-local.md) |
 
-### Library building blocks, not yet wired into the CLI
+</details>
+
+<details>
+<summary>Library building blocks, not yet wired into the CLI</summary>
 
 | Capability | What it does | Guide |
 | --- | --- | --- |
@@ -98,6 +131,8 @@ model call. Model names in those fixtures are examples, not availability claims.
 | **Structured validation** | Evaluates typed validation contracts over a caller-supplied view and returns a digest-bound report. | [Structured validation](docs/structured-validation.md) |
 | **Adapter descriptors** | Validates `adapter.json` descriptors inertly: reserved names, bound entry points, no activation. | [Descriptor format](integrations/README.md) |
 | **Multimodal contracts** | Types and bounds image, audio, file inputs and JSON outputs; nothing is transported. | [JSON contracts](docs/reference/json-contracts.md) |
+
+</details>
 
 The project is under active development. Human validation of the evaluation
 corpus, the full startup target and additional native host evidence remain open.
@@ -120,11 +155,16 @@ cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 ./target/release/agent-router --help
 ```
 
+<details>
+<summary>Build options and limits</summary>
+
 The default CLI includes the Codex and Claude adapter features. To build the
 routing CLI without those host adapters, use `--no-default-features`. Routing
 works offline once Cargo dependencies are available; no Python or semantic
 service is required at runtime. There is no published package-manager install
 or automatic global configuration step.
+
+</details>
 
 ### Route a task and read the explanation
 
@@ -150,6 +190,9 @@ Excluded candidates: 13
 Missing evidence: 0
 ```
 
+<details>
+<summary>Phase-specific routing and exit codes</summary>
+
 For phase-specific routing, try the synthetic observed-host fixture:
 
 ```sh
@@ -166,6 +209,8 @@ Most product commands expose stable machine output through `--json`; run
 selection, `3` for a valid no-route result, `2` for invalid input and `4` for an
 internal error.
 
+</details>
+
 ### Run an approved workflow
 
 Follow the [preparation guide](docs/preparation.md), then the
@@ -176,11 +221,20 @@ verification of the task's result.
 
 ## How it works
 
+The deterministic receipt records the decision and its evidence. An optional
+semantic proposal stays within the admissible candidate pool. Unknown
+permissions or incompatible assets cannot become valid through a higher score.
+Execution binds the request, binary, sandbox and asset contracts to an approval.
+Later workflow steps receive only declared, bounded artifacts.
+
 ### Where it sits
 
 You keep working in your coding host or terminal. Agent Router answers one
 question, which model, effort and skills for each phase, and hands back a
 decision you can read before anything runs.
+
+<details>
+<summary>Open diagram: where it sits</summary>
 
 ```mermaid
 flowchart LR
@@ -193,10 +247,15 @@ flowchart LR
     V -->|preview, apply or discard| U
 ```
 
+</details>
+
 ### How a decision is made
 
 Constraints come first. Scoring only ranks candidates that are already
 admissible, and every exclusion is kept in the explanation.
+
+<details>
+<summary>Open diagram: how a decision is made</summary>
 
 ```mermaid
 flowchart TD
@@ -212,10 +271,15 @@ flowchart TD
     D --> X
 ```
 
+</details>
+
 ### What must hold before anything runs
 
 Routing and preparation never execute anything. A run starts only when every
 check passes at launch time.
+
+<details>
+<summary>Open diagram: what must hold before anything runs</summary>
 
 ```mermaid
 sequenceDiagram
@@ -236,13 +300,14 @@ sequenceDiagram
     U->>RT: apply or discard
 ```
 
-The deterministic receipt records the decision and its evidence. An optional
-semantic proposal stays within the admissible candidate pool. Unknown
-permissions or incompatible assets cannot become valid through a higher score.
-Execution binds the request, binary, sandbox and asset contracts to an approval.
-Later workflow steps receive only declared, bounded artifacts.
+</details>
 
 ## Host support
+
+Codex and Claude Code have CLI adapters; OpenCode and Copilot are optional adapters whose native installations and providers remain unverified. Runtime supervision exists on macOS (Seatbelt) and Linux (Bubblewrap); Windows native execution is not implemented.
+
+<details>
+<summary>Host and platform evidence table</summary>
 
 | Host / platform | Current evidence and boundary |
 | --- | --- |
@@ -255,11 +320,18 @@ Later workflow steps receive only declared, bounded artifacts.
 | **Linux** | Bubblewrap supervisor with PID namespace cleanup, exercised by [native runtime CI](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
 | **Windows** | Native execution is not implemented. |
 
+</details>
+
 Host CLIs and credentials are supplied separately. Agent Router does not
 silently install them, bypass their permission systems or change the model of
 an existing parent conversation.
 
 ## Documentation
+
+Guides for installing, routing, execution, release and the development harness are indexed in the table below.
+
+<details>
+<summary>Documentation index</summary>
 
 | Start here | Go deeper |
 | --- | --- |
@@ -276,6 +348,8 @@ an existing parent conversation.
 | [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |
 | [Build source distributions](docs/distribution.md) | [Build a local native binary](docs/binary-distribution.md) |
 | [Review shared session budgets](docs/session-budgets.md) | [Development harness](docs/harness.md) |
+
+</details>
 
 The [functional specification](docs/specs/functional-specification.md) and
 [technical specification](docs/specs/technical-specification.md) define the wider
