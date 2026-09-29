@@ -377,7 +377,7 @@ pub fn build_plan(
     seal(plan)
 }
 
-fn seal(mut plan: WorkflowPlan) -> Result<WorkflowPlan> {
+pub(crate) fn seal(mut plan: WorkflowPlan) -> Result<WorkflowPlan> {
     validate_structure(&plan)?;
     plan.plan_id.clear();
     plan.plan_id =

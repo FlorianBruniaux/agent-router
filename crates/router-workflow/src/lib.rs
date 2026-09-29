@@ -4,11 +4,16 @@ mod normalize;
 mod plan;
 mod policy;
 mod prompt;
+mod proposal;
 pub use execution::{seal_execution_contract, validate_execution_contract};
 pub use normalize::{normalize, normalize_with_risk, validate_task};
 pub use plan::{PlanLimits, build_plan, validate_plan};
 pub use policy::{merge_restrictions, resolve_configuration, validate_restrictions};
 pub use prompt::{render_prompt, seal_prompt};
+pub use proposal::{
+    MAX_PROPOSAL_BYTES, NodeDivergence, PLAN_PROPOSAL_SCHEMA, PlanDivergence, PlanProposalReview,
+    review_plan_proposal,
+};
 
 use sha2::{Digest, Sha256};
 #[derive(Debug, thiserror::Error)]
