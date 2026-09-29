@@ -7,11 +7,36 @@ pub fn seal_definition(mut definition: WorkflowDefinition) -> Result<WorkflowDef
     definition.definition_sha256 = hash("coordinator-definition-v1", &definition)?;
     Ok(definition)
 }
-pub fn validate_definition(definition: &WorkflowDefinition) -> Result<()> {
+/// A definition whose structure and seal were checked by `validate_definition`.
+/// The private field makes that function the only constructor. The shared
+/// borrow keeps the definition unchanged for as long as this value lives, so
+/// a loop may validate once instead of re-hashing the definition per iteration.
+#[derive(Clone, Copy)]
+pub struct ValidatedDefinition<'a>(&'a WorkflowDefinition);
+impl std::ops::Deref for ValidatedDefinition<'_> {
+    type Target = WorkflowDefinition;
+    fn deref(&self) -> &WorkflowDefinition {
+        self.0
+    }
+}
+thread_local! {
+    static VALIDATIONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+/// Number of full definition validations run by the current thread. Reserved
+/// for tests, which use it to prove that supervision ticks do not re-hash the
+/// definition. It assumes a tokio current_thread runtime (the `#[tokio::test]`
+/// default): with a multi-thread runtime the validations may run on other
+/// threads and this count would miss them.
+#[doc(hidden)]
+pub fn validations_on_this_thread() -> u64 {
+    VALIDATIONS.with(std::cell::Cell::get)
+}
+pub fn validate_definition(definition: &WorkflowDefinition) -> Result<ValidatedDefinition<'_>> {
+    VALIDATIONS.with(|count| count.set(count.get().wrapping_add(1)));
     if seal_definition(definition.clone())?.definition_sha256 != definition.definition_sha256 {
         return Err(CoordinatorError::Integrity);
     }
-    Ok(())
+    Ok(ValidatedDefinition(definition))
 }
 fn validate_structure(definition: &WorkflowDefinition) -> Result<()> {
     router_workflow::validate_execution_contract(&definition.execution, &definition.plan)?;
