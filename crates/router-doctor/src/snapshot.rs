@@ -95,7 +95,7 @@ fn capture(source: &Connection, budget: Duration) -> Result<Connection> {
     }
     let size = pages.checked_mul(page_size).ok_or(DoctorError::Limit)?;
     if size > MAX_FILE_BYTES as i64 {
-        return Err(DoctorError::Limit);
+        return Err(DoctorError::DatabaseTooLarge);
     }
     if started.elapsed() >= budget {
         return Err(DoctorError::Limit);

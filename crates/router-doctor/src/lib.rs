@@ -31,6 +31,11 @@ pub enum DoctorError {
     Limit,
     #[error("doctor.schema.invalid")]
     Schema,
+    /// The database is larger than the inspection cap. This is a size
+    /// observation, not a sign of hostile input, so callers may report a
+    /// partial result instead of refusing.
+    #[error("doctor.database.too_large")]
+    DatabaseTooLarge,
     #[error("doctor.audit.integrity")]
     Integrity,
     #[error("doctor.platform.unsupported")]
