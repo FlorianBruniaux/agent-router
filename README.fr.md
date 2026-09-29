@@ -248,8 +248,9 @@ Pour un routage par phase, essayez la fixture synthétique d'hôte observé :
 `--now 100` sert uniquement à l'horloge de la fixture. Les preuves d'hôte réelles doivent être récentes.
 La plupart des commandes du produit exposent une sortie machine stable via `--json` ; lancez
 `agent-router <command> --help` pour connaître les entrées requises. `route` retourne `0` pour une
-sélection, `3` pour un résultat valide sans route, `2` pour une entrée invalide et `4` pour une erreur
-interne.
+sélection, `3` pour un résultat valide sans route, `2` pour une entrée invalide, `4` pour une erreur
+interne et `7` pour une erreur d'intégrité ; voir
+[les codes de sortie](docs/cli-output.md#exit-codes-and-error-codes).
 
 </details>
 

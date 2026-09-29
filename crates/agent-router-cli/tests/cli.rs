@@ -295,6 +295,29 @@ fn explain_no_route_prints_each_exclusion_without_the_request_body() {
         .stderr(predicate::str::is_empty());
 }
 
+#[test]
+fn explain_refuses_a_decision_with_an_unsupported_schema_version() {
+    let temporary = TempDir::new().unwrap();
+    let decision = temporary.path().join("unsupported.json");
+    let output = command()
+        .args(route_args(implementation_request(), catalog_path()))
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let mut value: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(value["schema_version"], "1");
+    for version in ["2", "", "01", " 1"] {
+        value["schema_version"] = version.into();
+        fs::write(&decision, serde_json::to_vec(&value).unwrap()).unwrap();
+        command()
+            .args(["explain", "--decision", decision.to_str().unwrap()])
+            .assert()
+            .code(2)
+            .stdout(predicate::str::is_empty())
+            .stderr("error: decision.schema.unsupported\n");
+    }
+}
+
 fn write_request_candidates(path: &std::path::Path, score: i64, source: &str, count: usize) {
     let mut request: serde_json::Value =
         serde_json::from_slice(&fs::read(implementation_request()).unwrap()).unwrap();

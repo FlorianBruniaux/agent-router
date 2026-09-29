@@ -27,7 +27,8 @@ which the next start replaces because nothing accepts on it.
   accepts any existing owner-only file holding 32 to 256 visible ASCII
   characters. The token is never printed or logged.
 - `lock`: held with a non-blocking `flock` for the life of the server. A second
-  `serve` on the same directory fails with `local_api.state_dir.locked`.
+  `serve` on the same directory fails with `local_api.state_dir.locked` and exit
+  status 5 (contention: it can be retried once the first server stops).
 
 ## Requests
 
