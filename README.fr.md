@@ -185,7 +185,7 @@ pour les critères d'acceptation. La release publique reste conditionnée à une
 
 ### Compiler depuis les sources
 
-Le [guide d'installation](docs/install.md) couvre les prérequis, les features de build optionnelles,
+Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
 la release locale vérifiable et la désinstallation. Utilisez Rust 1.85 ou plus récent. Le dépôt épingle la toolchain de développement dans
 [`rust-toolchain.toml`](rust-toolchain.toml). Un accès en clone est nécessaire tant que le
 dépôt est privé.
@@ -370,14 +370,14 @@ d'une conversation parente existante.
 
 ## Documentation
 
-Les guides d'installation, de routage, d'exécution, de release et du harness de développement sont indexés dans le tableau ci-dessous.
+L'[index complet de la documentation](docs/README.fr.md) classe tous les guides par besoin. Les plus utilisés sont ci-dessous.
 
 <details>
 <summary>Index de la documentation</summary>
 
 | Pour commencer | Pour aller plus loin |
 | --- | --- |
-| [Install Agent Router](docs/install.md) | [Changelog](CHANGELOG.md) |
+| [Install Agent Router](docs/install.fr.md) | [Changelog](CHANGELOG.md) |
 | [Serve the local route API](docs/local-api.md) | [Build a verifiable local release](docs/release-local.md) |
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
 | [Run, verify and retain outputs](docs/cli-execution.md) | [Runtime and crash recovery](docs/runtime.md) |
