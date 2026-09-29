@@ -8,6 +8,10 @@ license.workspace = true
 [package.metadata.agent-router]
 distribution = "integration"
 
+[features]
+# Supervised HTTP transport limited to loopback. Off by default; see docs/provider-transport.md.
+loopback-transport = []
+
 [dependencies]
 router-types = { path = "../../crates/router-types" }
 router-policy = { path = "../../crates/router-policy" }
