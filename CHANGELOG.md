@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Breaking
 
+- The macOS Codex sandbox reads the `com.openai.codex` preference domain and shared memory named `apple.cfprefs.*`. Approval format v6 binds this permission change; v1-v5 approvals require a new preview. No preference writes or Linux profile change is added.
+
 - Native Codex and Claude runs use disposable private host state. Configured `CODEX_HOME` and `CLAUDE_CONFIG_DIR` are refused; OAuth state is never copied. Approval format v5 requires a fresh preview for the API-key-only bootstrap and host-state grants.
 
 - **BREAKING:** `prepare` no longer reports `prepare.invalid_or_denied` or `prepare.final_input.invalid_or_denied`. The assembly step returns one fixed code per failure class: `prepare.decision.authority_unavailable`, `prepare.decision.authority_required`, `prepare.decision.context`, `prepare.decision.abstained`, `prepare.decision.stale`, `prepare.decision.serialization` (exit 4), `prepare.workflow.invalid`, `prepare.route.invalid`, `prepare.retrieval.invalid`, `prepare.adapter.invalid`, `prepare.snapshot.invalid_or_stale`, `prepare.route.abstained`, `prepare.binding.mismatch`, `prepare.input.limit` and `prepare.encoding.json` (exit 4). All other codes exit 2. Scripts that matched the old codes must match the new list, which is in `docs/cli-output.md`.

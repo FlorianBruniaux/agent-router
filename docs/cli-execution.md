@@ -200,9 +200,10 @@ byte and the value. Neither the value nor its HMAC appears in the output or an
 error. An unset variable is bound as absent, distinct from an empty value.
 Review and `--approve` must therefore run with the same values: any change,
 removal or addition refuses the launch with
-`runtime.approval.required_or_changed`. This binding is approval format v5
-(`runtime-cli-approval-v5`, `-v5-backend`, `-v5-escalation`), which also binds the
-private host-state policy. Digests produced by versions v1 to v4 are stale: review the run again for a new
+`runtime.approval.required_or_changed`. This binding is approval format v6
+(`runtime-cli-approval-v6`, `-v6-backend`, `-v6-escalation`), which also binds the
+private host-state policy and Codex-only macOS preference-read rule. Digests
+produced by versions v1 to v5 are stale: review the run again for a new
 digest. The same applies to `coordinate` review, wave and verification digests.
 
 The approval key is 32 random bytes in `approval.key` inside the runtime store
@@ -302,3 +303,15 @@ permissions), a completed attempt is recorded as failed and the CLI reports
 `runtime.cleanup.unknown` (exit 6). A version probe cannot succeed with failed
 state cleanup. Inspect the private orphan before retrying; no automatic OAuth
 recovery or credential write-back is attempted.
+
+On macOS, only the Codex program receives `user-preference-read` for the
+`com.openai.codex` domain and shared-memory reads for names prefixed
+`apple.cfprefs.`. No preference writes or other preference domains are granted.
+The shared-memory namespace is the cfprefs service namespace, not a
+per-domain memory restriction. Linux has no macOS preference service and its
+bubblewrap profile is unchanged. A local Codex 0.159.2 startup with disposable
+state, a synthetic invalid API key and networking denied passed preference
+synchronization with the combined rules and reached connection errors. The
+shared-memory rule alone also reached turn startup; the domain rule alone did
+not. This does not establish that both rules are independently necessary.
+Authenticated provider execution remains unverified.

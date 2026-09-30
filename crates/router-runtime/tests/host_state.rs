@@ -91,6 +91,22 @@ printf '%s' "$state"
                 },
             )
             .unwrap();
+        #[cfg(target_os = "macos")]
+        {
+            let profile = command
+                .as_std()
+                .get_args()
+                .nth(1)
+                .unwrap()
+                .to_str()
+                .unwrap();
+            let rule = "(allow user-preference-read (preference-domain \"com.openai.codex\"))";
+            assert_eq!(profile.contains(rule), program == "codex");
+            assert!(!profile.contains("(allow user-preference-read)"));
+            let shm = "(allow ipc-posix-shm-read* (ipc-posix-name-prefix \"apple.cfprefs.\"))";
+            assert_eq!(profile.contains(shm), program == "codex");
+            assert!(!profile.contains("(allow ipc-posix-shm-read*)"));
+        }
         let output = command.output().await.unwrap();
         assert!(output.status.success(), "synthetic canary: {:?}", output);
         let path = std::path::PathBuf::from(String::from_utf8(output.stdout).unwrap());

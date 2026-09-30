@@ -326,7 +326,18 @@ impl SandboxSupervisor for SeatbeltSandbox {
         // Seatbelt accepts scope paths that do not exist yet; a missing tail is
         // checked through its deepest existing ancestor.
         require_canonical_paths(&reads, &writes, false)?;
-        let profile = seatbelt_profile(&reads, &writes, policy.network)?;
+        let mut profile = seatbelt_profile(&reads, &writes, policy.network)?;
+        if run.program == "codex" {
+            // Codex synchronizes managed preferences before it starts. Keep the
+            // preference grant on its domain and shared-memory reads on the
+            // cfprefs service namespace. Neither grants preference writes.
+            profile.push_str(
+                "(allow user-preference-read (preference-domain \"com.openai.codex\"))\n",
+            );
+            profile.push_str(
+                "(allow ipc-posix-shm-read* (ipc-posix-name-prefix \"apple.cfprefs.\"))\n",
+            );
+        }
         let mut command = checked_seatbelt_command(
             &self.wrapper_hash,
             &profile,

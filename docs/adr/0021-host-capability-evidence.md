@@ -419,6 +419,28 @@ permissions), a completed attempt is recorded as failed and the CLI reports
 state cleanup. Inspect the private orphan before retrying; no automatic OAuth
 recovery or credential write-back is attempted.
 
+The follow-up macOS fix grants `user-preference-read` for `com.openai.codex`
+and `ipc-posix-shm-read*` for names prefixed `apple.cfprefs.`, only when the
+selected program is Codex. The latter is a service namespace, not a per-domain
+memory filter. Approval domain v6 adds both read rules to the v5 policy. No
+preference writes are added. Linux has no CFPreferences service and is unchanged.
+
+A 2026-09-30 local startup check used Codex 0.159.2 (SHA-256
+`16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704`),
+disposable `HOME`/`CODEX_HOME`, a synthetic invalid API key, a synthetic model
+name and `network: false`. The unmodified profile and the preference-domain
+rule alone both exited 1 with the managed-preferences synchronization error.
+Adding the scoped shared-memory reads removed that error. A separate
+shared-memory-only variant also reached `turn.started`, so the measurement
+does not establish that the domain rule is independently necessary. The
+explicit domain rule declares the intended preference access. A confirming run
+emitted `thread.started`, `turn.started` and connection/reconnection errors,
+with no assistant message; it was stopped at the 22-second fixture limit.
+This establishes progress past startup to the network refusal, not successful
+provider execution. No personal auth file was read or paid call made. A
+standalone CFPreferences C probe did not reproduce the failure and was not
+used as the deciding evidence.
+
 ## Consequences
 
 A write phase becomes routable on a host only after a canary succeeded on that
