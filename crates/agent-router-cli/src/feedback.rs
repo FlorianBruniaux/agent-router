@@ -84,6 +84,15 @@ pub(crate) fn feedback(
             &store.drift(&read_json(&rules, 4096)?, now).map_err(error)?,
             ExitCode::SUCCESS,
         ),
+        FeedbackCommand::Report { pricing } => {
+            let pricing: Option<router_eval::PricingTable> = pricing
+                .map(|path| read_json(&path, 64 * 1024))
+                .transpose()?;
+            json_output(
+                &store.report(pricing.as_ref(), now).map_err(error)?,
+                ExitCode::SUCCESS,
+            )
+        }
     }
 }
 pub(crate) fn policy(

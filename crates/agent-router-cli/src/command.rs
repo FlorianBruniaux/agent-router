@@ -708,6 +708,12 @@ pub enum FeedbackCommand {
         #[arg(long)]
         rules: PathBuf,
     },
+    /// Report accepted rate, usage, computed cost and UNKNOWN counts per model, effort and task kind; requires collection consent.
+    Report {
+        /// Versioned pricing table JSON; without it every cost is null.
+        #[arg(long)]
+        pricing: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]

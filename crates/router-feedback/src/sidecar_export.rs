@@ -148,7 +148,12 @@ fn project(event: &FeedbackEvent) -> Result<SidecarExportProjection> {
         objective: i.objective,
         verification_evidence_sha256: i.verification_evidence_sha256.clone(),
         failure: i.failure,
-        measurements: i.measurements.clone(),
+        // The token split is report input for the local store only; the
+        // exported measurements keep their earlier shape.
+        measurements: FeedbackMeasurements {
+            usage: None,
+            ..i.measurements.clone()
+        },
     };
     Ok(match (&i.origin, &i.human) {
         (FeedbackOrigin::Automated, None) => {

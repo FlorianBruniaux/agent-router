@@ -193,3 +193,29 @@ fn reentry_from_the_guard_holding_thread_is_locked_not_a_deadlock() {
     ));
     assert!(after.is_ok());
 }
+#[test]
+fn projection_drops_the_local_token_split() {
+    let dir = tempfile::tempdir().unwrap();
+    let store = FeedbackStore::open(&dir.path().join("feedback")).unwrap();
+    store.configure(preferences(), 100).unwrap();
+    let field = router_types::UsageField::host_reported;
+    let mut with_usage = input(100, false);
+    with_usage.measurements.usage = Some(router_types::HostUsage {
+        input_tokens: field(10),
+        cached_input_tokens: field(2),
+        cache_write_input_tokens: router_types::UsageField::UNKNOWN,
+        output_tokens: field(5),
+        reasoning_output_tokens: router_types::UsageField::UNKNOWN,
+    });
+    let event = store.record(with_usage, 100).unwrap();
+    // The stored event keeps the split; only the projection drops it.
+    assert!(event.input.measurements.usage.is_some());
+    let guard = store
+        .authorize_sidecar_export(event.sequence, &event.event_hash, 1, 100)
+        .unwrap();
+    let SidecarExportProjection::Outcome(p) = guard.projection() else {
+        panic!("automated event");
+    };
+    let value = serde_json::to_value(p).unwrap();
+    assert!(value["observation"]["measurements"].get("usage").is_none());
+}

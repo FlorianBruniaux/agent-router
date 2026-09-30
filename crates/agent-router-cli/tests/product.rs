@@ -615,3 +615,66 @@ fn claude_stream_probe_preserves_unknown_effort_and_does_not_leak_content() {
     assert!(!encoded.contains("secret-provider-output"));
     assert!(!encoded.contains("forged-model"));
 }
+
+#[test]
+fn feedback_report_needs_collection_consent_and_is_byte_identical() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let store = directory.join("feedback");
+    let report = |extra: &[&Path]| {
+        let mut cmd = command();
+        cmd.args(["feedback", "--store"])
+            .arg(&store)
+            .arg("report")
+            .args(["--now", "200", "--json"]);
+        for path in extra {
+            cmd.arg("--pricing").arg(path);
+        }
+        cmd
+    };
+    report(&[])
+        .assert()
+        .code(2)
+        .stderr(predicates::str::contains("feedback.consent_required"));
+    let preferences = directory.join("preferences.json");
+    write(
+        &preferences,
+        &json!({"schema_version":1,"collection_enabled":true,"learning_enabled":false,"retention_seconds":3600}),
+    );
+    command()
+        .args(["feedback", "--store"])
+        .arg(&store)
+        .args(["configure", "--preferences"])
+        .arg(&preferences)
+        .args(["--now", "100", "--json"])
+        .assert()
+        .success();
+    command()
+        .args(["feedback", "--store"])
+        .arg(&store)
+        .args(["record", "--input"])
+        .arg(root().join("tests/fixtures/feedback/automated-unknown-v1.json"))
+        .args(["--now", "102", "--json"])
+        .assert()
+        .success();
+    let pricing = directory.join("pricing.json");
+    write(
+        &pricing,
+        &json!({"schema_version":1,"version":"cli-test-v1","source":"synthetic","observed_at_unix_seconds":90,"models":{"fixture-model":{"input_microusd_per_million":1,"cached_input_microusd_per_million":1,"output_microusd_per_million":1}}}),
+    );
+    let first = report(&[&pricing]).assert().success();
+    let first_bytes = first.get_output().stdout.clone();
+    let second = report(&[&pricing]).assert().success();
+    assert_eq!(first_bytes, second.get_output().stdout);
+    let value: Value = serde_json::from_slice(&first_bytes).unwrap();
+    assert_eq!(value["pricing"]["version"], "cli-test-v1");
+    assert_eq!(value["automated_events"], 1);
+    assert_eq!(value["unlinked"], 1);
+    assert_eq!(value["advisory"]["reason"], "learning_disabled");
+    // The recorded event carries no usage, so its cost is unknown, never zero.
+    assert_eq!(value["groups"][0]["cost"]["cost_unknown"], 1);
+    assert!(value["groups"][0]["cost"]["total_microusd"].is_null());
+    let bad = directory.join("bad-pricing.json");
+    write(&bad, &json!({"schema_version":1,"unexpected":true}));
+    report(&[&bad]).assert().failure();
+}

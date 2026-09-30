@@ -1,17 +1,23 @@
 #![forbid(unsafe_code)]
 
+mod beta;
 mod facts;
 mod learning;
 mod policy;
+mod report;
 mod sidecar_export;
 mod store;
 pub use sidecar_export::{SidecarExportGuard, SidecarExportProjection};
 
 pub use learning::*;
 pub use policy::*;
+pub use report::*;
 pub use store::FeedbackStore;
 
-use router_types::{FeedbackInput, FeedbackOrigin, FeedbackPreferences, VerificationOutcome};
+use router_types::{
+    FeedbackInput, FeedbackOrigin, FeedbackPreferences, HostUsage, UsageField, UsageProvenance,
+    VerificationOutcome,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
@@ -207,8 +213,45 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
     {
         return Err(FeedbackError::Invalid("measurements"));
     }
+    if m.usage.as_ref().is_some_and(|usage| !valid_usage(usage))
+        // A total next to a split must be that split's total.
+        || m.tokens.is_some() && m.usage.as_ref().is_some_and(|u| u.total_tokens() != m.tokens)
+    {
+        return Err(FeedbackError::Invalid("usage"));
+    }
     if serde_json::to_vec(input)?.len() > MAX_INPUT_BYTES {
         return Err(FeedbackError::Limit);
     }
     Ok(())
+}
+
+/// Every count is a host declaration inside the bound, its provenance agrees
+/// with its presence, and a subset field never exceeds the field containing it.
+fn valid_usage(usage: &HostUsage) -> bool {
+    let fields = [
+        usage.input_tokens,
+        usage.cached_input_tokens,
+        usage.cache_write_input_tokens,
+        usage.output_tokens,
+        usage.reasoning_output_tokens,
+    ];
+    let subset = |part: UsageField, whole: UsageField| match (part.tokens, whole.tokens) {
+        (Some(part), Some(whole)) => part <= whole,
+        _ => true,
+    };
+    fields.iter().all(|f| {
+        f.tokens.is_some_and(|t| t <= MAX_VALUE) && f.provenance == UsageProvenance::HostReported
+            || f.tokens.is_none() && f.provenance == UsageProvenance::Unknown
+    }) && subset(usage.cached_input_tokens, usage.input_tokens)
+        && subset(usage.cache_write_input_tokens, usage.input_tokens)
+        // Cache reads and writes are disjoint subsets of input.
+        && match (
+            usage.cached_input_tokens.tokens,
+            usage.cache_write_input_tokens.tokens,
+            usage.input_tokens.tokens,
+        ) {
+            (Some(read), Some(write), Some(input)) => read + write <= input,
+            _ => true,
+        }
+        && subset(usage.reasoning_output_tokens, usage.output_tokens)
 }

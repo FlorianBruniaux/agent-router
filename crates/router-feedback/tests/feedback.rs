@@ -52,6 +52,7 @@ fn input(run: &str, observed: u64) -> FeedbackInput {
             tokens: Some(1000),
             attempts: 1,
             escalations: 0,
+            usage: None,
         },
         comment_sha256: None,
     }
