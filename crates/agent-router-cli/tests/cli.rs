@@ -456,11 +456,32 @@ fn a_broken_stdout_pipe_fails_without_panicking_or_reporting_success() {
 
     // A closed stdout (`>&-`) is not testable here: the Rust runtime reopens fds
     // 0-2 on /dev/null at startup, so the descriptor is valid and writes succeed.
-    // A pipe whose reader already exited: the write end stays open here, so the
-    // first write fails with EPIPE deterministically.
+    // A pipe whose reader already exited: the write end stays open here, so a
+    // write fails with EPIPE. The reader's exit does not by itself prove that no
+    // read end is left open: a concurrent test's fork can hold a copy until its
+    // exec, and then the CLI's write would succeed. Probe the pipe until it
+    // reports EPIPE. No reader can reappear afterwards, so the broken pipe is
+    // established before the CLI runs, and a pipe that never breaks fails the
+    // test instead of passing vacuously.
     let mut reader = Std::new("true").stdin(Stdio::piped()).spawn().unwrap();
-    let broken = reader.stdin.take().unwrap();
+    let mut broken = reader.stdin.take().unwrap();
     reader.wait().unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        match std::io::Write::write_all(&mut broken, b"\n") {
+            Ok(()) => {
+                assert!(
+                    std::time::Instant::now() < deadline,
+                    "the pipe kept a reader for 10 s"
+                );
+                std::thread::yield_now();
+            }
+            Err(error) => {
+                assert_eq!(error.kind(), std::io::ErrorKind::BrokenPipe);
+                break;
+            }
+        }
+    }
     let output = Std::new(&bin)
         .args(&args)
         .stdout(Stdio::from(broken))
