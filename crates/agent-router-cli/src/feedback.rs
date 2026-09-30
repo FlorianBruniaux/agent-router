@@ -80,6 +80,27 @@ pub(crate) fn feedback(
                 ExitCode::SUCCESS,
             )
         }
+        FeedbackCommand::ReplayExport {
+            definition,
+            runtime_store,
+            pricing,
+            case_id,
+            family_id,
+            split,
+            output,
+        } => crate::replay_export::export(
+            &store,
+            now,
+            crate::replay_export::ExportArgs {
+                definition,
+                runtime_store,
+                pricing,
+                case_id,
+                family_id,
+                split,
+                output,
+            },
+        ),
         FeedbackCommand::Drift { rules } => json_output(
             &store.drift(&read_json(&rules, 4096)?, now).map_err(error)?,
             ExitCode::SUCCESS,

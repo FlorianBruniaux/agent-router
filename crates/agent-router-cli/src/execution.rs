@@ -352,6 +352,12 @@ pub(crate) fn context(
     )
 }
 fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, PendingRun), CliError> {
+    open_existing_decision(store, definition).map(|(runtime, pending, _)| (runtime, pending))
+}
+fn open_existing_decision(
+    store: &Path,
+    definition: &Definition,
+) -> Result<(Runtime, PendingRun, crate::generation::LoadedDecision), CliError> {
     let existing = router_runtime::observe(store, &definition.run_id).map_err(error)?;
     let proposal = definition
         .escalation_decision
@@ -376,8 +382,65 @@ fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, Pend
         definition.admission.as_ref(),
     )
     .map_err(error)?;
-    let (pending, _) = reopen_in(&runtime, definition, proposal.as_ref())?;
-    Ok((runtime, pending))
+    let (pending, loaded) = reopen_in(&runtime, definition, proposal.as_ref())?;
+    Ok((runtime, pending, loaded))
+}
+/// What a replay export reads from a run definition. Nothing is re-routed: the
+/// executed candidate is the one the runtime reopened from its stored record.
+pub(crate) struct ReplaySource {
+    pub(crate) request: router_types::PhaseRouteRequest,
+    pub(crate) snapshot: HostObservation,
+    pub(crate) catalog: serde_json::Value,
+    pub(crate) policy: router_types::PhasePolicy,
+    pub(crate) run: router_types::RunSummary,
+    pub(crate) executed_candidate: String,
+    pub(crate) uses_assets: bool,
+}
+pub(crate) fn replay_source(path: &Path, store: &Path) -> Result<ReplaySource, CliError> {
+    let definition = load_definition(path)?;
+    let (_runtime, pending, loaded) = open_existing_decision(store, &definition)?;
+    let request: router_types::PhaseRouteRequest =
+        phases::read_json(&definition.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
+    let snapshot: HostObservation = phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
+    // The same historical clock `context` uses to reopen a run.
+    let now = match &definition.asset_authority {
+        Some(path) => crate::assets::historical_time(path)?,
+        None => snapshot.observed_at_unix_seconds,
+    };
+    let (catalog, _) = crate::catalogs::load(&definition.catalog, Some(now), 86400)?;
+    let catalog = catalog
+        .canonical_json()
+        .map_err(|_| CliError::CatalogInvalid)
+        .and_then(|bytes| serde_json::from_slice(&bytes).map_err(|_| CliError::CatalogInvalid))?;
+    // The same policy authority `context` resolves, without its active-artifact check.
+    let policy = match (
+        &definition.policy,
+        &definition.policy_store,
+        &definition.policy_artifact_id,
+    ) {
+        (Some(path), _, _) => phases::read_json(path, 64 * 1024)?,
+        (None, Some(dir), Some(id)) => {
+            if !dir.join("feedback.sqlite3").is_file() {
+                return Err(CliError::Product("policy.store.unavailable"));
+            }
+            router_feedback::FeedbackStore::open(dir)
+                .map_err(|_| CliError::Product("policy.store.invalid"))?
+                .policy(id)
+                .map_err(|_| CliError::Product("policy.artifact.invalid"))?
+                .artifact
+                .policy
+        }
+        _ => router_types::PhasePolicy::default(),
+    };
+    Ok(ReplaySource {
+        request,
+        snapshot,
+        catalog,
+        policy,
+        run: pending.summary().clone(),
+        executed_candidate: loaded.decision.selection().candidate.id.clone(),
+        uses_assets: definition.asset_authority.is_some(),
+    })
 }
 /// Reconstruct against an already-owned store; never acquire it recursively.
 pub(crate) fn reopen_in(

@@ -714,6 +714,27 @@ pub enum FeedbackCommand {
         #[arg(long)]
         pricing: Option<PathBuf>,
     },
+    /// Export a real run as a sealed replay record, labelled from recorded facts.
+    ReplayExport {
+        /// Run definition, as given to `run`.
+        #[arg(long)]
+        definition: PathBuf,
+        /// Runtime store that holds the run.
+        #[arg(long)]
+        runtime_store: PathBuf,
+        /// Versioned pricing table JSON.
+        #[arg(long)]
+        pricing: PathBuf,
+        #[arg(long)]
+        case_id: String,
+        #[arg(long)]
+        family_id: String,
+        #[arg(long, value_parser = ["training", "validation", "held_out"])]
+        split: String,
+        /// Write the record to a new private file instead of printing it.
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
 }
 
 #[derive(Subcommand)]

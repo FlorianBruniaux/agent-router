@@ -49,6 +49,15 @@ semantic-model invocation. Both traces keep transport, validation and functional
 outcomes unknown. Prices and usage are synthetic; elapsed time is unknown. The
 generator and replay call no model or external provider.
 
+## Records from real runs
+
+`agent-router feedback replay-export` builds a sealed `ReplayRecord` from an
+executed run and labels it only from a recorded integration and verification, or
+from a human verdict. It never labels from transport success, and it refuses a
+rejected run because `CaseLabel` cannot express a candidate that is not
+expected. The label is never independent, so these records do not replace the
+review protocol below. Rules and limits: [local feedback](feedback.md).
+
 ## Human review protocol
 
 1. Freeze artifacts, hashes, family split and review procedure before labeling.

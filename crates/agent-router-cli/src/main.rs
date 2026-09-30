@@ -22,6 +22,7 @@ mod phases;
 mod preparation;
 mod product;
 mod render;
+mod replay_export;
 #[cfg(all(feature = "local-api", unix))]
 mod serve;
 mod session_budget;
