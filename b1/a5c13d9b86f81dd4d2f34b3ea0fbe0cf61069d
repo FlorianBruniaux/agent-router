@@ -1,0 +1,413 @@
+CHANGELOG.md
+  s_00c6bf8ee605be::t_34a62587768de2 25-28
+Cargo.lock
+  s_00c6bf8ee605be::t_cdf62afa8be056 75,299-307
+Cargo.toml
+  s_00c6bf8ee605be::t_489b73fe3f4f35 47
+README.fr.md
+  s_00c6bf8ee605be::t_341fb5ad35768c 169,410,447-478
+README.md
+  s_00c6bf8ee605be::t_93c06b02540a3b 168,409,446-474
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_2b8014447dc2b1 43
+crates/agent-router-cli/build.rs
+  s_00c6bf8ee605be::t_c9a65f20246bb5 1-7
+crates/agent-router-cli/src/command.rs
+  s_00c6bf8ee605be::t_78140506a89149 64-87,772-777,1052-1053
+crates/agent-router-cli/src/completions.rs
+  s_00c6bf8ee605be::t_aed4f7da127272 1-38
+crates/agent-router-cli/src/contracts.rs
+  s_00c6bf8ee605be::t_89690a0b85c882 1-59
+crates/agent-router-cli/src/feedback.rs
+  s_00c6bf8ee605be::t_db848d40c0785c 10-14,38-40,116,122-128
+crates/agent-router-cli/src/main.rs
+  s_00c6bf8ee605be::t_9871f05be4158d 10-11,28,34,309-311
+crates/agent-router-cli/src/schema.rs
+  s_00c6bf8ee605be::t_211e1af84a311b 1-50
+crates/agent-router-cli/src/schemas/error.schema.json
+  s_00c6bf8ee605be::t_55f83954e68bdf 1-21
+crates/agent-router-cli/src/schemas/feedback-report.schema.json
+  s_00c6bf8ee605be::t_b9b83b40a12566 1-406
+crates/agent-router-cli/src/schemas/feedback-summary.schema.json
+  s_00c6bf8ee605be::t_a556837629929d 1-296
+crates/agent-router-cli/src/schemas/route-decision.schema.json
+  s_00c6bf8ee605be::t_d460e2d365c3cc 1-214
+crates/agent-router-cli/src/schemas/version.schema.json
+  s_00c6bf8ee605be::t_5f3e1a35dda01b 1-65
+crates/agent-router-cli/src/version_info.rs
+  s_00c6bf8ee605be::t_4a9bc32eea4989 1-86
+crates/agent-router-cli/tests/completions.rs
+  s_00c6bf8ee605be::t_8ac9760eb0bcca 1-117
+crates/agent-router-cli/tests/feedback_summary.rs
+  s_00c6bf8ee605be::t_df814eb1e0502c 1-166
+crates/agent-router-cli/tests/schema.rs
+  s_00c6bf8ee605be::t_164fdc05dfcca5 1-514
+crates/agent-router-cli/tests/support/json_schema.rs
+  s_00c6bf8ee605be::t_5c48f97856535b 1-241
+crates/agent-router-cli/tests/version_info.rs
+  s_00c6bf8ee605be::t_068c70a24cacdb 1-73
+crates/router-feedback/src/report.rs
+  s_00c6bf8ee605be::t_b9499dc101b512 183-230,325-364,370,481-525,535,546,563-564,597-599,640-656
+crates/router-feedback/tests/report.rs
+  s_00c6bf8ee605be::t_ee22ca5f1ebbfa 682-853
+docs/README.fr.md
+  s_00c6bf8ee605be::t_32b2ce6e1543b7 67,94
+docs/README.md
+  s_00c6bf8ee605be::t_08609066283011 67,94
+docs/bench/playbook.md
+  s_00c6bf8ee605be::t_5e84aaf002051a 1-146
+docs/bench/router-value-protocol.md
+  s_00c6bf8ee605be::t_0d5dae82a3e831 6-9
+docs/bench/runs/2026-09-30-pilot/README.md
+  s_00c6bf8ee605be::t_3c82c3950e39ee 1-70
+docs/bench/runs/2026-09-30-pilot/REDACTIONS
+  s_00c6bf8ee605be::t_3c5d7ad5c9fc43 1-76
+docs/bench/runs/2026-09-30-pilot/SHA256SUMS
+  s_00c6bf8ee605be::t_7c856d28de85e2 1-165
+docs/bench/runs/2026-09-30-pilot/base-repo.HEAD
+  s_00c6bf8ee605be::t_63a615c84bf1b4 1
+docs/bench/runs/2026-09-30-pilot/base-repo/README.md
+  s_00c6bf8ee605be::t_3215241f2760f3 1-5
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/__init__.py
+  s_00c6bf8ee605be::t_f1c8de90c79584 1
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/cache.py
+  s_00c6bf8ee605be::t_259ff244c0b187 1-20
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/durations.py
+  s_00c6bf8ee605be::t_a6dd0bf1190c7d 1-12
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/intervals.py
+  s_00c6bf8ee605be::t_a4bee9148c4504 1-3
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/pagination.py
+  s_00c6bf8ee605be::t_54d730f10f95b1 1-13
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/retry.py
+  s_00c6bf8ee605be::t_6270bcc0c52736 1-11
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/roman.py
+  s_00c6bf8ee605be::t_9b4ef1ed3ba3cb 1-6
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/semver.py
+  s_00c6bf8ee605be::t_ebcc87b4d9bd8e 1-5
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/tables.py
+  s_00c6bf8ee605be::t_8066b8f7dd5a44 1-9
+docs/bench/runs/2026-09-30-pilot/base-repo/pilot_lib/text.py
+  s_00c6bf8ee605be::t_afefcee253d0a3 1-8
+docs/bench/runs/2026-09-30-pilot/base-repo/tests/test_smoke.py
+  s_00c6bf8ee605be::t_2146b7194db632 1-12
+docs/bench/runs/2026-09-30-pilot/export_results.py
+  s_00c6bf8ee605be::t_a344c2748f6d89 1-80
+docs/bench/runs/2026-09-30-pilot/pilot/PLAN.md
+  s_00c6bf8ee605be::t_672523bdd1f808 1-173
+docs/bench/runs/2026-09-30-pilot/pilot/catalogs/claude-pool.json
+  s_00c6bf8ee605be::t_0dcb783a82e577 1-43
+docs/bench/runs/2026-09-30-pilot/pilot/catalogs/codex-pool.json
+  s_00c6bf8ee605be::t_fa364c2ec0add7 1-43
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/README.md
+  s_00c6bf8ee605be::t_cd5a169200bf79 1-5
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/__init__.py
+  s_00c6bf8ee605be::t_f0cea91b09ccf5 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/cache.py
+  s_00c6bf8ee605be::t_2c22abff8c570f 1-20
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/durations.py
+  s_00c6bf8ee605be::t_4a0b7c67adacb7 1-12
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/intervals.py
+  s_00c6bf8ee605be::t_0891bfd632afb9 1-3
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/pagination.py
+  s_00c6bf8ee605be::t_3d241fc267d154 1-13
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/retry.py
+  s_00c6bf8ee605be::t_f576005375a173 1-11
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/roman.py
+  s_00c6bf8ee605be::t_d6c95a3f50174f 1-6
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/semver.py
+  s_00c6bf8ee605be::t_4e212ee652b94a 1-5
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/tables.py
+  s_00c6bf8ee605be::t_13139716910972 1-9
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/pilot_lib/text.py
+  s_00c6bf8ee605be::t_cb03ad50dbd6a7 1-8
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/base/tests/test_smoke.py
+  s_00c6bf8ee605be::t_ec437d1eee626d 1-12
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/build_tasks.py
+  s_00c6bf8ee605be::t_c4d18327181638 1-357
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t01.py
+  s_00c6bf8ee605be::t_33527c2b681171 1-11
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t02.py
+  s_00c6bf8ee605be::t_f6c09d249f8d41 1-31
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t03.py
+  s_00c6bf8ee605be::t_1825e2a35cdbca 1-18
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t04.py
+  s_00c6bf8ee605be::t_088e0e4ac5c422 1-8
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t05.py
+  s_00c6bf8ee605be::t_2e315bb19ea049 1-24
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t06.py
+  s_00c6bf8ee605be::t_ebf2c620280c5f 1-14
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t07.py
+  s_00c6bf8ee605be::t_d7a3fcc3658cac 1-14
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t08.py
+  s_00c6bf8ee605be::t_43b0fa5cdc810b 1-12
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t09.py
+  s_00c6bf8ee605be::t_bc75ce83f25ad5 1-13
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/solutions/t10.py
+  s_00c6bf8ee605be::t_9cec8021e44d2a 1-31
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t01/hidden_test.py
+  s_00c6bf8ee605be::t_2187abc4a6c060 1-16
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t01/meta.json
+  s_00c6bf8ee605be::t_92370ffa507dc6 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t01/statement.md
+  s_00c6bf8ee605be::t_76f17aacc1ee93 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t02/hidden_test.py
+  s_00c6bf8ee605be::t_26e363ab58a160 1-11
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t02/meta.json
+  s_00c6bf8ee605be::t_33d7c0d869e2ff 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t02/statement.md
+  s_00c6bf8ee605be::t_96819df240717b 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t03/hidden_test.py
+  s_00c6bf8ee605be::t_defcc942841f49 1-12
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t03/meta.json
+  s_00c6bf8ee605be::t_5b9935ebe3e61e 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t03/statement.md
+  s_00c6bf8ee605be::t_aff90d7a7e9419 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t04/hidden_test.py
+  s_00c6bf8ee605be::t_61dfb41d61c78b 1-14
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t04/meta.json
+  s_00c6bf8ee605be::t_99efa9886bf0c4 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t04/statement.md
+  s_00c6bf8ee605be::t_e5e7dc451ec5af 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t05/hidden_test.py
+  s_00c6bf8ee605be::t_13d95a2d15c1f0 1-22
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t05/meta.json
+  s_00c6bf8ee605be::t_646f79bdb2f9ca 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t05/statement.md
+  s_00c6bf8ee605be::t_21c93bbef6b88b 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t06/hidden_test.py
+  s_00c6bf8ee605be::t_0dc46b9614b2fe 1-10
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t06/meta.json
+  s_00c6bf8ee605be::t_a483d302e4ff9b 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t06/statement.md
+  s_00c6bf8ee605be::t_1e6ffa02d69092 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t07/hidden_test.py
+  s_00c6bf8ee605be::t_9ae9b4652cbb46 1-16
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t07/meta.json
+  s_00c6bf8ee605be::t_8863252e60385a 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t07/statement.md
+  s_00c6bf8ee605be::t_8ac6ae75641637 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t08/hidden_test.py
+  s_00c6bf8ee605be::t_13665d21b32b13 1-27
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t08/meta.json
+  s_00c6bf8ee605be::t_409c7bab6166c4 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t08/statement.md
+  s_00c6bf8ee605be::t_61d5ae4ca04bc3 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t09/hidden_test.py
+  s_00c6bf8ee605be::t_a67233463068d5 1-13
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t09/meta.json
+  s_00c6bf8ee605be::t_21ea21e5d10e4f 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t09/statement.md
+  s_00c6bf8ee605be::t_4f1eefb8da591c 1
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t10/hidden_test.py
+  s_00c6bf8ee605be::t_6a7fe74ca7593e 1-11
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t10/meta.json
+  s_00c6bf8ee605be::t_4ba5bebf9c484e 1-7
+docs/bench/runs/2026-09-30-pilot/pilot/corpus/tasks/t10/statement.md
+  s_00c6bf8ee605be::t_bc7ff0cac8242a 1
+docs/bench/runs/2026-09-30-pilot/pilot/fake/fake_host.py
+  s_00c6bf8ee605be::t_7f2e9760863128 1-49
+docs/bench/runs/2026-09-30-pilot/pilot/pilot-config.json
+  s_00c6bf8ee605be::t_77735bd5c92fd6 1-65
+docs/bench/runs/2026-09-30-pilot/pilot/pricing-cache-writes.json
+  s_00c6bf8ee605be::t_a6ca4681e1287f 1-28
+docs/bench/runs/2026-09-30-pilot/pilot/pricing-sources.md
+  s_00c6bf8ee605be::t_315f0e88723e69 1-28
+docs/bench/runs/2026-09-30-pilot/pilot/pricing.json
+  s_00c6bf8ee605be::t_f8606455ce0472 1-68
+docs/bench/runs/2026-09-30-pilot/pilot/run-pilot-r1.sh
+  s_00c6bf8ee605be::t_d2d9a394926a0a 1-10
+docs/bench/runs/2026-09-30-pilot/pilot/run-pilot.sh
+  s_00c6bf8ee605be::t_00a2051d0f3e50 1-24
+docs/bench/runs/2026-09-30-pilot/pilot/run_pilot.py
+  s_00c6bf8ee605be::t_ad1abb5afc7c58 1-799
+docs/bench/runs/2026-09-30-pilot/pilot/run_r1.py
+  s_00c6bf8ee605be::t_732438cbc31a85 1-95
+docs/bench/runs/2026-09-30-pilot/results/ledger.jsonl
+  s_00c6bf8ee605be::t_2045bd8cc05385 1-28
+docs/bench/runs/2026-09-30-pilot/results/manifest.json
+  s_00c6bf8ee605be::t_abfe490ecbdb7b 1-2176
+docs/bench/runs/2026-09-30-pilot/results/overhead/claude-claude-opus-5-5-isolated.json
+  s_00c6bf8ee605be::t_639fa6645c9961 1-37
+docs/bench/runs/2026-09-30-pilot/results/overhead/claude-claude-opus-5-5-user-config.json
+  s_00c6bf8ee605be::t_0f9d86533f4b17 1-37
+docs/bench/runs/2026-09-30-pilot/results/overhead/claude-claude-sonnet-5-5-isolated.json
+  s_00c6bf8ee605be::t_8cdd1ce2937930 1-37
+docs/bench/runs/2026-09-30-pilot/results/overhead/claude-claude-sonnet-5-5-user-config.json
+  s_00c6bf8ee605be::t_63251f048737e8 1-37
+docs/bench/runs/2026-09-30-pilot/results/overhead/codex-gpt-5.6-terra-isolated.json
+  s_00c6bf8ee605be::t_5cee1c16b70e76 1-32
+docs/bench/runs/2026-09-30-pilot/results/overhead/codex-gpt-5.6-terra-user-config.json
+  s_00c6bf8ee605be::t_ea5f67801f95c1 1-32
+docs/bench/runs/2026-09-30-pilot/results/overhead/codex-gpt-6.1-sol-isolated.json
+  s_00c6bf8ee605be::t_b3b969486b8e57 1-32
+docs/bench/runs/2026-09-30-pilot/results/overhead/codex-gpt-6.1-sol-user-config.json
+  s_00c6bf8ee605be::t_f12309cd1758d0 1-32
+docs/bench/runs/2026-09-30-pilot/results/reports/calibration-report.json
+  s_00c6bf8ee605be::t_6735b38b7d8603 1-709
+docs/bench/runs/2026-09-30-pilot/results/reports/calibration-report.md
+  s_00c6bf8ee605be::t_76d9b934157f5e 1-295
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t01-decision.json
+  s_00c6bf8ee605be::t_b18aae2a7d4865 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t01-request.json
+  s_00c6bf8ee605be::t_169e6b0b809083 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t02-decision.json
+  s_00c6bf8ee605be::t_88b2bd0c5f6953 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t02-request.json
+  s_00c6bf8ee605be::t_0a095fb8885b3e 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t03-decision.json
+  s_00c6bf8ee605be::t_996351f2986388 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t03-request.json
+  s_00c6bf8ee605be::t_272ab3e6d36362 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t04-decision.json
+  s_00c6bf8ee605be::t_e9e8ea416f0184 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t04-request.json
+  s_00c6bf8ee605be::t_e9a66cf5b0157a 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t05-decision.json
+  s_00c6bf8ee605be::t_2b40bcfd0c2615 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t05-request.json
+  s_00c6bf8ee605be::t_755cf81b1ccdb1 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t06-decision.json
+  s_00c6bf8ee605be::t_b47706832bbe65 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t06-request.json
+  s_00c6bf8ee605be::t_e6464d4dfe2a0d 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t07-decision.json
+  s_00c6bf8ee605be::t_e51489d3c09b73 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t07-request.json
+  s_00c6bf8ee605be::t_d7ce4e74be9cc2 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t08-decision.json
+  s_00c6bf8ee605be::t_3311825a8a3ce1 1-144
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t08-request.json
+  s_00c6bf8ee605be::t_22059d54509335 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t09-decision.json
+  s_00c6bf8ee605be::t_26a35c8d48c83d 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t09-request.json
+  s_00c6bf8ee605be::t_95ffc256350857 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t10-decision.json
+  s_00c6bf8ee605be::t_82554bf0ba3978 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/claude-t10-request.json
+  s_00c6bf8ee605be::t_57996b8432119e 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t01-decision.json
+  s_00c6bf8ee605be::t_cf52ac65591db4 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t01-request.json
+  s_00c6bf8ee605be::t_c02a66b0520f6c 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t02-decision.json
+  s_00c6bf8ee605be::t_eeaab0e3db6b01 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t02-request.json
+  s_00c6bf8ee605be::t_1323a504f3ec00 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t03-decision.json
+  s_00c6bf8ee605be::t_ce6ba780c06e60 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t03-request.json
+  s_00c6bf8ee605be::t_1b3dfcc13e7e9c 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t04-decision.json
+  s_00c6bf8ee605be::t_fdc91fb1871f30 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t04-request.json
+  s_00c6bf8ee605be::t_554c979e215e3b 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t05-decision.json
+  s_00c6bf8ee605be::t_51fbc31abcd6b9 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t05-request.json
+  s_00c6bf8ee605be::t_0722b3f6ad03ac 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t06-decision.json
+  s_00c6bf8ee605be::t_b575079862d2db 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t06-request.json
+  s_00c6bf8ee605be::t_5c77bf0d8de96e 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t07-decision.json
+  s_00c6bf8ee605be::t_cab63e2d71b718 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t07-request.json
+  s_00c6bf8ee605be::t_437208c24643f8 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t08-decision.json
+  s_00c6bf8ee605be::t_fb5c8ae0d3c25b 1-144
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t08-request.json
+  s_00c6bf8ee605be::t_88af024218bcb2 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t09-decision.json
+  s_00c6bf8ee605be::t_411ba315a642fc 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t09-request.json
+  s_00c6bf8ee605be::t_23687e1c2ce79a 1-34
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t10-decision.json
+  s_00c6bf8ee605be::t_2ecb8ed7b6ba42 1-135
+docs/bench/runs/2026-09-30-pilot/results/routes/codex-t10-request.json
+  s_00c6bf8ee605be::t_911a918fe3f2c8 1-34
+docs/bench/runs/2026-09-30-pilot/results/run-filter.jsonl
+  s_00c6bf8ee605be::t_fa25bef741db15 1
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-A-t02-r1.json
+  s_00c6bf8ee605be::t_a2aa560bf83665 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-A-t07-r1.json
+  s_00c6bf8ee605be::t_7367c11b38060a 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-A-t09-r1.json
+  s_00c6bf8ee605be::t_5d59868b37838d 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-B-t02-r1.json
+  s_00c6bf8ee605be::t_ab92fd68495086 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-B-t07-r1.json
+  s_00c6bf8ee605be::t_3f874550b2685f 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-B-t09-r1.json
+  s_00c6bf8ee605be::t_9be5a2d845cd68 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-C-t02-r1.json
+  s_00c6bf8ee605be::t_3a1d467a560274 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-C-t07-r1.json
+  s_00c6bf8ee605be::t_a3dda6ab78f14c 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-C-t09-r1.json
+  s_00c6bf8ee605be::t_51013840fbfb87 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-E-t02-r1.json
+  s_00c6bf8ee605be::t_5d364e0067e4d6 1-71
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-E-t07-r1.json
+  s_00c6bf8ee605be::t_6fa7e3eaa720f8 1-71
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-E-t09-r1.json
+  s_00c6bf8ee605be::t_2480131186b5e0 1-71
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-G-t02-r1.json
+  s_00c6bf8ee605be::t_5905dd41cf324f 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-G-t07-r1.json
+  s_00c6bf8ee605be::t_900bd082dbbb86 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/claude-G-t09-r1.json
+  s_00c6bf8ee605be::t_f56f11b25e09d9 1-146
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-A-t02-r1.json
+  s_00c6bf8ee605be::t_aae6ce795e60ee 1-131
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-A-t07-r1.json
+  s_00c6bf8ee605be::t_8fec13ecaf2041 1-135
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-A-t09-r1.json
+  s_00c6bf8ee605be::t_896521e0392942 1-135
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-B-t02-r1.json
+  s_00c6bf8ee605be::t_97dde007bcdeca 1-131
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-B-t09-r1.json
+  s_00c6bf8ee605be::t_f4e871d356c079 1-131
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-C-t02-r1.json
+  s_00c6bf8ee605be::t_0d355cf262785b 1-135
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-C-t07-r1.json
+  s_00c6bf8ee605be::t_7d7c561719e367 1-135
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-C-t09-r1.json
+  s_00c6bf8ee605be::t_aca7b8643a801a 1-131
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-E-t02-r1.json
+  s_00c6bf8ee605be::t_fd2d2f4468d699 1-66
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-E-t07-r1.json
+  s_00c6bf8ee605be::t_879830182b2039 1-66
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-E-t09-r1.json
+  s_00c6bf8ee605be::t_8e7b567baed80a 1-66
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-G-t02-r1.json
+  s_00c6bf8ee605be::t_35332a4ccd3b17 1-131
+docs/bench/runs/2026-09-30-pilot/results/runs/codex-G-t09-r1.json
+  s_00c6bf8ee605be::t_08c6f9b4ddacd8 1-131
+docs/bench/runs/2026-09-30-pilot/summarize.py
+  s_00c6bf8ee605be::t_b3718ae01c80ca 1-126
+docs/cli-output.md
+  s_00c6bf8ee605be::t_1183dfba811c13 67-99
+docs/comparison.md
+  s_00c6bf8ee605be::t_189f4f2f7dcb2b 1-316
+docs/feedback.md
+  s_00c6bf8ee605be::t_6b263d08065b0a 420-459
+docs/reference/json-contracts.md
+  s_00c6bf8ee605be::t_b81ad9835a1a7c 37,41-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "b1a5c13d9b86f81dd4d2f34b3ea0fbe0cf61069d",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
