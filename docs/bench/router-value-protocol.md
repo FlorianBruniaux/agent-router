@@ -3,10 +3,8 @@
 Status: draft for pre-registration. Nothing below has run. No figure in this
 document is a measured gain.
 
-This protocol answers one question: does Agent Router help ship better quality,
-faster, or cheaper, with AI FinOps as the main concern. It defines the metrics,
-arms, contrasts, corpus, pre-registration, FinOps analysis, implementation
-batches P1 to P8 and the risks of a wrong conclusion. It consumes the outcome
+This protocol asks one question: does Agent Router help ship better quality,
+faster, or cheaper, with AI FinOps as the main concern. It consumes the outcome
 data decided in [ADR 0019](../adr/0019-outcome-measurement.md) and extends the
 offline tools described in [evaluation](../evaluation.md).
 
@@ -185,13 +183,13 @@ approximation.
   effect. Precedent: in the LiteLLM benchmark the rule-based router did no better
   than the random control (vendor source, same URL as above).
 - Static rule, per provider: risk `High` or `Critical` to B(p), otherwise C(p)
-  (`RiskLevel`, `crates/router-types/src/task.rs:9-14`). The most serious
-  opponent: if A does not beat a one-line rule, it adds nothing.
+  (`RiskLevel`, `crates/router-types/src/task.rs:9-14`). If A does not beat
+  this one-line rule, routing adds nothing over it.
 
-Why these baselines: B is the price of caution, C the price of economy, G
-separates effort from model, E the cost of splitting, D the current habit. A
-router is worth something only if it sits above the B to C line on the
-quality/cost frontier without the B vs E overhead cancelling it.
+Why these baselines: B is the cautious configuration, C the economical one, G
+separates effort from model, E measures the cost of splitting, D is the current
+habit. A router adds value only if it sits above the B to C line on the
+quality/cost frontier and the B vs E overhead does not cancel the gain.
 
 Why a counterfactual replay is not enough (inferred): tokens depend on the model
 (verbosity, reasoning, number of turns and tool calls), on the trajectory (a
@@ -305,7 +303,8 @@ Bootstrap: 10,000 resamples, fixed seed.
   arm of a task stays with it.
 - Strata: each cluster has one attachment stratum, the stratum of the majority
   of its tasks, ties broken by the first task in manifest order. A cluster
-  spanning several strata is resampled only within its attachment stratum.
+  spanning more than one stratum is resampled only within its attachment
+  stratum.
 - Resampling: within each stratum, clusters are drawn with replacement, as many
   as observed.
 - Statistic: recomputed on each resample from the drawn tasks, paired across
@@ -418,7 +417,7 @@ confirms it.
 - 20x to 10x scenario: envelope halved. Per arm, the share of a window's tasks
   that exceed the envelope.
 - Overrun: purchased credits, or waiting until the window resets. The wait adds
-  to V1 in this scenario, where FinOps and speed meet.
+  to V1 in this scenario.
 - Threshold effect: a router that lowers consumption per task can bring volume
   back under the envelope. The gain is nonlinear and invisible in a cost ratio
   (inferred).
@@ -522,7 +521,8 @@ v1 does not need the cross-host pool; the v2 analyses do.
 - Weak tests: human review on a subsample (Q4).
 - Multiple comparisons: four adoption hypotheses under Holm; E1 to E4 published
   as estimates without threshold.
-- Rate limits: a 429 invalidates the run, rescheduled later.
+- Rate limits: a 429 invalidates the run; the infrastructure-failure rule under
+  Invalid runs allows one retry.
 - Price rumor: the 20x to 10x change remains a scenario while no official page
   confirms it.
 - Cross-host gap: v1 shows only per-provider routing. Any claim that the

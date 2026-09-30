@@ -36,7 +36,8 @@ proposal, replay evaluation, shadow and canary trials, then signed activation
   (`crates/router-feedback/src/store.rs:175-195`) and is written at completion,
   by a single run (`crates/agent-router-cli/src/execution.rs:953`) and by a
   coordinated wave (`crates/agent-router-cli/src/coordinator.rs:626`), before
-  `verify` and before integration. A later automated verdict for the same run is refused.
+  `verify` and before integration. The store refuses a later automated verdict
+  for the same run.
 - The runtime journal already holds the missing signals:
   `verification.recorded` (`crates/router-runtime/src/store.rs:734`),
   `integration.applied` and `integration.discarded`

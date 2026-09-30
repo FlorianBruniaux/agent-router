@@ -143,7 +143,7 @@ protect against a local owner replacing the entire database, keys or program.
 
 [ADR 0019](adr/0019-outcome-measurement.md) decides how runs executed by Agent
 Router will feed this store. None of it is merged yet; until its batches land,
-the behavior described above is the current one: the automatic record keeps
+the behavior described above is the current one, and the automatic record keeps
 validation and objective `Unknown`, so real runs alone cannot pass the proposal
 gate.
 
@@ -160,9 +160,11 @@ What will change for an operator:
   and purge will cover the new facts.
 - The data will feed three metrics per accepted task: accepted success rate,
   wall-clock time from run start to `integration.applied` of the accepted
-  result and attempts, and tokens with computed cost. Late facts will carry a timestamp for the time metric. None of them
-  alone proves a gain from the router; that needs the paired A/B
-  [router value protocol](bench/router-value-protocol.md) against fixed baselines.
+  result and attempts, and tokens with computed cost. Late facts will carry a
+  timestamp for the time metric. None of them alone proves a gain from the
+  router; that needs the paired A/B
+  [router value protocol](bench/router-value-protocol.md) against fixed
+  baselines.
 - A `feedback report` command will show verified success, usage, computed cost
   and `UNKNOWN` counts, with an advisory suggestion. Activating a policy will
   still go through propose, evaluate, trial and signed apply.

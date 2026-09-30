@@ -2,7 +2,7 @@
 
 An ADR records one structural decision: what was decided, why, and what it costs. Write one when a change fixes a contract, a trust boundary, a storage format or a crate dependency that later work has to respect (see `CLAUDE.md`: "Record structural decisions in `docs/adr/`"). Routine changes that follow an existing decision do not need one.
 
-Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the file `NNNN-short-title.md`. Never rename an ADR file: source code cites these paths.
+Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the file `NNNN-short-title.md`. Never rename an ADR file, because source code cites these paths.
 
 ## Index
 
