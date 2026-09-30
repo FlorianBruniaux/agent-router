@@ -14,6 +14,8 @@
   </tr>
 </table>
 
+---
+
 <p align="center">
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/ci.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/ci.yml/badge.svg?branch=main" alt="Rust quality and secret checks" /></a>
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Linux runtime canaries" /></a>
@@ -31,9 +33,11 @@
   <a href="#host-support">Host support</a> &middot;
   <a href="#documentation">Documentation</a> &middot;
   <a href="https://github.com/FlorianBruniaux/agent-router/issues/11">Roadmap</a>
+  <br />
+  English | <a href="README.fr.md">Français</a>
 </p>
 
-English | [Français](README.fr.md)
+---
 
 Agent Router is a local Rust CLI for routing coding work across models, agents,
 skills and tools. It checks constraints before scoring, explains its choices,
@@ -51,6 +55,8 @@ to own its interaction, credentials and native permissions.
 
 The demo uses bundled synthetic fixtures and actual CLI output. It makes no
 model call. Model names in those fixtures are examples, not availability claims.
+
+---
 
 ## Why it exists
 
@@ -92,6 +98,8 @@ You call Agent Router from a terminal, or from a host through the opt-in local
 route API. It does not switch the model of the conversation you are in: each
 approved phase runs as a separate host process.
 
+---
+
 ## What Agent Router is, and what it is not
 
 Agent Router is a local, deterministic decision layer: it picks the model, effort and skills for each phase of a coding task and explains why. It is not a coding agent, a hosted gateway or an autonomous runner; your host still does the work.
@@ -114,6 +122,8 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 | A set of bounded Rust libraries plus one CLI, with versioned JSON contracts. | A package that installs hooks, skills or global configuration on your machine. |
 
 </details>
+
+---
 
 ## Features
 
@@ -179,6 +189,8 @@ The project is under active development. Human validation of the evaluation
 corpus, the full startup target and additional native host evidence remain open.
 See the [completion ledger](docs/completion.md) and [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11)
 for acceptance criteria. Public release is still gated by license and security review.
+
+---
 
 ## Quick start
 
@@ -260,6 +272,8 @@ Follow the [preparation guide](docs/preparation.md), then the
 Execution requires current asset authority, a reviewed digest, explicit storage
 and a working native sandbox. A successful process exit is separate from
 verification of the task's result.
+
+---
 
 ## How it works
 
@@ -344,6 +358,8 @@ sequenceDiagram
 
 </details>
 
+---
+
 ## Host support
 
 Codex and Claude Code have CLI adapters; OpenCode and Copilot are optional adapters whose native installations and providers remain unverified. Runtime supervision exists on macOS (Seatbelt) and Linux (Bubblewrap); Windows native execution is not implemented.
@@ -367,6 +383,8 @@ Codex and Claude Code have CLI adapters; OpenCode and Copilot are optional adapt
 Host CLIs and credentials are supplied separately. Agent Router does not
 silently install them, bypass their permission systems or change the model of
 an existing parent conversation.
+
+---
 
 ## Documentation
 
@@ -398,6 +416,8 @@ The [functional specification](docs/specs/functional-specification.md) and
 project. The [completion ledger](docs/completion.md) distinguishes delivered
 behavior from outstanding acceptance.
 
+---
+
 ## Development
 
 ```sh
@@ -416,6 +436,8 @@ Use the [issue tracker](https://github.com/FlorianBruniaux/agent-router/issues)
 for bugs and feature requests. Include the command, version, platform and a
 redacted reproduction. Keep credentials, prompts and private policy data out
 of reports.
+
+---
 
 ## License
 
