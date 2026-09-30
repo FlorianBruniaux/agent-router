@@ -1,6 +1,17 @@
-# 0014: Loopback-only provider transport behind a Cargo feature
+---
+adr: "0014"
+title: Loopback-only provider transport behind a Cargo feature
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "`router-bridge-contract` feature `loopback-transport` (R10-a)."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: ["0012"]
+---
 
-Status: accepted for `router-bridge-contract` feature `loopback-transport` (R10-a).
+# ADR 0014: Loopback-only provider transport behind a Cargo feature
 
 ## Context
 

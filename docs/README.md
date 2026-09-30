@@ -85,7 +85,7 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [JSON contracts](reference/json-contracts.md) | Versioned input and output contracts, trust rules |
-| [Architecture decisions](adr/) | ADR 0001 to 0019 |
+| [Architecture decisions](adr/README.md) | ADR 0001 to 0019, with frontmatter and index |
 | [Completion ledger](completion.md) | What is delivered, with evidence |
 | [Remaining acceptance](remaining-acceptance.md) (FR) | Open requirements and proof gates |
 | [Functional specification](specs/functional-specification.md) (FR) | Product requirements |

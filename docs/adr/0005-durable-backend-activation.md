@@ -1,6 +1,17 @@
-# ADR 0005: pin durable backend authority through dispatch
+---
+adr: "0005"
+title: Pin durable backend authority through dispatch
+status: accepted
+created: 2026-09-27
+last_modified: 2026-09-27
+scope: "Local backend activation store."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the local backend activation store.
+# ADR 0005: Pin durable backend authority through dispatch
 
 An in-memory promotion proof can become stale while a run waits in a queue.
 Persisted JSON cannot itself be an execution capability. The application reloads

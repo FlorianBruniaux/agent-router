@@ -1,6 +1,17 @@
-# 0011: Authenticated advisory cache of backend proposals
+---
+adr: "0011"
+title: Authenticated advisory cache of backend proposals
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "`router-advisory-cache` library. No CLI wiring yet."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the `router-advisory-cache` library. No CLI wiring yet.
+# ADR 0011: Authenticated advisory cache of backend proposals
 
 ## Context
 

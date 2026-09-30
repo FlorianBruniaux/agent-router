@@ -1,8 +1,17 @@
-# 0019: Outcome measurement
+---
+adr: "0019"
+title: Outcome measurement
+status: accepted
+created: 2026-09-30
+last_modified: 2026-09-30
+scope: "Implementation planned; this ADR changes no code."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: ["0009"]
+---
 
-Status: Accepted. Implementation planned; this ADR changes no code.
-
-Date: 2026-09-30
+# ADR 0019: Outcome measurement
 
 ## Context
 

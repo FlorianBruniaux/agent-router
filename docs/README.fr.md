@@ -85,7 +85,7 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Contrats JSON](reference/json-contracts.md) | Contrats d'entrée et de sortie versionnés, règles de confiance |
-| [Décisions d'architecture](adr/) | ADR 0001 à 0019 |
+| [Décisions d'architecture](adr/README.md) | ADR 0001 à 0019, avec frontmatter et index |
 | [Registre d'avancement](completion.md) | Ce qui est livré, avec les preuves |
 | [Acceptation restante](remaining-acceptance.md) (FR) | Exigences ouvertes et gates de preuve |
 | [Spécification fonctionnelle](specs/functional-specification.md) (FR) | Exigences produit |

@@ -1,6 +1,17 @@
-# ADR 0009: Conservative shared session allocations
+---
+adr: "0009"
+title: Conservative shared session allocations
+status: implemented
+created: 2026-09-28
+last_modified: 2026-09-29
+scope: "`router-runtime` admission budgets, see session budgets (`docs/session-budgets.md`)."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: ["0008"]
+---
 
-Status: implemented (`router-runtime` admission budgets, see [session budgets](../session-budgets.md)).
+# ADR 0009: Conservative shared session allocations
 
 ## Context
 

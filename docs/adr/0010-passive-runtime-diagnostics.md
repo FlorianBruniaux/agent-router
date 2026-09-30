@@ -1,6 +1,17 @@
-# 0010: Inspect runtime storage without application recovery
+---
+adr: "0010"
+title: Inspect runtime storage without application recovery
+status: accepted
+created: 2026-09-28
+last_modified: 2026-09-28
+scope: "Passive diagnostic API and CLI."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the passive diagnostic API and CLI.
+# ADR 0010: Inspect runtime storage without application recovery
 
 ## Context
 
