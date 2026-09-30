@@ -1,6 +1,8 @@
-# Project license texts
+# Third-party license evidence
 
-The workspace declares `MIT OR Apache-2.0`. `LICENSE-MIT` uses the contributor
+The project license texts, `LICENSE-MIT` and `LICENSE-APACHE`, live at the
+repository root so that GitHub detects them. The workspace declares
+`MIT OR Apache-2.0`. `LICENSE-MIT` uses the contributor
 attribution authorized for this project, `Agent Router contributors`.
 `LICENSE-APACHE` contains the standard Apache License 2.0 terms. Its SHA-256 is
 `62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a`.

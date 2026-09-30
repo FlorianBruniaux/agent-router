@@ -183,9 +183,10 @@ stays `NOASSERTION`. A checksum establishes provenance of the inspected bytes,
 not license compatibility. The generated notices state the same boundary.
 
 The core is declared `MIT OR Apache-2.0` by the workspace. Corresponding texts
-are supplied in `licenses/`. Dependency texts retain their own terms. Legal
-compatibility review, security review, host runtime verification and publication
-are separate fields; this exporter cannot mark them successful.
+are supplied as `LICENSE-MIT` and `LICENSE-APACHE` at the repository root.
+Dependency texts retain their own terms. Legal compatibility review, security
+review, host runtime verification and publication are separate fields; this
+exporter cannot mark them successful.
 
 ## Acceptance evidence for issue #8
 

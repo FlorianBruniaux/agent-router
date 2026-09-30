@@ -172,7 +172,7 @@ def projected_manifest(data: bytes, packages: list[dict]) -> bytes:
 
 
 def collect_sources(root: Path, packages: list[dict], distribution: str = "core", excluded: list[dict] | None = None) -> dict[str, bytes]:
-    names = {"Cargo.toml", "Cargo.lock", "licenses/LICENSE-MIT", "licenses/LICENSE-APACHE"}
+    names = {"Cargo.toml", "Cargo.lock", "LICENSE-MIT", "LICENSE-APACHE"}
     for package in packages:
         base = root / package["relative"]
         names.add(f"{package['relative']}/Cargo.toml")

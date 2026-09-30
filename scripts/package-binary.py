@@ -389,8 +389,8 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
 
 
 def archive_payload(binary: bytes, proof: dict, source: dict[str, bytes]) -> bytes:
-    files = {"bin/agent-router": binary, "LICENSE": source["licenses/LICENSE-MIT"],
-             "LICENSE-APACHE": source["licenses/LICENSE-APACHE"], "THIRD_PARTY_NOTICES.md": source["THIRD_PARTY_NOTICES.md"],
+    files = {"bin/agent-router": binary, "LICENSE": source["LICENSE-MIT"],
+             "LICENSE-APACHE": source["LICENSE-APACHE"], "THIRD_PARTY_NOTICES.md": source["THIRD_PARTY_NOTICES.md"],
              "LICENSE-INVENTORY.json": source["LICENSE-INVENTORY.json"]}
     if "SBOM.spdx.json" in source:
         files["SOURCE-SBOM.spdx.json"] = source["SBOM.spdx.json"]

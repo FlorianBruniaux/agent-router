@@ -186,7 +186,7 @@ serde = "1"
         self.write("Cargo.toml", '[workspace]\nmembers=["integrations/bridge"]\n')
         self.write("Cargo.lock", "version=4\n")
         for license in ("MIT", "APACHE"):
-            self.write("licenses/LICENSE-" + license, "Fixture license")
+            self.write("LICENSE-" + license, "Fixture license")
         package = {"relative": "integrations/bridge"}
         self.write("integrations/bridge/Cargo.toml", '[package]\nname="bridge"\nversion="0.1.0"\n')
         self.write("integrations/bridge/src/lib.rs", "pub fn example() {}")
@@ -348,8 +348,8 @@ checksum="bbbbbbbb"
         self.write("Cargo.lock", lock)
         self.write("crates/core/Cargo.toml", '[package]\nname="core"\nversion="1.0.0"\n')
         self.write("crates/core/src/lib.rs", "pub fn answer() -> u8 { 42 }\n")
-        self.write("licenses/LICENSE-MIT", "Fixture MIT license\n")
-        self.write("licenses/LICENSE-APACHE", "Fixture Apache license\n")
+        self.write("LICENSE-MIT", "Fixture MIT license\n")
+        self.write("LICENSE-APACHE", "Fixture Apache license\n")
         package = {"id": "core", "name": "core", "version": "1.0.0", "license": "MIT", "features": {},
                    "manifest_path": str(self.root / "crates/core/Cargo.toml"), "dependencies": [],
                    "targets": [{"kind": ["lib"]}]}

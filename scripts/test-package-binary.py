@@ -36,8 +36,8 @@ class BinaryPackageTests(unittest.TestCase):
         files = {"Cargo.toml": b"[workspace]\nmembers=[]\n",
                  "Cargo.lock": b"version = 4\n\n[[package]]\nname='agent-router-cli'\nversion='0.1.0'\n",
                  "LICENSE-INVENTORY.json": b'{"packages":[]}\n',
-                 "licenses/LICENSE-MIT": b"MIT license\n",
-                 "licenses/LICENSE-APACHE": b"Apache license\n",
+                 "LICENSE-MIT": b"MIT license\n",
+                 "LICENSE-APACHE": b"Apache license\n",
                  "THIRD_PARTY_NOTICES.md": b"No external package in this fixture.\n"}
         hashes = {name: hashlib.sha256(data).hexdigest() for name, data in sorted(files.items())}
         manifest = {"kind": "core-source", "content_sha256": PACKAGE.sha(PACKAGE.CORE.json_bytes(hashes)),
