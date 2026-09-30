@@ -91,6 +91,7 @@ sauf celles marquées (FR).
 | [Acceptation restante](remaining-acceptance.md) (FR) | Exigences ouvertes et gates de preuve |
 | [Spécification fonctionnelle](specs/functional-specification.md) (FR) | Exigences produit |
 | [Spécification technique](specs/technical-specification.md) (FR) | Conception technique |
+| [Comparaison avec des projets similaires](comparison.md) (EN) | Comparaison sourcée avec d'autres routeurs et outils pour agents de code |
 | [Comparaison avec Omnigent](omnigent-comparison.md) (FR) | Comparaison et éléments de roadmap qui en découlent |
 | [Point d'étape du 27/09/2026](checkpoints/2026-09-27-paused-work.md) | État du travail mis en pause |
 
