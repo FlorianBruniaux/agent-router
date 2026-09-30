@@ -1,0 +1,35 @@
+docs/distribution.md
+  s_00c6bf8ee605be::t_887fa49cc3b922 186-189
+README.fr.md
+  s_00c6bf8ee605be::t_c1c36b9ed25a61 24,445-446
+README.md
+  s_00c6bf8ee605be::t_ee0198d897cdf8 24,444-445
+licenses/README.md
+  s_00c6bf8ee605be::t_171917fbbe990e 1,3-5
+scripts/package-binary.py
+  s_00c6bf8ee605be::t_92246aa09ec16e 392-393
+scripts/package-core.py
+  s_00c6bf8ee605be::t_a39edc1e491c9a 175
+scripts/test-package-binary.py
+  s_00c6bf8ee605be::t_9555d1fb203f7c 39-40
+scripts/test-package-core.py
+  s_00c6bf8ee605be::t_e90155e7c3c367 189,351-352
+scripts/test-release-local.py
+  s_00c6bf8ee605be::t_d84f9fafd9b40d 56-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6fe4b0665378ad61803a069ad3e437a412f8608d",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
