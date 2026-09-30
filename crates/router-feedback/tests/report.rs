@@ -1,0 +1,531 @@
+//! `feedback report`: classification, join by run key, cost from stored usage,
+//! determinism and consent. Every figure is checked against a hand computation.
+use std::collections::BTreeSet;
+
+use router_eval::{PricingTable, TokenPrice};
+use router_feedback::*;
+use router_types::*;
+use tempfile::TempDir;
+
+/// An event stored before `usage` existed: it must round-trip byte for byte.
+const V1_EVENT: &str = r#"{"sequence":1,"consent_revision":1,"recorded_at_unix_seconds":102,"input":{"schema_version":1,"observed_at_unix_seconds":101,"binding":{"task_hash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","run_hash":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","receipt_hash":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","policy_hash":"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","catalog_hash":"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee","snapshot_hash":"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff","producer_version":"synthetic-contract-v1","provenance_sha256":"1111111111111111111111111111111111111111111111111111111111111111"},"context":{"task_kind":"explore","risk":"low","model":"fixture-model","effort":"medium","harness":"fixture-host","transport":"subprocess-jsonl","agent":null,"skills":[],"plan":"single-pass","propensity_micros":null},"origin":"automated","transport":"passed","validation":"unknown","objective":"unknown","verification_evidence_sha256":null,"human":null,"failure":null,"measurements":{"cost_microusd":null,"latency_ms":100,"tokens":null,"attempts":1,"escalations":0},"comment_sha256":null},"event_hash":"fabf1fb43c1aa19cf1c1487d90bc4ac8f41e5a4af32d96f1cf0fa1f996f9f539"}"#;
+
+fn key(c: char) -> String {
+    c.to_string().repeat(64)
+}
+fn model(name: &str) -> ModelId {
+    ModelId::parse(name).unwrap()
+}
+fn usage(input: u64, cached: u64, output: u64) -> HostUsage {
+    HostUsage {
+        input_tokens: UsageField::host_reported(input),
+        cached_input_tokens: UsageField::host_reported(cached),
+        cache_write_input_tokens: UsageField::UNKNOWN,
+        output_tokens: UsageField::host_reported(output),
+        reasoning_output_tokens: UsageField::UNKNOWN,
+    }
+}
+/// An automated event as the writer records it: verdicts unknown, transport passed.
+fn automated(run: &str, run_key: Option<char>, model_name: &str) -> FeedbackInput {
+    FeedbackInput {
+        schema_version: 1,
+        observed_at_unix_seconds: 130,
+        started_at_unix_seconds: Some(120),
+        run_key_sha256: run_key.map(key),
+        binding: FeedbackBinding {
+            task_hash: "a".repeat(64),
+            run_hash: redacted_digest(run).unwrap(),
+            receipt_hash: "b".repeat(64),
+            policy_hash: "c".repeat(64),
+            catalog_hash: "d".repeat(64),
+            snapshot_hash: "e".repeat(64),
+            producer_version: "synthetic-v1".into(),
+            provenance_sha256: "f".repeat(64),
+        },
+        context: FeedbackContext {
+            task_kind: TaskKind::Explore,
+            risk: RiskLevel::Low,
+            model: model(model_name),
+            effort: EffortLevel::Medium,
+            harness: HarnessId::parse("fixture-host").unwrap(),
+            transport: "subprocess-jsonl".into(),
+            agent: None,
+            skills: BTreeSet::new(),
+            plan: "single-pass".into(),
+            propensity_micros: None,
+            route: None,
+        },
+        origin: FeedbackOrigin::Automated,
+        transport: VerificationOutcome::Passed,
+        validation: VerificationOutcome::Unknown,
+        objective: VerificationOutcome::Unknown,
+        verification_evidence_sha256: None,
+        human: None,
+        failure: None,
+        measurements: FeedbackMeasurements {
+            cost_microusd: None,
+            latency_ms: Some(100),
+            tokens: None,
+            attempts: 1,
+            escalations: 0,
+            usage: None,
+        },
+        comment_sha256: None,
+    }
+}
+fn with_usage(mut input: FeedbackInput, usage: HostUsage) -> FeedbackInput {
+    input.measurements.tokens = usage.total_tokens();
+    input.measurements.usage = Some(usage);
+    input
+}
+fn verification(run_key: char, objective: VerificationOutcome) -> FeedbackFact {
+    FeedbackFact {
+        schema_version: 1,
+        run_key_sha256: key(run_key),
+        observed_at_unix_seconds: 150,
+        kind: FeedbackFactKind::Verification {
+            validation: match objective {
+                VerificationOutcome::Passed => VerificationOutcome::Passed,
+                _ => VerificationOutcome::Failed,
+            },
+            objective,
+            evidence_sha256: "9".repeat(64),
+        },
+    }
+}
+fn integration(run_key: char, outcome: IntegrationOutcome, at: u64) -> FeedbackFact {
+    FeedbackFact {
+        schema_version: 1,
+        run_key_sha256: key(run_key),
+        observed_at_unix_seconds: at,
+        kind: FeedbackFactKind::Integration { outcome },
+    }
+}
+fn pricing() -> PricingTable {
+    PricingTable {
+        schema_version: 1,
+        version: "test-pricing-v1".into(),
+        source: "synthetic".into(),
+        observed_at_unix_seconds: 90,
+        models: [
+            (
+                model("model-a"),
+                TokenPrice {
+                    input_microusd_per_million: 3_000_000,
+                    cached_input_microusd_per_million: 300_000,
+                    output_microusd_per_million: 15_000_000,
+                },
+            ),
+            (
+                model("model-c"),
+                TokenPrice {
+                    input_microusd_per_million: 1,
+                    cached_input_microusd_per_million: 1,
+                    output_microusd_per_million: 1,
+                },
+            ),
+        ]
+        .into(),
+    }
+}
+fn store(learning: bool) -> (TempDir, FeedbackStore) {
+    let temp = TempDir::new().unwrap();
+    let store = FeedbackStore::open(&temp.path().join("feedback")).unwrap();
+    store
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                learning_enabled: learning,
+                ..Default::default()
+            },
+            100,
+        )
+        .unwrap();
+    (temp, store)
+}
+fn json(report: &FeedbackReport) -> serde_json::Value {
+    serde_json::to_value(report).unwrap()
+}
+fn group<'a>(report: &'a serde_json::Value, model: &str) -> &'a serde_json::Value {
+    report["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|g| g["model"] == model)
+        .unwrap()
+}
+
+/// Seven runs of one model covering every classification.
+fn classified() -> (TempDir, FeedbackStore) {
+    let (temp, store) = store(true);
+    for (run, run_key) in [
+        ("accepted", Some('1')),
+        ("verification-only", Some('2')),
+        ("applied-only", Some('3')),
+        ("discarded", Some('4')),
+        ("failed-objective", Some('5')),
+        ("applied-but-failed", Some('6')),
+        ("no-key", None),
+    ] {
+        store
+            .record(automated(run, run_key, "model-a"), 200)
+            .unwrap();
+    }
+    let facts = [
+        verification('1', VerificationOutcome::Passed),
+        integration('1', IntegrationOutcome::Applied, 200),
+        verification('2', VerificationOutcome::Passed),
+        integration('3', IntegrationOutcome::Applied, 200),
+        integration('4', IntegrationOutcome::Discarded, 200),
+        verification('5', VerificationOutcome::Failed),
+        verification('6', VerificationOutcome::Failed),
+        integration('6', IntegrationOutcome::Applied, 200),
+        // A fact whose automated event was never recorded.
+        integration('7', IntegrationOutcome::Applied, 200),
+    ];
+    for fact in facts {
+        store.record_fact(fact, 250).unwrap();
+    }
+    (temp, store)
+}
+
+#[test]
+fn report_is_byte_identical_for_the_same_inputs() {
+    let (_temp, store) = classified();
+    let table = pricing();
+    let first = serde_json::to_vec(&store.report(Some(&table), 300).unwrap()).unwrap();
+    let second = serde_json::to_vec(&store.report(Some(&table), 300).unwrap()).unwrap();
+    assert_eq!(first, second);
+    let without = serde_json::to_vec(&store.report(None, 300).unwrap()).unwrap();
+    assert_ne!(first, without);
+}
+
+#[test]
+fn outcomes_are_accepted_rejected_or_unknown_and_unknown_is_never_a_failure() {
+    let (_temp, store) = classified();
+    let report = json(&store.report(None, 300).unwrap());
+    let g = group(&report, "model-a");
+    assert_eq!(g["runs"], 7);
+    // accepted: applied and passed. rejected: discarded, failed objective, and
+    // applied with a failed objective. unknown: verification only, applied only,
+    // and the run without a key.
+    assert_eq!(g["accepted"], 1);
+    assert_eq!(g["rejected"], 3);
+    assert_eq!(g["unknown"], 3);
+    assert_eq!(g["unlinked"], 1);
+    assert_eq!(report["unlinked"], 1);
+    assert_eq!(report["orphan_facts"], 1);
+    // The rate is over decided runs: 1 accepted of 4, the 3 unknown excluded.
+    let rate = &g["accepted_rate"];
+    assert_eq!(
+        (rate["accepted"].clone(), rate["rejected"].clone()),
+        (1.into(), 3.into())
+    );
+    assert_eq!(rate["point_micros"], 250_000);
+    assert_eq!(rate["prior"], "jeffreys");
+    assert_eq!(rate["level_micros"], 950_000);
+    // 3 applied, 1 discarded, 3 without an integration fact.
+    assert_eq!(g["integration"]["applied"], 3);
+    assert_eq!(g["integration"]["discarded"], 1);
+    assert_eq!(g["integration"]["unknown"], 3);
+    assert_eq!(g["integration"]["rate_micros"], 750_000);
+}
+
+#[test]
+fn a_group_with_only_unknown_runs_has_no_rate() {
+    let (_temp, store) = store(true);
+    store
+        .record(automated("pending", Some('1'), "model-a"), 200)
+        .unwrap();
+    store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    let report = json(&store.report(None, 300).unwrap());
+    let g = group(&report, "model-a");
+    assert_eq!(
+        (
+            g["accepted"].clone(),
+            g["rejected"].clone(),
+            g["unknown"].clone()
+        ),
+        (0.into(), 0.into(), 1.into())
+    );
+    assert!(g["accepted_rate"].is_null());
+    assert!(g["integration"]["rate_micros"].is_null());
+}
+
+#[test]
+fn cost_is_computed_from_stored_usage_and_unknown_without_it() {
+    let (_temp, store) = store(true);
+    // 600 uncached at 3.0, 400 cached at 0.3, 500 output at 15.0 per million,
+    // in micro-dollars: 1_800_000_000 + 120_000_000 + 7_500_000_000 = 9_420 exactly.
+    store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), usage(1000, 400, 500)),
+            200,
+        )
+        .unwrap();
+    // 1000 * 3_000_000 + 1 * 15_000_000 = 3_015_000_000 -> 3015.
+    store
+        .record(
+            with_usage(automated("r2", Some('2'), "model-a"), usage(1000, 0, 1)),
+            200,
+        )
+        .unwrap();
+    // One token at one micro-dollar per million rounds up to one micro-dollar.
+    store
+        .record(
+            with_usage(automated("r3", Some('3'), "model-c"), usage(1, 0, 0)),
+            200,
+        )
+        .unwrap();
+    // No usage stored: unknown, never zero.
+    store
+        .record(automated("r4", Some('4'), "model-b"), 200)
+        .unwrap();
+    // Model absent from the table: unknown.
+    store
+        .record(
+            with_usage(automated("r5", Some('5'), "model-d"), usage(10, 0, 10)),
+            200,
+        )
+        .unwrap();
+    for run_key in ['1', '3'] {
+        store
+            .record_fact(verification(run_key, VerificationOutcome::Passed), 250)
+            .unwrap();
+        store
+            .record_fact(integration(run_key, IntegrationOutcome::Applied, 200), 250)
+            .unwrap();
+    }
+    let report = json(&store.report(Some(&pricing()), 300).unwrap());
+    assert_eq!(report["pricing"]["version"], "test-pricing-v1");
+    assert_eq!(report["pricing"]["source"], "synthetic");
+
+    let a = &group(&report, "model-a")["cost"];
+    assert_eq!(a["priced_runs"], 2);
+    assert_eq!(a["cost_unknown"], 0);
+    assert_eq!(a["total_microusd"], 9_420 + 3_015);
+    // One accepted task carries the cost of both runs.
+    assert_eq!(a["per_accepted_microusd"], 9_420 + 3_015);
+
+    let c = &group(&report, "model-c")["cost"];
+    assert_eq!(c["total_microusd"], 1);
+    assert_eq!(c["per_accepted_microusd"], 1);
+
+    for unknown in ["model-b", "model-d"] {
+        let cost = &group(&report, unknown)["cost"];
+        assert_eq!(cost["priced_runs"], 0);
+        assert_eq!(cost["cost_unknown"], 1);
+        assert!(cost["total_microusd"].is_null());
+        assert_eq!(cost["reason"], "no_priced_runs");
+    }
+}
+
+#[test]
+fn per_accepted_cost_is_null_while_a_run_of_the_group_is_unpriced() {
+    let (_temp, store) = store(true);
+    store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), usage(1000, 400, 500)),
+            200,
+        )
+        .unwrap();
+    store
+        .record(automated("r2", Some('2'), "model-a"), 200)
+        .unwrap();
+    store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Applied, 200), 250)
+        .unwrap();
+    let report = json(&store.report(Some(&pricing()), 300).unwrap());
+    let cost = &group(&report, "model-a")["cost"];
+    assert_eq!(cost["total_microusd"], 9_420);
+    assert!(cost["per_accepted_microusd"].is_null());
+    assert_eq!(cost["reason"], "cost_unknown_runs");
+}
+
+#[test]
+fn without_a_pricing_table_every_cost_is_null_with_a_reason() {
+    let (_temp, store) = store(true);
+    store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), usage(1000, 400, 500)),
+            200,
+        )
+        .unwrap();
+    let report = json(&store.report(None, 300).unwrap());
+    assert!(report["pricing"].is_null());
+    let cost = &group(&report, "model-a")["cost"];
+    assert!(cost["total_microusd"].is_null());
+    assert!(cost["per_accepted_microusd"].is_null());
+    assert_eq!(cost["reason"], "no_pricing_table");
+}
+
+#[test]
+fn an_unusable_pricing_table_is_refused() {
+    let (_temp, store) = store(true);
+    let mut table = pricing();
+    table.source = " ".into();
+    assert!(matches!(
+        store.report(Some(&table), 300),
+        Err(FeedbackError::Invalid("pricing"))
+    ));
+}
+
+#[test]
+fn time_to_acceptance_needs_a_start_time_and_counts_the_missing() {
+    let (_temp, store) = store(true);
+    // Started at 120 and applied at 200: 80 seconds.
+    store
+        .record(automated("timed", Some('1'), "model-a"), 200)
+        .unwrap();
+    let mut untimed = automated("untimed", Some('2'), "model-a");
+    untimed.started_at_unix_seconds = None;
+    store.record(untimed, 200).unwrap();
+    for run_key in ['1', '2'] {
+        store
+            .record_fact(verification(run_key, VerificationOutcome::Passed), 250)
+            .unwrap();
+        store
+            .record_fact(integration(run_key, IntegrationOutcome::Applied, 200), 250)
+            .unwrap();
+    }
+    let report = json(&store.report(None, 300).unwrap());
+    let t = &group(&report, "model-a")["time_to_acceptance_seconds"];
+    assert_eq!(t["samples"], 1);
+    assert_eq!(t["missing"], 1);
+    assert_eq!(t["p50"], 80);
+    assert_eq!(t["p90"], 80);
+}
+
+#[test]
+fn human_verdicts_are_counted_apart_from_automated_outcomes() {
+    let (_temp, store) = store(true);
+    let run = automated("reviewed", Some('1'), "model-a");
+    store.record(run.clone(), 200).unwrap();
+    let mut human = run;
+    human.origin = FeedbackOrigin::Human;
+    human.human = Some(HumanVerdict {
+        success: VerificationOutcome::Passed,
+        quality: Some(80),
+        perceived_cost: PerceivedCost::Low,
+        correction_required: None,
+        reviewer_sha256: "2".repeat(64),
+    });
+    store.record(human, 200).unwrap();
+    let report = json(&store.report(None, 300).unwrap());
+    let g = group(&report, "model-a");
+    assert_eq!(report["human_events"], 1);
+    assert_eq!(report["automated_events"], 1);
+    assert_eq!(g["runs"], 1);
+    assert_eq!(g["human"]["passed"], 1);
+    // A human verdict never makes an automated run accepted.
+    assert_eq!(g["accepted"], 0);
+    assert_eq!(g["unknown"], 1);
+}
+
+#[test]
+fn report_requires_collection_consent() {
+    let temp = TempDir::new().unwrap();
+    let store = FeedbackStore::open(&temp.path().join("feedback")).unwrap();
+    assert!(matches!(
+        store.report(None, 300),
+        Err(FeedbackError::Consent)
+    ));
+    store
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                ..Default::default()
+            },
+            100,
+        )
+        .unwrap();
+    assert!(store.report(None, 300).is_ok());
+    store
+        .configure(FeedbackPreferences::default(), 310)
+        .unwrap();
+    assert!(matches!(
+        store.report(None, 320),
+        Err(FeedbackError::Consent)
+    ));
+}
+
+#[test]
+fn advisory_needs_learning_and_never_carries_a_suggestion() {
+    let (_temp, disabled) = store(false);
+    let report = json(&disabled.report(None, 300).unwrap());
+    assert_eq!(
+        report["advisory"],
+        serde_json::json!({"advisory": null, "reason": "learning_disabled"})
+    );
+    let (_temp, enabled) = store(true);
+    let report = json(&enabled.report(None, 300).unwrap());
+    assert_eq!(report["advisory"]["advisory"], true);
+    assert!(report["advisory"]["suggestion"].is_null());
+    assert!(report["advisory"].get("suggestion").is_some());
+    assert!(report["catalog_estimate_ratio"]["value"].is_null());
+    assert_eq!(
+        report["catalog_estimate_ratio"]["reason"],
+        "no_catalog_estimate_stored_in_feedback"
+    );
+}
+
+#[test]
+fn an_event_without_usage_keeps_its_bytes() {
+    let event: FeedbackEvent = serde_json::from_str(V1_EVENT).unwrap();
+    assert!(event.input.measurements.usage.is_none());
+    assert_eq!(serde_json::to_string(&event).unwrap(), V1_EVENT);
+}
+
+#[test]
+fn usage_is_stored_and_read_back_and_inconsistent_usage_is_refused() {
+    let (_temp, store) = store(true);
+    let stored = store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), usage(1000, 400, 500)),
+            200,
+        )
+        .unwrap();
+    assert_eq!(stored.input.measurements.usage, Some(usage(1000, 400, 500)));
+    assert_eq!(store.events(300).unwrap()[0], stored);
+
+    let cached_over_input = with_usage(automated("r2", Some('2'), "model-a"), usage(10, 11, 5));
+    assert!(matches!(
+        store.record(cached_over_input, 200),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    let mut reasoning_over_output = usage(10, 0, 5);
+    reasoning_over_output.reasoning_output_tokens = UsageField::host_reported(6);
+    assert!(matches!(
+        store.record(
+            with_usage(automated("r3", Some('3'), "model-a"), reasoning_over_output),
+            200
+        ),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    let mut over_bound = usage(10, 0, 5);
+    over_bound.input_tokens = UsageField::host_reported(MAX_VALUE + 1);
+    assert!(matches!(
+        store.record(
+            with_usage(automated("r4", Some('4'), "model-a"), over_bound),
+            200
+        ),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    let mut disagreeing = usage(10, 0, 5);
+    disagreeing.output_tokens = UsageField {
+        tokens: Some(5),
+        provenance: UsageProvenance::Unknown,
+    };
+    assert!(matches!(
+        store.record(
+            with_usage(automated("r5", Some('5'), "model-a"), disagreeing),
+            200
+        ),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+}

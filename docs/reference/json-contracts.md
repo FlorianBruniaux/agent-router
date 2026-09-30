@@ -33,7 +33,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
-| Feedback | v1 private consent/events (optional `run_key_sha256` and `started_at_unix_seconds`), schema 2 store with late facts, signed policy changes with externally trusted keys; no online exploration |
+| Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds` and `measurements.usage`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
@@ -83,6 +83,33 @@ or `{"recorded":false,"reason":"..."}` with `not_requested`,
 `collection_disabled`, `inconclusive`, `invalid_fact` or `consent_changed_or_storage_error`.
 `agent-router run` and `coordinate run-wave` keep the same `feedback` shape for
 the automated event, with `event_hash` in place of `fact_hash`.
+
+`FeedbackMeasurements.usage` (optional, omitted when absent so earlier events keep
+their bytes and `event_hash`) holds a `HostUsage`: `input_tokens`,
+`cached_input_tokens`, `cache_write_input_tokens`, `output_tokens` and
+`reasoning_output_tokens`, each `{"tokens": n, "provenance": "host_reported"}` or
+`{"tokens": null, "provenance": "unknown"}`. Recording refuses a count above
+`MAX_VALUE`, a provenance that disagrees with the presence of the count, cached
+input or cache writes above input, and reasoning above output. The sidecar
+projection drops it.
+
+`agent-router feedback --store <dir> --json report [--pricing <file>]` prints a
+`FeedbackReport` (schema 1); the pricing file is a `PricingTable` (schema 1, unknown
+keys refused, at most 64 models). It needs collection consent. Top-level keys:
+`schema_version`, `generated_at_unix_seconds`, `event_set_hash`, `fact_set_hash`,
+`automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `pricing`
+(`version`, `source`, `observed_at_unix_seconds`, or null), `groups`,
+`catalog_estimate_ratio` (always `{"value":null,"reason":...}`), `advisory`,
+`interpretation` and `content_hash` (domain `feedback-report-v1`). Each group
+sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
+`unknown`, `unlinked`, `human`, `accepted_rate` (counts, `point_micros`,
+`lower_micros`, `upper_micros`, `level_micros` 950000, `prior` `jeffreys`, or null),
+`integration`, the `tokens`, `latency_ms`, `attempts` and
+`time_to_acceptance_seconds` percentiles (`samples`, `missing`, `p50`, `p90`) and
+`cost` (`priced_runs`, `cost_unknown`, `total_microusd`, `per_accepted_microusd`,
+`reason`). No float appears in the output. `advisory` is
+`{"advisory":null,"reason":"learning_disabled"}` or `{"advisory":true,"suggestion":null,"reason":...}`.
+See [feedback](../feedback.md#feedback-report) for the join rules.
 
 ## Catalog
 

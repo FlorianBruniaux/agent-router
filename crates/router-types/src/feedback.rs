@@ -5,7 +5,8 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    EffortLevel, HarnessId, ModelId, PhaseAbstention, RiskLevel, TaskKind, VerificationOutcome,
+    EffortLevel, HarnessId, HostUsage, ModelId, PhaseAbstention, RiskLevel, TaskKind,
+    VerificationOutcome,
 };
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -133,6 +134,11 @@ pub struct FeedbackMeasurements {
     pub tokens: Option<u64>,
     pub attempts: u32,
     pub escalations: u32,
+    /// Token split the host declared, with its provenance. Report input only:
+    /// it prices runs at report time and never feeds admission budgets. Absent
+    /// in earlier events, so they keep their bytes and hash; None is UNKNOWN.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage: Option<HostUsage>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

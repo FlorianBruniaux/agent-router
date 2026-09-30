@@ -61,6 +61,7 @@ pub fn input(now: u64, human: bool) -> FeedbackInput {
             tokens: None,
             attempts: 1,
             escalations: 0,
+            usage: None,
         },
         comment_sha256: Some("3".repeat(64)),
     }

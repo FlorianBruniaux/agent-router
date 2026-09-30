@@ -213,11 +213,11 @@ protect against a local owner replacing the entire database, keys or program.
 
 [ADR 0019](adr/0019-outcome-measurement.md) decides how runs executed by Agent
 Router will feed this store. Batch 2 (host-declared tokens in
-`measurements.tokens`), batch 3 (late facts and the run start time) and batch 4
-(route facts and the escalation count) are described above. The other batches
-are not merged: the automatic record still keeps validation and objective
-`Unknown`, and nothing reads the facts yet, so real runs alone cannot pass the
-proposal gate.
+`measurements.tokens`), batch 3 (late facts and the run start time), batch 4
+(route facts and the escalation count) and batch 6 (`feedback report`, see
+[the report](#feedback-report)) are described in this file. The automatic record
+still keeps validation and objective `Unknown`, and the proposal gate does not
+read the facts, so real runs alone cannot pass it. Only the report reads them.
 
 What will change for an operator:
 
@@ -225,9 +225,9 @@ What will change for an operator:
   and a recorded verification has a `Passed` objective. A transport exit code of
   0 will still never count.
 - The per-field token detail (input, cached input, cache writes, output,
-  reasoning), now in `RuntimeEvidence.host_usage`, will be stored with its
-  `host_reported` provenance, for reports only. Admission budgets will not use
-  it.
+  reasoning), from `RuntimeEvidence.host_usage`, is stored in
+  `measurements.usage` with its `host_reported` provenance, for reports only.
+  Admission budgets do not use it, and the sidecar export omits it.
 - The data will feed three metrics per accepted task: accepted success rate,
   wall-clock time from run start to `integration.applied` of the accepted
   result and attempts, and tokens with computed cost. Late facts carry a
@@ -235,14 +235,90 @@ What will change for an operator:
   router; that needs the paired A/B
   [router value protocol](bench/router-value-protocol.md) against fixed
   baselines.
-- A `feedback report` command will show verified success, usage, computed cost
-  and `UNKNOWN` counts, with an advisory suggestion. Activating a policy will
-  still go through propose, evaluate, trial and signed apply.
+- `feedback report` shows accepted rate, usage, computed cost and `UNKNOWN`
+  counts. Activating a policy still goes through propose, evaluate, trial and
+  signed apply.
 
 Collection stays opt-in through `feedback_store`, and the product defaults do
 not change. A longer retention, such as 90 days on a single workstation, is an
 explicit configuration choice made in the preferences passed to `feedback
 configure`.
+
+## Feedback report
+
+```sh
+agent-router feedback --store <dir> --json report [--pricing <file>] [--now <unix>]
+```
+
+The report needs collection consent and writes nothing. Like the other readers
+it may expire retained rows and advance the clock watermark. The same retained
+events, facts, pricing file and `--now` give byte-identical output: lists are
+sorted and every figure is an integer or a fixed-precision value in micros.
+
+Runs are grouped by `(model, effort, task_kind)`. Automated events join late
+facts by `run_key_sha256`:
+
+- accepted: an `integration` fact `applied` and a `verification` fact with
+  objective `passed`;
+- rejected: an `integration` fact `discarded`, or a `verification` fact with
+  objective `failed`. A rejection signal wins over an acceptance signal;
+- unknown: everything else, including a run with only one of the two facts. It
+  is counted and never treated as a failure;
+- `unlinked`: automated events without a run key, which no fact can refer to.
+  They are also counted as unknown.
+
+Human-origin events are counted apart, by their `human.success`, and never
+change an automated outcome. Facts that match no retained automated event are
+counted as `orphan_facts`.
+
+Per group the report gives:
+
+- `accepted_rate`: accepted over accepted plus rejected, with a 95% equal-tailed
+  Jeffreys interval (Beta prior 1/2, 1/2) in micros. Unknown runs are excluded.
+  It is null when no run is decided;
+- p50 and p90 by nearest rank, with `samples` and `missing`, for `tokens`,
+  `latency_ms`, `attempts` and `time_to_acceptance_seconds`. The last one covers
+  accepted runs only: the applied fact's `observed_at` minus the run's
+  `started_at_unix_seconds`. A run without a start time is counted in `missing`;
+- `integration`: applied, discarded, unknown, and `rate_micros` as applied over
+  applied plus discarded;
+- `cost`, only with `--pricing`, a `PricingTable` file whose `version` and
+  `source` the report cites. Each run is priced from its stored usage split, at
+  the uncached input, cached input and output rates, rounded up to a
+  micro-dollar per run like `router_eval::price_usage`. A run with no stored
+  usage, an undeclared input, cached input or output count, or a model missing
+  from the table is `cost_unknown`, never zero. `total_microusd` sums priced runs
+  only. `per_accepted_microusd` divides the total over all runs by accepted
+  tasks, and is null while any run of the group is unpriced. Cache writes are
+  priced as input, since the table has no cache write price, and reasoning tokens
+  as output. Without `--pricing` every cost is null with reason
+  `no_pricing_table`.
+
+The ratio between catalog estimate and observed usage that ADR 0019 lists is not
+computed: no catalog estimate is stored in feedback. It is reported as
+`catalog_estimate_ratio` with a null value and a reason, and no source is
+invented for it.
+
+`advisory` is `{"advisory":null,"reason":"learning_disabled"}` unless learning is
+enabled. With learning enabled the report carries `"advisory":true` and a null
+`suggestion`. `propose_policy` accepts only score-weight changes within
+`maximum_weight_delta` and never a lower threshold. A sound weight suggestion
+needs the active policy, the catalog and the propensity of each route, and the
+report has none of them: grouped outcomes cannot say which weight caused a
+route. A missing suggestion is the honest output; a human still writes any
+candidate.
+
+What the report does not prove:
+
+- A gain attributable to the router. That needs the paired A/B
+  [router value protocol](bench/router-value-protocol.md); these figures are
+  associations from routes whose propensity is unknown.
+- Small samples: read the interval, not the point value.
+- Spending: usage is `host_reported` and prices come from the table given, so the
+  cost is neither an invoice nor a metered figure.
+- Cross-platform bit equality of the interval: it is computed in floating point
+  and rounded to micros, so it is stable on one build and can differ in the last
+  digit elsewhere.
 
 ## Explicit sidecar export
 

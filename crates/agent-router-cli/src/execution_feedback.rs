@@ -246,17 +246,17 @@ fn route_facts(receipt: &PhaseReceipt, executed: &PhaseSelection) -> FeedbackRou
 }
 /// Host-declared usage is a report input only, never an admission input.
 fn measurements(completion: &RunCompletion, escalations: u32) -> FeedbackMeasurements {
-    let tokens = completion
+    let usage = completion
         .runtime_evidence
         .as_ref()
-        .and_then(|evidence| evidence.host_usage.as_ref())
-        .and_then(HostUsage::total_tokens);
+        .and_then(|evidence| evidence.host_usage);
     FeedbackMeasurements {
         cost_microusd: None,
         latency_ms: Some(completion.transport.elapsed_ms),
-        tokens,
+        tokens: usage.as_ref().and_then(HostUsage::total_tokens),
         attempts: completion.run.attempts,
         escalations,
+        usage,
     }
 }
 fn feedback_input(
@@ -484,6 +484,8 @@ mod tests {
         };
         let m = measurements(&completion(Some(usage)), 0);
         assert_eq!(m.tokens, Some(120));
+        // The split is stored with its provenance, not only the total.
+        assert_eq!(m.usage, Some(usage));
         for absent in [
             None,
             Some(HostUsage {
@@ -493,6 +495,7 @@ mod tests {
         ] {
             let m = measurements(&completion(absent), 0);
             assert_eq!(m.tokens, None);
+            assert_eq!(m.usage, absent);
         }
     }
 
