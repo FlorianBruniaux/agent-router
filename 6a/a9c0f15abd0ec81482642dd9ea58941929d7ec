@@ -1,0 +1,33 @@
+crates/agent-router-cli/src/execution_feedback.rs
+  s_2b47aafd5c6e51::t_0bd70671e9c8e0 43-55,97-122,128-129,157,179,188-288
+crates/router-feedback/src/learning.rs
+  s_2b47aafd5c6e51::t_70fc7348141fc7 109-122,141-142,169,205-208
+crates/router-feedback/src/lib.rs
+  s_2b47aafd5c6e51::t_96c4130708d6a6 106-113,154-160,194-196
+crates/router-feedback/tests/feedback.rs
+  s_2b47aafd5c6e51::t_0c0c00c6154afe 38,205
+crates/router-feedback/tests/route.rs
+  s_2b47aafd5c6e51::t_41b1e36616f687 1-215
+crates/router-feedback/tests/support/sidecar.rs
+  s_2b47aafd5c6e51::t_f83515a6174321 37
+crates/router-types/src/feedback.rs
+  s_2b47aafd5c6e51::t_45f20c02d1ebaa 7-9,100-121
+docs/feedback.md
+  s_2b47aafd5c6e51::t_deffc0c59e4fa1 56-67,76-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6aa9c0f15abd0ec81482642dd9ea58941929d7ec",
+  "prompts": {},
+  "sessions": {
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
