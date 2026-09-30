@@ -118,7 +118,7 @@ See [feedback](../feedback.md#feedback-report) for the join rules.
 record contract: the `ReplayInput` and `CaseLabel` schemas are unchanged. Report
 keys: `input_hash`, `policy_id`, `executed_candidate_id`, `label`
 (`basis`: `integration`, `human` or `human_and_integration`; `human_validated`;
-`independent`, always false), `observations` (`usage` is `unknown`; `elapsed_ms`
+`independent`, always false), `observations` (`usage` is `host_reported` or `unknown`; `elapsed_ms`
 may be null), `replay_context` (`complete` or `without_asset_authority`),
 `request_free_text_fields` and, with `--output`, `output`. Refusal codes:
 `feedback.replay.unlabeled`, `feedback.replay.rejected`,

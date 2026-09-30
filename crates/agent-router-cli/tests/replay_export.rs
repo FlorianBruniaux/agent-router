@@ -6,11 +6,11 @@
 mod native_fixture;
 use native_fixture::*;
 use router_adapter_api::{SnapshotValidation, content_digest};
-use router_eval::{ObservedOutcome, ReplayRecord, TokenUsage, replay_deterministic};
+use router_eval::{ObservedOutcome, ReplayRecord, replay_deterministic};
 use router_feedback::{FeedbackStore, parse_feedback};
 use router_types::{
-    FeedbackFact, FeedbackFactKind, FeedbackInput, FeedbackOrigin, HumanVerdict,
-    IntegrationOutcome, PerceivedCost, VerificationOutcome,
+    FeedbackFact, FeedbackFactKind, FeedbackInput, FeedbackOrigin, HostUsage, HumanVerdict,
+    IntegrationOutcome, PerceivedCost, UsageField, VerificationOutcome,
 };
 use serde_json::{Value, json};
 use std::{
@@ -71,6 +71,11 @@ impl Case {
     }
     fn store(&self) -> FeedbackStore {
         FeedbackStore::open(&self.f.feedback).unwrap()
+    }
+    fn automated_with(&self, usage: HostUsage) {
+        let mut input = self.input(FeedbackOrigin::Automated);
+        input.measurements.usage = Some(usage);
+        self.store().record(input, now()).unwrap();
     }
     fn input(&self, origin: FeedbackOrigin) -> FeedbackInput {
         let mut input = parse_feedback(include_bytes!(
@@ -196,7 +201,7 @@ fn an_accepted_run_exports_a_sealed_record_labelled_from_integration() {
         ObservedOutcome::Passed
     );
     assert_eq!(observed.outcomes.functional, ObservedOutcome::Passed);
-    // A count nobody recorded is an empty list, never a row of zeros.
+    // The event carries no usage: an empty list, never a row of zeros.
     assert!(observed.usage.is_empty());
     assert_eq!(report["observations"]["usage"], "unknown");
     // The seal detects any edit.
@@ -256,34 +261,74 @@ fn a_negative_signal_refuses_because_the_label_cannot_say_not_expected() {
     }
 }
 
-#[test]
-fn the_record_replays_deterministically_once_usage_is_supplied() {
-    let case = Case::new();
-    case.automated();
+fn usage(input: u64, cached: u64, output: u64) -> HostUsage {
+    HostUsage {
+        input_tokens: UsageField::host_reported(input),
+        cached_input_tokens: UsageField::host_reported(cached),
+        cache_write_input_tokens: UsageField::UNKNOWN,
+        output_tokens: UsageField::host_reported(output),
+        reasoning_output_tokens: UsageField::UNKNOWN,
+    }
+}
+fn accept(case: &Case) {
     case.verified(VerificationOutcome::Passed, VerificationOutcome::Passed);
     case.integrated(IntegrationOutcome::Applied);
+}
+fn validation(record: &ReplayRecord) -> SnapshotValidation {
+    SnapshotValidation {
+        now_unix_seconds: record.input().snapshot.observed_at_unix_seconds,
+        max_age_seconds: 300,
+    }
+}
+
+#[test]
+fn a_recorded_usage_replays_deterministically_without_manual_edits() {
+    let case = Case::new();
+    case.automated_with(usage(100, 40, 5));
+    accept(&case);
     let (report, record) = case.exported();
     assert_eq!(report["request_free_text_fields"][0], "task.objective");
     assert_eq!(report["replay_context"], "without_asset_authority");
+    assert_eq!(report["observations"]["usage"], "host_reported");
     let policy = report["policy_id"].as_str().unwrap();
-    let validation = SnapshotValidation {
-        now_unix_seconds: record.input().snapshot.observed_at_unix_seconds,
-        max_age_seconds: 300,
-    };
-    // Without usage the selected model cannot be priced: no zero is invented.
-    assert!(replay_deterministic(&record, policy, validation).is_err());
-    let mut input = record.input().clone();
-    input.observations.get_mut(policy).unwrap().usage = vec![TokenUsage {
-        model: router_types::ModelId::parse(&case.model).unwrap(),
-        input_tokens: 10,
-        cached_input_tokens: 0,
-        output_tokens: 5,
-    }];
-    let supplied = ReplayRecord::seal(input).unwrap();
-    let first = replay_deterministic(&supplied, policy, validation).unwrap();
-    let second = replay_deterministic(&supplied, policy, validation).unwrap();
+    let rows = &record.input().observations[policy].usage;
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].model.as_str(), case.model);
+    // Total input, cache included: the pricing subtracts the cached part itself.
+    assert_eq!(
+        (
+            rows[0].input_tokens,
+            rows[0].cached_input_tokens,
+            rows[0].output_tokens
+        ),
+        (100, 40, 5)
+    );
+    let first = replay_deterministic(&record, policy, validation(&record)).unwrap();
+    let second = replay_deterministic(&record, policy, validation(&record)).unwrap();
     assert_eq!(first.trace_hash(), second.trace_hash());
     assert!(first.violations().is_empty());
+    // 60 uncached at 1000, 40 cached at 100, 5 output at 5000 per million, rounded up.
+    assert_eq!(first.cost_microusd(), 1);
+}
+
+#[test]
+fn an_undeclared_count_or_an_absent_usage_stays_unknown_never_zero() {
+    let mut partial = usage(100, 40, 5);
+    partial.cached_input_tokens = UsageField::UNKNOWN;
+    for automated in [Some(partial), None] {
+        let case = Case::new();
+        match automated {
+            Some(partial) => case.automated_with(partial),
+            None => case.automated(),
+        }
+        accept(&case);
+        let (report, record) = case.exported();
+        let policy = report["policy_id"].as_str().unwrap();
+        assert!(record.input().observations[policy].usage.is_empty());
+        assert_eq!(report["observations"]["usage"], "unknown");
+        // Nothing to price the selected model with: no zero is invented.
+        assert!(replay_deterministic(&record, policy, validation(&record)).is_err());
+    }
 }
 
 #[test]

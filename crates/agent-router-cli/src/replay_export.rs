@@ -3,7 +3,7 @@
 use crate::{CliError, Outcome, execution, phases::read_json, product::json_output};
 use router_eval::{
     CaseLabel, DatasetSplit, ObservedOutcome, PricingTable, RecordedPhase, ReplayInput,
-    ReplayRecord, VerificationOutcomes,
+    ReplayRecord, TokenUsage, VerificationOutcomes,
 };
 use router_feedback::FeedbackStore;
 use router_types::{
@@ -195,10 +195,35 @@ pub(crate) fn export(
     let elapsed_ms = automated.and_then(|event| event.input.measurements.latency_ms);
     let fields = free_text_fields(&source.request);
     let policy_id = source.policy.version.clone();
-    // The runtime store keeps no completion, so no per-model token split exists
-    // to read back. An unknown usage stays an empty list, never a zero row.
+    // The usage split lives in the automated event, not in the runtime store.
+    // `TokenUsage.input_tokens` is the total input, cache included: `price_usage`
+    // subtracts the cached part itself. Any undeclared count leaves the usage
+    // empty, UNKNOWN, never a row of zeros.
+    let usage: Vec<TokenUsage> = automated
+        .and_then(|event| event.input.measurements.usage.as_ref())
+        .and_then(|host| {
+            Some(TokenUsage {
+                model: source
+                    .request
+                    .candidates
+                    .iter()
+                    .find(|candidate| candidate.id == source.executed_candidate)?
+                    .model
+                    .clone(),
+                input_tokens: host.input_tokens.reported()?,
+                cached_input_tokens: host.cached_input_tokens.reported()?,
+                output_tokens: host.output_tokens.reported()?,
+            })
+        })
+        .into_iter()
+        .collect();
+    let usage_status = if usage.is_empty() {
+        "unknown"
+    } else {
+        "host_reported"
+    };
     let observation = RecordedPhase {
-        usage: Vec::new(),
+        usage,
         elapsed_ms,
         fallback_reasons: Vec::new(),
         outcomes,
@@ -231,7 +256,7 @@ pub(crate) fn export(
         "policy_id": policy_id,
         "executed_candidate_id": source.executed_candidate,
         "label": {"basis": verdict.basis, "human_validated": verdict.human_validated, "independent": false},
-        "observations": {"usage": "unknown", "elapsed_ms": elapsed_ms},
+        "observations": {"usage": usage_status, "elapsed_ms": elapsed_ms},
         "replay_context": if source.uses_assets { "without_asset_authority" } else { "complete" },
         "request_free_text_fields": fields,
     });

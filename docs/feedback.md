@@ -165,13 +165,16 @@ same run make the export fail with `feedback.replay.ambiguous`.
 Observations. `outcomes.transport` comes from the automated event, and
 `command_validation` and `functional` from the verification fact; a missing
 source stays `unknown`. `elapsed_ms` is the transport latency, not the time to
-acceptance. `usage` is empty: the runtime store keeps no completion, so the
-host-declared token split (`RuntimeEvidence.host_usage`) is gone after the run,
-and the feedback event holds only a total that cannot fill input, cached and
-output counts. An empty list is UNKNOWN, never a row of zeros. Replay prices the
-selected model from `usage`, so `replay_deterministic` refuses such a record
-(`selected model usage missing`) until usage is added by hand and the record is
-sealed again with `eval seal`.
+acceptance. `usage` is one row for the executed candidate's model, read from
+`measurements.usage` of the automated event: `input_tokens` is the total input,
+cache included, as `price_usage` subtracts `cached_input_tokens` itself, and
+`output_tokens` includes reasoning. If the event has no `usage`, or one of these
+three counts is undeclared, `usage` is an empty list and the report says
+`"usage": "unknown"`: UNKNOWN, never a row of zeros. Replay prices the selected
+model from `usage`, so `replay_deterministic` refuses a record with an empty
+`usage` (`selected model usage missing`) until usage is added by hand and the
+record is sealed again with `eval seal`. Events written before batch 6 carry no
+usage.
 
 Privacy. The record carries whatever the definition carries: the request's task
 objective and any deliverables, constraints, scope, dependencies and acceptance
