@@ -1,0 +1,27 @@
+crates/router-feedback/src/lib.rs
+  s_00c6bf8ee605be::t_b2aff7241e5e9e 216-219,247-255
+crates/router-feedback/src/report.rs
+  s_00c6bf8ee605be::t_6054a5db479996 94-96,172-174,273,299-311,314-321,376-382,450,484
+crates/router-feedback/tests/report.rs
+  s_00c6bf8ee605be::t_ced017f5888d99 532-681
+docs/feedback.md
+  s_00c6bf8ee605be::t_6b3ce61a0341bc 270-278,302-304
+docs/reference/json-contracts.md
+  s_00c6bf8ee605be::t_9f687b25b5136f 93-95,102,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f568589ff3feb8ec65bc1519c764ca08aadf18fd",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
