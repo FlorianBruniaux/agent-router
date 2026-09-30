@@ -14,7 +14,7 @@ class AgentRouter < Formula
   # are relative to it (agent-router-binary/ in the archive).
   def install
     bin.install "bin/agent-router"
-    doc.install "LICENSE", "LICENSE-APACHE", "THIRD_PARTY_NOTICES.md",
+    doc.install "LICENSE.md", "NOTICE", "THIRD_PARTY_NOTICES.md",
                 "LICENSE-INVENTORY.json", "BUILD-SBOM.json"
     doc.install "SOURCE-SBOM.spdx.json" if File.exist?("SOURCE-SBOM.spdx.json")
     doc.install "licenses" if File.directory?("licenses")

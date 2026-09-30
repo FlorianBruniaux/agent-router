@@ -182,8 +182,10 @@ The SBOM records upstream declarations as `licenseDeclared`; `licenseConcluded`
 stays `NOASSERTION`. A checksum establishes provenance of the inspected bytes,
 not license compatibility. The generated notices state the same boundary.
 
-The core is declared `MIT OR Apache-2.0` by the workspace. Corresponding texts
-are supplied as `LICENSE-MIT` and `LICENSE-APACHE` at the repository root.
+The core is declared `FSL-1.1-ALv2` by the workspace. `FSL-1.1-ALv2` is on the
+SPDX license list but is not OSI approved. The texts are `LICENSE.md` and
+`NOTICE` at the repository root, exported in the source archive and in the
+binary archive.
 Dependency texts retain their own terms. Legal compatibility review, security
 review, host runtime verification and publication are separate fields; this
 exporter cannot mark them successful.

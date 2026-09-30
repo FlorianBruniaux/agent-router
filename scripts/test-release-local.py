@@ -53,8 +53,8 @@ class LocalReleaseTests(unittest.TestCase):
             "Cargo.lock": b'version = 4\n\n[[package]]\nname = "agent-router-cli"\nversion = "0.1.0"\n',
             "LICENSE-INVENTORY.json": b'{"packages":[]}\n',
             "SBOM.spdx.json": b'{"spdxVersion":"SPDX-2.3","packages":[]}\n',
-            "LICENSE-MIT": b"MIT license text\n",
-            "LICENSE-APACHE": b"Apache license text\n",
+            "LICENSE.md": b"Project license text\n",
+            "NOTICE": b"Project notice text\n",
             "THIRD_PARTY_NOTICES.md": b"No external dependency notices in this fixture.\n",
         }
         hashes = {name: sha(data) for name, data in sorted(files.items())}

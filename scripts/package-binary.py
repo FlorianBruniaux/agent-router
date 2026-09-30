@@ -389,8 +389,8 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
 
 
 def archive_payload(binary: bytes, proof: dict, source: dict[str, bytes]) -> bytes:
-    files = {"bin/agent-router": binary, "LICENSE": source["LICENSE-MIT"],
-             "LICENSE-APACHE": source["LICENSE-APACHE"], "THIRD_PARTY_NOTICES.md": source["THIRD_PARTY_NOTICES.md"],
+    files = {"bin/agent-router": binary, "LICENSE.md": source["LICENSE.md"],
+             "NOTICE": source["NOTICE"], "THIRD_PARTY_NOTICES.md": source["THIRD_PARTY_NOTICES.md"],
              "LICENSE-INVENTORY.json": source["LICENSE-INVENTORY.json"]}
     if "SBOM.spdx.json" in source:
         files["SOURCE-SBOM.spdx.json"] = source["SBOM.spdx.json"]
@@ -468,7 +468,7 @@ def verify_binary_archive(payload: bytes) -> dict[str, bytes]:
             if len(data) != member.size:
                 raise PackageError("archive.member_invalid")
             files[name], modes[name] = data, member.mode
-    fixed_names = {"bin/agent-router", "LICENSE", "LICENSE-APACHE", "THIRD_PARTY_NOTICES.md",
+    fixed_names = {"bin/agent-router", "LICENSE.md", "NOTICE", "THIRD_PARTY_NOTICES.md",
                    "LICENSE-INVENTORY.json", "BUILD-SBOM.json", "BUILD-RECIPE.json",
                    "BUILD-OBSERVATIONS.json", "INTEGRITY.json"}
     if "SOURCE-SBOM.spdx.json" in files:
