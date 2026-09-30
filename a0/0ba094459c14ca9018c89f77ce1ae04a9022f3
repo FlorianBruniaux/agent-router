@@ -1,0 +1,29 @@
+CHANGELOG.md
+  s_9e80b85afcc43a::t_1250877c71c98a 19-20
+crates/agent-router-cli/src/execution.rs
+  s_9e80b85afcc43a::t_a0e2c76b0eaa06 721,725,727,738
+crates/router-runtime/src/sandbox.rs
+  s_9e80b85afcc43a::t_f310a8b0f0826b 329-340
+crates/router-runtime/tests/host_state.rs
+  s_9e80b85afcc43a::t_1a6ad3e2399d96 94-109
+docs/adr/0021-host-capability-evidence.md
+  s_9e80b85afcc43a::t_6a860ee7e38c4d 422-443
+docs/cli-execution.md
+  s_9e80b85afcc43a::t_9e38857c990c5f 203-206,306-317
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a00ba094459c14ca9018c89f77ce1ae04a9022f3",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
