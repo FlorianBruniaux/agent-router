@@ -1,0 +1,55 @@
+docs/bench/runs/2026-09-30-egress-spike/README.md
+  s_00c6bf8ee605be::t_e64fc6e4b0da89 1-57,59-89
+  s_00c6bf8ee605be::t_0484ab78d4f689 90
+  s_00c6bf8ee605be::t_e4a0e979b0bcc4 58
+.gitleaks.toml
+  s_00c6bf8ee605be::t_19cdf50a0086f1 9-12
+docs/adr/0021-host-capability-evidence.md
+  s_00c6bf8ee605be::t_67eb8eecd5e4c0 7,334-388
+docs/bench/runs/2026-09-30-egress-spike/REDACTIONS
+  s_00c6bf8ee605be::t_50ed0e4cfc998e 1-70
+docs/bench/runs/2026-09-30-egress-spike/SHA256SUMS
+  s_00c6bf8ee605be::t_27d6af20340f5c 1-15
+docs/bench/runs/2026-09-30-egress-spike/harness/v1/selftest.py
+  s_00c6bf8ee605be::t_6dab6240b0c331 1-158
+docs/bench/runs/2026-09-30-egress-spike/harness/v1/spike_egress.py
+  s_00c6bf8ee605be::t_35002f601455de 1-638
+docs/bench/runs/2026-09-30-egress-spike/harness/v2/selftest.py
+  s_00c6bf8ee605be::t_3d0ab62920b4f1 1-248
+docs/bench/runs/2026-09-30-egress-spike/harness/v2/spike_egress.py
+  s_00c6bf8ee605be::t_24dc1f57dac38e 1-785
+docs/bench/runs/2026-09-30-egress-spike/harness/v3/selftest.py
+  s_00c6bf8ee605be::t_5f59f01a134e58 1-289
+docs/bench/runs/2026-09-30-egress-spike/harness/v3/spike_egress.py
+  s_00c6bf8ee605be::t_d5003fc53fffbf 1-864
+docs/bench/runs/2026-09-30-egress-spike/results/v1-20260930T170911Z/codex.json
+  s_00c6bf8ee605be::t_7b6202a530b1b8 1-164
+docs/bench/runs/2026-09-30-egress-spike/results/v1-20260930T170911Z/manifest.json
+  s_00c6bf8ee605be::t_fbb4efed70cc4a 1-53
+docs/bench/runs/2026-09-30-egress-spike/results/v2-20260930T173101Z/codex.json
+  s_00c6bf8ee605be::t_b5decc06413a09 1-225
+docs/bench/runs/2026-09-30-egress-spike/results/v2-20260930T173101Z/manifest.json
+  s_00c6bf8ee605be::t_82b5ea3786c70a 1-75
+docs/bench/runs/2026-09-30-egress-spike/results/v3-20260930T184024Z/claude.json
+  s_00c6bf8ee605be::t_461c58a36b1970 1-135
+docs/bench/runs/2026-09-30-egress-spike/results/v3-20260930T184024Z/codex.json
+  s_00c6bf8ee605be::t_b75096ab6c0f78 1-330
+docs/bench/runs/2026-09-30-egress-spike/results/v3-20260930T184024Z/manifest.json
+  s_00c6bf8ee605be::t_af96e71b80adc2 1-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ef41f0fd674441e34b152539ea560e9db2dfc2e1",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
