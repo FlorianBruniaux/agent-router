@@ -188,6 +188,8 @@ fn parse(
         executed_effort: None,
         events,
         missing_evidence: missing,
+        // Token usage is not decoded for this host.
+        host_usage: None,
     };
     let text = if collect_text
         && evidence.transport_success

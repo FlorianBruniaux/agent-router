@@ -8,10 +8,10 @@ use std::{
 
 use router_types::{
     AdapterDegradation, Capability, CapabilitySupport, EffectiveRestrictions, ExecutionMode,
-    ExecutionRequest, ExecutionSandbox, ExecutionSkillKind, ExecutionTarget, ModelId, Mutation,
-    ObservedModel, PreparedInput, PreparedRun, RuntimeEvidence, SkillTrust, ToolSelection,
-    TransportEvent, TransportEventKind, TransportOutcome, TransportTermination,
-    VerificationOutcome,
+    ExecutionRequest, ExecutionSandbox, ExecutionSkillKind, ExecutionTarget, HostUsage, ModelId,
+    Mutation, ObservedModel, PreparedInput, PreparedRun, RuntimeEvidence, SkillTrust,
+    ToolSelection, TransportEvent, TransportEventKind, TransportOutcome, TransportTermination,
+    UsageField, VerificationOutcome,
 };
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -774,6 +774,7 @@ pub fn decode_transport(
     let mut events = Vec::new();
     let mut models = Vec::new();
     let mut stream_complete = true;
+    let mut usage = UsageCollector::default();
     for (sequence, line) in bytes
         .split(|byte| *byte == b'\n')
         .filter(|line| !line.is_empty())
@@ -801,7 +802,10 @@ pub fn decode_transport(
         let event = match (dialect, kind) {
             (StreamDialect::Codex, "thread.started") => TransportEventKind::SessionStarted,
             (StreamDialect::Codex, "turn.started") => TransportEventKind::TurnStarted,
-            (StreamDialect::Codex, "turn.completed") => TransportEventKind::TurnCompleted,
+            (StreamDialect::Codex, "turn.completed") => {
+                usage.codex_turn(&value);
+                TransportEventKind::TurnCompleted
+            }
             (StreamDialect::Codex, "turn.failed" | "error") => TransportEventKind::HostError,
             (StreamDialect::Codex, "item.completed")
                 if value.pointer("/item/type").and_then(|v| v.as_str())
@@ -851,6 +855,10 @@ pub fn decode_transport(
             (StreamDialect::Claude, "result")
                 if value.get("is_error").and_then(|v| v.as_bool()) == Some(false) =>
             {
+                // A subagent result is never attributed to the root worker.
+                if native_root_event(&value) {
+                    usage.claude_result(&value);
+                }
                 TransportEventKind::TurnCompleted
             }
             (StreamDialect::Claude, "result") => return Err(AdapterError::Protocol),
@@ -880,6 +888,14 @@ pub fn decode_transport(
     if !stream_complete {
         missing_evidence.push("stream.truncated".into());
     }
+    // Usage from a truncated stream, a killed process or a host error is
+    // partial or unreliable, so none is reported.
+    let usable_usage = stream_complete
+        && outcome.termination == TransportTermination::Exited
+        && outcome.exit_code == Some(0)
+        && !events
+            .iter()
+            .any(|event| event.kind == TransportEventKind::HostError);
     Ok(RuntimeEvidence {
         schema_version: 1,
         transport_success: outcome.termination == TransportTermination::Exited
@@ -892,5 +908,141 @@ pub fn decode_transport(
         executed_effort: None,
         events,
         missing_evidence,
+        host_usage: if usable_usage { usage.finish() } else { None },
     })
+}
+
+/// One declared count: absent, valid, or present but unusable.
+enum Count {
+    Absent,
+    Valid(u64),
+    Invalid,
+}
+
+fn count(value: Option<&serde_json::Value>, key: &str) -> Count {
+    match value.and_then(|v| v.get(key)) {
+        None | Some(serde_json::Value::Null) => Count::Absent,
+        // Negative, fractional and oversized numbers are refused, not clamped.
+        Some(v) => match v.as_u64().filter(|n| *n <= HostUsage::MAX_TOKENS) {
+            Some(n) => Count::Valid(n),
+            None => Count::Invalid,
+        },
+    }
+}
+
+/// Accumulator for one field. Input that omits the field or
+/// declares it unusably makes the field UNKNOWN: a partial sum would
+/// understate.
+#[derive(Default)]
+struct Sum {
+    total: u64,
+    seen: u32,
+    spoiled: bool,
+}
+
+impl Sum {
+    fn add(&mut self, count: Count) {
+        match count {
+            Count::Valid(n) => match self.total.checked_add(n) {
+                Some(total) if total <= HostUsage::MAX_TOKENS => {
+                    self.total = total;
+                    self.seen += 1;
+                }
+                _ => self.spoiled = true,
+            },
+            Count::Absent | Count::Invalid => self.spoiled = true,
+        }
+    }
+    fn value(&self) -> Option<u64> {
+        (!self.spoiled && self.seen > 0).then_some(self.total)
+    }
+}
+
+/// Collects the usage a host declares in its own stream. Reads counts only:
+/// no assistant text, cost or model name is copied out.
+#[derive(Default)]
+struct UsageCollector {
+    input: Sum,
+    cached_input: Sum,
+    cache_write_input: Sum,
+    output: Sum,
+    reasoning_output: Sum,
+    /// Claude only: a second root `result` makes cumulative or per-turn
+    /// semantics ambiguous, so usage becomes UNKNOWN.
+    claude_results: u32,
+    /// Codex: more than one `turn.completed` is ambiguous in the same way.
+    codex_turns: u32,
+}
+
+impl UsageCollector {
+    /// Codex `turn.completed.usage`, stored as declared. Codex is assumed to
+    /// report cached input inside `input_tokens` and reasoning inside
+    /// `output_tokens` (see `HostUsage`). A second turn makes usage UNKNOWN.
+    fn codex_turn(&mut self, event: &serde_json::Value) {
+        self.codex_turns += 1;
+        let usage = event.get("usage").filter(|u| u.is_object());
+        self.input.add(count(usage, "input_tokens"));
+        self.cached_input.add(count(usage, "cached_input_tokens"));
+        self.output.add(count(usage, "output_tokens"));
+        self.reasoning_output
+            .add(count(usage, "reasoning_output_tokens"));
+    }
+
+    /// Claude root `result.usage`. The API reports cache reads and writes
+    /// next to `input_tokens`, not inside it, so the normalized `input_tokens`
+    /// is the sum of the three. One unusable cache count makes `input_tokens`
+    /// and both cache fields UNKNOWN. An absent cache count adds nothing to the
+    /// input. No reasoning field is documented, so it stays UNKNOWN.
+    fn claude_result(&mut self, event: &serde_json::Value) {
+        self.claude_results += 1;
+        let usage = event.get("usage").filter(|u| u.is_object());
+        let write = count(usage, "cache_creation_input_tokens");
+        let read = count(usage, "cache_read_input_tokens");
+        let cache_ok = !matches!(write, Count::Invalid) && !matches!(read, Count::Invalid);
+        let declared = |c: &Count| if let Count::Valid(n) = c { *n } else { 0 };
+        match (count(usage, "input_tokens"), cache_ok) {
+            (Count::Valid(base), true) => {
+                let total = base
+                    .saturating_add(declared(&write))
+                    .saturating_add(declared(&read));
+                self.input.add(Count::Valid(total));
+            }
+            _ => self.input.add(Count::Invalid),
+        }
+        if cache_ok {
+            self.cached_input.add(read);
+            self.cache_write_input.add(write);
+        } else {
+            self.cached_input.add(Count::Invalid);
+            self.cache_write_input.add(Count::Invalid);
+        }
+        self.output.add(count(usage, "output_tokens"));
+    }
+
+    fn finish(self) -> Option<HostUsage> {
+        if self.claude_results > 1 || self.codex_turns > 1 {
+            return None;
+        }
+        let field = |sum: &Sum| {
+            sum.value()
+                .map_or(UsageField::UNKNOWN, UsageField::host_reported)
+        };
+        let usage = HostUsage {
+            input_tokens: field(&self.input),
+            cached_input_tokens: field(&self.cached_input),
+            cache_write_input_tokens: field(&self.cache_write_input),
+            output_tokens: field(&self.output),
+            reasoning_output_tokens: field(&self.reasoning_output),
+        };
+        [
+            usage.input_tokens,
+            usage.cached_input_tokens,
+            usage.cache_write_input_tokens,
+            usage.output_tokens,
+            usage.reasoning_output_tokens,
+        ]
+        .iter()
+        .any(|f| f.tokens.is_some())
+        .then_some(usage)
+    }
 }

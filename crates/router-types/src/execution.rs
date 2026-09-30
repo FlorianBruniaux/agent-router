@@ -221,4 +221,114 @@ pub struct RuntimeEvidence {
     pub executed_effort: Option<EffortLevel>,
     pub events: Vec<TransportEvent>,
     pub missing_evidence: Vec<String>,
+    /// Token counts the host declared in its own stream. Absent means UNKNOWN,
+    /// never zero. Report-only: admission budgets never read it (ADR 0009).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub host_usage: Option<HostUsage>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UsageProvenance {
+    /// Declared by the host process. Not metered, signed or billed by the router.
+    HostReported,
+    Unknown,
+}
+
+/// One token count. `tokens` is `Some` exactly when `provenance` is
+/// `HostReported`: a missing, negative, fractional or oversized declaration is
+/// `Unknown`, never zero. Deserialization refuses any other pairing.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(try_from = "UsageFieldWire")]
+pub struct UsageField {
+    pub tokens: Option<u64>,
+    pub provenance: UsageProvenance,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct UsageFieldWire {
+    tokens: Option<u64>,
+    provenance: UsageProvenance,
+}
+
+impl TryFrom<UsageFieldWire> for UsageField {
+    type Error = &'static str;
+
+    fn try_from(wire: UsageFieldWire) -> Result<Self, Self::Error> {
+        match (wire.tokens, wire.provenance) {
+            (Some(tokens), UsageProvenance::HostReported) if tokens <= HostUsage::MAX_TOKENS => {
+                Ok(Self::host_reported(tokens))
+            }
+            (None, UsageProvenance::Unknown) => Ok(Self::UNKNOWN),
+            _ => Err("usage field: tokens and provenance disagree or exceed the bound"),
+        }
+    }
+}
+
+impl UsageField {
+    pub const UNKNOWN: Self = Self {
+        tokens: None,
+        provenance: UsageProvenance::Unknown,
+    };
+
+    /// The count, only when the host reported it.
+    pub fn reported(&self) -> Option<u64> {
+        match (self.tokens, self.provenance) {
+            (Some(tokens), UsageProvenance::HostReported) => Some(tokens),
+            _ => None,
+        }
+    }
+
+    pub fn host_reported(tokens: u64) -> Self {
+        Self {
+            tokens: Some(tokens),
+            provenance: UsageProvenance::HostReported,
+        }
+    }
+}
+
+/// Token counts declared by the host, normalized to one meaning for every host.
+/// A field the host did not declare validly is `UsageField::UNKNOWN`.
+///
+/// - `input_tokens`: total input, cache reads and cache writes included.
+/// - `cached_input_tokens`: cache reads, a subset of `input_tokens`.
+/// - `cache_write_input_tokens`: cache creation, a subset of `input_tokens`.
+///   Claude only; UNKNOWN for Codex, which documents no such field.
+/// - `output_tokens`: total output, reasoning included.
+/// - `reasoning_output_tokens`: a subset of `output_tokens`. Codex only;
+///   UNKNOWN for Claude, which documents no such field.
+///
+/// Codex reports `input_tokens` with `cached_input_tokens` inside it and
+/// `output_tokens` with `reasoning_output_tokens` inside it. That is an
+/// assumption from OpenAI usage practice, not proven: the documented example
+/// (24763 input, 24448 cached) is consistent with it but does not establish it.
+/// Claude reports `input_tokens` without cache reads or writes, so the decoder
+/// adds them. Totals therefore never add a subset field a second time.
+///
+/// A Codex stream with more than one `turn.completed`, or a Claude stream with
+/// more than one root `result`, yields no usage at all: nothing establishes
+/// whether each `usage` is per turn or cumulative, and a sum would double count
+/// in the cumulative case.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct HostUsage {
+    pub input_tokens: UsageField,
+    pub cached_input_tokens: UsageField,
+    pub cache_write_input_tokens: UsageField,
+    pub output_tokens: UsageField,
+    pub reasoning_output_tokens: UsageField,
+}
+
+impl HostUsage {
+    /// Ceiling for one field or a total. Larger declarations are refused.
+    pub const MAX_TOKENS: u64 = 1_000_000_000_000;
+
+    /// `input_tokens + output_tokens`, only when both are known and the total is in bounds.
+    pub fn total_tokens(&self) -> Option<u64> {
+        self.input_tokens
+            .reported()?
+            .checked_add(self.output_tokens.reported()?)
+            .filter(|total| *total <= Self::MAX_TOKENS)
+    }
 }

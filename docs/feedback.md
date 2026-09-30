@@ -51,7 +51,11 @@ objective success additionally requires successful validation. This verifies
 the contract of the claim, not the underlying evidence. Human quality uses an
 explicit 0–100 scale. Perceived cost, failure class and required correction stay
 separate from measured cost. Missing cost, tokens, latency and propensity remain
-unknown; none become zero by omission.
+unknown; none become zero by omission. `measurements.tokens` is the total
+declared by the caller. The automatic CLI feedback sets it only to input plus
+output tokens the host declared in its own stream (`host_reported`, decoded
+into `RuntimeEvidence.host_usage`); manual and sidecar feedback set it
+themselves. The per-field detail is not in the feedback record.
 
 Automated events also carry optional route facts in `context.route`: the
 executed candidate id, its one-based rank and utility margin over the next
@@ -156,10 +160,11 @@ protect against a local owner replacing the entire database, keys or program.
 ## Planned: outcome measurement for executed runs
 
 [ADR 0019](adr/0019-outcome-measurement.md) decides how runs executed by Agent
-Router will feed this store. None of it is merged yet; until its batches land,
-the behavior described above is the current one, and the automatic record keeps
-validation and objective `Unknown`, so real runs alone cannot pass the proposal
-gate.
+Router will feed this store. Batch 2 (host-declared tokens in
+`measurements.tokens`) and batch 4 (route facts and the escalation count) are
+described above. The other batches are not merged: the automatic record still
+keeps validation and objective `Unknown`, so real runs alone cannot pass the
+proposal gate.
 
 What will change for an operator:
 
@@ -168,8 +173,10 @@ What will change for an operator:
   0 will still never count.
 - `verify`, `artifacts apply` and `artifacts discard` will append late facts,
   one per run and kind, without rewriting the completion verdict.
-- Token usage reported by the host will be stored with `host_reported`
-  provenance, for reports only. Admission budgets will not use it.
+- The per-field token detail (input, cached input, cache writes, output,
+  reasoning), now in `RuntimeEvidence.host_usage`, will be stored with its
+  `host_reported` provenance, for reports only. Admission budgets will not use
+  it.
 - The store will migrate to schema version 2 on open. Consent, retention, export
   and purge will cover the new facts.
 - The data will feed three metrics per accepted task: accepted success rate,

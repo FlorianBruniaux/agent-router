@@ -120,6 +120,21 @@ fn route_facts(receipt: &PhaseReceipt, executed: &PhaseSelection) -> FeedbackRou
         abstention: receipt.abstention,
     }
 }
+/// Host-declared usage is a report input only, never an admission input.
+fn measurements(completion: &RunCompletion, escalations: u32) -> FeedbackMeasurements {
+    let tokens = completion
+        .runtime_evidence
+        .as_ref()
+        .and_then(|evidence| evidence.host_usage.as_ref())
+        .and_then(HostUsage::total_tokens);
+    FeedbackMeasurements {
+        cost_microusd: None,
+        latency_ms: Some(completion.transport.elapsed_ms),
+        tokens,
+        attempts: completion.run.attempts,
+        escalations,
+    }
+}
 fn feedback_input(
     context: &ValidatedPhaseContext,
     completion: &RunCompletion,
@@ -171,13 +186,7 @@ fn feedback_input(
         verification_evidence_sha256: None,
         human: None,
         failure,
-        measurements: FeedbackMeasurements {
-            cost_microusd: None,
-            latency_ms: Some(completion.transport.elapsed_ms),
-            tokens: None,
-            attempts: completion.run.attempts,
-            escalations,
-        },
+        measurements: measurements(completion, escalations),
         comment_sha256: None,
     })
 }
@@ -285,6 +294,80 @@ mod tests {
             (outside.rank, outside.margin_micros, outside.alternatives),
             (None, None, 2)
         );
+    }
+
+    fn completion(host_usage: Option<HostUsage>) -> RunCompletion {
+        RunCompletion {
+            run: RunSummary {
+                run_id: "run".into(),
+                definition_hash: "d".into(),
+                approval_digest: "a".into(),
+                receipt_id: "r".into(),
+                plan_id: "p".into(),
+                node_id: "n".into(),
+                state: RunState::Verifying,
+                attempts: 1,
+                failure: None,
+                worktree: None,
+                artifact_sha256: None,
+                output_retention: Default::default(),
+                workflow: None,
+                artifact_contract_sha256: None,
+            },
+            transport: TransportOutcome {
+                termination: TransportTermination::Exited,
+                exit_code: Some(0),
+                elapsed_ms: 5,
+            },
+            stdout_sha256: String::new(),
+            stderr_sha256: String::new(),
+            stdout_bytes: 0,
+            stderr_bytes: 0,
+            validation: VerificationOutcome::Unknown,
+            objective: VerificationOutcome::Unknown,
+            memory_enforcement: MemoryEnforcement::NotRequested,
+            runtime_evidence: Some(RuntimeEvidence {
+                schema_version: 1,
+                transport: TransportOutcome {
+                    termination: TransportTermination::Exited,
+                    exit_code: Some(0),
+                    elapsed_ms: 5,
+                },
+                transport_success: true,
+                stream_complete: true,
+                validation: VerificationOutcome::Unknown,
+                objective: VerificationOutcome::Unknown,
+                executed_models: vec![],
+                executed_effort: None,
+                events: vec![],
+                missing_evidence: vec![],
+                host_usage,
+            }),
+            output_artifacts: None,
+        }
+    }
+
+    #[test]
+    fn host_usage_becomes_total_tokens_and_absence_stays_unknown() {
+        let usage = HostUsage {
+            input_tokens: UsageField::host_reported(100),
+            cached_input_tokens: UsageField::host_reported(40),
+            cache_write_input_tokens: UsageField::UNKNOWN,
+            output_tokens: UsageField::host_reported(20),
+            reasoning_output_tokens: UsageField::host_reported(5),
+        };
+        let m = measurements(&completion(Some(usage)), 0);
+        assert_eq!(m.tokens, Some(120));
+        for absent in [
+            None,
+            Some(HostUsage {
+                output_tokens: UsageField::UNKNOWN,
+                ..usage
+            }),
+        ] {
+            let m = measurements(&completion(absent), 0);
+            assert_eq!(m.tokens, None);
+        }
     }
 
     #[test]

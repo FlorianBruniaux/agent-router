@@ -1,7 +1,7 @@
 //! Two real local worker attempts and durable accounting. No provider calls.
 use router_adapter_api::{
-    AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, ValidatedExecutionRequest,
-    ValidatedHostObservation, prepared_run,
+    AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, StreamDialect,
+    ValidatedExecutionRequest, ValidatedHostObservation, decode_transport, prepared_run,
 };
 use router_catalog::Catalog;
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
@@ -173,6 +173,37 @@ impl Fixture {
             )
             .await
             .unwrap()
+    }
+}
+
+/// Prints a Codex stream whose `turn.completed` declares usage, decoded by the
+/// real shared decoder.
+struct UsageAdapter;
+impl HarnessAdapter for UsageAdapter {
+    fn host(&self) -> &'static str {
+        "codex"
+    }
+    fn prepare(
+        &self,
+        request: &ValidatedExecutionRequest,
+    ) -> std::result::Result<PreparedRun, AdapterError> {
+        prepared_run(
+            request,
+            "/bin/sh",
+            vec![
+                "-c".into(),
+                r#"printf '%s\n' '{"type":"turn.completed","usage":{"input_tokens":700,"output_tokens":30}}'"#.into(),
+            ],
+            vec![],
+        )
+    }
+    fn decode_stream(
+        &self,
+        bytes: &[u8],
+        outcome: TransportOutcome,
+        max_bytes: usize,
+    ) -> std::result::Result<RuntimeEvidence, AdapterError> {
+        decode_transport(bytes, outcome, max_bytes, StreamDialect::Codex)
     }
 }
 
@@ -381,6 +412,32 @@ async fn native_supervisor(fixture: &Fixture) -> ResourceSupervisor<impl Sandbox
     .await
     .unwrap()
 }
+#[tokio::test]
+async fn host_declared_usage_is_reported_but_never_enters_admission_accounting() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let completion = runtime
+        .execute(
+            approved,
+            &UsageAdapter,
+            &LocalProcess,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    let usage = completion.runtime_evidence.unwrap().host_usage.unwrap();
+    assert_eq!(usage.input_tokens, UsageField::host_reported(700));
+    assert_eq!(usage.total_tokens(), Some(730));
+    let evidence = runtime.attempt_evidence("run-1").unwrap();
+    assert_eq!(evidence.len(), 1);
+    assert_eq!(evidence[0].observed_cost_microusd, None);
+    assert_eq!(evidence[0].observed_tokens, None);
+}
+
 #[tokio::test]
 async fn one_real_attempt_with_two_errors_is_insufficient_and_metadata_stays_private() {
     let fixture = Fixture::new(false).await;
