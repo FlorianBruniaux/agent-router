@@ -63,6 +63,7 @@ written in French.
 | [Backend activation store](backend-store.md) | Durable activation, rollback and revocation |
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
+| [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Feedback](feedback.md) | Local consented feedback and offline policies |
 
 ## Diagnostics, distribution and security
@@ -84,7 +85,7 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [JSON contracts](reference/json-contracts.md) | Versioned input and output contracts, trust rules |
-| [Architecture decisions](adr/) | ADR 0001 to 0017 |
+| [Architecture decisions](adr/) | ADR 0001 to 0019 |
 | [Completion ledger](completion.md) | What is delivered, with evidence |
 | [Remaining acceptance](remaining-acceptance.md) (FR) | Open requirements and proof gates |
 | [Functional specification](specs/functional-specification.md) (FR) | Product requirements |

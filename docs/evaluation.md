@@ -186,4 +186,6 @@ successful alternatives have known costs. An unknown outcome or cost can hide a
 cheaper successful alternative, so exact cost regret remains unknown. A failed
 selected policy has cost regret `not_applicable`, distinct from unknown or zero.
 The report combines neither axis into an invented score and has no effect on
-promotion or activation.
+promotion or activation. It reports no confidence interval or paired delta; the
+[router value protocol](bench/router-value-protocol.md) plans those for a bench
+of fixed arms against the router.
