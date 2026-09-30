@@ -58,12 +58,12 @@ executed candidate id, its one-based rank and utility margin over the next
 ranked candidate (both taken from the receipt's own order), the number of other
 ranked candidates and the baseline abstention when the execution overrode it.
 No text is stored. Events written before these facts existed omit the key and
-read back unchanged. `margin_micros` is signed: the receipt ranks the preferred model first, so it
-can be negative. `escalations` is 1 when the run is the target of an escalation
-and 0 otherwise; a chain cannot exceed 1 because an escalation source must be a
-deterministic or activated run. That 1 sits beside an attempt counter that also
-starts at one, so the validator now rejects only `escalations > attempts`
-instead of `>=`.
+read back unchanged. `margin_micros` can be negative, because the receipt ranks
+the preferred model first even when its utility is lower. `escalations` is 1
+when the run is the target of an escalation and 0 otherwise; a chain cannot
+exceed 1 because an escalation source must be a deterministic or activated run.
+An escalated run therefore has one attempt and one escalation, and the validator
+rejects `escalations > attempts` instead of `escalations >= attempts`.
 
 `statistics(now)` is available only with learning consent. It rebuilds a
 versioned, content-hashed report from retained immutable events:

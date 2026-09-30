@@ -191,8 +191,7 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
         || m.attempts == 0
         || m.attempts > 100
         || m.escalations > 99
-        // An escalated run is itself the escalation while its own attempt
-        // counter starts at one.
+        // An escalated run records one escalation and starts with one attempt.
         || m.escalations > m.attempts
     {
         return Err(FeedbackError::Invalid("measurements"));
