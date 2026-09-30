@@ -1,0 +1,164 @@
+{
+  "argv": [
+    "exec",
+    "--model",
+    "gpt-5.6-luna",
+    "--config",
+    "model_reasoning_effort=\"low\"",
+    "--sandbox",
+    "read-only",
+    "--json",
+    "--ephemeral",
+    "--color",
+    "never",
+    "--cd",
+    "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T170911Z/codex/workspace",
+    "-"
+  ],
+  "calls": 2,
+  "entry": {
+    "file": "a /usr/bin/env node script text executable, ASCII text",
+    "kind": "script",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/bin/codex.js",
+    "sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+    "shebang": "/usr/bin/env node",
+    "size_bytes": 8790
+  },
+  "environment_names": [
+    "HOME",
+    "PATH"
+  ],
+  "host": "codex",
+  "launches": [
+    {
+      "elapsed_ms": 21,
+      "exit_code": 127,
+      "kind": "version",
+      "label": "V0 entry --version",
+      "network": false,
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/bin/codex.js",
+      "signal": null,
+      "stderr_bytes": 37,
+      "stderr_categories": [
+        "launcher_missing"
+      ],
+      "stderr_sha256": "058c3e7114a685e48c485c5eec7bf04ecd685fb818d18a9cf483d38fcc3eef35",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    },
+    {
+      "elapsed_ms": 75,
+      "exit_code": 0,
+      "kind": "version",
+      "label": "V1 program --version",
+      "network": false,
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 104,
+      "stderr_categories": [
+        "fs_denied"
+      ],
+      "stderr_sha256": "3087f13b0d34323fbc05177ef68ae53dc523d9acaf6c0c63852825479db5af2a",
+      "stdout_bytes": 18,
+      "stdout_sha256": "48784a39efd6841c30aff4c70ab315bea1dccee48519515cb308652cdef3ea57",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": "codex-cli 0.159.2"
+    },
+    {
+      "elapsed_ms": 127,
+      "exit_code": 1,
+      "kind": "model",
+      "label": "C1 program network:false",
+      "list_cost_microusd": null,
+      "network": false,
+      "outcome": "clean_failure",
+      "profile_sha256": "ff83965b053144c281f572665993a2628c8e2ce19ec541f1adfd0e9ac438ea2d",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 199,
+      "stderr_categories": [
+        "fs_denied"
+      ],
+      "stderr_sha256": "2d8b902fb51c4fb0108c58a40b037f3ed52641f00cdae67901d7cbda9b4b8473",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {},
+        "json_lines": 0,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": false,
+        "usage": null
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "elapsed_ms": 73,
+      "exit_code": 1,
+      "kind": "model",
+      "label": "C2 program network:true (control)",
+      "list_cost_microusd": null,
+      "network": true,
+      "outcome": "clean_failure",
+      "profile_sha256": "a0baf41eb3c0243497a11def3f3df3f34c59d688f3f977342524a18ddf1bb830",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 199,
+      "stderr_categories": [
+        "fs_denied"
+      ],
+      "stderr_sha256": "2d8b902fb51c4fb0108c58a40b037f3ed52641f00cdae67901d7cbda9b4b8473",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {},
+        "json_lines": 0,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": false,
+        "usage": null
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "kind": "model",
+      "label": "C3 private copy network:true",
+      "skipped": "control C2 did not complete"
+    }
+  ],
+  "list_cost_complete": true,
+  "list_cost_microusd": 0,
+  "model_requested": "gpt-5.6-luna",
+  "program": {
+    "file": "Mach-O 64-bit executable arm64",
+    "kind": "mach-o",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "shebang": null,
+    "size_bytes": 240184096
+  },
+  "read_roots": [
+    "$SPIKE_HOME/.codex"
+  ],
+  "verdict": {
+    "abnormal": true,
+    "anomalies": [],
+    "copy": null,
+    "egress": "inconclusive"
+  },
+  "write_roots": []
+}
