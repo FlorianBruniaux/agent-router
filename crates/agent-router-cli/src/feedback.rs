@@ -7,7 +7,11 @@ use crate::{
     read_bounded,
 };
 use router_feedback::{FeedbackError, FeedbackStore};
-use std::{collections::BTreeSet, path::Path, process::ExitCode};
+use std::{
+    collections::BTreeSet,
+    path::{Path, PathBuf},
+    process::ExitCode,
+};
 
 fn error(error: FeedbackError) -> CliError {
     CliError::Product(match error {
@@ -30,6 +34,9 @@ fn error(error: FeedbackError) -> CliError {
         FeedbackError::Json(_) => "feedback.serialization",
         FeedbackError::Evaluation(_) => "feedback.evaluation",
     })
+}
+fn read_pricing(path: Option<PathBuf>) -> Result<Option<router_eval::PricingTable>, CliError> {
+    path.map(|path| read_json(&path, 64 * 1024)).transpose()
 }
 pub(crate) fn feedback(
     path: &Path,
@@ -106,11 +113,16 @@ pub(crate) fn feedback(
             ExitCode::SUCCESS,
         ),
         FeedbackCommand::Report { pricing } => {
-            let pricing: Option<router_eval::PricingTable> = pricing
-                .map(|path| read_json(&path, 64 * 1024))
-                .transpose()?;
+            let pricing = read_pricing(pricing)?;
             json_output(
                 &store.report(pricing.as_ref(), now).map_err(error)?,
+                ExitCode::SUCCESS,
+            )
+        }
+        FeedbackCommand::Summary { pricing } => {
+            let pricing = read_pricing(pricing)?;
+            json_output(
+                &store.summary(pricing.as_ref(), now).map_err(error)?,
                 ExitCode::SUCCESS,
             )
         }

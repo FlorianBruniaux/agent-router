@@ -40,6 +40,7 @@ router-execution-decision = { path = "../router-execution-decision" }
 router-local-api = { path = "../router-local-api", optional = true }
 tokio = { version = "=1.45.1", features = ["rt-multi-thread", "time", "signal"] }
 clap.workspace = true
+clap_complete.workspace = true
 router-catalog = { path = "../router-catalog" }
 router-policy = { path = "../router-policy" }
 router-types = { path = "../router-types" }

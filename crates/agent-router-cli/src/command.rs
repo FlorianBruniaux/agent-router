@@ -61,6 +61,30 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Print the JSON Schema of a named output contract, or list them.
+    Schema {
+        /// Contract name; see `schema --list`.
+        #[arg(required_unless_present = "list", conflicts_with = "list")]
+        name: Option<String>,
+        /// List the contracts and the `schema_version` values supported for each.
+        #[arg(long)]
+        list: bool,
+        /// Accepted so that errors are reported as JSON; the output is always JSON.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print the build, enabled features and supported contract versions.
+    Version {
+        /// Print the complete versioned JSON result instead of the human view.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Print a shell completion script for bash, zsh or fish.
+    Completions {
+        /// Target shell.
+        #[arg(value_enum)]
+        shell: crate::completions::CompletionShell,
+    },
     /// Configure and inspect an explicitly shared concurrency domain.
     Admission {
         /// Print the complete versioned JSON result instead of the human view.
@@ -714,6 +738,12 @@ pub enum FeedbackCommand {
         #[arg(long)]
         pricing: Option<PathBuf>,
     },
+    /// One global total over every group of `report`: accepted rate, computed cost and UNKNOWN counts; requires collection consent.
+    Summary {
+        /// Versioned pricing table JSON; without it every cost is null.
+        #[arg(long)]
+        pricing: Option<PathBuf>,
+    },
     /// Export a real run as a sealed replay record, labelled from recorded facts.
     ReplayExport {
         /// Run definition, as given to `run`.
@@ -985,6 +1015,8 @@ impl Commands {
                 | CatalogCommand::Show { json, .. }
                 | CatalogCommand::Refresh { json, .. } => (json, "Catalog"),
             },
+            Self::Version { json } => (json, "Version"),
+            Self::Schema { .. } | Self::Completions { .. } => return None,
             Self::Route { .. } | Self::Explain { .. } => return None,
             #[cfg(all(feature = "local-api", unix))]
             Self::Serve { .. } => return None,
