@@ -4,7 +4,7 @@ title: Outcome measurement
 status: accepted
 created: 2026-09-30
 last_modified: 2026-09-30
-scope: "Implementation planned; this ADR changes no code."
+scope: "Batches 1 to 6 merged; coordinated runs record no verification fact yet."
 amended_by: []
 supersedes: []
 superseded_by: []

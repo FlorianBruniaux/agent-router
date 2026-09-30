@@ -7,3 +7,4 @@
 /.harness-state/
 /.claude/settings.local.json
 /.codex/*.local.toml
+__pycache__/
