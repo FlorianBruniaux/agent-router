@@ -103,6 +103,14 @@ pub(crate) fn identifier(value: &str) -> bool {
             .bytes()
             .all(|b| b.is_ascii_alphanumeric() || b"._:/-".contains(&b))
 }
+/// Candidate ids follow the policy bound (128), wider than other identifiers.
+fn candidate_identifier(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 128
+        && value
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"._:/-".contains(&b))
+}
 pub(crate) fn validate_preferences(value: &FeedbackPreferences) -> Result<()> {
     if value.schema_version != 1
         || value.learning_enabled && !value.collection_enabled
@@ -143,6 +151,13 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
     {
         return Err(FeedbackError::Invalid("context"));
     }
+    if c.route.as_ref().is_some_and(|r| {
+        !candidate_identifier(&r.candidate_id)
+            || r.alternatives > 64
+            || r.rank.is_some_and(|v| v == 0 || v > r.alternatives + 1)
+    }) {
+        return Err(FeedbackError::Invalid("route"));
+    }
     if input.origin == FeedbackOrigin::Human && input.human.is_none()
         || input.origin == FeedbackOrigin::Automated && input.human.is_some()
         || input
@@ -176,7 +191,9 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
         || m.attempts == 0
         || m.attempts > 100
         || m.escalations > 99
-        || m.escalations >= m.attempts
+        // An escalated run is itself the escalation while its own attempt
+        // counter starts at one.
+        || m.escalations > m.attempts
     {
         return Err(FeedbackError::Invalid("measurements"));
     }

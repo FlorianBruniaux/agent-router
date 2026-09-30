@@ -106,6 +106,20 @@ pub struct PerformanceStatistics {
     pub escalations: u64,
 }
 
+/// Route facts of automated events. Skipped when empty so statistics of
+/// pre-route stores keep their content hash.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
+pub struct RouteStatistics {
+    pub recorded: usize,
+    /// Executions that overrode an abstaining baseline receipt.
+    pub abstained: usize,
+}
+impl RouteStatistics {
+    fn is_empty(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct FeedbackStatistics {
     pub schema_version: u32,
@@ -124,6 +138,8 @@ pub struct FeedbackStatistics {
     pub plan_preference: BTreeMap<String, OutcomeStatistics>,
     pub known_propensities: usize,
     pub unknown_propensities: usize,
+    #[serde(skip_serializing_if = "RouteStatistics::is_empty")]
+    pub route: RouteStatistics,
     pub interpretation: String,
     pub content_hash: String,
 }
@@ -150,6 +166,7 @@ pub(crate) fn statistics(events: &[FeedbackEvent]) -> Result<FeedbackStatistics>
         plan_preference: BTreeMap::new(),
         known_propensities: 0,
         unknown_propensities: 0,
+        route: RouteStatistics::default(),
         interpretation: "descriptive_associations_not_causal_or_verified_human_gain".into(),
         content_hash: String::new(),
     };
@@ -184,6 +201,10 @@ pub(crate) fn statistics(events: &[FeedbackEvent]) -> Result<FeedbackStatistics>
                 result.known_propensities += 1;
             } else {
                 result.unknown_propensities += 1;
+            }
+            if let Some(route) = &c.route {
+                result.route.recorded += 1;
+                result.route.abstained += usize::from(route.abstention.is_some());
             }
         }
         if let Some(human) = &i.human {

@@ -53,6 +53,18 @@ explicit 0–100 scale. Perceived cost, failure class and required correction st
 separate from measured cost. Missing cost, tokens, latency and propensity remain
 unknown; none become zero by omission.
 
+Automated events also carry optional route facts in `context.route`: the
+executed candidate id, its one-based rank and utility margin over the next
+ranked candidate (both taken from the receipt's own order), the number of other
+ranked candidates and the baseline abstention when the execution overrode it.
+No text is stored. Events written before these facts existed omit the key and
+read back unchanged. `margin_micros` is signed: the receipt ranks the preferred model first, so it
+can be negative. `escalations` is 1 when the run is the target of an escalation
+and 0 otherwise; a chain cannot exceed 1 because an escalation source must be a
+deterministic or activated run. That 1 sits beside an attempt counter that also
+starts at one, so the validator now rejects only `escalations > attempts`
+instead of `>=`.
+
 `statistics(now)` is available only with learning consent. It rebuilds a
 versioned, content-hashed report from retained immutable events:
 
@@ -61,6 +73,8 @@ versioned, content-hashed report from retained immutable events:
 - Exact count, sum, sum of squares and empirical min/median/p95/max for cost,
   latency and tokens by model/effort/harness; missing values have their own count.
 - Attempts, escalations, transport failures and failure classes.
+- Route facts recorded and how many of them overrode an abstention (`route`,
+  omitted while no event carries one).
 - Human plan preference under a discrete task/risk context, quality moments and
   known versus unknown decision propensities.
 
