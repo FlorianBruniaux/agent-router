@@ -1,0 +1,135 @@
+{
+  "argv": [
+    "--print",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--input-format",
+    "text",
+    "--model",
+    "claude-haiku-4-5",
+    "--effort",
+    "low",
+    "--permission-mode",
+    "plan",
+    "--permission-prompts",
+    "none",
+    "--no-session-persistence",
+    "--tools",
+    ""
+  ],
+  "calls": 0,
+  "entry": {
+    "file": "Mach-O 64-bit executable arm64",
+    "kind": "mach-o",
+    "path": "$SPIKE_HOME/.local/share/claude/versions/2.1.285",
+    "sha256": "51f09bd1e021d9fa8a1864c179799bd37cb39962a937935c5cf6823398e86db4",
+    "shebang": null,
+    "size_bytes": 223821616
+  },
+  "environment_names": [
+    "CLAUDE_CONFIG_DIR",
+    "HOME",
+    "PATH"
+  ],
+  "host": "claude",
+  "launches": [
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 38,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "S0 program --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 0,
+      "stderr_categories": [],
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 22,
+      "stdout_excerpt": null,
+      "stdout_sha256": "ce4c32e46e44a2de8d639a121fe9b138af1407052d6229ab340c894dcdd816c9",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": "2.1.285 (Claude Code)"
+    },
+    {
+      "argv": [
+        "auth",
+        "status"
+      ],
+      "elapsed_ms": 293,
+      "exit_code": 1,
+      "kind": "local",
+      "label": "S1 program auth status",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 0,
+      "stderr_categories": [],
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 348,
+      "stdout_excerpt": "{\n  \"loggedIn\": false,\n  \"authMethod\": \"none\",\n  \"apiProvider\": \"firstParty\",\n  \"analyticsDisabled\": false,\n  \"projectsDirectory\": \"<config>/projects\",\n  \"configDirectory\": \"<config>\"\n}\n",
+      "stdout_sha256": "d70a4f930589e2ccf4b353b6a5e853b61a653ae27a19663217f913ce8a84bb82",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    }
+  ],
+  "list_cost_complete": true,
+  "list_cost_microusd": 0,
+  "model_requested": "claude-haiku-4-5",
+  "private_config": {
+    "auth_json": {
+      "copied": false
+    },
+    "entries_at_end": [
+      ".claude.json",
+      ".claude.json.lock",
+      "backups"
+    ],
+    "mode": "0700",
+    "path": "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/claude/config",
+    "variable": "CLAUDE_CONFIG_DIR"
+  },
+  "profile_deviations": [
+    "write root: private configuration directory",
+    "read root: ~/Library/Keychains"
+  ],
+  "profile_extra_rules": [],
+  "program": {
+    "file": "Mach-O 64-bit executable arm64",
+    "kind": "mach-o",
+    "path": "$SPIKE_HOME/.local/share/claude/versions/2.1.285",
+    "sha256": "51f09bd1e021d9fa8a1864c179799bd37cb39962a937935c5cf6823398e86db4",
+    "shebang": null,
+    "size_bytes": 223821616
+  },
+  "read_roots": [
+    "$SPIKE_HOME/Library/Keychains"
+  ],
+  "startup": {
+    "config_entries_created": [
+      ".claude.json",
+      ".claude.json.lock",
+      "backups"
+    ],
+    "ok": false,
+    "status_ok": false,
+    "version_ok": true
+  },
+  "verdict": {
+    "abnormal": true,
+    "anomalies": [],
+    "cause": "startup",
+    "copy": null,
+    "egress": "inconclusive"
+  },
+  "write_roots": [
+    "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/claude/config"
+  ]
+}

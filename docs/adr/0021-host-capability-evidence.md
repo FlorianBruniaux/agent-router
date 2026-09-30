@@ -4,7 +4,7 @@ title: Host capability evidence from supervised canaries
 status: proposed
 created: 2026-09-30
 last_modified: 2026-09-30
-scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batches 4 to 9 are design only; every real host capability stays UNKNOWN until a real canary passes after batch 4."
+scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batch 4 ran on 2026-09-30: Codex cannot reach its provider under `network: false`, so this ADR stops at batch 4 for Codex until a provider-egress ADR; Claude Code is inconclusive at startup. Batches 5 to 9 are design only; every real host capability stays UNKNOWN."
 amended_by: []
 supersedes: []
 superseded_by: []
@@ -330,6 +330,61 @@ runs a paid host call in CI.
    evaluation: an attestation never changes `host.capabilities` or `support`;
    a phase policy without an acceptance list rejects it; with the capability
    listed, the receipt shows `attested`.
+
+## Batch 4 result
+
+The spike ran three times on 2026-09-30, on macOS, for a total list cost of
+1094 microUSD. Harness, results and redactions are in
+`docs/bench/runs/2026-09-30-egress-spike/` (below, "the run folder"). The
+harness replicates the profile, command and adapter argv of `f263e7d`, not the
+resource helper, the approval digest or the router prompt.
+
+**Codex: provider unreachable.** In run v3, Codex `0.159.2` with
+`gpt-5.6-luna` exited 1 after 16 872 ms under `network: false`, with
+`Connection failed: error sending request` and no root assistant message. Under
+the same profile with `network: true` it completed with a root assistant
+message, and so did a private copy of its executable
+(`results/v3-20260930T184024Z/codex.json`, launches `C1`, `C2`, `C3`). For
+Codex this ADR therefore stops at batch 4: canaries and every native run need
+provider egress, and a separate ADR must separate provider egress from the
+`Network` capability of tools, as decided under "Provider egress spike". The
+v3 profile carried two deviations from the runtime's, listed below; the only
+difference between `C1` and `C2` was the network line.
+
+**Claude Code: inconclusive at startup.** In run v3, `claude auth status`
+(`2.1.285`) exited 1 under a private `CLAUDE_CONFIG_DIR`, even with
+`~/Library/Keychains` as a read root; its output reports `"loggedIn": false`
+(`results/v3-20260930T184024Z/claude.json`, launch `S1`). No model call was
+made, so Claude egress stays UNKNOWN. The binary names its keychain entry with
+a suffix derived from `CLAUDE_CONFIG_DIR` when that variable is set (strings of
+the `2.1.285` binary); that explains the result but was not observed in the
+run.
+
+**Product findings.** Each one blocks a native Codex run under the runtime as
+it stands at `f263e7d`:
+
+- The read-only profile grants no writable root for host state. Codex exited 1
+  with `fs_denied` in `C1` and `C2` alike (run v1,
+  `results/v1-20260930T170911Z/codex.json`). The runs gave each host a private
+  0700 directory named by `CODEX_HOME` or `CLAUDE_CONFIG_DIR`, both names the
+  runtime already accepts (`crates/router-runtime/src/sandbox.rs:466-476`).
+- Codex needs `user-preference-read` on the domain `com.openai.codex`. Without
+  it, `CFPreferencesAppSynchronize("com.openai.codex")` fails and Codex stops
+  with `Failed to synchronize managed preferences`, identically with and
+  without network (run v2, `results/v2-20260930T173101Z/codex.json`; call site
+  `codex-rs/config/src/loader/macos.rs:136-148` at tag `rust-v0.159.2`). The
+  profile allows every `mach-lookup` but no preference read
+  (`crates/router-runtime/src/sandbox.rs:430`). Run v3 added
+  `(allow user-preference-read (preference-domain "com.openai.codex"))` and
+  shared-memory reads named `apple.cfprefs.*`; whether the shared-memory rule
+  is required was not isolated.
+- The npm launcher `codex.js` is a `#!/usr/bin/env node` script and exits 127
+  under `PATH=/usr/bin:/bin` (`crates/router-runtime/src/sandbox.rs:318`, all
+  three runs, launch `V0`). A program entry must name the native executable
+  that `codex.js` spawns.
+
+These findings belong to the provider-egress ADR or to a runtime profile
+change; this ADR does not decide them.
 
 ## Consequences
 

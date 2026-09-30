@@ -1,0 +1,225 @@
+{
+  "argv": [
+    "exec",
+    "--model",
+    "gpt-5.6-luna",
+    "--config",
+    "model_reasoning_effort=\"low\"",
+    "--sandbox",
+    "read-only",
+    "--json",
+    "--ephemeral",
+    "--color",
+    "never",
+    "--cd",
+    "<run>/codex/workspace",
+    "-"
+  ],
+  "calls": 2,
+  "entry": {
+    "file": "a /usr/bin/env node script text executable, ASCII text",
+    "kind": "script",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/bin/codex.js",
+    "sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+    "shebang": "/usr/bin/env node",
+    "size_bytes": 8790
+  },
+  "environment_names": [
+    "CODEX_HOME",
+    "HOME",
+    "PATH"
+  ],
+  "host": "codex",
+  "launches": [
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 22,
+      "exit_code": 127,
+      "kind": "local",
+      "label": "V0 entry --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 37,
+      "stderr_categories": [
+        "launcher_missing"
+      ],
+      "stderr_excerpt": "env: node: No such file or directory\n",
+      "stderr_sha256": "058c3e7114a685e48c485c5eec7bf04ecd685fb818d18a9cf483d38fcc3eef35",
+      "stdout_bytes": 0,
+      "stdout_excerpt": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    },
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 69,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "S0 program --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 0,
+      "stderr_categories": [],
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 18,
+      "stdout_excerpt": null,
+      "stdout_sha256": "48784a39efd6841c30aff4c70ab315bea1dccee48519515cb308652cdef3ea57",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": "codex-cli 0.159.2"
+    },
+    {
+      "argv": [
+        "login",
+        "status"
+      ],
+      "elapsed_ms": 68,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "S1 program login status",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 24,
+      "stderr_categories": [],
+      "stderr_excerpt": "Logged in using ChatGPT\n",
+      "stderr_sha256": "16118df3eb3595e44a4721878cef0f79910e6564e10ff0e78e451e7c4e478947",
+      "stdout_bytes": 0,
+      "stdout_excerpt": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    },
+    {
+      "elapsed_ms": 178,
+      "exit_code": 1,
+      "kind": "model",
+      "label": "C1 program network:false",
+      "list_cost_microusd": null,
+      "network": false,
+      "outcome": "clean_failure",
+      "profile_sha256": "f389d1b5eb75d4565c1179afed7af83f8154a7c4d14f4e7e07114650d56f0cb5",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 128,
+      "stderr_categories": [],
+      "stderr_excerpt": "Error: thread/start: thread/start failed: failed to load configuration: Failed to synchronize managed preferences (code -32600)\n",
+      "stderr_sha256": "bb38c0d526acee9c1f67e6986c7377cc9268b75da6dc5b72fe45002fb4e73ef5",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {},
+        "json_lines": 0,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": false,
+        "usage": null
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "elapsed_ms": 128,
+      "exit_code": 1,
+      "kind": "model",
+      "label": "C2 program network:true (control)",
+      "list_cost_microusd": null,
+      "network": true,
+      "outcome": "clean_failure",
+      "profile_sha256": "4382b51d8e60db49dda24d8b16bb2b380429b315d9074370dd904b55faa8c871",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 128,
+      "stderr_categories": [],
+      "stderr_excerpt": "Error: thread/start: thread/start failed: failed to load configuration: Failed to synchronize managed preferences (code -32600)\n",
+      "stderr_sha256": "bb38c0d526acee9c1f67e6986c7377cc9268b75da6dc5b72fe45002fb4e73ef5",
+      "stdout_bytes": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {},
+        "json_lines": 0,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": false,
+        "usage": null
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "kind": "model",
+      "label": "C3 private copy network:true",
+      "skipped": "control C2 did not complete"
+    }
+  ],
+  "list_cost_complete": true,
+  "list_cost_microusd": 0,
+  "model_requested": "gpt-5.6-luna",
+  "private_config": {
+    "auth_json": {
+      "absent_before_delete": false,
+      "copied": true,
+      "deleted": true,
+      "deleted_at": "2026-09-30T17:31:01+00:00",
+      "mode": "0600",
+      "present_after_delete": false,
+      "signature_changed_by_host": false
+    },
+    "entries_at_end": [
+      "goals_1.sqlite",
+      "installation_id",
+      "logs_2.sqlite",
+      "memories_1.sqlite",
+      "queue_1.sqlite",
+      "skills",
+      "state_5.sqlite",
+      "tmp"
+    ],
+    "mode": "0700",
+    "path": "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T173101Z/codex/config",
+    "variable": "CODEX_HOME"
+  },
+  "program": {
+    "file": "Mach-O 64-bit executable arm64",
+    "kind": "mach-o",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "shebang": null,
+    "size_bytes": 240184096
+  },
+  "read_roots": [],
+  "startup": {
+    "config_entries_created": [
+      "tmp"
+    ],
+    "ok": true,
+    "status_ok": true,
+    "version_ok": true
+  },
+  "verdict": {
+    "abnormal": true,
+    "anomalies": [],
+    "cause": "model_call",
+    "copy": null,
+    "egress": "inconclusive"
+  },
+  "write_roots": [
+    "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T173101Z/codex/config"
+  ]
+}

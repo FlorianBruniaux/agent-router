@@ -1,0 +1,75 @@
+{
+  "auth_json_swept": [],
+  "cap_usd_per_host": 1.0,
+  "claude_keychain_read_root": true,
+  "fake": false,
+  "hosts": {
+    "codex": {
+      "auth_json": {
+        "absent_before_delete": false,
+        "copied": true,
+        "deleted": true,
+        "deleted_at": "2026-09-30T17:31:01+00:00",
+        "mode": "0600",
+        "present_after_delete": false,
+        "signature_changed_by_host": false
+      },
+      "calls": 2,
+      "list_cost_complete": true,
+      "list_cost_microusd": 0,
+      "startup": {
+        "config_entries_created": [
+          "tmp"
+        ],
+        "ok": true,
+        "status_ok": true,
+        "version_ok": true
+      },
+      "verdict": {
+        "abnormal": true,
+        "anomalies": [],
+        "cause": "model_call",
+        "copy": null,
+        "egress": "inconclusive"
+      }
+    }
+  },
+  "hosts_order": [
+    "codex",
+    "claude"
+  ],
+  "preflight": {
+    "checks": {
+      "control_nc_reaches_loopback": true,
+      "nc_network_false_exit": 1,
+      "nc_network_true_exit": 0,
+      "write_outside_roots_denied": true
+    },
+    "sandbox_effective": true,
+    "wrapper": "seatbelt"
+  },
+  "pricing_sha256": {
+    "cache_writes": "9f0024d3f70194175cd0a92fa3e3a20092c25154a313e73d36d34252798bd0a4",
+    "pricing": "09946890d9e4594a2e682d864ae55b4901162c4af75f4e4eaa57d6f612b67917"
+  },
+  "profile_template": {
+    "checks": {
+      "base": true,
+      "env_names": true,
+      "env_path": true,
+      "git_deny": true,
+      "network": true,
+      "read_line": true,
+      "write_line": true
+    },
+    "ok": true,
+    "source_sha256": "9c836b9ec5fa5856646c76d7aae23f68d03ad28e2b456ed65e39a2975a6b107a"
+  },
+  "prompt_sha256": "36144b821d71e22efa62f53a1d29711de8cbe1fe9e74e6f5357c9bbf55c65651",
+  "schema": "agent-router-egress-spike-v2",
+  "script_sha256": "09026180ad2e9e88b06a4d645fa23aa1c0331a6423fc5cd1e0f85768d36c2aba",
+  "started_at": "20260930T173101Z",
+  "stop_rule": "stop after the first host only when it is abnormal for a cause other than startup",
+  "stopped": "first host codex abnormal: {'egress': 'inconclusive', 'cause': 'model_call', 'copy': None, 'anomalies': [], 'abnormal': True}",
+  "timeout_seconds": 90.0
+}

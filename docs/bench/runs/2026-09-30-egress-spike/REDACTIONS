@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "note": "Redactions applied to the versioned copy only. The prefix rule replaces the byte string made of from_parts joined (the maintainer home directory) with to. Inverse: replace `to` with the joined `from_parts`; the result must hash to original_sha256. Harness files are byte-identical to the scripts that ran (their SHA-256 equals script_sha256 in each manifest).",
+  "files": [
+    {
+      "path": "results/v1-20260930T170911Z/codex.json",
+      "original_sha256": "84f12429bb9ec69e00311564305bd66a5c832b709e5cb7048ea15b75724350ed",
+      "redacted_sha256": "c09da0b2f1ed05eb5bdfa42de5400cfa497470a3b0a59dbf84a1a4a4e8f7c8f3",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$SPIKE_HOME",
+          "count": 8
+        }
+      ]
+    },
+    {
+      "path": "results/v2-20260930T173101Z/codex.json",
+      "original_sha256": "e5daaa05907715fe0bf27d7597295fd37767b7ee5bfb7b91b2a732adc8da9a6d",
+      "redacted_sha256": "2d81c8f9e03a976b7ff997fc6349eaca319bbaffd0e95e8e15b70d4cf8c0a120",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$SPIKE_HOME",
+          "count": 6
+        }
+      ]
+    },
+    {
+      "path": "results/v3-20260930T184024Z/claude.json",
+      "original_sha256": "6b10ea3d2793cd8df174462b68f86a3efe482c4460f3391aea2f2c5a325dcd03",
+      "redacted_sha256": "a184ab2780a896ac84c9c1391701a5ef0e9dcf669af22192368b57828e15f65c",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$SPIKE_HOME",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "path": "results/v3-20260930T184024Z/codex.json",
+      "original_sha256": "00c18a34c956e2af978962f04e1ae3321c8f2330685789154785352c1997b4d3",
+      "redacted_sha256": "4de47578f3030a8ebabd83fe487d356beca2f3b4f2708daadb5bfed9bff00dc2",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$SPIKE_HOME",
+          "count": 8
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+  "argv": [
+    "exec",
+    "--model",
+    "gpt-5.6-luna",
+    "--config",
+    "model_reasoning_effort=\"low\"",
+    "--sandbox",
+    "read-only",
+    "--json",
+    "--ephemeral",
+    "--color",
+    "never",
+    "--cd",
+    "<run>/codex/workspace",
+    "-"
+  ],
+  "calls": 3,
+  "entry": {
+    "file": "a /usr/bin/env node script text executable, ASCII text",
+    "kind": "script",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/bin/codex.js",
+    "sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+    "shebang": "/usr/bin/env node",
+    "size_bytes": 8790
+  },
+  "environment_names": [
+    "CODEX_HOME",
+    "HOME",
+    "PATH"
+  ],
+  "host": "codex",
+  "launches": [
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 18,
+      "exit_code": 127,
+      "kind": "local",
+      "label": "V0 entry --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 37,
+      "stderr_categories": [
+        "launcher_missing"
+      ],
+      "stderr_excerpt": "env: node: No such file or directory\n",
+      "stderr_sha256": "058c3e7114a685e48c485c5eec7bf04ecd685fb818d18a9cf483d38fcc3eef35",
+      "stdout_bytes": 0,
+      "stdout_excerpt": null,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    },
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 74,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "S0 program --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 0,
+      "stderr_categories": [],
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 18,
+      "stdout_excerpt": null,
+      "stdout_sha256": "48784a39efd6841c30aff4c70ab315bea1dccee48519515cb308652cdef3ea57",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": "codex-cli 0.159.2"
+    },
+    {
+      "argv": [
+        "login",
+        "status"
+      ],
+      "elapsed_ms": 38,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "S1 program login status",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 24,
+      "stderr_categories": [],
+      "stderr_excerpt": "Logged in using ChatGPT\n",
+      "stderr_sha256": "16118df3eb3595e44a4721878cef0f79910e6564e10ff0e78e451e7c4e478947",
+      "stdout_bytes": 0,
+      "stdout_excerpt": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": null
+    },
+    {
+      "elapsed_ms": 16872,
+      "exit_code": 1,
+      "kind": "model",
+      "label": "C1 program network:false",
+      "list_cost_microusd": null,
+      "network": false,
+      "outcome": "clean_failure",
+      "profile_sha256": "8c8ce98386c1195529f87975445973b836903bf545d31c13ac197476c0f3a1be",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 2019,
+      "stderr_categories": [
+        "net_connect",
+        "fs_denied"
+      ],
+      "stderr_excerpt": "2026-09-30T18:40:28.174780Z ERROR codex_models_manager::manager: failed to refresh available models: Connection failed: error sending request\n2026-09-30T18:40:28.180626Z ERROR codex_skills_extension::loader::host: failed to scan skill path file://~/.config/ai-agents/releases/<redacted>/skills/projec",
+      "stderr_sha256": "f06b32516abf9e9ae826e9882c3b43bd1a5c577a21c2efc8cf5a97102d2eed73",
+      "stdout_bytes": 1179,
+      "stdout_sha256": "7269eb40c1a5b1698a9ddb303da0fb5e444b9692ff701728073ca6cab01e0ea1",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {
+          "error": 10,
+          "item.completed": 1,
+          "thread.started": 1,
+          "turn.failed": 1,
+          "turn.started": 1
+        },
+        "json_lines": 14,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": false,
+        "usage": null
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "elapsed_ms": 5565,
+      "exit_code": 0,
+      "kind": "model",
+      "label": "C2 program network:true (control)",
+      "list_cost_microusd": 526,
+      "network": true,
+      "outcome": "completed",
+      "profile_sha256": "0b931b7a1c21742398686cf9b148bbd5b1aafce6a7a287e6e1f581b8164da05f",
+      "program": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+      "signal": null,
+      "stderr_bytes": 283,
+      "stderr_categories": [
+        "fs_denied"
+      ],
+      "stderr_excerpt": "2026-09-30T18:40:42.603391Z ERROR codex_skills_extension::loader::host: failed to scan skill path file://~/.config/ai-agents/releases/<redacted>/skills/projections/codex: Operation not permitted (os error 1)\n",
+      "stderr_sha256": "3d302f50c5583c685f75fa7beef5deaca481ffab4f1783e4cdb62b654693bae1",
+      "stdout_bytes": 344,
+      "stdout_sha256": "16a36c2adca6b647cdad9a92c5d17f2353edc7d1c6d83832c86bd26c0d54f297",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {
+          "item.completed": 1,
+          "thread.started": 1,
+          "turn.completed": 1,
+          "turn.started": 1
+        },
+        "json_lines": 4,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": true,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 9984,
+          "input_tokens": 11586,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      },
+      "termination": "exited",
+      "timed_out": false
+    },
+    {
+      "argv": [
+        "--version"
+      ],
+      "elapsed_ms": 2353,
+      "exit_code": 0,
+      "kind": "local",
+      "label": "V2 copy --version",
+      "network": false,
+      "signal": null,
+      "stderr_bytes": 0,
+      "stderr_categories": [],
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_bytes": 18,
+      "stdout_excerpt": null,
+      "stdout_sha256": "48784a39efd6841c30aff4c70ab315bea1dccee48519515cb308652cdef3ea57",
+      "stdout_truncated": false,
+      "termination": "exited",
+      "timed_out": false,
+      "version": "codex-cli 0.159.2"
+    },
+    {
+      "elapsed_ms": 3435,
+      "exit_code": 0,
+      "kind": "model",
+      "label": "C3 private copy network:true",
+      "list_cost_microusd": 568,
+      "network": true,
+      "outcome": "completed",
+      "profile_sha256": "1d29379441685d453c06e9e0f71b27b0ef8608eddfa84eeba3210eebf2d62152",
+      "program": "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/codex/private-bin/codex",
+      "signal": null,
+      "stderr_bytes": 283,
+      "stderr_categories": [
+        "fs_denied"
+      ],
+      "stderr_excerpt": "2026-09-30T18:40:50.480617Z ERROR codex_skills_extension::loader::host: failed to scan skill path file://~/.config/ai-agents/releases/<redacted>/skills/projections/codex: Operation not permitted (os error 1)\n",
+      "stderr_sha256": "fcd1361ce173ee27b42d09ab4061279c7a1c0c6e5166e238400110611a7c70b8",
+      "stdout_bytes": 728,
+      "stdout_sha256": "02f6fed5534af9ab7b8d330a309c23dead0a2ad98755ba7f75750ce86ea22b99",
+      "stdout_truncated": false,
+      "stream": {
+        "error_event_categories": [],
+        "event_types": {
+          "item.completed": 2,
+          "thread.started": 1,
+          "turn.completed": 1,
+          "turn.started": 1
+        },
+        "json_lines": 5,
+        "non_json_lines": 0,
+        "observed_models": [],
+        "result": null,
+        "root_assistant_message": true,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 9984,
+          "input_tokens": 11794,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      },
+      "termination": "exited",
+      "timed_out": false
+    }
+  ],
+  "list_cost_complete": true,
+  "list_cost_microusd": 1094,
+  "model_requested": "gpt-5.6-luna",
+  "private_config": {
+    "auth_json": {
+      "absent_before_delete": false,
+      "copied": true,
+      "deleted": true,
+      "deleted_at": "2026-09-30T18:40:53+00:00",
+      "mode": "0600",
+      "present_after_delete": false,
+      "signature_changed_by_host": false
+    },
+    "entries_at_end": [
+      ".sandbox_migration",
+      "cache",
+      "goals_1.sqlite",
+      "goals_1.sqlite-shm",
+      "goals_1.sqlite-wal",
+      "installation_id",
+      "logs_2.sqlite",
+      "memories_1.sqlite",
+      "models_cache.json",
+      "plugins",
+      "queue_1.sqlite",
+      "shell_snapshots",
+      "skills",
+      "state_5.sqlite",
+      "state_5.sqlite-shm",
+      "state_5.sqlite-wal",
+      "tmp"
+    ],
+    "mode": "0700",
+    "path": "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/codex/config",
+    "variable": "CODEX_HOME"
+  },
+  "private_copy": {
+    "matches_original": true,
+    "path": "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/codex/private-bin/codex",
+    "sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704"
+  },
+  "profile_deviations": [
+    "write root: private configuration directory",
+    "codex preferences: domain"
+  ],
+  "profile_extra_rules": [
+    "(allow user-preference-read (preference-domain \"com.openai.codex\"))",
+    "(allow ipc-posix-shm-read* (ipc-posix-name-prefix \"apple.cfprefs.\"))"
+  ],
+  "program": {
+    "file": "Mach-O 64-bit executable arm64",
+    "kind": "mach-o",
+    "path": "$SPIKE_HOME/.nvm/versions/node/v24.16.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-darwin-arm64/vendor/aarch64-apple-darwin/bin/codex",
+    "sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "shebang": null,
+    "size_bytes": 240184096
+  },
+  "read_roots": [],
+  "startup": {
+    "config_entries_created": [
+      "tmp"
+    ],
+    "ok": true,
+    "status_ok": true,
+    "version_ok": true
+  },
+  "verdict": {
+    "abnormal": false,
+    "anomalies": [],
+    "cause": null,
+    "copy": "runs_from_copy",
+    "egress": "provider_unreachable_under_network_false"
+  },
+  "write_roots": [
+    "$SPIKE_HOME/Sites/perso/agent-router-spike/runs/20260930T184024Z/codex/config"
+  ]
+}
