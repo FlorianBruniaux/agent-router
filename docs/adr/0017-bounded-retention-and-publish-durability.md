@@ -4,11 +4,11 @@ title: Bounded retention and publish durability for stores
 status: accepted
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "Persistent stores: lifetime caps and publish durability."
+scope: "Persistent stores. Implemented in the catalog store, the backend store, the runtime admission registry and the advisory cache sweep. Missing: the advisory cache reports a failed directory fsync after rename as `advisory_cache.io`, not as published with durability UNKNOWN."
 amended_by: []
 supersedes: []
 superseded_by: []
-related: ["0008"]
+related: ["0006", "0008", "0011"]
 ---
 
 # ADR 0017: Bounded retention and publish durability for stores

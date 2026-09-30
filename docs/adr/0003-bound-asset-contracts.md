@@ -1,10 +1,10 @@
 ---
 adr: "0003"
 title: Bind asset constraints separately from legacy wire documents
-status: accepted
+status: implemented
 created: 2026-09-27
 last_modified: 2026-09-27
-scope: "Additive contract library. Phase and runtime integration must consume the new gates before enabling constrained execution."
+scope: "`router-asset-contracts`, consumed by the phase gate (`router-policy` `asset_phases`), preparation and the runtime final gate on the exact prepared input."
 amended_by: []
 supersedes: []
 superseded_by: []

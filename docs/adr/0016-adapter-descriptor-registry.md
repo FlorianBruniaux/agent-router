@@ -1,10 +1,10 @@
 ---
 adr: "0016"
 title: Validate adapter descriptors as inert data
-status: accepted
+status: implemented
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "Descriptor validator in `router-adapter-api`."
+scope: "Descriptor validator in `router-adapter-api` (`AdapterDescriptor`, `AdapterRegistry`)."
 amended_by: []
 supersedes: []
 superseded_by: []

@@ -1,11 +1,11 @@
 ---
 adr: "0011"
 title: Authenticated advisory cache of backend proposals
-status: accepted
+status: amended
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "`router-advisory-cache` library. No CLI wiring yet."
-amended_by: []
+scope: "`router-advisory-cache` library, complete; no caller yet. ADR 0017 adds the sweep of stale entries when the entry limit is reached."
+amended_by: ["0017"]
 supersedes: []
 superseded_by: []
 related: []

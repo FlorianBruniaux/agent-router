@@ -1,10 +1,10 @@
 ---
 adr: "0005"
 title: Pin durable backend authority through dispatch
-status: accepted
+status: implemented
 created: 2026-09-27
 last_modified: 2026-09-27
-scope: "Local backend activation store."
+scope: "`router-backend-store`. The runtime validates the dispatch guard before spawn and releases it right after the spawn attempt."
 amended_by: []
 supersedes: []
 superseded_by: []

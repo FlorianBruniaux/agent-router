@@ -1,11 +1,11 @@
 ---
 adr: "0006"
 title: Persistent current signed-catalog selection
-status: accepted
+status: amended
 created: 2026-09-28
 last_modified: 2026-09-29
-scope: "Library consumers exist: signed routing (`router-policy::signed_phases`) and signed preparation (`router-prepare`) take the current guard. CLI and runtime dispatch integration is pending."
-amended_by: []
+scope: "Store in `router-catalog-store`, consumed by signed routing and signed preparation. Missing: runtime dispatch refuses a signed-catalog context and the CLI has no catalog-store command. ADR 0017 replaces the refusal to prune history with bounded retention."
+amended_by: ["0017"]
 supersedes: []
 superseded_by: []
 related: []

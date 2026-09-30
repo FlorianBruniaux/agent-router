@@ -1,10 +1,10 @@
 ---
 adr: "0010"
 title: Inspect runtime storage without application recovery
-status: accepted
+status: implemented
 created: 2026-09-28
 last_modified: 2026-09-28
-scope: "Passive diagnostic API and CLI."
+scope: "Passive diagnostic API (`router_runtime::diagnose_runtime_storage`) and the CLI `doctor` command."
 amended_by: []
 supersedes: []
 superseded_by: []

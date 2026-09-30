@@ -1,10 +1,10 @@
 ---
 adr: "0004"
 title: Separate backend activation proof from deterministic receipts
-status: accepted
+status: implemented
 created: 2026-09-27
 last_modified: 2026-09-27
-scope: "Promotion library. Runtime integration must explicitly consume its opaque proof before enabling semantic execution."
+scope: "Promotion library in `router-backend-policy`, consumed through `router-execution-decision` and the CLI backend manifest, and revalidated at dispatch."
 amended_by: []
 supersedes: []
 superseded_by: []

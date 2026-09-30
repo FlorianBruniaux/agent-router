@@ -4,7 +4,7 @@ title: Loopback-only provider transport behind a Cargo feature
 status: accepted
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "`router-bridge-contract` feature `loopback-transport` (R10-a)."
+scope: "`router-bridge-contract` feature `loopback-transport` (R10-a) is implemented; no caller yet. Missing: the supervising runtime that builds `ApprovedEndpoint` and enables the feature, left for R10-b."
 amended_by: []
 supersedes: []
 superseded_by: []

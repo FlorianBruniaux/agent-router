@@ -1,10 +1,10 @@
 ---
 adr: "0001"
 title: One project harness, two host projections
-status: accepted
+status: implemented
 created: 2026-09-26
 last_modified: 2026-09-26
-scope: "Issue #12. Product integration is outside this decision."
+scope: "Issue #12. Implemented by `xtask` (`generate`, `check`, `remove`, `rollback` and the advisory `hook`) and `harness/session-start.sh`. Product integration is outside this decision."
 amended_by: []
 supersedes: []
 superseded_by: []

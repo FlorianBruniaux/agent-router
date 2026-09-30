@@ -1,10 +1,10 @@
 ---
 adr: "0002"
 title: Bounded routing and execution boundaries
-status: accepted
+status: implemented
 created: 2026-09-27
 last_modified: 2026-09-27
-scope: "Product implementation."
+scope: "Product implementation: v2 phase contexts in `router-policy`, bounded BM25 in `router-retrieval`, eight presets in `router-types`, route recomputation at runtime review."
 amended_by: []
 supersedes: []
 superseded_by: []
