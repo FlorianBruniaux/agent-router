@@ -216,7 +216,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         },
         &loaded.decision,
     )
-    .map_err(|_| CliError::Product("prepare.invalid_or_denied"))?;
+    .map_err(|error| CliError::Product(error.code()))?;
     if let Some(runtime) = &runtime {
         let final_request = proposal
             .as_ref()
@@ -232,7 +232,7 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
             &final_request,
             options.now_unix_seconds,
         )
-        .map_err(|_| CliError::Product("prepare.final_input.invalid_or_denied"))?;
+        .map_err(|error| CliError::Product(error.code()))?;
         runtime
             .validate_escalation_preparation(
                 &router,

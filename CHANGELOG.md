@@ -14,8 +14,14 @@ reasons); every change was verified locally on macOS.
 
 ## [Unreleased]
 
+### Breaking
+
+- **BREAKING:** `prepare` no longer reports `prepare.invalid_or_denied` or `prepare.final_input.invalid_or_denied`. The assembly step returns one fixed code per failure class: `prepare.decision.authority_unavailable`, `prepare.decision.authority_required`, `prepare.decision.context`, `prepare.decision.abstained`, `prepare.decision.stale`, `prepare.decision.serialization` (exit 4), `prepare.workflow.invalid`, `prepare.route.invalid`, `prepare.retrieval.invalid`, `prepare.adapter.invalid`, `prepare.snapshot.invalid_or_stale`, `prepare.route.abstained`, `prepare.binding.mismatch`, `prepare.input.limit` and `prepare.encoding.json` (exit 4). All other codes exit 2. Scripts that matched the old codes must match the new list, which is in `docs/cli-output.md`.
+- **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
+
 ### Added
 
+- `assets seal --kind contracts|availability --document FILE (--catalog FILE | --host-snapshot FILE) --json` prints a sealed contracts or availability document and its `content_hash`. It writes nothing, edits no manifest and approves nothing: the operator pins the hash independently in the asset-authority manifest. New codes: `assets.seal.input_required`, `assets.seal.document_invalid`.
 - `agent-router feedback summary`: one global total over every group of `feedback report` (same snapshot and classification), with the accepted rate and its Jeffreys interval, computed cost and cost per accepted change (null with a reason while any run is unpriced), time to acceptance p50 and p90, UNKNOWN counts and `attribution: not_established`. Human view by default, `--json` for the versioned result.
 - `agent-router schema <name>` and `schema --list`: hand-written JSON Schemas (draft 2020-12) embedded in the binary for `route-decision`, `feedback-report`, `feedback-summary`, `error` and `version`. No schema library was added.
 - `agent-router version --json`: crate version, target triple, enabled features and the `schema_version` values supported per output contract. `--version` is unchanged.

@@ -176,3 +176,39 @@ now receive `5`, `6` or `7` for those cases. `policy apply` with an empty or
 oversized trusted-key set now reports `feedback.invalid` (`2`) instead of
 `feedback.policy.signature`, which is reserved for a signature mismatch (`7`).
 
+### `prepare` assembly codes
+
+The final assembly step of `prepare` (`router_prepare::PreparationError::code`)
+returns one fixed code per failure class instead of the former catch-all
+`prepare.invalid_or_denied`. The same mapping now types the later
+dependency-framing check, which used `prepare.final_input.invalid_or_denied`.
+A code never carries input text, a path or the inner error message.
+
+| Code | Class |
+| --- | --- |
+| `prepare.decision.authority_unavailable` | The execution-decision authority could not be acquired. |
+| `prepare.decision.authority_required` | An execution authority is required and absent. |
+| `prepare.decision.context` | The decision context is invalid. |
+| `prepare.decision.abstained` | The decision abstained. |
+| `prepare.decision.stale` | The current authority changed or expired. |
+| `prepare.decision.serialization` | The decision could not be serialized (`4`). |
+| `prepare.workflow.invalid` | The workflow or generated plan failed validation. |
+| `prepare.route.invalid` | Phase routing or its receipt failed validation, including a stale clock. |
+| `prepare.retrieval.invalid` | A selected asset is untrusted, unbound, missing or its body hash changed. |
+| `prepare.adapter.invalid` | The host adapter refused the request. |
+| `prepare.snapshot.invalid_or_stale` | The host snapshot is invalid or older than allowed. |
+| `prepare.route.abstained` | Routing abstained; nothing is prepared. |
+| `prepare.binding.mismatch` | Plan, node, agent authority or budget binding does not hold. |
+| `prepare.input.limit` | The assembled input exceeds its bound. |
+| `prepare.encoding.json` | An internal JSON encoding failed (`4`: the last segment is `json`). |
+
+`prepare.workflow.invalid` and `prepare.route.invalid` are also raised by
+earlier `prepare` stages; the code names the class, not the stage.
+
+Codes raised by `prepare` before assembly, all status `2`:
+
+| Code | Cause |
+| --- | --- |
+| `prepare.snapshot.maximum_age` | `max_snapshot_age_seconds` in the options file exceeds 300. |
+| `prepare.workflow.generation_required` | `workflow_contract` and `generation` are not supplied together. |
+

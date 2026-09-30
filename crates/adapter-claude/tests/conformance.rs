@@ -589,7 +589,12 @@ fn passive_claude_probe_is_bounded_redacted_and_does_not_infer_effort_or_capabil
             .probe(100)
             .is_err()
     );
-    assert!(ClaudeStreamProbe::from_native_stream(b"{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"invented\",\"claude_code_version\":\"1\"}\n").probe(100).is_err());
+    assert!(matches!(
+        ClaudeStreamProbe::from_native_stream(b"{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"invented\",\"claude_code_version\":\"1\"}\n")
+            .probe(100)
+            .unwrap_err(),
+        ProbeError::InvalidCache("model not observed")
+    ));
 }
 
 #[test]
@@ -630,5 +635,40 @@ fn probe_ignores_subagent_models_and_caps_observed_models() {
             .probe(100)
             .unwrap_err(),
         ProbeError::InvalidCache("model bounds")
+    ));
+}
+
+#[test]
+fn probe_lists_only_the_dated_assistant_model_when_init_names_an_alias() {
+    let init = "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-haiku-4-5\",\"claude_code_version\":\"2.1.285\"}\n";
+    let assistant = "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"type\":\"message\",\"model\":\"claude-haiku-4-5-20251001\"}}\n";
+    let observation =
+        ClaudeStreamProbe::from_native_stream(format!("{init}{assistant}").as_bytes())
+            .probe(100)
+            .unwrap();
+    let models: Vec<_> = observation
+        .host
+        .supported_models
+        .iter()
+        .map(|m| m.as_str().to_owned())
+        .collect();
+    assert_eq!(models, ["claude-haiku-4-5-20251001"]);
+    // Without a root assistant message nothing is observed.
+    assert!(matches!(
+        ClaudeStreamProbe::from_native_stream(init.as_bytes())
+            .probe(100)
+            .unwrap_err(),
+        ProbeError::InvalidCache("model not observed")
+    ));
+}
+
+#[test]
+fn probe_fails_when_only_a_subagent_names_a_model() {
+    let stream = "{\"type\":\"system\",\"subtype\":\"init\",\"model\":\"claude-haiku-4-5\",\"claude_code_version\":\"2.1.285\"}\n{\"type\":\"assistant\",\"parent_tool_use_id\":\"toolu_1\",\"message\":{\"role\":\"assistant\",\"type\":\"message\",\"model\":\"claude-haiku-4-5-20251001\"}}\n";
+    assert!(matches!(
+        ClaudeStreamProbe::from_native_stream(stream.as_bytes())
+            .probe(100)
+            .unwrap_err(),
+        ProbeError::InvalidCache("model not observed")
     ));
 }

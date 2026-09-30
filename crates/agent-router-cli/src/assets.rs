@@ -1,6 +1,8 @@
 //! Parent-owned asset authority and explicit selected-skill review. No activation.
 use crate::{
-    CliError, Outcome, catalogs, command::PhaseArgs, inspect, phases, product, read_bounded,
+    CliError, Outcome, catalogs,
+    command::{AssetSealKind, PhaseArgs},
+    inspect, phases, product, read_bounded,
 };
 use router_adapter_api::ValidatedHostObservation;
 use router_asset_contracts::{
@@ -287,6 +289,62 @@ pub(crate) fn review(
     product::json_output(
         &serde_json::json!({"schema_version":1,"contracts_hash":loaded.contracts.hash(),"availability_hash":loaded.availability.hash(),
         "authority_scope_digest":scope,"reviews":projections,"approved":false,"executed":false,"source_authentication":"unknown"}),
+        ExitCode::SUCCESS,
+    )
+}
+
+fn seal_document<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, CliError> {
+    let value = router_adapter_api::strict_json(&bytes(path, MAX_DOCUMENT_BYTES)?)
+        .map_err(|_| CliError::Product("assets.seal.document_invalid"))?;
+    serde_json::from_value(value).map_err(|_| CliError::Product("assets.seal.document_invalid"))
+}
+
+/// Compute the integrity hash of an unsealed contracts or availability document
+/// and print the sealed document. Nothing is written and no manifest, pin or
+/// approval is created: the operator still pins the printed hash independently.
+pub(crate) fn seal(
+    kind: AssetSealKind,
+    document: &Path,
+    catalog: Option<&Path>,
+    host_snapshot: Option<&Path>,
+    now: Option<u64>,
+    snapshot_max_age_seconds: u64,
+    json: bool,
+) -> Result<Outcome, CliError> {
+    if !json {
+        return Err(CliError::JsonOutputRequired);
+    }
+    let (label, sealed, hash) = match kind {
+        AssetSealKind::Contracts => {
+            let catalog = catalog.ok_or(CliError::Product("assets.seal.input_required"))?;
+            let (catalog, _) = catalogs::load(catalog, now, snapshot_max_age_seconds)?;
+            let unsealed: router_types::AssetContractsDocument = seal_document(document)?;
+            let sealed = router_asset_contracts::seal_contracts(unsealed, &catalog)
+                .map_err(|e| CliError::Product(e.code()))?;
+            let hash = sealed.content_hash.clone();
+            (
+                "contracts",
+                serde_json::to_value(&sealed).map_err(|_| CliError::Internal)?,
+                hash,
+            )
+        }
+        AssetSealKind::Availability => {
+            let path = host_snapshot.ok_or(CliError::Product("assets.seal.input_required"))?;
+            let snapshot = inspect::read_snapshot(path, now, snapshot_max_age_seconds)?;
+            let unsealed: router_types::AssetAvailabilityDocument = seal_document(document)?;
+            let sealed = router_asset_contracts::seal_availability(unsealed, &snapshot)
+                .map_err(|e| CliError::Product(e.code()))?;
+            let hash = sealed.content_hash.clone();
+            (
+                "availability",
+                serde_json::to_value(&sealed).map_err(|_| CliError::Internal)?,
+                hash,
+            )
+        }
+    };
+    product::json_output(
+        &serde_json::json!({"schema_version":1,"kind":label,"content_hash":hash,"document":sealed,
+        "approved":false,"authority_established":false,"source_authentication":"unknown"}),
         ExitCode::SUCCESS,
     )
 }

@@ -4,7 +4,7 @@ title: Host capability evidence from supervised canaries
 status: proposed
 created: 2026-09-30
 last_modified: 2026-09-30
-scope: "Design only. No code implements it; every real host capability stays UNKNOWN until a real canary passes after batch 4."
+scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batches 4 to 9 are design only; every real host capability stays UNKNOWN until a real canary passes after batch 4."
 amended_by: []
 supersedes: []
 superseded_by: []
@@ -67,17 +67,17 @@ Codex host. Facts read on `main` at `765a2f6`:
   default `false`.
 - The per-store approval key is a 0600 file owned by the user who runs the
   router (`crates/agent-router-cli/src/approval_key.rs:12`).
-- The Claude probe requires the `init` model to appear among the models of
+- Before batch 1, the Claude probe required the `init` model to appear among the models of
   root assistant messages (`crates/adapter-claude/src/probe.rs:96-103`). The
   fixtures use the same synthetic id on both sides
   (`crates/adapter-claude/tests/fixtures/claude.jsonl:1-2`). A real 2.1.285
   stream announced `claude-haiku-4-5` in `init` and a dated id in the assistant
   message, and `inspect` failed with `probe.cache.invalid` (reported by the
   pilot agent on 2026-09-30, not reproduced here).
-- `prepare` maps every `router_prepare` error to `prepare.invalid_or_denied`
-  (`crates/agent-router-cli/src/preparation.rs:219`). The only `assets`
-  subcommand is `review` (`crates/agent-router-cli/src/command.rs:553-566`);
-  `seal_contracts` and `seal_availability` are library functions called from
+- Before batches 2 and 3, `prepare` mapped every `router_prepare` error to
+  `prepare.invalid_or_denied` (`crates/agent-router-cli/src/preparation.rs:219`).
+  The only `assets` subcommand was `review` (`crates/agent-router-cli/src/command.rs:553-566`);
+  `seal_contracts` and `seal_availability` were library functions called from
   tests only (`docs/asset-contracts.md:29-30`), while new execution approval
   requires a v3 asset authority (`docs/cli-execution.md:74-75`).
 

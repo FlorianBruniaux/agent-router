@@ -219,3 +219,167 @@ fn review_rejects_unrequested_or_duplicate_skill_selection_and_duplicate_json_ke
     fs::write(path, original.replacen('{', "{\"schema_version\":1,", 1)).unwrap();
     assert!(!fixture.review(&["fixture-skill"]).status.success());
 }
+
+impl Fixture {
+    fn seal(&self, kind: &str, document: &str) -> Output {
+        let root = self.directory.path();
+        let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
+        command
+            .args(["assets", "seal", "--kind", kind, "--document"])
+            .arg(root.join(document))
+            .args(["--now", "100", "--json"]);
+        if kind == "contracts" {
+            command.arg("--catalog").arg(root.join("catalog.json"));
+        } else {
+            command
+                .arg("--host-snapshot")
+                .arg(root.join("snapshot.json"));
+        }
+        command.output().unwrap()
+    }
+    fn files(&self) -> Vec<String> {
+        let mut names: Vec<_> = fs::read_dir(self.directory.path())
+            .unwrap()
+            .map(|entry| entry.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
+        names.sort();
+        names
+    }
+    /// Pin `hash` for `file` in the authority manifest and run `review`.
+    fn review_with_pin(&self, field: &str, hash: &str) -> Output {
+        self.change("authority.json", |manifest| {
+            manifest[field]["expected_hash"] = json!(hash);
+        });
+        self.review(&["fixture-skill"])
+    }
+}
+
+#[test]
+fn seal_prints_documents_the_validator_accepts_and_refuses_a_one_byte_change() {
+    for (kind, file, field, mutate, replacement) in [
+        ("contracts", "contracts.json", "contracts", "fixtur", "f"),
+        (
+            "availability",
+            "availability.json",
+            "availability",
+            "\"expires_at_unix_seconds\": 20",
+            "1",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        let root = fixture.directory.path();
+        let pinned = fs::read(root.join("authority.json")).unwrap();
+        let expected: Value = serde_json::from_slice(&pinned).unwrap();
+        // The producer starts from an unsealed document: the hash is blank.
+        fixture.change(file, |document| document["content_hash"] = json!(""));
+        let before = fixture.files();
+        let output = fixture.seal(kind, file);
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(before, fixture.files(), "seal writes nothing");
+        assert_eq!(
+            pinned,
+            fs::read(root.join("authority.json")).unwrap(),
+            "seal never touches the manifest"
+        );
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["kind"], kind);
+        assert_eq!(result["approved"], false);
+        assert_eq!(result["authority_established"], false);
+        let hash = result["content_hash"].as_str().unwrap();
+        assert_eq!(hash, expected[field]["expected_hash"].as_str().unwrap());
+        assert_eq!(result["document"]["content_hash"], hash);
+
+        // Accepted by the existing validator, pinned only by the printed hash.
+        write(&root.join(file), &result["document"]);
+        let accepted = fixture.review_with_pin(field, hash);
+        assert!(
+            accepted.status.success(),
+            "{}",
+            String::from_utf8_lossy(&accepted.stderr)
+        );
+
+        // One byte of content changes: the same pin is refused as an integrity failure.
+        let mut text = fs::read_to_string(root.join(file)).unwrap();
+        let at = text.find(mutate).expect("mutation target present") + mutate.len();
+        text.replace_range(at..at + 1, replacement);
+        fs::write(root.join(file), text).unwrap();
+        let refused = fixture.review_with_pin(field, hash);
+        assert!(!refused.status.success());
+        assert!(
+            String::from_utf8_lossy(&refused.stderr).contains("integrity"),
+            "{}",
+            String::from_utf8_lossy(&refused.stderr)
+        );
+    }
+}
+
+#[test]
+fn seal_refuses_a_document_bound_to_another_catalog_or_snapshot() {
+    let fixture = Fixture::new();
+    let stderr = |output: Output| String::from_utf8_lossy(&output.stderr).into_owned();
+    fixture.change("contracts.json", |document| {
+        document["catalog_hash"] = json!("0".repeat(64));
+    });
+    let refused = fixture.seal("contracts", "contracts.json");
+    assert!(!refused.status.success());
+    assert!(stderr(refused).contains("asset_contract.binding.invalid"));
+    fixture.change("availability.json", |document| {
+        document["snapshot_hash"] = json!("0".repeat(64));
+    });
+    let refused = fixture.seal("availability", "availability.json");
+    assert!(!refused.status.success());
+    assert!(stderr(refused).contains("asset_contract.binding.invalid"));
+}
+
+#[test]
+fn seal_refuses_a_valid_document_sealed_against_a_different_catalog() {
+    let fixture = Fixture::new();
+    let root = fixture.directory.path();
+    // A different but valid catalog: same content, another version.
+    let mut other: Value =
+        serde_json::from_slice(&fs::read(root.join("catalog.json")).unwrap()).unwrap();
+    other["version"] = json!("another-version");
+    fs::write(
+        root.join("other-catalog.json"),
+        serde_json::to_vec(&other).unwrap(),
+    )
+    .unwrap();
+    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
+    command
+        .args(["assets", "seal", "--kind", "contracts", "--document"])
+        .arg(root.join("contracts.json"))
+        .arg("--catalog")
+        .arg(root.join("other-catalog.json"))
+        .args(["--now", "100", "--json"]);
+    let output = command.output().unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("asset_contract.binding.invalid"));
+}
+
+#[test]
+fn seal_bounds_and_types_its_document_input() {
+    let fixture = Fixture::new();
+    let root = fixture.directory.path();
+    let expect = |file: &str, code: &str| {
+        let output = fixture.seal("contracts", file);
+        assert!(!output.status.success());
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains(code),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    };
+    fs::write(root.join("huge.json"), vec![b' '; 4 * 1024 * 1024 + 1]).unwrap();
+    expect("huge.json", "assets.input.limit");
+    expect("absent.json", "assets.input.unavailable");
+    fs::write(
+        root.join("bad.json"),
+        b"{\"schema_version\":1,\"schema_version\":1}",
+    )
+    .unwrap();
+    expect("bad.json", "assets.seal.document_invalid");
+}

@@ -92,13 +92,13 @@ impl HostProbe for ClaudeStreamProbe<'_> {
                 None => return Err(ProbeError::InvalidCache("native event type")),
             }
         }
-        let current_model =
-            initialized_model.ok_or(ProbeError::InvalidCache("missing native init"))?;
-        let current_model =
-            ModelId::parse(current_model).map_err(|_| ProbeError::InvalidCache("model"))?;
-        // Init advertises a configured model; only native assistant metadata
-        // proves the model was observed. Effort and tools remain unknown.
-        if models.is_empty() || !models.contains(&current_model) {
+        if initialized_model.is_none() {
+            return Err(ProbeError::InvalidCache("missing native init"));
+        }
+        // The init model is a configured label and never proves a model. Only
+        // root assistant `message.model` values are observed; no alias is
+        // resolved and no date suffix is stripped. Effort and tools stay unknown.
+        if models.is_empty() {
             return Err(ProbeError::InvalidCache("model not observed"));
         }
         let source_id = "claude-native-stream".to_string();
