@@ -113,6 +113,19 @@ sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
 `{"advisory":null,"reason":"learning_disabled"}` or `{"advisory":true,"suggestion":null,"reason":...}`.
 See [feedback](../feedback.md#feedback-report) for the join rules.
 
+`feedback replay-export` prints a report (`schema_version` 1) and, without
+`--output`, the sealed `ReplayRecord` under `record`. It introduces no new
+record contract: the `ReplayInput` and `CaseLabel` schemas are unchanged. Report
+keys: `input_hash`, `policy_id`, `executed_candidate_id`, `label`
+(`basis`: `integration`, `human` or `human_and_integration`; `human_validated`;
+`independent`, always false), `observations` (`usage` is `unknown`; `elapsed_ms`
+may be null), `replay_context` (`complete` or `without_asset_authority`),
+`request_free_text_fields` and, with `--output`, `output`. Refusal codes:
+`feedback.replay.unlabeled`, `feedback.replay.rejected`,
+`feedback.replay.ambiguous`, `feedback.replay.candidate_outside_request`,
+`feedback.replay.invalid`, `feedback.replay.output_exists_or_unavailable` and
+`feedback.replay.output_write`.
+
 ## Catalog
 
 Catalog files use a numeric `schema_version` and exact model identifiers. The

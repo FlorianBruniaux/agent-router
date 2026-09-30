@@ -121,6 +121,71 @@ Limit: no verification fact is recorded for a coordinated run. `coordinate
 verify` only queues the verification, and `service`, which applies it, does not
 receive the sandbox configuration.
 
+## Exporting a run as a replay record
+
+`agent-router feedback --store <dir> --json replay-export --definition
+<definition.json> --runtime-store <dir> --pricing <pricing.json> --case-id <id>
+--family-id <id> --split <training|validation|held_out> [--output <file>]`
+turns one executed run into a sealed `ReplayRecord` that `eval`, `replay` and
+`policy evaluate` accept. It changes nothing in either store. The record is an
+explicit local file made on demand. It is never kept in the feedback store and
+it is not covered by `purge`: delete the file yourself.
+
+What it reads:
+
+- the request, host snapshot, catalog and policy from the run definition, as
+  `run` loads them. Nothing is re-routed. The runtime store reopens the run
+  against that definition, so a changed definition is refused, and the executed
+  candidate is the one the runtime recorded. The store lock applies: a run that
+  is still being supervised makes the command fail;
+- the run's automated event, late facts and human event from the feedback store,
+  found through the run key that `run` and the late-fact commands already share.
+
+Label rules. Only a fact or a human verdict labels; a transport exit code never
+does.
+
+| Recorded | Result |
+| --- | --- |
+| Integration `applied` and verification objective `passed` | Executed candidate expected, `human_validated: false` |
+| Human verdict `success: passed` | Executed candidate expected, `human_validated: true`, `reviewer_id` set to the reviewer digest |
+| Both | Expected, `human_validated: true` |
+| Nothing, or only part of the first row | Refused, `feedback.replay.unlabeled` |
+| Integration `discarded`, validation or objective `failed`, or human `failed` | Refused, `feedback.replay.rejected` |
+
+A rejection is refused because `CaseLabel` cannot say "this candidate is not
+expected": `expect_abstention` is true exactly when the expected set is empty,
+which claims that the router should abstain, a different statement. Any negative
+signal wins over a positive one. `independent` is always false, since nothing
+here attests a reviewer's independence, so the record cannot satisfy the
+independent-label gate of `compare_shadow`. `evidence_sha256` is the
+verification fact's evidence digest, or the human event's own when there is no
+fact. Two automated events, two facts of one kind or two human events for the
+same run make the export fail with `feedback.replay.ambiguous`.
+
+Observations. `outcomes.transport` comes from the automated event, and
+`command_validation` and `functional` from the verification fact; a missing
+source stays `unknown`. `elapsed_ms` is the transport latency, not the time to
+acceptance. `usage` is empty: the runtime store keeps no completion, so the
+host-declared token split (`RuntimeEvidence.host_usage`) is gone after the run,
+and the feedback event holds only a total that cannot fill input, cached and
+output counts. An empty list is UNKNOWN, never a row of zeros. Replay prices the
+selected model from `usage`, so `replay_deterministic` refuses such a record
+(`selected model usage missing`) until usage is added by hand and the record is
+sealed again with `eval seal`.
+
+Privacy. The record carries whatever the definition carries: the request's task
+objective and any deliverables, constraints, scope, dependencies and acceptance
+text. The report lists the non-empty ones in `request_free_text_fields`
+(`task.objective` is always present). The execution prompt in the execution
+request is not part of the record. Without `--output`, the record is printed to
+standard output; with it, the file is created private (mode 0600) and an
+existing file is refused.
+
+Limits. The replay context is the request, snapshot, catalog and policy without
+the run's asset authority: `replay_context` reads `without_asset_authority` when
+the definition used one. The policy id under `policies` and `observations` is the
+policy `version`. `out_of_domain` is false.
+
 `statistics(now)` is available only with learning consent. It rebuilds a
 versioned, content-hashed report from retained immutable events:
 
