@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "Implement `pilot_lib.text.word_wrap(text, width)`: split on whitespace, greedily fill lines of at most `width` characters with words separated by single spaces, put a word longer than `width` alone on its own line without cutting it, return the list of lines (an empty list for blank text), and raise ValueError when width < 1. Leave `slugify` untouched.",
+    "kind": "implement",
+    "risk": "low",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-codex",
+    "harness": "codex",
+    "supported_models": [
+      "gpt-5.6-terra",
+      "gpt-6.1-sol"
+    ],
+    "supported_efforts": {
+      "gpt-6.1-sol": [
+        "medium",
+        "high"
+      ],
+      "gpt-5.6-terra": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

@@ -1,0 +1,7 @@
+{
+  "id": "t06",
+  "kind": "implement",
+  "risk": "low",
+  "module": "roman",
+  "target": "pilot_lib/roman.py"
+}

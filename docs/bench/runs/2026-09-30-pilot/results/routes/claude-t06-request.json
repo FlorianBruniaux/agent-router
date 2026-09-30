@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "`pilot_lib.roman.roman_to_int(numeral)` ignores subtractive notation (IV, IX, XL, XC, CD, CM). Fix it, and raise ValueError for an empty string or a character that is not a Roman digit.",
+    "kind": "implement",
+    "risk": "low",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-claude",
+    "harness": "claude-code",
+    "supported_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "supported_efforts": {
+      "claude-opus-5-5": [
+        "medium",
+        "high"
+      ],
+      "claude-sonnet-5-5": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

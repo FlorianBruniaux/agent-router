@@ -1,0 +1,7 @@
+{
+  "id": "t08",
+  "kind": "implement",
+  "risk": "high",
+  "module": "retry",
+  "target": "pilot_lib/retry.py"
+}

@@ -1,0 +1,7 @@
+{
+  "id": "t05",
+  "kind": "implement",
+  "risk": "medium",
+  "module": "cache",
+  "target": "pilot_lib/cache.py"
+}

@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "`pilot_lib.semver.semver_compare(a, b)` must follow Semantic Versioning 2.0.0 precedence: compare MAJOR.MINOR.PATCH numerically, a pre-release version (`1.0.0-alpha`) has lower precedence than the release, pre-release identifiers are compared dot by dot (numeric identifiers numerically, alphanumeric ones lexically, numeric lower than alphanumeric, a shorter set lower when all preceding identifiers are equal), and build metadata after `+` is ignored.",
+    "kind": "implement",
+    "risk": "medium",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-claude",
+    "harness": "claude-code",
+    "supported_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "supported_efforts": {
+      "claude-opus-5-5": [
+        "medium",
+        "high"
+      ],
+      "claude-sonnet-5-5": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

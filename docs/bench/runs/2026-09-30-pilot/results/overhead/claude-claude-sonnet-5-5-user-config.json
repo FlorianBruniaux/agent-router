@@ -1,0 +1,37 @@
+{
+  "announced_models": [
+    "claude-sonnet-5-5"
+  ],
+  "cost": {
+    "list_microusd": 260814,
+    "product_microusd": 130484,
+    "reason": null
+  },
+  "effort": "medium",
+  "elapsed_ms": 5616,
+  "ended_at_unix": 1790776819.262155,
+  "error_count": 0,
+  "exit_code": 0,
+  "final_text_sha256": "f1768197a4fc70e2491dbc2da2db7fde5fbcf7be8b47c63df8b0b67cdd15294c",
+  "host_cost_usd": 0.260814,
+  "model": "claude-sonnet-5-5",
+  "model_check": "match",
+  "phase": "probe",
+  "provider": "claude",
+  "sessions": 1,
+  "started_at_unix": 1790776813.644902,
+  "timed_out": false,
+  "usage": {
+    "cache_write_1h_tokens": 65165,
+    "cache_write_5m_tokens": 0,
+    "cache_write_input_tokens": 65165,
+    "cached_input_tokens": 0,
+    "input_tokens": 65167,
+    "output_tokens": 15,
+    "reasoning_output_tokens": null,
+    "thinking_tokens_reported": 0
+  },
+  "usage_events": 1,
+  "variant": "user-config",
+  "write": false
+}

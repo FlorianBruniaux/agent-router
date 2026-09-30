@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "`pilot_lib.durations.parse_duration(value)` must accept hours, minutes and seconds in any combination and order (for example '1h30m', '45s', '2m5s', '1h1s'), ignore surrounding whitespace, and raise ValueError for an empty string, an unknown unit, a unit without a number or a trailing number without a unit.",
+    "kind": "implement",
+    "risk": "medium",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-claude",
+    "harness": "claude-code",
+    "supported_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "supported_efforts": {
+      "claude-opus-5-5": [
+        "medium",
+        "high"
+      ],
+      "claude-sonnet-5-5": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "note": "Redactions applied to the versioned copy only. The prefix rule replaces the byte string made of from_parts joined (the maintainer home directory) with to; the literal rule replaces one raw host output quote with a summary. Inverse: replace `to` with the joined `from_parts`, then each literal `to` with its `from`, in reverse order; the result must hash to original_sha256.",
+  "files": [
+    {
+      "path": "pilot/PLAN.md",
+      "original_sha256": "27036f21aa9fd8c7f93529c562a39dc50e956a8c1cf8e979aa4cd7547fc115e1",
+      "redacted_sha256": "0f22e9658f3214184711560b61677f62e7403fe5a782c91bfd71e2dee9160733",
+      "rules": [
+        {
+          "type": "literal",
+          "from": "`\"result\":\"OK\\n\\nSkills used: flow-lean\"`",
+          "to": "la sonde a répondu OK",
+          "count": 1
+        },
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$PILOT_HOME",
+          "count": 4
+        }
+      ]
+    },
+    {
+      "path": "pilot/pilot-config.json",
+      "original_sha256": "7b57463c8af63026b2aa72048694c22b77b513a5c7454cd17c6d9bcc7f46a1fc",
+      "redacted_sha256": "289e510b0fb252d23bb6a02b10fd6bf6cf049b677e6427241e6e272c77614bfc",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$PILOT_HOME",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "pilot/run-pilot.sh",
+      "original_sha256": "b5208b12ba0c4cce99966cc6110c54b499057cd55d4ab1da0b772ef79f778aae",
+      "redacted_sha256": "b401f0e610d9a2bcae1c89c5c5a5477a865458eb3fc2d7add2a48b28e6667be4",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$PILOT_HOME",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "path": "pilot/run-pilot-r1.sh",
+      "original_sha256": "e747b0f4f4bbd8d826eaea7b0fe94a66ee61298e27ccd4ec809eddf9514d39a5",
+      "redacted_sha256": "0733ef6b06a447be503fa1f5cd55692817948d52f209dc12e14ab7e45b28e6a5",
+      "rules": [
+        {
+          "type": "prefix",
+          "from_parts": [
+            "/Users/",
+            "florianbruniaux"
+          ],
+          "to": "$PILOT_HOME",
+          "count": 3
+        }
+      ]
+    }
+  ]
+}
