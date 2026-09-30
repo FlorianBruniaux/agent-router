@@ -284,35 +284,38 @@ Clock values are explicit for deterministic tests. Production callers must use
 a trusted wall clock. On-disk hashes detect accidental modification; they do not
 protect against a local owner replacing the entire database, keys or program.
 
-## Planned: outcome measurement for executed runs
+## Outcome measurement for executed runs
 
 [ADR 0019](adr/0019-outcome-measurement.md) decides how runs executed by Agent
-Router will feed this store. Batch 2 (host-declared tokens in
-`measurements.tokens`), batch 3 (late facts and the run start time), batch 4
-(route facts and the escalation count) and batch 6 (`feedback report`, see
-[the report](#feedback-report)) are described in this file. The automatic record
-still keeps validation and objective `Unknown`, and the proposal gate does not
-read the facts, so real runs alone cannot pass it. Only the report reads them.
+Router feed this store. All six batches are merged and described in this file:
+host-declared tokens (batch 2), late facts and the run start time (batch 3),
+route facts and the escalation count (batch 4), replay export (batch 5) and
+[`feedback report`](#feedback-report) (batch 6). The automatic record still
+keeps validation and objective `Unknown`, and the proposal gate does not read
+the facts, so real runs alone cannot pass it. The report and the replay export
+read them.
 
-What will change for an operator:
+For an operator:
 
-- A run will count as an automated success only when its integration is applied
+- A run counts as an automated success only when its integration is applied
   and a recorded verification has a `Passed` objective. A transport exit code of
-  0 will still never count.
+  0 never counts.
 - The per-field token detail (input, cached input, cache writes, output,
   reasoning), from `RuntimeEvidence.host_usage`, is stored in
   `measurements.usage` with its `host_reported` provenance, for reports only.
   Admission budgets do not use it, and the sidecar export omits it.
-- The data will feed three metrics per accepted task: accepted success rate,
+- The data feeds three metrics per accepted task: accepted success rate,
   wall-clock time from run start to `integration.applied` of the accepted
-  result and attempts, and tokens with computed cost. Late facts carry a
-  timestamp for the time metric. None of them alone proves a gain from the
-  router; that needs the paired A/B
+  result and attempts, and tokens with computed cost. None of them alone
+  proves a gain from the router; that needs the paired A/B
   [router value protocol](bench/router-value-protocol.md) against fixed
   baselines.
-- `feedback report` shows accepted rate, usage, computed cost and `UNKNOWN`
-  counts. Activating a policy still goes through propose, evaluate, trial and
-  signed apply.
+- A labelled run can be exported as a sealed replay record and evaluated with
+  the existing chain. Activating a policy still goes through propose, evaluate,
+  trial and signed apply.
+- Coordinated runs record no verification fact yet: `coordinate verify` only
+  queues the request, and the service that applies it does not receive the
+  configuration.
 
 Collection stays opt-in through `feedback_store`, and the product defaults do
 not change. A longer retention, such as 90 days on a single workstation, is an
