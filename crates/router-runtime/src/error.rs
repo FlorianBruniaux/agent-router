@@ -30,6 +30,8 @@ pub enum RuntimeError {
     NestedGit,
     #[error("runtime.sandbox.unknown_or_unsafe")]
     Sandbox,
+    #[error("runtime.program.script_unsupported")]
+    ScriptProgram,
     #[error("runtime.resource.unsupported: {0}")]
     ResourceUnsupported(&'static str),
     #[error("runtime.route.invalid")]

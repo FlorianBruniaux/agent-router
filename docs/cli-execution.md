@@ -170,6 +170,13 @@ The sandbox file contains `schema_version: 1`, `programs` (native program name t
 absolute binary path), `read_roots`, `environment_names`, an absolute resource
 `helper` path, `bubblewrap` (Linux path, null on macOS), and `limits`.
 
+For `programs.codex`, configure the canonical path of the native executable,
+not the npm `codex.js` entry. Both macOS and Linux reject Codex programs whose
+first two bytes are `#!` with `runtime.program.script_unsupported` (exit 2),
+before sandbox probes or dispatch. The runtime does not search for Node or
+widen `PATH=/usr/bin:/bin`. Script contracts for other host adapters are unchanged.
+This check does not implement ADR 0021's private-copy execution batch.
+
 Limits require every field: `cpu_seconds`, `address_space_bytes`,
 `max_open_files`, `max_processes`, and `max_file_bytes`. The memory field is
 required even when explicitly null. macOS cannot enforce RLIMIT_AS on the
