@@ -267,8 +267,8 @@ fn operator_metadata_is_mandatory() {
 fn the_source_locator_is_never_a_local_path_or_a_non_public_scheme() {
     let dir = fixture();
     let refused = [
-        "/Users/someone/pack",
-        "../../home/me/pack",
+        "/srv/someone/pack",
+        "../../srv/me/pack",
         "..",
         ".",
         "Users/me/pack",
