@@ -1,6 +1,9 @@
 # Agent Router
 
-**Choisissez le modèle, l'effort et les skills de chaque tâche de code, relisez la décision, puis lancez un workflow approuvé.**
+**Les modèles frontier pour les étapes difficiles, des modèles moins chers pour le reste.**
+
+Un routage local et explicable pour Claude Code et Codex, avec le coût de
+chaque changement accepté.
 
 <table>
   <tr>
