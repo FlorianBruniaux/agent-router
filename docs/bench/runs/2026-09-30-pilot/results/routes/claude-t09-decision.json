@@ -1,0 +1,135 @@
+{
+  "schema_version": "1",
+  "decision_id": "19e4bbd7a2888cfa98ef47e8fdcc4653a0ac8c58b8b4a1d073b3be474f54b774",
+  "catalog_version": "pilot-claude-pool-v1",
+  "policy_version": "stable-v1",
+  "decision": {
+    "selected": {
+      "plan": {
+        "preset": "plan-execute-verify",
+        "stages": [
+          {
+            "kind": "plan",
+            "model": "claude-opus-5-5",
+            "effort": "high",
+            "skills": []
+          },
+          {
+            "kind": "execute",
+            "model": "claude-sonnet-5-5",
+            "effort": "medium",
+            "skills": []
+          },
+          {
+            "kind": "verify",
+            "model": "claude-sonnet-5-5",
+            "effort": "medium",
+            "skills": []
+          }
+        ],
+        "utility_micros": 130000
+      },
+      "alternatives": [
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "claude-opus-5-5",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": []
+            }
+          ],
+          "utility_micros": 35000
+        },
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "claude-opus-5-5",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "claude-sonnet-5-5",
+              "effort": "medium",
+              "skills": []
+            }
+          ],
+          "utility_micros": 17500
+        }
+      ],
+      "exclusions": [
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'high' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'low' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'max' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'ultra' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'xhigh' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "model.stage.unsupported",
+          "evidence": "model 'claude-sonnet-5-5' cannot serve stage 'plan'"
+        },
+        {
+          "stage": "verify",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'high' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "verify",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'xhigh' for model 'claude-sonnet-5-5'"
+        }
+      ],
+      "missing_evidence": []
+    }
+  }
+}

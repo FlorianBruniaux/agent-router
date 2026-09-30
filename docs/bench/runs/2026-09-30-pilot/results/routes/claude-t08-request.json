@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "`pilot_lib.retry.retry(fn, attempts, backoff=0.0, sleep=None)` calls `fn` one time too few and sleeps a constant delay. It must call `fn` at most `attempts` times, return the first successful result, sleep between attempts only (never after the last), use exponential backoff (backoff, 2*backoff, 4*backoff, ...) when `sleep` is given, re-raise the last exception, and raise ValueError when attempts < 1.",
+    "kind": "implement",
+    "risk": "high",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-claude",
+    "harness": "claude-code",
+    "supported_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "supported_efforts": {
+      "claude-opus-5-5": [
+        "medium",
+        "high"
+      ],
+      "claude-sonnet-5-5": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

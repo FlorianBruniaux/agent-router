@@ -1,0 +1,1 @@
+`pilot_lib.durations.parse_duration(value)` must accept hours, minutes and seconds in any combination and order (for example '1h30m', '45s', '2m5s', '1h1s'), ignore surrounding whitespace, and raise ValueError for an empty string, an unknown unit, a unit without a number or a trailing number without a unit.

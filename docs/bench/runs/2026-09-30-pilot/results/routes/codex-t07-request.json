@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "`pilot_lib.tables.csv_sum(path, column)` crashes on the header row and on empty cells. It must skip the header, treat empty or whitespace-only cells as missing (not zero, just skipped), raise KeyError if the column does not exist, and return a float.",
+    "kind": "implement",
+    "risk": "medium",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-codex",
+    "harness": "codex",
+    "supported_models": [
+      "gpt-5.6-terra",
+      "gpt-6.1-sol"
+    ],
+    "supported_efforts": {
+      "gpt-6.1-sol": [
+        "medium",
+        "high"
+      ],
+      "gpt-5.6-terra": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}

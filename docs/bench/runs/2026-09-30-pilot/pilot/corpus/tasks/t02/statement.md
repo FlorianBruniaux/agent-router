@@ -1,0 +1,1 @@
+Implement `pilot_lib.text.slugify(text)`: lowercase, strip accents (é becomes e), replace every run of characters that are not ASCII letters or digits with a single hyphen, and remove leading and trailing hyphens. Leave `word_wrap` untouched.

@@ -64,6 +64,7 @@ sauf celles marquées (FR).
 | [Exécution d'un backend](backend-execution.md) | Exécuter une décision de backend signée |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
+| [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Feedback](feedback.md) | Feedback local donné avec consentement, politiques hors ligne |
 
 ## Diagnostic, distribution et sécurité

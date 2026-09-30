@@ -64,6 +64,7 @@ written in French.
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
+| [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Feedback](feedback.md) | Local consented feedback and offline policies |
 
 ## Diagnostics, distribution and security

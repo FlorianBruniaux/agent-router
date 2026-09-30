@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "seed": 20260930,
+  "repetitions": 3,
+  "tasks": [
+    "t01",
+    "t02",
+    "t03",
+    "t04",
+    "t05",
+    "t06",
+    "t07",
+    "t08",
+    "t09",
+    "t10"
+  ],
+  "arms": [
+    "A",
+    "B",
+    "G",
+    "C",
+    "E"
+  ],
+  "optional_arms": [
+    "D"
+  ],
+  "phase_timeout_seconds": 900,
+  "acceptance_timeout_seconds": 120,
+  "python": "$PILOT_HOME/.pyenv/versions/3.13.0/bin/python3",
+  "agent_router": "src/target/release/agent-router",
+  "programs": {
+    "claude": "$PILOT_HOME/.local/bin/claude",
+    "codex": "$PILOT_HOME/.nvm/versions/node/v24.16.0/bin/codex"
+  },
+  "providers": {
+    "claude": {
+      "harness": "claude-code",
+      "frontier": "claude-opus-5-5",
+      "cheaper": "claude-sonnet-5-5",
+      "catalog": "catalogs/claude-pool.json"
+    },
+    "codex": {
+      "harness": "codex",
+      "frontier": "gpt-6.1-sol",
+      "cheaper": "gpt-5.6-terra",
+      "catalog": "catalogs/codex-pool.json"
+    }
+  },
+  "host_isolation_variant": {
+    "claude": [
+      "--safe-mode"
+    ],
+    "codex": [
+      "--ignore-user-config",
+      "--ignore-rules",
+      "--disable",
+      "hooks",
+      "--disable",
+      "plugins",
+      "--disable",
+      "apps"
+    ]
+  },
+  "_host_isolation_variant_note": "Off by default. Enabled only by `init --isolated`, sealed in the manifest. Command-line options only: no config file or credential is touched."
+}

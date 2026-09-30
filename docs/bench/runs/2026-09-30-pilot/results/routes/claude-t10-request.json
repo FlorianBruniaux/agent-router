@@ -1,0 +1,34 @@
+{
+  "task": {
+    "objective": "Implement `pilot_lib.text.word_wrap(text, width)`: split on whitespace, greedily fill lines of at most `width` characters with words separated by single spaces, put a word longer than `width` alone on its own line without cutting it, return the list of lines (an empty list for blank text), and raise ValueError when width < 1. Leave `slugify` untouched.",
+    "kind": "implement",
+    "risk": "low",
+    "required_capabilities": [
+      "tools"
+    ],
+    "acceptance": [
+      "hidden unit tests pass"
+    ]
+  },
+  "host": {
+    "id": "pilot-claude",
+    "harness": "claude-code",
+    "supported_models": [
+      "claude-opus-5-5",
+      "claude-sonnet-5-5"
+    ],
+    "supported_efforts": {
+      "claude-opus-5-5": [
+        "medium",
+        "high"
+      ],
+      "claude-sonnet-5-5": [
+        "medium"
+      ]
+    },
+    "capabilities": [
+      "tools"
+    ]
+  },
+  "skill_candidates": []
+}
