@@ -1,0 +1,51 @@
+docs/adr/0020-cross-host-routing.md
+  s_00c6bf8ee605be::t_391a4ec03c41a2 1-136
+docs/adr/0001-project-harness.md
+  s_00c6bf8ee605be::t_13739509eabb2a 4,7
+docs/adr/0002-bounded-routing-pipeline.md
+  s_00c6bf8ee605be::t_9ff12fa27e4b03 4,7
+docs/adr/0003-bound-asset-contracts.md
+  s_00c6bf8ee605be::t_fc7e64258546a9 4,7
+docs/adr/0004-signed-backend-promotion.md
+  s_00c6bf8ee605be::t_245105349be0a5 4,7
+docs/adr/0005-durable-backend-activation.md
+  s_00c6bf8ee605be::t_14438e0eb09f42 4,7
+docs/adr/0006-current-signed-catalog-authority.md
+  s_00c6bf8ee605be::t_30fa23528fb259 4,7-8
+docs/adr/0010-passive-runtime-diagnostics.md
+  s_00c6bf8ee605be::t_f8ec6c3fb760a8 4,7
+docs/adr/0011-advisory-decision-cache.md
+  s_00c6bf8ee605be::t_b8a9bbfa4a521c 4,7-8
+docs/adr/0012-local-route-api.md
+  s_00c6bf8ee605be::t_14d84aca56fb54 4,7
+docs/adr/0013-inert-importer.md
+  s_00c6bf8ee605be::t_b05bef883651fb 4,7
+docs/adr/0014-loopback-provider-transport.md
+  s_00c6bf8ee605be::t_ae6e7e54c1bfa5 7
+docs/adr/0015-structured-validation.md
+  s_00c6bf8ee605be::t_0d2dd328675297 7
+docs/adr/0016-adapter-descriptor-registry.md
+  s_00c6bf8ee605be::t_4f840bc19d2940 4,7
+docs/adr/0017-bounded-retention-and-publish-durability.md
+  s_00c6bf8ee605be::t_b8f172713a75db 7,11
+docs/adr/0018-incremental-event-chain-verification.md
+  s_00c6bf8ee605be::t_fa1fa112762b9f 4,7
+docs/adr/README.md
+  s_00c6bf8ee605be::t_927e9caa98bc34 11-16,20-23,26,28,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7a2c3e059cf474fd4d8a0dc8a1a431ff7f5aa976",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
