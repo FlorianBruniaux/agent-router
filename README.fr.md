@@ -442,12 +442,15 @@ dans vos rapports.
 
 ## Licence
 
-Le projet est sous [Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md) (`FSL-1.1-ALv2`).
-Le code source est lisible, et l'usage interne, éducatif, la recherche et les
-services autorisés sont permis. L'usage dans un produit ou un service
-commercial concurrent est interdit sans permission. Chaque version passe sous
-Apache 2.0 deux ans après sa publication. Ce n'est pas une licence open source
-au sens de l'OSI. Les œuvres dérivées doivent créditer l'auteur, voir
-[NOTICE](NOTICE). La provenance des dépendances, l'inventaire
-des licences et les limites de la revue de release sont documentés dans le
+Le projet est sous
+[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
+(`FSL-1.1-ALv2`). Ce n'est pas une licence open source au sens de l'OSI. Le
+code source est lisible, et sont permis l'usage interne, l'enseignement et la
+recherche non commerciaux, ainsi que les prestations de services pour un
+licencié. Le proposer, ou un substitut, dans un produit ou un service
+commercial concurrent demande une permission. Chaque version passe sous
+Apache 2.0 deux ans après sa mise à disposition. Toute redistribution doit
+conserver les mentions de copyright, les termes de la licence et
+[NOTICE](NOTICE). La provenance des dépendances, l'inventaire des licences et
+les limites de la revue de release sont documentés dans le
 [guide de distribution](docs/distribution.md).

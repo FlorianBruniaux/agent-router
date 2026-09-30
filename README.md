@@ -441,12 +441,14 @@ of reports.
 
 ## License
 
-The project is licensed under the [Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md) (`FSL-1.1-ALv2`).
-The source is readable, and internal use, education, research and
-permitted services are allowed. Use in a competing commercial product or
-service is not allowed without permission. Each version becomes available
-under Apache 2.0 two years after its publication. This is not an open source
-license as defined by the OSI. Derivative works must credit the author, see
-[NOTICE](NOTICE). Dependency provenance,
-license inventory and release review boundaries are documented in the
+The project is licensed under the
+[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
+(`FSL-1.1-ALv2`). This is not an open source license as defined by the OSI.
+The source is readable, and internal use, non-commercial education and
+research, and professional services for a licensee are allowed. Offering it,
+or a substitute for it, in a competing commercial product or service requires
+permission. Each version becomes available under Apache 2.0 two years after it
+is made available. Redistributions must keep the copyright notices, the
+license terms and [NOTICE](NOTICE). Dependency provenance, license inventory
+and release review boundaries are documented in the
 [distribution guide](docs/distribution.md).
