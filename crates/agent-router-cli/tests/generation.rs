@@ -662,3 +662,23 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
         assert!(!value.to_string().contains("synthetic-private-result"));
     }
 }
+
+#[test]
+fn final_assembly_failures_report_their_own_typed_code() {
+    // Appended whitespace keeps the template valid JSON but breaks the body hash
+    // pinned by the metadata: the retrieval class.
+    let (fixture, _) = Fixture::for_preparation(0, 300);
+    let path = fixture.root.join("prompt.json");
+    let mut bytes = fs::read(&path).unwrap();
+    bytes.push(b'\n');
+    fs::write(&path, bytes).unwrap();
+    fixture.rejected_preparation("prepare.retrieval.invalid");
+
+    // A one-byte input bound: a different class, hence a different code.
+    let (fixture, _) = Fixture::for_preparation(0, 300);
+    let path = fixture.root.join("options.json");
+    let mut options: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+    options["max_input_bytes"] = json!(1);
+    write(&path, &options);
+    fixture.rejected_preparation("prepare.input.limit");
+}

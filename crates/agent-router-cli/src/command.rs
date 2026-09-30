@@ -563,6 +563,37 @@ pub enum AssetCommand {
         #[arg(long)]
         json: bool,
     },
+    /// Compute and print a sealed contracts or availability document and its
+    /// hash. Establishes no authority: the operator pins the hash in the manifest.
+    Seal {
+        /// Which document to seal.
+        #[arg(long, value_enum)]
+        kind: AssetSealKind,
+        /// Unsealed document JSON; its `content_hash` is recomputed.
+        #[arg(long)]
+        document: PathBuf,
+        /// Model and skill catalog JSON (required for `contracts`).
+        #[arg(long)]
+        catalog: Option<PathBuf>,
+        /// Host snapshot JSON, as printed by `inspect` (required for `availability`).
+        #[arg(long)]
+        host_snapshot: Option<PathBuf>,
+        /// Current time override, in Unix seconds (for fixtures and replays).
+        #[arg(long)]
+        now: Option<u64>,
+        /// Maximum accepted host snapshot age, in seconds.
+        #[arg(long, default_value_t = 86400)]
+        snapshot_max_age_seconds: u64,
+        /// Print the complete versioned JSON result.
+        #[arg(long)]
+        json: bool,
+    },
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+pub enum AssetSealKind {
+    Contracts,
+    Availability,
 }
 
 #[derive(Subcommand)]
@@ -967,6 +998,9 @@ impl Commands {
             Self::Assets {
                 command: AssetCommand::Review { json, .. },
             } => (json, "Asset review"),
+            Self::Assets {
+                command: AssetCommand::Seal { json, .. },
+            } => (json, "Asset seal"),
             Self::Audit { command } => match command {
                 AuditCommand::Export { json, .. } | AuditCommand::Verify { json, .. } => {
                     (json, "Audit")

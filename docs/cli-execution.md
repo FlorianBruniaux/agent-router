@@ -93,6 +93,14 @@ manifest and its exact referenced inputs with the private bundle.
 }
 ```
 
+To produce the two pinned documents, `assets seal --kind contracts --document
+contracts.json --catalog catalog.json --json` or `assets seal --kind
+availability --document availability.json --host-snapshot snapshot.json --json`
+recomputes `content_hash` from an unsealed document and prints the sealed
+document with its hash. It writes no file, edits no manifest and approves
+nothing; the operator copies the hash into `expected_hash` after checking it
+independently.
+
 The placeholders must be replaced with independently established values. Asset
 requests map every candidate ID to its exact typed provider, model, host,
 capabilities and context requirements. Routing reads metadata only. To inspect

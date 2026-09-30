@@ -319,6 +319,23 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
                 skills,
                 json,
             } => assets::review(&manifest, &inputs, &skills, json),
+            command::AssetCommand::Seal {
+                kind,
+                document,
+                catalog,
+                host_snapshot,
+                now,
+                snapshot_max_age_seconds,
+                json,
+            } => assets::seal(
+                kind,
+                &document,
+                catalog.as_deref(),
+                host_snapshot.as_deref(),
+                now,
+                snapshot_max_age_seconds,
+                json,
+            ),
         },
         Commands::Prepare {
             manifest,
@@ -776,6 +793,41 @@ mod exit_class_tests {
         ] {
             assert_eq!(exit_class(error.code()) as u8, status, "{}", error.code());
         }
+    }
+
+    #[test]
+    fn every_preparation_error_has_a_unique_prepare_code_and_its_exit_class() {
+        use router_execution_decision::DecisionError as D;
+        use router_prepare::PreparationError as P;
+        let table = [
+            (P::Decision(D::AuthorityUnavailable), 2),
+            (P::Decision(D::AuthorityRequired), 2),
+            (P::Decision(D::Context), 2),
+            (P::Decision(D::Abstained), 2),
+            (P::Decision(D::Stale), 2),
+            (P::Decision(D::Serialization), 4),
+            (P::Workflow(router_workflow::WorkflowError::Invalid("x")), 2),
+            (P::Route(router_policy::PhaseRouteError::Invalid("x")), 2),
+            (P::Retrieval(router_retrieval::RetrievalError::Selection), 2),
+            (
+                P::Adapter(router_adapter_api::AdapterError::HostMismatch),
+                2,
+            ),
+            (P::Snapshot, 2),
+            (P::Abstained, 2),
+            (P::Binding("secret"), 2),
+            (P::Limit, 2),
+            (P::Json, 4),
+        ];
+        let mut seen = std::collections::BTreeSet::new();
+        for (error, status) in table {
+            let code = error.code();
+            assert!(code.starts_with("prepare."), "{code}");
+            assert!(seen.insert(code), "duplicate {code}");
+            assert!(!code.contains("secret"), "{code}");
+            assert_eq!(exit_class(code) as u8, status, "{code}");
+        }
+        assert_eq!(seen.len(), 15);
     }
 
     #[test]

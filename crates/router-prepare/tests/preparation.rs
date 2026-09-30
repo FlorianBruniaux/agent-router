@@ -897,3 +897,43 @@ fn activated_preparation_uses_secondary_and_keeps_baseline_unavailable_unchanged
     .unwrap();
     assert!(router_prepare::prepare_with_decision(f.input(), &decision).is_err());
 }
+
+#[test]
+fn each_preparation_failure_class_has_its_own_fixed_code() {
+    let mut fixture = Fixture::new();
+    fixture.enable_asset_contracts(4000);
+    fixture.options.now_unix_seconds = 161;
+    let route = fixture.prepare().unwrap_err();
+    assert_eq!(route.code(), "prepare.route.invalid");
+
+    let fixture = Fixture::new();
+    let path = &fixture
+        .metadata
+        .assets
+        .iter()
+        .find(|asset| asset.kind == AssetKind::Skill)
+        .unwrap()
+        .body
+        .as_ref()
+        .unwrap()
+        .path;
+    fs::write(fixture.root.path().join(path), "tampered secret-body").unwrap();
+    let retrieval = fixture.prepare().unwrap_err();
+    assert_eq!(retrieval.code(), "prepare.retrieval.invalid");
+
+    let binding = PreparationError::Binding("secret-node-name");
+    let codes = [
+        route.code(),
+        retrieval.code(),
+        PreparationError::Abstained.code(),
+        PreparationError::Snapshot.code(),
+        PreparationError::Limit.code(),
+        PreparationError::Json.code(),
+        binding.code(),
+    ];
+    let distinct: std::collections::BTreeSet<_> = codes.iter().collect();
+    assert_eq!(distinct.len(), codes.len());
+    assert!(codes.iter().all(|code| code.starts_with("prepare.")));
+    assert!(!binding.code().contains("secret"));
+    assert!(!retrieval.code().contains("secret"));
+}

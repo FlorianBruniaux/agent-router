@@ -49,10 +49,39 @@ pub enum PreparationError {
     Binding(&'static str),
     #[error("prepare.input.limit")]
     Limit,
-    #[error("prepare.json.invalid")]
+    #[error("prepare.encoding.json")]
     Json,
 }
 pub type Result<T> = std::result::Result<T, PreparationError>;
+
+impl PreparationError {
+    /// Stable product code. Fixed strings only: no input text, path or inner
+    /// error message is carried, so the code is safe to print.
+    pub fn code(&self) -> &'static str {
+        use router_execution_decision::DecisionError;
+        match self {
+            Self::Decision(DecisionError::AuthorityUnavailable) => {
+                "prepare.decision.authority_unavailable"
+            }
+            Self::Decision(DecisionError::AuthorityRequired) => {
+                "prepare.decision.authority_required"
+            }
+            Self::Decision(DecisionError::Context) => "prepare.decision.context",
+            Self::Decision(DecisionError::Abstained) => "prepare.decision.abstained",
+            Self::Decision(DecisionError::Stale) => "prepare.decision.stale",
+            Self::Decision(DecisionError::Serialization) => "prepare.decision.serialization",
+            Self::Workflow(_) => "prepare.workflow.invalid",
+            Self::Route(_) => "prepare.route.invalid",
+            Self::Retrieval(_) => "prepare.retrieval.invalid",
+            Self::Adapter(_) => "prepare.adapter.invalid",
+            Self::Snapshot => "prepare.snapshot.invalid_or_stale",
+            Self::Abstained => "prepare.route.abstained",
+            Self::Binding(_) => "prepare.binding.mismatch",
+            Self::Limit => "prepare.input.limit",
+            Self::Json => "prepare.encoding.json",
+        }
+    }
+}
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]

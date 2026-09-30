@@ -27,7 +27,8 @@ supply independently pinned expected hashes to `ValidatedContracts::from_json`
 and `ValidatedAvailability::from_json`. Reading `content_hash` from an untrusted
 document and passing it back as the expected hash does not establish authority.
 `seal_contracts` and `seal_availability` are producer operations that compute
-integrity only. All library errors have fixed codes and omit input text.
+integrity only; `agent-router assets seal` exposes them without writing
+anything or pinning a hash. All library errors have fixed codes and omit input text.
 
 Inputs use strict JSON with unknown fields, duplicate keys and duplicate array
 members rejected. Duplicate detection digests each value once, bottom-up, so its
