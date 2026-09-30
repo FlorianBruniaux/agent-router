@@ -13,8 +13,9 @@ use router_types::{
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 use crate::{
-    DriftFinding, FeedbackError, FeedbackStatistics, LearningRules, MAX_EVENTS, Result, hash,
-    validate_input, validate_preferences,
+    DriftFinding, FeedbackError, FeedbackStatistics, LearningRules, MAX_EVENTS, Result,
+    facts::{expire_facts, latest_recorded_at, read_facts},
+    hash, validate_input, validate_preferences,
 };
 
 pub struct FeedbackStore {
@@ -66,7 +67,7 @@ impl FeedbackStore {
         db.pragma_update(None, "secure_delete", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if version > 1 {
+        if version > 2 {
             return Err(FeedbackError::Integrity("future schema"));
         }
         if version == 0 {
@@ -88,6 +89,15 @@ impl FeedbackStore {
                 "INSERT INTO settings VALUES('consent',?1)",
                 [serde_json::to_string(&consent)?],
             )?;
+            tx.commit()?;
+        }
+        let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if version == 1 {
+            // Additive: events are neither read nor rewritten.
+            let tx = db.transaction()?;
+            tx.execute_batch("CREATE TABLE facts(sequence INTEGER PRIMARY KEY AUTOINCREMENT, run_key TEXT NOT NULL, kind TEXT NOT NULL, observed_at INTEGER NOT NULL, fact TEXT NOT NULL, UNIQUE(run_key,kind));
+                CREATE TRIGGER facts_immutable BEFORE UPDATE ON facts BEGIN SELECT RAISE(ABORT,'immutable fact'); END;
+                PRAGMA user_version=2;")?;
             tx.commit()?;
         }
         for suffix in ["", "-wal", "-shm"] {
@@ -143,6 +153,7 @@ impl FeedbackStore {
         write_consent(&tx, &consent)?;
         if !consent.preferences.collection_enabled {
             tx.execute("DELETE FROM feedback", [])?;
+            tx.execute("DELETE FROM facts", [])?;
         }
         if !consent.preferences.learning_enabled {
             // Opt-out discards learned artifacts and restores the explicitly registered deterministic baseline.
@@ -250,25 +261,36 @@ impl FeedbackStore {
         Ok((events, consent))
     }
     pub fn export(&self, now: u64) -> Result<FeedbackExport> {
-        let (events, consent) = self.event_snapshot(now, false)?;
+        timestamp(now)?;
+        let mut db = self.lock()?;
+        let tx = db.transaction()?;
+        let (events, consent, removed) = snapshot_in(&tx, now, false)?;
+        let facts = read_facts(&tx)?;
+        tx.commit()?;
+        if removed > 0 {
+            scrub(&db)?;
+        }
         let mut export = FeedbackExport {
             schema_version: 1,
             exported_at_unix_seconds: now,
             consent,
             events,
+            facts,
             content_hash: String::new(),
         };
         export.content_hash = hash("feedback-export-v1", &export)?;
         Ok(export)
     }
-    /// Deletes feedback, policies, audit records and resets consent/settings.
+    /// Deletes feedback, facts, policies, audit records and resets consent/settings.
     /// Only a non-personal clock watermark survives, preventing clock replay.
+    /// The count covers events and facts.
     pub fn purge_all(&self, now: u64) -> Result<usize> {
         timestamp(now)?;
         let mut db = self.lock()?;
         let tx = db.transaction()?;
         ensure_clock(&tx, now)?;
-        let removed = tx.execute("DELETE FROM feedback", [])?;
+        let removed =
+            tx.execute("DELETE FROM feedback", [])? + tx.execute("DELETE FROM facts", [])?;
         tx.execute("DELETE FROM policy_events", [])?;
         tx.execute("DELETE FROM policies", [])?;
         tx.execute("DELETE FROM settings", [])?;
@@ -322,6 +344,7 @@ impl FeedbackStore {
         let consent = read_consent(&db)?;
         validate_preferences(&consent.preferences)?;
         read_events(&db)?;
+        read_facts(&db)?;
         crate::policy::verify_policies(&db)?;
         Ok(())
     }
@@ -361,9 +384,12 @@ fn write_consent(tx: &Transaction<'_>, consent: &FeedbackConsent) -> Result<()> 
     )?;
     Ok(())
 }
-fn expire(tx: &Transaction<'_>, consent: &FeedbackConsent, now: u64) -> Result<usize> {
+pub(crate) fn expire(tx: &Transaction<'_>, consent: &FeedbackConsent, now: u64) -> Result<usize> {
     let cutoff = now.saturating_sub(consent.preferences.retention_seconds);
-    Ok(tx.execute("DELETE FROM feedback WHERE observed_at < ?1", [cutoff])?)
+    Ok(
+        tx.execute("DELETE FROM feedback WHERE observed_at < ?1", [cutoff])?
+            + expire_facts(tx, cutoff)?,
+    )
 }
 pub(crate) fn ensure_clock(db: &Connection, now: u64) -> Result<()> {
     let previous: Option<String> = db
@@ -393,6 +419,9 @@ pub(crate) fn ensure_clock(db: &Connection, now: u64) -> Result<()> {
         if now < event.recorded_at_unix_seconds {
             return Err(FeedbackError::Invalid("clock moved backwards"));
         }
+    }
+    if latest_recorded_at(db)?.is_some_and(|recorded| now < recorded) {
+        return Err(FeedbackError::Invalid("clock moved backwards"));
     }
     db.execute(
         "INSERT OR REPLACE INTO settings VALUES('last_seen_time',?1)",

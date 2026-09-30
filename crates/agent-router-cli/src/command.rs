@@ -229,6 +229,9 @@ pub enum Commands {
         /// Verification evidence JSON.
         #[arg(long)]
         evidence: PathBuf,
+        /// Sandbox configuration JSON; only its `feedback_store` is used, to record the verification fact.
+        #[arg(long)]
+        config: Option<PathBuf>,
         /// Print the complete versioned JSON result instead of the human view.
         #[arg(long)]
         json: bool,
@@ -241,6 +244,9 @@ pub enum Commands {
         /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
+        /// Sandbox configuration JSON; only its `feedback_store` is used, to record the integration fact.
+        #[arg(long)]
+        config: Option<PathBuf>,
         /// Print the complete versioned JSON result instead of the human view.
         #[arg(long, global = true)]
         json: bool,
@@ -632,6 +638,9 @@ pub enum CoordinateCommand {
         bundle: PathBuf,
         #[arg(long)]
         store: PathBuf,
+        /// Sandbox configuration JSON; only its `feedback_store` is used, to record the integration fact.
+        #[arg(long)]
+        config: Option<PathBuf>,
         #[command(subcommand)]
         command: ArtifactCommand,
     },

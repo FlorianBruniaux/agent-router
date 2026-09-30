@@ -24,6 +24,7 @@ pub(crate) fn record(
     selection: &router_execution_decision::ExecutionDecision,
     context: &ValidatedPhaseContext,
     completion: &RunCompletion,
+    started_at: Option<u64>,
 ) -> serde_json::Value {
     let (Some(path), Some(consent)) = (path, consent) else {
         return serde_json::json!({"recorded":false,"reason":"not_requested"});
@@ -53,6 +54,8 @@ pub(crate) fn record(
             escalations,
             now,
         )?;
+        input.started_at_unix_seconds = started_at.filter(|started| *started <= now);
+        input.run_key_sha256 = Some(run_key(&completion.run)?);
         input.binding.receipt_hash = selection.authorization_id().into();
         if let Some(binding) = selection.binding() {
             input.binding.provenance_sha256 = digest(&(completion, receipt, binding))?;
@@ -71,6 +74,73 @@ pub(crate) fn record(
             serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
         }
     }
+}
+
+/// Stable across state changes: `run_hash` covers `state` and `attempts`, so a
+/// later verification or integration cannot recompute it. The writer and the
+/// late-fact paths both key the run through this one function.
+pub(crate) fn run_key(run: &RunSummary) -> Result<String, ()> {
+    digest(&(&run.run_id, &run.definition_hash, &run.approval_digest))
+}
+
+/// Records one late fact for a run, or says why not. Nothing here can fail the
+/// command that already succeeded: a failure is only reported in the value.
+pub(crate) fn record_fact(
+    path: Option<&Path>,
+    run: &RunSummary,
+    kind: FeedbackFactKind,
+) -> serde_json::Value {
+    let Some(path) = path else {
+        return serde_json::json!({"recorded":false,"reason":"not_requested"});
+    };
+    if matches!(
+        &kind,
+        FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Unknown,
+            objective: VerificationOutcome::Unknown,
+            ..
+        }
+    ) {
+        return serde_json::json!({"recorded":false,"reason":"inconclusive"});
+    }
+    let result = (|| {
+        if !path.join("feedback.sqlite3").is_file() {
+            return Err(());
+        }
+        let store = FeedbackStore::open(path).map_err(|_| ())?;
+        if !store
+            .consent()
+            .map_err(|_| ())?
+            .preferences
+            .collection_enabled
+        {
+            return Ok(None);
+        }
+        let now = crate::inspect::current_time(None).map_err(|_| ())?;
+        let fact = FeedbackFact {
+            schema_version: 1,
+            run_key_sha256: run_key(run)?,
+            observed_at_unix_seconds: now,
+            kind,
+        };
+        store.record_fact(fact, now).map(Some).map_err(|_| ())
+    })();
+    match result {
+        Ok(Some(event)) => serde_json::json!({"recorded":true,"fact_hash":event.fact_hash}),
+        Ok(None) => serde_json::json!({"recorded":false,"reason":"collection_disabled"}),
+        Err(()) => {
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+        }
+    }
+}
+
+/// The evidence digest covers the whole stored record, verifier included.
+pub(crate) fn verification_fact(record: &VerificationRecord) -> Result<FeedbackFactKind, ()> {
+    Ok(FeedbackFactKind::Verification {
+        validation: record.validation,
+        objective: record.objective,
+        evidence_sha256: digest(record)?,
+    })
 }
 
 fn digest(value: &impl serde::Serialize) -> Result<String, ()> {
@@ -148,6 +218,8 @@ fn feedback_input(
     Ok(FeedbackInput {
         schema_version: 1,
         observed_at_unix_seconds: now,
+        started_at_unix_seconds: None,
+        run_key_sha256: None,
         binding: FeedbackBinding {
             task_hash: digest(&context.request().task)?,
             run_hash: digest(&completion.run)?,
@@ -380,5 +452,149 @@ mod tests {
             feedback_failure(Some(RunFailure::Verification), RunState::VerificationFailed),
             Some(FeedbackFailure::Validation)
         ));
+    }
+    fn run(state: RunState, attempts: u32) -> RunSummary {
+        RunSummary {
+            run_id: "run-1".into(),
+            definition_hash: "d".repeat(64),
+            approval_digest: "a".repeat(64),
+            receipt_id: "receipt".into(),
+            plan_id: "plan".into(),
+            node_id: "node".into(),
+            state,
+            attempts,
+            failure: None,
+            worktree: None,
+            artifact_sha256: None,
+            output_retention: OutputRetentionPolicy::default(),
+            workflow: None,
+            artifact_contract_sha256: None,
+        }
+    }
+
+    #[test]
+    fn run_key_ignores_state_and_attempts_but_run_hash_does_not() {
+        let at_completion = run(RunState::Verifying, 1);
+        let later = run(RunState::Verified, 2);
+        assert_eq!(run_key(&at_completion), run_key(&later));
+        assert_ne!(digest(&at_completion), digest(&later));
+        let mut other = run(RunState::Verifying, 1);
+        other.approval_digest = "b".repeat(64);
+        assert_ne!(run_key(&at_completion), run_key(&other));
+        other = run(RunState::Verifying, 1);
+        other.run_id = "run-2".into();
+        assert_ne!(run_key(&at_completion), run_key(&other));
+        other = run(RunState::Verifying, 1);
+        other.definition_hash = "e".repeat(64);
+        assert_ne!(run_key(&at_completion), run_key(&other));
+    }
+
+    fn now() -> u64 {
+        crate::inspect::current_time(None).ok().unwrap()
+    }
+    fn store(collection_enabled: bool) -> (tempfile::TempDir, std::path::PathBuf) {
+        let temp = tempfile::TempDir::new().unwrap();
+        let path = temp.path().join("feedback");
+        let store = FeedbackStore::open(&path).unwrap();
+        let now = now();
+        store
+            .configure(
+                FeedbackPreferences {
+                    collection_enabled,
+                    ..FeedbackPreferences::default()
+                },
+                now,
+            )
+            .unwrap();
+        (temp, path)
+    }
+    fn applied() -> FeedbackFactKind {
+        FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Applied,
+        }
+    }
+
+    #[test]
+    fn late_fact_is_recorded_under_the_writer_run_key() {
+        let (_temp, path) = store(true);
+        let value = record_fact(Some(&path), &run(RunState::Verified, 2), applied());
+        assert_eq!(value["recorded"], true);
+        let facts = FeedbackStore::open(&path).unwrap().facts(now()).unwrap();
+        assert_eq!(facts.len(), 1);
+        assert_eq!(
+            facts[0].fact.run_key_sha256,
+            run_key(&run(RunState::Verifying, 1)).unwrap()
+        );
+        assert_eq!(value["fact_hash"], facts[0].fact_hash);
+        // A repeat is idempotent and reports the same fact.
+        let again = record_fact(Some(&path), &run(RunState::Verified, 2), applied());
+        assert_eq!(again, value);
+    }
+
+    #[test]
+    fn late_fact_reports_why_it_was_not_recorded() {
+        let reason = |value: serde_json::Value| {
+            assert_eq!(value["recorded"], false);
+            value["reason"].as_str().unwrap().to_owned()
+        };
+        let summary = run(RunState::Verified, 1);
+        assert_eq!(
+            reason(record_fact(None, &summary, applied())),
+            "not_requested"
+        );
+        let (_temp, disabled) = store(false);
+        assert_eq!(
+            reason(record_fact(Some(&disabled), &summary, applied())),
+            "collection_disabled"
+        );
+        let missing = disabled.join("absent");
+        assert_eq!(
+            reason(record_fact(Some(&missing), &summary, applied())),
+            "consent_changed_or_storage_error"
+        );
+        assert!(!missing.exists());
+        let (_temp, enabled) = store(true);
+        let inconclusive = FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Unknown,
+            objective: VerificationOutcome::Unknown,
+            evidence_sha256: "9".repeat(64),
+        };
+        assert_eq!(
+            reason(record_fact(Some(&enabled), &summary, inconclusive)),
+            "inconclusive"
+        );
+        // A conflicting outcome is a storage refusal, never a command failure.
+        record_fact(Some(&enabled), &summary, applied());
+        let conflict = FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Discarded,
+        };
+        assert_eq!(
+            reason(record_fact(Some(&enabled), &summary, conflict)),
+            "consent_changed_or_storage_error"
+        );
+    }
+
+    #[test]
+    fn verification_fact_carries_the_stored_outcomes_and_a_record_digest() {
+        let record = VerificationRecord {
+            verifier: "checker".into(),
+            evidence_sha256: "1".repeat(64),
+            artifact_sha256: None,
+            validation: VerificationOutcome::Passed,
+            objective: VerificationOutcome::Failed,
+        };
+        let FeedbackFactKind::Verification {
+            validation,
+            objective,
+            evidence_sha256,
+        } = verification_fact(&record).unwrap()
+        else {
+            panic!("verification fact");
+        };
+        assert_eq!(
+            (validation, objective),
+            (VerificationOutcome::Passed, VerificationOutcome::Failed)
+        );
+        assert_eq!(evidence_sha256, digest(&record).unwrap());
     }
 }

@@ -13,6 +13,8 @@ pub fn input(now: u64, human: bool) -> FeedbackInput {
     FeedbackInput {
         schema_version: 1,
         observed_at_unix_seconds: now,
+        started_at_unix_seconds: None,
+        run_key_sha256: None,
         binding: FeedbackBinding {
             task_hash: "a".repeat(64),
             run_hash: "b".repeat(64),

@@ -939,6 +939,7 @@ pub(crate) fn run(
                 interrupt.cancel();
             }
         });
+        let started_at = crate::inspect::current_time(None).ok();
         let completed = runtime
             .execute_decision(
                 approved,
@@ -956,6 +957,7 @@ pub(crate) fn run(
             &loaded.decision,
             &context,
             &completed,
+            started_at,
         );
         let code = if completed.transport.exit_code == Some(0)
             && completed.transport.termination == router_types::TransportTermination::Exited
@@ -1039,18 +1041,42 @@ pub(crate) fn workflow(
         ExitCode::SUCCESS,
     )
 }
+/// Only `feedback_store` is read from the configuration. It is validated before
+/// the operation, while nothing has changed; a feedback failure after it never
+/// fails the command.
+pub(crate) fn late_feedback_store(config: Option<&Path>) -> Result<Option<PathBuf>, CliError> {
+    Ok(config
+        .map(sandbox)
+        .transpose()?
+        .and_then(|c| c.feedback_store))
+}
 pub(crate) fn verify(
     definition: &Path,
     store: &Path,
     evidence: &Path,
+    config: Option<&Path>,
     json: bool,
 ) -> Result<Outcome, CliError> {
     require_json(json)?;
     let definition = load_definition(definition)?;
-    let record = phases::read_json(evidence, 64 * 1024)?;
+    let record: router_types::VerificationRecord = phases::read_json(evidence, 64 * 1024)?;
+    let feedback_path = late_feedback_store(config)?;
     let (runtime, pending) = open_existing(store, &definition)?;
+    let run = runtime
+        .record_verification(&pending, record.clone())
+        .map_err(error)?;
+    let feedback = match crate::execution_feedback::verification_fact(&record) {
+        Ok(kind) => crate::execution_feedback::record_fact(
+            feedback_path.as_deref(),
+            pending.summary(),
+            kind,
+        ),
+        Err(()) => {
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+        }
+    };
     json_output(
-        &serde_json::json!({"schema_version":1,"run":runtime.record_verification(&pending,record).map_err(error)?}),
+        &serde_json::json!({"schema_version":1,"run":run,"feedback":feedback}),
         ExitCode::SUCCESS,
     )
 }
@@ -1058,11 +1084,20 @@ pub(crate) fn artifacts(
     definition: &Path,
     store: &Path,
     command: ArtifactCommand,
+    config: Option<&Path>,
     json: bool,
 ) -> Result<Outcome, CliError> {
     require_json(json)?;
     let definition = load_definition(definition)?;
+    let feedback_path = late_feedback_store(config)?;
     let (runtime, pending) = open_existing(store, &definition)?;
+    let integration = |outcome| {
+        crate::execution_feedback::record_fact(
+            feedback_path.as_deref(),
+            pending.summary(),
+            router_types::FeedbackFactKind::Integration { outcome },
+        )
+    };
     block(async {
         let value = match command {
             ArtifactCommand::Declared => {
@@ -1089,11 +1124,12 @@ pub(crate) fn artifacts(
                 serde_json::json!({"schema_version":1,"preview":runtime.integration_preview(&pending).await.map_err(error)?})
             }
             ArtifactCommand::Apply { approve } => {
-                serde_json::json!({"schema_version":1,"applied":runtime.apply(&pending,&approve).await.map_err(error)?})
+                let applied = runtime.apply(&pending, &approve).await.map_err(error)?;
+                serde_json::json!({"schema_version":1,"applied":applied,"feedback":integration(router_types::IntegrationOutcome::Applied)})
             }
             ArtifactCommand::Discard { approve } => {
                 runtime.discard(&pending, &approve).await.map_err(error)?;
-                serde_json::json!({"schema_version":1,"discarded":true})
+                serde_json::json!({"schema_version":1,"discarded":true,"feedback":integration(router_types::IntegrationOutcome::Discarded)})
             }
             ArtifactCommand::Keep => {
                 serde_json::json!({"schema_version":1,"kept":true,"run":pending.summary()})

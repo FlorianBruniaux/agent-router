@@ -33,7 +33,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
-| Feedback | v1 private consent/events, signed policy changes with externally trusted keys; no online exploration |
+| Feedback | v1 private consent/events (optional `run_key_sha256` and `started_at_unix_seconds`), schema 2 store with late facts, signed policy changes with externally trusted keys; no online exploration |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
@@ -49,6 +49,39 @@ quarantine, rollback or activation is detected before fresh execution. Explicit
 policy files override store selection when a command accepts both; an execution
 definition naming both is refused with `policy.composition.denied`. A change of
 authority source also changes the CLI approval digest.
+
+## Feedback late facts
+
+`FeedbackInput` (schema 1) gains two optional keys, both omitted when absent so
+an earlier event keeps its bytes and `event_hash`:
+
+- `run_key_sha256`: 64 lowercase hex characters, the digest of `[run_id,
+  definition_hash, approval_digest]` of the run summary. It is not in
+  `FeedbackBinding`, which human and automated verdicts must share.
+- `started_at_unix_seconds`: when the native process started; at most
+  `observed_at_unix_seconds`.
+
+A late fact (`FeedbackFact`, schema 1) has `run_key_sha256`,
+`observed_at_unix_seconds` and `kind`, a tagged object with `type` of either:
+
+- `verification`: `validation`, `objective` (`passed`, `failed` or `unknown`,
+  not both `unknown`, `objective` `passed` only with `validation` `passed`) and
+  `evidence_sha256`, the digest of the stored verification record;
+- `integration`: `outcome`, `applied` or `discarded`.
+
+The stored `FeedbackFactEvent` adds `sequence`, `consent_revision`,
+`recorded_at_unix_seconds` and `fact_hash` (domain `feedback-fact-v1`), with no
+free text. There is one fact per run key and kind. `FeedbackExport` (schema 1)
+lists them in `facts`, omitted when empty so an export without facts keeps its
+`content_hash`. The store `user_version` is 2; a newer version is refused.
+
+`verify`, `artifacts apply`, `artifacts discard` and `coordinate artifacts`
+accept an optional `--config <sandbox.json>`, of which only `feedback_store` is
+read. Their JSON output gains `feedback`: `{"recorded":true,"fact_hash":"..."}`
+or `{"recorded":false,"reason":"..."}` with `not_requested`,
+`collection_disabled`, `inconclusive` or `consent_changed_or_storage_error`.
+`agent-router run` and `coordinate run-wave` keep the same `feedback` shape for
+the automated event, with `event_hash` in place of `fact_hash`.
 
 ## Catalog
 

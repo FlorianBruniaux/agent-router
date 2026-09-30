@@ -69,6 +69,45 @@ exceed 1 because an escalation source must be a deterministic or activated run.
 An escalated run therefore has one attempt and one escalation, and the validator
 rejects `escalations > attempts` instead of `escalations >= attempts`.
 
+Automated events written by the CLI also carry `run_key_sha256` and
+`started_at_unix_seconds`, both optional and omitted when absent, so an earlier
+event keeps its bytes and hash. The run key is the digest of the stable run
+identity (run id, definition hash, approval digest). `run_hash` cannot serve
+later, because it covers the run state and attempts, which `verify` and
+`artifacts apply` change. The start time is read before the native process
+starts; a coordinated wave shares one start time for its steps. It is refused
+when later than `observed_at_unix_seconds`.
+
+Late facts are appended after the automated verdict, keyed by the run key and
+holding no free text:
+
+- `verification`: the validation and objective outcomes of the record the runtime
+  stored, and the digest of that record. A record with both outcomes `unknown` is
+  inconclusive, so it is not a fact.
+- `integration`: `applied` or `discarded`.
+
+There is at most one fact per run key and kind. Repeating an identical fact is
+idempotent; a different fact for the same key and kind fails with an integrity
+error, and nothing is rewritten. A fact does not require a matching automated
+event, which may have failed to record. The human outcome is not a fact kind: it
+stays the human-origin event, once per run. Consent, the clock watermark and
+retention (by observation time) apply as for events. Disabling collection,
+`purge_all` and expiry delete facts, and `export` lists them under `facts`,
+omitted when empty. The sidecar projection never includes a fact. The store
+migrates from schema version 1 to 2 when opened, in one transaction that only
+adds the fact table; events are not read or rewritten, and a database with a
+newer version is refused.
+
+`agent-router verify`, `artifacts apply`, `artifacts discard` and their
+`coordinate artifacts` counterparts accept `--config <sandbox.json>`. Only its
+`feedback_store` is read. Without the option, or with collection disabled,
+nothing is recorded. The JSON output gains a `feedback` object, either
+`{"recorded":true,"fact_hash":...}` or `{"recorded":false,"reason":...}` with
+`not_requested`, `collection_disabled`, `inconclusive` or
+`consent_changed_or_storage_error`. A feedback failure never fails the command
+that succeeded. `coordinate verify` only queues the verification for `service`,
+which does not record a fact yet.
+
 `statistics(now)` is available only with learning consent. It rebuilds a
 versioned, content-hashed report from retained immutable events:
 
@@ -161,9 +200,10 @@ protect against a local owner replacing the entire database, keys or program.
 
 [ADR 0019](adr/0019-outcome-measurement.md) decides how runs executed by Agent
 Router will feed this store. Batch 2 (host-declared tokens in
-`measurements.tokens`) and batch 4 (route facts and the escalation count) are
-described above. The other batches are not merged: the automatic record still
-keeps validation and objective `Unknown`, so real runs alone cannot pass the
+`measurements.tokens`), batch 3 (late facts and the run start time) and batch 4
+(route facts and the escalation count) are described above. The other batches
+are not merged: the automatic record still keeps validation and objective
+`Unknown`, and nothing reads the facts yet, so real runs alone cannot pass the
 proposal gate.
 
 What will change for an operator:
@@ -171,17 +211,13 @@ What will change for an operator:
 - A run will count as an automated success only when its integration is applied
   and a recorded verification has a `Passed` objective. A transport exit code of
   0 will still never count.
-- `verify`, `artifacts apply` and `artifacts discard` will append late facts,
-  one per run and kind, without rewriting the completion verdict.
 - The per-field token detail (input, cached input, cache writes, output,
   reasoning), now in `RuntimeEvidence.host_usage`, will be stored with its
   `host_reported` provenance, for reports only. Admission budgets will not use
   it.
-- The store will migrate to schema version 2 on open. Consent, retention, export
-  and purge will cover the new facts.
 - The data will feed three metrics per accepted task: accepted success rate,
   wall-clock time from run start to `integration.applied` of the accepted
-  result and attempts, and tokens with computed cost. Late facts will carry a
+  result and attempts, and tokens with computed cost. Late facts carry a
   timestamp for the time metric. None of them alone proves a gain from the
   router; that needs the paired A/B
   [router value protocol](bench/router-value-protocol.md) against fixed

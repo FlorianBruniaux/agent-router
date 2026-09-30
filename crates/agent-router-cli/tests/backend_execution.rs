@@ -784,11 +784,29 @@ fn native_alternate_feedback_and_historical_verification_after_rollback() {
             .arg("--store")
             .arg(&fixture.files.store)
             .arg("--evidence")
-            .arg(evidence)
+            .arg(&evidence)
+            .arg("--config")
+            .arg(fixture.files.root.join("sandbox.json"))
             .arg("--json"),
         0,
     );
     assert_eq!(verified["run"]["state"], "verified");
+    assert_eq!(verified["feedback"]["recorded"], true);
+    // The fact is keyed by the run key the completion writer stored, though the
+    // run state (and so its `run_hash`) has changed since.
+    let late = fixture.files.exported_feedback();
+    let key = &exported["events"][0]["input"]["run_key_sha256"];
+    assert!(key.is_string());
+    assert!(exported["events"][0]["input"]["started_at_unix_seconds"].is_u64());
+    assert_eq!(late["facts"].as_array().unwrap().len(), 1);
+    assert_eq!(late["facts"][0]["fact"]["run_key_sha256"], *key);
+    assert_eq!(late["facts"][0]["fact"]["kind"]["type"], "verification");
+    assert_eq!(late["facts"][0]["fact"]["kind"]["validation"], "passed");
+    assert_eq!(
+        late["facts"][0]["fact_hash"],
+        verified["feedback"]["fact_hash"]
+    );
+    assert_eq!(late["events"], exported["events"]);
     assert_eq!(
         verified["run"]["receipt_id"],
         fixture.decision.authorization_id()
