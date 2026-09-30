@@ -18,13 +18,13 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0008](0008-shared-admission.md) | Explicit shared admission with opaque release | amended | 2026-09-28 | 2026-09-29 | [0009](0009-conservative-session-allocations.md), [0017](0017-bounded-retention-and-publish-durability.md) |
 | [0009](0009-conservative-session-allocations.md) | Conservative shared session allocations | implemented | 2026-09-28 | 2026-09-29 | - |
 | [0010](0010-passive-runtime-diagnostics.md) | Inspect runtime storage without application recovery | implemented | 2026-09-28 | 2026-09-28 | - |
-| [0011](0011-advisory-decision-cache.md) | Authenticated advisory cache of backend proposals | amended | 2026-09-29 | 2026-09-29 | [0017](0017-bounded-retention-and-publish-durability.md) |
+| [0011](0011-advisory-decision-cache.md) | Authenticated advisory cache of backend proposals | amended | 2026-09-29 | 2026-09-30 | [0017](0017-bounded-retention-and-publish-durability.md) |
 | [0012](0012-local-route-api.md) | Route-only local API on an owner-private Unix socket | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0013](0013-inert-importer.md) | Import definitions as an unsigned, untrusted candidate | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0014](0014-loopback-provider-transport.md) | Loopback-only provider transport behind a Cargo feature | accepted | 2026-09-29 | 2026-09-29 | - |
 | [0015](0015-structured-validation.md) | Structured validation as a pure library | accepted | 2026-09-29 | 2026-09-29 | - |
 | [0016](0016-adapter-descriptor-registry.md) | Validate adapter descriptors as inert data | implemented | 2026-09-29 | 2026-09-29 | - |
-| [0017](0017-bounded-retention-and-publish-durability.md) | Bounded retention and publish durability for stores | accepted | 2026-09-29 | 2026-09-29 | - |
+| [0017](0017-bounded-retention-and-publish-durability.md) | Bounded retention and publish durability for stores | accepted | 2026-09-29 | 2026-09-30 | - |
 | [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0019](0019-outcome-measurement.md) | Outcome measurement | implemented | 2026-09-30 | 2026-09-30 | - |
 | [0020](0020-cross-host-routing.md) | Cross-host phase routing | proposed | 2026-09-30 | 2026-09-30 | - |

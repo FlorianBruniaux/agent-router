@@ -66,7 +66,8 @@ across hosts with a separate, versioned cross-host step.
   hash and receipt hash, the selected `(harness, candidate id)` and the
   alternatives. The selected host's own `PhaseReceipt` stays the dispatch input.
 - Runtime review recomputes the cross-host step from the same contexts, as it
-  recomputes the per-host route today (`crates/router-runtime/src/lib.rs:427-429`).
+  recomputes the per-host route today under ADR 0002
+  (`crates/router-runtime/src/lib.rs:427-429`).
   The execution definition, and so the approval digest, binds the
   `CrossHostReceipt` hash.
 - Dispatch runs on the selected host only. Its capability evidence must be

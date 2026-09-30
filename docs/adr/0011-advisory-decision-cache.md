@@ -3,7 +3,7 @@ adr: "0011"
 title: Authenticated advisory cache of backend proposals
 status: amended
 created: 2026-09-29
-last_modified: 2026-09-29
+last_modified: 2026-09-30
 scope: "`router-advisory-cache` library, complete; no caller yet. ADR 0017 adds the sweep of stale entries when the entry limit is reached."
 amended_by: ["0017"]
 supersedes: []
@@ -65,8 +65,9 @@ state.
 - Under the lock, orphaned `*.pending` files are removed (`unlinkat` never
   follows a link). Only `*.json` names count toward the 1024 entry bound, which
   is enforced by a scan on a fresh descriptor.
-- Reads are bounded to 16 KiB and the lifetime to 24 hours. Expired entries are
-  removed only when their key is stored again.
+- Reads are bounded to 16 KiB and the lifetime to 24 hours. An expired entry is
+  replaced when its key is stored again, and swept when a store finds 1,024
+  entries (see Consequences).
 
 ## Key handling
 

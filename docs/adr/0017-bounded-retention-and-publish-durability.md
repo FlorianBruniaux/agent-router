@@ -3,8 +3,8 @@ adr: "0017"
 title: Bounded retention and publish durability for stores
 status: accepted
 created: 2026-09-29
-last_modified: 2026-09-29
-scope: "Persistent stores. Implemented in the catalog store, the backend store, the runtime admission registry and the advisory cache sweep. Missing: the advisory cache reports a failed directory fsync after rename as `advisory_cache.io`, not as published with durability UNKNOWN."
+last_modified: 2026-09-30
+scope: "Persistent stores. Implemented in the catalog store, the runtime admission registry, the backend store promotion cap and durability error, and the advisory cache sweep. Missing: the backend store `apply`, used by rollback, still refuses at `MAX_EVENTS` with no event reserved for revocation (`crates/router-backend-store/src/lib.rs:536`); the runtime budget journal keeps its lifetime cap of 16384 events (`crates/router-runtime/src/admission/budget_store.rs:304`); the advisory cache reports a failed directory fsync after rename as `advisory_cache.io` (`crates/router-advisory-cache/src/files.rs:126`)."
 amended_by: []
 supersedes: []
 superseded_by: []
@@ -51,6 +51,12 @@ Decided B. Published but not durable is its own outcome.
   failure, and has a stable code.
 - Callers must not retry blindly. They read the current state and decide from
   what they observe.
+
+This decision amends [ADR 0006](0006-current-signed-catalog-authority.md),
+whose catalog store refused changes at its limits instead of pruning history,
+[ADR 0008](0008-shared-admission.md), whose settled tickets are now pruned, and
+[ADR 0011](0011-advisory-decision-cache.md), whose stale entries are now swept
+when the entry bound is reached.
 
 ## Consequences
 
