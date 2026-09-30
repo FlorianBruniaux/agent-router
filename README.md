@@ -21,7 +21,7 @@
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Linux runtime canaries" /></a>
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml/badge.svg?branch=main" alt="RustSec dependency audit" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.85%2B-dc7336?logo=rust" alt="Rust 1.85 or newer" /></a>
-  <a href="licenses/LICENSE-MIT"><img src="https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-597ee5" alt="MIT or Apache 2.0 license" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5" alt="Functional Source License 1.1, Apache 2.0 future license" /></a>
   <a href="#host-support"><img src="https://img.shields.io/badge/Runtime-macOS%20%7C%20Linux-597ee5" alt="Runtime: macOS and Linux" /></a>
 </p>
 
@@ -441,7 +441,14 @@ of reports.
 
 ## License
 
-The project is licensed under [MIT](licenses/LICENSE-MIT) or
-[Apache 2.0](licenses/LICENSE-APACHE), at your option. Dependency provenance,
-license inventory and release review boundaries are documented in the
+The project is licensed under the
+[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
+(`FSL-1.1-ALv2`). This is not an open source license as defined by the OSI.
+The source is readable, and internal use, non-commercial education and
+research, and professional services for a licensee are allowed. Offering it,
+or a substitute for it, in a competing commercial product or service requires
+permission. Each version becomes available under Apache 2.0 two years after it
+is made available. Redistributions must keep the copyright notices, the
+license terms and [NOTICE](NOTICE). Dependency provenance, license inventory
+and release review boundaries are documented in the
 [distribution guide](docs/distribution.md).

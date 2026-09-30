@@ -1,14 +1,10 @@
-# Project license texts
+# Third-party license evidence
 
-The workspace declares `MIT OR Apache-2.0`. `LICENSE-MIT` uses the contributor
-attribution authorized for this project, `Agent Router contributors`.
-`LICENSE-APACHE` contains the standard Apache License 2.0 terms. Its SHA-256 is
-`62c7a1e35f56406896d7aa7ca52d0cc0d272ac022b5d2796e7d6905db8a3636a`.
-
-The Apache text was obtained from the `serde` 1.0.229 package archive after its
-SHA-256 matched Cargo.lock. Only the standard license text was copied; no Serde
-implementation was copied. The upstream archive checksum at verification was
-`4148590afebada386688f18773da617792bf2ef03ffc1e4cbd2b1d45b023e0ba`.
+The project license, `FSL-1.1-ALv2` (Functional Source License 1.1, Apache 2.0
+Future License), is in `LICENSE.md` at the repository root, with `NOTICE`. The
+text is the official template with only the copyright line filled in. It is
+not OSI approved, and each version converts to Apache 2.0 two years after
+publication.
 
 The source exporter preserves dependency license and notice texts separately
 under `licenses/dependencies/` inside each generated archive. Their declarations

@@ -1161,7 +1161,7 @@ fn provenance_source_accepts_only_public_locators_and_refuses_local_paths() {
     }
     for refused in [
         "/etc/passwd",
-        "../../home/me/pack",
+        "../../srv/me/pack",
         "./pack",
         "..",
         ".",
@@ -1177,8 +1177,8 @@ fn provenance_source_accepts_only_public_locators_and_refuses_local_paths() {
         "https://host/../x",
         "https://host/./x",
         "https://../x",
-        "C:\\Users\\me",
-        "C:/Users/me",
+        "C:\\Data\\me",
+        "C:/Data/me",
         "c:/x",
         "scheme:id",
         "~/pack",

@@ -21,7 +21,7 @@
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Tests canary du runtime Linux" /></a>
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml/badge.svg?branch=main" alt="Audit RustSec des dépendances" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.85%2B-dc7336?logo=rust" alt="Rust 1.85 ou plus récent" /></a>
-  <a href="licenses/LICENSE-MIT"><img src="https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-597ee5" alt="Licence MIT ou Apache 2.0" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5" alt="Functional Source License 1.1, licence future Apache 2.0" /></a>
   <a href="#hosts-supportés"><img src="https://img.shields.io/badge/Runtime-macOS%20%7C%20Linux-597ee5" alt="Runtime : macOS et Linux" /></a>
 </p>
 
@@ -442,7 +442,15 @@ dans vos rapports.
 
 ## Licence
 
-Le projet est sous licence [MIT](licenses/LICENSE-MIT) ou
-[Apache 2.0](licenses/LICENSE-APACHE), au choix. La provenance des dépendances, l'inventaire
-des licences et les limites de la revue de release sont documentés dans le
+Le projet est sous
+[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
+(`FSL-1.1-ALv2`). Ce n'est pas une licence open source au sens de l'OSI. Le
+code source est lisible, et sont permis l'usage interne, l'enseignement et la
+recherche non commerciaux, ainsi que les prestations de services pour un
+licencié. Le proposer, ou un substitut, dans un produit ou un service
+commercial concurrent demande une permission. Chaque version passe sous
+Apache 2.0 deux ans après sa mise à disposition. Toute redistribution doit
+conserver les mentions de copyright, les termes de la licence et
+[NOTICE](NOTICE). La provenance des dépendances, l'inventaire des licences et
+les limites de la revue de release sont documentés dans le
 [guide de distribution](docs/distribution.md).
