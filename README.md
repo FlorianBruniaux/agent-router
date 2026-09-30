@@ -60,7 +60,7 @@ model call. Model names in those fixtures are examples, not availability claims.
 
 ## Why it exists
 
-**The problem.** A coding host such as Claude Code or Codex uses one model and
+A coding host such as Claude Code or Codex uses one model and
 effort setting per session unless you switch by hand. Picking a stronger model
 for planning, a cheaper one for a routine edit, or the right skills for the task
 is left to habit. Nothing records why a choice was made, and permission or

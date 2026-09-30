@@ -60,10 +60,10 @@ Elle n'appelle aucun modèle. Les noms de modèles de ces fixtures sont des exem
 
 ## Pourquoi ce projet
 
-**Le problème.** Un host comme Claude Code ou Codex tourne avec un seul modèle et
+Un host comme Claude Code ou Codex tourne avec un seul modèle et
 un seul niveau d'effort par session, sauf si vous en changez à la main. Prendre un
 modèle plus puissant pour planifier, un modèle moins cher pour une modification de
-routine ou les bons skills pour la tâche se fait à l'habitude. Rien ne garde la
+routine ou les bons skills pour la tâche relève de l'habitude. Rien ne garde la
 trace de la raison d'un choix, et les limites de permissions ou de budget peuvent
 n'apparaître qu'une fois l'agent au travail.
 

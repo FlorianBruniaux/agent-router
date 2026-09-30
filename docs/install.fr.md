@@ -127,9 +127,9 @@ applique réellement quoi que ce soit, ni qu'un identifiant est valide.
 ## Build de release locale
 
 Pour une archive binaire locale reproductible avec un manifeste signé, suivez
-[release-local.md](release-local.md). Elle s'appuie sur
-[binary-distribution.md](binary-distribution.md) (l'archive binaire) et
-[distribution.md](distribution.md) (les archives source séparées). Rien, dans ces
+la [procédure de release locale](release-local.md). Elle s'appuie sur la
+[distribution binaire](binary-distribution.md) (l'archive binaire) et sur la
+[distribution des sources](distribution.md) (les archives source séparées). Rien, dans ces
 étapes, ne signe, ne publie ni n'installe à votre place.
 
 L'archive binaire est compilée avec `--no-default-features` et ne contient que
