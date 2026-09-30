@@ -1,6 +1,9 @@
 # Agent Router
 
-**Choose the model, effort and skills for each coding task. Review the decision. Run an approved workflow.**
+**Frontier models for the hard steps, cheaper ones for the rest.**
+
+Local, explainable routing for Claude Code and Codex, with the cost of each
+accepted change.
 
 <table>
   <tr>
