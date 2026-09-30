@@ -111,7 +111,10 @@ newer version is refused.
 `run`, and an invalid configuration fails the command before the operation.
 Without the option, or with collection disabled, nothing is recorded. The JSON output gains a `feedback` object, either
 `{"recorded":true,"fact_hash":...}` or `{"recorded":false,"reason":...}` with
-`not_requested`, `collection_disabled`, `inconclusive`, `invalid_fact` or
+`not_requested`, `collection_disabled`, `inconclusive`, `invalid_fact`,
+`already_recorded` (a fact with the same content is already stored, possibly
+under another `observed_at`, and is left as is), `verification_record_unavailable`
+(`coordinate service` could not read the stored record) or
 `consent_changed_or_storage_error`. Once the operation succeeded, a feedback
 failure never fails the command. There is no retry: if the process dies between
 the runtime operation and the fact write, or the write fails, the fact is lost

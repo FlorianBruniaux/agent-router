@@ -107,23 +107,29 @@ pub(crate) fn record_verification_fact(
 /// For a coordinated run, whose verification `service` applies from a queue and
 /// does not report per run. `was_concluded` is read before the service pass, so
 /// only a run this pass moved to `Verified` or `VerificationFailed` gets a fact,
-/// once, from the record the runtime stored. `None`: nothing to report.
+/// once, from the record the runtime stored. The configuration is read only for
+/// such a run. `None`: nothing to report.
 pub(crate) fn service_verification_fact(
-    path: Option<&Path>,
     was_concluded: bool,
     now: &RunSummary,
-    stored: Option<&VerificationRecord>,
+    stored: impl FnOnce() -> Result<Option<VerificationRecord>, ()>,
+    feedback_store: impl FnOnce() -> Result<Option<std::path::PathBuf>, ()>,
 ) -> Option<serde_json::Value> {
     let concluded = matches!(now.state, RunState::Verified | RunState::VerificationFailed);
     if was_concluded || !concluded {
         return None;
     }
-    let Some(record) = stored else {
+    let Ok(Some(record)) = stored() else {
         return Some(
-            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"}),
+            serde_json::json!({"recorded":false,"reason":"verification_record_unavailable"}),
         );
     };
-    Some(record_verification_fact(path, now, record, now))
+    Some(match feedback_store() {
+        Ok(path) => record_verification_fact(path.as_deref(), now, &record, now),
+        Err(()) => {
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+        }
+    })
 }
 fn verification_fact_at(
     path: Option<&Path>,
@@ -149,8 +155,10 @@ fn verification_fact_at(
     }
 }
 
-/// `now` overrides the clock, for tests: `observed_at` is the recording time, so
-/// only a repeat at the same second is the identical, idempotent fact.
+/// `now` overrides the clock, for tests. The store treats a repeat as idempotent
+/// only when `observed_at` matches too; here an existing fact with the same
+/// content but another `observed_at` is reported as `already_recorded`, and a
+/// different content stays a refusal.
 fn record_fact_at(
     path: Option<&Path>,
     run: &RunSummary,
@@ -170,6 +178,11 @@ fn record_fact_at(
     ) {
         return serde_json::json!({"recorded":false,"reason":"inconclusive"});
     }
+    enum Written {
+        Recorded(FeedbackFactEvent),
+        Disabled,
+        Already,
+    }
     let result = (|| {
         if !path.join("feedback.sqlite3").is_file() {
             return Err(false);
@@ -181,7 +194,7 @@ fn record_fact_at(
             .preferences
             .collection_enabled
         {
-            return Ok(None);
+            return Ok(Written::Disabled);
         }
         let now = crate::inspect::current_time(now).map_err(|_| false)?;
         let fact = FeedbackFact {
@@ -190,16 +203,32 @@ fn record_fact_at(
             observed_at_unix_seconds: now,
             kind,
         };
-        store.record_fact(fact, now).map(Some).map_err(|error| {
-            matches!(
-                error,
-                FeedbackError::Invalid("fact binding" | "verification fact")
-            )
-        })
+        let already = store
+            .facts(now)
+            .map_err(|_| false)?
+            .iter()
+            .any(|e| e.fact.run_key_sha256 == fact.run_key_sha256 && e.fact.kind == fact.kind);
+        if already {
+            return Ok(Written::Already);
+        }
+        store
+            .record_fact(fact, now)
+            .map(Written::Recorded)
+            .map_err(|error| {
+                matches!(
+                    error,
+                    FeedbackError::Invalid("fact binding" | "verification fact")
+                )
+            })
     })();
     match result {
-        Ok(Some(event)) => serde_json::json!({"recorded":true,"fact_hash":event.fact_hash}),
-        Ok(None) => serde_json::json!({"recorded":false,"reason":"collection_disabled"}),
+        Ok(Written::Recorded(event)) => {
+            serde_json::json!({"recorded":true,"fact_hash":event.fact_hash})
+        }
+        Ok(Written::Disabled) => {
+            serde_json::json!({"recorded":false,"reason":"collection_disabled"})
+        }
+        Ok(Written::Already) => serde_json::json!({"recorded":false,"reason":"already_recorded"}),
         // The fact breaks the contract, for example a passed objective with a
         // failed validation. It is not a storage or consent problem.
         Err(true) => serde_json::json!({"recorded":false,"reason":"invalid_fact"}),
@@ -610,23 +639,21 @@ mod tests {
             run_key(&run(RunState::Verifying, 1)).unwrap()
         );
         assert_eq!(value["fact_hash"], facts[0].fact_hash);
-        // A repeat is idempotent and reports the same fact.
+        // A repeat, at any time, is reported as already recorded, not rewritten.
         let again = record_fact_at(
             Some(&path),
             &run(RunState::Verified, 2),
             applied(),
             FACT_TIME,
         );
-        assert_eq!(again, value);
-        // The identity includes `observed_at`: the same outcome a second later is
-        // a different fact, refused rather than rewritten.
+        assert_eq!(again["reason"], "already_recorded");
         let later = record_fact_at(
             Some(&path),
             &run(RunState::Verified, 2),
             applied(),
             Some(1_501),
         );
-        assert_eq!(later["reason"], "consent_changed_or_storage_error");
+        assert_eq!(later["reason"], "already_recorded");
     }
 
     #[test]
@@ -798,43 +825,44 @@ mod tests {
         );
     }
 
+    /// Service pass over one run: `stored` record, and the configuration path.
+    fn service(
+        path: Option<&std::path::Path>,
+        was_concluded: bool,
+        state: RunState,
+        stored: Result<Option<VerificationRecord>, ()>,
+    ) -> Option<serde_json::Value> {
+        service_verification_fact(
+            was_concluded,
+            &run(state, 1),
+            || stored,
+            || Ok(path.map(std::path::Path::to_path_buf)),
+        )
+    }
+
     #[test]
     fn service_records_a_fact_only_for_a_run_it_concluded() {
         use VerificationOutcome::{Passed, Unknown};
         let (_temp, path) = store(true);
         let stored = record(Passed, Passed);
         let verifying = run(RunState::Verifying, 1);
-        // Still verifying (an inconclusive record), or concluded before the pass.
-        assert!(
-            service_verification_fact(
-                Some(&path),
-                false,
-                &verifying,
-                Some(&record(Passed, Unknown))
-            )
-            .is_none()
-        );
-        assert!(
-            service_verification_fact(
-                Some(&path),
-                true,
-                &run(RunState::Verified, 1),
-                Some(&stored)
-            )
-            .is_none()
-        );
         let facts = || {
             FeedbackStore::open(&path)
                 .unwrap()
                 .facts(now_secs())
                 .unwrap()
         };
+        // Still verifying (an inconclusive record), or concluded before the pass.
+        let inconclusive = Ok(Some(record(Passed, Unknown)));
+        assert!(service(Some(&path), false, RunState::Verifying, inconclusive).is_none());
+        let done = Ok(Some(stored.clone()));
+        assert!(service(Some(&path), true, RunState::Verified, done).is_none());
         assert!(facts().is_empty());
-        let reported = service_verification_fact(
+        let reported = service(
             Some(&path),
             false,
-            &run(RunState::Verified, 1),
-            Some(&stored),
+            RunState::Verified,
+            Ok(Some(stored.clone())),
         )
         .unwrap();
         assert_eq!(reported["recorded"], true);
@@ -845,11 +873,11 @@ mod tests {
         assert_eq!(facts[0].fact.kind.name(), "verification");
         // Collection off: nothing recorded, and the service keeps going.
         let (_temp, off) = store(false);
-        let value = service_verification_fact(
+        let value = service(
             Some(&off),
             false,
-            &run(RunState::Verified, 1),
-            Some(&stored),
+            RunState::Verified,
+            Ok(Some(stored.clone())),
         )
         .unwrap();
         assert_eq!(value["reason"], "collection_disabled");
@@ -860,9 +888,61 @@ mod tests {
                 .unwrap()
                 .is_empty()
         );
-        let none =
-            service_verification_fact(None, false, &run(RunState::Verified, 1), Some(&stored))
-                .unwrap();
+        let none = service(None, false, RunState::Verified, Ok(Some(stored))).unwrap();
         assert_eq!(none["reason"], "not_requested");
+    }
+
+    #[test]
+    fn service_reports_an_unreadable_record_and_reads_the_config_only_when_needed() {
+        use VerificationOutcome::Passed;
+        let read = std::cell::Cell::new(0);
+        let pass = |was, state, stored| {
+            service_verification_fact(
+                was,
+                &run(state, 1),
+                || stored,
+                || {
+                    read.set(read.get() + 1);
+                    Ok(None)
+                },
+            )
+        };
+        assert!(pass(false, RunState::Verifying, Ok(None)).is_none());
+        assert!(pass(true, RunState::Verified, Ok(None)).is_none());
+        assert_eq!(read.get(), 0);
+        for stored in [Err(()), Ok(None)] {
+            let value = pass(false, RunState::Verified, stored).unwrap();
+            assert_eq!(value["reason"], "verification_record_unavailable");
+        }
+        assert_eq!(read.get(), 0);
+        let value = pass(false, RunState::Verified, Ok(Some(record(Passed, Passed)))).unwrap();
+        assert_eq!(value["reason"], "not_requested");
+        assert_eq!(read.get(), 1);
+    }
+
+    #[test]
+    fn a_second_pass_reports_already_recorded_and_a_different_fact_stays_refused() {
+        use VerificationOutcome::Passed;
+        let (_temp, path) = store(true);
+        let summary = run(RunState::Verified, 1);
+        let first = record_fact_at(Some(&path), &summary, applied(), Some(1_500));
+        assert_eq!(first["recorded"], true);
+        let later = record_fact_at(Some(&path), &summary, applied(), Some(1_501));
+        assert_eq!(later["recorded"], false);
+        assert_eq!(later["reason"], "already_recorded");
+        let facts = FeedbackStore::open(&path).unwrap().facts(1_501).unwrap();
+        assert_eq!(facts.len(), 1);
+        assert_eq!(facts[0].fact.observed_at_unix_seconds, 1_500);
+        let other = FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Discarded,
+        };
+        let conflict = record_fact_at(Some(&path), &summary, other, Some(1_502));
+        assert_eq!(conflict["reason"], "consent_changed_or_storage_error");
+        // Content differing inside one kind is a conflict too.
+        let verified = |validation| verification_fact(&record(validation, Passed)).ok().unwrap();
+        let a = record_fact_at(Some(&path), &summary, verified(Passed), Some(1_503));
+        assert_eq!(a["recorded"], true);
+        let b = record_fact_at(Some(&path), &summary, verified(Passed), Some(1_504));
+        assert_eq!(b["reason"], "already_recorded");
     }
 }

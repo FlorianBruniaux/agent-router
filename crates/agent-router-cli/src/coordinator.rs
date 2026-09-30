@@ -769,22 +769,16 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 .iter()
                 .filter_map(|(id, sandbox, was_concluded)| {
                     let now = runtime.summary(id).ok()?;
-                    let stored = runtime.verification_record(id).ok().flatten();
-                    let path = execution::sandbox(sandbox).map(|c| c.feedback_store);
-                    let value = match path {
-                        Ok(path) => crate::execution_feedback::service_verification_fact(
-                            path.as_deref(),
-                            *was_concluded,
-                            &now,
-                            stored.as_ref(),
-                        )?,
-                        Err(_) => {
-                            if *was_concluded || !matches!(now.state, RunState::Verified | RunState::VerificationFailed) {
-                                return None;
-                            }
-                            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
-                        }
-                    };
+                    let value = crate::execution_feedback::service_verification_fact(
+                        *was_concluded,
+                        &now,
+                        || runtime.verification_record(id).map_err(|_| ()),
+                        || {
+                            execution::sandbox(sandbox)
+                                .map(|c| c.feedback_store)
+                                .map_err(|_| ())
+                        },
+                    )?;
                     Some(serde_json::json!({"run_id":id,"feedback":value}))
                 })
                 .collect();

@@ -80,7 +80,11 @@ lists them in `facts`, omitted when empty so an export without facts keeps its
 accept an optional `--config <sandbox.json>`, of which only `feedback_store` is
 read. Their JSON output gains `feedback`: `{"recorded":true,"fact_hash":"..."}`
 or `{"recorded":false,"reason":"..."}` with `not_requested`,
-`collection_disabled`, `inconclusive`, `invalid_fact` or `consent_changed_or_storage_error`.
+`collection_disabled`, `inconclusive`, `invalid_fact`, `already_recorded`,
+`verification_record_unavailable` (only from `coordinate service`) or
+`consent_changed_or_storage_error`. `already_recorded` means a fact with the
+same content is stored, possibly under another `observed_at`; a different
+content for the same run key and kind stays `consent_changed_or_storage_error`.
 `coordinate service` adds a `feedback` array to its output: one
 `{"run_id":...,"feedback":{...}}` per run its pass concluded, from the
 `feedback_store` of that run's bundle sandbox configuration.
