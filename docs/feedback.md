@@ -159,8 +159,15 @@ signal wins over a positive one. `independent` is always false, since nothing
 here attests a reviewer's independence, so the record cannot satisfy the
 independent-label gate of `compare_shadow`. `evidence_sha256` is the
 verification fact's evidence digest, or the human event's own when there is no
-fact. Two automated events, two facts of one kind or two human events for the
-same run make the export fail with `feedback.replay.ambiguous`.
+fact. A run can hold several automated events, since `run_hash` covers state and
+attempts: like `feedback report`, the export takes the one with the highest
+sequence for the run key, and `transport`, `usage` and `elapsed_ms` come from it.
+A human verdict is linked to the run through the `run_hash` of any of its
+automated events. Human verdicts that disagree on `success` make the export
+fail with `feedback.replay.ambiguous`; identical ones do not. With `--output`
+the record is written to a private temporary file next to the target, synced
+and linked into place, so a failure leaves no partial file and an existing file
+is never replaced.
 
 Observations. `outcomes.transport` comes from the automated event, and
 `command_validation` and `functional` from the verification fact; a missing

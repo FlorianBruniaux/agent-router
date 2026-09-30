@@ -77,6 +77,27 @@ impl Case {
         input.measurements.usage = Some(usage);
         self.store().record(input, now()).unwrap();
     }
+    /// An automated event of the same run at another state: another `run_hash`.
+    fn automated_at(&self, run_hash: char, latency_ms: u64, usage: HostUsage) {
+        let mut input = self.input(FeedbackOrigin::Automated);
+        input.binding.run_hash = run_hash.to_string().repeat(64);
+        input.measurements.latency_ms = Some(latency_ms);
+        input.measurements.usage = Some(usage);
+        self.store().record(input, now()).unwrap();
+    }
+    /// A human verdict on the frozen identity `run_hash`.
+    fn human_on(&self, run_hash: char, success: VerificationOutcome) {
+        let mut input = self.input(FeedbackOrigin::Human);
+        input.binding.run_hash = run_hash.to_string().repeat(64);
+        input.human = Some(HumanVerdict {
+            success,
+            quality: Some(90),
+            perceived_cost: PerceivedCost::Acceptable,
+            correction_required: Some(false),
+            reviewer_sha256: REVIEWER.into(),
+        });
+        self.store().record(input, now()).unwrap();
+    }
     fn input(&self, origin: FeedbackOrigin) -> FeedbackInput {
         let mut input = parse_feedback(include_bytes!(
             "../../../tests/fixtures/feedback/automated-unknown-v1.json"
@@ -339,4 +360,75 @@ fn without_output_the_record_is_printed() {
     let report = checked(&mut case.export(), 0);
     let record = ReplayRecord::from_json(&serde_json::to_vec(&report["record"]).unwrap()).unwrap();
     assert_eq!(report["input_hash"], record.input_hash());
+}
+
+#[test]
+fn the_latest_automated_event_of_a_run_supplies_usage_and_latency() {
+    let case = Case::new();
+    case.automated_at('b', 111, usage(100, 40, 5));
+    case.automated_at('c', 222, usage(200, 0, 9));
+    accept(&case);
+    let (report, record) = case.exported();
+    let observed = &record.input().observations[report["policy_id"].as_str().unwrap()];
+    assert_eq!(observed.elapsed_ms, Some(222));
+    assert_eq!(
+        (
+            observed.usage[0].input_tokens,
+            observed.usage[0].output_tokens
+        ),
+        (200, 9)
+    );
+}
+
+#[test]
+fn a_human_verdict_of_another_run_does_not_label_this_one() {
+    let case = Case::new();
+    case.automated();
+    case.human_on('d', VerificationOutcome::Passed);
+    case.refused("feedback.replay.unlabeled");
+}
+
+#[test]
+fn contradictory_human_verdicts_on_one_run_are_ambiguous() {
+    let case = Case::new();
+    case.automated_at('b', 1, usage(1, 0, 1));
+    case.automated_at('c', 2, usage(1, 0, 1));
+    case.human_on('b', VerificationOutcome::Failed);
+    case.human_on('c', VerificationOutcome::Passed);
+    case.refused("feedback.replay.ambiguous");
+}
+
+#[test]
+fn a_refused_or_failed_output_leaves_no_temporary_file() {
+    let case = Case::new();
+    case.automated();
+    accept(&case);
+    let path = case.f.root.join("record.json");
+    checked(case.export().arg("--output").arg(&path), 0);
+    let leftovers = |dir: &std::path::Path| {
+        fs::read_dir(dir)
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_name().to_string_lossy().contains(".tmp-"))
+            .count()
+    };
+    assert_eq!(leftovers(&case.f.root), 0);
+    let before = fs::read(&path).unwrap();
+    let refused = case.export().arg("--output").arg(&path).output().unwrap();
+    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        before,
+        "the target is never overwritten"
+    );
+    assert_eq!(leftovers(&case.f.root), 0);
+    let missing = case.f.root.join("missing").join("record.json");
+    let output = case
+        .export()
+        .arg("--output")
+        .arg(&missing)
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(!missing.exists());
 }

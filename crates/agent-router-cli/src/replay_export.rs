@@ -114,18 +114,35 @@ fn free_text_fields(request: &router_types::PhaseRouteRequest) -> Vec<&'static s
     fields
 }
 
+/// A partial file must never look like a sealed record: write a private
+/// temporary file next to the target, sync it, then link it into place. The
+/// link fails if the target exists, so nothing is overwritten.
 fn write_private(path: &Path, bytes: &[u8]) -> Result<(), CliError> {
     use std::os::unix::fs::OpenOptionsExt;
+    let name = path.file_name().ok_or(CliError::Product(
+        "feedback.replay.output_exists_or_unavailable",
+    ))?;
+    let mut temporary_name = std::ffi::OsString::from(".");
+    temporary_name.push(name);
+    temporary_name.push(format!(".tmp-{}", std::process::id()));
+    let temporary = path.with_file_name(temporary_name);
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .mode(0o600)
         .custom_flags(libc::O_NOFOLLOW)
-        .open(path)
+        .open(&temporary)
         .map_err(|_| CliError::Product("feedback.replay.output_exists_or_unavailable"))?;
-    file.write_all(bytes)
+    let written = file
+        .write_all(bytes)
         .and_then(|()| file.sync_all())
-        .map_err(|_| CliError::Product("feedback.replay.output_write"))
+        .map_err(|_| CliError::Product("feedback.replay.output_write"));
+    let result = written.and_then(|()| {
+        std::fs::hard_link(&temporary, path)
+            .map_err(|_| CliError::Product("feedback.replay.output_exists_or_unavailable"))
+    });
+    let _ = std::fs::remove_file(&temporary);
+    result
 }
 
 pub(crate) fn export(
@@ -141,18 +158,35 @@ pub(crate) fn export(
     let feedback_error = |_| CliError::Product("feedback.storage_database");
     let events = store.events(now).map_err(feedback_error)?;
     let facts = store.facts(now).map_err(feedback_error)?;
-    let automated = one(events.iter().filter(|event| {
-        event.input.origin == FeedbackOrigin::Automated
-            && event.input.run_key_sha256.as_deref() == Some(&key)
-    }))?;
-    // A human verdict shares the automated verdict's frozen run identity.
-    let human = one(events.iter().filter(|event| {
-        event.input.origin == FeedbackOrigin::Human
-            && (event.input.run_key_sha256.as_deref() == Some(&key)
-                || automated.is_some_and(|auto| {
-                    auto.input.binding.run_hash == event.input.binding.run_hash
-                }))
-    }))?;
+    // `run_hash` covers state and attempts, so one run can hold several
+    // automated events. Like `feedback report`, take the latest for the key.
+    let runs: Vec<&FeedbackEvent> = events
+        .iter()
+        .filter(|event| {
+            event.input.origin == FeedbackOrigin::Automated
+                && event.input.run_key_sha256.as_deref() == Some(&key)
+        })
+        .collect();
+    let automated = runs.iter().max_by_key(|event| event.sequence).copied();
+    // A human verdict shares the frozen run identity of one of those events.
+    let verdicts: Vec<&FeedbackEvent> = events
+        .iter()
+        .filter(|event| {
+            event.input.origin == FeedbackOrigin::Human
+                && (event.input.run_key_sha256.as_deref() == Some(&key)
+                    || runs
+                        .iter()
+                        .any(|auto| auto.input.binding.run_hash == event.input.binding.run_hash))
+        })
+        .collect();
+    let success = |event: &&FeedbackEvent| event.input.human.as_ref().map(|h| h.success);
+    if verdicts
+        .iter()
+        .any(|event| success(event) != success(&verdicts[0]))
+    {
+        return Err(CliError::Product("feedback.replay.ambiguous"));
+    }
+    let human = verdicts.iter().max_by_key(|event| event.sequence).copied();
     let mine = |fact: &&FeedbackFactEvent| fact.fact.run_key_sha256 == key;
     let verification = one(facts
         .iter()
