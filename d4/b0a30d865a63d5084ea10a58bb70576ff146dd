@@ -1,0 +1,33 @@
+docs/adr/0011-advisory-decision-cache.md
+  s_00c6bf8ee605be::t_b6e0160971b102 6,68-70
+docs/adr/0017-bounded-retention-and-publish-durability.md
+  s_00c6bf8ee605be::t_1a9510b031b42c 6-7,55-60
+docs/adr/0020-cross-host-routing.md
+  s_6e23ba2e4cbafd::t_59c8ea9f975775 69-70
+docs/adr/README.md
+  s_6e23ba2e4cbafd::t_437e4bf20b8edc 21,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d4b0a30d865a63d5084ea10a58bb70576ff146dd",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_6e23ba2e4cbafd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e22a4c1b-9492-41fe-a273-e2a1a5693406",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
