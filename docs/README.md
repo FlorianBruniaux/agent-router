@@ -91,6 +91,7 @@ written in French.
 | [Remaining acceptance](remaining-acceptance.md) (FR) | Open requirements and proof gates |
 | [Functional specification](specs/functional-specification.md) (FR) | Product requirements |
 | [Technical specification](specs/technical-specification.md) (FR) | Technical design |
+| [Comparison with similar projects](comparison.md) | Sourced comparison with other routers and coding-agent tools |
 | [Omnigent comparison](omnigent-comparison.md) (FR) | Comparison and derived roadmap items |
 | [Checkpoint 2026-09-27](checkpoints/2026-09-27-paused-work.md) | Paused work snapshot |
 
