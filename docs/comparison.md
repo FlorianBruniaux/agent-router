@@ -62,7 +62,7 @@ page.
 - Routing docs: [omnigent.ai/docs/build/routing](https://omnigent.ai/docs/build/routing) (read 2026-09-30).
 - FAQ (license, alpha status, local): [omnigent.ai/faq](https://omnigent.ai/faq) (read 2026-09-30).
 - Repository: [github.com/omnigent-ai/omnigent](https://github.com/omnigent-ai/omnigent), Apache-2.0, v0.16.0 released 2026-09-29 (read 2026-09-30).
-- Agent Router already has an offline translation of the Omnigent routing contract ([integrations/omnigent.md](../integrations/omnigent.md), [README.md:379](../README.md)); see the [earlier comparison](omnigent-comparison.md).
+- Agent Router already has an offline translation of the Omnigent routing contract ([integrations/omnigent.md](../integrations/omnigent.md), [README.md:380](../README.md)); see the [earlier comparison](omnigent-comparison.md).
 
 ### OpenRouter Auto Router
 
@@ -206,7 +206,7 @@ Agent Router cells cite [README.md:74](../README.md) (per phase),
 [README.md:122](../README.md) (approved digest, fresh evidence, OS sandbox),
 [README.md:80](../README.md) (Git worktree for writes, patch preview),
 [README.md:124](../README.md) (local and offline for routing) and
-[README.md:478](../README.md) (license).
+[README.md:479](../README.md) (license).
 
 ## What Agent Router does differently
 
@@ -235,7 +235,7 @@ These are design properties, not measured outcomes.
   are reported as `UNKNOWN` ([README.md:123](../README.md)).
 - **No network needed to route.** Routing needs no provider call, daemon or
   network access ([README.md:124](../README.md)), once Cargo dependencies
-  are available ([README.md:219](../README.md)). OpenRouter and Not Diamond
+  are available ([README.md:220](../README.md)). OpenRouter and Not Diamond
   decide on a hosted service; Omnigent's built-in judge and LiteLLM's LLM
   classifier call a model.
 - **Cumulative session budgets.** Capacity and conservative cost/token
@@ -248,9 +248,9 @@ These are design properties, not measured outcomes.
 - **Maturity and adoption.** claude-code-router (MIT, 37,486 stars, v3.1.1),
   LiteLLM (59,927 stars, release on 2026-09-30) and vLLM Semantic Router have
   public releases and wide use. Agent Router's public release is "still gated
-  by license and security review" ([README.md:194](../README.md)) and clone
+  by license and security review" ([README.md:195](../README.md)) and clone
   access is required while the repository is private
-  ([README.md:204](../README.md)).
+  ([README.md:205](../README.md)).
 - **Routing inside a live session.** The proxies re-route every request as the
   conversation goes. Agent Router "does not switch the model of the
   conversation you are in: each approved phase runs as a separate host
@@ -268,11 +268,11 @@ These are design properties, not measured outcomes.
   interfaces and multi-harness orchestration (see the
   [earlier comparison](omnigent-comparison.md)).
 - **Platforms.** Agent Router has no Windows native execution
-  ([README.md:382](../README.md)); claude-code-router ships a desktop app for
+  ([README.md:383](../README.md)); claude-code-router ships a desktop app for
   macOS, Windows and Linux.
 - **Licensing.** Most projects above are MIT or Apache-2.0. Agent Router's
   FSL-1.1-ALv2 is not an OSI open source license and restricts competing
-  commercial use ([README.md:478](../README.md)).
+  commercial use ([README.md:479](../README.md)).
 - **Zero setup.** Claude Code subagents and Codex profiles need no extra tool.
 
 ## When to pick something else

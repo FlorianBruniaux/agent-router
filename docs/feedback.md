@@ -417,6 +417,46 @@ What the report does not prove:
   and rounded to micros, so it is stable on one build and can differ in the last
   digit elsewhere.
 
+## Feedback summary
+
+```sh
+agent-router feedback --store <dir> summary [--pricing <file>] [--now <unix>] [--json]
+```
+
+`summary` is the one-line view of [`feedback report`](#feedback-report): a single
+global total over every group. It reads the same snapshot and classifies the runs
+with the same code, so `runs`, `accepted`, `rejected` and `unknown` equal the sum
+of the report's groups. `runs` counts automated events only, as the groups do;
+human-origin events are counted apart in the `human` block (`passed`, `failed`,
+`unknown`) and never change an automated outcome. It needs the same collection
+consent and has the same read effects. Without `--json` it prints the labeled
+human view. Each view is byte-identical for the same retained events, facts,
+pricing file and `--now`; the two views differ from each other. The versioned
+schema is `agent-router schema feedback-summary`.
+
+The rate, the percentiles and the cost are recomputed over the merged runs, never
+averaged from group figures:
+
+- `accepted_rate`: accepted over accepted plus rejected with the 95% Jeffreys
+  interval, null when no run is decided. Unknown runs are excluded and never
+  counted as failures;
+- `time_to_acceptance_seconds`: p50 and p90 by nearest rank over accepted runs,
+  with `samples` and `missing`;
+- `cost`: with `--pricing`, the sum over priced runs as `total_microusd`.
+  `per_accepted_microusd` divides the total over all runs by accepted tasks and
+  is null, with `reason`, while any run of any group is unpriced. Without
+  `--pricing`, or when no run is priced, the total is null with its reason;
+- `unknown_counts`: `verdict`, `unlinked`, `cost`, `time_to_acceptance`,
+  `integration`, `orphan_facts` and `superseded_events`, each a count of what the
+  figures above could not establish;
+- `report_content_hash`: the `content_hash` of the report from the same events
+  and facts, so a caller can tie the two documents together.
+
+`attribution` is always `not_established`, with a note: the summary shows
+descriptive associations, and a gain attributable to the router needs the paired
+A/B [router value protocol](bench/router-value-protocol.md). It is not a savings
+figure.
+
 ## Explicit sidecar export
 
 Collection or learning consent alone never causes network transmission.

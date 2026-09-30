@@ -679,3 +679,175 @@ fn usage_must_agree_with_itself_and_with_the_total() {
     total_only.measurements.tokens = Some(42);
     store.record(total_only, 200).unwrap();
 }
+
+/// `classified()` plus two more groups, so the total spans three groups.
+fn multi_group() -> (TempDir, FeedbackStore) {
+    let (temp, store) = classified();
+    // model-c: accepted after 60 s, priced. model-b: accepted after 10 s, no usage.
+    store
+        .record(
+            with_usage(automated("c1", Some('8'), "model-c"), usage(1, 0, 0)),
+            260,
+        )
+        .unwrap();
+    store
+        .record(automated("b1", Some('9'), "model-b"), 260)
+        .unwrap();
+    for (run_key, at) in [('8', 180), ('9', 130)] {
+        store
+            .record_fact(verification(run_key, VerificationOutcome::Passed), 270)
+            .unwrap();
+        store
+            .record_fact(integration(run_key, IntegrationOutcome::Applied, at), 270)
+            .unwrap();
+    }
+    (temp, store)
+}
+
+fn sum(report: &serde_json::Value, key: &str) -> u64 {
+    report["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|g| g[key].as_u64().unwrap())
+        .sum()
+}
+
+#[test]
+fn summary_is_byte_identical_for_the_same_inputs() {
+    let (_temp, store) = multi_group();
+    let table = pricing();
+    let first = serde_json::to_vec(&store.summary(Some(&table), 300).unwrap()).unwrap();
+    let second = serde_json::to_vec(&store.summary(Some(&table), 300).unwrap()).unwrap();
+    assert_eq!(first, second);
+    let without = serde_json::to_vec(&store.summary(None, 300).unwrap()).unwrap();
+    assert_ne!(first, without);
+}
+
+#[test]
+fn summary_totals_equal_the_sum_of_the_report_groups() {
+    let (_temp, store) = multi_group();
+    let (report, summary) = store.report_and_summary(Some(&pricing()), 300).unwrap();
+    let report_json = json(&report);
+    let summary_json = serde_json::to_value(&summary).unwrap();
+    assert_eq!(report_json["groups"].as_array().unwrap().len(), 3);
+    for key in ["runs", "accepted", "rejected", "unknown"] {
+        assert_eq!(
+            summary_json[key].as_u64().unwrap(),
+            sum(&report_json, key),
+            "{key}"
+        );
+    }
+    // Hand count: model-a 7 runs (1 accepted, 3 rejected, 3 unknown), model-c
+    // 1 accepted, model-b 1 accepted.
+    assert_eq!(
+        (
+            summary.runs,
+            summary.accepted,
+            summary.rejected,
+            summary.unknown
+        ),
+        (9, 3, 3, 3)
+    );
+    assert_eq!(summary.unknown_counts.unlinked, report.unlinked);
+    assert_eq!(summary.unknown_counts.orphan_facts, report.orphan_facts);
+    assert_eq!(
+        summary.unknown_counts.superseded_events,
+        report.superseded_events
+    );
+    assert_eq!(summary.event_set_hash, report.event_set_hash);
+    assert_eq!(summary.fact_set_hash, report.fact_set_hash);
+    assert_eq!(summary.report_content_hash, report.content_hash);
+    // The rate is over decided runs of every group: 3 accepted of 6.
+    let rate = summary.accepted_rate.as_ref().unwrap();
+    assert_eq!(
+        (rate.accepted, rate.rejected, rate.point_micros),
+        (3, 3, 500_000)
+    );
+    assert_eq!(rate.prior, "jeffreys");
+    // Percentiles come from the merged accepted runs (started at 120):
+    // model-a 200 - 120 = 80, model-c 180 - 120 = 60, model-b 130 - 120 = 10.
+    let p = &summary.time_to_acceptance_seconds;
+    assert_eq!(
+        (p.samples, p.missing, p.p50, p.p90),
+        (3, 0, Some(60), Some(80))
+    );
+    // Cost: only the model-c run is priced; model-a runs carry no usage and
+    // model-b is not in the table, so those 8 runs stay unknown.
+    let priced: u64 = report_json["groups"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|g| g["cost"]["priced_runs"].as_u64().unwrap())
+        .sum();
+    assert_eq!(summary.cost.priced_runs, priced);
+    assert_eq!(summary.cost.priced_runs, 1);
+    assert_eq!(summary.cost.cost_unknown, 8);
+    assert_eq!(summary.unknown_counts.cost, 8);
+}
+
+#[test]
+fn summary_unknown_is_never_counted_as_a_failure() {
+    let (_temp, store) = classified();
+    let summary = store.summary(None, 300).unwrap();
+    // 3 of the 7 runs have no verdict: they are neither accepted nor rejected,
+    // and they stay out of the rate denominator.
+    assert_eq!(summary.unknown, 3);
+    assert_eq!(summary.unknown_counts.verdict, 3);
+    let rate = summary.accepted_rate.unwrap();
+    assert_eq!((rate.accepted, rate.rejected), (1, 3));
+    assert_eq!(rate.point_micros, 250_000);
+    assert_eq!(summary.attribution, "not_established");
+}
+
+#[test]
+fn summary_cost_per_accepted_is_null_with_a_reason_while_any_run_is_unpriced() {
+    let (_temp, store) = multi_group();
+    // model-a runs have no usage and model-b is not in the table.
+    let with_table = store.summary(Some(&pricing()), 300).unwrap();
+    assert_eq!(with_table.cost.total_microusd, Some(1));
+    assert_eq!(with_table.cost.per_accepted_microusd, None);
+    assert_eq!(with_table.cost.reason, Some("cost_unknown_runs"));
+    let without_table = store.summary(None, 300).unwrap();
+    assert_eq!(without_table.cost.total_microusd, None);
+    assert_eq!(without_table.cost.reason, Some("no_pricing_table"));
+
+    // Every run priced: the total over all runs is divided by accepted tasks.
+    let (_temp, store) = self::store(true);
+    for (run, run_key, u) in [
+        ("r1", '1', usage(1000, 400, 500)),
+        ("r2", '2', usage(1000, 0, 1)),
+    ] {
+        store
+            .record(with_usage(automated(run, Some(run_key), "model-a"), u), 200)
+            .unwrap();
+    }
+    store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Applied, 200), 250)
+        .unwrap();
+    let priced = store.summary(Some(&pricing()), 300).unwrap();
+    assert_eq!(priced.cost.total_microusd, Some(9_420 + 3_015));
+    assert_eq!(priced.cost.per_accepted_microusd, Some(9_420 + 3_015));
+    assert_eq!(priced.cost.reason, None);
+}
+
+#[test]
+fn summary_of_an_empty_store_has_no_rate_and_needs_consent() {
+    let (_temp, store) = self::store(true);
+    let summary = store.summary(None, 300).unwrap();
+    assert_eq!(
+        (summary.runs, summary.accepted, summary.rejected),
+        (0, 0, 0)
+    );
+    assert!(summary.accepted_rate.is_none());
+    assert_eq!(summary.time_to_acceptance_seconds.p50, None);
+    let temp = TempDir::new().unwrap();
+    let closed = FeedbackStore::open(&temp.path().join("feedback")).unwrap();
+    assert!(matches!(
+        closed.summary(None, 300),
+        Err(FeedbackError::Consent)
+    ));
+}

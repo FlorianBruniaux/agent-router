@@ -1,0 +1,406 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agent-router:schema:feedback-report:1",
+  "title": "feedback report",
+  "description": "Output of `agent-router feedback report`: descriptive outcome measurement per model, effort and task kind. Associations, not a gain attributable to the router.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at_unix_seconds",
+    "event_set_hash",
+    "fact_set_hash",
+    "automated_events",
+    "human_events",
+    "facts",
+    "unlinked",
+    "orphan_facts",
+    "superseded_events",
+    "pricing",
+    "groups",
+    "catalog_estimate_ratio",
+    "advisory",
+    "interpretation",
+    "content_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at_unix_seconds": {
+      "$ref": "#/$defs/u64"
+    },
+    "event_set_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "fact_set_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "automated_events": {
+      "$ref": "#/$defs/u64"
+    },
+    "human_events": {
+      "$ref": "#/$defs/u64"
+    },
+    "facts": {
+      "$ref": "#/$defs/u64"
+    },
+    "unlinked": {
+      "$ref": "#/$defs/u64"
+    },
+    "orphan_facts": {
+      "$ref": "#/$defs/u64"
+    },
+    "superseded_events": {
+      "$ref": "#/$defs/u64"
+    },
+    "pricing": {
+      "$ref": "#/$defs/pricing"
+    },
+    "groups": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/group"
+      }
+    },
+    "catalog_estimate_ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "value": {
+          "type": "null"
+        },
+        "reason": {
+          "type": "string"
+        }
+      }
+    },
+    "advisory": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "advisory",
+            "reason"
+          ],
+          "properties": {
+            "advisory": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "advisory",
+            "suggestion",
+            "reason"
+          ],
+          "properties": {
+            "advisory": {
+              "const": true
+            },
+            "suggestion": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "interpretation": {
+      "type": "string"
+    },
+    "content_hash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "u64": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "hash": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    },
+    "percentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "samples",
+        "missing",
+        "p50",
+        "p90"
+      ],
+      "properties": {
+        "samples": {
+          "$ref": "#/$defs/u64"
+        },
+        "missing": {
+          "$ref": "#/$defs/u64"
+        },
+        "p50": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "p90": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      },
+      "description": "Nearest-rank percentiles over known values; a null percentile means no known value, never zero."
+    },
+    "accepted_rate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "accepted",
+        "rejected",
+        "point_micros",
+        "lower_micros",
+        "upper_micros",
+        "level_micros",
+        "prior"
+      ],
+      "properties": {
+        "accepted": {
+          "$ref": "#/$defs/u64"
+        },
+        "rejected": {
+          "$ref": "#/$defs/u64"
+        },
+        "point_micros": {
+          "$ref": "#/$defs/u64"
+        },
+        "lower_micros": {
+          "$ref": "#/$defs/u64"
+        },
+        "upper_micros": {
+          "$ref": "#/$defs/u64"
+        },
+        "level_micros": {
+          "$ref": "#/$defs/u64"
+        },
+        "prior": {
+          "const": "jeffreys"
+        }
+      },
+      "description": "Accepted over decided runs in micros, with a Jeffreys interval; unknown runs are excluded."
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "priced_runs",
+        "cost_unknown",
+        "runs_with_cache_writes_priced_as_input",
+        "total_microusd",
+        "per_accepted_microusd",
+        "reason"
+      ],
+      "properties": {
+        "priced_runs": {
+          "$ref": "#/$defs/u64"
+        },
+        "cost_unknown": {
+          "$ref": "#/$defs/u64"
+        },
+        "runs_with_cache_writes_priced_as_input": {
+          "$ref": "#/$defs/u64"
+        },
+        "total_microusd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "per_accepted_microusd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "description": "Computed cost in micro-dollars. A null figure is unknown and comes with a reason."
+    },
+    "human_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "failed",
+        "unknown"
+      ],
+      "properties": {
+        "passed": {
+          "$ref": "#/$defs/u64"
+        },
+        "failed": {
+          "$ref": "#/$defs/u64"
+        },
+        "unknown": {
+          "$ref": "#/$defs/u64"
+        }
+      }
+    },
+    "pricing": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "version",
+            "source",
+            "observed_at_unix_seconds"
+          ],
+          "properties": {
+            "version": {
+              "type": "string"
+            },
+            "source": {
+              "type": "string"
+            },
+            "observed_at_unix_seconds": {
+              "$ref": "#/$defs/u64"
+            }
+          }
+        }
+      ]
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "effort",
+        "task_kind",
+        "runs",
+        "accepted",
+        "rejected",
+        "unknown",
+        "unlinked",
+        "human",
+        "accepted_rate",
+        "integration",
+        "tokens",
+        "latency_ms",
+        "attempts",
+        "time_to_acceptance_seconds",
+        "cost"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string"
+        },
+        "task_kind": {
+          "type": "string"
+        },
+        "runs": {
+          "$ref": "#/$defs/u64"
+        },
+        "accepted": {
+          "$ref": "#/$defs/u64"
+        },
+        "rejected": {
+          "$ref": "#/$defs/u64"
+        },
+        "unknown": {
+          "$ref": "#/$defs/u64"
+        },
+        "unlinked": {
+          "$ref": "#/$defs/u64"
+        },
+        "human": {
+          "$ref": "#/$defs/human_counts"
+        },
+        "accepted_rate": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/accepted_rate"
+            }
+          ]
+        },
+        "integration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applied",
+            "discarded",
+            "unknown",
+            "rate_micros"
+          ],
+          "properties": {
+            "applied": {
+              "$ref": "#/$defs/u64"
+            },
+            "discarded": {
+              "$ref": "#/$defs/u64"
+            },
+            "unknown": {
+              "$ref": "#/$defs/u64"
+            },
+            "rate_micros": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "tokens": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "latency_ms": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "attempts": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "time_to_acceptance_seconds": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "cost": {
+          "$ref": "#/$defs/cost"
+        }
+      }
+    }
+  }
+}

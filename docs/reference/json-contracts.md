@@ -34,8 +34,17 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
 | Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds` and `measurements.usage`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
+| Feedback summary | v1 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
+
+`agent-router schema --list` names the contracts that have a published JSON
+Schema (`route-decision`, `feedback-report`, `feedback-summary`, `error` and
+`version`) with the `schema_version` values supported for each, and
+`agent-router schema <name>` prints the document. `agent-router version --json`
+lists the same versions per output. The schemas describe output shapes and
+reject unknown keys; the sections of this file and the guides they link remain
+the reference for meaning. See [CLI output](../cli-output.md#commands-for-programmatic-callers).
 
 `PhaseCandidate.tool_policy` defaults to `restricted` and is omitted when
 serialized at that default, preserving existing v2 identities. `native_host`
