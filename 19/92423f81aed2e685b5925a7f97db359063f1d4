@@ -1,0 +1,25 @@
+docs/adr/0019-outcome-measurement.md
+  s_d5869f14f7ab92::t_5331982667e30d 39-40
+docs/adr/README.md
+  s_d5869f14f7ab92::t_9cd57bd463cbe9 5
+docs/bench/router-value-protocol.md
+  s_d5869f14f7ab92::t_49dfbc95ded41d 6-7,186-187,189-192,306-307,420,524-525
+docs/feedback.md
+  s_d5869f14f7ab92::t_13dc424d9c7e72 146,163-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "1992423f81aed2e685b5925a7f97db359063f1d4",
+  "prompts": {},
+  "sessions": {
+    "s_d5869f14f7ab92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a24f4540-f599-4950-94a0-1c3b20e61213",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
