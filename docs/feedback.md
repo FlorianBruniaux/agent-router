@@ -267,6 +267,15 @@ facts by `run_key_sha256`:
 - `unlinked`: automated events without a run key, which no fact can refer to.
   They are also counted as unknown.
 
+The verdict reads the verification fact's `objective` only. That is enough
+because a fact with objective `passed` and validation other than `passed` is
+refused when recorded, so a passed objective always follows a passed validation.
+
+`run_hash` covers run state and attempts, so one run can hold several automated
+events. The report counts each run key once, on its latest event, and gives the
+number of others as `superseded_events`. Its groups, `automated_events` and costs
+count that one event.
+
 Human-origin events are counted apart, by their `human.success`, and never
 change an automated outcome. Facts that match no retained automated event are
 counted as `orphan_facts`.
@@ -290,8 +299,9 @@ Per group the report gives:
   from the table is `cost_unknown`, never zero. `total_microusd` sums priced runs
   only. `per_accepted_microusd` divides the total over all runs by accepted
   tasks, and is null while any run of the group is unpriced. Cache writes are
-  priced as input, since the table has no cache write price, and reasoning tokens
-  as output. Without `--pricing` every cost is null with reason
+  priced as input, since the table has no cache write price, and
+  `runs_with_cache_writes_priced_as_input` counts the priced runs that declared
+  some. Reasoning tokens are priced as output. Without `--pricing` every cost is null with reason
   `no_pricing_table`.
 
 The ratio between catalog estimate and observed usage that ADR 0019 lists is not

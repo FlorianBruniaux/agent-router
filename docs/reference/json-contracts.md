@@ -90,14 +90,16 @@ their bytes and `event_hash`) holds a `HostUsage`: `input_tokens`,
 `reasoning_output_tokens`, each `{"tokens": n, "provenance": "host_reported"}` or
 `{"tokens": null, "provenance": "unknown"}`. Recording refuses a count above
 `MAX_VALUE`, a provenance that disagrees with the presence of the count, cached
-input or cache writes above input, and reasoning above output. The sidecar
+input or cache writes above input, cached input plus cache writes above input,
+reasoning above output, and a `tokens` total that differs from the split's
+total (input plus output). The sidecar
 projection drops it.
 
 `agent-router feedback --store <dir> --json report [--pricing <file>]` prints a
 `FeedbackReport` (schema 1); the pricing file is a `PricingTable` (schema 1, unknown
 keys refused, at most 64 models). It needs collection consent. Top-level keys:
 `schema_version`, `generated_at_unix_seconds`, `event_set_hash`, `fact_set_hash`,
-`automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `pricing`
+`automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `superseded_events`, `pricing`
 (`version`, `source`, `observed_at_unix_seconds`, or null), `groups`,
 `catalog_estimate_ratio` (always `{"value":null,"reason":...}`), `advisory`,
 `interpretation` and `content_hash` (domain `feedback-report-v1`). Each group
@@ -106,7 +108,7 @@ sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
 `lower_micros`, `upper_micros`, `level_micros` 950000, `prior` `jeffreys`, or null),
 `integration`, the `tokens`, `latency_ms`, `attempts` and
 `time_to_acceptance_seconds` percentiles (`samples`, `missing`, `p50`, `p90`) and
-`cost` (`priced_runs`, `cost_unknown`, `total_microusd`, `per_accepted_microusd`,
+`cost` (`priced_runs`, `cost_unknown`, `runs_with_cache_writes_priced_as_input`, `total_microusd`, `per_accepted_microusd`,
 `reason`). No float appears in the output. `advisory` is
 `{"advisory":null,"reason":"learning_disabled"}` or `{"advisory":true,"suggestion":null,"reason":...}`.
 See [feedback](../feedback.md#feedback-report) for the join rules.

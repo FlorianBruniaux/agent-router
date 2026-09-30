@@ -91,6 +91,9 @@ pub struct GroupCost {
     pub priced_runs: u64,
     /// Runs without complete usage, or whose model is not in the table.
     pub cost_unknown: u64,
+    /// Priced runs with a declared cache write count above zero. Cache writes
+    /// are priced at the input rate because the table has no write price.
+    pub runs_with_cache_writes_priced_as_input: u64,
     /// Sum over priced runs only.
     pub total_microusd: Option<u64>,
     /// Total over all runs divided by accepted tasks; null unless every run is priced.
@@ -166,6 +169,9 @@ pub struct FeedbackReport {
     pub unlinked: u64,
     /// Facts whose run key matches no retained automated event.
     pub orphan_facts: u64,
+    /// Automated events left out because a later event holds the same run key.
+    /// `automated_events` and the groups count each run key once.
+    pub superseded_events: u64,
     pub pricing: Option<PricingCitation>,
     pub groups: Vec<GroupReport>,
     pub catalog_estimate_ratio: NullFigure,
@@ -264,6 +270,7 @@ struct Accumulator<'a> {
     acceptance_seconds: Vec<Option<u64>>,
     priced: u64,
     cost_unknown: u64,
+    cache_write_runs: u64,
     cost_total: u128,
 }
 
@@ -289,8 +296,29 @@ pub(crate) fn build_report(
     let mut automated_keys = BTreeSet::new();
     let (mut automated, mut human, mut unlinked) = (0u64, 0u64, 0u64);
     let none = RunFacts::default();
+    // `run_hash` covers state and attempts, so one run can hold several
+    // automated events. Late facts belong to the run, not to an event: count
+    // each run key once, on its latest event.
+    let mut latest: BTreeMap<&str, u64> = BTreeMap::new();
+    for event in events {
+        if let (FeedbackOrigin::Automated, Some(run_key)) =
+            (event.input.origin, event.input.run_key_sha256.as_deref())
+        {
+            let entry = latest.entry(run_key).or_default();
+            *entry = (*entry).max(event.sequence);
+        }
+    }
+    let mut superseded = 0u64;
     for event in events {
         let i = &event.input;
+        if i.origin == FeedbackOrigin::Automated
+            && i.run_key_sha256
+                .as_deref()
+                .is_some_and(|run_key| latest.get(run_key) != Some(&event.sequence))
+        {
+            superseded += 1;
+            continue;
+        }
         let key = (
             i.context.model.to_string(),
             label(&i.context.effort)?,
@@ -345,6 +373,13 @@ pub(crate) fn build_report(
                 match cost {
                     Some(cost) => {
                         group.priced += 1;
+                        group.cache_write_runs += u64::from(
+                            i.measurements
+                                .usage
+                                .as_ref()
+                                .and_then(|u| u.cache_write_input_tokens.reported())
+                                .is_some_and(|w| w > 0),
+                        );
                         group.cost_total += cost;
                     }
                     None => group.cost_unknown += 1,
@@ -412,6 +447,7 @@ pub(crate) fn build_report(
         facts: fact_events.len() as u64,
         unlinked,
         orphan_facts,
+        superseded_events: superseded,
         pricing: pricing.map(|p| PricingCitation {
             version: p.version.clone(),
             source: p.source.clone(),
@@ -445,6 +481,7 @@ fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost 
     let mut cost = GroupCost {
         priced_runs: a.priced,
         cost_unknown: a.cost_unknown,
+        runs_with_cache_writes_priced_as_input: a.cache_write_runs,
         ..GroupCost::default()
     };
     if pricing.is_none() {

@@ -529,3 +529,153 @@ fn usage_is_stored_and_read_back_and_inconsistent_usage_is_refused() {
         Err(FeedbackError::Invalid("usage"))
     ));
 }
+
+#[test]
+fn a_run_key_is_counted_once_on_its_latest_event() {
+    let (_temp, store) = store(true);
+    // Same run key, different run_hash: the second event carries a later state.
+    store
+        .record(
+            with_usage(
+                automated("state-1", Some('1'), "model-a"),
+                usage(1000, 400, 500),
+            ),
+            200,
+        )
+        .unwrap();
+    store
+        .record(
+            with_usage(
+                automated("state-2", Some('1'), "model-a"),
+                usage(1000, 0, 1),
+            ),
+            200,
+        )
+        .unwrap();
+    store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Applied, 200), 250)
+        .unwrap();
+    let report = json(&store.report(Some(&pricing()), 300).unwrap());
+    let g = group(&report, "model-a");
+    assert_eq!(report["superseded_events"], 1);
+    assert_eq!(report["automated_events"], 1);
+    assert_eq!(
+        (g["runs"].clone(), g["accepted"].clone()),
+        (1.into(), 1.into())
+    );
+    assert_eq!(g["integration"]["applied"], 1);
+    // Only the latest event is priced: 3015, not 3015 + 9420.
+    assert_eq!(g["cost"]["total_microusd"], 3_015);
+    assert_eq!(report["orphan_facts"], 0);
+}
+
+#[test]
+fn cache_writes_are_priced_as_input_once_and_counted() {
+    let (_temp, store) = store(true);
+    let mut split = usage(1000, 300, 100);
+    split.cache_write_input_tokens = UsageField::host_reported(200);
+    // 700 non cached input (writes included) at 3.0, 300 cached at 0.3, 100
+    // output at 15.0: 2_100_000_000 + 90_000_000 + 1_500_000_000 = 3_690 micros.
+    // Charging the 200 writes again would give 3_690 + 600 = 4_290.
+    store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), split),
+            200,
+        )
+        .unwrap();
+    store
+        .record(
+            with_usage(automated("r2", Some('2'), "model-a"), usage(1000, 0, 1)),
+            200,
+        )
+        .unwrap();
+    let report = json(&store.report(Some(&pricing()), 300).unwrap());
+    let cost = &group(&report, "model-a")["cost"];
+    assert_eq!(cost["total_microusd"], 3_690 + 3_015);
+    assert_eq!(cost["runs_with_cache_writes_priced_as_input"], 1);
+}
+
+#[test]
+fn per_accepted_cost_is_null_when_no_task_was_accepted() {
+    let (_temp, store) = store(true);
+    store
+        .record(
+            with_usage(automated("r1", Some('1'), "model-a"), usage(1000, 400, 500)),
+            200,
+        )
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Discarded, 200), 250)
+        .unwrap();
+    let report = json(&store.report(Some(&pricing()), 300).unwrap());
+    let cost = &group(&report, "model-a")["cost"];
+    assert_eq!(cost["total_microusd"], 9_420);
+    assert!(cost["per_accepted_microusd"].is_null());
+    assert_eq!(cost["reason"], "no_accepted_task");
+}
+
+#[test]
+fn a_passed_objective_needs_a_passed_validation_so_objective_alone_decides() {
+    let (_temp, store) = store(true);
+    let fact = FeedbackFact {
+        schema_version: 1,
+        run_key_sha256: key('1'),
+        observed_at_unix_seconds: 150,
+        kind: FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Failed,
+            objective: VerificationOutcome::Passed,
+            evidence_sha256: "9".repeat(64),
+        },
+    };
+    assert!(matches!(
+        store.record_fact(fact, 250),
+        Err(FeedbackError::Invalid("verification fact"))
+    ));
+}
+
+#[test]
+fn usage_must_agree_with_itself_and_with_the_total() {
+    let (_temp, store) = store(true);
+    // Reads and writes are disjoint subsets of input: 600 + 500 > 1000.
+    let mut overlapping = usage(1000, 600, 10);
+    overlapping.cache_write_input_tokens = UsageField::host_reported(500);
+    assert!(matches!(
+        store.record(
+            with_usage(automated("r1", Some('1'), "model-a"), overlapping),
+            200
+        ),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    let mut fits = usage(1000, 600, 10);
+    fits.cache_write_input_tokens = UsageField::host_reported(400);
+    store
+        .record(with_usage(automated("r2", Some('2'), "model-a"), fits), 200)
+        .unwrap();
+    // A total that is not the split's total.
+    let mut wrong_total = with_usage(automated("r3", Some('3'), "model-a"), usage(1000, 0, 10));
+    wrong_total.measurements.tokens = Some(1);
+    assert!(matches!(
+        store.record(wrong_total, 200),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    // A total beside a split whose output is unknown has no total to match.
+    let mut unknown_output = usage(1000, 0, 10);
+    unknown_output.output_tokens = UsageField::UNKNOWN;
+    let mut input = automated("r4", Some('4'), "model-a");
+    input.measurements.usage = Some(unknown_output);
+    input.measurements.tokens = Some(1010);
+    assert!(matches!(
+        store.record(input, 200),
+        Err(FeedbackError::Invalid("usage"))
+    ));
+    // A split alone, and a total alone, stay valid.
+    let mut split_only = automated("r5", Some('5'), "model-a");
+    split_only.measurements.usage = Some(unknown_output);
+    store.record(split_only, 200).unwrap();
+    let mut total_only = automated("r6", Some('6'), "model-a");
+    total_only.measurements.tokens = Some(42);
+    store.record(total_only, 200).unwrap();
+}

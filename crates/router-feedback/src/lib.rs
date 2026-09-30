@@ -213,7 +213,10 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
     {
         return Err(FeedbackError::Invalid("measurements"));
     }
-    if m.usage.as_ref().is_some_and(|usage| !valid_usage(usage)) {
+    if m.usage.as_ref().is_some_and(|usage| !valid_usage(usage))
+        // A total next to a split must be that split's total.
+        || m.tokens.is_some() && m.usage.as_ref().is_some_and(|u| u.total_tokens() != m.tokens)
+    {
         return Err(FeedbackError::Invalid("usage"));
     }
     if serde_json::to_vec(input)?.len() > MAX_INPUT_BYTES {
@@ -241,5 +244,14 @@ fn valid_usage(usage: &HostUsage) -> bool {
             || f.tokens.is_none() && f.provenance == UsageProvenance::Unknown
     }) && subset(usage.cached_input_tokens, usage.input_tokens)
         && subset(usage.cache_write_input_tokens, usage.input_tokens)
+        // Cache reads and writes are disjoint subsets of input.
+        && match (
+            usage.cached_input_tokens.tokens,
+            usage.cache_write_input_tokens.tokens,
+            usage.input_tokens.tokens,
+        ) {
+            (Some(read), Some(write), Some(input)) => read + write <= input,
+            _ => true,
+        }
         && subset(usage.reasoning_output_tokens, usage.output_tokens)
 }
