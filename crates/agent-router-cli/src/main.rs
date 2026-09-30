@@ -7,6 +7,8 @@ mod backend_activation;
 mod catalogs;
 mod cli;
 mod command;
+mod completions;
+mod contracts;
 mod coordinator;
 mod diagnostics;
 mod escalation;
@@ -23,11 +25,13 @@ mod preparation;
 mod product;
 mod render;
 mod replay_export;
+mod schema;
 #[cfg(all(feature = "local-api", unix))]
 mod serve;
 mod session_budget;
 mod sidecar;
 mod task_guide;
+mod version_info;
 
 use std::{
     ffi::OsString,
@@ -302,6 +306,9 @@ fn run(mut command: Commands) -> Result<Outcome, CliError> {
 
 fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::Schema { name, list, .. } => schema::run(name.as_deref(), list),
+        Commands::Version { .. } => version_info::run(),
+        Commands::Completions { shell } => completions::run(shell),
         Commands::GeneratePlan {
             manifest,
             now,

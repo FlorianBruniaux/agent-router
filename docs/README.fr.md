@@ -64,6 +64,7 @@ sauf celles marquées (FR).
 | [Exécution d'un backend](backend-execution.md) | Exécuter une décision de backend signée |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
+| [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Feedback](feedback.md) | Feedback local donné avec consentement, politiques hors ligne |
 
 ## Diagnostic, distribution et sécurité
@@ -90,6 +91,7 @@ sauf celles marquées (FR).
 | [Acceptation restante](remaining-acceptance.md) (FR) | Exigences ouvertes et gates de preuve |
 | [Spécification fonctionnelle](specs/functional-specification.md) (FR) | Exigences produit |
 | [Spécification technique](specs/technical-specification.md) (FR) | Conception technique |
+| [Comparaison avec des projets similaires](comparison.md) (EN) | Comparaison sourcée avec d'autres routeurs et outils pour agents de code |
 | [Comparaison avec Omnigent](omnigent-comparison.md) (FR) | Comparaison et éléments de roadmap qui en découlent |
 | [Point d'étape du 27/09/2026](checkpoints/2026-09-27-paused-work.md) | État du travail mis en pause |
 

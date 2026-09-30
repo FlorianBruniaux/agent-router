@@ -1,0 +1,32 @@
+{
+  "announced_models": [],
+  "cost": {
+    "list_microusd": 42520,
+    "product_microusd": 42520,
+    "reason": null
+  },
+  "effort": "medium",
+  "elapsed_ms": 7375,
+  "ended_at_unix": 1790776839.011638,
+  "error_count": 0,
+  "exit_code": 0,
+  "final_text_sha256": "565339bc4d33d72817b583024112eb7f5cdf3e5eef0252d6ec1b9c9a94e12bb3",
+  "host_cost_usd": null,
+  "model": "gpt-6.1-sol",
+  "model_check": "unknown",
+  "phase": "probe",
+  "provider": "codex",
+  "sessions": 1,
+  "started_at_unix": 1790776831.635266,
+  "timed_out": false,
+  "usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 0,
+    "input_tokens": 21235,
+    "output_tokens": 5,
+    "reasoning_output_tokens": 0
+  },
+  "usage_events": 1,
+  "variant": "isolated",
+  "write": false
+}

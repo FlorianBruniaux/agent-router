@@ -165,6 +165,7 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 | **Optional semantic decisions** | Compare proposals in shadow, then review signed evidence, activate explicitly and revoke before dispatch. | `backend`, `backend-activation`, [execution binding](docs/backend-execution.md) |
 | **Local ranking sidecar** | Compare bounded ranking proposals and explicitly send selected outcomes or feedback under current consent. | `sidecar`, [protocol and consent](docs/standard-sidecar.md) |
 | **Diagnostics and audit** | Inspect configuration and active runtime storage without recovery; keep process and cleanup authority unknown, and export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
+| **Programmatic callers** | Print the JSON Schema of an output contract, report the build and supported contract versions as JSON, summarize feedback in one global total, and generate shell completions. | `schema`, `version --json`, `feedback summary`, `completions`, [CLI output](docs/cli-output.md#commands-for-programmatic-callers) |
 | **Separate distributions** | Export source workspaces or build a local native binary with verified licenses, inventories and reproducibility checks. | [Distribution](docs/distribution.md) |
 | **Dependency checks** | Verify source license evidence and audit the committed dependency lock against a fresh RustSec database in CI. | [License evidence](docs/distribution.md#continuous-integration-license-evidence-gate), [security audit](docs/dependency-audit.md) |
 | **Local route-only API** | Serve route decisions over a private Unix socket with a token; no execution, feedback or activation endpoint. Opt-in build feature. | `serve` (`--features local-api`), [local API](docs/local-api.md) |
@@ -405,7 +406,7 @@ The [full documentation index](docs/README.md) lists every guide by task. The mo
 | [Coordinate a workflow](docs/coordinator.md) | [JSON contracts](docs/reference/json-contracts.md) |
 | [Generate bounded plans](docs/plan-generation.md) | [Durable escalation library](docs/escalation.md) |
 | [Search catalogs](docs/retrieval.md) | [Routing architecture](docs/adr/0002-bounded-routing-pipeline.md) |
-| [Validate signed catalogs](docs/signed-catalogs.md) | [Omnigent comparison and roadmap](docs/omnigent-comparison.md) |
+| [Validate signed catalogs](docs/signed-catalogs.md) | [Comparison with similar projects](docs/comparison.md), [Omnigent comparison and roadmap](docs/omnigent-comparison.md) |
 | [Evaluate decisions](docs/evaluation.md) | [Private feedback and offline policy](docs/feedback.md) |
 | [Execute signed backend decisions](docs/backend-execution.md) | [Activation and rollback](docs/backend-store.md) |
 | [Inspect diagnostics](docs/doctor.md) | [Performance measurements](docs/performance.md) |
@@ -439,6 +440,35 @@ Use the [issue tracker](https://github.com/FlorianBruniaux/agent-router/issues)
 for bugs and feature requests. Include the command, version, platform and a
 redacted reproduction. Keep credentials, prompts and private policy data out
 of reports.
+
+---
+
+## Compared with similar projects
+
+Several tools route model choice for coding agents or LLM calls. Most proxies
+and hosted routers decide per request while the call is in flight; Agent
+Router decides per phase, before the run, under hard constraints, and leaves
+a replayable receipt. The table compares documented design properties, read
+on 2026-09-30, not measured quality or cost.
+
+| Project | Routing unit | How the choice is made | Where it runs | Reasoning effort | Decision record | License |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Agent Router** | Each phase (plan, execute, verify), before the run | Constraints filter, then deterministic scoring | Local CLI, offline | Per phase | Replayable receipt with exclusions | FSL-1.1-ALv2 |
+| [claude-code-router](https://github.com/musistudio/claude-code-router) | Each request | User rules, route scripts, fallbacks | Local gateway | Not documented | Request logs | MIT |
+| [Omnigent Smart Routing](https://omnigent.ai/docs/build/routing) | Session, from the first message | LLM judge or external router | Local server | Not documented | Reason on failure | Apache-2.0 |
+| [OpenRouter Auto Router](https://openrouter.ai/docs/guides/routing/routers/auto-router) | Each turn | Task classifier ranked by community spend | Hosted | Not available on `openrouter/auto` | Chosen model, opt-in task type | Hosted service |
+| [LiteLLM Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routing) | Each request | Complexity tiers (heuristic, classifier, keywords) | Self-hosted proxy | Set per model entry (`reasoning_effort`, `thinking`) | Decision cause in logs | MIT, except `enterprise/` |
+| [vLLM Semantic Router](https://github.com/vllm-project/semantic-router) | Each request | Signals and prioritized rule decisions | Self-hosted, Envoy | Provider-level default | Selected-model header | Apache-2.0 |
+| [Aider architect mode](https://aider.chat/docs/usage/modes.html) | Each request, two fixed roles | User configuration | Local CLI | Not distinguished per role in the docs | Configuration | Apache-2.0 |
+| [Claude Code subagents](https://code.claude.com/docs/en/sub-agents) / [Codex profiles](https://learn.chatgpt.com/docs/config-file/config-advanced) | Per subagent or profile | User configuration | Inside the host | Per subagent or profile | Configuration | Anthropic Commercial Terms / Apache-2.0 |
+
+Others are stronger on maturity and adoption, on re-routing every request of
+a live session, on provider breadth and failover, on learned routing from data,
+and on permissive licenses. Agent Router is not yet published (publication is
+gated by license and security review), has no Windows native execution and has
+no measured gain yet. The [full comparison](docs/comparison.md)
+adds Plano, RouteLLM and Not Diamond, cites a source for every cell, and covers
+when to pick something else and the limits of a documentation-only review.
 
 ---
 

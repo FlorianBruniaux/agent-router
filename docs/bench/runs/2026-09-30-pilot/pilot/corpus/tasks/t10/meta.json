@@ -1,0 +1,7 @@
+{
+  "id": "t10",
+  "kind": "implement",
+  "risk": "low",
+  "module": "text",
+  "target": "pilot_lib/text.py"
+}

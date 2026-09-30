@@ -1,0 +1,7 @@
+{
+  "id": "t07",
+  "kind": "implement",
+  "risk": "medium",
+  "module": "tables",
+  "target": "pilot_lib/tables.py"
+}

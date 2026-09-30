@@ -1,0 +1,2176 @@
+{
+  "agent_router_sha256": "f789b2d80858aa09bcfb3a0fcce727f4472c5a82bf3c75be8f6a57881bab3c6b",
+  "arms": [
+    "A",
+    "B",
+    "G",
+    "C",
+    "E"
+  ],
+  "created_at_unix_seconds": 1790776801,
+  "host_config": "user-config",
+  "host_versions": {
+    "claude": "2.1.285 (Claude Code)",
+    "codex": "codex-cli 0.159.2"
+  },
+  "inputs": {
+    "catalogs/claude-pool.json": "979e743674a03abd0627f0617d1fa113360f1b156f2c306a6957d3f1e5aadfe0",
+    "catalogs/codex-pool.json": "044abf816459be1ab25f13e71a807f4bba8c2ceae2cd41ff209d8817cec7d4a3",
+    "corpus/base/README.md": "78a0d2d3601c444e7710ad3c4e396cf55c9e9198992a0f75d9062e88e025e677",
+    "corpus/base/pilot_lib/__init__.py": "7e979f2358ba8bc501910418b2f4101cbfeab988269655f0d49ca9b264e41719",
+    "corpus/base/pilot_lib/cache.py": "d3f71f2d51dfca1d7a5d99b4d37ad97f3953dc379bc70835964c832b004f0daa",
+    "corpus/base/pilot_lib/durations.py": "835e739ada0f53c1b0395cdc86e634ea4fe7d414a26cc324a3512f7c7bde9415",
+    "corpus/base/pilot_lib/intervals.py": "cc588c9565e5883d6464814ee684f14de4db7925c1683728e8da516fa45f39b8",
+    "corpus/base/pilot_lib/pagination.py": "abe53bb849369cee276cadcaa1c573e39779c65fc7f44f9219a2cb009987750d",
+    "corpus/base/pilot_lib/retry.py": "1062656b05b4ecf7815938b4b28d873a89c886b889290a79f34839e995fb0645",
+    "corpus/base/pilot_lib/roman.py": "7b9cb158dee76a4297976f71943ed544c0315462ece4d4a7b1d02fa4baa0522e",
+    "corpus/base/pilot_lib/semver.py": "e93fa0dbe3a6f8eba7c29fdb1d8ffb2aad2875535ec23a5e7dabf8ac1b8ab596",
+    "corpus/base/pilot_lib/tables.py": "32a915b753c57d5a65fd9f62071704c5612723bbbadcbbc94fe90ca94758e680",
+    "corpus/base/pilot_lib/text.py": "b28cead753f0feb0a621d2ecdbdb37e9c9efd71ae70008e42255d19cb9fbc630",
+    "corpus/base/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "corpus/base/tests/test_smoke.py": "a17096e6f915f0d82c7e217edabdefd01ac0db806d38a73479acd3a562beb566",
+    "corpus/build_tasks.py": "51e03f6728a04daaf7ea30ae7f4f447eda3499a97ac9cf47989fe0b4991554bb",
+    "corpus/solutions/t01.py": "ce175b81c5bd1ef0091a31ac16ff210f68d0e9e8649505c047949a8492728343",
+    "corpus/solutions/t02.py": "76a3835c10db49bba643bc14aea35b188b982f7b717db190c70336e5afa6203e",
+    "corpus/solutions/t03.py": "cb65117102db87d02933da3051ba7c48360074a815f21aeaf4ca62f5bf1f344c",
+    "corpus/solutions/t04.py": "eac2c72f5bfacb32e4fbea5fae38d6f8c8ce6c2ddcbbff582e4539eebb948ad5",
+    "corpus/solutions/t05.py": "d607ad3427c27ff5db2afabfca0551b3ae198f44e453173d107db79296ba918a",
+    "corpus/solutions/t06.py": "0838261309226a07d68b3f867b291200c984b75a383aa23d901b545afc28404d",
+    "corpus/solutions/t07.py": "189775f509e43982a6be3df776d53849a3cfada4bda186544ee39c3a15a0b35d",
+    "corpus/solutions/t08.py": "5cf3f33b3385c86c7ad6931418a340c876236238a35bc4429857ca6381879dac",
+    "corpus/solutions/t09.py": "761457a063da5e78ad2248de71ba38264fb9984f76110582916eaec5d013185d",
+    "corpus/solutions/t10.py": "76a3835c10db49bba643bc14aea35b188b982f7b717db190c70336e5afa6203e",
+    "corpus/tasks/t01/hidden_test.py": "6c073d9e2a2dbcbb14bbd7b39d680c158550ccb14b7dfc2a2e096535cd2d348d",
+    "corpus/tasks/t01/meta.json": "bccadda42b861fd5834213274607b1028b22c7c3d9acb2908488519f5f71e4b4",
+    "corpus/tasks/t01/statement.md": "d31d4287df69b625216ff425d148bce4415326c96150e280ea77f2d53d118e23",
+    "corpus/tasks/t02/hidden_test.py": "85dfa7866125666b9ea6da1e75dec96d7e6407a1bc1f308b02b84f64c2abe4ce",
+    "corpus/tasks/t02/meta.json": "eeda0c2abefe3c79897c3a6e85ef7d60ad7e7956edf0150bd07690eb19ac054f",
+    "corpus/tasks/t02/statement.md": "e43e79c50c7c92744a60851033df6aa89de06351729e4340188441f13ab4df4b",
+    "corpus/tasks/t03/hidden_test.py": "725c9031067cb8b0bfba19f3bac4f06b2d11f86fd62307c40e892c98bc16d9b4",
+    "corpus/tasks/t03/meta.json": "19a5e88387f0d99788bb0ee918d1767548ad8e23e17d225d21d8574d7f269b71",
+    "corpus/tasks/t03/statement.md": "af5699e6d481990f02cca80adb84c527889383e4a6d8dd7cc5faa54fd2a69c95",
+    "corpus/tasks/t04/hidden_test.py": "1b769d14b038b04e9abd0b72ab5dba1517f509a84a9699cb9bec6f641a34111c",
+    "corpus/tasks/t04/meta.json": "2f41774ce5343a2d25a714a1283b042baafa91f9696a9d4717c268abde95e699",
+    "corpus/tasks/t04/statement.md": "7777c2f7f7548bcf9be3735f1f42df4a3e3718a7eabcdeb8292b1db332d8cb0d",
+    "corpus/tasks/t05/hidden_test.py": "88fd06ba53ef63f471889d03840bbcfd337c0836300e46a9738da72bdb76eebc",
+    "corpus/tasks/t05/meta.json": "a403c07f7c5afdaced8582a5114adfbab37964c9cef328c98457edd13709a6d9",
+    "corpus/tasks/t05/statement.md": "ebe161ff3893c64c7f43237e7eb023548dc088341e11be60b3c5a6af4df6d217",
+    "corpus/tasks/t06/hidden_test.py": "041213b003b2cf622612576e921bf6a1c8de5e7a2d8912fa8e6fe14635f565a7",
+    "corpus/tasks/t06/meta.json": "3a9eb7dd3b11e20a8b95c79fde658a3b3552862dd656856d97ec7c6b40eda33c",
+    "corpus/tasks/t06/statement.md": "b4d201efb2d6fb6f0af59fb9595728ed04b1d29f548ee41477c13f17bdeccca1",
+    "corpus/tasks/t07/hidden_test.py": "83190e748de65b9d60e3d8e2ce2baefae23330bc4b16c810a52f7df9bb64e70b",
+    "corpus/tasks/t07/meta.json": "bb7d39c80898320f7c49f3993175728222762d44c83a61afeaced20eb4318d98",
+    "corpus/tasks/t07/statement.md": "dd52cb28165f2736ac5925c35e7971bc7e3eda54129ffe6f1ef853940cf05240",
+    "corpus/tasks/t08/hidden_test.py": "2d569ec2d6b28824abb890b67629a76b250333ad5ecdb230675bd1ed2d3c4711",
+    "corpus/tasks/t08/meta.json": "1719b8840a1def334afd8940e732b4a95d4708445f3cf7bb8371b7f31a6407a1",
+    "corpus/tasks/t08/statement.md": "8dd869a955975171381f2fe38dfb85cf2bc5b3b6810eb0b0ee22f87db8e11307",
+    "corpus/tasks/t09/hidden_test.py": "2cfd20e167bcbc7afddfe4009a6108845e35c7e7c9e88dc67359b1efa9ae44da",
+    "corpus/tasks/t09/meta.json": "bb51318edf6fd99410dc5dd051c383109e8c1848be70dc38c294d2157aed3d46",
+    "corpus/tasks/t09/statement.md": "2a9a4f57507a05544db3b1be13c53fb5e2172e89c16027da318583724ee538b6",
+    "corpus/tasks/t10/hidden_test.py": "b03ad3bed84126f5168791d26f3624bffe52d3f35424ff0764e8361e20150c97",
+    "corpus/tasks/t10/meta.json": "c023d6756a8770235a64868f03a52dbbdd1229fa9097c62003e7dbed4a4b01a6",
+    "corpus/tasks/t10/statement.md": "8319347212895f1aa0c5f7b89a93802cdfd48c8cafe0910aaf3bb87595c62f67",
+    "pilot-config.json": "7b57463c8af63026b2aa72048694c22b77b513a5c7454cd17c6d9bcc7f46a1fc",
+    "pricing-cache-writes.json": "9f0024d3f70194175cd0a92fa3e3a20092c25154a313e73d36d34252798bd0a4",
+    "pricing-sources.md": "a701b4817cfa2835b63be5b26b3df16af8243ee78af47c78837cbb467f820926",
+    "pricing.json": "09946890d9e4594a2e682d864ae55b4901162c4af75f4e4eaa57d6f612b67917",
+    "run_pilot.py": "e61d381a6236b69353be0fbf5f71201ae24192e1736f6fffe0f62413631dd5a5"
+  },
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "mode": "host-direct",
+  "order": [
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t02"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t09"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t01"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t06"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t10"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t04"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 2,
+      "task": "t03"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t08"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t07"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 1,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "A",
+      "provider": "claude",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "B",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "G",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "C",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "A",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t05"
+    },
+    {
+      "arm": "E",
+      "provider": "codex",
+      "rep": 3,
+      "task": "t05"
+    }
+  ],
+  "prompt_templates_sha256": {
+    "execute": "730283650a0c33d18c0b770f628c44a523256ae502ae1404388e46f33a2bba27",
+    "plan": "b798f7efd878f2d2633ebb089c17743090d14b29d694de4e22fd2b45e5329644",
+    "single": "361826749fb8485271d486da5db15fb3e741b7c30856427b2e4236eef94242cf",
+    "verify": "eb9232a8636220d8cdd260163e3bbc3cbd93e154813327aab371a0654fecf173"
+  },
+  "routes": {
+    "claude": {
+      "t01": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t02": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t03": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t04": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t05": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t06": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t07": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t08": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t09": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      },
+      "t10": {
+        "execute": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "claude-opus-5-5"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "claude-sonnet-5-5"
+        }
+      }
+    },
+    "codex": {
+      "t01": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t02": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t03": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t04": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t05": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t06": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t07": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t08": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t09": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      },
+      "t10": {
+        "execute": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        },
+        "plan": {
+          "effort": "high",
+          "model": "gpt-6.1-sol"
+        },
+        "verify": {
+          "effort": "medium",
+          "model": "gpt-5.6-terra"
+        }
+      }
+    }
+  },
+  "schema_version": 1
+}

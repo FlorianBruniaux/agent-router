@@ -3,6 +3,10 @@
 Status: draft for pre-registration. Nothing below has run. No figure in this
 document is a measured gain.
 
+A 10-task pilot ran on 2026-09-30 in host-direct mode, outside the pipeline
+this protocol describes. Its record, the procedure to rerun it and the
+campaign log are in the [bench playbook](playbook.md).
+
 This protocol asks one question: does Agent Router help ship better quality,
 faster, or cheaper, with AI FinOps as the main concern. It consumes the outcome
 data decided in [ADR 0019](../adr/0019-outcome-measurement.md) and extends the

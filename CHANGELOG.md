@@ -22,6 +22,10 @@ reasons); every change was verified locally on macOS.
 ### Added
 
 - `assets seal --kind contracts|availability --document FILE (--catalog FILE | --host-snapshot FILE) --json` prints a sealed contracts or availability document and its `content_hash`. It writes nothing, edits no manifest and approves nothing: the operator pins the hash independently in the asset-authority manifest. New codes: `assets.seal.input_required`, `assets.seal.document_invalid`.
+- `agent-router feedback summary`: one global total over every group of `feedback report` (same snapshot and classification), with the accepted rate and its Jeffreys interval, computed cost and cost per accepted change (null with a reason while any run is unpriced), time to acceptance p50 and p90, UNKNOWN counts and `attribution: not_established`. Human view by default, `--json` for the versioned result.
+- `agent-router schema <name>` and `schema --list`: hand-written JSON Schemas (draft 2020-12) embedded in the binary for `route-decision`, `feedback-report`, `feedback-summary`, `error` and `version`. No schema library was added.
+- `agent-router version --json`: crate version, target triple, enabled features and the `schema_version` values supported per output contract. `--version` is unchanged.
+- `agent-router completions <bash|zsh|fish>`: completion scripts generated with `clap_complete` 4.6.9 (clap project, `MIT OR Apache-2.0`, no dependency beyond `clap`), recorded in the license inventory produced by `scripts/package-core.py`.
 
 ## [0.0.1] - 2026-09-30
 

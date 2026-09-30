@@ -64,6 +64,7 @@ written in French.
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
+| [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Feedback](feedback.md) | Local consented feedback and offline policies |
 
 ## Diagnostics, distribution and security
@@ -90,6 +91,7 @@ written in French.
 | [Remaining acceptance](remaining-acceptance.md) (FR) | Open requirements and proof gates |
 | [Functional specification](specs/functional-specification.md) (FR) | Product requirements |
 | [Technical specification](specs/technical-specification.md) (FR) | Technical design |
+| [Comparison with similar projects](comparison.md) | Sourced comparison with other routers and coding-agent tools |
 | [Omnigent comparison](omnigent-comparison.md) (FR) | Comparison and derived roadmap items |
 | [Checkpoint 2026-09-27](checkpoints/2026-09-27-paused-work.md) | Paused work snapshot |
 

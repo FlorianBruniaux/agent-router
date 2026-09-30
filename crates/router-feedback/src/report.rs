@@ -180,6 +180,54 @@ pub struct FeedbackReport {
     pub content_hash: String,
 }
 
+/// Counts of what the summary could not establish. Each is a count of runs or
+/// records, never a value shown as zero for an unknown figure.
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
+pub struct UnknownCounts {
+    /// Runs with neither an accepting nor a rejecting signal.
+    pub verdict: u64,
+    /// Runs without a run key: no late fact can refer to them.
+    pub unlinked: u64,
+    /// Runs without a computed cost (no table, no complete usage or model not priced).
+    pub cost: u64,
+    /// Accepted runs whose time to acceptance cannot be computed.
+    pub time_to_acceptance: u64,
+    /// Runs without an integration fact.
+    pub integration: u64,
+    /// Facts whose run key matches no retained automated event.
+    pub orphan_facts: u64,
+    /// Automated events left out because a later event holds the same run key.
+    pub superseded_events: u64,
+}
+
+/// `feedback summary`: one global total over every group of the report, built
+/// from the same run classification, so the totals equal the sum of the groups.
+/// Percentiles and the rate are recomputed over the merged runs, never
+/// averaged from group figures. Like the report it shows associations, not a
+/// gain attributable to the router.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct FeedbackSummary {
+    pub schema_version: u32,
+    pub generated_at_unix_seconds: u64,
+    pub event_set_hash: String,
+    pub fact_set_hash: String,
+    /// `content_hash` of the report built from the same events and facts.
+    pub report_content_hash: String,
+    pub pricing: Option<PricingCitation>,
+    pub runs: u64,
+    pub accepted: u64,
+    pub rejected: u64,
+    pub unknown: u64,
+    pub human: HumanCounts,
+    pub accepted_rate: Option<AcceptedRate>,
+    pub cost: GroupCost,
+    pub time_to_acceptance_seconds: Percentiles,
+    pub unknown_counts: UnknownCounts,
+    pub attribution: &'static str,
+    pub attribution_note: &'static str,
+    pub content_hash: String,
+}
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 enum Verdict {
     Accepted,
@@ -274,13 +322,52 @@ struct Accumulator<'a> {
     cost_total: u128,
 }
 
-pub(crate) fn build_report(
+impl<'a> Accumulator<'a> {
+    /// Adds another group's runs: counters are summed and the raw values are
+    /// concatenated, so percentiles and rates come from the merged runs.
+    fn absorb(&mut self, other: &Accumulator<'a>) {
+        self.events.extend(other.events.iter().copied());
+        self.accepted += other.accepted;
+        self.rejected += other.rejected;
+        self.unknown += other.unknown;
+        self.unlinked += other.unlinked;
+        self.human.passed += other.human.passed;
+        self.human.failed += other.human.failed;
+        self.human.unknown += other.human.unknown;
+        self.integration.applied += other.integration.applied;
+        self.integration.discarded += other.integration.discarded;
+        self.integration.unknown += other.integration.unknown;
+        self.acceptance_seconds
+            .extend(other.acceptance_seconds.iter().copied());
+        self.priced += other.priced;
+        self.cost_unknown += other.cost_unknown;
+        self.cache_write_runs += other.cache_write_runs;
+        self.cost_total += other.cost_total;
+    }
+}
+
+fn accepted_rate(a: &Accumulator<'_>) -> Option<AcceptedRate> {
+    let decided = a.accepted + a.rejected;
+    let (lower, upper) = jeffreys_interval_micros(a.accepted, a.rejected);
+    (decided > 0).then(|| AcceptedRate {
+        accepted: a.accepted,
+        rejected: a.rejected,
+        point_micros: ratio_micros(a.accepted, decided).unwrap_or(0),
+        lower_micros: lower,
+        upper_micros: upper,
+        level_micros: 950_000,
+        prior: "jeffreys",
+    })
+}
+
+/// The report and the summary, from one pass over the same classified runs.
+fn build_report(
     events: &[FeedbackEvent],
     fact_events: &[FeedbackFactEvent],
     pricing: Option<&PricingTable>,
     learning_enabled: bool,
     now: u64,
-) -> Result<FeedbackReport> {
+) -> Result<(FeedbackReport, FeedbackSummary)> {
     if pricing.is_some_and(|p| !valid_pricing(p)) {
         return Err(FeedbackError::Invalid("pricing"));
     }
@@ -391,17 +478,61 @@ pub(crate) fn build_report(
         .iter()
         .filter(|f| !automated_keys.contains(f.fact.run_key_sha256.as_str()))
         .count() as u64;
+    let mut total = Accumulator::default();
+    for group in groups.values() {
+        total.absorb(group);
+    }
+    let event_set = event_set_hash(events)?;
+    let fact_set = hash(
+        "feedback-fact-set-v1",
+        &fact_events.iter().map(|f| &f.fact_hash).collect::<Vec<_>>(),
+    )?;
+    let mut summary = FeedbackSummary {
+        schema_version: 1,
+        generated_at_unix_seconds: now,
+        event_set_hash: event_set.clone(),
+        fact_set_hash: fact_set.clone(),
+        report_content_hash: String::new(),
+        pricing: pricing.map(|p| PricingCitation {
+            version: p.version.clone(),
+            source: p.source.clone(),
+            observed_at_unix_seconds: p.observed_at_unix_seconds,
+        }),
+        runs: total.events.len() as u64,
+        accepted: total.accepted,
+        rejected: total.rejected,
+        unknown: total.unknown,
+        human: total.human.clone(),
+        accepted_rate: accepted_rate(&total),
+        cost: group_cost(pricing, &total),
+        time_to_acceptance_seconds: percentiles(total.acceptance_seconds.iter().copied()),
+        unknown_counts: UnknownCounts {
+            verdict: total.unknown,
+            unlinked: total.unlinked,
+            cost: total.cost_unknown,
+            time_to_acceptance: total
+                .acceptance_seconds
+                .iter()
+                .filter(|s| s.is_none())
+                .count() as u64,
+            integration: total.integration.unknown,
+            orphan_facts,
+            superseded_events: superseded,
+        },
+        attribution: "not_established",
+        attribution_note: "descriptive associations only; a gain attributable to the router needs the paired A/B protocol",
+        content_hash: String::new(),
+    };
     let groups = groups
         .into_iter()
         .map(|((model, effort, task_kind), a)| {
-            let decided = a.accepted + a.rejected;
-            let (lower, upper) = jeffreys_interval_micros(a.accepted, a.rejected);
             let mut integration = a.integration.clone();
             integration.rate_micros = ratio_micros(
                 integration.applied,
                 integration.applied + integration.discarded,
             );
             let cost = group_cost(pricing, &a);
+            let rate = accepted_rate(&a);
             GroupReport {
                 model,
                 effort,
@@ -412,15 +543,7 @@ pub(crate) fn build_report(
                 unknown: a.unknown,
                 unlinked: a.unlinked,
                 human: a.human,
-                accepted_rate: (decided > 0).then(|| AcceptedRate {
-                    accepted: a.accepted,
-                    rejected: a.rejected,
-                    point_micros: ratio_micros(a.accepted, decided).unwrap_or(0),
-                    lower_micros: lower,
-                    upper_micros: upper,
-                    level_micros: 950_000,
-                    prior: "jeffreys",
-                }),
+                accepted_rate: rate,
                 integration,
                 tokens: percentiles(a.events.iter().map(|e| e.input.measurements.tokens)),
                 latency_ms: percentiles(a.events.iter().map(|e| e.input.measurements.latency_ms)),
@@ -437,11 +560,8 @@ pub(crate) fn build_report(
     let mut report = FeedbackReport {
         schema_version: 1,
         generated_at_unix_seconds: now,
-        event_set_hash: event_set_hash(events)?,
-        fact_set_hash: hash(
-            "feedback-fact-set-v1",
-            &fact_events.iter().map(|f| &f.fact_hash).collect::<Vec<_>>(),
-        )?,
+        event_set_hash: event_set,
+        fact_set_hash: fact_set,
         automated_events: automated,
         human_events: human,
         facts: fact_events.len() as u64,
@@ -474,7 +594,9 @@ pub(crate) fn build_report(
         content_hash: String::new(),
     };
     report.content_hash = hash("feedback-report-v1", &report)?;
-    Ok(report)
+    summary.report_content_hash = report.content_hash.clone();
+    summary.content_hash = hash("feedback-summary-v1", &summary)?;
+    Ok((report, summary))
 }
 
 fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost {
@@ -515,6 +637,23 @@ impl FeedbackStore {
     /// readers: it may expire retained rows and advance the clock watermark,
     /// and writes nothing else. The advisory part needs learning consent.
     pub fn report(&self, pricing: Option<&PricingTable>, now: u64) -> Result<FeedbackReport> {
+        self.report_and_summary(pricing, now)
+            .map(|(report, _)| report)
+    }
+
+    /// The global total of `report`, from the same read and the same
+    /// classification. Same consent and read effects as `report`.
+    pub fn summary(&self, pricing: Option<&PricingTable>, now: u64) -> Result<FeedbackSummary> {
+        self.report_and_summary(pricing, now)
+            .map(|(_, summary)| summary)
+    }
+
+    /// Both views from one snapshot, so a test can compare them exactly.
+    pub fn report_and_summary(
+        &self,
+        pricing: Option<&PricingTable>,
+        now: u64,
+    ) -> Result<(FeedbackReport, FeedbackSummary)> {
         timestamp(now)?;
         let mut db = self.lock()?;
         let tx = db.transaction()?;

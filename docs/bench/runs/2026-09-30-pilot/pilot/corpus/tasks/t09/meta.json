@@ -1,0 +1,7 @@
+{
+  "id": "t09",
+  "kind": "implement",
+  "risk": "medium",
+  "module": "semver",
+  "target": "pilot_lib/semver.py"
+}

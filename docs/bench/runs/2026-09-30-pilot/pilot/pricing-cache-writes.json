@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "note": "Claude cache write prices per million tokens, microusd. The product PricingTable has no cache write price; the driver computes a list-price cost with these, next to the product-compatible cost that prices cache writes as input.",
+  "source": "https://platform.claude.com/docs/en/about-claude/pricing, consulted 2026-09-30",
+  "models": {
+    "claude-fable-5-1": {
+      "write_5m": 12500000,
+      "write_1h": 20000000
+    },
+    "claude-opus-5-5": {
+      "write_5m": 5000000,
+      "write_1h": 8000000
+    },
+    "claude-sonnet-5-5": {
+      "write_5m": 2500000,
+      "write_1h": 4000000
+    },
+    "claude-haiku-4-5": {
+      "write_5m": 1250000,
+      "write_1h": 2000000
+    },
+    "claude-haiku-4-5-20251001": {
+      "write_5m": 1250000,
+      "write_1h": 2000000
+    }
+  },
+  "openai_note": "OpenAI short context cache writes, read 2026-09-30 on https://developers.openai.com/api/docs/pricing: gpt-6.1-sol $2.50/MTok, gpt-5.6-terra $2.50/MTok. Not applied: the Codex turn.completed usage read by the pilot declares no cache write count, so these writes are UNKNOWN in the pilot."
+}

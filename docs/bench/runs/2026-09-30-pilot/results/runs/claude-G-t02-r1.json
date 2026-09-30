@@ -1,0 +1,146 @@
+{
+  "acceptance": {
+    "elapsed_ms": 67,
+    "exit_code": 0,
+    "passed": true,
+    "touched": [
+      "pilot_lib/text.py"
+    ],
+    "touched_outside_scope": []
+  },
+  "accepted": true,
+  "agent_verdict": "PASS",
+  "arm": "G",
+  "cost_list_microusd": 1475819,
+  "cost_product_microusd": 824795,
+  "host_cost_usd": 1.4758174000000002,
+  "inter_phase_gaps_ms": [
+    0,
+    0
+  ],
+  "invalid": [],
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "phases": [
+    {
+      "announced_models": [
+        "claude-opus-5-5"
+      ],
+      "cost": {
+        "list_microusd": 494781,
+        "product_microusd": 276309,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 26313,
+      "ended_at_unix": 1790776972.9658098,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "dccbea57023940934c1005c682cce2fc84ddd5319b905ebe51f80a40fecfa5aa",
+      "host_cost_usd": 0.49478020000000006,
+      "model": "claude-opus-5-5",
+      "model_check": "match",
+      "phase": "plan",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790776946.6514702,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 54618,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 54618,
+        "cached_input_tokens": 145361,
+        "input_tokens": 199985,
+        "output_tokens": 1437,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 354
+      },
+      "usage_events": 1,
+      "write": false
+    },
+    {
+      "announced_models": [
+        "claude-opus-5-5"
+      ],
+      "cost": {
+        "list_microusd": 504872,
+        "product_microusd": 286480,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 24465,
+      "ended_at_unix": 1790776997.432533,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "21747377b6471bf8316112afb1e15951cfc3f4e615d94e59cac899b113b52482",
+      "host_cost_usd": 0.5048714000000001,
+      "model": "claude-opus-5-5",
+      "model_check": "match",
+      "phase": "execute",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790776972.9661078,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 54598,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 54598,
+        "cached_input_tokens": 217977,
+        "input_tokens": 272583,
+        "output_tokens": 1223,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 59
+      },
+      "usage_events": 1,
+      "write": true
+    },
+    {
+      "announced_models": [
+        "claude-opus-5-5"
+      ],
+      "cost": {
+        "list_microusd": 476166,
+        "product_microusd": 262006,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 26437,
+      "ended_at_unix": 1790777023.872457,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "6d69e3c040ad1959cf4ca624cbc5d7bd9c34963557c708368124fcb8b57ebae2",
+      "host_cost_usd": 0.47616580000000003,
+      "model": "claude-opus-5-5",
+      "model_check": "match",
+      "phase": "verify",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790776997.432863,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 53540,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 53540,
+        "cached_input_tokens": 148309,
+        "input_tokens": 201855,
+        "output_tokens": 908,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 173
+      },
+      "usage_events": 1,
+      "write": false
+    }
+  ],
+  "provider": "claude",
+  "rep": 1,
+  "run_id": "claude-G-t02-r1",
+  "started_at_unix": 1790776946.650982,
+  "task": "t02",
+  "time_to_acceptance_ms": 77292,
+  "tokens": {
+    "cache_write_input_tokens": 162756,
+    "cached_input_tokens": 511647,
+    "input_tokens": 674423,
+    "output_tokens": 3568,
+    "reasoning_output_tokens": null
+  }
+}

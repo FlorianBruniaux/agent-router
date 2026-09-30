@@ -1,0 +1,1 @@
+Implement `pilot_lib.intervals.merge_intervals(intervals)`: take a list of `(start, end)` tuples with start <= end, in any order, and return a new sorted list of tuples where overlapping or touching intervals (end == next start) are merged. Do not modify the input list.

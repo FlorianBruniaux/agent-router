@@ -1,0 +1,1 @@
+Implement `pilot_lib.text.word_wrap(text, width)`: split on whitespace, greedily fill lines of at most `width` characters with words separated by single spaces, put a word longer than `width` alone on its own line without cutting it, return the list of lines (an empty list for blank text), and raise ValueError when width < 1. Leave `slugify` untouched.

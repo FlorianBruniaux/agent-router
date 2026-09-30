@@ -166,6 +166,7 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 | **Décisions sémantiques optionnelles** | Comparer des propositions en mode shadow, puis relire des preuves signées, activer explicitement et révoquer avant l'envoi. | `backend`, `backend-activation`, [liaison à l'exécution](docs/backend-execution.md) |
 | **Sidecar de classement local** | Comparer des propositions de classement bornées et envoyer explicitement les résultats ou le feedback choisis, dans le cadre du consentement en cours. | `sidecar`, [protocole et consentement](docs/standard-sidecar.md) |
 | **Diagnostic et audit** | Inspecter la configuration et le stockage runtime actif sans déclencher de reprise ; laisser inconnue l'autorité sur les processus et le nettoyage, et exporter une trace d'audit expurgée. | `doctor`, `audit`, [diagnostic](docs/doctor.md) |
+| **Appelants programmatiques** | Afficher le JSON Schema d'un contrat de sortie, indiquer en JSON la version du binaire et des contrats pris en charge, résumer les retours en un total global, et générer les complétions shell. | `schema`, `version --json`, `feedback summary`, `completions`, [sortie de la CLI](docs/cli-output.md#commands-for-programmatic-callers) |
 | **Distributions séparées** | Exporter des workspaces source ou construire un binaire natif local, avec licences, inventaires et contrôles de reproductibilité vérifiés. | [Distribution](docs/distribution.md) |
 | **Contrôle des dépendances** | Vérifier les preuves de licence des sources et auditer en CI le lockfile commité contre une base RustSec à jour. | [Preuves de licence](docs/distribution.md#continuous-integration-license-evidence-gate), [audit de sécurité](docs/dependency-audit.md) |
 | **API locale limitée au routage** | Servir les décisions de routage sur un socket Unix privé, avec un token ; aucun endpoint d'exécution, de feedback ou d'activation. Feature de build à activer en opt-in. | `serve` (`--features local-api`), [API locale](docs/local-api.md) |
@@ -406,7 +407,7 @@ L'[index complet de la documentation](docs/README.fr.md) classe tous les guides 
 | [Coordonner un workflow](docs/coordinator.md) | [Contrats JSON](docs/reference/json-contracts.md) |
 | [Générer des plans bornés](docs/plan-generation.md) | [Bibliothèque d'escalade durable](docs/escalation.md) |
 | [Chercher dans les catalogues](docs/retrieval.md) | [Architecture du routage](docs/adr/0002-bounded-routing-pipeline.md) |
-| [Valider des catalogues signés](docs/signed-catalogs.md) | [Comparaison avec Omnigent et roadmap](docs/omnigent-comparison.md) |
+| [Valider des catalogues signés](docs/signed-catalogs.md) | [Comparaison avec des projets similaires](docs/comparison.md) (EN), [Comparaison avec Omnigent et roadmap](docs/omnigent-comparison.md) |
 | [Évaluer les décisions](docs/evaluation.md) | [Feedback privé et politique hors ligne](docs/feedback.md) |
 | [Exécuter des décisions de backend signées](docs/backend-execution.md) | [Activation et rollback](docs/backend-store.md) |
 | [Consulter le diagnostic](docs/doctor.md) | [Mesures de performance](docs/performance.md) |
@@ -440,6 +441,38 @@ Utilisez les [issues GitHub](https://github.com/FlorianBruniaux/agent-router/iss
 pour les bugs et les demandes de fonctionnalités. Indiquez la commande, la version, la plateforme et une
 reproduction expurgée. Ne mettez ni identifiants, ni prompts, ni données de politique privées
 dans vos rapports.
+
+---
+
+## Comparaison avec des projets similaires
+
+Plusieurs outils routent le choix du modèle pour des agents de code ou des
+appels LLM. La plupart des proxies et des routeurs hébergés décident à chaque
+requête, pendant l'appel ; Agent Router décide par phase, avant l'exécution,
+sous contraintes strictes, et laisse un reçu rejouable. Le tableau compare des
+propriétés de conception documentées, lues le 2026-09-30, pas une qualité ou
+un coût mesurés.
+
+| Projet | Unité de routage | Mode de choix | Où il tourne | Effort de raisonnement | Trace de la décision | Licence |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Agent Router** | Chaque phase (plan, exécution, vérification), avant l'exécution | Filtre de contraintes, puis score déterministe | CLI locale, hors ligne | Par phase | Reçu rejouable avec les exclusions | FSL-1.1-ALv2 |
+| [claude-code-router](https://github.com/musistudio/claude-code-router) | Chaque requête | Règles utilisateur, scripts de route, fallbacks | Passerelle locale | Non documenté | Journaux de requêtes | MIT |
+| [Omnigent Smart Routing](https://omnigent.ai/docs/build/routing) | Session, dès le premier message | Juge LLM ou routeur externe | Serveur local | Non documenté | Raison en cas d'échec | Apache-2.0 |
+| [OpenRouter Auto Router](https://openrouter.ai/docs/guides/routing/routers/auto-router) | Chaque tour | Classifieur de tâche, classement par dépense de la communauté | Hébergé | Indisponible sur `openrouter/auto` | Modèle choisi, type de tâche sur option | Service hébergé |
+| [LiteLLM Auto Routing](https://docs.litellm.ai/docs/proxy/auto_routing) | Chaque requête | Niveaux de complexité (heuristique, classifieur, mots-clés) | Proxy auto-hébergé | Réglé par entrée de modèle (`reasoning_effort`, `thinking`) | Cause de la décision dans les logs | MIT, sauf `enterprise/` |
+| [vLLM Semantic Router](https://github.com/vllm-project/semantic-router) | Chaque requête | Signaux et décisions par règles priorisées | Auto-hébergé, Envoy | Valeur par défaut au niveau fournisseur | En-tête du modèle choisi | Apache-2.0 |
+| [Aider, mode architect](https://aider.chat/docs/usage/modes.html) | Chaque requête, deux rôles fixes | Configuration utilisateur | CLI locale | Pas de distinction par rôle dans la doc | Configuration | Apache-2.0 |
+| [Subagents Claude Code](https://code.claude.com/docs/en/sub-agents) / [profils Codex](https://learn.chatgpt.com/docs/config-file/config-advanced) | Par subagent ou profil | Configuration utilisateur | Dans le host | Par subagent ou profil | Configuration | Conditions commerciales Anthropic / Apache-2.0 |
+
+Les autres sont plus forts sur la maturité et l'adoption, sur le reroutage de
+chaque requête d'une session en cours, sur l'étendue des fournisseurs et le
+basculement, sur le routage appris à partir de données, et sur des licences
+permissives. Agent Router n'est pas encore publié (la publication attend une
+revue de licence et de sécurité), n'a pas d'exécution native sous Windows et
+n'a pas encore de gain mesuré. La
+[comparaison complète](docs/comparison.md) (en anglais) ajoute Plano, RouteLLM
+et Not Diamond, cite une source pour chaque cellule, et indique quand choisir
+autre chose et les limites d'une revue fondée sur la seule documentation.
 
 ---
 

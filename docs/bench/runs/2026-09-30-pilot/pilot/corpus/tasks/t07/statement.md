@@ -1,0 +1,1 @@
+`pilot_lib.tables.csv_sum(path, column)` crashes on the header row and on empty cells. It must skip the header, treat empty or whitespace-only cells as missing (not zero, just skipped), raise KeyError if the column does not exist, and return a float.

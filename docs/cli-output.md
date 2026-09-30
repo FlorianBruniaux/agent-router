@@ -64,6 +64,39 @@ review and approval. See [durable escalation and CLI boundaries](escalation.md).
 The run view distinguishes `decision_origin`, `escalation_decision` and the
 unchanged `baseline_receipt_id`; changing the output format adds no authority.
 
+## Commands for programmatic callers
+
+Three commands help a script or an agent use the CLI without reading the source:
+`schema`, `version --json` and `completions`. None of them reads a store, a
+file, the network or the environment. A fourth, `feedback summary`, gives one
+global total of the feedback report and is documented with
+[feedback](feedback.md#feedback-summary).
+
+`schema <name>` prints the JSON Schema (draft 2020-12) of an output contract,
+and `schema --list` prints `{"schema_version":1,"schemas":[...]}` with each
+contract's name, the command that prints it and the `schema_version` values
+supported for it. The contracts are `route-decision` (`route --json`),
+`feedback-report`, `feedback-summary`, `error` (the `--json` error line on
+stderr) and `version`. The output is the embedded document, byte-identical for a
+given binary. An unknown name fails with `schema.unknown` (exit `2`).
+
+The schemas are written by hand and embedded in the binary; no schema library is
+a dependency. They reject unknown keys in the output, so a field added without a
+schema change fails the tests that validate real outputs against them. They
+describe the shape of an output, not its meaning: read the linked guides for
+that. The decision envelope carries `schema_version` as the string `"1"`; every
+other output carries the number `1`.
+
+`version --json` prints the crate version, the target triple the binary was
+compiled for, the enabled Cargo features and, for each contract above, the
+`schema_version` values it supports. `agent-router --version` and `-V` are
+unchanged. Without `--json` the same result is shown in the labeled human view.
+
+`completions <bash|zsh|fish>` prints a completion script to stdout. It is
+generated from the command definitions, so it registers every top-level
+subcommand of `--help` and carries their flags. It writes nothing to disk: redirect it yourself, for example
+`agent-router completions zsh > "${fpath[1]}/_agent-router"`.
+
 ## Exit codes and error codes
 
 A failed command writes `error: <code>` as the first line on stderr (the only
