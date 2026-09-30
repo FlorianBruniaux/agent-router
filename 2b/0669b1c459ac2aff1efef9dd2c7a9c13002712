@@ -1,0 +1,107 @@
+CHANGELOG.md
+  s_6e23ba2e4cbafd::t_a615097649e342 17-22
+Cargo.lock
+  s_00c6bf8ee605be::t_7d169d0ece35bb 75,299-307
+Cargo.toml
+  s_00c6bf8ee605be::t_3c208e53c47cae 47
+README.fr.md
+  s_00c6bf8ee605be::t_1c4a347a170c5c 169
+README.md
+  s_00c6bf8ee605be::t_ae82dd7a044a82 168
+crates/agent-router-cli/Cargo.toml
+  s_00c6bf8ee605be::t_df2b8f145c520e 43
+crates/agent-router-cli/build.rs
+  s_00c6bf8ee605be::t_a2bd63c213e6fa 1-7
+crates/agent-router-cli/src/command.rs
+  s_00c6bf8ee605be::t_383b55324df7cf 64-87,741-746,1018-1019
+crates/agent-router-cli/src/completions.rs
+  s_9e15cec8cf2013::t_c23244b45512d7 1-38
+crates/agent-router-cli/src/contracts.rs
+  s_071600ca59dc7a::t_2e64969d97bde4 1-59
+crates/agent-router-cli/src/feedback.rs
+  s_00c6bf8ee605be::t_b3c5eaf5b497a4 10-14,38-40,116,122-128
+crates/agent-router-cli/src/main.rs
+  s_9e15cec8cf2013::t_8eae9420baf13a 10-11,28,34,309-311
+crates/agent-router-cli/src/schema.rs
+  s_00c6bf8ee605be::t_15515f0e3f3ab5 1-50
+crates/agent-router-cli/src/schemas/error.schema.json
+  s_00c6bf8ee605be::t_ec2666c251aea1 1-21
+crates/agent-router-cli/src/schemas/feedback-report.schema.json
+  s_00c6bf8ee605be::t_401bb6bda935ab 1-406
+crates/agent-router-cli/src/schemas/feedback-summary.schema.json
+  s_00c6bf8ee605be::t_0b414ce9a7fad8 1-296
+crates/agent-router-cli/src/schemas/route-decision.schema.json
+  s_00c6bf8ee605be::t_d839d8c9a36843 1-214
+crates/agent-router-cli/src/schemas/version.schema.json
+  s_00c6bf8ee605be::t_520e948ab3327f 1-65
+crates/agent-router-cli/src/version_info.rs
+  s_00c6bf8ee605be::t_06fef461969f5b 1-86
+crates/agent-router-cli/tests/completions.rs
+  s_2b47aafd5c6e51::t_823c0d26bdeaaa 1-117
+crates/agent-router-cli/tests/feedback_summary.rs
+  s_00c6bf8ee605be::t_7ee9045f800b3a 1-166
+crates/agent-router-cli/tests/schema.rs
+  s_00c6bf8ee605be::t_16ab8b61e891cb 1-514
+crates/agent-router-cli/tests/support/json_schema.rs
+  s_00c6bf8ee605be::t_a7a9e27e392071 1-241
+crates/agent-router-cli/tests/version_info.rs
+  s_00c6bf8ee605be::t_6760852f2372d7 1-73
+crates/router-feedback/src/report.rs
+  s_6e23ba2e4cbafd::t_daaea591c89ad6 183-230,325-364,370,481-525,535,546,563-564,597-599,640-656
+crates/router-feedback/tests/report.rs
+  s_00c6bf8ee605be::t_c32510f059bae7 682-853
+docs/cli-output.md
+  s_2b47aafd5c6e51::t_fe4d545e63b463 67-99
+docs/feedback.md
+  s_00c6bf8ee605be::t_f7220ba4ebb9ce 420-459
+docs/reference/json-contracts.md
+  s_00c6bf8ee605be::t_d9d9d4019e2e96 37,41-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2b0669b1c459ac2aff1efef9dd2c7a9c13002712",
+  "prompts": {},
+  "sessions": {
+    "s_00c6bf8ee605be": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bbe7a0d7-93bd-4226-95f9-5fe27cbb6b19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_071600ca59dc7a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bee15dbd-6fe2-418b-9cbe-01a23613af29",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_2b47aafd5c6e51": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb9f2c9e-2738-40ce-9df9-3c0a8467bbe6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_6e23ba2e4cbafd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e22a4c1b-9492-41fe-a273-e2a1a5693406",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e15cec8cf2013": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee55b5e6-c13f-4366-8ef6-02c6713eec4b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
