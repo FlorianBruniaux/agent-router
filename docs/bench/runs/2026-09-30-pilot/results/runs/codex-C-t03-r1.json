@@ -1,0 +1,131 @@
+{
+  "acceptance": {
+    "elapsed_ms": 168,
+    "exit_code": 0,
+    "passed": true,
+    "touched": [
+      "pilot_lib/durations.py"
+    ],
+    "touched_outside_scope": []
+  },
+  "accepted": true,
+  "agent_verdict": "PASS",
+  "arm": "C",
+  "cost_list_microusd": 313477,
+  "cost_product_microusd": 313477,
+  "host_cost_usd": null,
+  "inter_phase_gaps_ms": [
+    0,
+    0
+  ],
+  "invalid": [],
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "phases": [
+    {
+      "announced_models": [],
+      "cost": {
+        "list_microusd": 75932,
+        "product_microusd": 75932,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 36600,
+      "ended_at_unix": 1790783570.475646,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "49f31383ad464363575e61cc790a7643fd3a5475f8d358908c200125c8447224",
+      "host_cost_usd": null,
+      "model": "gpt-5.6-terra",
+      "model_check": "unknown",
+      "phase": "plan",
+      "provider": "codex",
+      "sessions": 1,
+      "started_at_unix": 1790783533.874027,
+      "timed_out": false,
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 82176,
+        "input_tokens": 106854,
+        "output_tokens": 845,
+        "reasoning_output_tokens": 189
+      },
+      "usage_events": 1,
+      "write": false
+    },
+    {
+      "announced_models": [],
+      "cost": {
+        "list_microusd": 149507,
+        "product_microusd": 149507,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 77973,
+      "ended_at_unix": 1790783648.4511921,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "e9ac40dcabe9c36a81bb38eb2ef316335252484133a3100fa684d2b717a9d539",
+      "host_cost_usd": null,
+      "model": "gpt-5.6-terra",
+      "model_check": "unknown",
+      "phase": "execute",
+      "provider": "codex",
+      "sessions": 1,
+      "started_at_unix": 1790783570.476332,
+      "timed_out": false,
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 274432,
+        "input_tokens": 306556,
+        "output_tokens": 2531,
+        "reasoning_output_tokens": 785
+      },
+      "usage_events": 1,
+      "write": true
+    },
+    {
+      "announced_models": [],
+      "cost": {
+        "list_microusd": 88038,
+        "product_microusd": 88038,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 33719,
+      "ended_at_unix": 1790783682.172571,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "16f6443603967a43f152be86fd5d6fbe6543e5908ba8f8819635e713f784da03",
+      "host_cost_usd": null,
+      "model": "gpt-5.6-terra",
+      "model_check": "unknown",
+      "phase": "verify",
+      "provider": "codex",
+      "sessions": 1,
+      "started_at_unix": 1790783648.451751,
+      "timed_out": false,
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 77056,
+        "input_tokens": 108881,
+        "output_tokens": 748,
+        "reasoning_output_tokens": 312
+      },
+      "usage_events": 1,
+      "write": false
+    }
+  ],
+  "provider": "codex",
+  "rep": 1,
+  "run_id": "codex-C-t03-r1",
+  "started_at_unix": 1790783533.870943,
+  "task": "t03",
+  "time_to_acceptance_ms": 148508,
+  "tokens": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 433664,
+    "input_tokens": 522291,
+    "output_tokens": 4124,
+    "reasoning_output_tokens": 1286
+  }
+}

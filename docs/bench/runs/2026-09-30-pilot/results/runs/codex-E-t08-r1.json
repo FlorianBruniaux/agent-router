@@ -1,0 +1,66 @@
+{
+  "acceptance": {
+    "elapsed_ms": 131,
+    "exit_code": 0,
+    "passed": true,
+    "touched": [
+      "pilot_lib/retry.py"
+    ],
+    "touched_outside_scope": []
+  },
+  "accepted": true,
+  "agent_verdict": "PASS",
+  "arm": "E",
+  "cost_list_microusd": 106263,
+  "cost_product_microusd": 106263,
+  "host_cost_usd": null,
+  "inter_phase_gaps_ms": [],
+  "invalid": [],
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "phases": [
+    {
+      "announced_models": [],
+      "cost": {
+        "list_microusd": 106263,
+        "product_microusd": 106263,
+        "reason": null
+      },
+      "effort": "high",
+      "elapsed_ms": 117530,
+      "ended_at_unix": 1790790643.019957,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "44c3adc3ac34014abba1909378766aea300048a4071d152c0d982f284a1fbdaf",
+      "host_cost_usd": null,
+      "model": "gpt-6.1-sol",
+      "model_check": "unknown",
+      "phase": "single",
+      "provider": "codex",
+      "sessions": 1,
+      "started_at_unix": 1790790525.48755,
+      "timed_out": false,
+      "usage": {
+        "cache_write_input_tokens": 0,
+        "cached_input_tokens": 162944,
+        "input_tokens": 199058,
+        "output_tokens": 1774,
+        "reasoning_output_tokens": 134
+      },
+      "usage_events": 1,
+      "write": true
+    }
+  ],
+  "provider": "codex",
+  "rep": 1,
+  "run_id": "codex-E-t08-r1",
+  "started_at_unix": 1790790525.48721,
+  "task": "t08",
+  "time_to_acceptance_ms": 117669,
+  "tokens": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 162944,
+    "input_tokens": 199058,
+    "output_tokens": 1774,
+    "reasoning_output_tokens": 134
+  }
+}

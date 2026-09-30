@@ -1,0 +1,734 @@
+{
+  "fixed_overhead": {
+    "host_config": "user-config",
+    "per_arm_estimate": {
+      "claude:A": {
+        "arm_list_cost_usd": 10.271026,
+        "estimated_overhead_usd": 10.57184,
+        "estimated_share": 1.0293
+      },
+      "claude:B": {
+        "arm_list_cost_usd": 15.261344,
+        "estimated_overhead_usd": 16.06668,
+        "estimated_share": 1.0528
+      },
+      "claude:C": {
+        "arm_list_cost_usd": 7.696024,
+        "estimated_overhead_usd": 7.82442,
+        "estimated_share": 1.0167
+      },
+      "claude:E": {
+        "arm_list_cost_usd": 5.406817,
+        "estimated_overhead_usd": 5.35556,
+        "estimated_share": 0.9905
+      },
+      "claude:G": {
+        "arm_list_cost_usd": 15.036753,
+        "estimated_overhead_usd": 16.06668,
+        "estimated_share": 1.0685
+      },
+      "codex:A": {
+        "arm_list_cost_usd": 3.049168,
+        "estimated_overhead_usd": 1.79233,
+        "estimated_share": 0.5878
+      },
+      "codex:B": {
+        "arm_list_cost_usd": 2.807491,
+        "estimated_overhead_usd": 1.52583,
+        "estimated_share": 0.5435
+      },
+      "codex:C": {
+        "arm_list_cost_usd": 3.070362,
+        "estimated_overhead_usd": 1.92558,
+        "estimated_share": 0.6272
+      },
+      "codex:E": {
+        "arm_list_cost_usd": 1.115098,
+        "estimated_overhead_usd": 0.50861,
+        "estimated_share": 0.4561
+      },
+      "codex:G": {
+        "arm_list_cost_usd": 2.617799,
+        "estimated_overhead_usd": 1.52583,
+        "estimated_share": 0.5829
+      }
+    },
+    "probes": {
+      "claude:claude-opus-5-5:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": 0.0669934,
+        "list_microusd": 66994,
+        "product_microusd": 34782,
+        "usage": {
+          "cache_write_1h_tokens": 8053,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 8053,
+          "cached_input_tokens": 12407,
+          "input_tokens": 20462,
+          "output_tokens": 4,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "claude:claude-opus-5-5:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": 0.5355559999999999,
+        "list_microusd": 535556,
+        "product_microusd": 270252,
+        "usage": {
+          "cache_write_1h_tokens": 66326,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 66326,
+          "cached_input_tokens": 0,
+          "input_tokens": 66328,
+          "output_tokens": 247,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 93
+        }
+      },
+      "claude:claude-sonnet-5-5:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": 0.034821399999999995,
+        "list_microusd": 34822,
+        "product_microusd": 18674,
+        "usage": {
+          "cache_write_1h_tokens": 8074,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 8074,
+          "cached_input_tokens": 12407,
+          "input_tokens": 20483,
+          "output_tokens": 4,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "claude:claude-sonnet-5-5:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": 0.260814,
+        "list_microusd": 260814,
+        "product_microusd": 130484,
+        "usage": {
+          "cache_write_1h_tokens": 65165,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 65165,
+          "cached_input_tokens": 0,
+          "input_tokens": 65167,
+          "output_tokens": 15,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "codex:gpt-5.6-terra:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 41462,
+        "product_microusd": 41462,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 25088,
+          "input_tokens": 41948,
+          "output_tokens": 227,
+          "reasoning_output_tokens": 23
+        }
+      },
+      "codex:gpt-5.6-terra:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 64186,
+        "product_microusd": 64186,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 37376,
+          "input_tokens": 64579,
+          "output_tokens": 192,
+          "reasoning_output_tokens": 46
+        }
+      },
+      "codex:gpt-6.1-sol:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 42520,
+        "product_microusd": 42520,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 0,
+          "input_tokens": 21235,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      },
+      "codex:gpt-6.1-sol:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 50861,
+        "product_microusd": 50861,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 7168,
+          "input_tokens": 32215,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    }
+  },
+  "host_config": "user-config",
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "mode": "host-direct",
+  "note": "10 tasks give a direction and variance estimates to fix N; no adoption claim follows from this pilot. Only repetition(s) <= 1 of the sealed order were run: variance between repetitions is not measured, and the sizing inputs mix task variance with run-to-run noise.",
+  "per_arm": {
+    "claude": {
+      "A": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 10.271026,
+        "cost_per_accepted_list_usd": 1.027103,
+        "cost_per_accepted_product_usd": 0.580778,
+        "cost_product_usd_total": 5.807784,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 10.271014,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 83.931,
+          "p90": 120.119
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 1671468,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4258389,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 5930031,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 34792,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 10
+          }
+        },
+        "valid": 10
+      },
+      "B": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 15.261344,
+        "cost_per_accepted_list_usd": 1.526134,
+        "cost_per_accepted_product_usd": 0.857435,
+        "cost_product_usd_total": 8.574348,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 15.26133,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 90.279,
+          "p90": 106.959
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 1671749,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 5072672,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 6744617,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 43601,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 10
+          }
+        },
+        "valid": 10
+      },
+      "C": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 7.696024,
+        "cost_per_accepted_list_usd": 0.769602,
+        "cost_per_accepted_product_usd": 0.441387,
+        "cost_product_usd_total": 4.41387,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 7.696013,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 67.396,
+          "p90": 128.364
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 1641077,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4054544,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 5695789,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 32046,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 10
+          }
+        },
+        "valid": 10
+      },
+      "E": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 5.406817,
+        "cost_per_accepted_list_usd": 0.540682,
+        "cost_per_accepted_product_usd": 0.310322,
+        "cost_product_usd_total": 3.103217,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 5.406815,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 36.019,
+          "p90": 73.624
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 575900,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 2246034,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 2822016,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 17504,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 10
+          }
+        },
+        "valid": 10
+      },
+      "G": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 15.036753,
+        "cost_per_accepted_list_usd": 1.503675,
+        "cost_per_accepted_product_usd": 0.83612,
+        "cost_product_usd_total": 8.361197,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 15.03674,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 94.187,
+          "p90": 206.823
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 1668889,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4724121,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 6393196,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 37003,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 10
+          }
+        },
+        "valid": 10
+      }
+    },
+    "codex": {
+      "A": {
+        "accepted": 7,
+        "accepted_rate": 0.7,
+        "agent_pass_but_rejected": 3,
+        "cost_list_usd_total": 3.049168,
+        "cost_per_accepted_list_usd": 0.435595,
+        "cost_per_accepted_product_usd": 0.435595,
+        "cost_product_usd_total": 3.049168,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 30,
+        "rejected": 3,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 146.537,
+          "p90": 154.262
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4538880,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 5449053,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 35504,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 9258,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 10
+      },
+      "B": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 2.807491,
+        "cost_per_accepted_list_usd": 0.280749,
+        "cost_per_accepted_product_usd": 0.280749,
+        "cost_product_usd_total": 2.807491,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 30,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 256.778,
+          "p90": 346.856
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4429696,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 5443356,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 33719,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 3960,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 10
+      },
+      "C": {
+        "accepted": 6,
+        "accepted_rate": 0.6,
+        "agent_pass_but_rejected": 4,
+        "cost_list_usd_total": 3.070362,
+        "cost_per_accepted_list_usd": 0.511727,
+        "cost_per_accepted_product_usd": 0.511727,
+        "cost_product_usd_total": 3.070362,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 30,
+        "rejected": 4,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 148.508,
+          "p90": 158.429
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 4618240,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 5469411,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 37030,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 10618,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 10
+      },
+      "E": {
+        "accepted": 10,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 1.115098,
+        "cost_per_accepted_list_usd": 0.11151,
+        "cost_per_accepted_product_usd": 0.11151,
+        "cost_product_usd_total": 1.115098,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 10,
+        "rejected": 0,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 128.53,
+          "p90": 185.611
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 2103936,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 2462501,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 18757,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 2658,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 10
+      },
+      "G": {
+        "accepted": 9,
+        "accepted_rate": 0.9,
+        "agent_pass_but_rejected": 1,
+        "cost_list_usd_total": 2.617799,
+        "cost_per_accepted_list_usd": 0.290867,
+        "cost_per_accepted_product_usd": 0.290867,
+        "cost_product_usd_total": 2.617799,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 30,
+        "rejected": 1,
+        "runs": 10,
+        "time_to_acceptance_s": {
+          "p50": 201.361,
+          "p90": 230.583
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 3337856,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 4360162,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 23939,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 1396,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 10
+      }
+    }
+  },
+  "pricing_version": "pilot-2026-09-30-b",
+  "repetition_filter": {
+    "journal": [
+      {
+        "already_done": 10,
+        "at_unix": 1790780178,
+        "budget_cap_usd": {
+          "claude": 65.0,
+          "codex": 18.0
+        },
+        "command": "run",
+        "extension": "run_r1.py",
+        "extension_sha256": "1de49adf05c01d0008aaeec8e0b89a69a232d238a07d6c3b14ea62985aa88c87",
+        "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+        "planned_runs": 100,
+        "providers": [
+          "claude",
+          "codex"
+        ],
+        "repetitions": 1,
+        "sealed_order_runs": 300
+      }
+    ],
+    "repetitions": 1
+  },
+  "schema_version": 1,
+  "sizing": {
+    "claude:A-vs-B": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.0225,
+      "n_cost_ratio_0_8_alpha_1_25": 1,
+      "n_cost_ratio_0_8_alpha_5": 1,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "claude:A-vs-C": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.0188,
+      "n_cost_ratio_0_8_alpha_1_25": 1,
+      "n_cost_ratio_0_8_alpha_5": 1,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "claude:B-vs-E": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.0447,
+      "n_cost_ratio_0_8_alpha_1_25": 1,
+      "n_cost_ratio_0_8_alpha_5": 1,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "claude:B-vs-G": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.0188,
+      "n_cost_ratio_0_8_alpha_1_25": 1,
+      "n_cost_ratio_0_8_alpha_5": 1,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "claude:G-vs-C": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.013,
+      "n_cost_ratio_0_8_alpha_1_25": 1,
+      "n_cost_ratio_0_8_alpha_5": 1,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "codex:A-vs-B": {
+      "discordance": 0.3,
+      "log_cost_ratio_sd_per_task": 0.1473,
+      "n_cost_ratio_0_8_alpha_1_25": 5,
+      "n_cost_ratio_0_8_alpha_5": 3,
+      "n_success_10pt_alpha_1_25": 286,
+      "n_success_10pt_alpha_5": 186,
+      "pairs": 10
+    },
+    "codex:A-vs-C": {
+      "discordance": 0.5,
+      "log_cost_ratio_sd_per_task": 0.2001,
+      "n_cost_ratio_0_8_alpha_1_25": 8,
+      "n_cost_ratio_0_8_alpha_5": 5,
+      "n_success_10pt_alpha_1_25": 476,
+      "n_success_10pt_alpha_5": 310,
+      "pairs": 10
+    },
+    "codex:B-vs-E": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": 0.1704,
+      "n_cost_ratio_0_8_alpha_1_25": 6,
+      "n_cost_ratio_0_8_alpha_5": 4,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 10
+    },
+    "codex:B-vs-G": {
+      "discordance": 0.1,
+      "log_cost_ratio_sd_per_task": 0.0963,
+      "n_cost_ratio_0_8_alpha_1_25": 2,
+      "n_cost_ratio_0_8_alpha_5": 2,
+      "n_success_10pt_alpha_1_25": 96,
+      "n_success_10pt_alpha_5": 62,
+      "pairs": 10
+    },
+    "codex:G-vs-C": {
+      "discordance": 0.5,
+      "log_cost_ratio_sd_per_task": 0.2054,
+      "n_cost_ratio_0_8_alpha_1_25": 9,
+      "n_cost_ratio_0_8_alpha_5": 6,
+      "n_success_10pt_alpha_1_25": 476,
+      "n_success_10pt_alpha_5": 310,
+      "pairs": 10
+    }
+  },
+  "variance_between_repetitions": "not_measured"
+}

@@ -1,0 +1,146 @@
+{
+  "acceptance": {
+    "elapsed_ms": 50,
+    "exit_code": 0,
+    "passed": true,
+    "touched": [
+      "pilot_lib/pagination.py"
+    ],
+    "touched_outside_scope": []
+  },
+  "accepted": true,
+  "agent_verdict": "PASS",
+  "arm": "C",
+  "cost_list_microusd": 770199,
+  "cost_product_microusd": 442307,
+  "host_cost_usd": 0.7701979999999999,
+  "inter_phase_gaps_ms": [
+    0,
+    0
+  ],
+  "invalid": [],
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "phases": [
+    {
+      "announced_models": [
+        "claude-sonnet-5-5"
+      ],
+      "cost": {
+        "list_microusd": 244690,
+        "product_microusd": 133966,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 13233,
+      "ended_at_unix": 1790786985.0034199,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "841f3cf789614dfe76d8eb0adc1c3f5d8ebe0946bc5bee92ea02c3e18b41c702",
+      "host_cost_usd": 0.2446896,
+      "model": "claude-sonnet-5-5",
+      "model_check": "match",
+      "phase": "plan",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790786971.769112,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 55362,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 55362,
+        "cached_input_tokens": 78218,
+        "input_tokens": 133584,
+        "output_tokens": 759,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 0
+      },
+      "usage_events": 1,
+      "write": false
+    },
+    {
+      "announced_models": [
+        "claude-sonnet-5-5"
+      ],
+      "cost": {
+        "list_microusd": 272814,
+        "product_microusd": 163270,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 16881,
+      "ended_at_unix": 1790787001.8863418,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "f978d114a683210d54882b16714ebb45c45d9694fef4883fdd7d7dc1aa7485fa",
+      "host_cost_usd": 0.2728138,
+      "model": "claude-sonnet-5-5",
+      "model_check": "match",
+      "phase": "execute",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790786985.003835,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 54772,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 54772,
+        "cached_input_tokens": 218899,
+        "input_tokens": 273679,
+        "output_tokens": 993,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 0
+      },
+      "usage_events": 1,
+      "write": true
+    },
+    {
+      "announced_models": [
+        "claude-sonnet-5-5"
+      ],
+      "cost": {
+        "list_microusd": 252695,
+        "product_microusd": 145071,
+        "reason": null
+      },
+      "effort": "medium",
+      "elapsed_ms": 18006,
+      "ended_at_unix": 1790787019.89374,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "81700361c0eda0bfed68190889f8e20aa6f7fc3933a8942d07def8838d52790e",
+      "host_cost_usd": 0.2526946,
+      "model": "claude-sonnet-5-5",
+      "model_check": "match",
+      "phase": "verify",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790787001.886671,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 53812,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 53812,
+        "cached_input_tokens": 149173,
+        "input_tokens": 202991,
+        "output_tokens": 760,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 32
+      },
+      "usage_events": 1,
+      "write": false
+    }
+  ],
+  "provider": "claude",
+  "rep": 1,
+  "run_id": "claude-C-t01-r1",
+  "started_at_unix": 1790786971.768679,
+  "task": "t01",
+  "time_to_acceptance_ms": 48178,
+  "tokens": {
+    "cache_write_input_tokens": 163946,
+    "cached_input_tokens": 446290,
+    "input_tokens": 610254,
+    "output_tokens": 2512,
+    "reasoning_output_tokens": null
+  }
+}
