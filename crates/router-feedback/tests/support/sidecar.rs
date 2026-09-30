@@ -34,6 +34,7 @@ pub fn input(now: u64, human: bool) -> FeedbackInput {
             skills: BTreeSet::from(["private-skill-canary".into()]),
             plan: "private-plan-canary".into(),
             propensity_micros: None,
+            route: None,
         },
         origin: if human {
             FeedbackOrigin::Human

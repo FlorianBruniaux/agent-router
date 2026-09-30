@@ -4,7 +4,9 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{EffortLevel, HarnessId, ModelId, RiskLevel, TaskKind, VerificationOutcome};
+use crate::{
+    EffortLevel, HarnessId, ModelId, PhaseAbstention, RiskLevel, TaskKind, VerificationOutcome,
+};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -95,6 +97,28 @@ pub struct FeedbackContext {
     pub plan: String,
     /// Actual selection probability in millionths; None means UNKNOWN.
     pub propensity_micros: Option<u32>,
+    /// Route facts from the receipt. Absent in v1 events; None means UNKNOWN.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub route: Option<FeedbackRoute>,
+}
+
+/// Discrete facts about how the executed candidate was ranked. No text: the
+/// only string is a registered candidate identifier, validated on record.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct FeedbackRoute {
+    pub candidate_id: String,
+    /// One-based rank among the receipt's ranked candidates; None is UNKNOWN
+    /// (the executed candidate is not in the receipt).
+    pub rank: Option<u32>,
+    /// Utility of this candidate minus the next ranked one, in micros. Signed:
+    /// the receipt ranks the preferred model first, so it can be negative.
+    /// None when no candidate follows or the candidate is not ranked.
+    pub margin_micros: Option<i64>,
+    /// Ranked candidates other than the executed one, as kept by the receipt.
+    pub alternatives: u32,
+    /// The baseline receipt's abstention, when the execution overrode it.
+    pub abstention: Option<PhaseAbstention>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
