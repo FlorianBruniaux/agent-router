@@ -745,7 +745,18 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 .collect::<Result<Vec<_>, _>>()?;
             let admission = crate::admission::same(&configs)?;
             let runtime = runtime(&store, retained, max_attempts, admission.as_ref())?;
-            let coordinator = owner(&store, runtime)?;
+            let coordinator = owner(&store, Arc::clone(&runtime))?;
+            // Same opt-in as the automated event of each run: the feedback store
+            // of the bundle's own sandbox configuration.
+            let concluded = |id: &str| {
+                runtime.summary(id).is_ok_and(|run| {
+                    matches!(run.state, RunState::Verified | RunState::VerificationFailed)
+                })
+            };
+            let runs: Vec<_> = loaded
+                .iter()
+                .map(|b| (b.run_id.clone(), b.sandbox.clone(), concluded(&b.run_id)))
+                .collect();
             for bundle in loaded {
                 if definition(&bundle.workflow)? != workflow {
                     return Err(CliError::Product("coordinator.wave.binding"));
@@ -753,8 +764,32 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 reopen(&coordinator, &workflow, &bundle, true)?;
             }
             let count = coordinator.service_controls(&workflow).map_err(error)?;
+            // A feedback failure is only reported, never a service failure.
+            let feedback: Vec<_> = runs
+                .iter()
+                .filter_map(|(id, sandbox, was_concluded)| {
+                    let now = runtime.summary(id).ok()?;
+                    let stored = runtime.verification_record(id).ok().flatten();
+                    let path = execution::sandbox(sandbox).map(|c| c.feedback_store);
+                    let value = match path {
+                        Ok(path) => crate::execution_feedback::service_verification_fact(
+                            path.as_deref(),
+                            *was_concluded,
+                            &now,
+                            stored.as_ref(),
+                        )?,
+                        Err(_) => {
+                            if *was_concluded || !matches!(now.state, RunState::Verified | RunState::VerificationFailed) {
+                                return None;
+                            }
+                            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+                        }
+                    };
+                    Some(serde_json::json!({"run_id":id,"feedback":value}))
+                })
+                .collect();
             json_output(
-                &serde_json::json!({"schema_version":1,"applied_controls":count,"workflow":coordinator.status(&workflow).map_err(error)?}),
+                &serde_json::json!({"schema_version":1,"applied_controls":count,"feedback":feedback,"workflow":coordinator.status(&workflow).map_err(error)?}),
                 ExitCode::SUCCESS,
             )
         }

@@ -26,7 +26,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0016](0016-adapter-descriptor-registry.md) | Validate adapter descriptors as inert data | accepted | 2026-09-29 | 2026-09-29 | - |
 | [0017](0017-bounded-retention-and-publish-durability.md) | Bounded retention and publish durability for stores | accepted | 2026-09-29 | 2026-09-29 | - |
 | [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0019](0019-outcome-measurement.md) | Outcome measurement | accepted | 2026-09-30 | 2026-09-30 | - |
+| [0019](0019-outcome-measurement.md) | Outcome measurement | implemented | 2026-09-30 | 2026-09-30 | - |
 
 ## Frontmatter fields
 

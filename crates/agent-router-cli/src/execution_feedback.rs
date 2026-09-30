@@ -104,6 +104,27 @@ pub(crate) fn record_verification_fact(
 ) -> serde_json::Value {
     verification_fact_at(path, identity, record, resulting, None)
 }
+/// For a coordinated run, whose verification `service` applies from a queue and
+/// does not report per run. `was_concluded` is read before the service pass, so
+/// only a run this pass moved to `Verified` or `VerificationFailed` gets a fact,
+/// once, from the record the runtime stored. `None`: nothing to report.
+pub(crate) fn service_verification_fact(
+    path: Option<&Path>,
+    was_concluded: bool,
+    now: &RunSummary,
+    stored: Option<&VerificationRecord>,
+) -> Option<serde_json::Value> {
+    let concluded = matches!(now.state, RunState::Verified | RunState::VerificationFailed);
+    if was_concluded || !concluded {
+        return None;
+    }
+    let Some(record) = stored else {
+        return Some(
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"}),
+        );
+    };
+    Some(record_verification_fact(path, now, record, now))
+}
 fn verification_fact_at(
     path: Option<&Path>,
     identity: &RunSummary,
@@ -546,6 +567,9 @@ mod tests {
         assert_ne!(run_key(&at_completion), run_key(&other));
     }
 
+    fn now_secs() -> u64 {
+        crate::inspect::current_time(None).ok().unwrap()
+    }
     const CONFIGURED: u64 = 1_000;
     const FACT_TIME: Option<u64> = Some(1_500);
     fn store(collection_enabled: bool) -> (tempfile::TempDir, std::path::PathBuf) {
@@ -772,5 +796,73 @@ mod tests {
                 .unwrap()
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn service_records_a_fact_only_for_a_run_it_concluded() {
+        use VerificationOutcome::{Passed, Unknown};
+        let (_temp, path) = store(true);
+        let stored = record(Passed, Passed);
+        let verifying = run(RunState::Verifying, 1);
+        // Still verifying (an inconclusive record), or concluded before the pass.
+        assert!(
+            service_verification_fact(
+                Some(&path),
+                false,
+                &verifying,
+                Some(&record(Passed, Unknown))
+            )
+            .is_none()
+        );
+        assert!(
+            service_verification_fact(
+                Some(&path),
+                true,
+                &run(RunState::Verified, 1),
+                Some(&stored)
+            )
+            .is_none()
+        );
+        let facts = || {
+            FeedbackStore::open(&path)
+                .unwrap()
+                .facts(now_secs())
+                .unwrap()
+        };
+        assert!(facts().is_empty());
+        let reported = service_verification_fact(
+            Some(&path),
+            false,
+            &run(RunState::Verified, 1),
+            Some(&stored),
+        )
+        .unwrap();
+        assert_eq!(reported["recorded"], true);
+        let facts = facts();
+        assert_eq!(facts.len(), 1);
+        // Same key as the automated event written at completion, while `Verifying`.
+        assert_eq!(facts[0].fact.run_key_sha256, run_key(&verifying).unwrap());
+        assert_eq!(facts[0].fact.kind.name(), "verification");
+        // Collection off: nothing recorded, and the service keeps going.
+        let (_temp, off) = store(false);
+        let value = service_verification_fact(
+            Some(&off),
+            false,
+            &run(RunState::Verified, 1),
+            Some(&stored),
+        )
+        .unwrap();
+        assert_eq!(value["reason"], "collection_disabled");
+        assert!(
+            FeedbackStore::open(&off)
+                .unwrap()
+                .facts(now_secs())
+                .unwrap()
+                .is_empty()
+        );
+        let none =
+            service_verification_fact(None, false, &run(RunState::Verified, 1), Some(&stored))
+                .unwrap();
+        assert_eq!(none["reason"], "not_requested");
     }
 }
