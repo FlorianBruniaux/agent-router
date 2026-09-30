@@ -8,7 +8,7 @@ One line per campaign. The commit is the repository commit the `agent-router` bi
 
 | Date | Commit | Manifest | Scope | Status | Results |
 | --- | --- | --- | --- | --- | --- |
-| 2026-09-30 | `c43d289` | `06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856` | host-direct pilot; 10 tasks, arms A, B, G, C, E, Claude and Codex, repetition 1 (100 runs) | calibration done; full run in progress at export (28 of 100 runs) | [runs/2026-09-30-pilot](runs/2026-09-30-pilot/README.md) |
+| 2026-09-30 | `c43d289` | `06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856` | host-direct pilot; 10 tasks, arms A, B, G, C, E, Claude and Codex, repetition 1 (100 runs) | done: 100 of 100 runs, 0 invalid, one infrastructure retry; exported 2026-09-30 after the run ended | [runs/2026-09-30-pilot](runs/2026-09-30-pilot/README.md) |
 
 ## Check a recorded campaign
 
@@ -75,7 +75,7 @@ Costs are catalog list prices in USD, not invoices. Every acceptance figure appe
 - Defect: the base repository has no `.gitignore`. An agent that runs the tests makes Python create `tests/__pycache__/`, and the sealed harness (`run_pilot.py`, `acceptance`) counts that directory as a write outside `pilot_lib/`. A run whose hidden test passed is then rejected.
 - Decision: taken on 2026-09-30, after observing the results of the running campaign. The run, the harness and the manifest were left unchanged.
 - Rule of the corrected column: a run is accepted when its hidden test passed and every remaining out-of-scope path has no path segment equal to `__pycache__`. Only `**/__pycache__/**` and the `__pycache__/` directory entry are ignored; any other out-of-scope path still rejects the run. The rule reads only recorded facts (`acceptance.passed`, `acceptance.touched_outside_scope`), implemented in `runs/2026-09-30-pilot/summarize.py` (`corrected`).
-- Runs concerned at export time (28 finished runs): `codex-C-t02-r1`, `codex-A-t07-r1`, `codex-C-t07-r1`, `codex-A-t09-r1`. All four passed their hidden test. `summarize.py` prints the complete list for the final export.
+- Runs concerned, final export (100 runs): `codex-A-t06-r1`, `codex-A-t07-r1`, `codex-A-t09-r1`, `codex-C-t01-r1`, `codex-C-t02-r1`, `codex-C-t05-r1`, `codex-C-t07-r1`, `codex-G-t04-r1`. All eight passed their hidden test and had no out-of-scope path other than `tests/__pycache__/`. No Claude run is concerned.
 - The raw column stays the protocol's verdict. The corrected column is a post hoc reading of the same runs, labelled as such.
 
 ### Calibration block (task t02, repetition 1)
@@ -116,16 +116,125 @@ The campaign ran with `user-config`. These probes paid a cold cache write, while
 
 ### Full run, repetition 1
 
-Status: in progress. When it ends, export with `python3 export_results.py <pilot-folder> --label final` from the campaign folder, update `SHA256SUMS`, then paste the output of `python3 summarize.py` here and update the campaign log.
+Status: done. 100 of 100 runs, exported with `export_results.py --label final` after the run ended. Source: `runs/2026-09-30-pilot/results/`; the tables below are the unedited output of `python3 summarize.py` in the campaign folder. Total list cost: Claude 53.6719 USD, Codex 12.6600 USD, plus one Codex attempt set aside after an infrastructure failure, whose cost is UNKNOWN (no usage recorded).
 
-| Provider | Arm | Runs | Invalid | Accepted raw | Rate raw | List USD per accepted raw | Accepted corrected | Rate corrected | List USD per accepted corrected | List cost USD | p50 time to acceptance s |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude | A to E | in progress | | | | | | | | | |
-| Codex | A to E | in progress | | | | | | | | | |
+Manifest `06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856`, host config `user-config`, 100 run(s), repetitions present: [1]. Variance between repetitions: not measured.
+Attempts set aside (retried or interrupted, excluded from the tables but paid): ['codex-B-t07-r1.retried'], list cost UNKNOWN USD.
+Runs whose verdict the pycache correction changes: ['codex-A-t06-r1', 'codex-A-t07-r1', 'codex-A-t09-r1', 'codex-C-t01-r1', 'codex-C-t02-r1', 'codex-C-t05-r1', 'codex-C-t07-r1', 'codex-G-t04-r1'].
 
-Conclusions for this run, written on both columns once it ends: in progress.
+| Provider | Arm | Runs | Invalid | Accepted raw | Rate raw | List USD per accepted raw | Accepted corrected | Rate corrected | List USD per accepted corrected | List cost USD | Product cost USD | Input tokens | Cached input | Cache writes | Output | p50 time to acceptance s (corrected) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| claude | A | 10 | 0 | 10 | 100% | 1.0271 | 10 | 100% | 1.0271 | 10.2710 | 5.8078 | 5930031 | 4258389 | 1671468 | 34792 | 83.9 |
+| claude | B | 10 | 0 | 10 | 100% | 1.5261 | 10 | 100% | 1.5261 | 15.2613 | 8.5743 | 6744617 | 5072672 | 1671749 | 43601 | 89.2 |
+| claude | G | 10 | 0 | 10 | 100% | 1.5037 | 10 | 100% | 1.5037 | 15.0368 | 8.3612 | 6393196 | 4724121 | 1668889 | 37003 | 92.3 |
+| claude | C | 10 | 0 | 10 | 100% | 0.7696 | 10 | 100% | 0.7696 | 7.6960 | 4.4139 | 5695789 | 4054544 | 1641077 | 32046 | 66.0 |
+| claude | E | 10 | 0 | 10 | 100% | 0.5407 | 10 | 100% | 0.5407 | 5.4068 | 3.1032 | 2822016 | 2246034 | 575900 | 17504 | 35.9 |
+| codex | A | 10 | 0 | 7 | 70% | 0.4356 | 10 | 100% | 0.3049 | 3.0492 | 3.0492 | 5449053 | 4538880 | 0 | 35504 | 146.8 |
+| codex | B | 10 | 0 | 10 | 100% | 0.2807 | 10 | 100% | 0.2807 | 2.8075 | 2.8075 | 5443356 | 4429696 | 0 | 33719 | 251.1 |
+| codex | G | 10 | 0 | 9 | 90% | 0.2909 | 10 | 100% | 0.2618 | 2.6178 | 2.6178 | 4360162 | 3337856 | 0 | 23939 | 194.9 |
+| codex | C | 10 | 0 | 6 | 60% | 0.5117 | 10 | 100% | 0.3070 | 3.0704 | 3.0704 | 5469411 | 4618240 | 0 | 37030 | 130.1 |
+| codex | E | 10 | 0 | 10 | 100% | 0.1115 | 10 | 100% | 0.1115 | 1.1151 | 1.1151 | 2462501 | 2103936 | 0 | 18757 | 127.8 |
 
-Sizing inputs for N (discordance and log cost ratio standard deviation per pair) are in the `sizing` section of the final report, `results/reports/final-report.json`.
+Paired comparisons per task (descriptive, no significance test). Discordance: share of paired tasks where exactly one of the two arms is accepted. Cost ratio: list cost of X summed over the paired tasks, divided by that of Y. The sizing section of the final report computes discordance on the raw column only.
+
+| Provider | X vs Y | Paired tasks | Discordance raw | Discordance corrected | Tasks where X costs less | Cost ratio X/Y |
+| --- | --- | --- | --- | --- | --- | --- |
+| claude | A vs B | 10 | 0.00 | 0.00 | 10/10 | 0.673 |
+| claude | A vs G | 10 | 0.00 | 0.00 | 10/10 | 0.683 |
+| claude | A vs C | 10 | 0.00 | 0.00 | 0/10 | 1.335 |
+| claude | A vs E | 10 | 0.00 | 0.00 | 0/10 | 1.900 |
+| claude | B vs E | 10 | 0.00 | 0.00 | 0/10 | 2.823 |
+| claude | B vs G | 10 | 0.00 | 0.00 | 2/10 | 1.015 |
+| claude | G vs C | 10 | 0.00 | 0.00 | 0/10 | 1.954 |
+| codex | A vs B | 10 | 0.30 | 0.00 | 2/10 | 1.086 |
+| codex | A vs G | 10 | 0.40 | 0.00 | 0/10 | 1.165 |
+| codex | A vs C | 10 | 0.50 | 0.00 | 5/10 | 0.993 |
+| codex | A vs E | 10 | 0.30 | 0.00 | 0/10 | 2.734 |
+| codex | B vs E | 10 | 0.00 | 0.00 | 0/10 | 2.518 |
+| codex | B vs G | 10 | 0.10 | 0.00 | 2/10 | 1.072 |
+| codex | G vs C | 10 | 0.50 | 0.00 | 8/10 | 0.853 |
+
+Fixed host overhead, one `Reply with OK` call per model and host config:
+
+| Provider | Model | Host config | Input tokens | Cached input | Cache writes | Output | List USD |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| claude | claude-opus-5-5 | isolated | 20462 | 12407 | 8053 | 4 | 0.0670 |
+| claude | claude-opus-5-5 | user-config | 66328 | 0 | 66326 | 247 | 0.5356 |
+| claude | claude-sonnet-5-5 | isolated | 20483 | 12407 | 8074 | 4 | 0.0348 |
+| claude | claude-sonnet-5-5 | user-config | 65167 | 0 | 65165 | 15 | 0.2608 |
+| codex | gpt-5.6-terra | isolated | 41948 | 25088 | 0 | 227 | 0.0415 |
+| codex | gpt-5.6-terra | user-config | 64579 | 37376 | 0 | 192 | 0.0642 |
+| codex | gpt-6.1-sol | isolated | 21235 | 0 | 0 | 5 | 0.0425 |
+| codex | gpt-6.1-sol | user-config | 32215 | 7168 | 0 | 5 | 0.0509 |
+
+Cold-probe bound per arm: the probe cost of each phase model under `user-config`, summed over the arm's processes, divided by the arm list cost. The probe pays a cold cache write; a run that reuses a warm cache pays less for the same prefix, so the ratio can exceed 100%. It bounds the fixed prefix cost from above; it is not the true share, which these data do not identify (the number of turns per process is not recorded).
+
+| Provider | Arm | Cold-probe bound USD | Arm list cost USD | Bound / cost |
+| --- | --- | --- | --- | --- |
+| claude | A | 10.5718 | 10.2710 | 102.9% |
+| claude | B | 16.0667 | 15.2613 | 105.3% |
+| claude | G | 16.0667 | 15.0368 | 106.8% |
+| claude | C | 7.8244 | 7.6960 | 101.7% |
+| claude | E | 5.3556 | 5.4068 | 99.1% |
+| codex | A | 1.7923 | 3.0492 | 58.8% |
+| codex | B | 1.5258 | 2.8075 | 54.3% |
+| codex | G | 1.5258 | 2.6178 | 58.3% |
+| codex | C | 1.9256 | 3.0704 | 62.7% |
+| codex | E | 0.5086 | 1.1151 | 45.6% |
+#### Conclusions of the full run
+
+Scope: 10 small Python tasks, one repetition, catalog list prices, host-direct execution. Neither `summarize.py` nor the final report computes a significance test; every statement below describes this pilot only.
+
+Claude:
+
+- Acceptance: every arm accepted 10 of 10 tasks, raw and corrected. On this pilot the corpus does not separate the arms on quality.
+- Cost per accepted task, identical in both columns: A 1.0271 USD, B 1.5261, G 1.5037, C 0.7696, E 0.5407. On this pilot, A cost 0.673 times B and 0.683 times G and was cheaper than B on 10 of 10 tasks; A cost 1.335 times C and 1.900 times E and was more expensive than both on 10 of 10 tasks.
+- Median time to acceptance: A 83.9 s, B 89.2 s, G 92.3 s, C 66.0 s, E 35.9 s.
+
+Codex:
+
+- Acceptance raw: A 7/10, B 10/10, G 9/10, C 6/10, E 10/10. Corrected: 10/10 for every arm. Every raw rejection is one of the eight pycache runs above, so the raw differences between arms measure the harness defect, not the models.
+- Cost per accepted task, raw: A 0.4356 USD, B 0.2807, G 0.2909, C 0.5117, E 0.1115. Corrected: A 0.3049, B 0.2807, G 0.2618, C 0.3070, E 0.1115.
+- Total list cost, which does not depend on acceptance: A cost 1.086 times B (cheaper on 2 of 10 tasks), 1.165 times G (0 of 10), 0.993 times C (5 of 10) and 2.734 times E (0 of 10).
+- The pool's "cheaper" model is not cheaper per token. In `pilot/pricing.json`, `gpt-5.6-terra` and `gpt-6.1-sol` share the input price (2 USD per million tokens), and `gpt-5.6-terra` costs more for cached input (0.20 against 0.10) and output (12 against 10). On this pilot, G (`gpt-6.1-sol`, medium) cost less than C (`gpt-5.6-terra`, medium) on 8 of 10 tasks, ratio 0.853. Arm A sends execute and verify to `gpt-5.6-terra`, so its recipe could not save list cost here.
+- Median time to acceptance (corrected): A 146.8 s, B 251.1 s, G 194.9 s, C 130.1 s, E 127.8 s.
+
+Both providers:
+
+- E, a single session with the frontier model at high effort, had the lowest cost per accepted task of every arm on both providers, in both columns, with the same acceptance as B. B cost 2.823 times E on Claude and 2.518 times E on Codex. This is the protocol's E1 contrast; the pilot does not isolate its cause, and the loss of the prompt cache between separate phase processes is one candidate the protocol names.
+
+The README tagline, "Frontier models for the hard steps, cheaper ones for the rest", is a product claim, not a result of this pilot. Against it:
+
+| Provider | Criterion | A vs B | A vs G | A vs C | A vs E |
+| --- | --- | --- | --- | --- | --- |
+| Claude | Cost per accepted task | supports: A cheaper (0.673) | supports: A cheaper (0.683) | contradicts: A dearer (1.335) at equal acceptance | contradicts: A dearer (1.900) at equal acceptance |
+| Claude | Acceptance rate | does not settle: 10/10 both | does not settle: 10/10 both | does not settle: 10/10 both | does not settle: 10/10 both |
+| Codex | Cost per accepted task | contradicts: A dearer, raw 0.4356 against 0.2807, corrected 0.3049 against 0.2807 | contradicts: A dearer in both columns | does not settle: corrected 0.3049 against 0.3070, total cost ratio 0.993; raw 0.4356 against 0.5117 favours A only through the defect | contradicts: A dearer in both columns |
+| Codex | Acceptance rate | does not settle: corrected 10/10 both; raw 7/10 against 10/10 is the defect | does not settle: same | does not settle: same | does not settle: same |
+
+On this pilot the tagline holds only for Claude, on cost, against the frontier-only arms B and G. It does not hold against C or E on either provider, and quality is not separated anywhere, because every arm reached the ceiling once the defect is corrected.
+
+#### Sizing inputs for N
+
+From the `sizing` section of `results/reports/final-report.json`, which the sealed harness computed on the raw acceptance column. The protocol's formulas give N for a 10-point success difference and for a cost ratio of 0.8, at alpha 1.25 % (first Holm step), power 80 %.
+
+| Pair | Paired tasks | Discordance (raw) | SD of log cost ratio per task | N, success 10 points | N, cost ratio 0.8 |
+| --- | --- | --- | --- | --- | --- |
+| Claude A vs B | 10 | 0.0 | 0.0225 | none (discordance 0) | 1 |
+| Claude A vs C | 10 | 0.0 | 0.0188 | none | 1 |
+| Claude B vs E | 10 | 0.0 | 0.0447 | none | 1 |
+| Claude B vs G | 10 | 0.0 | 0.0188 | none | 1 |
+| Claude G vs C | 10 | 0.0 | 0.0130 | none | 1 |
+| Codex A vs B | 10 | 0.3 | 0.1473 | 286 | 5 |
+| Codex A vs C | 10 | 0.5 | 0.2001 | 476 | 8 |
+| Codex B vs E | 10 | 0.0 | 0.1704 | none | 6 |
+| Codex B vs G | 10 | 0.1 | 0.0963 | 96 | 2 |
+| Codex G vs C | 10 | 0.5 | 0.2054 | 476 | 9 |
+
+Reading limits:
+
+- Every nonzero discordance above comes from the pycache defect. With the corrected column the discordance is 0.00 on every pair (paired comparisons table), so this pilot gives no usable discordance and no success N. The raw success N values must not size the main bench.
+- The cost N values come from one repetition of 10 tasks that every arm solved; they contain no run-to-run variance, which was not measured. They are the protocol formula applied to these standard deviations, not a recommendation.
 
 ## Next campaign: harness fixes
 
@@ -133,6 +242,8 @@ These fixes change sealed inputs, so they need a new campaign folder and a new m
 
 - Out-of-scope check: either add a `.gitignore` with `__pycache__/` to `corpus/base/`, or make the scope check in `run_pilot.py` ignore paths with a `__pycache__` segment. Either way the corrected column becomes the protocol's verdict, stated before the first run.
 - Record the number of turns per host process, so that the share of the fixed host prefix can be estimated instead of bounded.
+- Check the pool before sealing: the model given the cheaper role must have lower list prices than the frontier model for every token class. In this pilot `gpt-5.6-terra` did not.
+- Use tasks that not every arm solves, so that acceptance can separate the arms.
 
 ## Limits of the 2026-09-30 pilot
 

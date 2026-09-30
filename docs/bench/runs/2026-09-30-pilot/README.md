@@ -35,7 +35,7 @@ Every file under `pilot/` that the manifest seals also matches its hash in `resu
 | Host config | `user-config`: the maintainer's own Claude and Codex configuration, unchanged |
 | Scope | 10 tasks, arms A, B, G, C, E, 2 providers, repetition 1 of the sealed order (100 of 300 runs), through `run_r1.py` without resealing |
 | Budget caps | Claude 65 USD, Codex 18 USD, catalog list prices |
-| Exported | 2026-09-30T15:38Z, while the full run was still running: 28 runs finished, 8 overhead probes |
+| Exported | first on 2026-09-30T15:38Z while the run was going (28 runs), then again after the run ended (last run at 18:11:16Z): 100 of 100 runs, one attempt set aside after an infrastructure failure (`codex-B-t07-r1.retried`), 8 overhead probes, final report `results/reports/final-report.json` |
 
 ## What is not stored
 
@@ -47,7 +47,7 @@ The project does not keep raw provider responses. `export_results.py` therefore 
 - in each phase, the 200-character excerpt of the model's final text (`final_text_head`) and the raw host error events, kept as `error_count`;
 - the agent verdict text, normalized to `PASS`, `FAIL` or `OTHER`.
 
-`final_text_sha256` is kept as an integrity reference. The export refuses to write a file containing a home directory path; one raw run result (`codex-C-t09-r1`) contained one, in fields the export drops.
+`final_text_sha256` is kept as an integrity reference. The export refuses to write a file containing a home directory path; two raw run results (`codex-C-t04-r1`, `codex-C-t09-r1`) contained one, in fields the export drops.
 
 ## Redactions
 
@@ -67,4 +67,4 @@ Four files of `pilot/` differ from the pilot folder, because the repository's st
 
 ## Deviation from the sealed protocol
 
-The base repository has no `.gitignore`. When an agent runs the tests, Python creates `tests/__pycache__/`, and the sealed harness counts it as a write outside `pilot_lib/`, which rejects a run whose hidden test passed. On 2026-09-30, after observing this in the running campaign, a corrected acceptance column was added to the analysis, next to the raw verdict, without changing the run, the harness or the manifest. Rule: hidden test passed, and no remaining out-of-scope path other than those with a `__pycache__` segment (`**/__pycache__/**`). At export time it changed 4 Codex runs (`codex-C-t02-r1`, `codex-A-t07-r1`, `codex-C-t07-r1`, `codex-A-t09-r1`). `summarize.py` prints both columns and the list of changed runs; conclusions are stated on both. The fix for the next campaign is in the [playbook](../../playbook.md#next-campaign-harness-fixes).
+The base repository has no `.gitignore`. When an agent runs the tests, Python creates `tests/__pycache__/`, and the sealed harness counts it as a write outside `pilot_lib/`, which rejects a run whose hidden test passed. On 2026-09-30, after observing this in the running campaign, a corrected acceptance column was added to the analysis, next to the raw verdict, without changing the run, the harness or the manifest. Rule: hidden test passed, and no remaining out-of-scope path other than those with a `__pycache__` segment (`**/__pycache__/**`). In the final export it changes 8 Codex runs, all with a passed hidden test and `tests/__pycache__/` as their only out-of-scope path: `codex-A-t06-r1`, `codex-A-t07-r1`, `codex-A-t09-r1`, `codex-C-t01-r1`, `codex-C-t02-r1`, `codex-C-t05-r1`, `codex-C-t07-r1`, `codex-G-t04-r1`. No Claude run is concerned. `summarize.py` prints both columns and the list of changed runs; conclusions are stated on both. The fix for the next campaign is in the [playbook](../../playbook.md#next-campaign-harness-fixes).

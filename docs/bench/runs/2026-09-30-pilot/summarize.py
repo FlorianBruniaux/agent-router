@@ -94,6 +94,28 @@ def main() -> None:
                   f"{usd(cost)} | {usd(product)} | {fmt(tokens['input_tokens'])} | {fmt(tokens['cached_input_tokens'])} | "
                   f"{fmt(tokens['cache_write_input_tokens'])} | {fmt(tokens['output_tokens'])} | {p50} |")
 
+    print("\nPaired comparisons per task (descriptive, no significance test). Discordance: share of paired tasks where "
+          "exactly one of the two arms is accepted. Cost ratio: list cost of X summed over the paired tasks, divided by "
+          "that of Y. The sizing section of the final report computes discordance on the raw column only.\n")
+    print("| Provider | X vs Y | Paired tasks | Discordance raw | Discordance corrected | Tasks where X costs less | Cost ratio X/Y |")
+    print("| --- | --- | --- | --- | --- | --- | --- |")
+    for provider in sorted({r["provider"] for r in runs}):
+        index = {(r["arm"], r["task"]): r for r in runs if r["provider"] == provider and not r["invalid"]}
+        for x, y in (("A", "B"), ("A", "G"), ("A", "C"), ("A", "E"), ("B", "E"), ("B", "G"), ("G", "C")):
+            tasks = sorted(t for (arm, t) in index if arm == x and (y, t) in index)
+            if not tasks:
+                continue
+            pairs = [(index[(x, t)], index[(y, t)]) for t in tasks]
+            raw = sum(bool(a["accepted"]) != bool(b["accepted"]) for a, b in pairs) / len(pairs)
+            fixed = sum(corrected(a) != corrected(b) for a, b in pairs) / len(pairs)
+            costs = [(a["cost_list_microusd"], b["cost_list_microusd"]) for a, b in pairs]
+            if any(a is None or b is None for a, b in costs):
+                cheaper, ratio = "UNKNOWN", "UNKNOWN"
+            else:
+                cheaper = f"{sum(a < b for a, b in costs)}/{len(costs)}"
+                ratio = f"{sum(a for a, _ in costs) / sum(b for _, b in costs):.3f}"
+            print(f"| {provider} | {x} vs {y} | {len(pairs)} | {raw:.2f} | {fixed:.2f} | {cheaper} | {ratio} |")
+
     probes = {p.stem: json.loads(p.read_text()) for p in sorted((RESULTS / "overhead").glob("*.json"))}
     print("\nFixed host overhead, one `Reply with OK` call per model and host config:\n")
     print("| Provider | Model | Host config | Input tokens | Cached input | Cache writes | Output | List USD |")

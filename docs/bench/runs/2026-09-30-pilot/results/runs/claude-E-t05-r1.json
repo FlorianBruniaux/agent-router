@@ -1,0 +1,71 @@
+{
+  "acceptance": {
+    "elapsed_ms": 249,
+    "exit_code": 0,
+    "passed": true,
+    "touched": [
+      "pilot_lib/cache.py"
+    ],
+    "touched_outside_scope": []
+  },
+  "accepted": true,
+  "agent_verdict": "PASS",
+  "arm": "E",
+  "cost_list_microusd": 536501,
+  "cost_product_microusd": 306981,
+  "host_cost_usd": 0.5365008,
+  "inter_phase_gaps_ms": [],
+  "invalid": [],
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "phases": [
+    {
+      "announced_models": [
+        "claude-opus-5-5"
+      ],
+      "cost": {
+        "list_microusd": 536501,
+        "product_microusd": 306981,
+        "reason": null
+      },
+      "effort": "high",
+      "elapsed_ms": 47072,
+      "ended_at_unix": 1790790690.423897,
+      "error_count": 0,
+      "exit_code": 0,
+      "final_text_sha256": "de6ff3d295d957958b08784fdefd697f7d7ad4f015d962b5560c1359c8c82d79",
+      "host_cost_usd": 0.5365008,
+      "model": "claude-opus-5-5",
+      "model_check": "match",
+      "phase": "single",
+      "provider": "claude",
+      "sessions": 1,
+      "started_at_unix": 1790790643.349264,
+      "timed_out": false,
+      "usage": {
+        "cache_write_1h_tokens": 57380,
+        "cache_write_5m_tokens": 0,
+        "cache_write_input_tokens": 57380,
+        "cached_input_tokens": 218044,
+        "input_tokens": 275432,
+        "output_tokens": 1691,
+        "reasoning_output_tokens": null,
+        "thinking_tokens_reported": 326
+      },
+      "usage_events": 1,
+      "write": true
+    }
+  ],
+  "provider": "claude",
+  "rep": 1,
+  "run_id": "claude-E-t05-r1",
+  "started_at_unix": 1790790643.348256,
+  "task": "t05",
+  "time_to_acceptance_ms": 47351,
+  "tokens": {
+    "cache_write_input_tokens": 57380,
+    "cached_input_tokens": 218044,
+    "input_tokens": 275432,
+    "output_tokens": 1691,
+    "reasoning_output_tokens": null
+  }
+}
