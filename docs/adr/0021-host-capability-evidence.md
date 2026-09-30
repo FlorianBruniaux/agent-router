@@ -441,6 +441,14 @@ provider execution. No personal auth file was read or paid call made. A
 standalone CFPreferences C probe did not reproduce the failure and was not
 used as the deciding evidence.
 
+The launcher fix rejects shebang entries in `programs.codex` with the typed
+`runtime.program.script_unsupported` error on both sandbox backends. Operators
+must select the canonical native executable explicitly; no interpreter search
+or PATH expansion is added. Other host script contracts are unchanged. The
+existing binary hash check still applies. Private-copy execution and protection
+against a replacement between hash and exec remain batch 5, not implemented by
+this launcher check.
+
 ## Consequences
 
 A write phase becomes routable on a host only after a canary succeeded on that

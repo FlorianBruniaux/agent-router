@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Breaking
 
+- Native Codex configuration rejects shebang launchers such as `codex.js` with `runtime.program.script_unsupported` (exit 2), on macOS and Linux. Configure the canonical native binary path; no Node lookup or PATH expansion is performed.
+
 - The macOS Codex sandbox reads the `com.openai.codex` preference domain and shared memory named `apple.cfprefs.*`. Approval format v6 binds this permission change; v1-v5 approvals require a new preview. No preference writes or Linux profile change is added.
 
 - Native Codex and Claude runs use disposable private host state. Configured `CODEX_HOME` and `CLAUDE_CONFIG_DIR` are refused; OAuth state is never copied. Approval format v5 requires a fresh preview for the API-key-only bootstrap and host-state grants.

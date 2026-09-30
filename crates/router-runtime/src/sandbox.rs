@@ -481,6 +481,24 @@ fn seatbelt_profile(reads: &[PathBuf], writes: &[PathBuf], network: bool) -> Res
     }
     Ok(profile)
 }
+// The npm entry uses /usr/bin/env node, outside the fixed child PATH. Refuse
+// every Codex shebang rather than guessing an interpreter or unbound modules.
+fn reject_codex_script(path: &Path) -> Result<()> {
+    use std::io::Read;
+    let file = fs::OpenOptions::new()
+        .read(true)
+        .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+        .open(path)?;
+    if !file.metadata()?.is_file() {
+        return Err(RuntimeError::Sandbox);
+    }
+    let mut prefix = Vec::with_capacity(2);
+    file.take(2).read_to_end(&mut prefix)?;
+    if prefix == b"#!" {
+        return Err(RuntimeError::ScriptProgram);
+    }
+    Ok(())
+}
 pub(crate) fn validate_configuration(
     programs: &BTreeMap<String, PathBuf>,
     roots: &[PathBuf],
@@ -493,6 +511,9 @@ pub(crate) fn validate_configuration(
         if fs::canonicalize(path)? != *path || path == Path::new("/") {
             return Err(RuntimeError::Sandbox);
         }
+    }
+    if let Some(program) = programs.get("codex") {
+        reject_codex_script(program)?;
     }
     for (key, value) in environment {
         if !matches!(
@@ -625,5 +646,23 @@ mod tests {
                 "{spelling} is not covered by {line}"
             );
         }
+    }
+    #[test]
+    fn codex_shebang_launchers_are_refused_with_a_fixed_code() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        let script = root.join("codex.js");
+        fs::write(&script, b"#!/usr/bin/env node\nprocess.exit(0);\n").unwrap();
+        fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+        let programs = [("codex".into(), script.clone())].into();
+        let error = validate_configuration(&programs, &[], &BTreeMap::new())
+            .err()
+            .map(|error| error.to_string());
+        assert_eq!(error.as_deref(), Some("runtime.program.script_unsupported"));
+        // Other adapters retain their existing script-host contract.
+        validate_configuration(&[("claude".into(), script)].into(), &[], &BTreeMap::new()).unwrap();
+        let native = fs::canonicalize("/bin/sh").unwrap();
+        validate_configuration(&[("codex".into(), native)].into(), &[], &BTreeMap::new()).unwrap();
     }
 }
