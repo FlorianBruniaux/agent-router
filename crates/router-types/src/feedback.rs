@@ -151,6 +151,16 @@ pub struct HumanVerdict {
 pub struct FeedbackInput {
     pub schema_version: u32,
     pub observed_at_unix_seconds: u64,
+    /// Start of the native process, at most `observed_at_unix_seconds`. Absent in
+    /// earlier events and in human feedback; None means UNKNOWN.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub started_at_unix_seconds: Option<u64>,
+    /// Digest of the stable run identity (run id, definition hash, approval
+    /// digest), the key late facts use to refer to the run. It is not part of
+    /// `FeedbackBinding`, which human and automated verdicts must share. None
+    /// means UNKNOWN.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub run_key_sha256: Option<String>,
     pub binding: FeedbackBinding,
     pub context: FeedbackContext,
     pub origin: FeedbackOrigin,
@@ -176,6 +186,58 @@ pub struct FeedbackEvent {
     pub event_hash: String,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IntegrationOutcome {
+    Applied,
+    Discarded,
+}
+
+/// What a late fact states. Enumerations and digests only, never free text.
+/// The human outcome is not a kind: it stays the human-origin `FeedbackEvent`.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum FeedbackFactKind {
+    Verification {
+        validation: VerificationOutcome,
+        objective: VerificationOutcome,
+        evidence_sha256: String,
+    },
+    Integration {
+        outcome: IntegrationOutcome,
+    },
+}
+
+impl FeedbackFactKind {
+    /// Stable storage key: at most one fact per `(run key, name)`.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Verification { .. } => "verification",
+            Self::Integration { .. } => "integration",
+        }
+    }
+}
+
+/// A fact learned after the automated verdict, keyed by the stable run key.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct FeedbackFact {
+    pub schema_version: u32,
+    pub run_key_sha256: String,
+    pub observed_at_unix_seconds: u64,
+    pub kind: FeedbackFactKind,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct FeedbackFactEvent {
+    pub sequence: u64,
+    pub consent_revision: u64,
+    pub recorded_at_unix_seconds: u64,
+    pub fact: FeedbackFact,
+    pub fact_hash: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FeedbackExport {
@@ -183,5 +245,9 @@ pub struct FeedbackExport {
     pub exported_at_unix_seconds: u64,
     pub consent: FeedbackConsent,
     pub events: Vec<FeedbackEvent>,
+    /// Late facts. Absent when there are none, so an export without facts keeps
+    /// its earlier bytes and hash.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub facts: Vec<FeedbackFactEvent>,
     pub content_hash: String,
 }

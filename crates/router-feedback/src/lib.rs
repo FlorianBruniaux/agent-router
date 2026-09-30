@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod facts;
 mod learning;
 mod policy;
 mod sidecar_export;
@@ -138,6 +139,16 @@ pub(crate) fn validate_input(input: &FeedbackInput) -> Result<()> {
         .any(|s| !valid_hash(s))
     {
         return Err(FeedbackError::Invalid("binding"));
+    }
+    if input
+        .started_at_unix_seconds
+        .is_some_and(|started| started > input.observed_at_unix_seconds)
+        || input
+            .run_key_sha256
+            .as_ref()
+            .is_some_and(|key| !valid_hash(key))
+    {
+        return Err(FeedbackError::Invalid("run identity"));
     }
     let c = &input.context;
     if !identifier(c.model.as_str())

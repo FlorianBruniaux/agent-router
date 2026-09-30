@@ -365,14 +365,16 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             definition,
             store,
             evidence,
+            config,
             json,
-        } => execution::verify(&definition, &store, &evidence, json),
+        } => execution::verify(&definition, &store, &evidence, config.as_deref(), json),
         Commands::Artifacts {
             definition,
             store,
             command,
+            config,
             json,
-        } => execution::artifacts(&definition, &store, command, json),
+        } => execution::artifacts(&definition, &store, command, config.as_deref(), json),
         Commands::Catalog { command } => catalogs::run(command),
         Commands::Feedback {
             store,

@@ -14,6 +14,8 @@ fn input(run: &str, observed: u64) -> FeedbackInput {
     FeedbackInput {
         schema_version: 1,
         observed_at_unix_seconds: observed,
+        started_at_unix_seconds: None,
+        run_key_sha256: None,
         binding: FeedbackBinding {
             task_hash: "a".repeat(64),
             run_hash: redacted_digest(run).unwrap(),

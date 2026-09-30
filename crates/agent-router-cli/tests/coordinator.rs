@@ -155,6 +155,17 @@ impl WorkflowFixture {
             .args(["--json", action]);
         cmd
     }
+    fn artifact_recording(&self, action: &str) -> Command {
+        let mut cmd = command();
+        cmd.args(["coordinate", "artifacts", "--bundle"])
+            .arg(&self.bundle)
+            .arg("--store")
+            .arg(&self.native.store)
+            .arg("--config")
+            .arg(self.native.root.join("sandbox.json"))
+            .args(["--json", action]);
+        cmd
+    }
 }
 
 #[test]
@@ -284,13 +295,19 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
     );
     let preview = checked(&mut f.artifact("preview"), 0);
     let applied = checked(
-        f.artifact("apply").args([
+        f.artifact_recording("apply").args([
             "--approve",
             preview["preview"]["approval_digest"].as_str().unwrap(),
         ]),
         0,
     );
     assert!(applied["applied"].is_object());
+    assert_eq!(applied["feedback"]["recorded"], true);
+    let late = f.native.exported_feedback();
+    let key = &late["events"][0]["input"]["run_key_sha256"];
+    assert_eq!(late["facts"][0]["fact"]["run_key_sha256"], *key);
+    assert_eq!(late["facts"][0]["fact"]["kind"]["type"], "integration");
+    assert_eq!(late["facts"][0]["fact"]["kind"]["outcome"], "applied");
     assert_eq!(
         fs::read(f.native.repo.join("src/result.txt")).unwrap(),
         b"isolated"

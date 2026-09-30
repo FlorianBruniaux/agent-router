@@ -1,7 +1,7 @@
 //! Explicit opt-in runtime feedback. No prompt or raw output crosses this boundary.
 use crate::CliError;
 use router_adapter_api::content_digest;
-use router_feedback::FeedbackStore;
+use router_feedback::{FeedbackError, FeedbackStore};
 use router_policy::ValidatedPhaseContext;
 use router_types::*;
 use std::path::Path;
@@ -24,6 +24,7 @@ pub(crate) fn record(
     selection: &router_execution_decision::ExecutionDecision,
     context: &ValidatedPhaseContext,
     completion: &RunCompletion,
+    started_at: Option<u64>,
 ) -> serde_json::Value {
     let (Some(path), Some(consent)) = (path, consent) else {
         return serde_json::json!({"recorded":false,"reason":"not_requested"});
@@ -53,6 +54,8 @@ pub(crate) fn record(
             escalations,
             now,
         )?;
+        input.started_at_unix_seconds = started_at.filter(|started| *started <= now);
+        input.run_key_sha256 = Some(run_key(&completion.run)?);
         input.binding.receipt_hash = selection.authorization_id().into();
         if let Some(binding) = selection.binding() {
             input.binding.provenance_sha256 = digest(&(completion, receipt, binding))?;
@@ -71,6 +74,127 @@ pub(crate) fn record(
             serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
         }
     }
+}
+
+/// Stable across state changes: `run_hash` covers `state` and `attempts`, so a
+/// later verification or integration cannot recompute it. The writer and the
+/// late-fact paths both key the run through this one function.
+pub(crate) fn run_key(run: &RunSummary) -> Result<String, ()> {
+    digest(&(&run.run_id, &run.definition_hash, &run.approval_digest))
+}
+
+/// Records one late fact for a run, or says why not. Nothing here can fail the
+/// command that already succeeded: a failure is only reported in the value.
+pub(crate) fn record_fact(
+    path: Option<&Path>,
+    run: &RunSummary,
+    kind: FeedbackFactKind,
+) -> serde_json::Value {
+    record_fact_at(path, run, kind, None)
+}
+
+/// A verification fact only once the runtime left `Verifying`: it can replace an
+/// inconclusive record, and a stored fact is never rewritten. `resulting` is the
+/// summary `record_verification` returned; `identity` gives the run key.
+pub(crate) fn record_verification_fact(
+    path: Option<&Path>,
+    identity: &RunSummary,
+    record: &VerificationRecord,
+    resulting: &RunSummary,
+) -> serde_json::Value {
+    verification_fact_at(path, identity, record, resulting, None)
+}
+fn verification_fact_at(
+    path: Option<&Path>,
+    identity: &RunSummary,
+    record: &VerificationRecord,
+    resulting: &RunSummary,
+    now: Option<u64>,
+) -> serde_json::Value {
+    if path.is_none() {
+        return serde_json::json!({"recorded":false,"reason":"not_requested"});
+    }
+    if !matches!(
+        resulting.state,
+        RunState::Verified | RunState::VerificationFailed
+    ) {
+        return serde_json::json!({"recorded":false,"reason":"inconclusive"});
+    }
+    match verification_fact(record) {
+        Ok(kind) => record_fact_at(path, identity, kind, now),
+        Err(()) => {
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+        }
+    }
+}
+
+/// `now` overrides the clock, for tests: `observed_at` is the recording time, so
+/// only a repeat at the same second is the identical, idempotent fact.
+fn record_fact_at(
+    path: Option<&Path>,
+    run: &RunSummary,
+    kind: FeedbackFactKind,
+    now: Option<u64>,
+) -> serde_json::Value {
+    let Some(path) = path else {
+        return serde_json::json!({"recorded":false,"reason":"not_requested"});
+    };
+    if matches!(
+        &kind,
+        FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Unknown,
+            objective: VerificationOutcome::Unknown,
+            ..
+        }
+    ) {
+        return serde_json::json!({"recorded":false,"reason":"inconclusive"});
+    }
+    let result = (|| {
+        if !path.join("feedback.sqlite3").is_file() {
+            return Err(false);
+        }
+        let store = FeedbackStore::open(path).map_err(|_| false)?;
+        if !store
+            .consent()
+            .map_err(|_| false)?
+            .preferences
+            .collection_enabled
+        {
+            return Ok(None);
+        }
+        let now = crate::inspect::current_time(now).map_err(|_| false)?;
+        let fact = FeedbackFact {
+            schema_version: 1,
+            run_key_sha256: run_key(run).map_err(|()| false)?,
+            observed_at_unix_seconds: now,
+            kind,
+        };
+        store.record_fact(fact, now).map(Some).map_err(|error| {
+            matches!(
+                error,
+                FeedbackError::Invalid("fact binding" | "verification fact")
+            )
+        })
+    })();
+    match result {
+        Ok(Some(event)) => serde_json::json!({"recorded":true,"fact_hash":event.fact_hash}),
+        Ok(None) => serde_json::json!({"recorded":false,"reason":"collection_disabled"}),
+        // The fact breaks the contract, for example a passed objective with a
+        // failed validation. It is not a storage or consent problem.
+        Err(true) => serde_json::json!({"recorded":false,"reason":"invalid_fact"}),
+        Err(false) => {
+            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
+        }
+    }
+}
+
+/// The evidence digest covers the whole stored record, verifier included.
+fn verification_fact(record: &VerificationRecord) -> Result<FeedbackFactKind, ()> {
+    Ok(FeedbackFactKind::Verification {
+        validation: record.validation,
+        objective: record.objective,
+        evidence_sha256: digest(record)?,
+    })
 }
 
 fn digest(value: &impl serde::Serialize) -> Result<String, ()> {
@@ -148,6 +272,8 @@ fn feedback_input(
     Ok(FeedbackInput {
         schema_version: 1,
         observed_at_unix_seconds: now,
+        started_at_unix_seconds: None,
+        run_key_sha256: None,
         binding: FeedbackBinding {
             task_hash: digest(&context.request().task)?,
             run_hash: digest(&completion.run)?,
@@ -380,5 +506,268 @@ mod tests {
             feedback_failure(Some(RunFailure::Verification), RunState::VerificationFailed),
             Some(FeedbackFailure::Validation)
         ));
+    }
+    fn run(state: RunState, attempts: u32) -> RunSummary {
+        RunSummary {
+            run_id: "run-1".into(),
+            definition_hash: "d".repeat(64),
+            approval_digest: "a".repeat(64),
+            receipt_id: "receipt".into(),
+            plan_id: "plan".into(),
+            node_id: "node".into(),
+            state,
+            attempts,
+            failure: None,
+            worktree: None,
+            artifact_sha256: None,
+            output_retention: OutputRetentionPolicy::default(),
+            workflow: None,
+            artifact_contract_sha256: None,
+        }
+    }
+
+    #[test]
+    fn run_key_ignores_state_and_attempts_but_run_hash_does_not() {
+        let at_completion = run(RunState::Verifying, 1);
+        let later = run(RunState::Verified, 2);
+        assert_eq!(run_key(&at_completion), run_key(&later));
+        assert_ne!(digest(&at_completion), digest(&later));
+        let mut other = run(RunState::Verifying, 1);
+        other.approval_digest = "b".repeat(64);
+        assert_ne!(run_key(&at_completion), run_key(&other));
+        other = run(RunState::Verifying, 1);
+        other.run_id = "run-2".into();
+        assert_ne!(run_key(&at_completion), run_key(&other));
+        other = run(RunState::Verifying, 1);
+        other.definition_hash = "e".repeat(64);
+        assert_ne!(run_key(&at_completion), run_key(&other));
+    }
+
+    const CONFIGURED: u64 = 1_000;
+    const FACT_TIME: Option<u64> = Some(1_500);
+    fn store(collection_enabled: bool) -> (tempfile::TempDir, std::path::PathBuf) {
+        let temp = tempfile::TempDir::new().unwrap();
+        let path = temp.path().join("feedback");
+        let store = FeedbackStore::open(&path).unwrap();
+        store
+            .configure(
+                FeedbackPreferences {
+                    collection_enabled,
+                    ..FeedbackPreferences::default()
+                },
+                CONFIGURED,
+            )
+            .unwrap();
+        (temp, path)
+    }
+    fn applied() -> FeedbackFactKind {
+        FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Applied,
+        }
+    }
+
+    #[test]
+    fn late_fact_is_recorded_under_the_writer_run_key() {
+        let (_temp, path) = store(true);
+        let value = record_fact_at(
+            Some(&path),
+            &run(RunState::Verified, 2),
+            applied(),
+            FACT_TIME,
+        );
+        assert_eq!(value["recorded"], true);
+        let facts = FeedbackStore::open(&path).unwrap().facts(1_500).unwrap();
+        assert_eq!(facts.len(), 1);
+        assert_eq!(
+            facts[0].fact.run_key_sha256,
+            run_key(&run(RunState::Verifying, 1)).unwrap()
+        );
+        assert_eq!(value["fact_hash"], facts[0].fact_hash);
+        // A repeat is idempotent and reports the same fact.
+        let again = record_fact_at(
+            Some(&path),
+            &run(RunState::Verified, 2),
+            applied(),
+            FACT_TIME,
+        );
+        assert_eq!(again, value);
+        // The identity includes `observed_at`: the same outcome a second later is
+        // a different fact, refused rather than rewritten.
+        let later = record_fact_at(
+            Some(&path),
+            &run(RunState::Verified, 2),
+            applied(),
+            Some(1_501),
+        );
+        assert_eq!(later["reason"], "consent_changed_or_storage_error");
+    }
+
+    #[test]
+    fn late_fact_reports_why_it_was_not_recorded() {
+        let reason = |value: serde_json::Value| {
+            assert_eq!(value["recorded"], false);
+            value["reason"].as_str().unwrap().to_owned()
+        };
+        let summary = run(RunState::Verified, 1);
+        assert_eq!(
+            reason(record_fact_at(None, &summary, applied(), FACT_TIME)),
+            "not_requested"
+        );
+        let (_temp, disabled) = store(false);
+        assert_eq!(
+            reason(record_fact_at(
+                Some(&disabled),
+                &summary,
+                applied(),
+                FACT_TIME
+            )),
+            "collection_disabled"
+        );
+        let missing = disabled.join("absent");
+        assert_eq!(
+            reason(record_fact_at(
+                Some(&missing),
+                &summary,
+                applied(),
+                FACT_TIME
+            )),
+            "consent_changed_or_storage_error"
+        );
+        assert!(!missing.exists());
+        let (_temp, enabled) = store(true);
+        let inconclusive = FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Unknown,
+            objective: VerificationOutcome::Unknown,
+            evidence_sha256: "9".repeat(64),
+        };
+        assert_eq!(
+            reason(record_fact_at(
+                Some(&enabled),
+                &summary,
+                inconclusive,
+                FACT_TIME
+            )),
+            "inconclusive"
+        );
+        // A conflicting outcome is a storage refusal, never a command failure.
+        record_fact_at(Some(&enabled), &summary, applied(), FACT_TIME);
+        let conflict = FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Discarded,
+        };
+        assert_eq!(
+            reason(record_fact_at(
+                Some(&enabled),
+                &summary,
+                conflict,
+                FACT_TIME
+            )),
+            "consent_changed_or_storage_error"
+        );
+    }
+
+    #[test]
+    fn verification_fact_carries_the_stored_outcomes_and_a_record_digest() {
+        let record = VerificationRecord {
+            verifier: "checker".into(),
+            evidence_sha256: "1".repeat(64),
+            artifact_sha256: None,
+            validation: VerificationOutcome::Passed,
+            objective: VerificationOutcome::Failed,
+        };
+        let FeedbackFactKind::Verification {
+            validation,
+            objective,
+            evidence_sha256,
+        } = verification_fact(&record).unwrap()
+        else {
+            panic!("verification fact");
+        };
+        assert_eq!(
+            (validation, objective),
+            (VerificationOutcome::Passed, VerificationOutcome::Failed)
+        );
+        assert_eq!(evidence_sha256, digest(&record).unwrap());
+    }
+
+    fn record(
+        validation: VerificationOutcome,
+        objective: VerificationOutcome,
+    ) -> VerificationRecord {
+        VerificationRecord {
+            verifier: "checker".into(),
+            evidence_sha256: "1".repeat(64),
+            artifact_sha256: None,
+            validation,
+            objective,
+        }
+    }
+
+    #[test]
+    fn a_verification_fact_waits_for_a_conclusive_runtime_state() {
+        use VerificationOutcome::{Failed, Passed, Unknown};
+        let (_temp, path) = store(true);
+        let identity = run(RunState::Verifying, 1);
+        // The runtime keeps the run in `Verifying` and may replace this record.
+        let first = verification_fact_at(
+            Some(&path),
+            &identity,
+            &record(Passed, Unknown),
+            &run(RunState::Verifying, 1),
+            FACT_TIME,
+        );
+        assert_eq!(first["reason"], "inconclusive");
+        let stored = || FeedbackStore::open(&path).unwrap().facts(1_500).unwrap();
+        assert!(stored().is_empty());
+        let second = verification_fact_at(
+            Some(&path),
+            &identity,
+            &record(Passed, Passed),
+            &run(RunState::Verified, 1),
+            FACT_TIME,
+        );
+        assert_eq!(second["recorded"], true);
+        let facts = stored();
+        assert_eq!(facts.len(), 1);
+        assert!(matches!(
+            facts[0].fact.kind,
+            FeedbackFactKind::Verification {
+                validation: Passed,
+                objective: Passed,
+                ..
+            }
+        ));
+        // A failure is conclusive too.
+        let (_temp, path) = store(true);
+        let failed = verification_fact_at(
+            Some(&path),
+            &identity,
+            &record(Failed, Unknown),
+            &run(RunState::VerificationFailed, 1),
+            FACT_TIME,
+        );
+        assert_eq!(failed["recorded"], true);
+    }
+
+    #[test]
+    fn a_contract_violating_verification_is_invalid_not_a_storage_error() {
+        use VerificationOutcome::{Failed, Passed};
+        let (_temp, path) = store(true);
+        // Conclusive for the runtime (a failed validation), refused by the contract.
+        let value = verification_fact_at(
+            Some(&path),
+            &run(RunState::Verifying, 1),
+            &record(Failed, Passed),
+            &run(RunState::VerificationFailed, 1),
+            FACT_TIME,
+        );
+        assert_eq!(value["recorded"], false);
+        assert_eq!(value["reason"], "invalid_fact");
+        assert!(
+            FeedbackStore::open(&path)
+                .unwrap()
+                .facts(1_500)
+                .unwrap()
+                .is_empty()
+        );
     }
 }

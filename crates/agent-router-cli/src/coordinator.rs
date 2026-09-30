@@ -620,10 +620,12 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     let _ = router_coordinator::request_cancel(&control, &instance);
                 }
             });
+            // One start for the wave: its steps are launched together.
+            let started_at = crate::inspect::current_time(None).ok();
             let result = coordinator.run_ready_decisions(&workflow, jobs).await;
             listener.abort();
             let result = result.map_err(error)?;
-            let recorded:Vec<_>=result.completions.iter().filter_map(|completion|feedback.iter().find(|f|f.0==completion.run.run_id).map(|(_,path,consent,context,selection)|serde_json::json!({"run_id":completion.run.run_id,"feedback":crate::execution_feedback::record(path.as_deref(),consent.as_ref(),selection,context,completion)}))).collect();
+            let recorded:Vec<_>=result.completions.iter().filter_map(|completion|feedback.iter().find(|f|f.0==completion.run.run_id).map(|(_,path,consent,context,selection)|serde_json::json!({"run_id":completion.run.run_id,"feedback":crate::execution_feedback::record(path.as_deref(),consent.as_ref(),selection,context,completion,started_at)}))).collect();
             let success = !result.cancelled
                 && result.errors.is_empty()
                 && result.completions.iter().all(|c| {
@@ -759,8 +761,10 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
         CoordinateCommand::Artifacts {
             bundle: path,
             store,
+            config,
             command,
         } => execution::block(async {
+            let feedback_path = execution::late_feedback_store(config.as_deref())?;
             let bundle = bundle(&path)?;
             let workflow = definition(&bundle.workflow)?;
             router_coordinator::observe(&store.join("coordinator"), &workflow).map_err(error)?;
@@ -778,19 +782,27 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let coordinator = owner(&store, Arc::clone(&runtime))?;
             let (pending, ..) = reopen(&coordinator, &workflow, &bundle, true)?;
             use crate::command::ArtifactCommand;
+            let integration = |outcome| {
+                crate::execution_feedback::record_fact(
+                    feedback_path.as_deref(),
+                    pending.summary(),
+                    router_types::FeedbackFactKind::Integration { outcome },
+                )
+            };
             let value = match command {
                 ArtifactCommand::Preview => {
                     serde_json::json!({"schema_version":1,"preview":coordinator.integration_preview(&pending).await.map_err(error)?})
                 }
                 ArtifactCommand::Apply { approve } => {
-                    serde_json::json!({"schema_version":1,"applied":coordinator.apply(&pending,&approve).await.map_err(error)?})
+                    let applied = coordinator.apply(&pending, &approve).await.map_err(error)?;
+                    serde_json::json!({"schema_version":1,"applied":applied,"feedback":integration(router_types::IntegrationOutcome::Applied)})
                 }
                 ArtifactCommand::Discard { approve } => {
                     coordinator
                         .discard(&pending, &approve)
                         .await
                         .map_err(error)?;
-                    serde_json::json!({"schema_version":1,"discarded":true})
+                    serde_json::json!({"schema_version":1,"discarded":true,"feedback":integration(router_types::IntegrationOutcome::Discarded)})
                 }
                 ArtifactCommand::Keep => {
                     serde_json::json!({"schema_version":1,"kept":true,"run":pending.summary()})

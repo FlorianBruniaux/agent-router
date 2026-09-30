@@ -119,7 +119,12 @@ Late facts. Verification, integration and human outcomes are appended as
 separate facts, at most one per `(run_hash, kind)` with kind `verification`,
 `integration` or `human`. Repeating an identical fact is idempotent; a
 conflicting one is refused. No existing verdict is rewritten, so the
-immutability of `(run_hash, origin)` holds.
+immutability of `(run_hash, origin)` holds. The human fact is the existing
+human-origin event, once per `(run_hash, human)` and timestamped by its
+`observed_at`, not a third fact kind. Late facts refer to the run by a stable
+run key, the digest of `(run_id, definition_hash, approval_digest)`, because
+`run_hash` covers the run state and attempts and changes after `verify` or
+`apply`.
 
 Storage. The same `feedback.sqlite3`, migrated from `user_version` 1
 (`crates/router-feedback/src/store.rs:81`) to 2 by an explicit migration. A
