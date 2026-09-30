@@ -28,6 +28,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0019](0019-outcome-measurement.md) | Outcome measurement | implemented | 2026-09-30 | 2026-09-30 | - |
 | [0020](0020-cross-host-routing.md) | Cross-host phase routing | proposed | 2026-09-30 | 2026-09-30 | - |
+| [0021](0021-host-capability-evidence.md) | Host capability evidence from supervised canaries | proposed | 2026-09-30 | 2026-09-30 | - |
 
 ## Frontmatter fields
 
