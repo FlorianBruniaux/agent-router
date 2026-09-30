@@ -1,0 +1,32 @@
+{
+  "announced_models": [],
+  "cost": {
+    "list_microusd": 41462,
+    "product_microusd": 41462,
+    "reason": null
+  },
+  "effort": "medium",
+  "elapsed_ms": 9359,
+  "ended_at_unix": 1790776866.843512,
+  "error_count": 0,
+  "exit_code": 0,
+  "final_text_sha256": "f1768197a4fc70e2491dbc2da2db7fde5fbcf7be8b47c63df8b0b67cdd15294c",
+  "host_cost_usd": null,
+  "model": "gpt-5.6-terra",
+  "model_check": "unknown",
+  "phase": "probe",
+  "provider": "codex",
+  "sessions": 1,
+  "started_at_unix": 1790776857.482084,
+  "timed_out": false,
+  "usage": {
+    "cache_write_input_tokens": 0,
+    "cached_input_tokens": 25088,
+    "input_tokens": 41948,
+    "output_tokens": 227,
+    "reasoning_output_tokens": 23
+  },
+  "usage_events": 1,
+  "variant": "isolated",
+  "write": false
+}

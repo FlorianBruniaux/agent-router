@@ -1,0 +1,144 @@
+{
+  "schema_version": "1",
+  "decision_id": "5f02a554d8c86b5d12f7d73e58649c9468c1f768382594a2ad04f09b973c4c8e",
+  "catalog_version": "pilot-claude-pool-v1",
+  "policy_version": "stable-v1",
+  "decision": {
+    "selected": {
+      "plan": {
+        "preset": "plan-execute-verify",
+        "stages": [
+          {
+            "kind": "plan",
+            "model": "claude-opus-5-5",
+            "effort": "high",
+            "skills": []
+          },
+          {
+            "kind": "execute",
+            "model": "claude-sonnet-5-5",
+            "effort": "medium",
+            "skills": []
+          },
+          {
+            "kind": "verify",
+            "model": "claude-sonnet-5-5",
+            "effort": "medium",
+            "skills": [],
+            "verification_independence": "fresh_instance"
+          }
+        ],
+        "utility_micros": 130000
+      },
+      "alternatives": [
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "claude-opus-5-5",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": [],
+              "verification_independence": "fresh_instance"
+            }
+          ],
+          "utility_micros": 35000
+        },
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "claude-sonnet-5-5",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "claude-opus-5-5",
+              "effort": "high",
+              "skills": [],
+              "verification_independence": "fresh_instance"
+            }
+          ],
+          "utility_micros": 17500
+        }
+      ],
+      "exclusions": [
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'high' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'low' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'max' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'ultra' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'xhigh' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "plan",
+          "model": "claude-sonnet-5-5",
+          "code": "model.stage.unsupported",
+          "evidence": "model 'claude-sonnet-5-5' cannot serve stage 'plan'"
+        },
+        {
+          "stage": "verify",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'high' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "verify",
+          "model": "claude-sonnet-5-5",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'pilot-claude' does not support effort 'xhigh' for model 'claude-sonnet-5-5'"
+        },
+        {
+          "stage": "verify",
+          "model": "claude-sonnet-5-5",
+          "code": "verification.quality.below_execute",
+          "evidence": "verify model 'claude-sonnet-5-5' quality 820000 is below execute model 'claude-opus-5-5' quality 950000"
+        }
+      ],
+      "missing_evidence": []
+    }
+  }
+}

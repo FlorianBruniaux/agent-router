@@ -1,0 +1,1 @@
+`pilot_lib.cache.LRUCache` evicts the oldest inserted key instead of the least recently used one. A successful `get` and a `put` on an existing key must both mark the key as most recently used. Keep the public interface (`get`, `put`, `__len__`, capacity check).

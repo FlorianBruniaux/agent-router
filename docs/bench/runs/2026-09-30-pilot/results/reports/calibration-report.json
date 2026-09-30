@@ -1,0 +1,709 @@
+{
+  "fixed_overhead": {
+    "host_config": "user-config",
+    "per_arm_estimate": {
+      "claude:A": {
+        "arm_list_cost_usd": 1.03282,
+        "estimated_overhead_usd": 1.057184,
+        "estimated_share": 1.0236
+      },
+      "claude:B": {
+        "arm_list_cost_usd": 1.487081,
+        "estimated_overhead_usd": 1.606668,
+        "estimated_share": 1.0804
+      },
+      "claude:C": {
+        "arm_list_cost_usd": 0.769532,
+        "estimated_overhead_usd": 0.782442,
+        "estimated_share": 1.0168
+      },
+      "claude:E": {
+        "arm_list_cost_usd": 0.528709,
+        "estimated_overhead_usd": 0.535556,
+        "estimated_share": 1.013
+      },
+      "claude:G": {
+        "arm_list_cost_usd": 1.475819,
+        "estimated_overhead_usd": 1.606668,
+        "estimated_share": 1.0887
+      },
+      "codex:A": {
+        "arm_list_cost_usd": 0.302501,
+        "estimated_overhead_usd": 0.179233,
+        "estimated_share": 0.5925
+      },
+      "codex:B": {
+        "arm_list_cost_usd": 0.271577,
+        "estimated_overhead_usd": 0.152583,
+        "estimated_share": 0.5618
+      },
+      "codex:C": {
+        "arm_list_cost_usd": 0.297441,
+        "estimated_overhead_usd": 0.192558,
+        "estimated_share": 0.6474
+      },
+      "codex:E": {
+        "arm_list_cost_usd": 0.108726,
+        "estimated_overhead_usd": 0.050861,
+        "estimated_share": 0.4678
+      },
+      "codex:G": {
+        "arm_list_cost_usd": 0.243209,
+        "estimated_overhead_usd": 0.152583,
+        "estimated_share": 0.6274
+      }
+    },
+    "probes": {
+      "claude:claude-opus-5-5:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": 0.0669934,
+        "list_microusd": 66994,
+        "product_microusd": 34782,
+        "usage": {
+          "cache_write_1h_tokens": 8053,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 8053,
+          "cached_input_tokens": 12407,
+          "input_tokens": 20462,
+          "output_tokens": 4,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "claude:claude-opus-5-5:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": 0.5355559999999999,
+        "list_microusd": 535556,
+        "product_microusd": 270252,
+        "usage": {
+          "cache_write_1h_tokens": 66326,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 66326,
+          "cached_input_tokens": 0,
+          "input_tokens": 66328,
+          "output_tokens": 247,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 93
+        }
+      },
+      "claude:claude-sonnet-5-5:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": 0.034821399999999995,
+        "list_microusd": 34822,
+        "product_microusd": 18674,
+        "usage": {
+          "cache_write_1h_tokens": 8074,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 8074,
+          "cached_input_tokens": 12407,
+          "input_tokens": 20483,
+          "output_tokens": 4,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "claude:claude-sonnet-5-5:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": 0.260814,
+        "list_microusd": 260814,
+        "product_microusd": 130484,
+        "usage": {
+          "cache_write_1h_tokens": 65165,
+          "cache_write_5m_tokens": 0,
+          "cache_write_input_tokens": 65165,
+          "cached_input_tokens": 0,
+          "input_tokens": 65167,
+          "output_tokens": 15,
+          "reasoning_output_tokens": null,
+          "thinking_tokens_reported": 0
+        }
+      },
+      "codex:gpt-5.6-terra:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 41462,
+        "product_microusd": 41462,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 25088,
+          "input_tokens": 41948,
+          "output_tokens": 227,
+          "reasoning_output_tokens": 23
+        }
+      },
+      "codex:gpt-5.6-terra:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 64186,
+        "product_microusd": 64186,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 37376,
+          "input_tokens": 64579,
+          "output_tokens": 192,
+          "reasoning_output_tokens": 46
+        }
+      },
+      "codex:gpt-6.1-sol:isolated": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 42520,
+        "product_microusd": 42520,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 0,
+          "input_tokens": 21235,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      },
+      "codex:gpt-6.1-sol:user-config": {
+        "exit_code": 0,
+        "host_cost_usd": null,
+        "list_microusd": 50861,
+        "product_microusd": 50861,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 7168,
+          "input_tokens": 32215,
+          "output_tokens": 5,
+          "reasoning_output_tokens": 0
+        }
+      }
+    }
+  },
+  "host_config": "user-config",
+  "manifest_sha256": "06d93c6668898f9900325dc3f97aaf891b3feee14e2029a741c993b2f8844856",
+  "mode": "host-direct",
+  "note": "10 tasks give a direction and variance estimates to fix N; no adoption claim follows from this pilot.",
+  "per_arm": {
+    "claude": {
+      "A": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 1.03282,
+        "cost_per_accepted_list_usd": 1.03282,
+        "cost_per_accepted_product_usd": 0.588916,
+        "cost_product_usd_total": 0.588916,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 1.032819,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 67.581,
+          "p90": 67.581
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 165868,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 441213,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 607099,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 3643,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 1
+          }
+        },
+        "valid": 1
+      },
+      "B": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 1.487081,
+        "cost_per_accepted_list_usd": 1.487081,
+        "cost_per_accepted_product_usd": 0.836701,
+        "cost_product_usd_total": 0.836701,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 1.487079,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 79.51,
+          "p90": 79.51
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 162595,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 509494,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 672109,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 4217,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 1
+          }
+        },
+        "valid": 1
+      },
+      "C": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.769532,
+        "cost_per_accepted_list_usd": 0.769532,
+        "cost_per_accepted_product_usd": 0.444762,
+        "cost_product_usd_total": 0.444762,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0.76953,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 50.237,
+          "p90": 50.237
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 162385,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 441272,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 603675,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 3170,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 1
+          }
+        },
+        "valid": 1
+      },
+      "E": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.528709,
+        "cost_per_accepted_list_usd": 0.528709,
+        "cost_per_accepted_product_usd": 0.302069,
+        "cost_product_usd_total": 0.302069,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0.528709,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 32.02,
+          "p90": 32.02
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 56660,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 214883,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 271551,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 1621,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 1
+          }
+        },
+        "valid": 1
+      },
+      "G": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 1.475819,
+        "cost_per_accepted_list_usd": 1.475819,
+        "cost_per_accepted_product_usd": 0.824795,
+        "cost_product_usd_total": 0.824795,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 1.475817,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 0,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 77.292,
+          "p90": 77.292
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 162756,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 511647,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 674423,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 3568,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 1
+          }
+        },
+        "valid": 1
+      }
+    },
+    "codex": {
+      "A": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.302501,
+        "cost_per_accepted_list_usd": 0.302501,
+        "cost_per_accepted_product_usd": 0.302501,
+        "cost_product_usd_total": 0.302501,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 3,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 138.991,
+          "p90": 138.991
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 457600,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 550145,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 3195,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 951,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 1
+      },
+      "B": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.271577,
+        "cost_per_accepted_list_usd": 0.271577,
+        "cost_per_accepted_product_usd": 0.271577,
+        "cost_product_usd_total": 0.271577,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 3,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 236.037,
+          "p90": 236.037
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 425984,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 526778,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 2739,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 359,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 1
+      },
+      "C": {
+        "accepted": 0,
+        "accepted_rate": 0.0,
+        "agent_pass_but_rejected": 1,
+        "cost_list_usd_total": 0.297441,
+        "cost_per_accepted_list_usd": null,
+        "cost_per_accepted_product_usd": null,
+        "cost_product_usd_total": 0.297441,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 3,
+        "rejected": 1,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": null,
+          "p90": null
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 329728,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 424883,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 3432,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 877,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 1
+      },
+      "E": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.108726,
+        "cost_per_accepted_list_usd": 0.108726,
+        "cost_per_accepted_product_usd": 0.108726,
+        "cost_product_usd_total": 0.108726,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 1,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 113.37,
+          "p90": 113.37
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 194176,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 230275,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 1711,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 290,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 1
+      },
+      "G": {
+        "accepted": 1,
+        "accepted_rate": 1.0,
+        "agent_pass_but_rejected": 0,
+        "cost_list_usd_total": 0.243209,
+        "cost_per_accepted_list_usd": 0.243209,
+        "cost_per_accepted_product_usd": 0.243209,
+        "cost_product_usd_total": 0.243209,
+        "cost_unknown_runs": 0,
+        "host_reported_cost_usd": 0,
+        "invalid": 0,
+        "invalid_reasons": [],
+        "model_check_unknown_phases": 3,
+        "rejected": 0,
+        "runs": 1,
+        "time_to_acceptance_s": {
+          "p50": 143.414,
+          "p90": 143.414
+        },
+        "tokens": {
+          "cache_write_input_tokens": {
+            "sum_known": 0,
+            "unknown_runs": 0
+          },
+          "cached_input_tokens": {
+            "sum_known": 321536,
+            "unknown_runs": 0
+          },
+          "input_tokens": {
+            "sum_known": 418748,
+            "unknown_runs": 0
+          },
+          "output_tokens": {
+            "sum_known": 1663,
+            "unknown_runs": 0
+          },
+          "reasoning_output_tokens": {
+            "sum_known": 63,
+            "unknown_runs": 0
+          }
+        },
+        "valid": 1
+      }
+    }
+  },
+  "pricing_version": "pilot-2026-09-30-b",
+  "schema_version": 1,
+  "sizing": {
+    "claude:A-vs-B": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "claude:A-vs-C": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "claude:B-vs-E": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "claude:B-vs-G": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "claude:G-vs-C": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "codex:A-vs-B": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "codex:A-vs-C": {
+      "discordance": 1.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": 951,
+      "n_success_10pt_alpha_5": 619,
+      "pairs": 1
+    },
+    "codex:B-vs-E": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "codex:B-vs-G": {
+      "discordance": 0.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": null,
+      "n_success_10pt_alpha_5": null,
+      "pairs": 1
+    },
+    "codex:G-vs-C": {
+      "discordance": 1.0,
+      "log_cost_ratio_sd_per_task": null,
+      "n_cost_ratio_0_8_alpha_1_25": null,
+      "n_cost_ratio_0_8_alpha_5": null,
+      "n_success_10pt_alpha_1_25": 951,
+      "n_success_10pt_alpha_5": 619,
+      "pairs": 1
+    }
+  }
+}

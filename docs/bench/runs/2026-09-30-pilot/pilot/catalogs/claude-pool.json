@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "version": "pilot-claude-pool-v1",
+  "models": [
+    {
+      "id": "claude-opus-5-5",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "medium",
+        "high"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 950000,
+      "cost_micros": 900000,
+      "latency_micros": 800000,
+      "source": "pilot prior mirroring the stage structure and quality/cost priors of assets/catalogs/codex-core-v1.json; not a measurement"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "stages": [
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "medium"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 820000,
+      "cost_micros": 550000,
+      "latency_micros": 550000,
+      "source": "pilot prior mirroring the stage structure and quality/cost priors of assets/catalogs/codex-core-v1.json; not a measurement"
+    }
+  ],
+  "skills": []
+}

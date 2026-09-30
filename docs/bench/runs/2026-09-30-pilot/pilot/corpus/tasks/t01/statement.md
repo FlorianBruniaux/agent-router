@@ -1,0 +1,1 @@
+`pilot_lib.pagination.paginate(items, page, size)` returns the wrong items: page 1 must return the first `size` items (pages are 1-based). `page_count(total, size)` must count a last partial page. Fix both functions without changing their signatures. Keep the existing ValueError checks.
