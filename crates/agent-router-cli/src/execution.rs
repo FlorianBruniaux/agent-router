@@ -718,13 +718,13 @@ fn approval_with_environment(
         let digest = binary_digest(&wrapper, BINARY_LIMIT)?;
         hashes.insert(wrapper, digest);
     }
-    // v5 binds fresh private host state and API-key-only bootstrap; v1-v4 are stale.
+    // v6 also binds the Codex-only macOS preference-read rule; v1-v5 are stale.
     let bytes = if let Some(backend) = backend {
         serde_json::to_vec(&(
             if matches!(backend, crate::generation::SourceBinding::Escalated(_)) {
-                "runtime-cli-approval-v5-escalation"
+                "runtime-cli-approval-v6-escalation"
             } else {
-                "runtime-cli-approval-v5-backend"
+                "runtime-cli-approval-v6-backend"
             },
             inner_digest,
             definition,
@@ -735,7 +735,7 @@ fn approval_with_environment(
         ))
     } else {
         serde_json::to_vec(&(
-            "runtime-cli-approval-v5",
+            "runtime-cli-approval-v6",
             inner_digest,
             definition,
             config,
