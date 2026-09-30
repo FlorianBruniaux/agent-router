@@ -66,7 +66,8 @@ A late fact (`FeedbackFact`, schema 1) has `run_key_sha256`,
 
 - `verification`: `validation`, `objective` (`passed`, `failed` or `unknown`,
   not both `unknown`, `objective` `passed` only with `validation` `passed`) and
-  `evidence_sha256`, the digest of the stored verification record;
+  `evidence_sha256`, the digest of the stored verification record. It is
+  recorded only once the run is `verified` or `verification_failed`;
 - `integration`: `outcome`, `applied` or `discarded`.
 
 The stored `FeedbackFactEvent` adds `sequence`, `consent_revision`,
@@ -79,7 +80,7 @@ lists them in `facts`, omitted when empty so an export without facts keeps its
 accept an optional `--config <sandbox.json>`, of which only `feedback_store` is
 read. Their JSON output gains `feedback`: `{"recorded":true,"fact_hash":"..."}`
 or `{"recorded":false,"reason":"..."}` with `not_requested`,
-`collection_disabled`, `inconclusive` or `consent_changed_or_storage_error`.
+`collection_disabled`, `inconclusive`, `invalid_fact` or `consent_changed_or_storage_error`.
 `agent-router run` and `coordinate run-wave` keep the same `feedback` shape for
 the automated event, with `event_hash` in place of `fact_hash`.
 

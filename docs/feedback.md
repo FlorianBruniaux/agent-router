@@ -71,10 +71,13 @@ rejects `escalations > attempts` instead of `escalations >= attempts`.
 
 Automated events written by the CLI also carry `run_key_sha256` and
 `started_at_unix_seconds`, both optional and omitted when absent, so an earlier
-event keeps its bytes and hash. The run key is the digest of the stable run
-identity (run id, definition hash, approval digest). `run_hash` cannot serve
-later, because it covers the run state and attempts, which `verify` and
-`artifacts apply` change. The start time is read before the native process
+event keeps its bytes and hash. The run key is the digest of the run id, the
+definition hash and the approval digest. It does not change with the run state
+or the attempt count, which `verify` and `artifacts apply` change and which
+`run_hash` covers, so `run_hash` cannot serve later. A retry issues a new
+approval digest (`retry_projection`), so it starts a new key: a late fact
+attaches to the latest attempt, and the earlier attempt's event keeps its own
+key. The start time is read before the native process
 starts; a coordinated wave shares one start time for its steps. It is refused
 when later than `observed_at_unix_seconds`.
 
@@ -82,13 +85,17 @@ Late facts are appended after the automated verdict, keyed by the run key and
 holding no free text:
 
 - `verification`: the validation and objective outcomes of the record the runtime
-  stored, and the digest of that record. A record with both outcomes `unknown` is
-  inconclusive, so it is not a fact.
+  stored, and the digest of that record. It is written only once the run left
+  `Verifying` (`verified` or `verification_failed`). The runtime may replace an
+  inconclusive record while the run stays `verifying`, so such a record is not a
+  fact, and a stored fact is never rewritten. A record that fails the contract
+  (a passed objective with a validation that did not pass) is refused.
 - `integration`: `applied` or `discarded`.
 
 There is at most one fact per run key and kind. Repeating an identical fact is
 idempotent; a different fact for the same key and kind fails with an integrity
-error, and nothing is rewritten. A fact does not require a matching automated
+error, and nothing is rewritten. Identical includes `observed_at`, the time of
+recording: a repeat is idempotent only within the same second. A fact does not require a matching automated
 event, which may have failed to record. The human outcome is not a fact kind: it
 stays the human-origin event, once per run. Consent, the clock watermark and
 retention (by observation time) apply as for events. Disabling collection,
@@ -100,13 +107,19 @@ newer version is refused.
 
 `agent-router verify`, `artifacts apply`, `artifacts discard` and their
 `coordinate artifacts` counterparts accept `--config <sandbox.json>`. Only its
-`feedback_store` is read. Without the option, or with collection disabled,
-nothing is recorded. The JSON output gains a `feedback` object, either
+`feedback_store` is read, but the whole file is validated by the same loader as
+`run`, and an invalid configuration fails the command before the operation.
+Without the option, or with collection disabled, nothing is recorded. The JSON output gains a `feedback` object, either
 `{"recorded":true,"fact_hash":...}` or `{"recorded":false,"reason":...}` with
-`not_requested`, `collection_disabled`, `inconclusive` or
-`consent_changed_or_storage_error`. A feedback failure never fails the command
-that succeeded. `coordinate verify` only queues the verification for `service`,
-which does not record a fact yet.
+`not_requested`, `collection_disabled`, `inconclusive`, `invalid_fact` or
+`consent_changed_or_storage_error`. Once the operation succeeded, a feedback
+failure never fails the command. There is no retry: if the process dies between
+the runtime operation and the fact write, or the write fails, the fact is lost
+and nothing records it later.
+
+Limit: no verification fact is recorded for a coordinated run. `coordinate
+verify` only queues the verification, and `service`, which applies it, does not
+receive the sandbox configuration.
 
 `statistics(now)` is available only with learning consent. It rebuilds a
 versioned, content-hashed report from retained immutable events:

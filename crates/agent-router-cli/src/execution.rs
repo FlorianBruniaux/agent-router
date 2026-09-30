@@ -1065,16 +1065,12 @@ pub(crate) fn verify(
     let run = runtime
         .record_verification(&pending, record.clone())
         .map_err(error)?;
-    let feedback = match crate::execution_feedback::verification_fact(&record) {
-        Ok(kind) => crate::execution_feedback::record_fact(
-            feedback_path.as_deref(),
-            pending.summary(),
-            kind,
-        ),
-        Err(()) => {
-            serde_json::json!({"recorded":false,"reason":"consent_changed_or_storage_error"})
-        }
-    };
+    let feedback = crate::execution_feedback::record_verification_fact(
+        feedback_path.as_deref(),
+        pending.summary(),
+        &record,
+        &run,
+    );
     json_output(
         &serde_json::json!({"schema_version":1,"run":run,"feedback":feedback}),
         ExitCode::SUCCESS,
