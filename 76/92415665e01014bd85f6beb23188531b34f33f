@@ -1,0 +1,29 @@
+crates/adapter-claude/src/probe.rs
+  s_9e15cec8cf2013::t_f834c563953548 95-101
+crates/adapter-claude/tests/conformance.rs
+  s_394b97e16a622a::t_31b2ce28c1deb9 592-597,640-674
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7692415665e01014bd85f6beb23188531b34f33f",
+  "prompts": {},
+  "sessions": {
+    "s_394b97e16a622a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa654826-2dbc-4b71-aa49-ed5a86c5b3be",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e15cec8cf2013": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee55b5e6-c13f-4366-8ef6-02c6713eec4b",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
