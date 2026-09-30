@@ -251,3 +251,62 @@ fn native_cli_cancel_with_zero_exit_handler_is_failure() {
     assert_eq!(feedback["events"][0]["input"]["transport"], "failed");
     assert_eq!(feedback["events"][0]["input"]["failure"], "cancelled");
 }
+
+#[test]
+#[ignore = "requires native OS sandbox and built helper; no live model"]
+fn native_host_state_is_private_writable_and_removed_after_completion() {
+    let body = format!(
+        r#"[ -d "$CLAUDE_CONFIG_DIR" ] || exit 61
+printf state > "$CLAUDE_CONFIG_DIR/probe"
+[ "$(cat "$CLAUDE_CONFIG_DIR/probe")" = state ] || exit 62
+if cat "$CLAUDE_CONFIG_DIR/../approval.key" >/dev/null 2>&1; then exit 63; fi
+if cat "$CLAUDE_CONFIG_DIR/../runtime.sqlite3" >/dev/null 2>&1; then exit 64; fi
+printf '%s' "$CLAUDE_CONFIG_DIR" > src/host-state-path
+printf '%s' {}
+"#,
+        shell_quote(STREAM)
+    );
+    let fixture = Fixture::new(&body, 3_000);
+    let digest = fixture.review();
+    let output = checked(fixture.run().args(["--approve", &digest]), 0);
+    assert_eq!(output["completion"]["transport"]["exit_code"], 0);
+    let worktree = Path::new(output["completion"]["run"]["worktree"].as_str().unwrap());
+    let state = fs::read_to_string(worktree.join("src/host-state-path")).unwrap();
+    assert!(Path::new(&state).starts_with(&fixture.store));
+    assert!(!Path::new(&state).exists());
+}
+
+#[test]
+#[ignore = "requires native OS sandbox and built helper; no live model"]
+fn native_host_state_cleanup_failure_is_terminal_and_reported() {
+    let body = format!(
+        "mkdir \"$CLAUDE_CONFIG_DIR/locked\"\nprintf private > \"$CLAUDE_CONFIG_DIR/locked/data\"\nchmod 000 \"$CLAUDE_CONFIG_DIR/locked\"\nprintf '%s' {}",
+        shell_quote(STREAM)
+    );
+    let fixture = Fixture::new(&body, 3_000);
+    let digest = fixture.review();
+    let output = fixture.run().args(["--approve", &digest]).output().unwrap();
+    let status = fixture.status();
+    let states: Vec<_> = fs::read_dir(&fixture.store)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| {
+            p.file_name()
+                .unwrap()
+                .as_encoded_bytes()
+                .starts_with(b"host-state-")
+        })
+        .collect();
+    // Restore synthetic fixture permissions so even a RED test leaves no orphan.
+    for state in &states {
+        fs::set_permissions(state.join("locked"), fs::Permissions::from_mode(0o700)).unwrap();
+        fs::remove_dir_all(state).unwrap();
+    }
+    assert_eq!(states.len(), 1);
+    assert_eq!(output.status.code(), Some(6));
+    assert_eq!(
+        serde_json::from_slice::<Value>(&output.stderr).unwrap()["error"],
+        "runtime.cleanup.unknown"
+    );
+    assert_eq!(status["run"]["state"], "failed");
+}

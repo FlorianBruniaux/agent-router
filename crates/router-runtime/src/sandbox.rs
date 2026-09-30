@@ -9,12 +9,20 @@ use std::{
 };
 use tokio::process::Command;
 
-pub struct SandboxPolicy {
+pub struct SandboxPolicy<'a> {
     pub network: bool,
+    pub host_state: Option<&'a crate::HostState>,
 }
 /// Implementors must enforce read/write/network restrictions in the child and
 /// every descendant. A declared host capability or receipt is not sufficient.
 pub trait SandboxSupervisor: Send + Sync {
+    fn create_host_state(
+        &self,
+        _store: &Path,
+        _run: &PreparedRun,
+    ) -> Result<Option<crate::HostState>> {
+        Ok(None)
+    }
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command>;
     /// True only for a probe-bound sandbox whose workers enter a PID namespace.
     fn pid_namespace_isolated(&self) -> bool {
@@ -281,6 +289,13 @@ impl SeatbeltSandbox {
     }
 }
 impl SandboxSupervisor for SeatbeltSandbox {
+    fn create_host_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+    ) -> Result<Option<crate::HostState>> {
+        crate::HostState::create(store, &run.program, &self.environment)
+    }
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
         let program = self
             .programs
@@ -297,11 +312,17 @@ impl SandboxSupervisor for SeatbeltSandbox {
         let mut reads = self.read_roots.clone();
         reads.push(cwd.into());
         reads.push(program.clone());
-        let writes = if run.sandbox == ExecutionSandbox::WorkspaceWrite {
+        let mut writes = if run.sandbox == ExecutionSandbox::WorkspaceWrite {
             run.scope.iter().map(|p| cwd.join(p)).collect()
         } else {
             vec![]
         };
+        let mut environment = self.environment.clone();
+        if let Some(state) = policy.host_state {
+            state.extend(&run.program, cwd, &mut reads, &mut writes, &mut environment)?;
+        } else if matches!(run.program.as_str(), "codex" | "claude") {
+            return Err(RuntimeError::Sandbox);
+        }
         // Seatbelt accepts scope paths that do not exist yet; a missing tail is
         // checked through its deepest existing ancestor.
         require_canonical_paths(&reads, &writes, false)?;
@@ -316,7 +337,7 @@ impl SandboxSupervisor for SeatbeltSandbox {
             .current_dir(cwd)
             .env_clear()
             .env("PATH", "/usr/bin:/bin");
-        for (key, value) in &self.environment {
+        for (key, value) in &environment {
             command.env(key, value);
         }
         Ok(command)

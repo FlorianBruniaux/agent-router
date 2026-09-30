@@ -386,6 +386,39 @@ it stands at `f263e7d`:
 These findings belong to the provider-egress ADR or to a runtime profile
 change; this ADR does not decide them.
 
+## Runtime startup amendment, 2026-09-30
+
+Native Codex and Claude processes receive a fresh owner-only host directory
+inside the runtime store for each attempt, including read-only attempts. Only
+that directory is added to child read/write roots. A read or write root covering
+the store, its approval key, or an unrelated store child is refused. The state
+is removed on preparation failure and after supervised completion; a killed
+router can leave a private orphan, never reused by another attempt.
+
+The runtime owns `CODEX_HOME` and `CLAUDE_CONFIG_DIR`: caller values for these
+names are refused, not silently replaced. It does not copy personal host config,
+OAuth credentials, keychains or refresh tokens. Explicitly approved
+`OPENAI_API_KEY` is written as the sole field of a private 0600 Codex `auth.json`;
+Claude receives the approved `ANTHROPIC_API_KEY` through its environment. Without
+an API key, state stays empty and authenticated provider access is unverified.
+The Codex file shape follows [AuthDotJson at rust-v0.159.2](https://github.com/openai/codex/blob/rust-v0.159.2/codex-rs/login/src/auth/storage.rs).
+Copying OAuth credentials is rejected because a refresh in a disposable copy
+could invalidate the original session. OAuth support requires a separate
+credential ownership and refresh design.
+
+Approval domain v5 binds this state policy in addition to all v4 inputs. Existing
+approvals must be previewed again. The random directory is runtime-owned output,
+not an extra caller-controlled grant. macOS and Linux use the same validation
+and environment construction; only their enforcement primitives differ. These
+changes do not open network access or establish any host capability.
+
+
+If host-state cleanup fails (for example, the child removes directory
+permissions), a completed attempt is recorded as failed and the CLI reports
+`runtime.cleanup.unknown` (exit 6). A version probe cannot succeed with failed
+state cleanup. Inspect the private orphan before retrying; no automatic OAuth
+recovery or credential write-back is attempted.
+
 ## Consequences
 
 A write phase becomes routable on a host only after a canary succeeded on that

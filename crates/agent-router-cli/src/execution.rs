@@ -718,13 +718,13 @@ fn approval_with_environment(
         let digest = binary_digest(&wrapper, BINARY_LIMIT)?;
         hashes.insert(wrapper, digest);
     }
-    // v4 adds the environment binding; every v1/v2/v3 approval is stale.
+    // v5 binds fresh private host state and API-key-only bootstrap; v1-v4 are stale.
     let bytes = if let Some(backend) = backend {
         serde_json::to_vec(&(
             if matches!(backend, crate::generation::SourceBinding::Escalated(_)) {
-                "runtime-cli-approval-v4-escalation"
+                "runtime-cli-approval-v5-escalation"
             } else {
-                "runtime-cli-approval-v4-backend"
+                "runtime-cli-approval-v5-backend"
             },
             inner_digest,
             definition,
@@ -735,7 +735,7 @@ fn approval_with_environment(
         ))
     } else {
         serde_json::to_vec(&(
-            "runtime-cli-approval-v4",
+            "runtime-cli-approval-v5",
             inner_digest,
             definition,
             config,

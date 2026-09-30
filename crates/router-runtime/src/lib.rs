@@ -8,6 +8,7 @@ mod diagnostics;
 mod error;
 mod escalation;
 mod generated;
+mod host_state;
 mod leases;
 mod native_version;
 mod outputs;
@@ -29,6 +30,7 @@ pub use diagnostics::{
 };
 pub use error::{Result, RuntimeError};
 pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
+pub use host_state::HostState;
 pub use native_version::{NativeVersionProbe, probe_native_version};
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
@@ -1064,7 +1066,7 @@ impl Runtime {
                 }
             }
         };
-        let (run, mut command) = match prepared {
+        let (run, mut command, mut host_state) = match prepared {
             Ok(v) => v,
             Err(RuntimeError::Cancelled) => {
                 self.store.transition(
@@ -1193,6 +1195,18 @@ impl Runtime {
                 Some(RunFailure::Interrupted),
             )?;
             return Err(error);
+        }
+        if let Some(state) = host_state.take() {
+            if state.cleanup().is_err() {
+                self.store.finish_attempt(id, "host_state_cleanup_failed")?;
+                self.store.transition(
+                    id,
+                    RunState::Failed,
+                    "host_state_cleanup_failed",
+                    Some(RunFailure::Interrupted),
+                )?;
+                return Err(RuntimeError::CleanupUnknown);
+            }
         }
         let output = match captured {
             Ok(v) => v,
@@ -1449,7 +1463,7 @@ impl Runtime {
         supervisor: &dyn SandboxSupervisor,
         cancel: &Cancellation,
         preparation: &store::Preparation<'_>,
-    ) -> Result<(PreparedRun, tokio::process::Command)> {
+    ) -> Result<(PreparedRun, tokio::process::Command, Option<HostState>)> {
         if !supervisor.resource_limits_enforced() {
             return Err(RuntimeError::Sandbox);
         }
@@ -1490,6 +1504,7 @@ impl Runtime {
             Some(&auth),
         )?;
         let initial = adapter.prepare(&validated)?;
+        let host_state = supervisor.create_host_state(&self.store.root, &initial)?;
         pending
             .router
             .validate_execution_assets(
@@ -1519,6 +1534,7 @@ impl Runtime {
             &initial,
             &SandboxPolicy {
                 network: request.required_capabilities.contains(&Capability::Network),
+                host_state: host_state.as_ref(),
             },
         )?;
         if request.sandbox == ExecutionSandbox::WorkspaceWrite {
@@ -1643,10 +1659,11 @@ impl Runtime {
             &run,
             &SandboxPolicy {
                 network: request.required_capabilities.contains(&Capability::Network),
+                host_state: host_state.as_ref(),
             },
         )?;
         preparation.complete()?;
-        Ok((run, command))
+        Ok((run, command, host_state))
     }
     async fn capture_artifact(&self, pending: &PendingRun, path: &Path) -> Result<()> {
         let (bytes, _) = workspace::patch_observed(

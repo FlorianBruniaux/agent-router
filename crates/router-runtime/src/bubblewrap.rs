@@ -180,6 +180,13 @@ impl BubblewrapSandbox {
     }
 }
 impl SandboxSupervisor for BubblewrapSandbox {
+    fn create_host_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+    ) -> Result<Option<crate::HostState>> {
+        crate::HostState::create(store, &run.program, &self.environment)
+    }
     fn pid_namespace_isolated(&self) -> bool {
         cfg!(target_os = "linux")
     }
@@ -199,11 +206,17 @@ impl SandboxSupervisor for BubblewrapSandbox {
         let mut reads = self.read_roots.clone();
         reads.push(cwd.into());
         reads.push(program.clone());
-        let writes = if run.sandbox == ExecutionSandbox::WorkspaceWrite {
+        let mut writes = if run.sandbox == ExecutionSandbox::WorkspaceWrite {
             run.scope.iter().map(|path| cwd.join(path)).collect()
         } else {
             vec![]
         };
+        let mut environment = self.environment.clone();
+        if let Some(state) = policy.host_state {
+            state.extend(&run.program, cwd, &mut reads, &mut writes, &mut environment)?;
+        } else if matches!(run.program.as_str(), "codex" | "claude") {
+            return Err(RuntimeError::Sandbox);
+        }
         wrap(
             &self.wrapper,
             program.to_str().ok_or(RuntimeError::Sandbox)?,
@@ -212,7 +225,7 @@ impl SandboxSupervisor for BubblewrapSandbox {
             &reads,
             &writes,
             policy.network,
-            &self.environment,
+            &environment,
         )
     }
 }

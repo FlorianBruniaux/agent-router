@@ -405,7 +405,10 @@ async fn native_supervisor(root: &Path, script: &str) -> Box<dyn SandboxSupervis
     #[cfg(target_os = "macos")]
     let sandbox = router_runtime::SeatbeltSandbox::probe_expected(
         root,
-        BTreeMap::from([("fake-version-host".into(), program)]),
+        BTreeMap::from([
+            ("fake-version-host".into(), program.clone()),
+            ("claude".into(), program),
+        ]),
         vec![],
         BTreeMap::new(),
         &hashes,
@@ -416,7 +419,10 @@ async fn native_supervisor(root: &Path, script: &str) -> Box<dyn SandboxSupervis
     let sandbox = router_runtime::BubblewrapSandbox::probe_expected(
         root,
         &wrapper,
-        BTreeMap::from([("fake-version-host".into(), program)]),
+        BTreeMap::from([
+            ("fake-version-host".into(), program.clone()),
+            ("claude".into(), program),
+        ]),
         vec![],
         BTreeMap::new(),
         &hashes,
@@ -625,4 +631,44 @@ async fn version_probe_rejects_a_stdout_prefix_when_a_stream_stays_open() {
         .await,
         Err(RuntimeError::Process)
     ));
+}
+
+#[tokio::test]
+#[ignore = "requires native OS sandbox and built resource helper; no model"]
+async fn native_version_probe_reports_host_state_cleanup_failure() {
+    let temp = private_dir();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    let store = root.join("store");
+    fs::create_dir(&store).unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let supervisor = native_supervisor(
+        &root,
+        r#"set -eu
+mkdir "$CLAUDE_CONFIG_DIR/locked"
+printf private > "$CLAUDE_CONFIG_DIR/locked/data"
+chmod 000 "$CLAUDE_CONFIG_DIR/locked"
+printf '1.2.3\n'
+"#,
+    )
+    .await;
+    let mut run = prepared(&root);
+    run.program = "claude".into();
+    let result =
+        probe_native_version(supervisor.as_ref(), &run, &store, &Cancellation::default()).await;
+    let states: Vec<_> = fs::read_dir(&store)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .filter(|p| {
+            p.file_name()
+                .unwrap()
+                .as_encoded_bytes()
+                .starts_with(b"host-state-")
+        })
+        .collect();
+    for state in &states {
+        fs::set_permissions(state.join("locked"), fs::Permissions::from_mode(0o700)).unwrap();
+        fs::remove_dir_all(state).unwrap();
+    }
+    assert_eq!(states.len(), 1);
+    assert!(matches!(result, Err(RuntimeError::CleanupUnknown)));
 }
