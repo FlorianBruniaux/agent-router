@@ -126,6 +126,10 @@ pub struct FeedbackRoute {
 pub struct FeedbackMeasurements {
     pub cost_microusd: Option<u64>,
     pub latency_ms: Option<u64>,
+    /// Total tokens declared by the caller. The automatic CLI feedback sets it
+    /// only to input plus output tokens the host declared in its own stream
+    /// (`host_reported`, decoded into `RuntimeEvidence.host_usage`); manual and
+    /// sidecar feedback set it themselves. `None` is UNKNOWN, never zero.
     pub tokens: Option<u64>,
     pub attempts: u32,
     pub escalations: u32,

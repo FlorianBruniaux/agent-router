@@ -172,6 +172,7 @@ pub(crate) fn decode_sse(
         executed_effort: None,
         events,
         missing_evidence: missing,
+        host_usage: None,
     })
 }
 
@@ -295,5 +296,6 @@ pub(crate) fn decode(
         executed_effort: None,
         events,
         missing_evidence: missing,
+        host_usage: None,
     })
 }
