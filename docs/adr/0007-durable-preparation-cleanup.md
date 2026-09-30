@@ -1,6 +1,17 @@
-# ADR 0007: Durable cleanup evidence for preparation
+---
+adr: "0007"
+title: Durable cleanup evidence for preparation
+status: implemented
+created: 2026-09-28
+last_modified: 2026-09-28
+scope: "Independently reviewed. Delivery checks tracked in the PR."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: implemented and independently reviewed; delivery checks tracked in the PR.
+# ADR 0007: Durable cleanup evidence for preparation
 
 ## Problem
 

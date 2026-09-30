@@ -1,6 +1,17 @@
-# ADR 0002: Bounded routing and execution boundaries
+---
+adr: "0002"
+title: Bounded routing and execution boundaries
+status: accepted
+created: 2026-09-27
+last_modified: 2026-09-27
+scope: "Product implementation."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the product implementation.
+# ADR 0002: Bounded routing and execution boundaries
 
 ## Context
 

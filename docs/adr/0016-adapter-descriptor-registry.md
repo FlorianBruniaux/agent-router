@@ -1,6 +1,17 @@
-# 0016: Validate adapter descriptors as inert data
+---
+adr: "0016"
+title: Validate adapter descriptors as inert data
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "Descriptor validator in `router-adapter-api`."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the descriptor validator in `router-adapter-api`.
+# ADR 0016: Validate adapter descriptors as inert data
 
 ## Context
 

@@ -63,6 +63,7 @@ sauf celles marquées (FR).
 | [Store d'activation des backends](backend-store.md) | Activation durable, rollback et révocation |
 | [Exécution d'un backend](backend-execution.md) | Exécuter une décision de backend signée |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
+| [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Feedback](feedback.md) | Feedback local donné avec consentement, politiques hors ligne |
 
 ## Diagnostic, distribution et sécurité
@@ -84,7 +85,7 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Contrats JSON](reference/json-contracts.md) | Contrats d'entrée et de sortie versionnés, règles de confiance |
-| [Décisions d'architecture](adr/) | ADR 0001 à 0017 |
+| [Décisions d'architecture](adr/README.md) | ADR 0001 à 0019, avec frontmatter et index |
 | [Registre d'avancement](completion.md) | Ce qui est livré, avec les preuves |
 | [Acceptation restante](remaining-acceptance.md) (FR) | Exigences ouvertes et gates de preuve |
 | [Spécification fonctionnelle](specs/functional-specification.md) (FR) | Exigences produit |

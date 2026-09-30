@@ -1,6 +1,17 @@
-# 0015: Structured validation as a pure library
+---
+adr: "0015"
+title: Structured validation as a pure library
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "`router-validation` library."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for `router-validation`.
+# ADR 0015: Structured validation as a pure library
 
 ## Context
 

@@ -1,7 +1,17 @@
-# ADR 0003: bind asset constraints separately from legacy wire documents
+---
+adr: "0003"
+title: Bind asset constraints separately from legacy wire documents
+status: accepted
+created: 2026-09-27
+last_modified: 2026-09-27
+scope: "Additive contract library. Phase and runtime integration must consume the new gates before enabling constrained execution."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the additive contract library; phase/runtime integration
-must consume the new gates before enabling constrained execution.
+# ADR 0003: Bind asset constraints separately from legacy wire documents
 
 Legacy model and skill records omit provider/auth/context/modalities and the
 complete skill activation manifest. Adding optional fields with permissive

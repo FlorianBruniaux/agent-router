@@ -1,6 +1,17 @@
-# ADR 0001: One project harness, two host projections
+---
+adr: "0001"
+title: One project harness, two host projections
+status: accepted
+created: 2026-09-26
+last_modified: 2026-09-26
+scope: "Issue #12. Product integration is outside this decision."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for issue #12. Product integration is outside this decision.
+# ADR 0001: One project harness, two host projections
 
 ## Decision
 

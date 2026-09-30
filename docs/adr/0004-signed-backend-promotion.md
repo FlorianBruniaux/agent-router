@@ -1,7 +1,17 @@
-# ADR 0004: separate backend activation proof from deterministic receipts
+---
+adr: "0004"
+title: Separate backend activation proof from deterministic receipts
+status: accepted
+created: 2026-09-27
+last_modified: 2026-09-27
+scope: "Promotion library. Runtime integration must explicitly consume its opaque proof before enabling semantic execution."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the promotion library. Runtime integration must explicitly
-consume its opaque proof before enabling semantic execution.
+# ADR 0004: Separate backend activation proof from deterministic receipts
 
 A backend proposal is untrusted selection data. Promoting it by marking a better
 candidate unavailable or by rewriting a deterministic receipt would confuse the

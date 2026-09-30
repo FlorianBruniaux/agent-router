@@ -1,8 +1,17 @@
-# 0017: Bounded retention and publish durability for stores
+---
+adr: "0017"
+title: Bounded retention and publish durability for stores
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "Persistent stores: lifetime caps and publish durability."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: ["0008"]
+---
 
-Status: Accepted
-
-Date: 2026-09-29
+# ADR 0017: Bounded retention and publish durability for stores
 
 ## Context
 

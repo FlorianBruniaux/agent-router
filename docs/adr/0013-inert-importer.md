@@ -1,6 +1,17 @@
-# 0013: Import definitions as an unsigned, untrusted candidate
+---
+adr: "0013"
+title: Import definitions as an unsigned, untrusted candidate
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "`router-import` library. No CLI subcommand."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the `router-import` library. No CLI subcommand.
+# ADR 0013: Import definitions as an unsigned, untrusted candidate
 
 ## Context
 

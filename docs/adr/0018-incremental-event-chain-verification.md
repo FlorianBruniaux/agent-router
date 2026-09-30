@@ -1,8 +1,17 @@
-# 0018: Incremental event chain verification by the store owner
+---
+adr: "0018"
+title: Incremental event chain verification by the store owner
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "Runtime `events` chain verification by the store owner."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: ["0008", "0017"]
+---
 
-Status: Accepted
-
-Date: 2026-09-29
+# ADR 0018: Incremental event chain verification by the store owner
 
 ## Context
 

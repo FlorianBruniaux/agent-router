@@ -1,8 +1,17 @@
-# ADR 0006: Persistent current signed-catalog selection
+---
+adr: "0006"
+title: Persistent current signed-catalog selection
+status: accepted
+created: 2026-09-28
+last_modified: 2026-09-29
+scope: "Library consumers exist: signed routing (`router-policy::signed_phases`) and signed preparation (`router-prepare`) take the current guard. CLI and runtime dispatch integration is pending."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: Accepted. Library consumers exist: signed routing
-(`router-policy::signed_phases`) and signed preparation (`router-prepare`)
-take the current guard. CLI and runtime dispatch integration is pending.
+# ADR 0006: Persistent current signed-catalog selection
 
 ## Problem
 

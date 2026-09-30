@@ -1,6 +1,17 @@
-# 0012: Route-only local API on an owner-private Unix socket
+---
+adr: "0012"
+title: Route-only local API on an owner-private Unix socket
+status: accepted
+created: 2026-09-29
+last_modified: 2026-09-29
+scope: "Opt-in `local-api` feature."
+amended_by: []
+supersedes: []
+superseded_by: []
+related: []
+---
 
-Status: accepted for the opt-in `local-api` feature.
+# ADR 0012: Route-only local API on an owner-private Unix socket
 
 ## Context
 
