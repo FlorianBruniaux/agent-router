@@ -121,6 +121,13 @@ impl<S: SandboxSupervisor> ResourceSupervisor<S> {
     }
 }
 impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
+    fn create_host_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+    ) -> Result<Option<crate::HostState>> {
+        self.inner.create_host_state(store, run)
+    }
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
         if router_adapter_api::content_digest(&read_helper(&self.helper)?) != self.helper_hash {
             return Err(RuntimeError::Integrity("sandbox helper changed"));

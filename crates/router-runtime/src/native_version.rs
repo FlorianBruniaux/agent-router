@@ -109,7 +109,14 @@ async fn probe_native_version_inner(
     run.sandbox = ExecutionSandbox::ReadOnly;
     run.timeout_ms = TIMEOUT_MS;
     run.max_output_bytes = MAX_BYTES;
-    let mut command = supervisor.command(&run, &SandboxPolicy { network: false })?;
+    let host_state = supervisor.create_host_state(private_dir, &run)?;
+    let mut command = supervisor.command(
+        &run,
+        &SandboxPolicy {
+            network: false,
+            host_state: host_state.as_ref(),
+        },
+    )?;
     let leases = LeaseStorage::open(private_dir)?;
     let registered = if let Some(preparation) = preparation {
         Some(preparation.register_probe()?)
@@ -135,6 +142,9 @@ async fn probe_native_version_inner(
         (None, None, Some((record, _))) => leases.cleanup_proof(&id, 0, record)?.evidence,
         _ => return Err(RuntimeError::Integrity("probe registration")),
     };
+    if let Some(state) = host_state {
+        state.cleanup().map_err(|_| RuntimeError::CleanupUnknown)?;
+    }
     let captured = captured?;
     if !matches!(
         cleanup,

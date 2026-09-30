@@ -176,7 +176,17 @@ required even when explicitly null. macOS cannot enforce RLIMIT_AS on the
 verified host; a requested memory limit fails closed. Explicit null is reported
 as `not_requested`, never as memory enforcement.
 
-Only named environment variables are passed. Their values are not included in
+Codex and Claude receive a fresh 0700 host-state directory inside the store for
+each attempt, writable even with a read-only workspace. Caller-provided
+`CODEX_HOME` or `CLAUDE_CONFIG_DIR` is refused. The runtime sets the matching
+variable and removes state after completion or preparation failure. No personal
+config, keychain or OAuth token is copied. An approved `OPENAI_API_KEY` seeds a
+0600 Codex `auth.json`; Claude uses the approved `ANTHROPIC_API_KEY` environment
+value. Missing API keys leave state empty. OAuth login is not supported by this
+bootstrap. Store roots and ancestors must stay outside the child read/write
+roots. A killed router may leave private orphan state, never reused by a run.
+
+Only named environment variables (plus runtime-owned host-state paths) are passed. Their values are not included in
 the preview. Binaries, helper and native sandbox wrapper are hashed in the
 approval and rechecked by the supervisor. Paths remain subject to the documented
 hash-to-exec race boundary in [runtime.md](runtime.md).
@@ -190,9 +200,9 @@ byte and the value. Neither the value nor its HMAC appears in the output or an
 error. An unset variable is bound as absent, distinct from an empty value.
 Review and `--approve` must therefore run with the same values: any change,
 removal or addition refuses the launch with
-`runtime.approval.required_or_changed`. This binding is approval format v4
-(`runtime-cli-approval-v4`, `-v4-backend`, `-v4-escalation`). Digests produced
-by earlier versions (v1, v2 and v3) are stale: review the run again for a new
+`runtime.approval.required_or_changed`. This binding is approval format v5
+(`runtime-cli-approval-v5`, `-v5-backend`, `-v5-escalation`), which also binds the
+private host-state policy. Digests produced by versions v1 to v4 are stale: review the run again for a new
 digest. The same applies to `coordinate` review, wave and verification digests.
 
 The approval key is 32 random bytes in `approval.key` inside the runtime store
@@ -286,3 +296,9 @@ owned worktree after a terminal state.
 --attempt 1 --json` deletes only the registered private files for that attempt.
 Expiration requires a caller to invoke the bounded purge API; no background
 scheduler or secure storage erasure is implied.
+
+If host-state cleanup fails (for example, the child removes directory
+permissions), a completed attempt is recorded as failed and the CLI reports
+`runtime.cleanup.unknown` (exit 6). A version probe cannot succeed with failed
+state cleanup. Inspect the private orphan before retrying; no automatic OAuth
+recovery or credential write-back is attempted.
