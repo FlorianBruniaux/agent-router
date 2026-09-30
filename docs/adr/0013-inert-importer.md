@@ -1,10 +1,10 @@
 ---
 adr: "0013"
 title: Import definitions as an unsigned, untrusted candidate
-status: accepted
+status: implemented
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "`router-import` library. No CLI subcommand."
+scope: "`router-import` library, complete; no caller yet. No CLI subcommand, which this decision does not require."
 amended_by: []
 supersedes: []
 superseded_by: []

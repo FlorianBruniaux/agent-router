@@ -8,25 +8,26 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | ADR | Title | Status | Created | Modified | Amended by |
 | --- | --- | --- | --- | --- | --- |
-| [0001](0001-project-harness.md) | One project harness, two host projections | accepted | 2026-09-26 | 2026-09-26 | - |
-| [0002](0002-bounded-routing-pipeline.md) | Bounded routing and execution boundaries | accepted | 2026-09-27 | 2026-09-27 | - |
-| [0003](0003-bound-asset-contracts.md) | Bind asset constraints separately from legacy wire documents | accepted | 2026-09-27 | 2026-09-27 | - |
-| [0004](0004-signed-backend-promotion.md) | Separate backend activation proof from deterministic receipts | accepted | 2026-09-27 | 2026-09-27 | - |
-| [0005](0005-durable-backend-activation.md) | Pin durable backend authority through dispatch | accepted | 2026-09-27 | 2026-09-27 | - |
-| [0006](0006-current-signed-catalog-authority.md) | Persistent current signed-catalog selection | accepted | 2026-09-28 | 2026-09-29 | - |
+| [0001](0001-project-harness.md) | One project harness, two host projections | implemented | 2026-09-26 | 2026-09-26 | - |
+| [0002](0002-bounded-routing-pipeline.md) | Bounded routing and execution boundaries | implemented | 2026-09-27 | 2026-09-27 | - |
+| [0003](0003-bound-asset-contracts.md) | Bind asset constraints separately from legacy wire documents | implemented | 2026-09-27 | 2026-09-27 | - |
+| [0004](0004-signed-backend-promotion.md) | Separate backend activation proof from deterministic receipts | implemented | 2026-09-27 | 2026-09-27 | - |
+| [0005](0005-durable-backend-activation.md) | Pin durable backend authority through dispatch | implemented | 2026-09-27 | 2026-09-27 | - |
+| [0006](0006-current-signed-catalog-authority.md) | Persistent current signed-catalog selection | amended | 2026-09-28 | 2026-09-29 | [0017](0017-bounded-retention-and-publish-durability.md) |
 | [0007](0007-durable-preparation-cleanup.md) | Durable cleanup evidence for preparation | implemented | 2026-09-28 | 2026-09-28 | - |
 | [0008](0008-shared-admission.md) | Explicit shared admission with opaque release | amended | 2026-09-28 | 2026-09-29 | [0009](0009-conservative-session-allocations.md), [0017](0017-bounded-retention-and-publish-durability.md) |
 | [0009](0009-conservative-session-allocations.md) | Conservative shared session allocations | implemented | 2026-09-28 | 2026-09-29 | - |
-| [0010](0010-passive-runtime-diagnostics.md) | Inspect runtime storage without application recovery | accepted | 2026-09-28 | 2026-09-28 | - |
-| [0011](0011-advisory-decision-cache.md) | Authenticated advisory cache of backend proposals | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0012](0012-local-route-api.md) | Route-only local API on an owner-private Unix socket | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0013](0013-inert-importer.md) | Import definitions as an unsigned, untrusted candidate | accepted | 2026-09-29 | 2026-09-29 | - |
+| [0010](0010-passive-runtime-diagnostics.md) | Inspect runtime storage without application recovery | implemented | 2026-09-28 | 2026-09-28 | - |
+| [0011](0011-advisory-decision-cache.md) | Authenticated advisory cache of backend proposals | amended | 2026-09-29 | 2026-09-30 | [0017](0017-bounded-retention-and-publish-durability.md) |
+| [0012](0012-local-route-api.md) | Route-only local API on an owner-private Unix socket | implemented | 2026-09-29 | 2026-09-29 | - |
+| [0013](0013-inert-importer.md) | Import definitions as an unsigned, untrusted candidate | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0014](0014-loopback-provider-transport.md) | Loopback-only provider transport behind a Cargo feature | accepted | 2026-09-29 | 2026-09-29 | - |
 | [0015](0015-structured-validation.md) | Structured validation as a pure library | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0016](0016-adapter-descriptor-registry.md) | Validate adapter descriptors as inert data | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0017](0017-bounded-retention-and-publish-durability.md) | Bounded retention and publish durability for stores | accepted | 2026-09-29 | 2026-09-29 | - |
-| [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | accepted | 2026-09-29 | 2026-09-29 | - |
+| [0016](0016-adapter-descriptor-registry.md) | Validate adapter descriptors as inert data | implemented | 2026-09-29 | 2026-09-29 | - |
+| [0017](0017-bounded-retention-and-publish-durability.md) | Bounded retention and publish durability for stores | accepted | 2026-09-29 | 2026-09-30 | - |
+| [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0019](0019-outcome-measurement.md) | Outcome measurement | implemented | 2026-09-30 | 2026-09-30 | - |
+| [0020](0020-cross-host-routing.md) | Cross-host phase routing | proposed | 2026-09-30 | 2026-09-30 | - |
 
 ## Frontmatter fields
 

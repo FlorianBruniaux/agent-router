@@ -1,10 +1,10 @@
 ---
 adr: "0018"
 title: Incremental event chain verification by the store owner
-status: accepted
+status: implemented
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "Runtime `events` chain verification by the store owner."
+scope: "Runtime `events` chain verification by the store owner (`Store` in `router-runtime`)."
 amended_by: []
 supersedes: []
 superseded_by: []

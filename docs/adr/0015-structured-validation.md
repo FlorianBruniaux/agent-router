@@ -4,7 +4,7 @@ title: Structured validation as a pure library
 status: accepted
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "`router-validation` library."
+scope: "`router-validation` library is implemented; no caller yet. Missing: the R13-b caller that supplies `artifact_sha256` and an explicit verifier to `record_verification`."
 amended_by: []
 supersedes: []
 superseded_by: []

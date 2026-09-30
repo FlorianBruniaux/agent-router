@@ -1,10 +1,10 @@
 ---
 adr: "0012"
 title: Route-only local API on an owner-private Unix socket
-status: accepted
+status: implemented
 created: 2026-09-29
 last_modified: 2026-09-29
-scope: "Opt-in `local-api` feature."
+scope: "Opt-in `local-api` feature: `router-local-api` and `agent-router serve`."
 amended_by: []
 supersedes: []
 superseded_by: []
