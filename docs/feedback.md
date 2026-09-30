@@ -111,15 +111,27 @@ newer version is refused.
 `run`, and an invalid configuration fails the command before the operation.
 Without the option, or with collection disabled, nothing is recorded. The JSON output gains a `feedback` object, either
 `{"recorded":true,"fact_hash":...}` or `{"recorded":false,"reason":...}` with
-`not_requested`, `collection_disabled`, `inconclusive`, `invalid_fact` or
+`not_requested`, `collection_disabled`, `inconclusive`, `invalid_fact`,
+`already_recorded` (a fact with the same content is already stored, possibly
+under another `observed_at`, and is left as is), `verification_record_unavailable`
+(`coordinate service` could not read the stored record) or
 `consent_changed_or_storage_error`. Once the operation succeeded, a feedback
 failure never fails the command. There is no retry: if the process dies between
 the runtime operation and the fact write, or the write fails, the fact is lost
 and nothing records it later.
 
-Limit: no verification fact is recorded for a coordinated run. `coordinate
-verify` only queues the verification, and `service`, which applies it, does not
-receive the sandbox configuration.
+A coordinated run records its verification fact in `coordinate service`, which
+applies the queued verification (`coordinate verify` only queues it). For each
+`--bundle` it reads `feedback_store` from that bundle's own sandbox
+configuration, the source the automated event of the same run used, so no new
+opt-in is involved. A run gets a fact only when this service pass moved it to
+`verified` or `verification_failed`, from the record the runtime stored, under
+the same run key as its automated event. The result is the `feedback` array of
+the service output, `{"run_id":...,"feedback":{...}}` per such run, with the
+reasons above. A feedback failure, including an unreadable bundle
+configuration, is reported there and never fails the service. Limits: a run
+concluded by a service pass that did not list its bundle, or before this
+behavior, has no fact; and a lost write is not retried.
 
 ## Exporting a run as a replay record
 
@@ -313,9 +325,6 @@ For an operator:
 - A labelled run can be exported as a sealed replay record and evaluated with
   the existing chain. Activating a policy still goes through propose, evaluate,
   trial and signed apply.
-- Coordinated runs record no verification fact yet: `coordinate verify` only
-  queues the request, and the service that applies it does not receive the
-  configuration.
 
 Collection stays opt-in through `feedback_store`, and the product defaults do
 not change. A longer retention, such as 90 days on a single workstation, is an

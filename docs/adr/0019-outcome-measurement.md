@@ -1,10 +1,10 @@
 ---
 adr: "0019"
 title: Outcome measurement
-status: accepted
+status: implemented
 created: 2026-09-30
 last_modified: 2026-09-30
-scope: "Batches 1 to 6 merged; coordinated runs record no verification fact yet."
+scope: "Batches 1 to 6 merged."
 amended_by: []
 supersedes: []
 superseded_by: []

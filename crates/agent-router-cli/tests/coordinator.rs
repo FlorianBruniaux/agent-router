@@ -288,6 +288,14 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
     assert_eq!(control["verified"], false);
     let serviced = checked(f.action("service").arg("--bundle").arg(&f.bundle), 0);
     assert_eq!(serviced["applied_controls"], 1);
+    assert_eq!(serviced["feedback"][0]["feedback"]["recorded"], true);
+    let recorded = f.native.exported_feedback();
+    assert_eq!(recorded["facts"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        recorded["facts"][0]["fact"]["run_key_sha256"],
+        recorded["events"][0]["input"]["run_key_sha256"]
+    );
+    assert_eq!(recorded["facts"][0]["fact"]["kind"]["type"], "verification");
     assert_eq!(serviced["workflow"]["nodes"][0]["state"], "verified");
     assert_eq!(
         checked(f.action("service").arg("--bundle").arg(&f.bundle), 0)["applied_controls"],
