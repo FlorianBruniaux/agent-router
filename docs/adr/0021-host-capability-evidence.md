@@ -1,11 +1,11 @@
 ---
 adr: "0021"
 title: Host capability evidence from supervised canaries
-status: proposed
+status: amended
 created: 2026-09-30
-last_modified: 2026-09-30
-scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batch 4 ran on 2026-09-30: Codex cannot reach its provider under `network: false`, so this ADR stops at batch 4 for Codex until a provider-egress ADR; Claude Code is inconclusive at startup. Batches 5 to 9 are design only; every real host capability stays UNKNOWN."
-amended_by: []
+last_modified: 2026-10-01
+scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
+amended_by: ["0022"]
 supersedes: []
 superseded_by: []
 related: ["0002", "0003", "0014", "0016"]
@@ -134,10 +134,12 @@ assistant message. It runs only after the owner authorizes the spend. The
 result decides the path per host:
 
 - **Provider unreachable** (expected, since the profile denies sockets): the
-  canaries and every native run need provider egress. This ADR then stops at
-  batch 4 for that host. A separate ADR must separate provider egress (only
-  the provider endpoint, for example through the loopback transport of ADR
-  0014) from the `Network` capability of tools. Running canaries with
+  canaries and every native run need provider egress. Native activation then
+  stops at batch 4 for that host. ADR 0022 permits independent synthetic
+  infrastructure work on batches 5, 6 and 9, without relaxing that stop.
+  ADR 0022 requires a separate execution boundary between provider access
+  and the `Network` capability of tools; ADR 0014's loopback transport alone
+  does not establish it. Running canaries with
   `network: true` in the meantime is refused, because it would open the network
   on every write run without the phase asking for it.
 - **Provider reachable**: some channel escapes the socket denial. Canaries may
@@ -291,6 +293,18 @@ operator still pins the expected hash in the manifest.
 Each batch lands with the test named as its acceptance criterion. No batch
 runs a paid host call in CI.
 
+### Independent infrastructure amendment, 2026-10-01
+
+[ADR 0022](0022-provider-egress.md) permits batches 5 and 6 to land with
+synthetic executables and proof fixtures while native activation remains
+blocked at batch 4. Batch 9 may follow its proof and shared-validation
+dependencies. Its attestation acceptance never bypasses provider-egress
+admission or OS sandbox refusal. Test-only proof issuance must not produce
+capability evidence for an installed real host. These are infrastructure
+deliveries, not permission to run batches 7 or 8, open native provider access,
+or change a real host's UNKNOWN capability. Implementation status is reported
+separately from the native admission result.
+
 1. Claude model identity. A stream with `init` model `claude-haiku-4-5` and an
    assistant message with a dated id yields a snapshot listing only the dated
    id. A stream without a root assistant model still fails.
@@ -345,8 +359,8 @@ resource helper, the approval digest or the router prompt.
 the same profile with `network: true` it completed with a root assistant
 message, and so did a private copy of its executable
 (`results/v3-20260930T184024Z/codex.json`, launches `C1`, `C2`, `C3`). For
-Codex this ADR therefore stops at batch 4: canaries and every native run need
-provider egress, and a separate ADR must separate provider egress from the
+Codex native activation therefore stops at batch 4: canaries and every native
+run need provider egress, and ADR 0022 must separate provider egress from the
 `Network` capability of tools, as decided under "Provider egress spike". The
 v3 profile carried two deviations from the runtime's, listed below; the only
 difference between `C1` and `C2` was the network line.

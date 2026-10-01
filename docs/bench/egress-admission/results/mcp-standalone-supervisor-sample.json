@@ -1,0 +1,87 @@
+{
+  "schema": "agent-router-claude-local-admission-v1",
+  "created_at": "2026-10-01T08:44:21.893631+00:00",
+  "native_binary": "<home>/.local/share/claude/versions/2.1.286",
+  "native_sha256": "75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433",
+  "script_sha256": "c5dd2fef1e2a8051808c24a3df90748c6ff98af700ca4aa9163d74c8456ae489",
+  "platform": "darwin",
+  "scope": "local scripted provider, synthetic key, no native admission",
+  "cases": [
+    {
+      "mode": "mcp_standalone_control",
+      "controller_argv": [
+        "/usr/bin/env",
+        "-i",
+        "PATH=/usr/bin:/bin",
+        "HOME=<scratch>/worker-home",
+        "PYTHONDONTWRITEBYTECODE=1",
+        "/usr/bin/sandbox-exec",
+        "-f",
+        "<scratch>/worker.sb",
+        "/usr/bin/python3",
+        "-B",
+        "<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission/claude_local.py",
+        "--mcp-worker",
+        "--workspace",
+        "<scratch>/workspace",
+        "--provider-port",
+        "62549",
+        "--other-port",
+        "62550",
+        "--private-canary",
+        "<scratch>/state/private-canary"
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "CLAUDE_CODE_TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:62549",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"localhost:62549\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {}
+      },
+      "socket_control": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 157,
+        "stdout": "62549 allowed\n62550 denied 1\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-tZja3jYy' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-7BWUwAjM' (errno=Operation not permitted)\n"
+      },
+      "process": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 324,
+        "stdout": "{\"jsonrpc\": \"2.0\", \"id\": 1, \"result\": {\"protocolVersion\": \"2024-11-05\", \"capabilities\": {\"tools\": {}}, \"serverInfo\": {\"name\": \"admission-fixture\", \"version\": \"1\"}}}\n{\"jsonrpc\": \"2.0\", \"id\": 2, \"result\": {\"tools\": [{\"name\": \"write_nonce\", \"description\": \"Write the supplied nonce in the fixture workspace.\", \"inputSchema\": {\"type\": \"object\", \"properties\": {\"nonce\": {\"type\": \"string\"}}, \"required\": [\"nonce\"], \"additionalProperties\": false}}]}}\n{\"jsonrpc\": \"2.0\", \"id\": 3, \"result\": {\"content\": [{\"type\": \"text\", \"text\": \"{\\\"nonce\\\": \\\"adr0022-local-mcp-nonce-v1\\\", \\\"credential_in_environment\\\": false, \\\"provider_connect\\\": \\\"denied\\\", \\\"provider_errno\\\": 1, \\\"other_connect\\\": \\\"denied\\\", \\\"other_errno\\\": 1, \\\"controller_state_read\\\": \\\"denied\\\", \\\"controller_state_errno\\\": 1}\"}]}}\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-Jz83R0PC' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-dg4FTs9d' (errno=Operation not permitted)\n"
+      },
+      "provider_requests": [],
+      "debug_excerpt": null,
+      "sample_excerpt": null,
+      "nonce_exact": true,
+      "worker_evidence": {
+        "nonce": "adr0022-local-mcp-nonce-v1",
+        "credential_in_environment": false,
+        "provider_connect": "denied",
+        "provider_errno": 1,
+        "other_connect": "denied",
+        "other_errno": 1,
+        "controller_state_read": "denied",
+        "controller_state_errno": 1
+      },
+      "artifact_reads": {
+        "debug": "missing",
+        "sample": "missing",
+        "nonce": "ok",
+        "worker_evidence": "ok"
+      },
+      "forbidden_builtin_created": false
+    }
+  ]
+}

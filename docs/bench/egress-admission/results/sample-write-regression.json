@@ -1,0 +1,43 @@
+{
+  "schema": "agent-router-sample-write-regression-v1",
+  "date": "2026-10-01",
+  "scope": "Synthetic files and local MCP only; no personal data or model calls",
+  "command": "python3 -B -m unittest discover -s docs/bench/egress-admission -p test_artifact_reads.py -v",
+  "red": {
+    "driver_sha256": "593a50018881ec3a47b961fcd014fa64575dfe9c681fd841df6abe11a3ca7651",
+    "test_sha256": "3bd00627344856bdc45985445ce9a426b7ce66dfe7d465bfff86a7c48846b105",
+    "preparation": "Added inert sample_dir parameter to existing bounded function; sample destination still used child workspace",
+    "test": "test_sample_cannot_overwrite_external_file_through_workspace_symlink",
+    "tests_run": 1,
+    "failures": 1,
+    "exit_code": 1,
+    "observation": "Simulated sampler changed external synthetic canary from SYNTHETIC_KEEP_UNCHANGED to SYNTHETIC_SAMPLE through workspace/startup-sample.txt symlink"
+  },
+  "green": {
+    "driver_sha256": "c5dd2fef1e2a8051808c24a3df90748c6ff98af700ca4aa9163d74c8456ae489",
+    "test_sha256": "ea7e616f7885b2c22ee527040802b1cea0dcbfc23811b649bfa9a6d3c0dbc8a2",
+    "tests_run": 10,
+    "failures": 0,
+    "skipped": 0,
+    "exit_code": 0,
+    "sample_invocation": "Simulated sampler, real bounded child process and cleanup",
+    "external_synthetic_canary": "unchanged",
+    "sample_destination": "supervisor/startup-sample.txt, excluded from child write grants",
+    "sample_collection": "Supervisor destination only; bounded same-FD regular-file read",
+    "seatbelt_child_effects": {
+      "write_existing_sample_errno": 1,
+      "create_symlink_in_supervisor_errno": 1,
+      "unlink_sample_errno": 1,
+      "rename_supervisor_directory_errno": 1,
+      "workspace_write_control": "allowed"
+    },
+    "previous_artifact_read_regressions": "All seven still pass"
+  },
+  "standalone_mcp_result": "mcp-standalone-supervisor-sample.json",
+  "standalone_mcp_result_sha256": "c1b14ec91012e021ea56e1426b7e813314a4f0c7f175af1ef74089bca792f7b2",
+  "prior_read_regression_record": "artifact-read-regression.json",
+  "native_claude_restarted": false,
+  "native_admission": "UNKNOWN",
+  "provider_spend_usd": 0,
+  "review_status": "Pending independent re-review"
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "agent-router-artifact-read-regression-v1",
+  "date": "2026-10-01",
+  "scope": "Synthetic artifact fixtures only; no personal data or model calls",
+  "command": "python3 -B -m unittest discover -s docs/bench/egress-admission -p test_artifact_reads.py -v",
+  "red": {
+    "driver_sha256": "3fd5b1652a866b1d4f36bdfff993324dc3bc906c61d9469e77659008cfc51607",
+    "tests_run": 1,
+    "failures": 1,
+    "exit_code": 1,
+    "observation": "Symlinks to files in a separate synthetic temporary directory exported SYNTHETIC_EXTERNAL_ARTIFACT_NOT_FOR_EXPORT in debug, sample and worker evidence; the linked nonce was incorrectly accepted."
+  },
+  "green": {
+    "driver_sha256": "161afbf380b628cca4cd2321598d779b6bfdf7247f86ddbe5b29e021c84233c4",
+    "test_sha256": "d292b7068bb1f6b6c0ab523c927fad932b550c87173df8cb1950a4d273ffe830",
+    "tests_run": 7,
+    "failures": 0,
+    "exit_code": 0,
+    "coverage": [
+      "Final-component symlinks for all four child artifacts",
+      "Parent directory replaced by symlink",
+      "FIFO refusal without a writer and directory refusal",
+      "Sparse 1 GiB files: only 20000 plus 24000 diagnostic bytes read; nonce and evidence refused before reads",
+      "Path replacement after opening retains original file descriptor",
+      "Valid nonce and JSON remain readable; malformed JSON is refused",
+      "Growth after fstat cannot bypass the full-artifact byte ceiling"
+    ]
+  },
+  "standalone_mcp_result": "mcp-standalone-safe-artifact-reads.json",
+  "native_claude_restarted": false,
+  "provider_spend_usd": 0,
+  "review_status": "Pending independent re-review"
+}
