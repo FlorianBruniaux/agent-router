@@ -1,0 +1,51 @@
+crates/router-runtime/src/private_program.rs
+  s_9e80b85afcc43a::t_af47be600eec5b 1-4,6-33,35-107
+  s_9e80b85afcc43a::t_26216393edfefc 5
+  s_9e80b85afcc43a::t_b9155e5b98566b 34
+crates/router-runtime/src/bubblewrap.rs
+  s_9e80b85afcc43a::t_6da8f20b78b27c 188-199,208,212-224
+  s_9e80b85afcc43a::t_e5cae1a991e7b3 225-227
+crates/router-runtime/src/sandbox.rs
+  s_9e80b85afcc43a::t_6da8f20b78b27c 297-308,311,315-330
+  s_9e80b85afcc43a::t_a6d88d9a13c9fc 331-333
+crates/router-runtime/tests/host_state.rs
+  s_9e80b85afcc43a::t_8cfa237d7ecc91 4-27,76,79
+  s_9e80b85afcc43a::t_eee548ac9b3d2b 28-31
+crates/router-runtime/Cargo.toml
+  s_9e80b85afcc43a::t_af47be600eec5b 20
+crates/router-runtime/src/host_state.rs
+  s_9e80b85afcc43a::t_49e0df7997ace4 179-216,238-247,249-284,288,290-305
+  s_9e80b85afcc43a::t_4a944e21175c4f 2,21,24-37,74,90-98,125-132,149-156
+  s_9e80b85afcc43a::t_82099becfa1ea3 217-237,248,289
+  s_9e80b85afcc43a::t_5854a2a305d362 285-287
+  s_9e80b85afcc43a::t_fbe081042919f6 307-356,359
+  s_9e80b85afcc43a::t_dc325e79ca8da9 306,357-358,360-363
+CHANGELOG.md
+  s_9e80b85afcc43a::t_b47e8d39391a23 23-24
+crates/agent-router-cli/src/execution.rs
+  s_9e80b85afcc43a::t_142985fd592b14 722,726,728,739
+crates/router-runtime/src/lib.rs
+  s_9e80b85afcc43a::t_48fe4f91065789 15
+docs/adr/0021-host-capability-evidence.md
+  s_9e80b85afcc43a::t_0a9ecff33861b9 7,348-370
+docs/cli-execution.md
+  s_9e80b85afcc43a::t_aa022a7072d4b4 198-208,219-223
+docs/runtime.md
+  s_9e80b85afcc43a::t_f4e50a166c687d 200-207,209-212
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "7c76b81a6f8a08280d06a8d066b8adefd59d0ad1",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
