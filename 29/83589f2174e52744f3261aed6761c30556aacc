@@ -1,0 +1,21 @@
+crates/router-runtime/src/store/admission.rs
+  s_9e80b85afcc43a::t_ebaaa22fdb2452 418-461
+  s_9e80b85afcc43a::t_2dae9e1c05b8f5 115-121
+  s_9e80b85afcc43a::t_f2d6c078bd8748 417
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "2983589f2174e52744f3261aed6761c30556aacc",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
