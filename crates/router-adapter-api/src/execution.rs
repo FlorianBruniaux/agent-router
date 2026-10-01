@@ -976,13 +976,15 @@ struct UsageCollector {
 
 impl UsageCollector {
     /// Codex `turn.completed.usage`, stored as declared. Codex is assumed to
-    /// report cached input inside `input_tokens` and reasoning inside
-    /// `output_tokens` (see `HostUsage`). A second turn makes usage UNKNOWN.
+    /// report cached input and cache writes inside `input_tokens`, and reasoning
+    /// inside `output_tokens` (see `HostUsage`). A second turn makes usage UNKNOWN.
     fn codex_turn(&mut self, event: &serde_json::Value) {
         self.codex_turns += 1;
         let usage = event.get("usage").filter(|u| u.is_object());
         self.input.add(count(usage, "input_tokens"));
         self.cached_input.add(count(usage, "cached_input_tokens"));
+        self.cache_write_input
+            .add(count(usage, "cache_write_input_tokens"));
         self.output.add(count(usage, "output_tokens"));
         self.reasoning_output
             .add(count(usage, "reasoning_output_tokens"));

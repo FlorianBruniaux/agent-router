@@ -294,15 +294,14 @@ impl UsageField {
 /// - `input_tokens`: total input, cache reads and cache writes included.
 /// - `cached_input_tokens`: cache reads, a subset of `input_tokens`.
 /// - `cache_write_input_tokens`: cache creation, a subset of `input_tokens`.
-///   Claude only; UNKNOWN for Codex, which documents no such field.
+///   UNKNOWN when the host omits it or declares it as null.
 /// - `output_tokens`: total output, reasoning included.
 /// - `reasoning_output_tokens`: a subset of `output_tokens`. Codex only;
 ///   UNKNOWN for Claude, which documents no such field.
 ///
-/// Codex reports `input_tokens` with `cached_input_tokens` inside it and
-/// `output_tokens` with `reasoning_output_tokens` inside it. That is an
-/// assumption from OpenAI usage practice, not proven: the documented example
-/// (24763 input, 24448 cached) is consistent with it but does not establish it.
+/// Codex reports cache reads and writes within `input_tokens`, and reasoning
+/// within `output_tokens`. Its upstream usage parser test declares 100 input,
+/// 40 cached, 60 cache-write, 10 output, and 110 total tokens.
 /// Claude reports `input_tokens` without cache reads or writes, so the decoder
 /// adds them. Totals therefore never add a subset field a second time.
 ///
