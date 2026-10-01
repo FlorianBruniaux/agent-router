@@ -500,8 +500,20 @@ mod tests {
             Err(CapabilityProofError::Revoked)
         ));
         // Historical reconstruction uses the run clock, before the failed canary.
+        assert!(matches!(
+            live.verify(&source, first.record.capability, &host, 101),
+            Err(CapabilityProofError::Future)
+        ));
+        let historical = StoredCapabilityProofVerifier::open_existing(
+            root.path(),
+            [42; 32],
+            vec![first.record.binding.clone()],
+        )
+        .unwrap()
+        .through_sequence(1);
         assert!(
-            live.verify(&source, first.record.capability, &host, 101)
+            historical
+                .verify(&source, first.record.capability, &host, 101)
                 .is_ok()
         );
         assert!(

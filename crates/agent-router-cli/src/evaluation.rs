@@ -50,7 +50,7 @@ pub(crate) fn replay(
     }
     let record = ReplayRecord::from_json(&bytes(path)?).map_err(error)?;
     let verifier = store
-        .map(crate::capability_proofs::historical)
+        .map(|store| crate::capability_proofs::historical_replay(store, &record))
         .transpose()?;
     let trace = replay_deterministic_with_verifier(
         &record,
@@ -175,12 +175,12 @@ pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
                 .map(|path| read_json(path, 64 * 1024))
                 .transpose()?;
             let mut pairs = Vec::new();
-            let verifier = store
-                .as_deref()
-                .map(crate::capability_proofs::historical)
-                .transpose()?;
             for path in records {
                 let record = ReplayRecord::from_json(&bytes(&path)?).map_err(error)?;
+                let verifier = store
+                    .as_deref()
+                    .map(|store| crate::capability_proofs::historical_replay(store, &record))
+                    .transpose()?;
                 pairs.push(PairedTrace {
                     baseline: replay_deterministic_with_verifier(
                         &record,

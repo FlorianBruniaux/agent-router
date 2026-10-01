@@ -133,6 +133,15 @@ fn generation_requires_explicit_proof_store_and_binds_effective_configuration() 
         command()
             .args(["generate-plan", "--manifest"])
             .arg(f.root.join("generation.json"))
+            // The report input hash includes the generation clock. Reuse the
+            // first run's clock so this assertion isolates config semantics.
+            .arg("--now")
+            .arg(
+                document["planned_at_unix_seconds"]
+                    .as_u64()
+                    .unwrap()
+                    .to_string(),
+            )
             .arg("--json"),
         0,
     );

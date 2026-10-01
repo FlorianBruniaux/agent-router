@@ -471,8 +471,12 @@ impl CapabilityProofVerifier for CapabilityProofSet {
             p.record.capability == capability
                 && p.record.tier == record.tier
                 && p.record.binding == record.binding
-                && p.record.ended_at_unix_seconds <= now
         });
+        // Fresh verification sees the latest authenticated attempt even if the
+        // wall clock moved backwards. Historical readers must bound sequence.
+        if deciding.is_some_and(|proof| proof.record.ended_at_unix_seconds > now) {
+            return Err(CapabilityProofError::Future);
+        }
         if record.outcome != CapabilityAttemptOutcome::Succeeded
             || deciding.is_none_or(|p| p.record.sequence != record.sequence)
         {
@@ -690,7 +694,8 @@ mod tests {
         let failed = key().authenticate(failure.clone()).unwrap();
         let proofs = set(vec![proof.clone(), failed.clone()], first.binding.clone());
         assert!(
-            proofs
+            set(vec![proof.clone(), failed.clone()], first.binding.clone())
+                .through_sequence(1)
                 .verify(&source(&proof), first.capability, &host(), 120)
                 .is_ok()
         );
@@ -803,5 +808,39 @@ mod tests {
                 .referenced_sequence(&wrong_host, &[super::tests::source(&first)])
                 .is_err()
         );
+    }
+    #[test]
+    fn proven_clock_rollback_cannot_hide_a_newer_authenticated_attempt() {
+        let first = key().authenticate(record()).unwrap();
+        let reference = source(&first);
+        for outcome in [
+            CapabilityAttemptOutcome::Failed,
+            CapabilityAttemptOutcome::Succeeded,
+        ] {
+            let mut latest = record();
+            latest.proof_id = "later-clock-attempt".into();
+            latest.sequence = 2;
+            latest.started_at_unix_seconds = 200;
+            latest.ended_at_unix_seconds = 200;
+            latest.outcome = outcome;
+            let latest = key().authenticate(latest).unwrap();
+            let current = set(
+                vec![first.clone(), latest.clone()],
+                first.record.binding.clone(),
+            );
+            assert!(
+                current
+                    .verify(&reference, record().capability, &host(), 150)
+                    .is_err(),
+                "rolling the clock back must not restore a superseded proof"
+            );
+            assert!(
+                set(vec![first.clone(), latest], first.record.binding.clone())
+                    .through_sequence(1)
+                    .verify(&reference, record().capability, &host(), 150)
+                    .is_ok(),
+                "only an explicitly bounded historical horizon retains the old authority"
+            );
+        }
     }
 }

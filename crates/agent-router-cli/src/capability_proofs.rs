@@ -71,10 +71,39 @@ pub(crate) fn fresh(
     ))
 }
 
-/// Historical reconstruction only. The caller must use a persisted run clock
-/// and feed the result exclusively to Runtime::reopen, never fresh dispatch.
-pub(crate) fn historical(store: &Path) -> Result<Arc<dyn CapabilityProofVerifier>, CliError> {
-    historical_through(store, None)
+/// Declared historical reconstruction for a validated replay document only.
+/// The record's input hash binds its snapshot, but does not prove that a live
+/// run produced it. This verifier is never used to authorize fresh execution.
+pub(crate) fn historical_replay(
+    store: &Path,
+    record: &router_eval::ReplayRecord,
+) -> Result<Arc<dyn CapabilityProofVerifier>, CliError> {
+    let observation = &record.input().snapshot;
+    let references: std::collections::BTreeSet<_> = observation
+        .capabilities
+        .values()
+        .filter(|evidence| evidence.support != router_types::CapabilitySupport::Unknown)
+        .flat_map(|evidence| evidence.source_ids.iter())
+        .collect();
+    let mut sources: Vec<_> = observation
+        .evidence
+        .iter()
+        .filter(|source| references.contains(&source.id))
+        .cloned()
+        .collect();
+    if sources.len() != references.len() {
+        return Err(CliError::Product("capability.evidence.unauthenticated"));
+    }
+    sources.retain(|source| source.kind == router_adapter_api::EvidenceKind::HostRuntime);
+    let secret = secret(store)?;
+    let proofs = CapabilityProofStore::open_existing(store)
+        .map_err(|error| CliError::Product(error.code()))?
+        .verifier(&secret, vec![])
+        .map_err(|error| CliError::Product(error.code()))?;
+    let sequence = proofs
+        .referenced_sequence(&observation.host, &sources)
+        .map_err(|error| CliError::Product(error.code()))?;
+    historical_through(store, Some(sequence))
 }
 pub(crate) fn historical_through(
     store: &Path,
@@ -85,7 +114,10 @@ pub(crate) fn historical_through(
         .map_err(|e| CliError::Product(e.code()))?
         .verifier(&secret, vec![])
         .map_err(|e| CliError::Product(e.code()))?;
-    let bindings = proofs.authenticated_bindings();
+    let bindings = match sequence {
+        Some(sequence) => proofs.through_sequence(sequence).authenticated_bindings(),
+        None => proofs.authenticated_bindings(),
+    };
     let verifier = StoredCapabilityProofVerifier::open_existing(store, secret, bindings)
         .map_err(|e| CliError::Product(e.code()))?;
     Ok(Arc::new(match sequence {
@@ -355,7 +387,8 @@ mod tests {
             CapabilitySupport::Unknown
         );
         assert!(crate::phases::load(&f.inputs(&observation, 170)).is_err());
-        let verifier = historical(&f.store).unwrap_or_else(|e| panic!("history {}", e.code()));
+        let verifier = historical_through(&f.store, Some(1))
+            .unwrap_or_else(|e| panic!("history {}", e.code()));
         assert!(
             ValidatedHostObservation::from_observation_with_verifier(
                 observation.clone(),
@@ -416,5 +449,140 @@ mod tests {
             )
             .is_ok()
         );
+    }
+    #[test]
+    fn replay_and_comparison_keep_per_record_authenticated_horizons_without_binary() {
+        let f = Fixture::new();
+        let old = f.inspected(120);
+        let inputs = f.inputs(&old, 120);
+        let request: serde_json::Value =
+            serde_json::from_slice(&fs::read(&inputs.context).unwrap()).unwrap();
+        let catalog: serde_json::Value =
+            serde_json::from_slice(&fs::read(&inputs.catalog).unwrap()).unwrap();
+        let make_record = |snapshot: &HostObservation, case: &str| {
+            let observation = json!({"usage":[{"model":"fixture-best","input_tokens":10,"cached_input_tokens":0,"output_tokens":1}],"elapsed_ms":10,"fallback_reasons":[],
+                "outcomes":{"transport":"passed","command_validation":"passed","functional":"unknown"}});
+            router_eval::ReplayRecord::seal(serde_json::from_value(json!({"schema_version":1,"case_id":case,"family_id":"synthetic-proof-history","split":"held_out","out_of_domain":false,
+                "request":request,"snapshot":snapshot,"catalog":catalog,
+                "policies":{"baseline":PhasePolicy::default(),"candidate":PhasePolicy::default()},
+                "pricing":{"schema_version":1,"version":"fixture","source":"synthetic","observed_at_unix_seconds":120,
+                    "models":{"fixture-best":{"input_microusd_per_million":1000,"cached_input_microusd_per_million":100,"output_microusd_per_million":5000}}},
+                "observations":{"baseline":observation,"candidate":observation},"label":null})).unwrap()).unwrap()
+        };
+        let old_record = make_record(&old, "old-case");
+        let old_path = f.root.join("old-replay.json");
+        fs::write(&old_path, old_record.canonical_json().unwrap()).unwrap();
+        let replay = |path: &Path, store: Option<&Path>| {
+            crate::evaluation::replay(path, "candidate", store, Some(120), 300, true)
+                .unwrap_or_else(|error| panic!("historical replay: {}", error.code()))
+                .output
+        };
+        let before = replay(&old_path, Some(&f.store));
+        let parsed: serde_json::Value = serde_json::from_str(&before).unwrap();
+        assert_eq!(parsed["capability_evidence"], "verified");
+        assert!(parsed["receipt"]["selected"].is_object());
+        let compare = |records: Vec<PathBuf>| {
+            crate::evaluation::run(crate::command::EvalCommand::Compare {
+                store: Some(f.store.clone()),
+                records,
+                baseline: "baseline".into(),
+                candidate: "candidate".into(),
+                criteria: None,
+                now: Some(120),
+                snapshot_max_age_seconds: 300,
+                json: true,
+            })
+            .unwrap_or_else(|error| panic!("historical compare: {}", error.code()))
+            .output
+        };
+        let report_before = compare(vec![old_path.clone()]);
+        let mut store = CapabilityProofStore::create(&f.store).unwrap();
+        let key = CapabilityProofKey::derive(&f.key, store.store_id()).unwrap();
+        for (sequence, outcome) in [
+            (2, CapabilityAttemptOutcome::Failed),
+            (3, CapabilityAttemptOutcome::Succeeded),
+        ] {
+            let mut record = f.proof.record.clone();
+            record.sequence = sequence;
+            record.proof_id = format!("subsequent-{sequence}");
+            record.started_at_unix_seconds = 120;
+            record.ended_at_unix_seconds = 120;
+            record.outcome = outcome;
+            store
+                .append(&key.authenticate(record).unwrap(), &f.key)
+                .unwrap();
+            assert!(
+                crate::phases::load(&f.inputs(&old, 120)).is_err(),
+                "fresh routing must not reuse an earlier proof"
+            );
+            assert_eq!(replay(&old_path, Some(&f.store)), before);
+            assert_eq!(compare(vec![old_path.clone()]), report_before);
+        }
+        let newer = f.inspected(120);
+        let new_path = f.root.join("new-replay.json");
+        fs::write(
+            &new_path,
+            make_record(&newer, "new-case").canonical_json().unwrap(),
+        )
+        .unwrap();
+        let new_before = replay(&new_path, Some(&f.store));
+        // A common maximum across records would invalidate the old source.
+        let paired_before = compare(vec![old_path.clone(), new_path.clone()]);
+        fs::remove_file(&f.binary).unwrap();
+        assert!(crate::phases::load(&f.inputs(&old, 120)).is_err());
+        assert_eq!(replay(&old_path, Some(&f.store)), before);
+        assert_eq!(replay(&new_path, Some(&f.store)), new_before);
+        assert_eq!(compare(vec![old_path.clone(), new_path]), paired_before);
+        let no_store: serde_json::Value = serde_json::from_str(&replay(&old_path, None)).unwrap();
+        assert_eq!(no_store["capability_evidence"], "unverified");
+        assert!(no_store["receipt"]["selected"].is_null());
+        let other = Fixture::new();
+        assert!(
+            crate::evaluation::replay(
+                &old_path,
+                "candidate",
+                Some(&other.store),
+                Some(120),
+                300,
+                true
+            )
+            .is_err()
+        );
+        for change in 0..3 {
+            let mut changed = old.clone();
+            match change {
+                0 => {
+                    changed
+                        .evidence
+                        .iter_mut()
+                        .find(|source| source.id == f.proof.record.proof_id)
+                        .unwrap()
+                        .content_sha256 = "9".repeat(64)
+                }
+                1 => changed.host.id = "wrong-host".into(),
+                _ => {
+                    changed
+                        .capabilities
+                        .get_mut(&Capability::WorkspaceWrite)
+                        .unwrap()
+                        .source_ids = BTreeSet::from(["missing".into()])
+                }
+            }
+            if change != 2 {
+                changed = changed.seal().unwrap();
+            }
+            let path = f.root.join(format!("tampered-{change}.json"));
+            fs::write(
+                &path,
+                make_record(&changed, "invalid-case")
+                    .canonical_json()
+                    .unwrap(),
+            )
+            .unwrap();
+            assert!(
+                crate::evaluation::replay(&path, "candidate", Some(&f.store), Some(120), 300, true)
+                    .is_err()
+            );
+        }
     }
 }
