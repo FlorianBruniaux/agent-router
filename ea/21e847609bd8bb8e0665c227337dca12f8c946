@@ -1,0 +1,131 @@
+docs/bench/campaign-next/tests/test_corpus.py
+  s_9e80b85afcc43a::t_874f0f67b112a0 1-32
+docs/bench/campaign-next/pilot/corpus/tasks/t01/meta.json
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/tasks/t02/hidden_test.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-15,17-22
+  s_9e80b85afcc43a::t_a29d2c42c6779e 16
+docs/bench/campaign-next/pilot/corpus/solutions/t03.py
+  s_9e80b85afcc43a::t_c1c3d23f269041 1-44
+docs/bench/campaign-next/pilot/run_pilot.py
+  s_9e80b85afcc43a::t_3c8314b55a44e2 1-33,38-109,111-114,120,122,124-180,182-189,191-192,215-319,321-590,594,597-599,664-671,675-684,686-689,692-701,704-771,773-783,786-889,891-896,901-910,913-921
+  s_9e80b85afcc43a::t_a29d2c42c6779e 615,618,674
+  s_9e80b85afcc43a::t_7421d6800749eb 118-119
+  s_9e80b85afcc43a::t_2584f31f7b115c 110,123
+  s_9e80b85afcc43a::t_bddc596061c80d 34-35,614,616-617,619-622,624-634,637-663,672-673,685,690-691,772,784-785,897-900,911-912
+  s_9e80b85afcc43a::t_23f1885e7fa278 115-117,121,608-611
+  s_9e80b85afcc43a::t_148e114e9199cb 320
+  s_9e80b85afcc43a::t_b264815c8d0083 36-37,635-636
+  s_9e80b85afcc43a::t_55cca4b5706749 591-593,595-596,600-605,607,612-613
+  s_9e80b85afcc43a::t_c02e176d4cf68c 623
+  s_9e80b85afcc43a::t_d4eb1e9aad5776 890
+  s_9e80b85afcc43a::t_87005f99c03be4 181,190,193-214,606,702-703
+docs/bench/campaign-next/pilot/corpus/base/pilot_lib/intervals.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-2
+docs/bench/campaign-next/pilot/corpus/tasks/t02/meta.json
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/tasks/t02/statement.md
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/tasks/t01/hidden_test.py
+  s_9e80b85afcc43a::t_a29d2c42c6779e 12,16
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-11,13-15,17-21
+docs/bench/campaign-next/pilot/corpus/tasks/t03/meta.json
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/runs/2026-09-30-egress-spike/README.md
+  s_9e80b85afcc43a::t_50a8ac6c8c8a12 13,15,70-74
+  s_9e80b85afcc43a::t_a071fd3103878d 75
+docs/bench/campaign-next/pilot/corpus/solutions/t02.py
+  s_9e80b85afcc43a::t_c1c3d23f269041 1-20
+docs/bench/campaign-next/pilot/corpus/base/pilot_lib/pagination.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-2
+docs/bench/campaign-next/.gitignore
+  s_9e80b85afcc43a::t_e9eba29a95bb74 1-2
+docs/bench/campaign-next/pilot/corpus/solutions/t01.py
+  s_9e80b85afcc43a::t_c1c3d23f269041 1-20
+docs/bench/campaign-next/tests/test_v4_projection.py
+  s_9e80b85afcc43a::t_3773abafa56398 1-2,4-40,66-69
+  s_9e80b85afcc43a::t_2c0960b2089556 3,41-65
+docs/bench/campaign-next/pilot/.gitignore
+  s_9e80b85afcc43a::t_d4eb1e9aad5776 1-3
+docs/bench/campaign-next/README.md
+  s_9e80b85afcc43a::t_478b9b47087ab3 15
+  s_9e80b85afcc43a::t_8b2bc7a75357cb 1-12,14,16,21-29
+  s_9e80b85afcc43a::t_3937a9df7dee75 13
+  s_9e80b85afcc43a::t_b18026ba392da1 17-20
+docs/bench/campaign-next/pilot/corpus/base/pilot_lib/semver.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-2
+docs/bench/campaign-next/tests/test_candidate.py
+  s_9e80b85afcc43a::t_e4b42cd5da1fa5 50-56,150,204-209
+  s_9e80b85afcc43a::t_8b5700c5a1e6fc 114-115
+  s_9e80b85afcc43a::t_478b9b47087ab3 83-87
+  s_9e80b85afcc43a::t_077edb49fcdb98 109-113,116-142
+  s_9e80b85afcc43a::t_4d0b4ae5f06534 16-18,64-65
+  s_9e80b85afcc43a::t_0f457e8060f81f 151-192,199,202-203
+  s_9e80b85afcc43a::t_5a38dae9edc553 70,73-74,76,78-82,88-93,105,107
+  s_9e80b85afcc43a::t_3ea65e1c28c00a 72
+  s_9e80b85afcc43a::t_b656f1aef5aa33 2,4,7,24-29,31-37,39-43,94-104,210-225
+  s_9e80b85afcc43a::t_e8a7ec9dcf3a2f 106
+  s_9e80b85afcc43a::t_6bb899aff5c4d7 1,3,5-6,8-15,19-23,30,38,49,57-63,66-69,71,75,77,226-229
+  s_9e80b85afcc43a::t_148e114e9199cb 193-198,200-201
+  s_9e80b85afcc43a::t_fe46cfcd0610f1 44-48,108,143-149
+docs/bench/campaign-next/pilot/corpus/base/pilot_lib/__init__.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/tasks/t03/statement.md
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/pilot-config.example.json
+  s_9e80b85afcc43a::t_d4eb1e9aad5776 1-11,14-18,21-35
+  s_9e80b85afcc43a::t_4069aaf483c26a 12-13,19-20
+docs/bench/campaign-next/pilot/corpus/tasks/t01/statement.md
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/base/.gitignore
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1
+docs/bench/campaign-next/pilot/corpus/base/README.md
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-3
+docs/bench/campaign-next/pilot/corpus/tasks/t03/hidden_test.py
+  s_9e80b85afcc43a::t_46ec98e1c296b8 1-22
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_478b9b47087ab3 245
+  s_9e80b85afcc43a::t_8b2bc7a75357cb 241,243-244,246
+docs/bench/campaign-next/pilot/catalogs/claude-pool.json
+  s_9e80b85afcc43a::t_0eb6c95fa012bd 1-43
+docs/bench/campaign-next/pilot/catalogs/codex-pool.json
+  s_9e80b85afcc43a::t_82878171679961 1-43
+docs/bench/campaign-next/pilot/export_results.py
+  s_9e80b85afcc43a::t_12c6c8cefb9178 1-80
+docs/bench/campaign-next/pilot/fake/fake_host.py
+  s_9e80b85afcc43a::t_7d48c9f989ba37 1-49
+docs/bench/campaign-next/pilot/pricing-cache-writes.json
+  s_9e80b85afcc43a::t_b57017ee46dcab 1-28
+docs/bench/campaign-next/pilot/pricing-sources.md
+  s_9e80b85afcc43a::t_54aa2456ec0c2e 1-28
+docs/bench/campaign-next/pilot/pricing.json
+  s_9e80b85afcc43a::t_e575522fb0e2c0 1-68
+docs/bench/campaign-next/pilot/summarize.py
+  s_9e80b85afcc43a::t_7c4e9173286bb5 1-148
+docs/bench/runs/2026-09-30-egress-spike/REDACTIONS
+  s_9e80b85afcc43a::t_83ed00b449a97f 68-151
+docs/bench/runs/2026-09-30-egress-spike/SHA256SUMS
+  s_9e80b85afcc43a::t_3f4d4062e17f41 1-2,16-18
+docs/bench/runs/2026-09-30-egress-spike/results/v4-startup/20260930T190002Z.json
+  s_9e80b85afcc43a::t_ca7364a2f89066 1-29
+docs/bench/runs/2026-09-30-egress-spike/results/v4-startup/20260930T190228Z.json
+  s_9e80b85afcc43a::t_a3f6360fa18335 1-29
+docs/bench/runs/2026-09-30-egress-spike/results/v4-startup/20260930T190433Z.json
+  s_9e80b85afcc43a::t_b0264867c97730 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ea21e847609bd8bb8e0665c227337dca12f8c946",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
