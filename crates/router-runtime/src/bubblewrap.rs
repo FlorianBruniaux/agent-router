@@ -185,7 +185,18 @@ impl SandboxSupervisor for BubblewrapSandbox {
         store: &Path,
         run: &PreparedRun,
     ) -> Result<Option<crate::HostState>> {
-        crate::HostState::create(store, &run.program, &self.environment)
+        if !matches!(run.program.as_str(), "codex" | "claude") {
+            return Ok(None);
+        }
+        let source = self
+            .programs
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        let hash = self
+            .program_hashes
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        crate::HostState::create_with_program(store, &run.program, &self.environment, source, hash)
     }
     fn pid_namespace_isolated(&self) -> bool {
         cfg!(target_os = "linux")
@@ -194,13 +205,26 @@ impl SandboxSupervisor for BubblewrapSandbox {
         if binary_hash(&self.wrapper)? != self.wrapper_hash {
             return Err(RuntimeError::Integrity("bubblewrap changed"));
         }
-        let program = self
+        let source = self
             .programs
             .get(&run.program)
             .ok_or(RuntimeError::Sandbox)?;
-        if self.program_hashes.get(&run.program) != Some(&binary_hash(program)?) {
-            return Err(RuntimeError::Integrity("native binary changed"));
-        }
+        let expected_hash = self
+            .program_hashes
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        let program = if matches!(run.program.as_str(), "codex" | "claude") {
+            policy
+                .host_state
+                .ok_or(RuntimeError::Sandbox)?
+                .private_program_path(&run.program, expected_hash)?
+                .to_path_buf()
+        } else {
+            if &binary_hash(source)? != expected_hash {
+                return Err(RuntimeError::Integrity("native binary changed"));
+            }
+            source.clone()
+        };
         let cwd = Path::new(&run.cwd);
         safe_scope(cwd, &run.scope)?;
         let mut reads = self.read_roots.clone();

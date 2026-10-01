@@ -12,6 +12,7 @@ mod host_state;
 mod leases;
 mod native_version;
 mod outputs;
+mod private_program;
 mod process;
 mod resources;
 mod sandbox;

@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Breaking
 
+- Native Codex and Claude execute a verified private copy of the approved entry file per attempt, outside writable host state. Approval format v7 requires a new preview; other adapters, interpreters, modules and sandbox/helper binaries retain their existing boundaries.
+
 - Native Codex configuration rejects shebang launchers such as `codex.js` with `runtime.program.script_unsupported` (exit 2), on macOS and Linux. Configure the canonical native binary path; no Node lookup or PATH expansion is performed.
 
 - The macOS Codex sandbox reads the `com.openai.codex` preference domain and shared memory named `apple.cfprefs.*`. Approval format v6 binds this permission change; v1-v5 approvals require a new preview. No preference writes or Linux profile change is added.

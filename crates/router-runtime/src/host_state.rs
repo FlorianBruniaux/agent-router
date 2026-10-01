@@ -1,5 +1,5 @@
 //! Per-attempt host files. Never import personal configuration or OAuth tokens.
-use crate::{Result, RuntimeError};
+use crate::{Result, RuntimeError, private_program::PrivateProgram};
 use std::{
     collections::BTreeMap,
     fs,
@@ -18,8 +18,23 @@ pub struct HostState {
     path: PathBuf,
     store: PathBuf,
     program: String,
+    private_program: Option<PrivateProgram>,
 }
 impl HostState {
+    pub(crate) fn create_with_program(
+        store: &Path,
+        program: &str,
+        environment: &BTreeMap<String, String>,
+        source: &Path,
+        expected_hash: &str,
+    ) -> Result<Option<Self>> {
+        let Some(mut state) = Self::create(store, program, environment)? else {
+            return Ok(None);
+        };
+        state.private_program = Some(PrivateProgram::copy(source, expected_hash, store)?);
+        Ok(Some(state))
+    }
+
     pub(crate) fn create(
         store: &Path,
         program: &str,
@@ -56,6 +71,7 @@ impl HostState {
             path,
             store: store.into(),
             program: program.into(),
+            private_program: None,
         };
         if program == "codex" {
             if let Some(key) = environment.get("OPENAI_API_KEY") {
@@ -70,6 +86,15 @@ impl HostState {
             }
         }
         Ok(Some(state))
+    }
+    pub(crate) fn private_program_path(&self, program: &str, expected_hash: &str) -> Result<&Path> {
+        if program != self.program {
+            return Err(RuntimeError::Sandbox);
+        }
+        self.private_program
+            .as_ref()
+            .ok_or(RuntimeError::Sandbox)?
+            .verify(expected_hash)
     }
     pub(crate) fn extend(
         &self,
@@ -97,6 +122,14 @@ impl HostState {
                 return Err(RuntimeError::Sandbox);
             }
         }
+        if let Some(copy) = &self.private_program {
+            if writes.iter().any(|root| {
+                copy.directory().starts_with(root) || root.starts_with(copy.directory())
+            }) {
+                return Err(RuntimeError::Sandbox);
+            }
+            reads.push(copy.directory().into());
+        }
         reads.push(self.path.clone());
         writes.push(self.path.clone());
         let variable = if program == "codex" {
@@ -113,8 +146,14 @@ impl HostState {
         );
         Ok(())
     }
-    pub(crate) fn cleanup(self) -> Result<()> {
-        crate::stale::remove_stale(&self.path)
+    pub(crate) fn cleanup(mut self) -> Result<()> {
+        let state_cleanup = crate::stale::remove_stale(&self.path);
+        let program_cleanup = self
+            .private_program
+            .take()
+            .map_or(Ok(()), PrivateProgram::cleanup);
+        state_cleanup?;
+        program_cleanup
     }
 }
 impl Drop for HostState {
@@ -137,6 +176,191 @@ fn private_directory(path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{SandboxPolicy, SandboxSupervisor};
+    use router_types::*;
+
+    fn native_run(cwd: &Path) -> PreparedRun {
+        PreparedRun {
+            schema_version: 1,
+            receipt_id: "a".repeat(64),
+            source_state: "b".repeat(40),
+            scope: vec![],
+            authorization_digest: "c".repeat(64),
+            snapshot_hash: "d".repeat(64),
+            host: HarnessId::parse("codex").unwrap(),
+            requested_model: ModelId::parse("fixture-model").unwrap(),
+            requested_effort: EffortLevel::Medium,
+            program: "codex".into(),
+            argv: vec![
+                "-c".into(),
+                r#"set -eu
+if (printf denied > "$1") 2>/dev/null; then exit 61; fi
+if (printf denied > "$2/denied") 2>/dev/null; then exit 62; fi
+printf approved
+"#
+                .into(),
+            ],
+            cwd: cwd.to_str().unwrap().into(),
+            stdin: PreparedInput::new(vec![]),
+            mode: ExecutionMode::Execute,
+            target: ExecutionTarget::ExternalWorker,
+            sandbox: ExecutionSandbox::ReadOnly,
+            timeout_ms: 3000,
+            max_output_bytes: 4096,
+            degradations: vec![],
+            missing_runtime_evidence: vec![],
+            parent_model_changed: false,
+        }
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    fn compile_shell_shim(path: &Path) {
+        let source = path.with_extension("c");
+        fs::write(
+            &source,
+            b"#include <unistd.h>\nint main(int argc, char **argv) { (void)argc; argv[0] = \"/bin/sh\"; execv(\"/bin/sh\", argv); return 127; }\n",
+        )
+        .unwrap();
+        #[cfg(target_os = "macos")]
+        let compiler = "/usr/bin/clang";
+        #[cfg(target_os = "linux")]
+        let compiler = "/usr/bin/cc";
+        let output = std::process::Command::new(compiler)
+            .arg(&source)
+            .arg("-o")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "local fixture compile: {output:?}");
+    }
+
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    #[tokio::test]
+    #[ignore = "requires native OS sandbox; runs only copied local programs"]
+    async fn approved_program_copy_survives_source_replacement_and_is_read_only() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        let store = root.join("store");
+        let cwd = root.join("repo");
+        fs::DirBuilder::new().mode(0o700).create(&store).unwrap();
+        fs::create_dir(&cwd).unwrap();
+        let source = root.join("fixture-program");
+        compile_shell_shim(&source);
+        let programs = BTreeMap::from([("codex".into(), source.clone())]);
+        #[cfg(target_os = "macos")]
+        let sandbox = crate::SeatbeltSandbox::probe(&store, programs, vec![], BTreeMap::new())
+            .await
+            .unwrap();
+        #[cfg(target_os = "linux")]
+        let sandbox = crate::BubblewrapSandbox::probe(
+            &store,
+            &fs::canonicalize("/usr/bin/bwrap").unwrap(),
+            programs,
+            vec![],
+            BTreeMap::new(),
+        )
+        .await
+        .unwrap();
+        let run = native_run(&cwd);
+        let state = sandbox.create_host_state(&store, &run).unwrap().unwrap();
+        let state_path = state.path.clone();
+        let mut command = sandbox
+            .command(
+                &run,
+                &SandboxPolicy {
+                    network: false,
+                    host_state: Some(&state),
+                },
+            )
+            .unwrap();
+        let args: Vec<_> = command.as_std().get_args().collect();
+        #[cfg(target_os = "macos")]
+        let executable = PathBuf::from(args[2]);
+        #[cfg(target_os = "linux")]
+        let executable = PathBuf::from(args[args.iter().position(|arg| *arg == "--").unwrap() + 1]);
+        let private_dir = executable.parent().unwrap().to_path_buf();
+        command.arg("--").arg(&executable).arg(&private_dir);
+
+        // Only this temporary source changes; the system binaries stay intact.
+        let replacement = root.join("replacement-program");
+        fs::copy("/usr/bin/false", &replacement).unwrap();
+        fs::rename(replacement, &source).unwrap();
+        let output = command.output().await.unwrap();
+        assert!(
+            output.status.success(),
+            "copied shell shim must run: {output:?}"
+        );
+        assert_eq!(output.stdout, b"approved");
+        assert_ne!(executable, source);
+        assert!(!private_dir.starts_with(&store));
+        assert_eq!(
+            fs::metadata(&private_dir).unwrap().permissions().mode() & 0o777,
+            0o700
+        );
+        assert_eq!(
+            fs::metadata(&executable).unwrap().permissions().mode() & 0o777,
+            0o500
+        );
+        assert!(!private_dir.join("denied").exists());
+        state.cleanup().unwrap();
+        assert!(!state_path.exists());
+        assert!(!private_dir.exists());
+
+        // The changed source must be rejected before a second copy is created.
+        assert!(matches!(
+            sandbox.create_host_state(&store, &run),
+            Err(RuntimeError::Integrity(_))
+        ));
+    }
+    #[test]
+    fn private_program_refuses_missing_copy_other_host_tampering_and_write_grants() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        let store = root.join("store");
+        fs::DirBuilder::new().mode(0o700).create(&store).unwrap();
+        let source = root.join("fixture-program");
+        fs::copy("/bin/sh", &source).unwrap();
+        let hash = crate::sandbox::binary_hash(&source).unwrap();
+        let empty = HostState::create(&store, "codex", &BTreeMap::new())
+            .unwrap()
+            .unwrap();
+        assert!(matches!(
+            empty.private_program_path("codex", &hash),
+            Err(RuntimeError::Sandbox)
+        ));
+        drop(empty);
+
+        let state =
+            HostState::create_with_program(&store, "codex", &BTreeMap::new(), &source, &hash)
+                .unwrap()
+                .unwrap();
+        let executable = state
+            .private_program_path("codex", &hash)
+            .unwrap()
+            .to_path_buf();
+        let directory = executable.parent().unwrap().to_path_buf();
+        assert!(matches!(
+            state.private_program_path("claude", &hash),
+            Err(RuntimeError::Sandbox)
+        ));
+        assert!(matches!(
+            state.extend(
+                "codex",
+                &root.join("repo"),
+                &mut vec![],
+                &mut vec![directory.clone()],
+                &mut BTreeMap::new(),
+            ),
+            Err(RuntimeError::Sandbox)
+        ));
+        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(matches!(
+            state.private_program_path("codex", &hash),
+            Err(RuntimeError::Integrity(_))
+        ));
+        state.cleanup().unwrap();
+        assert!(!directory.exists());
+    }
     #[test]
     fn host_state_is_unique_private_and_api_key_only_then_removed() {
         let temp = tempfile::tempdir().unwrap();

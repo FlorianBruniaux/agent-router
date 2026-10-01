@@ -1,7 +1,34 @@
 //! Native local canary, no provider process or credentials.
 use router_runtime::{SandboxPolicy, SandboxSupervisor};
 use router_types::*;
-use std::{collections::BTreeMap, fs, os::unix::fs::PermissionsExt, path::Path};
+use std::{
+    collections::BTreeMap,
+    fs,
+    os::unix::fs::PermissionsExt,
+    path::{Path, PathBuf},
+};
+
+fn compile_shell_shim(root: &Path) -> PathBuf {
+    let source = root.join("shell-shim.c");
+    let program = root.join("shell-shim");
+    fs::write(
+        &source,
+        b"#include <unistd.h>\nint main(int argc, char **argv) { (void)argc; argv[0] = \"/bin/sh\"; execv(\"/bin/sh\", argv); return 127; }\n",
+    )
+    .unwrap();
+    #[cfg(target_os = "macos")]
+    let compiler = "/usr/bin/clang";
+    #[cfg(target_os = "linux")]
+    let compiler = "/usr/bin/cc";
+    let output = std::process::Command::new(compiler)
+        .arg(&source)
+        .arg("-o")
+        .arg(&program)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "local fixture compile: {output:?}");
+    program
+}
 
 fn run(root: &Path, program: &str) -> PreparedRun {
     PreparedRun {
@@ -46,9 +73,10 @@ async fn read_only_host_state_allows_state_but_denies_workspace_and_store() {
     fs::create_dir(&cwd).unwrap();
     fs::write(store.join("approval.key"), b"synthetic-key").unwrap();
     fs::write(store.join("runtime.sqlite3"), b"synthetic-store").unwrap();
+    let shim = compile_shell_shim(&root);
     let programs = ["codex", "claude"]
         .into_iter()
-        .map(|name| (name.into(), fs::canonicalize("/bin/sh").unwrap()))
+        .map(|name| (name.into(), shim.clone()))
         .collect();
     #[cfg(target_os = "macos")]
     let sandbox = router_runtime::SeatbeltSandbox::probe(&store, programs, vec![], BTreeMap::new())

@@ -294,19 +294,43 @@ impl SandboxSupervisor for SeatbeltSandbox {
         store: &Path,
         run: &PreparedRun,
     ) -> Result<Option<crate::HostState>> {
-        crate::HostState::create(store, &run.program, &self.environment)
-    }
-    fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
-        let program = self
+        if !matches!(run.program.as_str(), "codex" | "claude") {
+            return Ok(None);
+        }
+        let source = self
             .programs
             .get(&run.program)
             .ok_or(RuntimeError::Sandbox)?;
-        if fs::canonicalize(program)? != *program || !program.is_file() {
-            return Err(RuntimeError::Sandbox);
-        }
-        if self.program_hashes.get(&run.program) != Some(&binary_hash(program)?) {
-            return Err(RuntimeError::Integrity("native binary changed"));
-        }
+        let hash = self
+            .program_hashes
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        crate::HostState::create_with_program(store, &run.program, &self.environment, source, hash)
+    }
+    fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
+        let source = self
+            .programs
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        let expected_hash = self
+            .program_hashes
+            .get(&run.program)
+            .ok_or(RuntimeError::Sandbox)?;
+        let program = if matches!(run.program.as_str(), "codex" | "claude") {
+            policy
+                .host_state
+                .ok_or(RuntimeError::Sandbox)?
+                .private_program_path(&run.program, expected_hash)?
+                .to_path_buf()
+        } else {
+            if fs::canonicalize(source)? != *source || !source.is_file() {
+                return Err(RuntimeError::Sandbox);
+            }
+            if &binary_hash(source)? != expected_hash {
+                return Err(RuntimeError::Integrity("native binary changed"));
+            }
+            source.clone()
+        };
         let cwd = Path::new(&run.cwd);
         safe_scope(cwd, &run.scope)?;
         let mut reads = self.read_roots.clone();
