@@ -1,0 +1,74 @@
+docs/adr/0022-provider-egress.md
+  s_9e80b85afcc43a::t_f20577cece755b 1-58,62-183,187-220
+  s_9e80b85afcc43a::t_35c342d84dadc4 59-61,221-250
+  s_9e80b85afcc43a::t_330552608aeb50 184-186
+docs/bench/egress-admission/results/artifact-read-regression.json
+  s_9e80b85afcc43a::t_13626a6749d928 1-33
+docs/bench/egress-admission/README.md
+  s_9e80b85afcc43a::t_1bc340ba0b17ae 95-97,102-117
+  s_9e80b85afcc43a::t_35c342d84dadc4 1-94,98-101,118-134
+docs/bench/egress-admission/results/sample-write-regression.json
+  s_9e80b85afcc43a::t_a272a477810fd8 1-43
+docs/bench/egress-admission/test_artifact_reads.py
+  s_9e80b85afcc43a::t_425fbaa5d6d17e 205-222
+  s_9e80b85afcc43a::t_dce51cc5741315 15-39,43
+  s_9e80b85afcc43a::t_0836def931d0d5 7-9,104-111,113-124,126-130,132-153,155-183,185-195,197-200,202-203
+  s_9e80b85afcc43a::t_a93099263f1f1d 40-42,44-82,98,112,125,131,154,184,196,201
+  s_9e80b85afcc43a::t_75916e55ca7cd1 1-6,10-14,83-97,99-103,204,223-225
+docs/bench/egress-admission/claude_local.py
+  s_9e80b85afcc43a::t_7dd41b4ed74085 12,60-62,295,377,392,396
+  s_9e80b85afcc43a::t_f682da79bdc03a 137,140-141,143
+  s_9e80b85afcc43a::t_e534dac27ae9aa 330,335-336,376
+  s_9e80b85afcc43a::t_2b6ee05635466e 105,107,127-128,142,301-304,353-354,359
+  s_9e80b85afcc43a::t_0836def931d0d5 15,65-104,106,108-123
+  s_9e80b85afcc43a::t_2782574b686a9a 331
+  s_9e80b85afcc43a::t_75916e55ca7cd1 124-125,361
+  s_9e80b85afcc43a::t_dce51cc5741315 126
+  s_9e80b85afcc43a::t_c1c66aa5411049 327-328
+  s_9e80b85afcc43a::t_57dd1d0a569ced 344,349-350,375
+  s_9e80b85afcc43a::t_6a418ae387cba1 1-11,13-14,16-50,52-59,63-64,129,131,135-136,138-139,144-294,296-300,305-326,329,332-334,337-343,355-358,360,362-374,378-391,393-395,397-405
+  s_9e80b85afcc43a::t_39d9ed4753a913 51
+  s_9e80b85afcc43a::t_f4ba1c930c7d4b 130,132-134,345-348,351-352
+docs/adr/0021-host-capability-evidence.md
+  s_9e80b85afcc43a::t_330552608aeb50 140-142,362-363
+  s_9e80b85afcc43a::t_f20577cece755b 6-8,137-139,296-307
+  s_9e80b85afcc43a::t_d578d7fc5d48ec 4
+docs/adr/README.md
+  s_9e80b85afcc43a::t_1569f2a513e667 31-32
+docs/bench/egress-admission/results/inventory-debug.json
+  s_9e80b85afcc43a::t_6aeefdab51c6ff 1-77
+docs/bench/egress-admission/results/inventory-initial.json
+  s_9e80b85afcc43a::t_7785ca9f4dce86 1-73
+docs/bench/egress-admission/results/inventory-localhost.json
+  s_9e80b85afcc43a::t_c314ba0d5dbd0f 1-73
+docs/bench/egress-admission/results/inventory-sampled.json
+  s_9e80b85afcc43a::t_f399b88a47f330 1-78
+docs/bench/egress-admission/results/inventory-without-restricted.json
+  s_9e80b85afcc43a::t_0309201a4cc126 1-76
+docs/bench/egress-admission/results/local-v1.json
+  s_9e80b85afcc43a::t_b54b376cfdaadf 1-227
+docs/bench/egress-admission/results/mcp-protocol-control.json
+  s_9e80b85afcc43a::t_683d077516a715 1-72
+docs/bench/egress-admission/results/mcp-standalone-control.json
+  s_9e80b85afcc43a::t_71dfd4e76ec503 1-81
+docs/bench/egress-admission/results/mcp-standalone-safe-artifact-reads.json
+  s_9e80b85afcc43a::t_fc2cac3b452c42 1-87
+docs/bench/egress-admission/results/mcp-standalone-supervisor-sample.json
+  s_9e80b85afcc43a::t_2d18441da37040 1-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "f4d2b6524895a49eb4acae64dd85a142c1f6229b",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
