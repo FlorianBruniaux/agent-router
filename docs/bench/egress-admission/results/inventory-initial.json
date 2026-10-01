@@ -1,0 +1,73 @@
+{
+  "schema": "agent-router-claude-local-admission-v1",
+  "created_at": "2026-10-01T08:12:35.853715+00:00",
+  "native_binary": "<home>/.local/share/claude/versions/2.1.286",
+  "native_sha256": "75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433",
+  "script_sha256": "0b43a95ee04cb7c05906897354c2d4b6efa4c051ebed177a1675be5e4d8ea7f8",
+  "platform": "darwin",
+  "scope": "local scripted provider, synthetic key, no native admission",
+  "cases": [
+    {
+      "mode": "inventory",
+      "controller_argv": [
+        "<home>/.local/share/claude/versions/2.1.286",
+        "--bare",
+        "--restricted",
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        "claude-haiku-4-5",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<scratch>/mcp.json",
+        "--setting-sources",
+        "",
+        "--settings",
+        "<scratch>/settings.json",
+        "--permission-prompts",
+        "none",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "Run the local fixture instruction and finish."
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:52599",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"127.0.0.1:52599\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {}
+      },
+      "socket_control": {
+        "exit_code": 65,
+        "termination": "exit",
+        "elapsed_ms": 54,
+        "stdout": "",
+        "stderr": "sandbox-exec: host must be * or localhost in network address\n\nBacktrace: \n<input string>:15:26:\n\t(remote ip \"127.0.0.1:52599\")\n\n"
+      },
+      "process": {
+        "exit_code": 65,
+        "termination": "exit",
+        "elapsed_ms": 52,
+        "stdout": "",
+        "stderr": "sandbox-exec: host must be * or localhost in network address\n\nBacktrace: \n<input string>:15:26:\n\t(remote ip \"127.0.0.1:52599\")\n\n"
+      },
+      "provider_requests": [],
+      "forbidden_builtin_created": false,
+      "nonce_exact": false,
+      "worker_evidence": null
+    }
+  ]
+}

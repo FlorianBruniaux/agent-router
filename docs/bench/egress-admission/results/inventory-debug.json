@@ -1,0 +1,77 @@
+{
+  "schema": "agent-router-claude-local-admission-v1",
+  "created_at": "2026-10-01T08:15:34.518288+00:00",
+  "native_binary": "<home>/.local/share/claude/versions/2.1.286",
+  "native_sha256": "75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433",
+  "script_sha256": "d596e006363142b1ce6b49ae2aab7a6aeb275ed458f218bc5d289097277c95b4",
+  "platform": "darwin",
+  "scope": "local scripted provider, synthetic key, no native admission",
+  "cases": [
+    {
+      "mode": "inventory",
+      "controller_argv": [
+        "<home>/.local/share/claude/versions/2.1.286",
+        "--bare",
+        "--restricted",
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--debug-file",
+        "<scratch>/state/debug.log",
+        "--model",
+        "claude-haiku-4-5",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<scratch>/mcp.json",
+        "--setting-sources",
+        "",
+        "--settings",
+        "<scratch>/settings.json",
+        "--permission-prompts",
+        "none",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "Run the local fixture instruction and finish."
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "CLAUDE_CODE_TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:53323",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"localhost:53323\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {}
+      },
+      "socket_control": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 160,
+        "stdout": "53323 allowed\n53324 denied 1\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-NAyyfo3Z' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-SLIhL5Vy' (errno=Operation not permitted)\n"
+      },
+      "process": {
+        "exit_code": -9,
+        "termination": "timeout",
+        "elapsed_ms": 15057,
+        "stdout": "",
+        "stderr": ""
+      },
+      "provider_requests": [],
+      "debug_excerpt": "2026-10-01T08:15:34.985Z [DEBUG] MDM settings load completed in 0ms\n2026-10-01T08:15:34.991Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: /Library/Application Support/ClaudeCode/managed-settings.json\n2026-10-01T08:15:34.991Z [DEBUG] CA certs: Config fallback - globalEnv keys: , settingsEnv keys: none\n2026-10-01T08:15:35.026Z [DEBUG] [init] configureGlobalMTLS starting\n2026-10-01T08:15:35.027Z [DEBUG] [init] configureGlobalMTLS complete\n2026-10-01T08:15:35.027Z [DEBUG] [init] configureGlobalAgents starting\n2026-10-01T08:15:35.027Z [DEBUG] CA certs: stores=bundled,system, extraCertsPath=undefined\n2026-10-01T08:15:35.027Z [DEBUG] CA certs: Loaded 121 bundled root certificates\n2026-10-01T08:15:35.040Z [DEBUG] CA certs: system store returned empty\n2026-10-01T08:15:35.040Z [DEBUG] mTLS: Creating HTTPS agent with custom certificates\n2026-10-01T08:15:35.040Z [DEBUG] [init] configureGlobalAgents complete\n2026-10-01T08:15:35.042Z [DEBUG] Git remote URL: null\n2026-10-01T08:15:35.042Z [DEBUG] No git remote URL found\n2026-10-01T08:15:35.042Z [DEBUG] Error log sink initialized\n2026-10-01T08:15:35.043Z [DEBUG] Broken symlink or missing file encountered for settings.json at path: <scratch>/state/settings.json\n2026-10-01T08:15:35.046Z [ERROR] Failed to save config with lock: Error: ENOENT: no such file or directory, lstat '<scratch>/state/.claude.json'\n2026-10-01T08:15:35.048Z [DEBUG] Setting permissions for new file: 600\n2026-10-01T08:15:35.048Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.5fcc61589f21\n2026-10-01T08:15:35.049Z [DEBUG] Temp file written successfully, size: 84 bytes\n2026-10-01T08:15:35.049Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.5fcc61589f21 to <scratch>/state/.claude.json\n2026-10-01T08:15:35.049Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.051Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.051Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.0af34f2551f1\n2026-10-01T08:15:35.052Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.052Z [DEBUG] Temp file written successfully, size: 167 bytes\n2026-10-01T08:15:35.052Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.0af34f2551f1 to <scratch>/state/.claude.json\n2026-10-01T08:15:35.053Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.055Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.055Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.5da7847e5383\n2026-10-01T08:15:35.056Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.056Z [DEBUG] Temp file written successfully, size: 203 bytes\n2026-10-01T08:15:35.057Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.5da7847e5383 to <scratch>/state/.claude.json\n2026-10-01T08:15:35.057Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.058Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.058Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.e77b371331d3\n2026-10-01T08:15:35.059Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.060Z [DEBUG] Temp file written successfully, size: 242 bytes\n2026-10-01T08:15:35.060Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.e77b371331d3 to <scratch>/state/.claude.json\n2026-10-01T08:15:35.060Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.063Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.063Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.460950f5cddf\n2026-10-01T08:15:35.063Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.064Z [DEBUG] Temp file written successfully, size: 269 bytes\n2026-10-01T08:15:35.064Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.460950f5cddf to <scratch>/state/.claude.json\n2026-10-01T08:15:35.064Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.067Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.067Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.ea0650ed1c94\n2026-10-01T08:15:35.067Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.067Z [DEBUG] Temp file written successfully, size: 317 bytes\n2026-10-01T08:15:35.067Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.ea0650ed1c94 to <scratch>/state/.claude.json\n2026-10-01T08:15:35.068Z [DEBUG] File <scratch>/state/.claude.json written atomically\n2026-10-01T08:15:35.069Z [DEBUG] Preserving file permissions: 100600\n2026-10-01T08:15:35.069Z [DEBUG] Writing to temp file: <scratch>/state/.claude.json.tmp.48461.2ffb9290dc2e\n2026-10-01T08:15:35.070Z [DEBUG] Applied original permissions to temp file\n2026-10-01T08:15:35.070Z [DEBUG] Temp file written successfully, size: 343 bytes\n2026-10-01T08:15:35.070Z [DEBUG] Renaming <scratch>/state/.claude.json.tmp.48461.2ffb9290dc2e to <scratch>/state/.claude.json\n2026-10-01T08:15:35.070Z [DEBUG] File <scratch>/state/.claude.json written atomically\n",
+      "forbidden_builtin_created": false,
+      "nonce_exact": false,
+      "worker_evidence": null
+    }
+  ]
+}

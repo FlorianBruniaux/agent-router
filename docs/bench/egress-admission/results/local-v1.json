@@ -1,0 +1,227 @@
+{
+  "schema": "agent-router-claude-local-admission-v1",
+  "created_at": "2026-10-01T08:13:56.239588+00:00",
+  "native_binary": "<home>/.local/share/claude/versions/2.1.286",
+  "native_sha256": "75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433",
+  "script_sha256": "a9ea2b4609f218093a78d7e1b1602be6ebbd93124b58d92e6c7d4c0614ec50ea",
+  "platform": "darwin",
+  "scope": "local scripted provider, synthetic key, no native admission",
+  "cases": [
+    {
+      "mode": "inventory",
+      "controller_argv": [
+        "<home>/.local/share/claude/versions/2.1.286",
+        "--bare",
+        "--restricted",
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        "claude-haiku-4-5",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<scratch>/mcp.json",
+        "--setting-sources",
+        "",
+        "--settings",
+        "<scratch>/settings.json",
+        "--permission-prompts",
+        "none",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "Run the local fixture instruction and finish."
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "CLAUDE_CODE_TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:52941",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"localhost:52941\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {}
+      },
+      "socket_control": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 109,
+        "stdout": "52941 allowed\n52942 denied 1\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-500eJDLK' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-PFdog4K7' (errno=Operation not permitted)\n"
+      },
+      "process": {
+        "exit_code": -9,
+        "termination": "timeout",
+        "elapsed_ms": 25017,
+        "stdout": "",
+        "stderr": ""
+      },
+      "provider_requests": [],
+      "forbidden_builtin_created": false,
+      "nonce_exact": false,
+      "worker_evidence": null
+    },
+    {
+      "mode": "forbidden_builtin",
+      "controller_argv": [
+        "<home>/.local/share/claude/versions/2.1.286",
+        "--bare",
+        "--restricted",
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        "claude-haiku-4-5",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<scratch>/mcp.json",
+        "--setting-sources",
+        "",
+        "--settings",
+        "<scratch>/settings.json",
+        "--permission-prompts",
+        "none",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "Run the local fixture instruction and finish."
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "CLAUDE_CODE_TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:53052",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"localhost:53052\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {}
+      },
+      "socket_control": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 105,
+        "stdout": "53052 allowed\n53053 denied 1\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-bDJjNrPp' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-JFlvDJ64' (errno=Operation not permitted)\n"
+      },
+      "process": {
+        "exit_code": -9,
+        "termination": "timeout",
+        "elapsed_ms": 25008,
+        "stdout": "",
+        "stderr": ""
+      },
+      "provider_requests": [],
+      "forbidden_builtin_created": false,
+      "nonce_exact": false,
+      "worker_evidence": null
+    },
+    {
+      "mode": "mcp_nonce",
+      "controller_argv": [
+        "<home>/.local/share/claude/versions/2.1.286",
+        "--bare",
+        "--restricted",
+        "--print",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--model",
+        "claude-haiku-4-5",
+        "--tools",
+        "",
+        "--strict-mcp-config",
+        "--mcp-config",
+        "<scratch>/mcp.json",
+        "--setting-sources",
+        "",
+        "--settings",
+        "<scratch>/settings.json",
+        "--permission-prompts",
+        "none",
+        "--no-session-persistence",
+        "--max-turns",
+        "3",
+        "--allowedTools",
+        "mcp__admission__write_nonce",
+        "Run the local fixture instruction and finish."
+      ],
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "HOME": "<scratch>/home",
+        "CLAUDE_CONFIG_DIR": "<scratch>/state",
+        "TMPDIR": "<scratch>/state",
+        "CLAUDE_CODE_TMPDIR": "<scratch>/state",
+        "ANTHROPIC_API_KEY": "<synthetic-key>",
+        "ANTHROPIC_BASE_URL": "http://127.0.0.1:53137",
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+        "DISABLE_AUTOUPDATER": "1"
+      },
+      "controller_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.local/share/claude/versions/2.1.286\") (subpath \"<home>/.local/share/claude/versions/2.1.286\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>\") (subpath \"<scratch>\"))\n(allow file-write* (literal \"<scratch>/home\") (subpath \"<scratch>/home\"))\n(allow file-write* (literal \"<scratch>/state\") (subpath \"<scratch>/state\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow network-outbound (remote ip \"localhost:53137\"))\n",
+      "worker_profile": "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\"))\n(allow file-write* (literal \"/dev/null\"))\n(allow file-read* (literal \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\") (subpath \"<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission\"))\n(allow file-read* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-read* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n(allow file-write* (literal \"<scratch>/workspace\") (subpath \"<scratch>/workspace\"))\n(allow file-write* (literal \"<scratch>/worker-home\") (subpath \"<scratch>/worker-home\"))\n",
+      "mcp_configuration": {
+        "mcpServers": {
+          "admission": {
+            "command": "/usr/bin/env",
+            "args": [
+              "-i",
+              "PATH=/usr/bin:/bin",
+              "HOME=<scratch>/worker-home",
+              "PYTHONDONTWRITEBYTECODE=1",
+              "/usr/bin/sandbox-exec",
+              "-f",
+              "<scratch>/worker.sb",
+              "/usr/bin/python3",
+              "-B",
+              "<home>/.codex/worktrees/runtime-native-startup/agent-router/docs/bench/egress-admission/claude_local.py",
+              "--mcp-worker",
+              "--workspace",
+              "<scratch>/workspace",
+              "--provider-port",
+              "53137",
+              "--other-port",
+              "53138",
+              "--private-canary",
+              "<scratch>/state/private-canary"
+            ]
+          }
+        }
+      },
+      "socket_control": {
+        "exit_code": 0,
+        "termination": "exit",
+        "elapsed_ms": 163,
+        "stdout": "53137 allowed\n53138 denied 1\n",
+        "stderr": "python3: error: couldn't create cache file '<system-temp>/xcrun_db-HlmDjpup' (errno=Operation not permitted)\npython3: error: couldn't create cache file '<system-temp>/xcrun_db-L4gekJX1' (errno=Operation not permitted)\n"
+      },
+      "process": {
+        "exit_code": -9,
+        "termination": "timeout",
+        "elapsed_ms": 25009,
+        "stdout": "",
+        "stderr": ""
+      },
+      "provider_requests": [],
+      "forbidden_builtin_created": false,
+      "nonce_exact": false,
+      "worker_evidence": null
+    }
+  ]
+}
