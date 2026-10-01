@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::content_digest;
 use router_catalog::Catalog;
 use router_doctor::{DoctorError, diagnose_deep};
@@ -549,7 +552,7 @@ fn normalized_task_plan_restrictions_and_configuration_use_their_semantic_valida
 
 #[test]
 fn generated_catalog_registry_hash_must_match_body_metadata_not_only_projection() {
-    use router_adapter_api::{HostObservation, SnapshotValidation, ValidatedHostObservation};
+    use router_adapter_api::{HostObservation, SnapshotValidation};
     use router_catalog::{AssetRegistry, GeneratedCatalog, GenerationConfig, RegistryAsset};
     let temp = tempfile::tempdir().unwrap();
     let (input, prior, mut metadata) = linked_request(temp.path());
@@ -563,7 +566,11 @@ fn generated_catalog_registry_hash_must_match_body_metadata_not_only_projection(
         model,
         BTreeSet::from([EffortLevel::Medium, EffortLevel::High]),
     )]);
-    let snapshot = ValidatedHostObservation::from_observation(
+    observation.host.capabilities.clear();
+    for evidence in observation.capabilities.values_mut() {
+        evidence.support = router_types::CapabilitySupport::Unknown;
+    }
+    let snapshot = fixture_proofs::from_observation(
         observation.seal().unwrap(),
         SnapshotValidation {
             now_unix_seconds: 110,

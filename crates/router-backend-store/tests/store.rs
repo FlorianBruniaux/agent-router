@@ -35,7 +35,13 @@ fn config(fixture: &Fixture) -> StoreConfig {
 fn setup(fixture: &Fixture) -> (tempfile::TempDir, PathBuf, BackendStore) {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().canonicalize().unwrap().join("backend-state");
-    let store = BackendStore::create(&root, config(fixture)).unwrap();
+    let store = BackendStore::create(&root, config(fixture))
+        .map(|store| {
+            store.with_capability_proof_verifier(std::sync::Arc::new(
+                fixture_proofs::FixtureVerifier,
+            ))
+        })
+        .unwrap();
     (temp, root, store)
 }
 fn activate(store: &BackendStore, fixture: &Fixture) -> String {
@@ -81,7 +87,8 @@ fn explicit_create_review_atomic_activation_restart_and_expired_history() {
         0o600
     );
     assert!(matches!(
-        BackendStore::create(&root, config(&fixture)),
+        BackendStore::create(&root, config(&fixture)).map(|store| store
+            .with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))),
         Err(StoreError::Exists)
     ));
     let before = fs::read(root.join("state.json")).unwrap();
@@ -92,7 +99,13 @@ fn explicit_create_review_atomic_activation_restart_and_expired_history() {
     assert_eq!(before, fs::read(root.join("state.json")).unwrap());
     let active = activate(&store, &fixture);
     assert_eq!(active, fixture.active().state_hash());
-    let reopened = BackendStore::open(&root, store.config_hash(), Some(&active)).unwrap();
+    let reopened = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        Some(&active),
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     let status = reopened.status(2000).unwrap();
     assert_eq!(status.event_count, 1);
     assert_eq!(status.active_expired, Some(true));
@@ -103,7 +116,13 @@ fn explicit_create_review_atomic_activation_restart_and_expired_history() {
     let result = reopened.rollback(&approval, 2000).unwrap();
     assert_eq!(result.event_count, 2);
     assert!(result.active_promotion_hash.is_none());
-    let after = BackendStore::open(&root, store.config_hash(), Some(&active)).unwrap();
+    let after = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        Some(&active),
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     assert_eq!(after.status(2000).unwrap(), result);
 }
 
@@ -122,7 +141,13 @@ fn shared_guard_blocks_other_handles_until_drop_and_stale_cas_never_replays() {
         120,
         "1",
     );
-    let second = BackendStore::open(&root, store.config_hash(), None).unwrap();
+    let second = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        None,
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     assert!(matches!(
         second.activate(&approval, &review, 120),
         Err(StoreError::Busy)
@@ -191,30 +216,59 @@ fn wrong_external_configuration_roots_or_history_checkpoint_fail_closed() {
     let (_temp, root, store) = setup(&fixture);
     let initial = fs::read(root.join("state.json")).unwrap();
     assert!(matches!(
-        BackendStore::open(&root, &"0".repeat(64), None),
+        BackendStore::open_with_capability_verifier(
+            &root,
+            &"0".repeat(64),
+            None,
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        ),
         Err(StoreError::Configuration)
     ));
     let mut changed = config(&fixture);
     changed.authorities[1].public_key_hex =
         hex::encode(SigningKey::from_bytes(&[8; 32]).verifying_key().as_bytes());
     assert_ne!(changed.content_hash().unwrap(), store.config_hash());
-    assert!(BackendStore::open(&root, &changed.content_hash().unwrap(), None).is_err());
+    assert!(
+        BackendStore::open_with_capability_verifier(
+            &root,
+            &changed.content_hash().unwrap(),
+            None,
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        )
+        .is_err()
+    );
     let active = activate(&store, &fixture);
-    let anchored = BackendStore::open(&root, store.config_hash(), Some(&active)).unwrap();
+    let anchored = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        Some(&active),
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     // Same-UID arbitrary rollback can restore intact old bytes. An independently
     // retained checkpoint detects it; the self-contained hash cannot.
     fs::write(root.join("state.json"), initial).unwrap();
     assert!(matches!(anchored.status(124), Err(StoreError::Anchor)));
     assert!(matches!(
-        BackendStore::open(&root, store.config_hash(), Some(&active)),
+        BackendStore::open_with_capability_verifier(
+            &root,
+            store.config_hash(),
+            Some(&active),
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        ),
         Err(StoreError::Anchor)
     ));
     assert_eq!(
-        BackendStore::open(&root, store.config_hash(), None)
-            .unwrap()
-            .status(124)
-            .unwrap()
-            .event_count,
+        BackendStore::open_with_capability_verifier(
+            &root,
+            store.config_hash(),
+            None,
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        )
+        .unwrap()
+        .status(124)
+        .unwrap()
+        .event_count,
         0
     );
 }
@@ -259,17 +313,28 @@ fn crashed_staging_write_is_ignored_then_replaced_without_partial_publication() 
     let pending = root.join("state.pending");
     fs::write(&pending, b"incomplete-crashed-candidate").unwrap();
     fs::set_permissions(&pending, fs::Permissions::from_mode(0o600)).unwrap();
-    let reopened = BackendStore::open(&root, store.config_hash(), None).unwrap();
+    let reopened = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        None,
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     assert_eq!(reopened.status(120).unwrap().event_count, 0);
     assert_eq!(before, fs::read(root.join("state.json")).unwrap());
     activate(&reopened, &fixture);
     assert!(!pending.exists());
     assert_eq!(
-        BackendStore::open(&root, store.config_hash(), None)
-            .unwrap()
-            .status(124)
-            .unwrap()
-            .event_count,
+        BackendStore::open_with_capability_verifier(
+            &root,
+            store.config_hash(),
+            None,
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        )
+        .unwrap()
+        .status(124)
+        .unwrap()
+        .event_count,
         1
     );
 }
@@ -304,10 +369,23 @@ fn private_modes_symlinks_hardlinks_and_replaced_lock_are_rejected() {
     let alias = temp.path().canonicalize().unwrap().join("alias");
     symlink(&root, &alias).unwrap();
     assert!(matches!(
-        BackendStore::open(&alias, store.config_hash(), None),
+        BackendStore::open_with_capability_verifier(
+            &alias,
+            store.config_hash(),
+            None,
+            Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+        ),
         Err(StoreError::Path)
     ));
-    assert!(BackendStore::create(&alias.join("child"), config(&fixture)).is_err());
+    assert!(
+        BackendStore::create(&alias.join("child"), config(&fixture))
+            .map(
+                |store| store.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier
+                ))
+            )
+            .is_err()
+    );
 }
 
 #[test]
@@ -351,7 +429,13 @@ fn subprocess_shared_guard_helper() {
     let expected = std::env::var("AR_BACKEND_STORE_TEST_CONFIG").unwrap();
     let marker = root.parent().unwrap().join("reader-ready");
     let release = root.parent().unwrap().join("reader-release");
-    let store = BackendStore::open(root, &expected, None).unwrap();
+    let store = BackendStore::open_with_capability_verifier(
+        root,
+        &expected,
+        None,
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     let guard = store.acquire().unwrap();
     fs::write(marker, b"shared-guard-held").unwrap();
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
@@ -677,7 +761,13 @@ fn cycle_promotions(count: usize) -> (tempfile::TempDir, BackendStore, u32) {
     assert_eq!(status.promotion_count, count);
     assert_eq!(status.event_count, count * 2);
     // Every promotion is still replayable after a restart.
-    let reopened = BackendStore::open(&root, store.config_hash(), Some(&head)).unwrap();
+    let reopened = BackendStore::open_with_capability_verifier(
+        &root,
+        store.config_hash(),
+        Some(&head),
+        Some(std::sync::Arc::new(fixture_proofs::FixtureVerifier)),
+    )
+    .unwrap();
     let after = reopened.status(120).unwrap();
     assert_eq!(after.state_hash, status.state_hash);
     assert_eq!(after.promotion_count, count);

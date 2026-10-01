@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::{
     AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, StreamDialect,
     ValidatedExecutionRequest, ValidatedHostObservation, decode_transport, prepared_run,
@@ -176,7 +179,7 @@ impl Fixture {
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = now;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: now,
@@ -199,7 +202,13 @@ impl Fixture {
     }
     fn runtime(&self) -> Arc<Runtime> {
         Arc::new(
-            Runtime::open(&self.temp.path().join("runtime"), RuntimeLimits::default()).unwrap(),
+            Runtime::open(&self.temp.path().join("runtime"), RuntimeLimits::default())
+                .map(|runtime| {
+                    runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                        fixture_proofs::FixtureVerifier,
+                    ))
+                })
+                .unwrap(),
         )
     }
     fn coordinator(&self, runtime: Arc<Runtime>) -> Coordinator {
@@ -888,7 +897,7 @@ async fn expired_v3_asset_authority_is_rechecked_before_any_native_process() {
         "../../../fixtures/examples/phase-snapshot.json"
     ))
     .unwrap();
-    let old_snapshot = ValidatedHostObservation::from_observation(
+    let old_snapshot = fixture_proofs::from_observation(
         old,
         SnapshotValidation {
             now_unix_seconds: 100,

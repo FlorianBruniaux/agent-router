@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)]
+mod fixture_proofs;
 use router_adapter_api::*;
 use router_bridge_contract::*;
 use router_types::*;
@@ -41,7 +44,7 @@ fn validated(host: &str, tools: ToolSelection) -> ValidatedExecutionRequest {
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation,
         SnapshotValidation {
             now_unix_seconds: 10,

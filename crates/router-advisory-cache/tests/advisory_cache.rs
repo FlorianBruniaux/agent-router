@@ -1,5 +1,8 @@
 #![cfg(unix)]
-use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
+use router_adapter_api::SnapshotValidation;
 use router_advisory_cache::{
     AdvisoryCache, CacheBinding, CacheError, Lookup, MAX_ENTRY_BYTES, MacKey, MissReason, cache_key,
 };
@@ -20,7 +23,7 @@ fn context_with(edit: impl FnOnce(&mut serde_json::Value)) -> BoundedDecisionCon
     .unwrap();
     edit(&mut value);
     let request = serde_json::from_value(value).unwrap();
-    let snapshot = ValidatedHostObservation::from_json(
+    let snapshot = fixture_proofs::from_json(
         include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
         SnapshotValidation {
             now_unix_seconds: 100,

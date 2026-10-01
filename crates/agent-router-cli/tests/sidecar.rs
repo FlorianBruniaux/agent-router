@@ -5,8 +5,11 @@ mod fixture;
 #[path = "../../router-decision/tests/support/http.rs"]
 mod http;
 #[cfg(feature = "local-sidecar")]
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
+#[cfg(feature = "local-sidecar")]
 mod standard {
-    use super::{fixture, http};
+    use super::{fixture, http, unknown_observation};
     use assert_cmd::Command;
     use http::*;
     use router_feedback::FeedbackStore;
@@ -183,7 +186,7 @@ mod standard {
             ])
             .arg(root.join("fixtures/examples/phase-request.json"))
             .arg("--host-snapshot")
-            .arg(root.join("fixtures/examples/phase-snapshot.json"))
+            .arg(unknown_observation::example_path())
             .arg("--catalog")
             .arg(root.join("fixtures/examples/phase-catalog.json"))
             .args(["--now", "100", "--json"]);

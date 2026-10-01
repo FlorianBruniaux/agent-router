@@ -1,8 +1,13 @@
 //! Synthetic metadata only. No provider, credentials or executable skills.
 use assert_cmd::Command;
+#[cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]
+use native_fixture::unknown_observation;
 use router_types::*;
 use router_workflow::{PlanLimits, build_plan, seal_execution_contract};
 use serde_json::{Value, json};
+#[cfg(not(all(feature = "claude", any(target_os = "macos", target_os = "linux"))))]
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -66,11 +71,18 @@ impl Fixture {
         .unwrap();
         write(&root.join("plan.json"), &plan);
         write(&root.join("contract.json"), &contract);
+        let observation: router_adapter_api::HostObservation =
+            serde_json::from_slice(&fs::read(fixtures.join("phase-snapshot.json")).unwrap())
+                .unwrap();
+        write(
+            &root.join("snapshot.json"),
+            &unknown_observation::from_example(observation),
+        );
         let nodes:Vec<_> = plan.nodes.iter().map(|node| {
             let mut request=request.clone();
             request.phase=contract.nodes[&node.id].phase;
             write(&root.join(format!("{}.json",node.id)), &request);
-            json!({"node_id":node.id,"context":format!("{}.json",node.id),"host_snapshot":fixtures.join("phase-snapshot.json"),"catalog":fixtures.join("phase-catalog.json"),"policy":null,"asset_authority":null,"dimensions":null})
+            json!({"node_id":node.id,"context":format!("{}.json",node.id),"host_snapshot":"snapshot.json","catalog":fixtures.join("phase-catalog.json"),"policy":null,"asset_authority":null,"dimensions":null})
         }).collect();
         let compatibility:Vec<_>=plan.nodes.iter().flat_map(|node|node.dependencies.iter().map(|source|json!({"source":source,"target":node.id,"allowed_pairs":[["primary","primary"],["primary","secondary"],["secondary","primary"],["secondary","secondary"]]}))).collect();
         let manifest = json!({"schema_version":1,"plan":"plan.json","workflow_contract":"contract.json","policy":PlanGenerationPolicy::default(),"nodes":nodes,"compatibility":compatibility,"snapshot_max_age_seconds":30});
@@ -158,8 +170,7 @@ impl Fixture {
         let planned_at = now - age;
         let examples = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/examples");
         let mut observation: router_adapter_api::HostObservation =
-            serde_json::from_slice(&fs::read(examples.join("phase-snapshot.json")).unwrap())
-                .unwrap();
+            serde_json::from_slice(&fs::read(fixture.root.join("snapshot.json")).unwrap()).unwrap();
         observation.observed_at_unix_seconds = planned_at;
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = planned_at;
@@ -356,7 +367,7 @@ mod native_fixture;
 #[ignore = "requires native OS sandbox and built helper; no live provider"]
 fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
     use native_fixture::{STREAM, checked, command, shell_quote};
-    use router_adapter_api::{SnapshotValidation, ValidatedHostObservation, content_digest};
+    use router_adapter_api::content_digest;
     use std::{
         collections::{BTreeMap, BTreeSet},
         time::{SystemTime, UNIX_EPOCH},
@@ -365,7 +376,18 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
         "printf generated > src/generated.txt\nprintf '%s:%s' \"$model\" \"$effort\" > src/argv.txt\nprintf '%s' {}",
         shell_quote(STREAM)
     );
-    let fixture = native_fixture::Fixture::new(&body, 3_000);
+    let mut fixture = native_fixture::Fixture::new(&body, 3_000);
+    // Rebind the synthetic proof after changing the fake native program bytes.
+    let script = fs::read_to_string(fixture.root.join("fake-claude")).unwrap();
+    assert!(script.contains("fixture-best"));
+    fs::write(
+        fixture.root.join("fake-claude"),
+        script.replace("fixture-best", "fixture-second"),
+    )
+    .unwrap();
+    let observation: router_adapter_api::HostObservation =
+        serde_json::from_slice(&fs::read(fixture.root.join("snapshot.json")).unwrap()).unwrap();
+    let snapshot = fixture.reprovision(&observation, "fixture-v1");
     let root = &fixture.root;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -375,14 +397,6 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
     let execution: ExecutionRequest = serde_json::from_slice(&read("request.json")).unwrap();
     let mut request: PhaseRouteRequest = serde_json::from_slice(&read("context.json")).unwrap();
     let plan: WorkflowPlan = serde_json::from_slice(&read("plan.json")).unwrap();
-    let snapshot = ValidatedHostObservation::from_json(
-        &read("snapshot.json"),
-        SnapshotValidation {
-            now_unix_seconds: now,
-            max_age_seconds: 300,
-        },
-    )
-    .unwrap();
     let catalog = router_catalog::Catalog::from_json(&read("catalog.json")).unwrap();
     let contract = seal_execution_contract(
         WorkflowExecutionContract {
@@ -441,15 +455,7 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
             now,
         ),
     );
-    // The fake host now accepts only the globally selected model. These are
-    // fixture bytes, never a native CLI configuration or production override.
-    let script = fs::read_to_string(root.join("fake-claude")).unwrap();
-    assert!(script.contains("fixture-best"));
-    fs::write(
-        root.join("fake-claude"),
-        script.replace("fixture-best", generated_model.as_str()),
-    )
-    .unwrap();
+    assert_eq!(generated_model.as_str(), "fixture-second");
     // The verifier participates in assignment but is not executed here.
     let mut verifier = request.clone();
     verifier.phase = StageKind::Verify;
@@ -473,8 +479,8 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
     );
     let manifest = json!({"schema_version":1,"plan":"plan.json","workflow_contract":"contract.json","policy":PlanGenerationPolicy::default(),
         "nodes":[
-            {"node_id":"execute","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"asset_authority":"asset-authority.json","dimensions":null},
-            {"node_id":"verify","context":"verify-context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"asset_authority":"verify-assets/asset-authority.json","dimensions":null}],
+            {"node_id":"execute","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","capability_store":fixture.store,"execution_config":"sandbox.json","policy":null,"asset_authority":"asset-authority.json","dimensions":null},
+            {"node_id":"verify","context":"verify-context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","capability_store":fixture.store,"execution_config":"sandbox.json","policy":null,"asset_authority":"verify-assets/asset-authority.json","dimensions":null}],
         "compatibility":[{"source":"execute","target":"verify","allowed_pairs":[["secondary","primary"]]}],"snapshot_max_age_seconds":300});
     write(&root.join("generation.json"), &manifest);
     let document = checked(
@@ -529,7 +535,7 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
     );
     write(
         &root.join("prepare.json"),
-        &json!({"schema_version":1,"run_id":native_fixture::RUN_ID,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"policy_store":null,"asset_authority":"asset-authority.json","backend_decision":null,"generated_plan":"proposal.json","plan":"plan.json","node_id":"execute","metadata":"metadata.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json","receipt":null,"workflow_contract":"contract.json","generation":0}),
+        &json!({"schema_version":1,"run_id":native_fixture::RUN_ID,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","capability_store":fixture.store,"execution_config":"sandbox.json","policy":null,"policy_store":null,"asset_authority":"asset-authority.json","backend_decision":null,"generated_plan":"proposal.json","plan":"plan.json","node_id":"execute","metadata":"metadata.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json","receipt":null,"workflow_contract":"contract.json","generation":0}),
     );
     let bundle = root.join("generated-bundle");
     let prepared = checked(
@@ -546,7 +552,7 @@ fn native_generated_plan_prepare_approve_and_execute_preserves_v3_authority() {
     assert!(!prepared.to_string().contains(native_fixture::PROMPT));
     let receipt: Value =
         serde_json::from_slice(&fs::read(bundle.join("receipt.json")).unwrap()).unwrap();
-    assert_eq!(receipt["schema_version"], 3);
+    assert_eq!(receipt["schema_version"], 5);
     assert_eq!(receipt["selected"]["candidate"]["id"], "primary");
     assert_eq!(receipt["selected"]["candidate"]["model"], "fixture-best");
     let generated_request: ExecutionRequest =

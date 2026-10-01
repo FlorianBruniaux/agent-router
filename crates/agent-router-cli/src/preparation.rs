@@ -13,6 +13,8 @@ use std::{
 #[serde(deny_unknown_fields)]
 struct Manifest {
     schema_version: u32,
+    capability_store: Option<PathBuf>,
+    execution_config: Option<PathBuf>,
     run_id: String,
     admission: Option<router_types::AdmissionConfig>,
     context: PathBuf,
@@ -87,6 +89,8 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
         return Err(CliError::Product("prepare.snapshot.maximum_age"));
     }
     let inputs = PhaseArgs {
+        store: manifest.capability_store.map(|p| resolve(base, p)),
+        execution_config: manifest.execution_config.map(|p| resolve(base, p)),
         context: resolve(base, manifest.context),
         host_snapshot: resolve(base, manifest.host_snapshot),
         catalog: resolve(base, manifest.catalog),
@@ -248,8 +252,36 @@ pub(crate) fn run(path: &Path, output: Option<&Path>, json: bool) -> Result<Outc
     }
     if let Some(directory) = output {
         use std::os::unix::fs::DirBuilderExt;
-        let (catalog, _) =
-            catalogs::load(&inputs.catalog, inputs.now, inputs.snapshot_max_age_seconds)?;
+        // A generated catalog embeds its authenticated snapshot. Reopening it
+        // must retain the same store/config authority as the phase load above.
+        // Recompute current pins rather than trusting hashes from that document.
+        let verifier = match (&inputs.store, &inputs.execution_config) {
+            (Some(store), Some(config)) => Some(crate::capability_proofs::fresh(
+                store,
+                &execution::sandbox(config)?,
+                context.snapshot(),
+                Some((
+                    &context.request().task.scope,
+                    context
+                        .request()
+                        .task
+                        .required_capabilities
+                        .contains(&router_types::Capability::Network),
+                )),
+            )?),
+            _ => None, // Incomplete pairs were already refused by phase loading.
+        };
+        let (catalog, embedded) = catalogs::load_with_verifier(
+            &inputs.catalog,
+            inputs.now,
+            inputs.snapshot_max_age_seconds,
+            verifier
+                .as_deref()
+                .map(|value| value as &dyn router_adapter_api::CapabilityProofVerifier),
+        )?;
+        if embedded.is_some_and(|snapshot| snapshot.hash() != context.snapshot().snapshot_hash) {
+            return Err(CliError::Product("prepare.catalog.changed"));
+        }
         if catalog
             .content_hash()
             .map_err(|_| CliError::CatalogInvalid)?

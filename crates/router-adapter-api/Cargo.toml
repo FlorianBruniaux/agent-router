@@ -7,6 +7,7 @@ license.workspace = true
 
 [dependencies]
 hex.workspace = true
+hmac.workspace = true
 router-types = { path = "../router-types" }
 serde.workspace = true
 serde_json.workspace = true

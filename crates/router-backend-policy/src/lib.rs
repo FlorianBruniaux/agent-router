@@ -16,7 +16,8 @@ pub use decision::{
 };
 pub use promotion::{
     FamilyEvaluationReport, ValidatedBackendEvaluation, ValidatedBackendPromotion,
-    evaluate_backend, evaluate_promotion, evaluation_dataset_hash,
+    evaluate_backend, evaluate_backend_with_verifier, evaluate_promotion,
+    evaluate_promotion_with_verifier, evaluation_dataset_hash,
 };
 pub use types::*;
 

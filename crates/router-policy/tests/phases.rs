@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::collections::BTreeSet;
 
 use router_adapter_api::{
@@ -68,7 +71,7 @@ fn observation() -> HostObservation {
 }
 
 fn snapshot(observation: HostObservation) -> ValidatedHostObservation {
-    ValidatedHostObservation::from_observation(
+    fixture_proofs::from_observation(
         observation.seal().unwrap(),
         SnapshotValidation {
             now_unix_seconds: 100,
@@ -760,7 +763,7 @@ fn versioned_cli_example_fixture_has_valid_integrity_and_replays() {
     let read = |name| std::fs::read(root.join(name)).unwrap();
     let request: PhaseRouteRequest = serde_json::from_slice(&read("phase-request.json")).unwrap();
     let policy: PhasePolicy = serde_json::from_slice(&read("phase-policy.json")).unwrap();
-    let snapshot = ValidatedHostObservation::from_json(
+    let snapshot = fixture_proofs::from_json(
         &read("phase-snapshot.json"),
         SnapshotValidation {
             now_unix_seconds: 100,

@@ -1,7 +1,10 @@
 //! Regression fingerprints captured at the unchanged f2d4107 v2/v3 implementation.
 #[path = "support/asset_fixture.rs"]
 mod asset_fixture;
-use router_adapter_api::{SnapshotValidation, ValidatedHostObservation, content_digest};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
+use router_adapter_api::{SnapshotValidation, content_digest};
 use router_catalog::Catalog;
 use router_policy::{PhaseExecutionScope, PhaseRouter};
 use router_types::PhaseRouteRequest;
@@ -11,7 +14,7 @@ fn legacy_v2_and_v3_receipt_bytes_remain_identical() {
         "../../../fixtures/examples/phase-request.json"
     ))
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_json(
+    let snapshot = fixture_proofs::from_json(
         include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
         SnapshotValidation {
             now_unix_seconds: 100,

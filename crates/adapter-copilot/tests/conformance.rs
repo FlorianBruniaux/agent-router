@@ -1,4 +1,7 @@
 //! Synthetic admission fixtures, not claims about installed provider runtimes.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use adapter_copilot::{CopilotAdapter, CopilotConfig, CopilotProtocol};
 use adapter_opencode::{OpenCodeAdapter, OpenCodeConfig, OpenCodeProtocol};
 use router_adapter_api::*;
@@ -76,7 +79,7 @@ fn fixture(
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation,
         SnapshotValidation {
             now_unix_seconds: 100,
@@ -230,7 +233,7 @@ fn unknown_capability_and_unapproved_writes_never_become_available_from_configur
             .unwrap()
             .support = CapabilitySupport::Unknown;
         observation.host.capabilities.remove(&Capability::Tools);
-        let unknown = ValidatedHostObservation::from_observation(
+        let unknown = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: 100,

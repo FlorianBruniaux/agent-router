@@ -31,8 +31,24 @@ pub enum HostChoice {
     Claude,
 }
 
+#[derive(Args, Clone, Default)]
+pub struct ProofArgs {
+    /// Existing private store containing authenticated capability proofs.
+    #[arg(long, requires = "execution_config")]
+    pub store: Option<PathBuf>,
+    /// Native execution configuration used to verify current binary and profile pins.
+    #[arg(long, requires = "store")]
+    pub execution_config: Option<PathBuf>,
+}
+
 #[derive(Args)]
 pub struct PhaseArgs {
+    /// Explicit runtime store used to authenticate capability evidence.
+    #[arg(long, requires = "execution_config")]
+    pub store: Option<PathBuf>,
+    /// Actual native execution configuration whose binary and profile pins must match.
+    #[arg(long, requires = "store")]
+    pub execution_config: Option<PathBuf>,
     /// Phase routing context JSON.
     #[arg(long)]
     pub context: PathBuf,
@@ -376,6 +392,9 @@ pub enum Commands {
     },
     /// Replay a sealed routing record under a named policy.
     Replay {
+        /// Existing runtime proof store; absent evidence remains unverified.
+        #[arg(long)]
+        store: Option<PathBuf>,
         /// Sealed replay record JSON.
         #[arg(long)]
         record: PathBuf,
@@ -442,6 +461,12 @@ pub enum Commands {
     },
     /// Observe the current host and print a validated host snapshot.
     Inspect {
+        /// Existing private runtime store; inspecting never creates proofs or keys.
+        #[arg(long, requires = "execution_config")]
+        store: Option<PathBuf>,
+        /// Native execution configuration used to verify current binary/profile pins.
+        #[arg(long, requires = "store")]
+        execution_config: Option<PathBuf>,
         /// Host to observe; `auto` requires a detected Codex session.
         #[arg(long, value_enum, default_value = "auto")]
         host: HostChoice,
@@ -462,6 +487,8 @@ pub enum Commands {
     },
     /// Search indexed asset metadata by text or by a context query.
     Search {
+        #[command(flatten)]
+        proof: ProofArgs,
         /// Metadata index JSON, as written by `index`.
         #[arg(long)]
         metadata: PathBuf,
@@ -490,6 +517,8 @@ pub enum Commands {
     },
     /// Build a metadata index bound to a catalog.
     Index {
+        #[command(flatten)]
+        proof: ProofArgs,
         /// Asset metadata JSON.
         #[arg(long)]
         metadata: PathBuf,
@@ -506,6 +535,8 @@ pub enum Commands {
     },
     /// Apply a checked metadata diff; optional output is a new file, never an overwrite.
     Refresh {
+        #[command(flatten)]
+        proof: ProofArgs,
         #[arg(long)]
         metadata: PathBuf,
         #[arg(long)]
@@ -590,6 +621,8 @@ pub enum AssetCommand {
     /// Compute and print a sealed contracts or availability document and its
     /// hash. Establishes no authority: the operator pins the hash in the manifest.
     Seal {
+        #[command(flatten)]
+        proof: ProofArgs,
         /// Which document to seal.
         #[arg(long, value_enum)]
         kind: AssetSealKind,
@@ -908,6 +941,9 @@ pub enum EvalCommand {
     },
     /// Compare a baseline and a candidate policy over replay records.
     Compare {
+        /// Existing runtime proof store for authenticated offline evaluation.
+        #[arg(long)]
+        store: Option<PathBuf>,
         #[arg(long, required = true, num_args = 1..)]
         records: Vec<PathBuf>,
         #[arg(long)]
@@ -939,6 +975,8 @@ pub enum EvalCommand {
 pub enum CatalogCommand {
     /// Validate a catalog and print its content hash.
     Validate {
+        #[command(flatten)]
+        proof: ProofArgs,
         #[arg(long)]
         catalog: PathBuf,
         /// Current time override, in Unix seconds (for fixtures and replays).
@@ -950,6 +988,8 @@ pub enum CatalogCommand {
     },
     /// List catalog assets.
     List {
+        #[command(flatten)]
+        proof: ProofArgs,
         #[arg(long)]
         catalog: PathBuf,
         /// Current time override, in Unix seconds (for fixtures and replays).
@@ -961,6 +1001,8 @@ pub enum CatalogCommand {
     },
     /// Show one catalog asset.
     Show {
+        #[command(flatten)]
+        proof: ProofArgs,
         #[arg(long)]
         catalog: PathBuf,
         #[arg(long)]
@@ -976,6 +1018,8 @@ pub enum CatalogCommand {
     },
     /// Generate a catalog from a host snapshot and a prior catalog.
     Refresh {
+        #[command(flatten)]
+        proof: ProofArgs,
         #[arg(long)]
         host_snapshot: PathBuf,
         #[arg(long)]

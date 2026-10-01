@@ -12,6 +12,34 @@ use router_types::{
 pub struct ClaudeAdapter;
 
 impl HarnessAdapter for ClaudeAdapter {
+    fn supports_native_version_pin(&self) -> bool {
+        true
+    }
+
+    fn validate_native_version_pin(
+        &self,
+        stdout: &[u8],
+        expected: &str,
+    ) -> Result<(), AdapterError> {
+        if stdout.len() > 256 || expected.is_empty() || expected.len() > 128 {
+            return Err(AdapterError::Invalid("claude.version.invalid"));
+        }
+        let text = std::str::from_utf8(stdout)
+            .map_err(|_| AdapterError::Invalid("claude.version.invalid"))?;
+        let text = text
+            .strip_suffix("\r\n")
+            .or_else(|| text.strip_suffix('\n'))
+            .unwrap_or(text);
+        let version = text
+            .strip_prefix("")
+            .and_then(|text| text.strip_suffix(" (Claude Code)"))
+            .ok_or(AdapterError::Invalid("claude.version.invalid"))?;
+        if version != expected || !version.bytes().all(|b| b.is_ascii_graphic()) {
+            return Err(AdapterError::Invalid("claude.version.mismatch"));
+        }
+        Ok(())
+    }
+
     fn host(&self) -> &'static str {
         "claude-code"
     }
@@ -82,5 +110,34 @@ impl HarnessAdapter for ClaudeAdapter {
         max_bytes: usize,
     ) -> Result<RuntimeEvidence, AdapterError> {
         decode_transport(bytes, outcome, max_bytes, StreamDialect::Claude)
+    }
+}
+
+#[cfg(test)]
+mod capability_version_tests {
+    use super::*;
+    #[test]
+    fn native_version_pin_requires_exact_bounded_single_line() {
+        let adapter = ClaudeAdapter;
+        assert!(
+            adapter
+                .validate_native_version_pin(b"1.2.3 (Claude Code)\n", "1.2.3")
+                .is_ok()
+        );
+        assert!(
+            adapter
+                .validate_native_version_pin(b"1.2.4 (Claude Code)\n", "1.2.3")
+                .is_err()
+        );
+        assert!(
+            adapter
+                .validate_native_version_pin(b"1.2.3 (Claude Code)\nignored", "1.2.3")
+                .is_err()
+        );
+        assert!(
+            adapter
+                .validate_native_version_pin(&vec![b'x'; 257], "1.2.3")
+                .is_err()
+        );
     }
 }

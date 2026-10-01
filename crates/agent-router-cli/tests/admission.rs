@@ -73,9 +73,7 @@ fn unknown_provider_mapping_and_wrong_external_pin_do_not_launch() {
     assert!(!fixture.store.join("worktrees").exists());
     let other = Fixture::metadata("exit 99", 3000);
     let bad = other.root.join("registry");
-    fs::create_dir(&other.store).unwrap();
-    use std::os::unix::fs::PermissionsExt;
-    fs::set_permissions(&other.store, fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(other.store.is_dir(), "fixture provisions its proof store");
     let mut policy = router_types::AdmissionPolicy {
         schema_version: 1,
         global_limit: 1,
@@ -156,7 +154,7 @@ fn native_cancel_queued_releases_waiting_ticket_before_other_work_finishes() {
 fn native_pair(case: NativeCase) {
     let barrier_temp = tempfile::tempdir().unwrap();
     let barrier = fs::canonicalize(barrier_temp.path()).unwrap();
-    let a = Fixture::new(
+    let mut a = Fixture::new(
         &format!(
             "while [ ! -f {} ]; do /bin/sleep 0.02; done\nprintf first > src/result.txt\nprintf '%s' {}",
             shell_quote(barrier.join("release").to_str().unwrap()),
@@ -174,6 +172,7 @@ fn native_pair(case: NativeCase) {
     let mut config = read(&a.root.join("sandbox.json"));
     config["read_roots"] = json!([barrier]);
     write(&a.root.join("sandbox.json"), &config);
+    a.rebind_after_config_change();
     let registry = a.root.join("registry");
     let (_, hash) = admission_fixture::bind(
         &registry,

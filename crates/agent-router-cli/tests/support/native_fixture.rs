@@ -8,6 +8,10 @@ use router_policy::PhaseRouter;
 use router_types::*;
 use router_workflow::{PlanLimits, build_plan};
 use serde_json::{Value, json};
+#[path = "../../../../tests/support/capability_store.rs"]
+mod capability_store;
+#[path = "unknown_observation.rs"]
+pub(crate) mod unknown_observation;
 use std::{
     fs,
     os::unix::fs::PermissionsExt,
@@ -25,6 +29,7 @@ pub(crate) const STREAM: &str = concat!(
 );
 const ARGUMENT_CHECK: &str = r#"#!/bin/sh
 set -eu
+if [ "$#" -eq 1 ] && [ "$1" = --version ]; then printf '%s\n' 'fixture-v1 (Claude Code)'; exit 0; fi
 tools=missing
 permission=missing
 prompts=missing
@@ -93,14 +98,22 @@ pub(crate) fn asset_inputs(
         evidence.observed_at_unix_seconds = 100;
     }
     let historical = ValidatedHostObservation::from_observation(
-        historical.seal().unwrap(),
+        unknown_observation::from_example(historical),
         SnapshotValidation {
             now_unix_seconds: 100,
             max_age_seconds: 300,
         },
     )
     .unwrap();
-    let mut inputs = asset_fixture::inputs(
+    // Read-only metadata fixtures carry no capability claim. They still need
+    // the fixture's model-version asset pin, while native claims use the
+    // authenticated version from their proof.
+    let version = snapshot
+        .capability_proofs()
+        .first()
+        .map(|proof| proof.binding.observed_version.as_str())
+        .unwrap_or("fixture-v1");
+    let mut inputs = asset_fixture::inputs_with_version(
         request,
         &historical,
         catalog,
@@ -111,6 +124,7 @@ pub(crate) fn asset_inputs(
         },
         &std::collections::BTreeMap::new(),
         4000,
+        version,
     );
     let mut availability = inputs.availability.document().clone();
     availability.snapshot_hash = snapshot.hash().into();
@@ -172,6 +186,65 @@ pub(crate) fn write_asset_authority(root: &Path, inputs: &router_policy::PhaseAs
     );
 }
 
+fn native_config(root: &Path, body: &str, native_sandbox: bool) -> PathBuf {
+    let fake = root.join("fake-claude");
+    let secret = root.join("denied-secret");
+    fs::write(&secret, b"synthetic-denied-read").unwrap();
+    let script = format!(
+        "{ARGUMENT_CHECK}\nif (printf escaped > outside.txt) 2>/dev/null; then exit 48; fi\nif /bin/cat {} >/dev/null 2>/dev/null; then exit 49; fi\n{body}\n",
+        shell_quote(secret.to_str().unwrap())
+    );
+    fs::write(&fake, script).unwrap();
+    fs::set_permissions(&fake, fs::Permissions::from_mode(0o700)).unwrap();
+    let helper = if native_sandbox {
+        let helper = Path::new(assert_cmd::cargo::cargo_bin!("agent-router"))
+            .parent()
+            .unwrap()
+            .join("router-sandbox-helper");
+        assert!(
+            helper.is_file(),
+            "build router-sandbox-helper before running native canaries"
+        );
+        helper
+    } else {
+        PathBuf::from("/bin/sh")
+    };
+    let helper = fs::canonicalize(helper).unwrap();
+    let feedback = root.join("feedback");
+    write(
+        &root.join("preferences.json"),
+        &json!({"schema_version":1,"collection_enabled":true,"learning_enabled":false,"retention_seconds":3600}),
+    );
+    checked(
+        command()
+            .args(["feedback", "--store"])
+            .arg(&feedback)
+            .args(["configure", "--preferences"])
+            .arg(root.join("preferences.json"))
+            .arg("--json"),
+        0,
+    );
+    let memory = if cfg!(target_os = "linux") {
+        Some(256_u64 * 1024 * 1024)
+    } else {
+        None
+    };
+    let bubblewrap = if cfg!(target_os = "linux") {
+        Some(if native_sandbox {
+            fs::canonicalize("/usr/bin/bwrap").expect("native bubblewrap is required")
+        } else {
+            fs::canonicalize("/bin/sh").unwrap()
+        })
+    } else {
+        None
+    };
+    write(
+        &root.join("sandbox.json"),
+        &json!({"schema_version":1,"programs":{"claude":fake},"read_roots":[],"environment_names":[],"helper":helper,"bubblewrap":bubblewrap,"feedback_store":feedback,"output_retention":{"mode":"private_artifacts","retention_seconds":60},"limits":{"cpu_seconds":10,"address_space_bytes":memory,"max_open_files":128,"max_processes":4096,"max_file_bytes":1048576}}),
+    );
+    feedback
+}
+
 pub(crate) struct Fixture {
     _temp: tempfile::TempDir,
     pub(crate) root: PathBuf,
@@ -180,6 +253,170 @@ pub(crate) struct Fixture {
     pub(crate) feedback: PathBuf,
 }
 impl Fixture {
+    pub(crate) fn validated_snapshot(&self, now: u64) -> ValidatedHostObservation {
+        let snapshot: HostObservation =
+            serde_json::from_slice(&fs::read(self.root.join("snapshot.json")).unwrap()).unwrap();
+        let config: Value =
+            serde_json::from_slice(&fs::read(self.root.join("sandbox.json")).unwrap()).unwrap();
+        let binding = capability_store::binding(
+            &snapshot.host,
+            &config,
+            &["src".into()],
+            false,
+            "fixture-v1",
+        );
+        let secret: [u8; 32] = fs::read(self.store.join("approval.key"))
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let proofs = router_runtime::CapabilityProofStore::open_existing(&self.store)
+            .unwrap()
+            .verifier(&secret, vec![binding])
+            .unwrap();
+        ValidatedHostObservation::from_observation_with_verifier(
+            snapshot,
+            SnapshotValidation {
+                now_unix_seconds: now,
+                max_age_seconds: 300,
+            },
+            Some(&proofs),
+        )
+        .unwrap()
+    }
+
+    pub(crate) fn reprovision(
+        &mut self,
+        observation: &HostObservation,
+        version: &str,
+    ) -> ValidatedHostObservation {
+        let config: Value =
+            serde_json::from_slice(&fs::read(self.root.join("sandbox.json")).unwrap()).unwrap();
+        let store = (1..=4)
+            .map(|index| self.root.join(format!("rebound-capability-store-{index}")))
+            .find(|path| !path.exists())
+            .expect("bounded synthetic proof-store revisions");
+        let (snapshot, proofs) = capability_store::provision(
+            observation,
+            &config,
+            &["src".into()],
+            false,
+            &store,
+            version,
+        );
+        let now = snapshot.observed_at_unix_seconds;
+        let validated = ValidatedHostObservation::from_observation_with_verifier(
+            snapshot.clone(),
+            SnapshotValidation {
+                now_unix_seconds: now,
+                max_age_seconds: 300,
+            },
+            Some(&proofs),
+        )
+        .unwrap();
+        write(&self.root.join("snapshot.json"), &snapshot);
+        self.store = store;
+        validated
+    }
+
+    pub(crate) fn rebind_after_config_change(&mut self) {
+        let observation: HostObservation =
+            serde_json::from_slice(&fs::read(self.root.join("snapshot.json")).unwrap()).unwrap();
+        let validated = self.reprovision(&observation, "fixture-v1");
+        self.renew_route_contracts(&validated);
+    }
+
+    /// Coordinate keeps its runtime under `store/runtime`. Mint fresh MAC
+    /// authority at that exact root and renew every snapshot-derived contract.
+    pub(crate) fn provision_coordinator_runtime(&self) {
+        let observation: HostObservation =
+            serde_json::from_slice(&fs::read(self.root.join("snapshot.json")).unwrap()).unwrap();
+        let config: Value =
+            serde_json::from_slice(&fs::read(self.root.join("sandbox.json")).unwrap()).unwrap();
+        let (snapshot, proofs) = capability_store::provision(
+            &observation,
+            &config,
+            &["src".into()],
+            false,
+            &self.store.join("runtime"),
+            "fixture-v1",
+        );
+        let now = snapshot.observed_at_unix_seconds;
+        let validated = ValidatedHostObservation::from_observation_with_verifier(
+            snapshot.clone(),
+            SnapshotValidation {
+                now_unix_seconds: now,
+                max_age_seconds: 300,
+            },
+            Some(&proofs),
+        )
+        .unwrap();
+        self.renew_route_contracts(&validated);
+    }
+
+    fn renew_route_contracts(&self, validated: &ValidatedHostObservation) {
+        let now = validated.observation().observed_at_unix_seconds;
+        let request: PhaseRouteRequest =
+            serde_json::from_slice(&fs::read(self.root.join("context.json")).unwrap()).unwrap();
+        let catalog =
+            Catalog::from_json(&fs::read(self.root.join("catalog.json")).unwrap()).unwrap();
+        let mut execution: ExecutionRequest =
+            serde_json::from_slice(&fs::read(self.root.join("request.json")).unwrap()).unwrap();
+        let assets = asset_inputs(
+            &request,
+            validated,
+            &catalog,
+            &self.repo,
+            &execution.source_state,
+            now,
+        );
+        let router = PhaseRouter::stable_v2();
+        let context = router
+            .context_with_assets(request, validated, &catalog, assets.clone(), now)
+            .unwrap();
+        let receipt = router.route(&context).unwrap();
+        let selected = receipt
+            .selected
+            .as_ref()
+            .expect("coordinator native candidate");
+        execution.receipt_id = receipt.receipt_id;
+        execution.required_capabilities =
+            router.execution_capabilities(&context, selected).unwrap();
+        write(&self.root.join("snapshot.json"), validated.observation());
+        write(&self.root.join("request.json"), &execution);
+        write_asset_authority(&self.root, &assets);
+    }
+
+    pub(crate) fn fail_coordinator_capability_after_review(&self) {
+        let root = self.store.join("runtime");
+        let secret: [u8; 32] = fs::read(root.join("approval.key"))
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let mut store = router_runtime::CapabilityProofStore::create(&root).unwrap();
+        let observation: HostObservation =
+            serde_json::from_slice(&fs::read(self.root.join("snapshot.json")).unwrap()).unwrap();
+        let bindings = store
+            .verifier(&secret, vec![])
+            .unwrap()
+            .authenticated_bindings();
+        let proofs = store.verifier(&secret, bindings).unwrap();
+        let succeeded = proofs
+            .deciding_proofs(&observation.host, observation.observed_at_unix_seconds)
+            .into_iter()
+            .find(|(proof, _)| proof.record.capability == Capability::WorkspaceWrite)
+            .expect("coordinator fixture has a successful workspace proof")
+            .0;
+        let mut failed = succeeded.record.clone();
+        failed.proof_id = "synthetic-coordinator-revocation-2".into();
+        failed.sequence += 1;
+        failed.outcome = router_adapter_api::CapabilityAttemptOutcome::Failed;
+        let key =
+            router_adapter_api::CapabilityProofKey::derive(&secret, store.store_id()).unwrap();
+        store
+            .append(&key.authenticate(failed).unwrap(), &secret)
+            .unwrap();
+    }
+
     pub(crate) fn new(body: &str, timeout_ms: u64) -> Self {
         Self::build(body, timeout_ms, true)
     }
@@ -249,11 +486,22 @@ impl Fixture {
             PlanLimits::default(),
         )
         .unwrap();
+        let feedback = native_config(&root, body, native_sandbox);
         let mut snapshot: HostObservation = serde_json::from_str(include_str!(
             "../../../../fixtures/examples/phase-snapshot.json"
         ))
         .unwrap();
         snapshot.host.harness = HarnessId::parse("claude-code").unwrap();
+        snapshot
+            .host
+            .capabilities
+            .retain(|capability| *capability == Capability::WorkspaceWrite);
+        for (capability, evidence) in &mut snapshot.capabilities {
+            if *capability != Capability::WorkspaceWrite {
+                evidence.support = CapabilitySupport::Unknown;
+                evidence.source_ids.clear();
+            }
+        }
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -262,13 +510,23 @@ impl Fixture {
         for evidence in &mut snapshot.evidence {
             evidence.observed_at_unix_seconds = now;
         }
-        let snapshot = snapshot.seal().unwrap();
-        let validated = ValidatedHostObservation::from_observation(
+        let config: Value =
+            serde_json::from_slice(&fs::read(root.join("sandbox.json")).unwrap()).unwrap();
+        let (snapshot, proofs) = capability_store::provision(
+            &snapshot.seal().unwrap(),
+            &config,
+            &["src".into()],
+            false,
+            &root.join("store"),
+            "fixture-v1",
+        );
+        let validated = ValidatedHostObservation::from_observation_with_verifier(
             snapshot.clone(),
             SnapshotValidation {
                 now_unix_seconds: now,
                 max_age_seconds: 300,
             },
+            Some(&proofs),
         )
         .unwrap();
         let catalog_bytes = include_bytes!("../../../../fixtures/examples/phase-catalog.json");
@@ -324,57 +582,6 @@ impl Fixture {
         write(
             &root.join("definition.json"),
             &json!({"schema_version":1,"run_id":RUN_ID,"context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"asset_authority":"asset-authority.json","plan":"plan.json","node_id":"execute","request":"request.json"}),
-        );
-        let fake = root.join("fake-claude");
-        let secret = root.join("denied-secret");
-        fs::write(&secret, b"synthetic-denied-read").unwrap();
-        let script = format!(
-            "{ARGUMENT_CHECK}\nif (printf escaped > outside.txt) 2>/dev/null; then exit 48; fi\nif /bin/cat {} >/dev/null 2>/dev/null; then exit 49; fi\n{body}\n",
-            shell_quote(secret.to_str().unwrap())
-        );
-        fs::write(&fake, script).unwrap();
-        fs::set_permissions(&fake, fs::Permissions::from_mode(0o700)).unwrap();
-        let helper = if native_sandbox {
-            let helper = Path::new(assert_cmd::cargo::cargo_bin!("agent-router"))
-                .parent()
-                .unwrap()
-                .join("router-sandbox-helper");
-            assert!(
-                helper.is_file(),
-                "build router-sandbox-helper before running native canaries"
-            );
-            helper
-        } else {
-            PathBuf::from("/bin/sh")
-        };
-        let helper = fs::canonicalize(helper).unwrap();
-        let feedback = root.join("feedback");
-        write(
-            &root.join("preferences.json"),
-            &json!({"schema_version":1,"collection_enabled":true,"learning_enabled":false,"retention_seconds":3600}),
-        );
-        checked(
-            command()
-                .args(["feedback", "--store"])
-                .arg(&feedback)
-                .args(["configure", "--preferences"])
-                .arg(root.join("preferences.json"))
-                .arg("--json"),
-            0,
-        );
-        let memory = if cfg!(target_os = "linux") {
-            Some(256_u64 * 1024 * 1024)
-        } else {
-            None
-        };
-        let bubblewrap = if native_sandbox && cfg!(target_os = "linux") {
-            Some(fs::canonicalize("/usr/bin/bwrap").expect("native bubblewrap is required"))
-        } else {
-            None
-        };
-        write(
-            &root.join("sandbox.json"),
-            &json!({"schema_version":1,"programs":{"claude":fake},"read_roots":[],"environment_names":[],"helper":helper,"bubblewrap":bubblewrap,"feedback_store":feedback,"output_retention":{"mode":"private_artifacts","retention_seconds":60},"limits":{"cpu_seconds":10,"address_space_bytes":memory,"max_open_files":128,"max_processes":4096,"max_file_bytes":1048576}}),
         );
         Self {
             _temp: temp,

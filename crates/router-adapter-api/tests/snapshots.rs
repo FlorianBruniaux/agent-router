@@ -183,9 +183,9 @@ fn runtime_declaration_requires_consistency_and_known_source() {
     let sealed = document.clone().seal().unwrap();
     assert_eq!(
         ValidatedHostObservation::from_observation(sealed, validation())
-            .unwrap()
-            .capabilities()[&Capability::Tools],
-        CapabilitySupport::Supported
+            .unwrap_err()
+            .code(),
+        "capability.evidence.unauthenticated"
     );
     document
         .capabilities
@@ -287,4 +287,29 @@ fn observed_model_with_unknown_efforts_never_invents_an_admissible_effort() {
     let snapshot = ValidatedHostObservation::from_observation(sealed, validation()).unwrap();
     assert_eq!(snapshot.host().supported_models.len(), 1);
     assert!(snapshot.host().supported_efforts.is_empty());
+}
+
+#[test]
+fn handwritten_runtime_capabilities_require_authenticated_evidence() {
+    for support in [CapabilitySupport::Supported, CapabilitySupport::Unsupported] {
+        let mut document = observation();
+        document.evidence[0].kind = EvidenceKind::HostRuntime;
+        document.capabilities.insert(
+            Capability::WorkspaceWrite,
+            CapabilityEvidence {
+                support,
+                source_ids: BTreeSet::from(["fixture-cache".into()]),
+            },
+        );
+        if support == CapabilitySupport::Supported {
+            document
+                .host
+                .capabilities
+                .insert(Capability::WorkspaceWrite);
+        }
+        let sealed = document.seal().unwrap();
+        let error = ValidatedHostObservation::from_observation(sealed, validation())
+            .expect_err("an unkeyed snapshot hash cannot authenticate runtime evidence");
+        assert_eq!(error.code(), "capability.evidence.unauthenticated");
+    }
 }

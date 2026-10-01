@@ -129,6 +129,21 @@ fn qualified_model(value: &str) -> bool {
         })
 }
 impl HarnessAdapter for OpenCodeAdapter {
+    fn supports_native_version_pin(&self) -> bool {
+        true
+    }
+    fn validate_native_version_pin(
+        &self,
+        stdout: &[u8],
+        expected: &str,
+    ) -> Result<(), AdapterError> {
+        if parse_version(stdout)? != expected {
+            return Err(AdapterError::Invalid(
+                "opencode.capability.version.mismatch",
+            ));
+        }
+        Ok(())
+    }
     fn requires_native_version(&self) -> bool {
         true
     }

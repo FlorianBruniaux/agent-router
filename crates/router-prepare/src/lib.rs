@@ -16,8 +16,8 @@ pub use signed::{
 };
 
 use router_adapter_api::{
-    MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, ValidatedHostObservation,
-    authorize_execution, content_digest, strict_json,
+    MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, authorize_execution,
+    content_digest, strict_json,
 };
 use router_execution_decision::ExecutionDecision;
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
@@ -344,14 +344,13 @@ fn prepare_with_decision_inner(
         .iter()
         .find(|node| node.id == input.node_id)
         .ok_or(PreparationError::Binding("node absent from plan"))?;
-    let snapshot = ValidatedHostObservation::from_observation(
-        input.context.snapshot().clone(),
-        SnapshotValidation {
+    let snapshot = input
+        .context
+        .revalidate_snapshot(SnapshotValidation {
             now_unix_seconds: options.now_unix_seconds,
             max_age_seconds: options.max_snapshot_age_seconds,
-        },
-    )
-    .map_err(|_| PreparationError::Snapshot)?;
+        })
+        .map_err(|_| PreparationError::Snapshot)?;
     input
         .index
         .validate_catalog_hash(input.context.catalog_hash())?;

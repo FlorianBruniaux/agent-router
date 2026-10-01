@@ -157,7 +157,7 @@ pub(crate) fn escalation_source(
     let workflow = definition(&bundle.workflow)?;
     source.run_id = bundle.run_id.clone();
     source.request = bundle.final_request.clone();
-    let (router, context) = execution::context(&source, true)?;
+    let (router, context) = execution::historical_context(runtime, &source)?;
     let baseline = execution::selection(&source, &router, &context)?;
     let request: ExecutionRequest = phases::read_json(
         &bundle.final_request,
@@ -224,24 +224,80 @@ pub(crate) fn bundle_admission(
 ) -> Result<Option<router_types::AdmissionConfig>, CliError> {
     Ok(execution::load_definition(&bundle_base(path)?.source_definition)?.admission)
 }
+type ProofVerifier = Arc<dyn router_adapter_api::CapabilityProofVerifier>;
+fn fresh_verifier(
+    store: &Path,
+    source: &execution::Definition,
+    config: &execution::SandboxConfig,
+) -> Result<Option<ProofVerifier>, CliError> {
+    let observation: router_adapter_api::HostObservation = phases::read_json(
+        &source.host_snapshot,
+        router_adapter_api::MAX_SNAPSHOT_BYTES,
+    )?;
+    if !crate::capability_proofs::has_claims(&observation) {
+        return Ok(None);
+    }
+    let request: ExecutionRequest = phases::read_json(
+        &source.request,
+        router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+    )?;
+    Ok(Some(crate::capability_proofs::fresh(
+        &store.join("runtime"),
+        config,
+        &observation,
+        Some((
+            &request.scope,
+            request.required_capabilities.contains(&Capability::Network),
+        )),
+    )?))
+}
+/// A wave uses only the verifiers derived from each explicitly configured step.
+/// An empty set grants no capability; the wave manifest bounds this collection.
+struct WaveProofVerifier(Vec<ProofVerifier>);
+impl router_adapter_api::CapabilityProofVerifier for WaveProofVerifier {
+    fn verify(
+        &self,
+        source: &router_adapter_api::EvidenceSource,
+        capability: Capability,
+        host: &HostSnapshot,
+        now: u64,
+    ) -> Result<router_adapter_api::VerifiedCapabilityProof, router_adapter_api::CapabilityProofError>
+    {
+        self.0
+            .iter()
+            .find_map(|verifier| verifier.verify(source, capability, host, now).ok())
+            .ok_or(router_adapter_api::CapabilityProofError::Unauthenticated)
+    }
+}
 fn runtime(
     store: &Path,
     retention: OutputRetentionPolicy,
     max_attempts: u32,
     admission: Option<&router_types::AdmissionConfig>,
 ) -> Result<Arc<Runtime>, CliError> {
-    Ok(Arc::new(
-        crate::admission::open(
-            &store.join("runtime"),
-            RuntimeLimits {
-                output_retention: retention,
-                max_attempts,
-                ..RuntimeLimits::default()
-            },
-            admission,
-        )
-        .map_err(execution::error)?,
-    ))
+    runtime_with_verifier(store, retention, max_attempts, admission, None)
+}
+fn runtime_with_verifier(
+    store: &Path,
+    retention: OutputRetentionPolicy,
+    max_attempts: u32,
+    admission: Option<&router_types::AdmissionConfig>,
+    verifier: Option<ProofVerifier>,
+) -> Result<Arc<Runtime>, CliError> {
+    let runtime = crate::admission::open(
+        &store.join("runtime"),
+        RuntimeLimits {
+            output_retention: retention,
+            max_attempts,
+            ..RuntimeLimits::default()
+        },
+        admission,
+    )
+    .map_err(execution::error)?;
+    Ok(Arc::new(match verifier {
+        Some(verifier) => runtime.with_capability_proof_verifier(verifier),
+        None => runtime,
+    }))
 }
 fn owner(store: &Path, runtime: Arc<Runtime>) -> Result<Coordinator, CliError> {
     Coordinator::open(&store.join("coordinator"), runtime).map_err(error)
@@ -286,7 +342,18 @@ fn reopen(
     }
     source.run_id = bundle.run_id.clone();
     source.request = bundle.final_request.clone();
-    let (router, context) = execution::context(&source, historical)?;
+    let (router, context) = if historical {
+        execution::historical_context(coordinator.runtime(), &source)?
+    } else {
+        let config = execution::sandbox(&bundle.sandbox)?;
+        let store = coordinator
+            .runtime()
+            .storage_root()
+            .parent()
+            .ok_or(CliError::RequestRead)?;
+        let verifier = fresh_verifier(store, &source, &config)?;
+        execution::context_with_proofs(&source, false, verifier.as_deref(), None)?
+    };
     let selection = execution::selection(&source, &router, &context)?;
     let request: ExecutionRequest = phases::read_json(
         &bundle.final_request,
@@ -393,13 +460,15 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             if source.node_id != node_id {
                 return Err(CliError::Product("coordinator.node.mismatch"));
             }
-            let (router, context) = execution::context(&source, false)?;
+            let config = execution::sandbox(&sandbox)?;
+            let proof_verifier = fresh_verifier(&store, &source, &config)?;
+            let (router, context) =
+                execution::context_with_proofs(&source, false, proof_verifier.as_deref(), None)?;
             let selection = execution::selection(&source, &router, &context)?;
             let request: router_types::ExecutionRequest = phases::read_json(
                 &source.request,
                 router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
             )?;
-            let config = execution::sandbox(&sandbox)?;
             execution::validate_adapter_config(request.host.as_str(), &config)?;
             // Refuse an existing bundle before registering anything in the store.
             if output_directory.exists() {
@@ -410,11 +479,12 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             if let Some(proposal) = &proposal {
                 proposal.validate_store(&store.join("runtime"))?;
             }
-            let runtime = runtime(
+            let runtime = runtime_with_verifier(
                 &store,
                 config.output_retention,
                 proposal.as_ref().map_or(2, |p| p.max_attempts()),
                 source.admission.as_ref(),
+                proof_verifier,
             )?;
             let coordinator = owner(&store, runtime)?;
             coordinator.register(&workflow).map_err(error)?;
@@ -466,6 +536,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 loaded.binding.as_ref(),
                 &store.join("runtime"),
             )?;
+            execution::validate_proof_binary_pins(&context, &config, &binaries)?;
             let bundle = Bundle {
                 schema_version: 1,
                 workflow: absolute(&path)?,
@@ -545,11 +616,25 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 })
                 .collect::<Result<Vec<_>, _>>()?;
             let admission = crate::admission::same(&configs)?;
-            let runtime = runtime(
+            let mut verifiers = Vec::new();
+            for (bundle, config, _) in &entries {
+                let mut source = execution::load_definition(&bundle.source_definition)?;
+                source.request = bundle.final_request.clone();
+                if let Some(verifier) = fresh_verifier(&store, &source, config)? {
+                    verifiers.push(verifier);
+                }
+            }
+            let proof_verifier: Option<ProofVerifier> = if verifiers.is_empty() {
+                None
+            } else {
+                Some(Arc::new(WaveProofVerifier(verifiers)))
+            };
+            let runtime = runtime_with_verifier(
                 &store,
                 retention.ok_or(CliError::InvalidCommand)?,
                 max_attempts,
                 admission.as_ref(),
+                proof_verifier,
             )?;
             let coordinator = owner(&store, runtime)?;
             let mut pending_steps = Vec::new();
@@ -568,6 +653,7 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     loaded.binding.as_ref(),
                     &store.join("runtime"),
                 )?;
+                execution::validate_proof_binary_pins(&context, &config, &binaries)?;
                 if approval != digest {
                     return Err(CliError::Product(
                         "coordinator.approval.required_or_changed",
@@ -664,7 +750,13 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                     proposal.control_binding(),
                 ))
             } else {
-                let (router, context) = execution::context(&source, true)?;
+                let evidence_runtime = runtime(
+                    &store,
+                    summary.output_retention,
+                    2,
+                    source.admission.as_ref(),
+                )?;
+                let (router, context) = execution::historical_context(&evidence_runtime, &source)?;
                 let baseline = execution::selection(&source, &router, &context)?;
                 let request: ExecutionRequest = phases::read_json(
                     &source.request,

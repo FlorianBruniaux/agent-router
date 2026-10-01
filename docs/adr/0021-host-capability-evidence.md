@@ -4,7 +4,7 @@ title: Host capability evidence from supervised canaries
 status: amended
 created: 2026-09-30
 last_modified: 2026-10-01
-scope: "Batches 1 to 3 and batch 5 are implemented (Claude model identity, typed `prepare` errors, `assets seal`, private entry copies). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
+scope: "Batches 1 to 3, 5 and 6 are implemented (Claude model identity, typed `prepare` errors, `assets seal`, private entry copies and authenticated proof consumers). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
 amended_by: ["0022"]
 supersedes: []
 superseded_by: []
@@ -16,7 +16,9 @@ related: ["0002", "0003", "0014", "0016"]
 ## Context
 
 A phase that writes to the workspace cannot be routed on a real Claude Code or
-Codex host. Facts read on `main` at `765a2f6`:
+Codex host without an authenticated capability proof. The following is the
+pre-implementation diagnosis on `main` at `765a2f6`; the batch 6 amendment below
+supersedes its snapshot-authentication findings:
 
 - The Claude probe marks every capability `unknown`
   (`crates/adapter-claude/src/probe.rs:112-123`). The Codex probe does the same
@@ -40,8 +42,8 @@ Codex host. Facts read on `main` at `765a2f6`:
   `crates/agent-router-cli/src/phases.rs:64`,
   `crates/agent-router-cli/src/inspect.rs:123`), and the snapshot hash is an
   unkeyed digest (`crates/router-adapter-api/src/lib.rs:302-306`). A
-  hand-written snapshot that labels a source `host_runtime` passes validation
-  today. An independent security review on 2026-09-30 confirmed this path. It is
+  hand-written snapshot that labels a source `host_runtime` passed validation
+  at that revision. An independent security review on 2026-09-30 confirmed this path. It is
   a weakness of evidence authenticity; it does not bypass the approval digest.
 - Fresh execution accepts a snapshot and each of its sources for 300 seconds;
   historical reconstruction accepts 86 400 seconds, measured from a historical
@@ -485,6 +487,69 @@ or PATH expansion is added. Other host script contracts are unchanged. The
 existing binary hash check still applies. Private-copy execution and protection
 against a replacement between hash and exec remain batch 5, not implemented by
 this launcher check.
+
+## Batch 6 infrastructure amendment
+
+ADR 0022 separates the provider-egress block from implementation of batches 5
+and 6 with local fake hosts. This amendment implements the proof consumer and
+store contract only. It does not authorize a real canary, issue a production
+proof or change any real capability from UNKNOWN. Batch 9 remains separate and
+must wait for the batch 6 gate and independent review.
+
+The proof database is `capability-proofs.sqlite3`, schema 1, inside the existing
+private runtime root. Keeping it separate avoids a runtime-journal migration and
+lets read-only inspection authenticate proofs without opening the runtime's
+writer lock. `open_existing` never creates, migrates or initializes a proof
+store or key. Creation and authenticated append are explicit library operations
+for a future supervised canary path. There is no production issuing command.
+The database identity is random and persistent; sequence and identity are MAC
+bound. HKDF-SHA256 separates the proof key from the approval key. An RFC 5869
+extract/expand vector and domain-separation checks cover derivation.
+
+Inspection requires both `--store` and `--execution-config` to consume proofs.
+It recomputes executable, helper and wrapper hashes and the adapter/profile
+fingerprints from the effective `SandboxConfig` and compiled implementation.
+It performs no version execution and no sandbox probe. It folds only deciding
+`proven` successes from one coherent binding; without complete configuration,
+no proof promotes a capability. Routing substitutes the actual task scope and
+network requirement. Run approval compares the proof pins with its own hashes;
+native dispatch compares the freshly observed version with every consumed pin.
+OpenCode and Copilot use their existing strict version parsers and retain their
+configured version checks. Codex and Claude with no consumed proof and no
+required version probe remain UNKNOWN instead of manufacturing a version pin.
+
+The shared validator refuses non-UNKNOWN claims without a verifier. Pure
+preparation retains the already validated observation for its own freshness
+checks; it cannot turn that retained authority into a new dispatch. The runtime
+reads the live log again immediately before main-process spawn, after version
+probing and other asynchronous preparation. This closes expiration or revocation
+while a version process is running. The maximum proof lifetime is 86400 seconds; each record names its lifetime, and
+model/cache evidence keeps its separate 300-second bound in fresh CLI paths.
+
+Receipt schema 5 carries per-required-capability digest, tier, end time and
+expiry. The run event stores this compact map, the decision clock, and a sequence
+horizon covering every validated snapshot proof, including unused capabilities.
+Historical reconstruction applies both that clock and that horizon, so a failure
+appended later in the same second does not alter an earlier run. Fresh execution
+never uses the historical verifier. Bindings and record counts are bounded at
+4096, with 32768-byte proof records and 64 snapshot evidence sources; replaced
+scope variants are deduplicated when reconstructing current expectations.
+
+Offline replay without the store explicitly reports unverified evidence,
+downgrades its capabilities to UNKNOWN and records a hard violation. Evaluation,
+backend promotion and store review expose explicit verifier-taking APIs; their
+default entry points grant no implicit fixture or store authority. Synthetic
+fixtures provision private MAC stores or inject a test-only verifier explicitly.
+Neither path is compiled into a production issuer.
+
+Explicit proof inputs also flow through catalog operations, asset review and
+sealing, retrieval indexing, generated planning and coordinator waves. An
+unconfigured reader still refuses a supported claim. Generated-plan source
+hashes include the execution configuration, and historical reconstruction
+checks exact authenticated references without rehashing a replaced executable.
+Coordinator history uses the recorded run checkpoint; fresh wave execution
+checks every step's own configuration and approved binary hashes before the
+shared runtime's final live check. These paths add no provider admission.
 
 ## Consequences
 

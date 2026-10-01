@@ -3,7 +3,7 @@ use crate::{
     PreparationError, PreparationInput, PreparationOptions, PreparationPreview, PreparedExecution,
     Result, json, loaded, prepare_with_decision_inner, validate_prepared_input_inner,
 };
-use router_adapter_api::{SnapshotValidation, ValidatedHostObservation, content_digest};
+use router_adapter_api::{SnapshotValidation, content_digest};
 use router_catalog::{CatalogAssetKind, SignedAssetKey, TrustedCatalogPublishers};
 use router_catalog_store::{CatalogHead, CurrentCatalogGuard};
 use router_execution_decision::ExecutionDecision;
@@ -134,14 +134,12 @@ fn validate_snapshot(
     options: &PublicSignedPreparationOptions,
     now: u64,
 ) -> Result<()> {
-    ValidatedHostObservation::from_observation(
-        context.snapshot().clone(),
-        SnapshotValidation {
+    context
+        .revalidate_snapshot(SnapshotValidation {
             now_unix_seconds: now,
             max_age_seconds: options.max_snapshot_age_seconds,
-        },
-    )
-    .map_err(|_| PreparationError::Snapshot)?;
+        })
+        .map_err(|_| PreparationError::Snapshot)?;
     Ok(())
 }
 fn key(kind: AssetKind, id: &str) -> Result<SignedAssetKey> {

@@ -9,7 +9,7 @@
 #[path = "support/native_fixture.rs"]
 mod native_fixture;
 use native_fixture::*;
-use router_adapter_api::{HostObservation, SnapshotValidation, ValidatedHostObservation};
+use router_adapter_api::HostObservation;
 use router_catalog::Catalog;
 use router_policy::PhaseRouter;
 use router_types::*;
@@ -132,7 +132,7 @@ fn read<T: serde::de::DeserializeOwned>(path: &Path) -> T {
 // Reuse setup and only replace the explicitly synthetic host authority. The
 // fixture's v3 hashes are regenerated, never mutated after their approval.
 fn fixture(host: Host, matching_version: bool, native: bool) -> Fixture {
-    let fixture = if native {
+    let mut fixture = if native {
         Fixture::new("exit 99", 3_000)
     } else {
         Fixture::metadata("exit 99", 3_000)
@@ -148,20 +148,42 @@ fn fixture(host: Host, matching_version: bool, native: bool) -> Fixture {
         PhasePermission::NativeHostTools,
         CapabilitySupport::Supported,
     );
+    let fake = fixture.root.join(format!("fake-{}", host.name()));
+    let script = format!(
+        "#!/bin/sh\nset -eu\nif [ \"$#\" = 1 ] && [ \"$1\" = --version ]; then\n[ -z \"$(/bin/cat)\" ] || exit 40\n[ ! -e src ] || exit 41\nprintf '%s' {}\nexit 0\nfi\n{}\n[ \"$(/bin/cat)\" = {} ] || exit 44\nif (printf escaped > outside.txt) 2>/dev/null; then exit 45; fi\nif /bin/cat {} >/dev/null 2>/dev/null; then exit 46; fi\nprintf started > src/native-worker-started\nprintf '%s' {}\n",
+        shell_quote(host.version(matching_version)),
+        host.argument_check(),
+        shell_quote(PROMPT),
+        shell_quote(fixture.root.join("denied-secret").to_str().unwrap()),
+        shell_quote(&host.stream()),
+    );
+    fs::write(&fake, script).unwrap();
+    fs::set_permissions(&fake, fs::Permissions::from_mode(0o700)).unwrap();
+    let mut sandbox: Value = read(&fixture.root.join("sandbox.json"));
+    sandbox["programs"] = json!({host.name():fake});
+    sandbox[host.name()] = host.config();
+    write(&fixture.root.join("sandbox.json"), &sandbox);
     let mut snapshot: HostObservation = read(&fixture.root.join("snapshot.json"));
     snapshot.host.harness = HarnessId::parse(host.name()).unwrap();
     snapshot.host.supported_models = [model.clone()].into();
     snapshot.host.supported_efforts = [(model.clone(), [EffortLevel::Medium].into())].into();
+    snapshot.host.capabilities.insert(Capability::Tools);
+    snapshot
+        .capabilities
+        .get_mut(&Capability::Tools)
+        .unwrap()
+        .support = CapabilitySupport::Supported;
     let now = snapshot.observed_at_unix_seconds;
-    let snapshot = snapshot.seal().unwrap();
-    let validated = ValidatedHostObservation::from_observation(
-        snapshot.clone(),
-        SnapshotValidation {
-            now_unix_seconds: now,
-            max_age_seconds: 300,
-        },
-    )
-    .unwrap();
+    let observed_version = match host {
+        Host::OpenCode => {
+            adapter_opencode::parse_version(host.version(matching_version).as_bytes()).unwrap()
+        }
+        Host::Copilot => {
+            adapter_copilot::parse_version(host.version(matching_version).as_bytes()).unwrap()
+        }
+    };
+    let validated = fixture.reprovision(&snapshot, &observed_version);
+    let snapshot = validated.observation().clone();
     let mut catalog_json: Value = read(&fixture.root.join("catalog.json"));
     catalog_json["models"][0]["id"] = json!(model);
     let catalog = Catalog::from_json(&serde_json::to_vec(&catalog_json).unwrap()).unwrap();
@@ -196,21 +218,6 @@ fn fixture(host: Host, matching_version: bool, native: bool) -> Fixture {
     write(&fixture.root.join("request.json"), &execution);
     write_asset_authority(&fixture.root, &inputs);
 
-    let fake = fixture.root.join(format!("fake-{}", host.name()));
-    let script = format!(
-        "#!/bin/sh\nset -eu\nif [ \"$#\" = 1 ] && [ \"$1\" = --version ]; then\n[ -z \"$(/bin/cat)\" ] || exit 40\n[ ! -e src ] || exit 41\nprintf '%s' {}\nexit 0\nfi\n{}\n[ \"$(/bin/cat)\" = {} ] || exit 44\nif (printf escaped > outside.txt) 2>/dev/null; then exit 45; fi\nif /bin/cat {} >/dev/null 2>/dev/null; then exit 46; fi\nprintf started > src/native-worker-started\nprintf '%s' {}\n",
-        shell_quote(host.version(matching_version)),
-        host.argument_check(),
-        shell_quote(PROMPT),
-        shell_quote(fixture.root.join("denied-secret").to_str().unwrap()),
-        shell_quote(&host.stream()),
-    );
-    fs::write(&fake, script).unwrap();
-    fs::set_permissions(&fake, fs::Permissions::from_mode(0o700)).unwrap();
-    let mut sandbox: Value = read(&fixture.root.join("sandbox.json"));
-    sandbox["programs"] = json!({host.name():fake});
-    sandbox[host.name()] = host.config();
-    write(&fixture.root.join("sandbox.json"), &sandbox);
     fixture
 }
 
@@ -301,21 +308,70 @@ fn version_mismatch(host: Host) {
 }
 
 #[test]
-fn native_version_pin_change_requires_a_new_cli_approval_for_each_host() {
+fn native_version_pin_change_invalidates_proof_before_approval_for_each_host() {
     for host in [Host::OpenCode, Host::Copilot] {
-        let fixture = fixture(host, true, false);
+        let mut fixture = fixture(host, true, false);
         let before = fixture.review();
         let mut sandbox: Value = read(&fixture.root.join("sandbox.json"));
         sandbox[host.name()]["expected_cli_version"] = json!("9.9.9");
         write(&fixture.root.join("sandbox.json"), &sandbox);
+        rejected(&mut fixture.run(), "capability.evidence.binding_mismatch");
+        rejected(
+            fixture.run().args(["--approve", &before]),
+            "capability.evidence.binding_mismatch",
+        );
+        assert_eq!(fixture.status()["run"]["attempts"], 0);
+        assert!(!fixture.store.join("worktrees").exists());
+        assert!(!fixture.repo.join("src/native-worker-started").exists());
+
+        // A coherent new authority can be reviewed, but the prior approval
+        // cannot authorize it. Renew the proof, snapshot, assets and receipt.
+        let observation: HostObservation = read(&fixture.root.join("snapshot.json"));
+        let version = match host {
+            Host::OpenCode => adapter_opencode::parse_version(host.version(true).as_bytes()),
+            Host::Copilot => adapter_copilot::parse_version(host.version(true).as_bytes()),
+        }
+        .unwrap();
+        let validated = fixture.reprovision(&observation, &version);
+        let request: PhaseRouteRequest = read(&fixture.root.join("context.json"));
+        let catalog =
+            Catalog::from_json(&fs::read(fixture.root.join("catalog.json")).unwrap()).unwrap();
+        let mut execution: ExecutionRequest = read(&fixture.root.join("request.json"));
+        let assets = asset_inputs(
+            &request,
+            &validated,
+            &catalog,
+            &fixture.repo,
+            &execution.source_state,
+            observation.observed_at_unix_seconds,
+        );
+        let router = PhaseRouter::stable_v2();
+        let context = router
+            .context_with_assets(
+                request,
+                &validated,
+                &catalog,
+                assets.clone(),
+                observation.observed_at_unix_seconds,
+            )
+            .unwrap();
+        let receipt = router.route(&context).unwrap();
+        let selected = receipt.selected.as_ref().expect("renewed native candidate");
+        execution.receipt_id = receipt.receipt_id;
+        execution.required_capabilities =
+            router.execution_capabilities(&context, selected).unwrap();
+        write(&fixture.root.join("request.json"), &execution);
+        write_asset_authority(&fixture.root, &assets);
+
         let after = fixture.review();
-        assert_ne!(before, after);
+        assert_ne!(after, before);
         rejected(
             fixture.run().args(["--approve", &before]),
             "runtime.approval.required_or_changed",
         );
         assert_eq!(fixture.status()["run"]["attempts"], 0);
         assert!(!fixture.store.join("worktrees").exists());
+        assert!(!fixture.repo.join("src/native-worker-started").exists());
     }
 }
 

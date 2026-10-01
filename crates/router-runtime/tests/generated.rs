@@ -1,7 +1,9 @@
 //! Synthetic planning evidence. These tests never invoke a model or a host CLI.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::{
     AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, ValidatedExecutionRequest,
-    ValidatedHostObservation,
 };
 use router_catalog::Catalog;
 use router_execution_decision::ExecutionDecision;
@@ -75,7 +77,7 @@ impl Fixture {
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = planned_at;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: planned_at,
@@ -182,7 +184,13 @@ impl Fixture {
         self.temp.path().join("runtime")
     }
     fn runtime(&self) -> Runtime {
-        Runtime::open(&self.storage(), RuntimeLimits::default()).unwrap()
+        Runtime::open(&self.storage(), RuntimeLimits::default())
+            .map(|runtime| {
+                runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier,
+                ))
+            })
+            .unwrap()
     }
     fn nodes(&self) -> Vec<GenerationNode<'_>> {
         self.plan
@@ -662,7 +670,15 @@ async fn failed_v6_migration_rolls_back_schema_and_preserves_history() {
     // A conflicting object simulates an incomplete/corrupted external migration.
     db.execute_batch("DROP TABLE admission_intents; DROP TABLE admission_binding; DROP TABLE preparation_cycles; DROP TABLE workflow_plan_authority; CREATE VIEW workflow_plan_authority AS SELECT instance_id,'legacy' AS pin FROM workflow_instances; PRAGMA user_version=6;").unwrap();
     drop(db);
-    assert!(Runtime::open(&fixture.storage(), RuntimeLimits::default()).is_err());
+    assert!(
+        Runtime::open(&fixture.storage(), RuntimeLimits::default())
+            .map(
+                |runtime| runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier
+                ))
+            )
+            .is_err()
+    );
     let db = Connection::open(fixture.storage().join("runtime.sqlite3")).unwrap();
     assert_eq!(
         db.pragma_query_value::<u32, _>(None, "user_version", |r| r.get(0))
@@ -729,7 +745,13 @@ async fn valid_replacement_pin_cannot_change_the_event_anchored_proposal() {
     assert_eq!(before, runtime.events().unwrap());
     drop(runtime);
     assert!(
-        Runtime::open(&fixture.storage(), RuntimeLimits::default()).is_err(),
+        Runtime::open(&fixture.storage(), RuntimeLimits::default())
+            .map(
+                |runtime| runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier
+                ))
+            )
+            .is_err(),
         "reopening must not legitimize a substituted pin"
     );
 }

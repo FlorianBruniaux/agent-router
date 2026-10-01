@@ -1,5 +1,8 @@
 //! Local synthetic capacity measurement; no model invocation or quality claim.
-use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
+use router_adapter_api::SnapshotValidation;
 use router_catalog::Catalog;
 use router_policy::{MAX_PHASE_CANDIDATES, PhaseRouter};
 use router_types::PhaseRouteRequest;
@@ -21,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let base: PhaseRouteRequest = serde_json::from_slice(include_bytes!(
         "../../../fixtures/examples/phase-request.json"
     ))?;
-    let snapshot = ValidatedHostObservation::from_json(
+    let snapshot = fixture_proofs::from_json(
         include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
         SnapshotValidation {
             now_unix_seconds: 100,

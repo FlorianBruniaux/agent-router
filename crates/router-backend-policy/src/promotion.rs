@@ -101,6 +101,25 @@ pub fn evaluate_backend(
     authorities: &TrustedAuthorities,
     now: u64,
 ) -> Result<ValidatedBackendEvaluation> {
+    evaluate_backend_with_verifier(
+        artifact,
+        criteria,
+        registration,
+        cases,
+        authorities,
+        now,
+        None,
+    )
+}
+pub fn evaluate_backend_with_verifier(
+    artifact: &BackendArtifact,
+    criteria: &router_eval::PromotionCriteria,
+    registration: &Signed<CriteriaStatement>,
+    cases: &[BackendEvaluationCase],
+    authorities: &TrustedAuthorities,
+    now: u64,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<ValidatedBackendEvaluation> {
     artifact.validate()?;
     let artifact_hash = artifact.content_hash()?;
     let criteria_digest = criteria_hash(criteria)?;
@@ -179,11 +198,19 @@ pub fn evaluate_backend(
             now_unix_seconds: case.evaluated_at_unix_seconds,
             max_age_seconds: case.snapshot_max_age_seconds,
         };
-        let baseline =
-            router_eval::replay_deterministic(&record, &case.baseline_policy_id, validation)
-                .map_err(|_| PromotionError::Gate)?;
-        let semantic =
-            router_eval::run_replay(&record, &case.semantic_policy_id, validation, |context| {
+        let baseline = router_eval::replay_deterministic_with_verifier(
+            &record,
+            &case.baseline_policy_id,
+            validation,
+            verifier,
+        )
+        .map_err(|_| PromotionError::Gate)?;
+        let semantic = router_eval::run_replay_with_verifier(
+            &record,
+            &case.semantic_policy_id,
+            validation,
+            verifier,
+            |context| {
                 let router = PhaseRouter::new(context.policy.clone())
                     .map_err(|_| router_eval::EvalError::Backend)?;
                 let bounded = BoundedDecisionContext::from_phase(&router, context.phase_context)
@@ -208,8 +235,9 @@ pub fn evaluate_backend(
                     artifact.failure_policy,
                 )
                 .map_err(|_| router_eval::EvalError::Backend)
-            })
-            .map_err(|_| PromotionError::Gate)?;
+            },
+        )
+        .map_err(|_| PromotionError::Gate)?;
         proofs.insert(
             input.case_id.clone(),
             (
@@ -337,16 +365,26 @@ pub fn evaluate_promotion(
     authorities: &TrustedAuthorities,
     now: u64,
 ) -> Result<ValidatedBackendPromotion> {
+    evaluate_promotion_with_verifier(artifact, evidence, authorities, now, None)
+}
+pub fn evaluate_promotion_with_verifier(
+    artifact: &BackendArtifact,
+    evidence: &PromotionEvidence,
+    authorities: &TrustedAuthorities,
+    now: u64,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<ValidatedBackendPromotion> {
     if evidence.schema_version != 1 {
         return Err(PromotionError::Invalid);
     }
-    let evaluation = evaluate_backend(
+    let evaluation = evaluate_backend_with_verifier(
         artifact,
         &evidence.criteria,
         &evidence.criteria_registration,
         &evidence.cases,
         authorities,
         now,
+        verifier,
     )?;
     let mut previous = evaluation.latest_evaluation;
     for (expected, signed) in [
@@ -422,6 +460,13 @@ fn evaluation_receipt(
         .is_none()
         .then_some(PhaseAbstention::Ambiguous);
     receipt.receipt_id.clear();
-    receipt.receipt_id = digest("phase-receipt-v2\0", &receipt)?;
+    receipt.receipt_id = digest(
+        if receipt.schema_version == 5 {
+            "phase-receipt-v5\0"
+        } else {
+            "phase-receipt-v2\0"
+        },
+        &receipt,
+    )?;
     Ok(receipt)
 }

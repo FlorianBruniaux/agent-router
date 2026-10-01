@@ -1,5 +1,8 @@
 #[path = "support/asset_fixture.rs"]
 mod asset_fixture;
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 
 use router_adapter_api::{
     HostObservation, SnapshotValidation, ValidatedHostObservation, content_digest,
@@ -38,7 +41,7 @@ impl Fixture {
             "../../../fixtures/examples/phase-snapshot.json"
         ))
         .unwrap();
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation,
             SnapshotValidation {
                 now_unix_seconds: 100,

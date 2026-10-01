@@ -122,7 +122,7 @@ pub(crate) async fn capture(
     cancel: &Cancellation,
 ) -> Result<Capture> {
     let captured = capture_guarded(
-        command, input, timeout_ms, max_bytes, grace_ms, cancel, None, None,
+        command, input, timeout_ms, max_bytes, grace_ms, cancel, None, None, None,
     )
     .await?;
     // Only the run path tolerates incomplete output, and records it. Every other
@@ -144,6 +144,7 @@ pub(crate) async fn capture_guarded(
     cancel: &Cancellation,
     dispatch: Option<router_execution_decision::DispatchGuard<'_>>,
     budget_dispatch: Option<crate::admission::BudgetDispatchGuard>,
+    validate_capabilities: Option<&(dyn Fn() -> Result<()> + Sync)>,
 ) -> Result<Capture> {
     if timeout_ms == 0
         || timeout_ms > 86_400_000
@@ -171,6 +172,9 @@ pub(crate) async fn capture_guarded(
     let start = Instant::now();
     if let Some(guard) = &dispatch {
         guard.validate_at(crate::now()?)?;
+    }
+    if let Some(validate) = validate_capabilities {
+        validate()?;
     }
     let spawned = command.spawn();
     drop(budget_dispatch);
@@ -331,6 +335,7 @@ mod tests {
             1024,
             0,
             &Cancellation::default(),
+            None,
             None,
             None,
         )

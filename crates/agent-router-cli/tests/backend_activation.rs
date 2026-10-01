@@ -1,5 +1,7 @@
 #![cfg(unix)]
 // All keys, observations and human claims below are synthetic test inputs.
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 mod fixture {
     #![allow(dead_code)]
     include!("../../router-backend-store/tests/support/fixture.rs");
@@ -45,16 +47,15 @@ mod fixture {
                 let mut input = case.record.input().clone();
                 let mut snapshot = serde_json::to_value(&input.snapshot).unwrap();
                 shift(&mut snapshot, delta);
-                input.snapshot = serde_json::from_value::<HostObservation>(snapshot)
-                    .unwrap()
-                    .seal()
-                    .unwrap();
+                input.snapshot = super::unknown_observation::from_example(
+                    serde_json::from_value::<HostObservation>(snapshot).unwrap(),
+                );
                 input.pricing.observed_at_unix_seconds += delta;
                 case.record = ReplayRecord::seal(input).unwrap();
                 case.evaluated_at_unix_seconds += delta;
             }
             let input = fixture.evidence.cases[0].record.input();
-            let snapshot = ValidatedHostObservation::from_observation(
+            let snapshot = fixture_proofs::from_observation(
                 input.snapshot.clone(),
                 SnapshotValidation {
                     now_unix_seconds: now,
@@ -101,13 +102,14 @@ mod fixture {
                     registered_at_unix_seconds: 99 + delta,
                 },
             );
-            let evaluation = evaluate_backend(
+            let evaluation = evaluate_backend_with_verifier(
                 &fixture.artifact,
                 &fixture.evidence.criteria,
                 &fixture.evidence.criteria_registration,
                 &fixture.evidence.cases,
                 &fixture.keys.authorities(),
                 now,
+                Some(&fixture_proofs::FixtureVerifier),
             )
             .unwrap();
             for trial in [&mut fixture.evidence.shadow, &mut fixture.evidence.canary] {

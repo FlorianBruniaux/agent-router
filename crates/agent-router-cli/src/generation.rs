@@ -21,6 +21,8 @@ const MAX_SOURCE_BYTES: usize = 32 * 1024 * 1024;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Node {
+    capability_store: Option<PathBuf>,
+    execution_config: Option<PathBuf>,
     node_id: String,
     context: PathBuf,
     host_snapshot: PathBuf,
@@ -174,7 +176,52 @@ impl Loaded {
         }
     }
 }
+/// Reconstruct a previously hashed proposal from only its own authenticated
+/// references. This horizon is not accepted from a CLI argument and is never
+/// used by fresh generation or dispatch. load_decision must still compare the
+/// complete captured source set and report with the approved document.
+fn historical_node_verifier(
+    store: &Path,
+    snapshot: &Path,
+) -> Result<std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>, CliError> {
+    let observation: router_adapter_api::HostObservation =
+        phases::read_json(snapshot, router_adapter_api::MAX_SNAPSHOT_BYTES)?;
+    let references: std::collections::BTreeSet<_> = observation
+        .capabilities
+        .values()
+        .filter(|evidence| evidence.support != CapabilitySupport::Unknown)
+        .flat_map(|evidence| evidence.source_ids.iter())
+        .collect();
+    let mut sources: Vec<_> = observation
+        .evidence
+        .iter()
+        .filter(|source| references.contains(&source.id))
+        .cloned()
+        .collect();
+    if sources.len() != references.len() {
+        return Err(CliError::Product("capability.evidence.unauthenticated"));
+    }
+    // Other provenance may accompany a runtime proof without granting authority.
+    // The shared snapshot validator still checks every declared source.
+    sources.retain(|source| source.kind == router_adapter_api::EvidenceKind::HostRuntime);
+    let secret: [u8; 32] = crate::approval_key::load_existing(store)?
+        .bytes()
+        .try_into()
+        .map_err(|_| CliError::Internal)?;
+    let proofs = router_runtime::CapabilityProofStore::open_existing(store)
+        .map_err(|error| CliError::Product(error.code()))?
+        .verifier(&secret, vec![])
+        .map_err(|error| CliError::Product(error.code()))?;
+    let sequence = proofs
+        .referenced_sequence(&observation.host, &sources)
+        .map_err(|error| CliError::Product(error.code()))?;
+    crate::capability_proofs::historical_through(store, Some(sequence))
+}
+
 fn load(path: &Path, now: u64) -> Result<Loaded, CliError> {
+    load_mode(path, now, false)
+}
+fn load_mode(path: &Path, now: u64, historical: bool) -> Result<Loaded, CliError> {
     let path = resolve(
         &std::env::current_dir().map_err(|_| CliError::RequestRead)?,
         path,
@@ -219,7 +266,23 @@ fn load(path: &Path, now: u64) -> Result<Loaded, CliError> {
         if let Some(p) = &asset_authority {
             sources.assets(p)?;
         }
+        let (store, execution_config) = match (&node.capability_store, &node.execution_config) {
+            (Some(store), Some(config)) => {
+                let store = resolve(base, store)?;
+                let config = resolve(base, config)?;
+                sources.capture(&config, 64 * 1024)?;
+                (Some(store), Some(config))
+            }
+            (None, None) => (None, None),
+            _ => {
+                return Err(CliError::Product(
+                    "capability.evidence.configuration_required",
+                ));
+            }
+        };
         args.push(PhaseArgs {
+            store,
+            execution_config,
             context,
             host_snapshot,
             catalog,
@@ -232,8 +295,19 @@ fn load(path: &Path, now: u64) -> Result<Loaded, CliError> {
     }
     let contexts = args
         .iter()
-        .map(phases::load)
-        .collect::<Result<Vec<_>, _>>()?;
+        .map(|inputs| {
+            let verifier = if historical {
+                inputs
+                    .store
+                    .as_deref()
+                    .map(|store| historical_node_verifier(store, &inputs.host_snapshot))
+                    .transpose()?
+            } else {
+                None
+            };
+            phases::load_with_policy_and_verifier(inputs, None, verifier.as_deref())
+        })
+        .collect::<Result<Vec<_>, CliError>>()?;
     sources.verify()?;
     Ok(Loaded {
         path,
@@ -356,13 +430,14 @@ pub(crate) fn load_decision(
         return Err(CliError::Product("generation.document"));
     }
     let input = resolve(path.parent().ok_or(CliError::RequestRead)?, &document.input)?;
-    let loaded = load(
+    let loaded = load_mode(
         &input,
         if historical {
             document.planned_at_unix_seconds
         } else {
             now
         },
+        historical,
     )?;
     if loaded.source_sha256 != document.source_sha256 {
         return Err(CliError::Product("generation.source.changed"));
@@ -420,3 +495,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "generation_proof_tests.rs"]
+mod capability_history_tests;

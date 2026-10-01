@@ -1,4 +1,7 @@
 //! Reproducible synthetic fixtures. `--write` is explicit; default checks files.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::{
     collections::{BTreeMap, BTreeSet},
     error::Error,
@@ -8,7 +11,6 @@ use std::{
 
 use router_adapter_api::{
     CapabilityEvidence, EvidenceKind, EvidenceSource, HostObservation, SnapshotValidation,
-    ValidatedHostObservation,
 };
 use router_catalog::Catalog;
 use router_eval::*;
@@ -352,7 +354,7 @@ fn build(case: CandidateCase) -> std::result::Result<CandidateReplay, Box<dyn Er
         now_unix_seconds: NOW,
         max_age_seconds: 300,
     };
-    let validated = ValidatedHostObservation::from_observation(snapshot.clone(), validation)?;
+    let validated = fixture_proofs::from_observation(snapshot.clone(), validation)?;
     let parsed_catalog = Catalog::from_json(&serde_json::to_vec(&catalog)?)?;
     let mut observations = BTreeMap::new();
     for (id, policy) in &policies {
@@ -413,7 +415,7 @@ fn build(case: CandidateCase) -> std::result::Result<CandidateReplay, Box<dyn Er
             ("shadow_candidate".into(), unavailable),
         ])
     };
-    Ok(CandidateReplay::seal(
+    Ok(CandidateReplay::seal_with_verifier(
         case,
         ReplayRecord::seal(input)?,
         validation,
@@ -425,6 +427,7 @@ fn build(case: CandidateCase) -> std::result::Result<CandidateReplay, Box<dyn Er
             human_validated: false,
         },
         unavailable_inputs,
+        Some(&fixture_proofs::FixtureVerifier),
     )?)
 }
 

@@ -1,5 +1,7 @@
 #[path = "../../router-policy/tests/support/asset_fixture.rs"]
 mod asset_fixture;
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 
 use assert_cmd::Command;
 use router_adapter_api::{
@@ -39,7 +41,7 @@ impl Fixture {
         ))
         .unwrap();
         let snapshot = ValidatedHostObservation::from_observation(
-            observation,
+            unknown_observation::from_example(observation),
             SnapshotValidation {
                 now_unix_seconds: 100,
                 max_age_seconds: 100,

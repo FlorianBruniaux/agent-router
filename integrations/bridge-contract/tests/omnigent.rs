@@ -1,4 +1,7 @@
-use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)]
+mod fixture_proofs;
+use router_adapter_api::SnapshotValidation;
 use router_bridge_contract::omnigent::*;
 use router_catalog::Catalog;
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
@@ -13,7 +16,7 @@ fn local_request() -> PhaseRouteRequest {
 }
 
 fn context(request: PhaseRouteRequest) -> (PhaseRouter, ValidatedPhaseContext) {
-    let snapshot = ValidatedHostObservation::from_json(
+    let snapshot = fixture_proofs::from_json(
         include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
         SnapshotValidation {
             now_unix_seconds: 100,

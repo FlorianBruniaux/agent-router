@@ -59,6 +59,15 @@ pub(crate) fn load_or_create(store: &Path) -> Result<ApprovalKey, CliError> {
     read(&path)
 }
 
+/// Evidence reads never create a missing secret or repair an unsafe store.
+pub(crate) fn load_existing(store: &Path) -> Result<ApprovalKey, CliError> {
+    let meta = fs::symlink_metadata(store).map_err(|_| UNAVAILABLE)?;
+    if !meta.is_dir() || !private(&meta) {
+        return Err(UNSAFE);
+    }
+    read(&store.join(KEY_FILE))
+}
+
 fn read(path: &Path) -> Result<ApprovalKey, CliError> {
     let file = OpenOptions::new()
         .read(true)

@@ -67,6 +67,8 @@ pub struct ValidatedPhaseContext {
     request: PhaseRouteRequest,
     policy: PhasePolicy,
     snapshot: HostObservation,
+    snapshot_authority: ValidatedHostObservation,
+    capability_evidence: BTreeMap<Capability, CapabilityReceiptEvidence>,
     context_hash: String,
     catalog_hash: String,
     policy_hash: String,
@@ -80,6 +82,13 @@ pub struct ValidatedPhaseContext {
 impl ValidatedPhaseContext {
     pub fn request(&self) -> &PhaseRouteRequest {
         &self.request
+    }
+    /// Retains non-serialized validation for pure preparation, never dispatch.
+    pub fn revalidate_snapshot(
+        &self,
+        validation: router_adapter_api::SnapshotValidation,
+    ) -> std::result::Result<ValidatedHostObservation, router_adapter_api::SnapshotError> {
+        self.snapshot_authority.revalidate_at(validation)
     }
     pub fn snapshot(&self) -> &HostObservation {
         &self.snapshot
@@ -243,6 +252,22 @@ impl PhaseRouter {
             request,
             policy: self.policy.clone(),
             snapshot: snapshot.observation().clone(),
+            snapshot_authority: snapshot.clone(),
+            capability_evidence: snapshot
+                .capability_proofs()
+                .iter()
+                .map(|proof| {
+                    (
+                        proof.capability,
+                        CapabilityReceiptEvidence {
+                            proof_sha256: proof.proof_sha256.clone(),
+                            tier: "proven".into(),
+                            observed_at_unix_seconds: proof.observed_at_unix_seconds,
+                            expires_at_unix_seconds: proof.expires_at_unix_seconds,
+                        },
+                    )
+                })
+                .collect(),
             context_hash,
             catalog_hash,
             policy_hash,
@@ -344,8 +369,23 @@ impl PhaseRouter {
             .take(self.policy.max_alternatives)
             .map(|s| (*s).clone())
             .collect();
+        let required = selected
+            .as_ref()
+            .map(|selection| self.execution_capabilities(context, selection))
+            .transpose()?
+            .unwrap_or_default();
+        let capability_evidence: BTreeMap<_, _> = context
+            .capability_evidence
+            .iter()
+            .filter(|(capability, _)| required.contains(capability))
+            .map(|(capability, proof)| (*capability, proof.clone()))
+            .collect();
+        let proven = !capability_evidence.is_empty();
         let mut receipt = PhaseReceipt {
-            schema_version: if context.signed_catalog.is_some() {
+            capability_evidence,
+            schema_version: if proven {
+                5
+            } else if context.signed_catalog.is_some() {
                 4
             } else if context.assets.is_some() {
                 3
@@ -367,7 +407,9 @@ impl PhaseRouter {
             unavailable: unavailable.clone(),
         };
         receipt.receipt_id = hash(
-            if context.signed_catalog.is_some() {
+            if proven {
+                "phase-receipt-v5"
+            } else if context.signed_catalog.is_some() {
                 "phase-receipt-v4"
             } else if context.assets.is_some() {
                 "phase-receipt-v3"

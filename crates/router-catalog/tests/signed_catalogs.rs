@@ -1,8 +1,9 @@
 //! Synthetic publishers and keys only; no production roots or human approval.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use ed25519_dalek::{Signer, SigningKey};
-use router_adapter_api::{
-    HostObservation, SnapshotValidation, ValidatedHostObservation, content_digest,
-};
+use router_adapter_api::{HostObservation, SnapshotValidation, content_digest};
 use router_catalog::*;
 use router_retrieval::{Bm25Index, ContextSearchQuery, SearchQuery, SignalProvenance};
 use router_types::*;
@@ -290,7 +291,7 @@ fn all_seven_families_feed_real_catalog_retrieval_registry_and_plan_without_read
         model,
         BTreeSet::from([EffortLevel::Medium, EffortLevel::High]),
     )]);
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation.seal().unwrap(),
         SnapshotValidation {
             now_unix_seconds: 110,

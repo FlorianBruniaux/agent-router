@@ -26,7 +26,8 @@ fn signed_projection_routes_without_loading_any_asset_body() {
     let context = f.context(100).unwrap();
     assert_eq!(selected(&context, &f), "primary");
     let receipt = f.router.route(&context).unwrap();
-    assert_eq!(receipt.schema_version, 4);
+    assert_eq!(receipt.schema_version, 5);
+    assert!(!receipt.capability_evidence.is_empty());
     let proof = f.router.validate_receipt(&context, &receipt).unwrap();
     let kinds: BTreeSet<_> = proof
         .selection()

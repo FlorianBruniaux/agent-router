@@ -1,3 +1,6 @@
+#[path = "../../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)]
+mod fixture_proofs;
 // Synthetic replay evidence only. No actual human labels or prices.
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -232,4 +235,35 @@ pub fn criteria(pairs: &[PairedTrace]) -> PromotionCriteria {
             },
         ],
     }
+}
+
+// Explicit authentication for this synthetic replay corpus only.
+fn replay_deterministic(
+    record: &ReplayRecord,
+    policy: &str,
+    validation: SnapshotValidation,
+) -> router_eval::Result<ReplayTrace> {
+    router_eval::replay_deterministic_with_verifier(
+        record,
+        policy,
+        validation,
+        Some(&fixture_proofs::FixtureVerifier),
+    )
+}
+fn run_replay<P>(
+    record: &ReplayRecord,
+    policy: &str,
+    validation: SnapshotValidation,
+    route: P,
+) -> router_eval::Result<ReplayTrace>
+where
+    P: FnOnce(&ReplayContext<'_>) -> router_eval::Result<PhaseReceipt>,
+{
+    router_eval::run_replay_with_verifier(
+        record,
+        policy,
+        validation,
+        Some(&fixture_proofs::FixtureVerifier),
+        route,
+    )
 }

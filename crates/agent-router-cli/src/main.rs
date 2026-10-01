@@ -4,6 +4,7 @@ mod admission;
 mod approval_key;
 mod assets;
 mod backend_activation;
+mod capability_proofs;
 mod catalogs;
 mod cli;
 mod command;
@@ -327,6 +328,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
                 json,
             } => assets::review(&manifest, &inputs, &skills, json),
             command::AssetCommand::Seal {
+                proof,
                 kind,
                 document,
                 catalog,
@@ -334,15 +336,16 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
                 now,
                 snapshot_max_age_seconds,
                 json,
-            } => assets::seal(
+            } => assets::seal(assets::SealArgs {
+                proof: &proof,
                 kind,
-                &document,
-                catalog.as_deref(),
-                host_snapshot.as_deref(),
+                document: &document,
+                catalog: catalog.as_deref(),
+                host_snapshot: host_snapshot.as_deref(),
                 now,
                 snapshot_max_age_seconds,
                 json,
-            ),
+            }),
         },
         Commands::Prepare {
             manifest,
@@ -449,12 +452,20 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         ),
         Commands::Replay {
+            store,
             record,
             policy,
             now,
             snapshot_max_age_seconds,
             json,
-        } => evaluation::replay(&record, &policy, now, snapshot_max_age_seconds, json),
+        } => evaluation::replay(
+            &record,
+            &policy,
+            store.as_deref(),
+            now,
+            snapshot_max_age_seconds,
+            json,
+        ),
         Commands::Eval { command } => evaluation::run(command),
         Commands::Route {
             request,
@@ -474,6 +485,8 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             retrieval.as_deref(),
         ),
         Commands::Inspect {
+            store,
+            execution_config,
             host,
             model_cache,
             native_stream,
@@ -483,6 +496,8 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         } => inspect::inspect(
             inspect::InspectArgs {
+                store,
+                execution_config,
                 host,
                 model_cache,
                 native_stream,
@@ -493,6 +508,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         ),
         Commands::Search {
+            proof,
             metadata,
             catalog,
             now,
@@ -503,6 +519,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             top_k,
             json,
         } => product::search(product::SearchArgs {
+            proof: &proof,
             metadata: &metadata,
             catalog: catalog.as_deref(),
             now,
@@ -514,13 +531,15 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         }),
         Commands::Index {
+            proof,
             metadata,
             signals,
             catalog,
             now,
             json,
-        } => product::index(&metadata, signals.as_deref(), &catalog, now, json),
+        } => product::index(&proof, &metadata, signals.as_deref(), &catalog, now, json),
         Commands::Refresh {
+            proof,
             metadata,
             successor,
             expected_source_hash,
@@ -528,15 +547,16 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             now,
             output,
             json,
-        } => product::refresh(
-            &metadata,
-            &successor,
-            &expected_source_hash,
-            &catalog,
+        } => product::refresh(product::RefreshArgs {
+            proof: &proof,
+            metadata: &metadata,
+            successor: &successor,
+            expected_source_hash: &expected_source_hash,
+            catalog: &catalog,
             now,
-            output.as_deref(),
+            output: output.as_deref(),
             json,
-        ),
+        }),
         Commands::TaskGuide { args, json } => task_guide::run(args, json),
         Commands::Normalize {
             task,

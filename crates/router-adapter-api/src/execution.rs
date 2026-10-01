@@ -122,6 +122,20 @@ pub trait HarnessAdapter {
     fn validate_native_version(&self, _stdout: &[u8]) -> Result<(), AdapterError> {
         Err(AdapterError::Unsupported("native-version"))
     }
+    /// Native adapters that can compare a proof's version pin at dispatch.
+    fn supports_native_version_pin(&self) -> bool {
+        false
+    }
+    /// Compare a fresh bounded native version response to authenticated evidence.
+    fn validate_native_version_pin(
+        &self,
+        stdout: &[u8],
+        expected: &str,
+    ) -> Result<(), AdapterError> {
+        self.validate_native_version(stdout)?;
+        let _ = expected;
+        Err(AdapterError::Unsupported("capability-version-pin"))
+    }
     /// Complete native answer text for an explicitly declared private artifact.
     /// Implementations must exclude tools, reasoning and incomplete streams.
     fn final_text(

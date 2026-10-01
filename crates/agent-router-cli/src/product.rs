@@ -65,6 +65,7 @@ pub(crate) fn read_index(path: &Path) -> Result<Bm25Index, CliError> {
     Bm25Index::from_json(&bytes).map_err(retrieval_error)
 }
 pub(crate) struct SearchArgs<'a> {
+    pub proof: &'a crate::command::ProofArgs,
     pub metadata: &'a Path,
     pub catalog: Option<&'a Path>,
     pub now: Option<u64>,
@@ -82,7 +83,7 @@ pub(crate) fn search(args: SearchArgs<'_>) -> Result<Outcome, CliError> {
     let index = read_index(args.metadata)?;
     let hash = args
         .catalog
-        .map(|path| catalog_hash(path, args.now))
+        .map(|path| catalog_hash(path, args.now, args.proof))
         .transpose()?;
     if let Some(path) = args.context_query {
         if args.text.is_some() || args.kind.is_some() {
@@ -136,11 +137,16 @@ pub(crate) fn search(args: SearchArgs<'_>) -> Result<Outcome, CliError> {
         },
     )
 }
-fn catalog_hash(path: &Path, now: Option<u64>) -> Result<String, CliError> {
-    let (catalog, _) = crate::catalogs::load(path, now, 86400)?;
+fn catalog_hash(
+    path: &Path,
+    now: Option<u64>,
+    proof: &crate::command::ProofArgs,
+) -> Result<String, CliError> {
+    let (catalog, _) = crate::catalogs::load_with_proofs(path, now, 86400, proof)?;
     catalog.content_hash().map_err(|_| CliError::CatalogInvalid)
 }
 pub(crate) fn index(
+    proof: &crate::command::ProofArgs,
     metadata: &Path,
     signals: Option<&Path>,
     catalog: &Path,
@@ -151,7 +157,7 @@ pub(crate) fn index(
         return Err(CliError::JsonOutputRequired);
     }
     let document = crate::phases::read_json(metadata, router_retrieval::MAX_DOCUMENT_BYTES)?;
-    let hash = catalog_hash(catalog, now)?;
+    let hash = catalog_hash(catalog, now, proof)?;
     if let Some(path) = signals {
         let signals = crate::phases::read_json(path, router_retrieval::MAX_DOCUMENT_BYTES)?;
         let envelope = router_retrieval::MetadataEnvelopeV3::new(document, signals, &hash)
@@ -165,15 +171,28 @@ pub(crate) fn index(
         json_output(&envelope, ExitCode::SUCCESS)
     }
 }
-pub(crate) fn refresh(
-    metadata: &Path,
-    successor: &Path,
-    expected_source_hash: &str,
-    catalog: &Path,
-    now: Option<u64>,
-    output: Option<&Path>,
-    json: bool,
-) -> Result<Outcome, CliError> {
+pub(crate) struct RefreshArgs<'a> {
+    pub proof: &'a crate::command::ProofArgs,
+    pub metadata: &'a Path,
+    pub successor: &'a Path,
+    pub expected_source_hash: &'a str,
+    pub catalog: &'a Path,
+    pub now: Option<u64>,
+    pub output: Option<&'a Path>,
+    pub json: bool,
+}
+
+pub(crate) fn refresh(args: RefreshArgs<'_>) -> Result<Outcome, CliError> {
+    let RefreshArgs {
+        proof,
+        metadata,
+        successor,
+        expected_source_hash,
+        catalog,
+        now,
+        output,
+        json,
+    } = args;
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
@@ -188,7 +207,7 @@ pub(crate) fn refresh(
         .refresh_from_json(&bytes, expected_source_hash)
         .map_err(retrieval_error)?;
     index
-        .validate_catalog_hash(&catalog_hash(catalog, now)?)
+        .validate_catalog_hash(&catalog_hash(catalog, now, proof)?)
         .map_err(retrieval_error)?;
     let canonical = index.canonical_source_json().map_err(retrieval_error)?;
     let document: serde_json::Value =

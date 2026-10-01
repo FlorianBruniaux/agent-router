@@ -1,5 +1,8 @@
-#![allow(dead_code)]
 //! Synthetic publisher, host and local asset evidence. No native execution.
+#![allow(dead_code)]
+#[path = "../../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 #[path = "signed_assets.rs"]
 mod signed_assets;
 use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
@@ -95,7 +98,7 @@ impl Fixture {
         for evidence in &mut source.observation.evidence {
             evidence.observed_at_unix_seconds = now;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             source.observation.clone().seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: now,

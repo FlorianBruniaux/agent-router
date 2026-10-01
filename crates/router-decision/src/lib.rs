@@ -390,9 +390,13 @@ pub fn validate_proposal(
 }
 
 #[cfg(test)]
+#[path = "../../../tests/support/capability_verifier.rs"]
+mod fixture_proofs;
+
+#[cfg(test)]
 mod tests {
     use super::*;
-    use router_adapter_api::{SnapshotValidation, ValidatedHostObservation};
+    use router_adapter_api::SnapshotValidation;
     use router_catalog::Catalog;
 
     fn context() -> BoundedDecisionContext {
@@ -400,7 +404,7 @@ mod tests {
             "../../../fixtures/examples/phase-request.json"
         ))
         .unwrap();
-        let snapshot = ValidatedHostObservation::from_json(
+        let snapshot = crate::fixture_proofs::from_json(
             include_bytes!("../../../fixtures/examples/phase-snapshot.json"),
             SnapshotValidation {
                 now_unix_seconds: 100,

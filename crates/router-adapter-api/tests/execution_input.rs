@@ -1,4 +1,7 @@
 //! Request scope canonicality and native stream attribution.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::collections::{BTreeMap, BTreeSet};
 
 use router_adapter_api::*;
@@ -43,7 +46,7 @@ fn gate(scope: Vec<String>) -> Result<(), AdapterError> {
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation,
         SnapshotValidation {
             now_unix_seconds: 100,
