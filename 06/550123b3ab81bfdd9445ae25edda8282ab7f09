@@ -1,0 +1,25 @@
+crates/router-adapter-api/tests/execution_input.rs
+  s_9e80b85afcc43a::t_499b40a02545e6 156-192
+crates/router-types/src/execution.rs
+  s_9e80b85afcc43a::t_069482be208392 297,302-304
+crates/router-adapter-api/src/execution.rs
+  s_9e80b85afcc43a::t_069482be208392 979-980,986-987
+CHANGELOG.md
+  s_9e80b85afcc43a::t_6a5527f6e1105a 17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "06550123b3ab81bfdd9445ae25edda8282ab7f09",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
