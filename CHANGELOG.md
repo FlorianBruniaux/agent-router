@@ -14,6 +14,10 @@ reasons); every change was verified locally on macOS.
 
 ## [Unreleased]
 
+### Fixed
+
+- Codex execution usage preserves a declared `cache_write_input_tokens` count, including zero. Missing, null or invalid counts stay unknown; input totals are not incremented again.
+
 ### Breaking
 
 - Native Codex configuration rejects shebang launchers such as `codex.js` with `runtime.program.script_unsupported` (exit 2), on macOS and Linux. Configure the canonical native binary path; no Node lookup or PATH expansion is performed.

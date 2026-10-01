@@ -153,3 +153,40 @@ fn malformed_tail_must_be_the_last_line_not_merely_equal_to_it() {
         assert!(!evidence.stream_complete);
     }
 }
+
+#[test]
+fn codex_cache_write_is_reported_only_when_declared() {
+    use serde_json::{Value, json};
+
+    for (declared, expected) in [
+        (None, UsageField::UNKNOWN),
+        (Some(Value::Null), UsageField::UNKNOWN),
+        (Some(json!(0)), UsageField::host_reported(0)),
+        (Some(json!(17)), UsageField::host_reported(17)),
+    ] {
+        let mut usage = json!({
+            "input_tokens": 100,
+            "cached_input_tokens": 20,
+            "output_tokens": 30,
+            "reasoning_output_tokens": 5
+        });
+        if let Some(value) = declared {
+            usage["cache_write_input_tokens"] = value;
+        }
+        let event = json!({"type": "turn.completed", "usage": usage});
+        let stream = format!("{event}\n");
+        let evidence = decode_transport(
+            stream.as_bytes(),
+            outcome(Some(0), TransportTermination::Exited),
+            8192,
+            StreamDialect::Codex,
+        )
+        .unwrap();
+        let actual = evidence.host_usage.unwrap();
+        assert_eq!(actual.input_tokens, UsageField::host_reported(100));
+        assert_eq!(actual.cached_input_tokens, UsageField::host_reported(20));
+        assert_eq!(actual.cache_write_input_tokens, expected);
+        assert_eq!(actual.output_tokens, UsageField::host_reported(30));
+        assert_eq!(actual.reasoning_output_tokens, UsageField::host_reported(5));
+    }
+}
