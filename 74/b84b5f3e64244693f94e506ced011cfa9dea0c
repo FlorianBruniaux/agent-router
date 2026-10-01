@@ -1,0 +1,28 @@
+crates/agent-router-cli/tests/generation_capabilities.rs
+  s_9e80b85afcc43a::t_69a71fd68c1748 136-139
+  s_9e80b85afcc43a::t_652905c1490775 140-144
+crates/agent-router-cli/src/capability_proofs.rs
+  s_9e80b85afcc43a::t_00be1b9fd51847 74-106,117-120,390-391,453-587
+crates/agent-router-cli/src/evaluation.rs
+  s_9e80b85afcc43a::t_d5f2f1ff0e77b6 53,180-183
+crates/router-adapter-api/src/proofs.rs
+  s_9e80b85afcc43a::t_a2c63a9a6e29d0 475-479,697-698,812-845
+crates/router-runtime/src/capability_proofs.rs
+  s_9e80b85afcc43a::t_e9f73301f83d0f 503-513,515-516
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "74b84b5f3e64244693f94e506ced011cfa9dea0c",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
