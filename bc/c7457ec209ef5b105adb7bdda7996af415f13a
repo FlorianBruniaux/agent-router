@@ -1,0 +1,103 @@
+crates/agent-router-cli/src/capability_proofs.rs
+  s_9e80b85afcc43a::t_86cf1719015906 12-15,110-119
+crates/router-adapter-api/src/proofs.rs
+  s_9e80b85afcc43a::t_86cf1719015906 100-101,121,142-149,198,206-210,340,370-374,382-383,432-437,462-566,629-705,711,1023-1685
+CHANGELOG.md
+  s_9e80b85afcc43a::t_c065545c08f727 38-39
+crates/adapter-claude/src/probe.rs
+  s_9e80b85afcc43a::t_4fae97f2bd3d63 125
+crates/adapter-claude/tests/conformance.rs
+  s_9e80b85afcc43a::t_0ec7c5017ddcad 26
+crates/adapter-codex/src/lib.rs
+  s_9e80b85afcc43a::t_55a9ed6e90c243 129
+crates/adapter-copilot/tests/conformance.rs
+  s_9e80b85afcc43a::t_ed55a911a47bf3 47
+crates/agent-router-cli/src/attestations.rs
+  s_9e80b85afcc43a::t_3d52cd5cd6d34e 1-301
+crates/agent-router-cli/src/command.rs
+  s_9e80b85afcc43a::t_56675af0bfdfee 80-84,1048
+crates/agent-router-cli/src/coordinator.rs
+  s_9e80b85afcc43a::t_21ba237ab57447 258-270,992-1079
+crates/agent-router-cli/src/generation.rs
+  s_9e80b85afcc43a::t_c41c9e12ed4b44 218-227
+crates/agent-router-cli/src/inspect.rs
+  s_9e80b85afcc43a::t_aadc0b42d8dbb2 78,81-88,117-136
+crates/agent-router-cli/src/main.rs
+  s_9e80b85afcc43a::t_769b4fcd2a5dbc 6,311
+crates/agent-router-cli/tests/capability_attestations.rs
+  s_9e80b85afcc43a::t_73655f2af61e12 1-565
+crates/agent-router-cli/tests/support/attestation_fixture.rs
+  s_9e80b85afcc43a::t_f6a015d86ecd8d 1-426
+crates/router-adapter-api/src/attestations.rs
+  s_9e80b85afcc43a::t_ec76a737d19821 1-330
+crates/router-adapter-api/src/execution.rs
+  s_9e80b85afcc43a::t_9e4bb4b14ecd80 10-14,63-64,461-473,476-492,494-495,503-517,550-558,583-588
+crates/router-adapter-api/src/lib.rs
+  s_9e80b85afcc43a::t_8240c35b936a94 3-5,68-69,184-186,193-194,202,210-214,220-223,226-239,393-405,459-488,497-508,720-755
+crates/router-adapter-api/tests/execution_input.rs
+  s_9e80b85afcc43a::t_7096e5c2df67d1 14
+crates/router-adapter-api/tests/snapshots.rs
+  s_9e80b85afcc43a::t_83f4b2cae74aa7 12
+crates/router-asset-contracts/src/gate.rs
+  s_9e80b85afcc43a::t_8841a56f9bed92 2,123-141,146-154,259,332-366,453-464
+crates/router-asset-contracts/src/lib.rs
+  s_9e80b85afcc43a::t_9ef5a27691200a 12-13
+crates/router-asset-contracts/tests/contracts.rs
+  s_9e80b85afcc43a::t_67e98ce1963fd2 36,923-1162
+crates/router-backend-policy/src/promotion.rs
+  s_9e80b85afcc43a::t_39371f51a0520c 464-466
+crates/router-catalog/tests/generated_catalogs.rs
+  s_9e80b85afcc43a::t_e96d4f24241402 28
+crates/router-doctor/tests/catalogs.rs
+  s_9e80b85afcc43a::t_8c03c8bd672f7e 23
+crates/router-eval/examples/candidate_corpus.rs
+  s_9e80b85afcc43a::t_273a6e38d22f0c 67
+crates/router-eval/src/replay.rs
+  s_9e80b85afcc43a::t_203a00c4a64049 286-287,328-330,345
+crates/router-eval/tests/replay.rs
+  s_9e80b85afcc43a::t_21591490a7a61a 48
+crates/router-feedback/tests/common/mod.rs
+  s_9e80b85afcc43a::t_e56d53f62c02af 48
+crates/router-policy/src/asset_phases.rs
+  s_9e80b85afcc43a::t_8d2233b3f90505 7-8,152,228,233,306,311,452,460
+crates/router-policy/src/phases.rs
+  s_9e80b85afcc43a::t_001104de069081 71,84-87,170-180,232,272,281-285,405-407,410-412,436-438,515,709,794,825,840-847,850-854,882-885
+crates/router-policy/src/signed_phases.rs
+  s_9e80b85afcc43a::t_06def5e75a8144 340,346-349
+crates/router-policy/tests/phases.rs
+  s_9e80b85afcc43a::t_6ca0d94d6a99d1 38
+crates/router-prepare/src/lib.rs
+  s_9e80b85afcc43a::t_0ed1f784c06062 19-20,501,505
+crates/router-runtime/src/capability_proofs.rs
+  s_9e80b85afcc43a::t_ce5b11d4aac246 4-6,44,104-116,202,228,235-239,252-257,260-268,274-275,277,287,290-309,311-359,369-388,392-405,410-411,414,420,423-424,443,598,670,823-926
+crates/router-runtime/src/lib.rs
+  s_9e80b85afcc43a::t_e712aa53b89a3d 48-50,609-615,670-674,1571,1575,1577,1581,1702,1706,1708,1712
+crates/router-runtime/tests/runtime.rs
+  s_9e80b85afcc43a::t_0ce5e34d182bc9 3521-3797
+crates/router-types/src/phases.rs
+  s_9e80b85afcc43a::t_76b318ee41b450 132-133,149
+docs/adr/0021-host-capability-evidence.md
+  s_9e80b85afcc43a::t_2b8cdc6c1fbe7d 275-299
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_20919f2c4352c8 504-563
+integrations/bridge-contract/tests/loopback.rs
+  s_9e80b85afcc43a::t_eabc4519c805b1 21
+integrations/bridge-contract/tests/native.rs
+  s_9e80b85afcc43a::t_457332c7a2bd77 17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "bcc7457ec209ef5b105adb7bdda7996af415f13a",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
