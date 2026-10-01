@@ -11,6 +11,7 @@ fn gate(scope: Vec<String>) -> Result<(), AdapterError> {
     let model = ModelId::parse("test-exact-model-v1").unwrap();
     let capabilities = ALL_CAPABILITIES.into_iter().collect::<BTreeSet<_>>();
     let observation = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic-conformance".into(),

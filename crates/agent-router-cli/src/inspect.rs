@@ -75,10 +75,17 @@ pub(crate) fn inspect(args: InspectArgs, json: bool) -> Result<Outcome, CliError
                 .snapshot()
                 .map_err(|e| CliError::Product(e.code()))?;
             let deciding = proofs.deciding_proofs(&observation.host, now);
+            let attestations = proofs.deciding_attestations(&observation.host, now);
             let chosen_binding = deciding
                 .iter()
-                .max_by_key(|(proof, _)| proof.record.sequence)
-                .map(|(proof, _)| proof.record.binding.clone());
+                .map(|(_, proof)| (proof.sequence, proof.binding.clone()))
+                .chain(
+                    attestations
+                        .iter()
+                        .map(|(_, proof)| (proof.sequence, proof.binding.clone())),
+                )
+                .max_by_key(|(sequence, _)| *sequence)
+                .map(|(_, binding)| binding);
             for (proof, _) in deciding {
                 if chosen_binding.as_ref() != Some(&proof.record.binding) {
                     continue;
@@ -105,6 +112,26 @@ pub(crate) fn inspect(args: InspectArgs, json: bool) -> Result<Outcome, CliError
                         observed_version: Some(record.binding.observed_version.clone()),
                         observed_at_unix_seconds: record.ended_at_unix_seconds,
                         content_sha256: proof.digest().map_err(|e| CliError::Product(e.code()))?,
+                    });
+            }
+            let mut references = Vec::new();
+            for (proof, verified) in attestations {
+                if chosen_binding.as_ref() == Some(&verified.binding)
+                    && !observation.host.capabilities.contains(&verified.capability)
+                {
+                    references.push(
+                        proof
+                            .reference()
+                            .map_err(|error| CliError::Product(error.code()))?,
+                    );
+                }
+            }
+            if !references.is_empty() {
+                observation.schema_version = 2;
+                observation.attestations =
+                    Some(router_adapter_api::CapabilityAttestationReferences {
+                        schema_version: 1,
+                        entries: references,
                     });
             }
             observation.observed_at_unix_seconds = now;

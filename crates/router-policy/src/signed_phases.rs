@@ -337,14 +337,16 @@ impl ValidatedPhaseCatalog {
         capabilities: &BTreeSet<Capability>,
         mutations: &BTreeSet<Mutation>,
         snapshot: &ValidatedHostObservation,
+        acceptance: &router_adapter_api::CapabilityAcceptance,
         assets: Option<&ValidatedPhaseAssets>,
     ) -> std::result::Result<Vec<PhaseAssetEvidence>, &'static str> {
         if candidate.tool_policy == PhaseToolPolicy::NativeHost {
             return Err("signed.tools.unrepresented_native_policy");
         }
-        if capabilities.iter().any(|capability| {
-            snapshot.capabilities().get(capability) != Some(&CapabilitySupport::Supported)
-        }) {
+        if capabilities
+            .iter()
+            .any(|capability| !snapshot.permits_capability(*capability, acceptance))
+        {
             return Err("signed.capability.unknown_or_unsupported");
         }
         let mut evidence = Vec::new();

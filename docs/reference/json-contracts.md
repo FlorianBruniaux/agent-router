@@ -501,3 +501,63 @@ local API uses the same body and field order. The write
 failure is reported instead of a panic or a success status. For commands that
 persist state, such as `run`, the persisted result is unaffected: the failed
 write only loses the printed copy, so read it back with `status` or `events`.
+
+## Operator attestations (ADR0021, batch 9)
+
+A local declaration authenticates its stored bytes, not the operator's identity
+or a native effect. `capability attest --store ROOT --request FILE --json`
+reads a strict request with `schema_version: 1`, `execution_config`,
+`host_snapshot`, `capability`, relative `scope`, `network`, `declared_version`,
+`operator_label`, `reason`, and `max_age_seconds` (1 through 86400). Paths in
+that request resolve against the request file. The issuer validates the
+snapshot and hashes the actual executable, adapter template and sandbox
+configuration without spawning a program. The identity is a declared label;
+the reason is bounded to 2048 bytes. The version is explicitly declared and
+must still match the bounded native version observation before dispatch.
+
+The explicit issuing operation may create a private store and approval key or
+atomically migrate capability database schema 1 to schema 2. Read-only consumers
+never create or migrate either. The original canary rows remain byte-identical.
+A schema 2 declaration payload omits model, nonce and effect fields, and uses a
+separate HKDF context, `agent-router/capability-attestation/v1`. Canary and
+attestation records share the authenticated store identity and append sequence.
+Old schema 1 records labelled `attested` are not accepted as declarations.
+
+`capability revoke --store ROOT --record-id ID --operator-label LABEL --reason
+TEXT --json` appends a revocation referencing an existing authenticated grant.
+It reads neither the old executable nor its execution configuration. Revocation
+has no expiry. For the same capability and execution binding, the latest
+declaration is chosen before checking its time and action; a future record,
+expired grant or revocation cannot resurrect an older grant. Historical reads
+use the recorded sequence horizon and decision clock. A valid proven canary
+wins over an attestation. An attestation must be newer than every failed canary
+for the same binding, even when a later successful canary has since expired.
+
+Both commands return `schema_version: 1`, `tier: "attested"`, `record_id`,
+`sequence`, `content_sha256`, `capability`, `action` (`grant` or `revoke`),
+`created_at_unix_seconds`, nullable `expires_at_unix_seconds`, and
+`executed: false`. They return no snapshot. `inspect` with explicit `--store`
+and `--execution-config` folds valid declaration references into a snapshot 2
+field `attestations: {"schema_version": 1, "entries": [...]}`. Each entry has
+`record_id`, `content_sha256`, `capability` and `created_at_unix_seconds`.
+`host.capabilities` excludes attested capabilities and their support remains
+`unknown`.
+
+Phase policy schema 3 adds the explicit `accepted_attestations` capability
+list, empty by default. Schema 2 cannot opt in and keeps its serialized bytes.
+Shared policy and execution gates require both a valid reference and opt-in;
+legacy execution APIs remain proven-only. The policy hash and retained evidence
+enter the approval binding. Changed selected evidence during the native version
+probe is refused by the live guard immediately before main-process dispatch.
+The guard freezes the evidence actually selected, not every intervening log row.
+A later successful canary that has already expired does not displace the same
+still-valid grant if no failure, revocation or newer declaration intervened.
+A still-valid proven canary changes the selected tier and requires fresh approval.
+Receipts consuming an attestation use schema 6 with tier `attested`; schemas 2
+through 5 retain their domains and meaning. Replay without its authenticated
+store reports unverified evidence and cannot authorize execution.
+
+Network attestations are explicitly refused by the issuer and shared verifier,
+and cannot pass policy or execution acceptance even with a valid MAC and
+approval. This batch provides no provider-egress broker or admission authority.
+No native capability or provider admission is established by these declarations.

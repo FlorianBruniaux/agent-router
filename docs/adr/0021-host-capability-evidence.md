@@ -272,6 +272,31 @@ acceptance list, and the receipt then shows the tier `attested`. The same rule
 holds in `route-phase`, `run`, replay and evaluation. This tier is the last
 batch and may be dropped without changing the others.
 
+### Batch 9 contract refinement
+
+Operator declarations use a distinct schema 2 payload and separate HKDF MAC
+context. They retain the canary execution binding, with `declared_version`
+instead of a claimed observation, and carry no synthetic nonce, effect or model.
+Database schema 2 migration occurs only through explicit issuance and commits
+atomically; readers accept existing versions without mutation. Snapshot 2 stores
+references independently of the UNKNOWN capability map. Policy 3 opts in with
+`accepted_attestations`; receipts consuming that tier use schema 6. The legacy
+wire forms and proven-only library entry points retain their authority.
+
+Selection uses the newest declaration before time/expiry checks. Revocation has
+no expiry and is issued by authenticated record reference without requiring the
+old binary. A newer declaration can supersede an older failed canary; an older
+declaration cannot survive a later failure, including after an intervening
+successful canary expires. Valid proven evidence has priority. The retained
+reference, policy hash, historical clock and sequence horizon bind replay and
+approval; live dispatch refuses changed evidence after the native version probe.
+
+In accordance with ADR0022, Network attestation is refused at issuance,
+verification and execution acceptance. No free-form field supplies egress
+admission. Batch 9 does not implement a broker or authorize provider contact.
+The exact CLI and serialized fields are in
+[the JSON contracts](../reference/json-contracts.md#operator-attestations-adr0021-batch-9).
+
 ### Claude model identity
 
 The model a stream proves is the `message.model` of root assistant messages.

@@ -20,6 +20,7 @@ const PRIOR: &[u8] = br#"{
 fn generated() -> Vec<u8> {
     let model = ModelId::parse("fixture-model").unwrap();
     let snapshot = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic-host".into(),

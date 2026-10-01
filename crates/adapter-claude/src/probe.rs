@@ -122,6 +122,7 @@ impl HostProbe for ClaudeStreamProbe<'_> {
             })
             .collect();
         HostObservation {
+            attestations: None,
             schema_version: 1,
             host: HostSnapshot {
                 id: format!("claude-native:{}", content_digest(self.bytes)),

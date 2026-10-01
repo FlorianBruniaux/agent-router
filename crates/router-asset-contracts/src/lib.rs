@@ -9,8 +9,8 @@ mod review;
 
 pub use documents::{ValidatedAvailability, ValidatedContracts, seal_availability, seal_contracts};
 pub use gate::{
-    EligibleAssetPlan, GatedAssets, SkillBody, gate, parse_gate_policy, parse_gate_request,
-    preflight,
+    EligibleAssetPlan, GatedAssets, SkillBody, gate, gate_with_capability_acceptance,
+    parse_gate_policy, parse_gate_request, preflight, preflight_with_capability_acceptance,
 };
 pub use modality::{
     DigestCheckedJsonObject, FILE_MEDIA_TYPES, InputContract, JsonOutputContract,

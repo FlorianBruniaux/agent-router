@@ -3518,3 +3518,280 @@ async fn authenticated_proof_revoked_during_native_version_probe_prevents_main_s
 async fn authenticated_proof_expired_during_native_version_probe_prevents_main_spawn() {
     proof_changed_during_native_version_probe(true).await;
 }
+
+#[derive(Clone, Copy)]
+enum AttestationChange {
+    Grant,
+    Proven,
+    Revoke,
+    Expire,
+}
+async fn attestation_changed_during_native_version_probe(change: AttestationChange) {
+    use router_adapter_api::*;
+    use std::{collections::BTreeSet, sync::Arc};
+    let mut fixture = Fixture::new(true).await;
+    let runtime = Runtime::open(
+        &fixture.temp.path().join("runtime"),
+        RuntimeLimits::default(),
+    )
+    .unwrap();
+    let mut store = CapabilityProofStore::create(runtime.storage_root()).unwrap();
+    store.enable_attestations(&[42; 32]).unwrap();
+    let key = CapabilityAttestationKey::derive(&[42; 32], store.store_id()).unwrap();
+    let mut observation = fixture.context.snapshot().clone();
+    let clock = || {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+    };
+    let now = clock();
+    let binding = CapabilityAttestationBinding {
+        harness_id: "codex".into(),
+        host_snapshot_id: observation.host.id.clone(),
+        binary_sha256: "a".repeat(64),
+        declared_version: "fixture-version".into(),
+        adapter_id: "codex".into(),
+        argument_template_sha256: "b".repeat(64),
+        sandbox_helper_sha256: "c".repeat(64),
+        sandbox_wrapper_sha256: "d".repeat(64),
+        sandbox_profile_sha256: "e".repeat(64),
+        write_roots: BTreeSet::from(["src".into()]),
+        network: false,
+        os: std::env::consts::OS.into(),
+    };
+    let grant = key
+        .authenticate(CapabilityAttestationRecord {
+            schema_version: 2,
+            record_id: "delayed-grant-1".into(),
+            sequence: 1,
+            store_id: store.store_id().into(),
+            capability: Capability::WorkspaceWrite,
+            binding: binding.clone(),
+            operator_label: "fixture-operator".into(),
+            reason: "Offline controlled version probe".into(),
+            created_at_unix_seconds: now,
+            action: CapabilityAttestationAction::Grant {
+                max_age_seconds: if matches!(change, AttestationChange::Expire) {
+                    2
+                } else {
+                    60
+                },
+            },
+        })
+        .unwrap();
+    store.append_attestation(&grant, &[42; 32]).unwrap();
+    observation.schema_version = 2;
+    observation.observed_at_unix_seconds = now;
+    observation.host.capabilities.clear();
+    observation.attestations = Some(CapabilityAttestationReferences {
+        schema_version: 1,
+        entries: vec![grant.reference().unwrap()],
+    });
+    for evidence in observation.capabilities.values_mut() {
+        evidence.support = CapabilitySupport::Unknown;
+        evidence.source_ids.clear();
+    }
+    observation.evidence = vec![EvidenceSource {
+        id: "fixture-model-metadata".into(),
+        kind: EvidenceKind::HostRuntime,
+        observed_version: None,
+        observed_at_unix_seconds: now,
+        content_sha256: "9".repeat(64),
+    }];
+    let observation = observation.seal().unwrap();
+    let verifier = Arc::new(
+        StoredCapabilityProofVerifier::open_existing(
+            runtime.storage_root(),
+            [42; 32],
+            vec![binding.execution_pins()],
+        )
+        .unwrap(),
+    );
+    let snapshot = ValidatedHostObservation::from_observation_with_verifier(
+        observation.clone(),
+        SnapshotValidation {
+            now_unix_seconds: now,
+            max_age_seconds: 300,
+        },
+        Some(verifier.as_ref()),
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(include_bytes!(
+        "../../../fixtures/examples/phase-catalog.json"
+    ))
+    .unwrap();
+    fixture.router = PhaseRouter::new(PhasePolicy {
+        schema_version: 3,
+        version: "fixture-attested-v3".into(),
+        accepted_attestations: BTreeSet::from([Capability::WorkspaceWrite]),
+        ..Default::default()
+    })
+    .unwrap();
+    fixture.context = fixture
+        .router
+        .context(fixture.context.request().clone(), &snapshot, &catalog)
+        .unwrap();
+    let receipt = fixture.router.route(&fixture.context).unwrap();
+    assert_eq!(receipt.schema_version, 6);
+    assert_eq!(
+        receipt.capability_evidence[&Capability::WorkspaceWrite].tier,
+        "attested"
+    );
+    assert!(fixture.context.snapshot().host.capabilities.is_empty());
+    fixture.request.receipt_id = receipt.receipt_id;
+    assert_eq!(
+        fixture.request.required_capabilities,
+        BTreeSet::from([Capability::WorkspaceWrite])
+    );
+    let runtime = runtime.with_capability_proof_verifier(verifier);
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let (decision_clock, sequence) = runtime
+        .capability_evidence_checkpoint("run-1")
+        .unwrap()
+        .unwrap();
+    assert_eq!(sequence, 1);
+    let supervisor = DelayedCapabilitySupervisor {
+        started: fixture.temp.path().join("attested-version-started"),
+        release: fixture.temp.path().join("attested-version-release"),
+        main_started: fixture.temp.path().join("attested-main-must-not-start"),
+    };
+    let mutate = async {
+        tokio::time::timeout(Duration::from_secs(3), async {
+            while !supervisor.started.exists() {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("native version process must start");
+        match change {
+            AttestationChange::Grant | AttestationChange::Revoke => {
+                let mut next = grant.record.clone();
+                next.record_id = "delayed-grant-2".into();
+                next.sequence = 2;
+                // Keep the same second as the decision to exercise the sequence horizon.
+                if matches!(change, AttestationChange::Revoke) {
+                    next.action = CapabilityAttestationAction::Revoke {
+                        record_id: grant.record.record_id.clone(),
+                        content_sha256: grant.digest().unwrap(),
+                    };
+                }
+                store
+                    .append_attestation(&key.authenticate(next).unwrap(), &[42; 32])
+                    .unwrap();
+            }
+            AttestationChange::Proven => {
+                let proof = CapabilityProofKey::derive(&[42; 32], store.store_id())
+                    .unwrap()
+                    .authenticate(CapabilityProofRecord {
+                        schema_version: 1,
+                        proof_id: "delayed-proven-2".into(),
+                        sequence: 2,
+                        store_id: store.store_id().into(),
+                        capability: Capability::WorkspaceWrite,
+                        tier: CapabilityProofTier::Proven,
+                        network_scope: None,
+                        binding: binding.execution_pins(),
+                        model_id: observation
+                            .host
+                            .supported_models
+                            .first()
+                            .unwrap()
+                            .to_string(),
+                        nonce_sha256: "7".repeat(64),
+                        expected_effect_sha256: "8".repeat(64),
+                        started_at_unix_seconds: now,
+                        ended_at_unix_seconds: now,
+                        max_age_seconds: 60,
+                        outcome: CapabilityAttemptOutcome::Succeeded,
+                    })
+                    .unwrap();
+                store.append(&proof, &[42; 32]).unwrap();
+            }
+            AttestationChange::Expire => {
+                while clock() <= grant.record.expires_at().unwrap() {
+                    tokio::time::sleep(Duration::from_millis(20)).await;
+                }
+            }
+        }
+        fs::write(&supervisor.release, "release").unwrap();
+    };
+    let (result, ()) = tokio::join!(
+        runtime.execute(
+            approved,
+            &DelayedCapabilityAdapter,
+            &supervisor,
+            Cancellation::default()
+        ),
+        mutate
+    );
+    assert!(
+        matches!(result, Err(RuntimeError::Route)),
+        "changed attestation must refuse final dispatch: {result:?}"
+    );
+    assert!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|event| event.kind == "native.version_validated")
+    );
+    assert!(
+        !supervisor.main_started.exists(),
+        "main process must not start after selected evidence changes"
+    );
+    let historical = StoredCapabilityProofVerifier::open_existing(
+        runtime.storage_root(),
+        [42; 32],
+        vec![binding.execution_pins()],
+    )
+    .unwrap()
+    .through_sequence(sequence);
+    let historical_snapshot = ValidatedHostObservation::from_observation_with_verifier(
+        observation,
+        SnapshotValidation {
+            now_unix_seconds: decision_clock,
+            max_age_seconds: 300,
+        },
+        Some(&historical),
+    )
+    .unwrap();
+    let historical_context = fixture
+        .router
+        .context(
+            fixture.context.request().clone(),
+            &historical_snapshot,
+            &catalog,
+        )
+        .unwrap();
+    let reopened = runtime
+        .reopen(
+            "run-1",
+            &fixture.router,
+            &historical_context,
+            fixture.request.clone(),
+            fixture.plan.clone(),
+            "execute",
+        )
+        .unwrap();
+    assert_eq!(reopened.approval_digest(), pending.approval_digest());
+}
+#[tokio::test]
+async fn attested_new_grant_during_native_probe_requires_new_approval() {
+    attestation_changed_during_native_version_probe(AttestationChange::Grant).await;
+}
+#[tokio::test]
+async fn attested_new_proven_during_native_probe_requires_new_approval() {
+    attestation_changed_during_native_version_probe(AttestationChange::Proven).await;
+}
+#[tokio::test]
+async fn attested_revocation_during_native_probe_prevents_main_spawn() {
+    attestation_changed_during_native_version_probe(AttestationChange::Revoke).await;
+}
+#[tokio::test]
+async fn attested_expiry_during_native_probe_prevents_main_spawn() {
+    attestation_changed_during_native_version_probe(AttestationChange::Expire).await;
+}

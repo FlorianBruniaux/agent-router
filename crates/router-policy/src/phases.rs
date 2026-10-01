@@ -68,6 +68,7 @@ pub struct ValidatedPhaseContext {
     policy: PhasePolicy,
     snapshot: HostObservation,
     snapshot_authority: ValidatedHostObservation,
+    capability_acceptance: router_adapter_api::CapabilityAcceptance,
     capability_evidence: BTreeMap<Capability, CapabilityReceiptEvidence>,
     context_hash: String,
     catalog_hash: String,
@@ -80,6 +81,10 @@ pub struct ValidatedPhaseContext {
 }
 
 impl ValidatedPhaseContext {
+    pub fn capability_acceptance(&self) -> &router_adapter_api::CapabilityAcceptance {
+        &self.capability_acceptance
+    }
+
     pub fn request(&self) -> &PhaseRouteRequest {
         &self.request
     }
@@ -162,7 +167,17 @@ impl PhaseRouter {
         let catalog_hash = catalog
             .content_hash()
             .map_err(|_| PhaseRouteError::Catalog)?;
-        let policy_hash = hash("phase-policy-v2", &self.policy)?;
+        let policy_hash = hash(
+            if self.policy.schema_version == 3 {
+                "phase-policy-v3"
+            } else {
+                "phase-policy-v2"
+            },
+            &self.policy,
+        )?;
+        let capability_acceptance =
+            router_adapter_api::CapabilityAcceptance::from_policy(&self.policy, &policy_hash)
+                .map_err(|_| PhaseRouteError::Invalid("capability acceptance"))?;
         let legacy_pool_hash = hash("phase-pool-v2", &request.candidates)?;
         let pool_hash = match &signed_catalog {
             Some(signed) => hash(
@@ -214,6 +229,7 @@ impl PhaseRouter {
                 catalog,
                 &registry,
                 &self.policy,
+                &capability_acceptance,
                 assets.as_ref(),
                 signed_catalog.as_ref(),
             )? {
@@ -253,6 +269,7 @@ impl PhaseRouter {
             policy: self.policy.clone(),
             snapshot: snapshot.observation().clone(),
             snapshot_authority: snapshot.clone(),
+            capability_acceptance,
             capability_evidence: snapshot
                 .capability_proofs()
                 .iter()
@@ -261,7 +278,11 @@ impl PhaseRouter {
                         proof.capability,
                         CapabilityReceiptEvidence {
                             proof_sha256: proof.proof_sha256.clone(),
-                            tier: "proven".into(),
+                            tier: match proof.tier {
+                                router_adapter_api::CapabilityProofTier::Proven => "proven",
+                                router_adapter_api::CapabilityProofTier::Attested => "attested",
+                            }
+                            .into(),
                             observed_at_unix_seconds: proof.observed_at_unix_seconds,
                             expires_at_unix_seconds: proof.expires_at_unix_seconds,
                         },
@@ -381,9 +402,14 @@ impl PhaseRouter {
             .map(|(capability, proof)| (*capability, proof.clone()))
             .collect();
         let proven = !capability_evidence.is_empty();
+        let attested = capability_evidence
+            .values()
+            .any(|evidence| evidence.tier == "attested");
         let mut receipt = PhaseReceipt {
             capability_evidence,
-            schema_version: if proven {
+            schema_version: if attested {
+                6
+            } else if proven {
                 5
             } else if context.signed_catalog.is_some() {
                 4
@@ -407,7 +433,9 @@ impl PhaseRouter {
             unavailable: unavailable.clone(),
         };
         receipt.receipt_id = hash(
-            if proven {
+            if attested {
+                "phase-receipt-v6"
+            } else if proven {
                 "phase-receipt-v5"
             } else if context.signed_catalog.is_some() {
                 "phase-receipt-v4"
@@ -484,6 +512,7 @@ fn evaluate(
     catalog: &Catalog,
     registry: &BTreeMap<(PhaseAssetKind, &str), &PhaseRegisteredAsset>,
     policy: &PhasePolicy,
+    acceptance: &router_adapter_api::CapabilityAcceptance,
     extended_assets: Option<&ValidatedPhaseAssets>,
     signed_catalog: Option<&ValidatedPhaseCatalog>,
 ) -> Result<std::result::Result<EligibleEvaluation, Vec<PhaseExclusion>>> {
@@ -677,7 +706,7 @@ fn evaluate(
             }
             _ => {}
         }
-        if snapshot.capabilities().get(capability) != Some(&CapabilitySupport::Supported) {
+        if !snapshot.permits_capability(*capability, acceptance) {
             reject(
                 "capability.unknown_or_unsupported",
                 format!("{capability:?}"),
@@ -762,7 +791,7 @@ fn evaluate(
     let model = model.ok_or(PhaseRouteError::Invalid("eligible model absent"))?;
     // Scoring is reached only after every hard constraint passes.
     if let Some(extended) = extended_assets {
-        match extended.gate_candidate(request, candidate, &capabilities, &mutations) {
+        match extended.gate_candidate(request, candidate, &capabilities, &mutations, acceptance) {
             Ok((extra_capabilities, extra_mutations)) => {
                 capabilities = extra_capabilities;
                 mutations = extra_mutations;
@@ -793,6 +822,7 @@ fn evaluate(
             &capabilities,
             &mutations,
             snapshot,
+            acceptance,
             extended_assets,
         ) {
             Ok(signed_assets) => assets.extend(signed_assets),
@@ -807,9 +837,21 @@ fn evaluate(
     }
     let score = score(candidate, model, policy)?;
     assets.sort_by(|a, b| (&a.kind, &a.id).cmp(&(&b.kind, &b.id)));
+    let attested_capability_used = capabilities.iter().any(|capability| {
+        snapshot.capabilities().get(capability) != Some(&CapabilitySupport::Supported)
+            && acceptance.accepts(*capability)
+            && snapshot.capability_proofs().iter().any(|proof| {
+                proof.capability == *capability
+                    && proof.tier == router_adapter_api::CapabilityProofTier::Attested
+            })
+    });
     Ok(Ok(EligibleEvaluation { selection: PhaseSelection { candidate: candidate.clone(), score, assets, reasons: vec![
         "advertised candidate and exact model/effort are available in the validated snapshot and catalog".into(),
-        "all required capabilities and permissions are explicitly supported".into(),
+        if attested_capability_used {
+            "all required capabilities have accepted evidence and permissions are explicitly supported"
+        } else {
+            "all required capabilities and permissions are explicitly supported"
+        }.into(),
         "every asset passed authoritative trust, compatibility and sandbox checks".into(),
         "declared resource estimates fit task and effective policy limits; no runtime cost is asserted".into(),
         "utility records catalog quality, retrieval relevance, declared cost and latency contributions".into(),
@@ -837,7 +879,10 @@ fn score(
 }
 
 fn validate_policy(policy: &PhasePolicy) -> Result<()> {
-    if policy.schema_version != 2 || !identifier(&policy.version) {
+    if !matches!(policy.schema_version, 2 | 3)
+        || (policy.schema_version == 2 && !policy.accepted_attestations.is_empty())
+        || !identifier(&policy.version)
+    {
         return Err(PhaseRouteError::Invalid("phase policy version"));
     }
     if [

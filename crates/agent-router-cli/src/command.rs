@@ -77,6 +77,11 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Manage authenticated operator declarations, without invoking a native host.
+    Capability {
+        #[command(subcommand)]
+        command: crate::attestations::CapabilityCommand,
+    },
     /// Print the JSON Schema of a named output contract, or list them.
     Schema {
         /// Contract name; see `schema --list`.
@@ -1040,6 +1045,7 @@ impl Commands {
     /// result for humans. Existing machine flags and exit statuses are preserved.
     pub(crate) fn structured_output(&mut self) -> Option<&'static str> {
         let (json, title) = match self {
+            Self::Capability { command } => (command.json(), "Capability declaration"),
             Self::GeneratePlan { json, .. } => (json, "Generated plan"),
             Self::Escalation { json, .. } => (json, "Escalation"),
             Self::Admission { json, .. } => (json, "Shared admission"),

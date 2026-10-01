@@ -4,7 +4,8 @@ use crate::{PhaseRouteError, PhaseRouter, ValidatedPhaseContext, phases};
 use router_adapter_api::{ValidatedHostObservation, content_digest};
 use router_asset_contracts::{
     ContractError, GateCode, GatedAssets, SkillBody, ValidatedAvailability, ValidatedContracts,
-    approve_review, gate, preflight, review_skill,
+    approve_review, gate_with_capability_acceptance, preflight_with_capability_acceptance,
+    review_skill,
 };
 use router_catalog::Catalog;
 use router_types::*;
@@ -148,6 +149,7 @@ impl ValidatedPhaseAssets {
         candidate: &PhaseCandidate,
         base_capabilities: &BTreeSet<Capability>,
         base_mutations: &BTreeSet<Mutation>,
+        acceptance: &router_adapter_api::CapabilityAcceptance,
     ) -> std::result::Result<(BTreeSet<Capability>, BTreeSet<Mutation>), ContractError> {
         let extension = self
             .inputs
@@ -223,11 +225,12 @@ impl ValidatedPhaseAssets {
         {
             return Err(ContractError::Gate(GateCode::CapabilityUnknownOrDenied));
         }
-        let eligible = preflight(
+        let eligible = preflight_with_capability_acceptance(
             &self.inputs.contracts,
             &self.inputs.availability,
             extension,
             &self.inputs.policy,
+            acceptance,
             self.now,
         )?;
         let reserved = eligible.reserved_context_upper_bound();
@@ -300,11 +303,12 @@ impl PhaseRouter {
             .requests
             .get(&selection.candidate.id)
             .ok_or(PhaseRouteError::Invalid("asset request absent"))?;
-        preflight(
+        preflight_with_capability_acceptance(
             &assets.inputs.contracts,
             &assets.inputs.availability,
             extension,
             &assets.inputs.policy,
+            context.capability_acceptance(),
             now,
         )?;
         Ok(())
@@ -445,7 +449,7 @@ impl PhaseRouter {
                 approve_review(&review, expected, &extension.authority_scope_digest)
             })
             .collect::<std::result::Result<Vec<_>, ContractError>>()?;
-        Ok(Some(gate(
+        Ok(Some(gate_with_capability_acceptance(
             &assets.inputs.contracts,
             &assets.inputs.availability,
             extension,
@@ -453,6 +457,7 @@ impl PhaseRouter {
             prepared_input_bytes,
             &bodies,
             &approvals,
+            context.capability_acceptance(),
             now,
         )?))
     }

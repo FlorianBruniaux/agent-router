@@ -255,6 +255,19 @@ fn fresh_verifier(
 /// An empty set grants no capability; the wave manifest bounds this collection.
 struct WaveProofVerifier(Vec<ProofVerifier>);
 impl router_adapter_api::CapabilityProofVerifier for WaveProofVerifier {
+    fn verify_attestation(
+        &self,
+        reference: &router_adapter_api::CapabilityAttestationReference,
+        host: &HostSnapshot,
+        now: u64,
+    ) -> Result<router_adapter_api::VerifiedCapabilityProof, router_adapter_api::CapabilityProofError>
+    {
+        self.0
+            .iter()
+            .find_map(|verifier| verifier.verify_attestation(reference, host, now).ok())
+            .ok_or(router_adapter_api::CapabilityProofError::Unauthenticated)
+    }
+
     fn verify(
         &self,
         source: &router_adapter_api::EvidenceSource,
@@ -974,5 +987,93 @@ mod code_alignment_tests {
             let display = variant.to_string();
             assert_eq!(error(variant).code(), display);
         }
+    }
+}
+#[cfg(test)]
+mod attested_wave_tests {
+    use super::*;
+    use router_adapter_api::*;
+    use std::os::unix::fs::PermissionsExt;
+    #[test]
+    fn wave_forwards_attestations_and_observes_revocation_live() {
+        let root = tempfile::Builder::new()
+            .permissions(std::fs::Permissions::from_mode(0o700))
+            .tempdir()
+            .unwrap();
+        let mut store = router_runtime::CapabilityProofStore::create(root.path()).unwrap();
+        store.enable_attestations(&[42; 32]).unwrap();
+        let binding = CapabilityAttestationBinding {
+            harness_id: "fixture-host".into(),
+            host_snapshot_id: "fixture-snapshot".into(),
+            binary_sha256: "1".repeat(64),
+            declared_version: "fixture-v1".into(),
+            adapter_id: "fixture-adapter".into(),
+            argument_template_sha256: "2".repeat(64),
+            sandbox_helper_sha256: "3".repeat(64),
+            sandbox_wrapper_sha256: "4".repeat(64),
+            sandbox_profile_sha256: "5".repeat(64),
+            write_roots: BTreeSet::from(["src".into()]),
+            network: false,
+            os: "fixture-os".into(),
+        };
+        let key = CapabilityAttestationKey::derive(&[42; 32], store.store_id()).unwrap();
+        let grant = key
+            .authenticate(CapabilityAttestationRecord {
+                schema_version: 2,
+                record_id: "grant".into(),
+                sequence: 1,
+                store_id: store.store_id().into(),
+                capability: Capability::WorkspaceWrite,
+                binding: binding.clone(),
+                operator_label: "fixture-operator".into(),
+                reason: "Offline wave fixture".into(),
+                created_at_unix_seconds: 100,
+                action: CapabilityAttestationAction::Grant {
+                    max_age_seconds: 1000,
+                },
+            })
+            .unwrap();
+        store.append_attestation(&grant, &[42; 32]).unwrap();
+        let host = HostSnapshot {
+            id: binding.host_snapshot_id.clone(),
+            harness: router_types::HarnessId::parse(&binding.harness_id).unwrap(),
+            supported_models: Default::default(),
+            supported_efforts: Default::default(),
+            capabilities: Default::default(),
+        };
+        let verifier = Arc::new(
+            router_runtime::StoredCapabilityProofVerifier::open_existing(
+                root.path(),
+                [42; 32],
+                vec![binding.execution_pins()],
+            )
+            .unwrap(),
+        );
+        let wave = WaveProofVerifier(vec![verifier]);
+        assert_eq!(
+            wave.verify_attestation(&grant.reference().unwrap(), &host, 110)
+                .unwrap()
+                .tier,
+            CapabilityProofTier::Attested
+        );
+        let mut revoke = grant.record.clone();
+        revoke.record_id = "revoke".into();
+        revoke.sequence = 2;
+        revoke.action = CapabilityAttestationAction::Revoke {
+            record_id: grant.record.record_id.clone(),
+            content_sha256: grant.digest().unwrap(),
+        };
+        store
+            .append_attestation(&key.authenticate(revoke).unwrap(), &[42; 32])
+            .unwrap();
+        assert!(
+            wave.verify_attestation(&grant.reference().unwrap(), &host, 110)
+                .is_err()
+        );
+        assert!(
+            WaveProofVerifier(vec![])
+                .verify_attestation(&grant.reference().unwrap(), &host, 110)
+                .is_err()
+        );
     }
 }

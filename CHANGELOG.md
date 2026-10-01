@@ -35,6 +35,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- Explicit local `capability attest` and `capability revoke` commands authenticate operator declarations without executing a host. Snapshot schema 2 keeps these references separate from UNKNOWN capabilities; policy schema 3 requires explicit capability opt-in and consuming receipts use schema 6. Network attestation remains refused pending provider-egress admission. The capability store migrates atomically only on explicit issuance, and legacy wire formats remain compatible.
+
 - ADR 0021 batch 6 adds bounded, append-only MAC capability records in the private runtime store. `inspect`, `route-phase`, catalog/asset and retrieval commands accept `--store` with `--execution-config`; generated-plan nodes take the equivalent manifest pair and coordinator waves validate each step against their private runtime proof store; readers never create the proof database or launch a host. Runtime dispatch rechecks live proof validity after version probing, while historical reopen uses its recorded decision clock and sequence horizon. Synthetic fixtures validate the plumbing; this adds no production canary issuer and establishes no real host capability.
 
 - `assets seal --kind contracts|availability --document FILE (--catalog FILE | --host-snapshot FILE) --json` prints a sealed contracts or availability document and its `content_hash`. It writes nothing, edits no manifest and approves nothing: the operator pins the hash independently in the asset-authority manifest. New codes: `assets.seal.input_required`, `assets.seal.document_invalid`.
