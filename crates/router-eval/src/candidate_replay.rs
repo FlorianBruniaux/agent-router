@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     CandidateCase, EvalError, MAX_REPLAY_BYTES, ReplayRecord, ReplayTrace, Result, hash,
-    run_replay, text,
+    run_replay_with_verifier, text,
 };
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -46,6 +46,23 @@ impl CandidateReplay {
         proposal: ProposedDecision,
         unavailable_candidates: BTreeMap<String, BTreeSet<String>>,
     ) -> Result<Self> {
+        Self::seal_with_verifier(
+            case,
+            record,
+            validation,
+            proposal,
+            unavailable_candidates,
+            None,
+        )
+    }
+    pub fn seal_with_verifier(
+        case: CandidateCase,
+        record: ReplayRecord,
+        validation: SnapshotValidation,
+        proposal: ProposedDecision,
+        unavailable_candidates: BTreeMap<String, BTreeSet<String>>,
+        verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Result<Self> {
         let mut candidate = Self {
             schema_version: 1,
             case,
@@ -61,7 +78,7 @@ impl CandidateReplay {
             content_hash: String::new(),
         };
         candidate.validate_identity()?;
-        for (id, trace) in candidate.replay()? {
+        for (id, trace) in candidate.replay_with_verifier(verifier)? {
             candidate
                 .expected_trace_hashes
                 .insert(id.clone(), trace.trace_hash().into());
@@ -86,6 +103,12 @@ impl CandidateReplay {
         Ok(candidate)
     }
     pub fn from_json(bytes: &[u8]) -> Result<Self> {
+        Self::from_json_with_verifier(bytes, None)
+    }
+    pub fn from_json_with_verifier(
+        bytes: &[u8],
+        verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Result<Self> {
         if bytes.len() > MAX_REPLAY_BYTES {
             return Err(EvalError::Limit("candidate replay bytes"));
         }
@@ -93,12 +116,13 @@ impl CandidateReplay {
         let parsed: Self = serde_json::from_value(value)
             .map_err(|_| EvalError::Invalid("candidate replay schema"))?;
         let record = ReplayRecord::from_json(&parsed.record.canonical_json()?)?;
-        let expected = Self::seal(
+        let expected = Self::seal_with_verifier(
             parsed.case.clone(),
             record,
             parsed.validation(),
             parsed.proposed_decision.clone(),
             parsed.unavailable_candidates.clone(),
+            verifier,
         )?;
         if expected != parsed {
             return Err(EvalError::Integrity);
@@ -106,25 +130,37 @@ impl CandidateReplay {
         Ok(parsed)
     }
     pub fn replay(&self) -> Result<BTreeMap<String, ReplayTrace>> {
+        self.replay_with_verifier(None)
+    }
+    pub fn replay_with_verifier(
+        &self,
+        verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Result<BTreeMap<String, ReplayTrace>> {
         self.validate_identity()?;
         self.record
             .input()
             .policies
             .keys()
             .map(|id| {
-                let trace = run_replay(&self.record, id, self.validation(), |context| {
-                    let router = router_policy::PhaseRouter::new(context.policy.clone())
-                        .map_err(|_| EvalError::Invalid("phase policy"))?;
-                    if let Some(unavailable) = self.unavailable_candidates.get(id) {
-                        router
-                            .fallback(context.phase_context, unavailable)
-                            .map_err(|_| EvalError::Backend)
-                    } else {
-                        router
-                            .route(context.phase_context)
-                            .map_err(|_| EvalError::Backend)
-                    }
-                })?;
+                let trace = run_replay_with_verifier(
+                    &self.record,
+                    id,
+                    self.validation(),
+                    verifier,
+                    |context| {
+                        let router = router_policy::PhaseRouter::new(context.policy.clone())
+                            .map_err(|_| EvalError::Invalid("phase policy"))?;
+                        if let Some(unavailable) = self.unavailable_candidates.get(id) {
+                            router
+                                .fallback(context.phase_context, unavailable)
+                                .map_err(|_| EvalError::Backend)
+                        } else {
+                            router
+                                .route(context.phase_context)
+                                .map_err(|_| EvalError::Backend)
+                        }
+                    },
+                )?;
                 Ok((id.clone(), trace))
             })
             .collect()

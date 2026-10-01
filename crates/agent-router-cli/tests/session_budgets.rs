@@ -179,6 +179,7 @@ fn authority_cannot_be_omitted_or_reassigned() {
 #[test]
 fn strict_policy_parser_refuses_duplicate_unknown_and_oversized_input() {
     let f = Fixture::metadata("exit 99", 3000);
+    let proof_store_entries = fs::read_dir(&f.store).unwrap().count();
     let path = f.root.join("invalid-policy.json");
     for bytes in [
         b"{\"schema_version\":1,\"schema_version\":1}".to_vec(),
@@ -194,7 +195,8 @@ fn strict_policy_parser_refuses_duplicate_unknown_and_oversized_input() {
             .unwrap();
         assert_eq!(o.status.code(), Some(2));
     }
-    assert!(!f.store.exists());
+    assert_eq!(fs::read_dir(&f.store).unwrap().count(), proof_store_entries);
+    assert!(!f.store.join("worktrees").exists());
 }
 struct Child(Option<std::process::Child>);
 impl Child {
@@ -220,7 +222,7 @@ impl Drop for Child {
 fn native_concurrent_roots_commit_once_and_ignore_claimed_zero_usage() {
     let temp = tempfile::tempdir().unwrap();
     let barrier = fs::canonicalize(temp.path()).unwrap();
-    let a = Fixture::new(
+    let mut a = Fixture::new(
         &format!(
             "while [ ! -f {} ]; do /bin/sleep 0.02; done\nprintf '%s' {}",
             shell_quote(barrier.join("release").to_str().unwrap()),
@@ -232,6 +234,7 @@ fn native_concurrent_roots_commit_once_and_ignore_claimed_zero_usage() {
     let mut sandbox = read(&a.root.join("sandbox.json"));
     sandbox["read_roots"] = json!([barrier]);
     write(&a.root.join("sandbox.json"), &sandbox);
+    a.rebind_after_config_change();
     let registry = a.root.join("registry");
     let (h, bh) = bind(
         &registry,

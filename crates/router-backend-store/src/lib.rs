@@ -8,7 +8,7 @@ use json::parse;
 use router_backend_policy::{
     ActivationAction, ActivationApproval, ActivationEvent, AuthorityRole, BackendActivationState,
     BackendArtifact, PromotionError, PromotionEvidence, Signed, TrustedAuthorities,
-    ValidatedBackendPromotion, evaluate_promotion,
+    ValidatedBackendPromotion, evaluate_promotion_with_verifier,
 };
 use router_execution_decision::{ActivationAuthority, ActivationGuard, DecisionError};
 use serde::{Deserialize, Serialize};
@@ -231,6 +231,7 @@ impl ReviewedPromotion {
 }
 
 pub struct BackendStore {
+    capability_verifier: Option<std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>>,
     root: files::Root,
     config_hash: String,
     // Optional independently retained checkpoint. Accepted signed successors
@@ -307,6 +308,7 @@ impl BackendStore {
         };
         root.commit(&snapshot.encode(MAX_SNAPSHOT_BYTES)?, None)?;
         Ok(Self {
+            capability_verifier: None,
             root,
             config_hash,
             anchor: None,
@@ -321,10 +323,21 @@ impl BackendStore {
         expected_config_hash: &str,
         expected_head: Option<&str>,
     ) -> Result<Self> {
+        Self::open_with_capability_verifier(path, expected_config_hash, expected_head, None)
+    }
+    pub fn open_with_capability_verifier(
+        path: &Path,
+        expected_config_hash: &str,
+        expected_head: Option<&str>,
+        capability_verifier: Option<
+            std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>,
+        >,
+    ) -> Result<Self> {
         if !valid_hash(expected_config_hash) || expected_head.is_some_and(|h| !valid_hash(h)) {
             return Err(StoreError::Configuration);
         }
         let store = Self {
+            capability_verifier,
             root: files::Root::open(path)?,
             config_hash: expected_config_hash.into(),
             anchor: expected_head.map(str::to_owned),
@@ -333,6 +346,15 @@ impl BackendStore {
         };
         store.read_guard(now()?)?;
         Ok(store)
+    }
+    /// Explicit authenticated capability evidence for every replay performed
+    /// by review, activation, current reads and historical reconstruction.
+    pub fn with_capability_proof_verifier(
+        mut self,
+        verifier: std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Self {
+        self.capability_verifier = Some(verifier);
+        self
     }
     /// Lowers the encoded snapshot bound enforced by `review` and `apply`,
     /// intended for tests. It only ever lowers: a later call cannot raise it
@@ -419,11 +441,12 @@ impl BackendStore {
             let record = snapshot.promotions.get(id).ok_or(StoreError::Integrity)?;
             promotions.insert(
                 id.clone(),
-                evaluate_promotion(
+                evaluate_promotion_with_verifier(
                     &record.artifact,
                     &record.evidence,
                     &authorities,
                     record.validated_at_unix_seconds,
+                    self.capability_verifier.as_deref(),
                 )?,
             );
         }
@@ -463,7 +486,13 @@ impl BackendStore {
         {
             return Err(StoreError::Limit);
         }
-        let accepted = evaluate_promotion(artifact, evidence, &authorities, now)?;
+        let accepted = evaluate_promotion_with_verifier(
+            artifact,
+            evidence,
+            &authorities,
+            now,
+            self.capability_verifier.as_deref(),
+        )?;
         // Refuse early: simulate the snapshot `apply` would encode with this
         // promotion retained, so no approval is signed for an unappliable change.
         if !snapshot.promotions.contains_key(accepted.promotion_hash()) {
@@ -538,11 +567,12 @@ impl BackendStore {
         }
         let accepted = review
             .map(|review| {
-                evaluate_promotion(
+                evaluate_promotion_with_verifier(
                     &review.record.artifact,
                     &review.record.evidence,
                     &authorities,
                     now,
+                    self.capability_verifier.as_deref(),
                 )
             })
             .transpose()?;
@@ -613,11 +643,12 @@ impl BackendStore {
             {
                 return Err(StoreError::Integrity);
             }
-            let validated = evaluate_promotion(
+            let validated = evaluate_promotion_with_verifier(
                 &record.artifact,
                 &record.evidence,
                 &authorities,
                 record.validated_at_unix_seconds,
+                self.capability_verifier.as_deref(),
             )?;
             if id != validated.promotion_hash() || record.promotion_hash != *id {
                 return Err(StoreError::Integrity);

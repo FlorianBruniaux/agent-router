@@ -300,6 +300,13 @@ impl GeneratedCatalog {
     }
 
     pub fn from_json(bytes: &[u8], validation: SnapshotValidation) -> Result<Self, CatalogError> {
+        Self::from_json_with_verifier(bytes, validation, None)
+    }
+    pub fn from_json_with_verifier(
+        bytes: &[u8],
+        validation: SnapshotValidation,
+        verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Result<Self, CatalogError> {
         if bytes.len() > MAX_GENERATED_BYTES {
             return Err(error(
                 "catalog.generated.too_large",
@@ -315,8 +322,12 @@ impl GeneratedCatalog {
                 .ok_or_else(|| error("catalog.generated.json.invalid", "snapshot is required"))?,
         )
         .map_err(|_| error("catalog.serialize", "snapshot serialization"))?;
-        let snapshot = ValidatedHostObservation::from_json(&snapshot_bytes, validation)
-            .map_err(|source| error(source.code(), "invalid host snapshot"))?;
+        let snapshot = ValidatedHostObservation::from_json_with_verifier(
+            &snapshot_bytes,
+            validation,
+            verifier,
+        )
+        .map_err(|source| error(source.code(), "invalid host snapshot"))?;
         let document: GeneratedDocument = serde_json::from_value(value)
             .map_err(|_| error("catalog.generated.json.invalid", "invalid generated schema"))?;
         if document.schema_version != GENERATED_SCHEMA_VERSION {

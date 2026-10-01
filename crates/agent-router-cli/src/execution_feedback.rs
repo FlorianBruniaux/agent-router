@@ -407,6 +407,7 @@ mod tests {
         alternatives: Vec<PhaseSelection>,
     ) -> PhaseReceipt {
         PhaseReceipt {
+            capability_evidence: Default::default(),
             schema_version: 2,
             receipt_id: "r".into(),
             phase: StageKind::Execute,

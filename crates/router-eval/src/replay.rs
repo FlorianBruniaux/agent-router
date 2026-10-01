@@ -131,10 +131,18 @@ pub struct HardConstraintViolation {
     pub candidate_id: Option<String>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CapabilityEvidenceVerification {
+    Verified,
+    Unverified,
+}
+
 /// Only the replay harness constructs this type. Persisted arbitrary JSON cannot
 /// become a promotion input without replay and independent constraint auditing.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ReplayTrace {
+    pub(crate) capability_evidence: CapabilityEvidenceVerification,
     pub(crate) input_hash: String,
     pub(crate) case_id: String,
     pub(crate) family_id: String,
@@ -201,6 +209,10 @@ impl ReplayRecord {
 }
 
 impl ReplayTrace {
+    pub fn capability_evidence(&self) -> CapabilityEvidenceVerification {
+        self.capability_evidence
+    }
+
     pub fn receipt(&self) -> &PhaseReceipt {
         &self.receipt
     }
@@ -232,6 +244,19 @@ pub fn run_replay<P>(
 where
     P: FnOnce(&ReplayContext<'_>) -> Result<PhaseReceipt>,
 {
+    run_replay_with_verifier(record, policy_id, validation, None, route)
+}
+
+pub fn run_replay_with_verifier<P>(
+    record: &ReplayRecord,
+    policy_id: &str,
+    validation: SnapshotValidation,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    route: P,
+) -> Result<ReplayTrace>
+where
+    P: FnOnce(&ReplayContext<'_>) -> Result<PhaseReceipt>,
+{
     validate_input(&record.input)?;
     if hash(b"agent-router:replay-input:v1\0", &record.input)? != record.input_hash {
         return Err(EvalError::Integrity);
@@ -245,7 +270,30 @@ where
         .observations
         .get(policy_id)
         .ok_or(EvalError::Invalid("missing policy observations"))?;
-    let snapshot = ValidatedHostObservation::from_observation(input.snapshot.clone(), validation)?;
+    let (snapshot, capability_evidence) =
+        match ValidatedHostObservation::from_observation_with_verifier(
+            input.snapshot.clone(),
+            validation,
+            verifier,
+        ) {
+            Ok(snapshot) => (snapshot, CapabilityEvidenceVerification::Verified),
+            Err(error)
+                if verifier.is_none() && error.code() == "capability.evidence.unauthenticated" =>
+            {
+                // The original hash and structure were checked before authenticity.
+                // Offline exports retain the input hash but route only UNKNOWN claims.
+                let mut unverified = input.snapshot.clone();
+                unverified.host.capabilities.clear();
+                for evidence in unverified.capabilities.values_mut() {
+                    evidence.support = router_types::CapabilitySupport::Unknown;
+                }
+                (
+                    ValidatedHostObservation::from_observation(unverified.seal()?, validation)?,
+                    CapabilityEvidenceVerification::Unverified,
+                )
+            }
+            Err(error) => return Err(error.into()),
+        };
     if input.pricing.observed_at_unix_seconds > validation.now_unix_seconds {
         return Err(EvalError::Invalid("pricing timestamp in future"));
     }
@@ -275,7 +323,12 @@ where
     let receipt = route(&context)?;
     let mut receipt_preimage = receipt.clone();
     receipt_preimage.receipt_id.clear();
-    if hash(b"phase-receipt-v2\0", &receipt_preimage)? != receipt.receipt_id {
+    let receipt_domain: &[u8] = if receipt.schema_version == 5 {
+        b"phase-receipt-v5\0"
+    } else {
+        b"phase-receipt-v2\0"
+    };
+    if hash(receipt_domain, &receipt_preimage)? != receipt.receipt_id {
         return Err(EvalError::Integrity);
     }
     if receipt.phase != input.request.phase
@@ -285,7 +338,8 @@ where
         || receipt.policy_hash != phase_context.policy_hash()
         || receipt.pool_hash != phase_context.pool_hash()
         || receipt.registry_hash != expected.registry_hash
-        || receipt.schema_version != 2
+        || !matches!(receipt.schema_version, 2 | 5)
+        || receipt.capability_evidence != expected.capability_evidence
     {
         return Err(EvalError::Integrity);
     }
@@ -293,6 +347,12 @@ where
         return Err(EvalError::Invalid("receipt selection or abstention"));
     }
     let mut violations = Vec::new();
+    if capability_evidence == CapabilityEvidenceVerification::Unverified {
+        violations.push(HardConstraintViolation {
+            code: "capability.evidence.unverified".into(),
+            candidate_id: None,
+        });
+    }
     if receipt.alternatives.len() > 64 || receipt.unavailable.len() > 64 {
         return Err(EvalError::Limit("receipt alternatives"));
     }
@@ -353,6 +413,7 @@ where
     }
     let cost_microusd = price_usage(&input.pricing, &observation.usage, &catalog)?;
     let mut trace = ReplayTrace {
+        capability_evidence,
         input_hash: record.input_hash.clone(),
         case_id: input.case_id.clone(),
         family_id: input.family_id.clone(),
@@ -383,6 +444,20 @@ pub fn replay_deterministic(
     validation: SnapshotValidation,
 ) -> Result<ReplayTrace> {
     run_replay(record, policy_id, validation, |context| {
+        PhaseRouter::new(context.policy.clone())
+            .map_err(|_| EvalError::Invalid("phase policy"))?
+            .route(context.phase_context)
+            .map_err(|_| EvalError::Backend)
+    })
+}
+
+pub fn replay_deterministic_with_verifier(
+    record: &ReplayRecord,
+    policy_id: &str,
+    validation: SnapshotValidation,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<ReplayTrace> {
+    run_replay_with_verifier(record, policy_id, validation, verifier, |context| {
         PhaseRouter::new(context.policy.clone())
             .map_err(|_| EvalError::Invalid("phase policy"))?
             .route(context.phase_context)

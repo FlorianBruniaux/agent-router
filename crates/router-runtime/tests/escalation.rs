@@ -1,7 +1,10 @@
 //! Two real local worker attempts and durable accounting. No provider calls.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::{
     AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, StreamDialect,
-    ValidatedExecutionRequest, ValidatedHostObservation, decode_transport, prepared_run,
+    ValidatedExecutionRequest, decode_transport, prepared_run,
 };
 use router_catalog::Catalog;
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
@@ -98,7 +101,7 @@ impl Fixture {
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = now;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: now,
@@ -159,6 +162,11 @@ impl Fixture {
                 ..RuntimeLimits::default()
             },
         )
+        .map(|runtime| {
+            runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                fixture_proofs::FixtureVerifier,
+            ))
+        })
         .unwrap()
     }
     async fn review(&self, runtime: &Runtime) -> PendingRun {
@@ -766,6 +774,9 @@ async fn native_budget_pool_failures_and_cumulative_limit_are_enforced() {
             ..RuntimeLimits::default()
         },
     )
+    .map(|runtime| {
+        runtime.with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+    })
     .unwrap();
     assert!(matches!(
         runtime.review_escalation(&next, &policy()),
@@ -867,7 +878,7 @@ impl Fixture {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             self.context.snapshot().clone(),
             SnapshotValidation {
                 now_unix_seconds: now,

@@ -1,4 +1,7 @@
 //! Both host implementations run the same admission and supervision fixtures.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::collections::{BTreeMap, BTreeSet};
 
 use adapter_claude::{ClaudeAdapter, ClaudeStreamProbe};
@@ -55,7 +58,7 @@ fn fixture(
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation,
         SnapshotValidation {
             now_unix_seconds: 100,
@@ -286,7 +289,7 @@ fn shared_unknown_capability_is_not_permission_and_snapshot_cannot_be_stale() {
         observation.host.capabilities.remove(&Capability::Tools);
         let observation = observation.seal().unwrap();
         assert!(matches!(
-            ValidatedHostObservation::from_observation(
+            fixture_proofs::from_observation(
                 observation.clone(),
                 SnapshotValidation {
                     now_unix_seconds: 111,
@@ -295,7 +298,7 @@ fn shared_unknown_capability_is_not_permission_and_snapshot_cannot_be_stale() {
             ),
             Err(SnapshotError::Stale)
         ));
-        let unknown = ValidatedHostObservation::from_observation(
+        let unknown = fixture_proofs::from_observation(
             observation,
             SnapshotValidation {
                 now_unix_seconds: 100,

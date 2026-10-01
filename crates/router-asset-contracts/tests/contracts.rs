@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::{
     ALL_CAPABILITIES, CapabilityEvidence, EvidenceKind, EvidenceSource, HostObservation,
     SnapshotValidation, ValidatedHostObservation, content_digest,
@@ -28,7 +31,7 @@ impl Fixture {
             "skills":[{"id":"fixture-skill","description":"fixture instruction","task_kinds":["explore"],"required_capabilities":[],"trust":"trusted_local"}]
         })).unwrap()).unwrap();
         let model = ModelId::parse("fixture-model").unwrap();
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             HostObservation {
                 schema_version: 1,
                 host: HostSnapshot {
@@ -368,7 +371,7 @@ fn native_claims_cannot_use_cache_documentation_or_unrelated_source() {
         evidence.source_ids.clear();
     }
     cache.host.capabilities.clear();
-    let cache = ValidatedHostObservation::from_observation(
+    let cache = fixture_proofs::from_observation(
         cache.seal().unwrap(),
         SnapshotValidation {
             now_unix_seconds: NOW,

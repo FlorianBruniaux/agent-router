@@ -1,5 +1,7 @@
 use assert_cmd::Command;
 use serde_json::{Value, json};
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -20,7 +22,7 @@ fn phase(name: &str) -> Command {
         .arg("--context")
         .arg(fixture("phase-request.json"))
         .arg("--host-snapshot")
-        .arg(fixture("phase-snapshot.json"))
+        .arg(unknown_observation::example_path())
         .arg("--catalog")
         .arg(fixture("phase-catalog.json"))
         .args(["--now", "100", "--json"]);
@@ -375,7 +377,7 @@ fn duplicate_permission_keys_and_stale_phase_evidence_fail_closed() {
         .arg("--context")
         .arg(path)
         .arg("--host-snapshot")
-        .arg(fixture("phase-snapshot.json"))
+        .arg(unknown_observation::example_path())
         .arg("--catalog")
         .arg(fixture("phase-catalog.json"))
         .args(["--now", "100", "--json"])
@@ -387,7 +389,7 @@ fn duplicate_permission_keys_and_stale_phase_evidence_fail_closed() {
         .arg("--context")
         .arg(fixture("phase-request.json"))
         .arg("--host-snapshot")
-        .arg(fixture("phase-snapshot.json"))
+        .arg(unknown_observation::example_path())
         .arg("--catalog")
         .arg(fixture("phase-catalog.json"))
         .args(["--now", "200", "--snapshot-max-age-seconds", "1", "--json"])
@@ -401,7 +403,7 @@ fn catalog_refresh_is_deterministic_and_alias_lookup_has_explicit_failure() {
     let mut refresh = command();
     refresh
         .args(["catalog", "refresh", "--host-snapshot"])
-        .arg(fixture("phase-snapshot.json"))
+        .arg(unknown_observation::example_path())
         .arg("--prior")
         .arg(fixture("phase-catalog.json"))
         .args(["--now", "100", "--json"]);
@@ -526,7 +528,7 @@ fn eval_seal_replay_compare_never_treats_synthetic_input_as_a_promotion() {
     let request: Value =
         serde_json::from_slice(&fs::read(fixture("phase-request.json")).unwrap()).unwrap();
     let snapshot: Value =
-        serde_json::from_slice(&fs::read(fixture("phase-snapshot.json")).unwrap()).unwrap();
+        serde_json::from_slice(&fs::read(unknown_observation::example_path()).unwrap()).unwrap();
     let catalog: Value =
         serde_json::from_slice(&fs::read(fixture("phase-catalog.json")).unwrap()).unwrap();
     let policy = serde_json::to_value(router_types::PhasePolicy::default()).unwrap();

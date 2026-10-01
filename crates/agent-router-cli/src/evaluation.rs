@@ -4,7 +4,8 @@ use crate::{
 };
 use router_adapter_api::SnapshotValidation;
 use router_eval::{
-    CandidateCorpus, EvalError, PairedTrace, ReplayRecord, compare_shadow, replay_deterministic,
+    CandidateCorpus, EvalError, PairedTrace, ReplayRecord, compare_shadow,
+    replay_deterministic_with_verifier,
 };
 use std::{path::Path, process::ExitCode};
 
@@ -39,6 +40,7 @@ fn validation(now: Option<u64>, max_age_seconds: u64) -> Result<SnapshotValidati
 pub(crate) fn replay(
     path: &Path,
     policy: &str,
+    store: Option<&Path>,
     now: Option<u64>,
     max_age: u64,
     json: bool,
@@ -47,7 +49,16 @@ pub(crate) fn replay(
         return Err(CliError::JsonOutputRequired);
     }
     let record = ReplayRecord::from_json(&bytes(path)?).map_err(error)?;
-    let trace = replay_deterministic(&record, policy, validation(now, max_age)?).map_err(error)?;
+    let verifier = store
+        .map(|store| crate::capability_proofs::historical_replay(store, &record))
+        .transpose()?;
+    let trace = replay_deterministic_with_verifier(
+        &record,
+        policy,
+        validation(now, max_age)?,
+        verifier.as_deref(),
+    )
+    .map_err(error)?;
     json_output(&trace, ExitCode::SUCCESS)
 }
 pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
@@ -143,6 +154,7 @@ pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
             )
         }
         EvalCommand::Compare {
+            store,
             records,
             baseline,
             candidate,
@@ -165,11 +177,25 @@ pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
             let mut pairs = Vec::new();
             for path in records {
                 let record = ReplayRecord::from_json(&bytes(&path)?).map_err(error)?;
+                let verifier = store
+                    .as_deref()
+                    .map(|store| crate::capability_proofs::historical_replay(store, &record))
+                    .transpose()?;
                 pairs.push(PairedTrace {
-                    baseline: replay_deterministic(&record, &baseline, validation)
-                        .map_err(error)?,
-                    semantic: replay_deterministic(&record, &candidate, validation)
-                        .map_err(error)?,
+                    baseline: replay_deterministic_with_verifier(
+                        &record,
+                        &baseline,
+                        validation,
+                        verifier.as_deref(),
+                    )
+                    .map_err(error)?,
+                    semantic: replay_deterministic_with_verifier(
+                        &record,
+                        &candidate,
+                        validation,
+                        verifier.as_deref(),
+                    )
+                    .map_err(error)?,
                 });
             }
             let report = compare_shadow(&pairs, criteria.as_ref()).map_err(error)?;

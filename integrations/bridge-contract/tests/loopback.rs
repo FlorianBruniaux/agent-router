@@ -1,5 +1,8 @@
 #![cfg(feature = "loopback-transport")]
 //! Loopback transport tests. Each fake server carries one defect.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)]
+mod fixture_proofs;
 use router_adapter_api::*;
 use router_bridge_contract::transport::*;
 use router_bridge_contract::*;
@@ -45,7 +48,7 @@ fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedE
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation,
         SnapshotValidation {
             now_unix_seconds: 10,

@@ -836,6 +836,7 @@ name = "router-adapter-api"
 version = "0.0.1"
 dependencies = [
  "hex",
+ "hmac",
  "router-types",
  "serde",
  "serde_json",

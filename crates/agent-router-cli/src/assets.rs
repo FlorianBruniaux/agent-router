@@ -1,7 +1,7 @@
 //! Parent-owned asset authority and explicit selected-skill review. No activation.
 use crate::{
     CliError, Outcome, catalogs,
-    command::{AssetSealKind, PhaseArgs},
+    command::{AssetSealKind, PhaseArgs, ProofArgs},
     inspect, phases, product, read_bounded,
 };
 use router_adapter_api::ValidatedHostObservation;
@@ -214,16 +214,7 @@ pub(crate) fn review(
     }
     let request: PhaseRouteRequest =
         phases::read_json(&phase.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
-    let snapshot = inspect::read_snapshot(
-        &phase.host_snapshot,
-        phase.now,
-        phase.snapshot_max_age_seconds,
-    )?;
-    let (catalog, embedded) =
-        catalogs::load(&phase.catalog, phase.now, phase.snapshot_max_age_seconds)?;
-    if embedded.is_some_and(|s| s.hash() != snapshot.hash()) {
-        return Err(CliError::Product("catalog.snapshot.mismatch"));
-    }
+    let (snapshot, catalog) = phases::load_observation_catalog(phase, &request, None)?;
     let now = inspect::current_time(phase.now)?;
     let (manifest, base) = manifest(path)?;
     let loaded = load_manifest(&manifest, &base, &request, &snapshot, &catalog, now)?;
@@ -302,22 +293,36 @@ fn seal_document<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, CliEr
 /// Compute the integrity hash of an unsealed contracts or availability document
 /// and print the sealed document. Nothing is written and no manifest, pin or
 /// approval is created: the operator still pins the printed hash independently.
-pub(crate) fn seal(
-    kind: AssetSealKind,
-    document: &Path,
-    catalog: Option<&Path>,
-    host_snapshot: Option<&Path>,
-    now: Option<u64>,
-    snapshot_max_age_seconds: u64,
-    json: bool,
-) -> Result<Outcome, CliError> {
+pub(crate) struct SealArgs<'a> {
+    pub proof: &'a ProofArgs,
+    pub kind: AssetSealKind,
+    pub document: &'a Path,
+    pub catalog: Option<&'a Path>,
+    pub host_snapshot: Option<&'a Path>,
+    pub now: Option<u64>,
+    pub snapshot_max_age_seconds: u64,
+    pub json: bool,
+}
+
+pub(crate) fn seal(args: SealArgs<'_>) -> Result<Outcome, CliError> {
+    let SealArgs {
+        proof,
+        kind,
+        document,
+        catalog,
+        host_snapshot,
+        now,
+        snapshot_max_age_seconds,
+        json,
+    } = args;
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
     let (label, sealed, hash) = match kind {
         AssetSealKind::Contracts => {
             let catalog = catalog.ok_or(CliError::Product("assets.seal.input_required"))?;
-            let (catalog, _) = catalogs::load(catalog, now, snapshot_max_age_seconds)?;
+            let (catalog, _) =
+                catalogs::load_with_proofs(catalog, now, snapshot_max_age_seconds, proof)?;
             let unsealed: router_types::AssetContractsDocument = seal_document(document)?;
             let sealed = router_asset_contracts::seal_contracts(unsealed, &catalog)
                 .map_err(|e| CliError::Product(e.code()))?;
@@ -330,7 +335,8 @@ pub(crate) fn seal(
         }
         AssetSealKind::Availability => {
             let path = host_snapshot.ok_or(CliError::Product("assets.seal.input_required"))?;
-            let snapshot = inspect::read_snapshot(path, now, snapshot_max_age_seconds)?;
+            let snapshot =
+                catalogs::read_snapshot_with_proofs(path, now, snapshot_max_age_seconds, proof)?;
             let unsealed: router_types::AssetAvailabilityDocument = seal_document(document)?;
             let sealed = router_asset_contracts::seal_availability(unsealed, &snapshot)
                 .map_err(|e| CliError::Product(e.code()))?;

@@ -1,9 +1,10 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::{collections::BTreeMap, fs, path::Path};
 
 use adapter_codex::{CodexProbe, CodexProbeConfig, MAX_MODEL_CACHE_BYTES};
-use router_adapter_api::{
-    HostProbe, ProbeError, SnapshotError, SnapshotValidation, ValidatedHostObservation,
-};
+use router_adapter_api::{HostProbe, ProbeError, SnapshotError, SnapshotValidation};
 use router_types::CapabilitySupport;
 
 const FIXTURE: &[u8] = include_bytes!("fixtures/models-cache.json");
@@ -54,7 +55,7 @@ fn probe_is_deterministic_passive_and_keeps_cache_capabilities_unknown() {
     assert!(!json.contains(directory.path().to_str().unwrap()));
     assert!(!json.contains("example_tool"));
     assert!(!json.contains("synthetic-fixture"));
-    ValidatedHostObservation::from_json(
+    fixture_proofs::from_json(
         json.as_bytes(),
         SnapshotValidation {
             now_unix_seconds: NOW + 10,
@@ -71,7 +72,7 @@ fn old_cache_stays_old_after_a_new_probe() {
     fs::write(&path, FIXTURE).unwrap();
     let fresh_probe = probe(&path).probe(NOW + 100).unwrap();
     assert!(matches!(
-        ValidatedHostObservation::from_observation(
+        fixture_proofs::from_observation(
             fresh_probe,
             SnapshotValidation {
                 now_unix_seconds: NOW + 100,

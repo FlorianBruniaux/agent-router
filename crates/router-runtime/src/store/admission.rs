@@ -112,6 +112,13 @@ impl Store {
             return Err(RuntimeError::CleanupUnknown);
         }
         let lock = if run.attempts == ticket.attempt {
+            // A live lease may become provable after Store::recover marked this
+            // run blocked. Keep shared capacity until that proof is persisted
+            // and the durable cleanup projection agrees with the release.
+            if cleanup_evidence(&db, &run.run_id)? == router_types::ProcessCleanupEvidence::Unknown
+            {
+                return Err(RuntimeError::CleanupUnknown);
+            }
             let record: Option<String> = db
                 .query_row(
                     "SELECT record FROM attempt_leases WHERE run_id=?1 AND attempt=?2",
@@ -405,6 +412,51 @@ mod tests {
         let store = Store::open(&temp.path().join("runtime")).unwrap();
         assert!(store.admission_release_proof(&t).is_err());
         assert!(store.require_cleanup_complete().is_err());
+    }
+    #[test]
+    fn admission_release_waits_for_durable_cleanup_after_lease_unlock() {
+        let (temp, store, ticket) = setup();
+        let prep = store.begin_preparation(&ticket.run_id).unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        let lease = store.attempt(&ticket.run_id, 2, true).unwrap().unwrap();
+        std::fs::write(&lease, b"router-runtime-lease-v1:group-clean\n").unwrap();
+        let held = nix::fcntl::Flock::lock(
+            std::fs::File::open(&lease).unwrap(),
+            nix::fcntl::FlockArg::LockExclusiveNonblock,
+        )
+        .unwrap();
+        store
+            .transition(&ticket.run_id, RunState::Running, "test", None)
+            .unwrap();
+        drop(store);
+
+        // The first reopen observes a held lease and durably blocks cleanup.
+        let store = Store::open(&temp.path().join("runtime")).unwrap();
+        assert_eq!(
+            store.cleanup_evidence(&ticket.run_id).unwrap(),
+            router_types::ProcessCleanupEvidence::Unknown
+        );
+        drop(held);
+        // The lease can now be proved live, but that proof has not been
+        // reconciled into the runtime journal. Capacity must stay reserved.
+        assert!(matches!(
+            store.admission_release_proof(&ticket),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert_eq!(
+            store.cleanup_evidence(&ticket.run_id).unwrap(),
+            router_types::ProcessCleanupEvidence::Unknown
+        );
+        drop(store);
+
+        let store = Store::open(&temp.path().join("runtime")).unwrap();
+        assert_eq!(
+            store.cleanup_evidence(&ticket.run_id).unwrap(),
+            router_types::ProcessCleanupEvidence::GroupTerminated
+        );
+        assert!(store.admission_release_proof(&ticket).is_ok());
     }
     #[test]
     fn model_cleanup_is_not_proof_of_finalization_git_cleanup() {

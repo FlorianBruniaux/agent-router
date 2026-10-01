@@ -60,17 +60,76 @@ pub(crate) fn load_with_policy(
     inputs: &PhaseArgs,
     pinned: Option<router_types::PhasePolicy>,
 ) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
-    let request = read_json(&inputs.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
-    let snapshot = inspect::read_snapshot(
+    load_with_policy_and_verifier(inputs, pinned, None)
+}
+pub(crate) fn load_observation_catalog(
+    inputs: &PhaseArgs,
+    request: &router_types::PhaseRouteRequest,
+    supplied: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<
+    (
+        router_adapter_api::ValidatedHostObservation,
+        router_catalog::Catalog,
+    ),
+    CliError,
+> {
+    let owned = match (&inputs.store, &inputs.execution_config, supplied) {
+        (Some(store), Some(config), None) => {
+            let observation = read_json(
+                &inputs.host_snapshot,
+                router_adapter_api::MAX_SNAPSHOT_BYTES,
+            )?;
+            let config = crate::execution::sandbox(config)?;
+            Some(crate::capability_proofs::fresh(
+                store,
+                &config,
+                &observation,
+                Some((
+                    &request.task.scope,
+                    request
+                        .task
+                        .required_capabilities
+                        .contains(&router_types::Capability::Network),
+                )),
+            )?)
+        }
+        (None, None, _) | (Some(_), Some(_), Some(_)) => None,
+        _ => {
+            return Err(CliError::Product(
+                "capability.evidence.configuration_required",
+            ));
+        }
+    };
+    let verifier = supplied.or_else(|| {
+        owned
+            .as_deref()
+            .map(|v| v as &dyn router_adapter_api::CapabilityProofVerifier)
+    });
+    let snapshot = inspect::read_snapshot_with_verifier(
         &inputs.host_snapshot,
         inputs.now,
         inputs.snapshot_max_age_seconds,
+        verifier,
     )?;
-    let (catalog, embedded) =
-        catalogs::load(&inputs.catalog, inputs.now, inputs.snapshot_max_age_seconds)?;
+    let (catalog, embedded) = catalogs::load_with_verifier(
+        &inputs.catalog,
+        inputs.now,
+        inputs.snapshot_max_age_seconds,
+        verifier,
+    )?;
     if embedded.is_some_and(|value| value.hash() != snapshot.hash()) {
         return Err(CliError::Product("catalog.snapshot.mismatch"));
     }
+    Ok((snapshot, catalog))
+}
+pub(crate) fn load_with_policy_and_verifier(
+    inputs: &PhaseArgs,
+    pinned: Option<router_types::PhasePolicy>,
+    supplied: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
+    let request: router_types::PhaseRouteRequest =
+        read_json(&inputs.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
+    let (snapshot, catalog) = load_observation_catalog(inputs, &request, supplied)?;
     let policy = match pinned {
         Some(policy) => policy,
         None => selected_policy(inputs)?,

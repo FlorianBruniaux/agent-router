@@ -25,6 +25,8 @@ pub(crate) fn current_time(override_time: Option<u64>) -> Result<u64, CliError> 
 }
 
 pub(crate) struct InspectArgs {
+    pub store: Option<PathBuf>,
+    pub execution_config: Option<PathBuf>,
     pub host: HostChoice,
     pub model_cache: Option<PathBuf>,
     pub native_stream: Option<PathBuf>,
@@ -41,7 +43,7 @@ pub(crate) fn inspect(args: InspectArgs, json: bool) -> Result<Outcome, CliError
         return Err(CliError::HostUnknown);
     }
     let now = current_time(args.now)?;
-    let observation = if matches!(args.host, HostChoice::Claude) {
+    let mut observation = if matches!(args.host, HostChoice::Claude) {
         if args.model_cache.is_some() || args.observed_version.is_some() {
             return Err(CliError::InvalidCommand);
         }
@@ -65,12 +67,68 @@ pub(crate) fn inspect(args: InspectArgs, json: bool) -> Result<Outcome, CliError
             .ok_or(CliError::HostUnknown)?;
         probe(model_cache_path, args.observed_version, now)?
     };
-    let validated = ValidatedHostObservation::from_observation(
+    let verifier = match (&args.store, &args.execution_config) {
+        (Some(store), Some(config)) => {
+            let config = crate::execution::sandbox(config)?;
+            let verifier = crate::capability_proofs::fresh(store, &config, &observation, None)?;
+            let proofs = verifier
+                .snapshot()
+                .map_err(|e| CliError::Product(e.code()))?;
+            let deciding = proofs.deciding_proofs(&observation.host, now);
+            let chosen_binding = deciding
+                .iter()
+                .max_by_key(|(proof, _)| proof.record.sequence)
+                .map(|(proof, _)| proof.record.binding.clone());
+            for (proof, _) in deciding {
+                if chosen_binding.as_ref() != Some(&proof.record.binding) {
+                    continue;
+                }
+                let record = &proof.record;
+                // Later attempts under distinct bindings are not merged into one
+                // capability claim; all pins are checked again on actual routing.
+                if observation.host.capabilities.contains(&record.capability) {
+                    continue;
+                }
+                observation.host.capabilities.insert(record.capability);
+                observation.capabilities.insert(
+                    record.capability,
+                    router_adapter_api::CapabilityEvidence {
+                        support: router_types::CapabilitySupport::Supported,
+                        source_ids: std::collections::BTreeSet::from([record.proof_id.clone()]),
+                    },
+                );
+                observation
+                    .evidence
+                    .push(router_adapter_api::EvidenceSource {
+                        id: record.proof_id.clone(),
+                        kind: router_adapter_api::EvidenceKind::HostRuntime,
+                        observed_version: Some(record.binding.observed_version.clone()),
+                        observed_at_unix_seconds: record.ended_at_unix_seconds,
+                        content_sha256: proof.digest().map_err(|e| CliError::Product(e.code()))?,
+                    });
+            }
+            observation.observed_at_unix_seconds = now;
+            observation = observation
+                .seal()
+                .map_err(|e| CliError::Snapshot(e.code()))?;
+            Some(verifier)
+        }
+        (None, None) => None,
+        _ => {
+            return Err(CliError::Product(
+                "capability.evidence.configuration_required",
+            ));
+        }
+    };
+    let validated = ValidatedHostObservation::from_observation_with_verifier(
         observation,
         SnapshotValidation {
             now_unix_seconds: now,
             max_age_seconds: router_adapter_api::DEFAULT_MAX_AGE_SECONDS,
         },
+        verifier
+            .as_deref()
+            .map(|v| v as &dyn router_adapter_api::CapabilityProofVerifier),
     )
     .map_err(|error| CliError::Snapshot(error.code()))?;
     let output =
@@ -106,15 +164,32 @@ pub(crate) fn read_snapshot(
     now: Option<u64>,
     max_age_seconds: u64,
 ) -> Result<ValidatedHostObservation, CliError> {
+    read_snapshot_with_verifier(path, now, max_age_seconds, None)
+}
+pub(crate) fn read_snapshot_with_verifier(
+    path: &Path,
+    now: Option<u64>,
+    max_age_seconds: u64,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+) -> Result<ValidatedHostObservation, CliError> {
     let bytes = read_bounded(
         path,
         MAX_SNAPSHOT_BYTES,
         CliError::SnapshotRead,
         CliError::SnapshotTooLarge,
     )?;
-    parse_snapshot(&bytes, now, max_age_seconds)
+    ValidatedHostObservation::from_json_with_verifier(
+        &bytes,
+        SnapshotValidation {
+            now_unix_seconds: current_time(now)?,
+            max_age_seconds,
+        },
+        verifier,
+    )
+    .map_err(|error| CliError::Snapshot(error.code()))
 }
 
+#[cfg(all(feature = "local-api", unix))]
 pub(crate) fn parse_snapshot(
     bytes: &[u8],
     now: Option<u64>,

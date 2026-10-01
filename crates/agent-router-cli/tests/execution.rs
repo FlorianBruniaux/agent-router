@@ -25,6 +25,8 @@ fn output(assert: assert_cmd::assert::Assert) -> Value {
 // not provider authentication, model limits or live model availability.
 #[path = "../../router-policy/tests/support/asset_fixture.rs"]
 mod asset_fixture;
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 
 fn asset_inputs(
     request: &PhaseRouteRequest,
@@ -40,7 +42,7 @@ fn asset_inputs(
         evidence.observed_at_unix_seconds = 100;
     }
     let historical = ValidatedHostObservation::from_observation(
-        historical.seal().unwrap(),
+        unknown_observation::from_example(historical),
         SnapshotValidation {
             now_unix_seconds: 100,
             max_age_seconds: 300,
@@ -193,7 +195,7 @@ impl Fixture {
         for e in &mut snapshot.evidence {
             e.observed_at_unix_seconds = now;
         }
-        let snapshot = snapshot.seal().unwrap();
+        let snapshot = unknown_observation::from_example(snapshot);
         let validated = ValidatedHostObservation::from_observation(
             snapshot.clone(),
             SnapshotValidation {

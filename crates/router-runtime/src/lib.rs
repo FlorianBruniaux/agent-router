@@ -4,6 +4,11 @@ mod admission;
 mod artifact_storage;
 mod artifacts;
 mod bubblewrap;
+mod capability_proofs;
+pub use capability_proofs::{
+    CAPABILITY_PROOF_DATABASE, CapabilityProofStore, CapabilityStoreError,
+    StoredCapabilityProofVerifier,
+};
 mod diagnostics;
 mod error;
 mod escalation;
@@ -81,6 +86,7 @@ impl Default for RuntimeLimits {
     }
 }
 pub struct Runtime {
+    capability_verifier: Option<Arc<dyn router_adapter_api::CapabilityProofVerifier>>,
     store: Store,
     admission: Option<admission::SharedAdmission>,
     output_store: outputs::OutputStorage,
@@ -128,6 +134,16 @@ impl ApprovedRun {
 }
 
 impl Runtime {
+    /// Supply authenticated store evidence explicitly. Runtime rechecks it
+    /// at each snapshot reconstruction, including immediately before dispatch.
+    pub fn with_capability_proof_verifier(
+        mut self,
+        verifier: Arc<dyn router_adapter_api::CapabilityProofVerifier>,
+    ) -> Self {
+        self.capability_verifier = Some(verifier);
+        self
+    }
+
     pub fn open(root: &Path, limits: RuntimeLimits) -> Result<Self> {
         Self::open_configured(root, limits, None)
     }
@@ -168,6 +184,7 @@ impl Runtime {
         }
         let output_store = outputs::OutputStorage::open(&store.root)?;
         Ok(Self {
+            capability_verifier: None,
             store,
             admission,
             output_store,
@@ -193,6 +210,24 @@ impl Runtime {
     }
     pub fn cleanup_evidence(&self, id: &str) -> Result<ProcessCleanupEvidence> {
         self.store.cleanup_evidence(id)
+    }
+    pub fn capability_evidence_clock(&self, id: &str) -> Result<Option<u64>> {
+        Ok(self
+            .capability_evidence_checkpoint(id)?
+            .map(|(clock, _)| clock))
+    }
+    pub fn capability_evidence_checkpoint(&self, id: &str) -> Result<Option<(u64, u64)>> {
+        for event in self.store.events()? {
+            if event.run_id == id && event.kind == "capability.evidence" {
+                let (clock, sequence, _): (
+                    u64,
+                    u64,
+                    BTreeMap<Capability, CapabilityReceiptEvidence>,
+                ) = serde_json::from_str(&event.detail)?;
+                return Ok(Some((clock, sequence)));
+            }
+        }
+        Ok(None)
     }
     pub fn events(&self) -> Result<Vec<RuntimeEvent>> {
         self.store.events()
@@ -615,6 +650,32 @@ impl Runtime {
             decision.generated_binding(),
         )?;
         if run.state == RunState::Planned {
+            if !snapshot.capability_proofs().is_empty() {
+                let proofs: BTreeMap<_, _> = snapshot
+                    .capability_proofs()
+                    .iter()
+                    .filter(|proof| request.required_capabilities.contains(&proof.capability))
+                    .map(|proof| {
+                        (
+                            proof.capability,
+                            CapabilityReceiptEvidence {
+                                proof_sha256: proof.proof_sha256.clone(),
+                                tier: "proven".into(),
+                                observed_at_unix_seconds: proof.observed_at_unix_seconds,
+                                expires_at_unix_seconds: proof.expires_at_unix_seconds,
+                            },
+                        )
+                    })
+                    .collect();
+                let sequence = snapshot
+                    .capability_proofs()
+                    .iter()
+                    .map(|proof| proof.sequence)
+                    .max()
+                    .unwrap_or(0);
+                let detail = serde_json::to_string(&(now()?, sequence, proofs))?;
+                self.store.event(run_id, "capability.evidence", &detail)?;
+            }
             run = self
                 .store
                 .transition(run_id, RunState::AwaitingApproval, "reviewed", None)?;
@@ -879,12 +940,13 @@ impl Runtime {
             .transition(id, RunState::Cancelled, "explicit_cancel", None)
     }
     fn snapshot(&self, context: &ValidatedPhaseContext) -> Result<ValidatedHostObservation> {
-        ValidatedHostObservation::from_observation(
+        ValidatedHostObservation::from_observation_with_verifier(
             context.snapshot().clone(),
             SnapshotValidation {
                 now_unix_seconds: now()?,
                 max_age_seconds: self.limits.snapshot_max_age_seconds,
             },
+            self.capability_verifier.as_deref(),
         )
         .map_err(|_| RuntimeError::Route)
     }
@@ -1168,6 +1230,7 @@ impl Runtime {
                 return Err(error);
             }
         };
+        let validate_capabilities = || self.snapshot(&pending.context).map(|_| ());
         let process = process::capture_guarded(
             command,
             run.stdin.as_bytes().to_vec(),
@@ -1177,6 +1240,7 @@ impl Runtime {
             &cancel,
             dispatch,
             budget_dispatch,
+            Some(&validate_capabilities),
         );
         tokio::pin!(process);
         let captured = loop {
@@ -1515,7 +1579,15 @@ impl Runtime {
                 now()?,
             )
             .map_err(|_| RuntimeError::Route)?;
-        if adapter.requires_native_version() {
+        let proof_versions: BTreeSet<_> = snapshot
+            .capability_proofs()
+            .iter()
+            .filter(|proof| request.required_capabilities.contains(&proof.capability))
+            .map(|proof| proof.binding.observed_version.as_str())
+            .collect();
+        if adapter.requires_native_version()
+            || (adapter.supports_native_version_pin() && !proof_versions.is_empty())
+        {
             let probe = native_version::probe_native_version_recorded(
                 supervisor,
                 &initial,
@@ -1524,7 +1596,12 @@ impl Runtime {
                 preparation,
             )
             .await?;
-            adapter.validate_native_version(probe.stdout())?;
+            if adapter.requires_native_version() {
+                adapter.validate_native_version(probe.stdout())?;
+            }
+            for version in proof_versions {
+                adapter.validate_native_version_pin(probe.stdout(), version)?;
+            }
             self.store
                 .event(id, "native.version_validated", &probe.output_sha256)?;
         }

@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod proofs;
+pub use proofs::*;
+
 mod execution;
 pub use execution::*;
 mod registry;
@@ -76,10 +79,13 @@ pub struct SnapshotValidation {
 #[derive(Clone, Debug)]
 pub struct ValidatedHostObservation {
     observation: HostObservation,
+    capability_proofs: Vec<VerifiedCapabilityProof>,
 }
 
 #[derive(Debug, Error)]
 pub enum SnapshotError {
+    #[error(transparent)]
+    CapabilityProof(#[from] CapabilityProofError),
     #[error("snapshot.too_large")]
     TooLarge,
     #[error("snapshot.json.invalid")]
@@ -101,6 +107,7 @@ pub enum SnapshotError {
 impl SnapshotError {
     pub fn code(&self) -> &'static str {
         match self {
+            Self::CapabilityProof(error) => error.code(),
             Self::TooLarge => "snapshot.too_large",
             Self::InvalidJson => "snapshot.json.invalid",
             Self::UnsupportedSchema => "snapshot.schema.unsupported",
@@ -272,6 +279,14 @@ impl HostObservation {
 
 impl ValidatedHostObservation {
     pub fn from_json(bytes: &[u8], validation: SnapshotValidation) -> Result<Self, SnapshotError> {
+        Self::from_json_with_verifier(bytes, validation, None)
+    }
+
+    pub fn from_json_with_verifier(
+        bytes: &[u8],
+        validation: SnapshotValidation,
+        verifier: Option<&dyn CapabilityProofVerifier>,
+    ) -> Result<Self, SnapshotError> {
         if bytes.len() > MAX_SNAPSHOT_BYTES {
             return Err(SnapshotError::TooLarge);
         }
@@ -290,12 +305,20 @@ impl ValidatedHostObservation {
         }
         reject_duplicate_sets(&value)?;
         let observation = serde_json::from_value(value).map_err(|_| SnapshotError::InvalidJson)?;
-        Self::from_observation(observation, validation)
+        Self::from_observation_with_verifier(observation, validation, verifier)
     }
 
     pub fn from_observation(
+        observation: HostObservation,
+        validation: SnapshotValidation,
+    ) -> Result<Self, SnapshotError> {
+        Self::from_observation_with_verifier(observation, validation, None)
+    }
+
+    pub fn from_observation_with_verifier(
         mut observation: HostObservation,
         validation: SnapshotValidation,
+        verifier: Option<&dyn CapabilityProofVerifier>,
     ) -> Result<Self, SnapshotError> {
         observation.normalize();
         observation.validate_structure()?;
@@ -312,9 +335,33 @@ impl ValidatedHostObservation {
         {
             return Err(SnapshotError::Stale);
         }
+        let mut capability_proofs = Vec::new();
+        let mut authenticated_sources = BTreeSet::new();
+        for (capability, evidence) in &observation.capabilities {
+            if evidence.support == CapabilitySupport::Unknown {
+                continue;
+            }
+            let verifier = verifier.ok_or(CapabilityProofError::Unauthenticated)?;
+            // Failed canaries produce UNKNOWN, never an unsupported assertion.
+            if evidence.support != CapabilitySupport::Supported {
+                return Err(CapabilityProofError::Unauthenticated.into());
+            }
+            for source in observation.evidence.iter().filter(|source| {
+                source.kind == EvidenceKind::HostRuntime && evidence.source_ids.contains(&source.id)
+            }) {
+                capability_proofs.push(verifier.verify(
+                    source,
+                    *capability,
+                    &observation.host,
+                    validation.now_unix_seconds,
+                )?);
+                authenticated_sources.insert(&source.id);
+            }
+        }
         for source in &observation.evidence {
-            if validation.now_unix_seconds - source.observed_at_unix_seconds
-                > validation.max_age_seconds
+            if !authenticated_sources.contains(&source.id)
+                && validation.now_unix_seconds - source.observed_at_unix_seconds
+                    > validation.max_age_seconds
             {
                 return Err(SnapshotError::StaleSource);
             }
@@ -326,7 +373,54 @@ impl ValidatedHostObservation {
         {
             return Err(SnapshotError::TooLarge);
         }
-        Ok(Self { observation })
+        Ok(Self {
+            observation,
+            capability_proofs,
+        })
+    }
+
+    /// Recheck freshness of already authenticated in-process evidence. This
+    /// retains its original authority; it does not re-read store revocations.
+    /// Executable consumers must additionally use their live store verifier.
+    pub fn revalidate_at(&self, validation: SnapshotValidation) -> Result<Self, SnapshotError> {
+        struct Retained<'a>(&'a [VerifiedCapabilityProof]);
+        impl CapabilityProofVerifier for Retained<'_> {
+            fn verify(
+                &self,
+                source: &EvidenceSource,
+                capability: Capability,
+                host: &HostSnapshot,
+                now: u64,
+            ) -> Result<VerifiedCapabilityProof, CapabilityProofError> {
+                let proof = self
+                    .0
+                    .iter()
+                    .find(|proof| {
+                        proof.capability == capability
+                            && proof.proof_id == source.id
+                            && proof.proof_sha256 == source.content_sha256
+                            && proof.observed_at_unix_seconds == source.observed_at_unix_seconds
+                            && Some(proof.binding.observed_version.as_str())
+                                == source.observed_version.as_deref()
+                            && proof.binding.host_snapshot_id == host.id
+                            && proof.binding.harness_id == host.harness.as_str()
+                    })
+                    .ok_or(CapabilityProofError::Unauthenticated)?;
+                if now > proof.expires_at_unix_seconds {
+                    return Err(CapabilityProofError::Expired);
+                }
+                Ok(proof.clone())
+            }
+        }
+        Self::from_observation_with_verifier(
+            self.observation.clone(),
+            validation,
+            Some(&Retained(&self.capability_proofs)),
+        )
+    }
+
+    pub fn capability_proofs(&self) -> &[VerifiedCapabilityProof] {
+        &self.capability_proofs
     }
 
     pub fn host(&self) -> &HostSnapshot {

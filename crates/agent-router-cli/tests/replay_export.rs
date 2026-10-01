@@ -6,8 +6,12 @@
 mod native_fixture;
 use native_fixture::*;
 use router_adapter_api::{SnapshotValidation, content_digest};
-use router_eval::{ObservedOutcome, ReplayRecord, replay_deterministic};
+use router_eval::{
+    CapabilityEvidenceVerification, ObservedOutcome, ReplayRecord, replay_deterministic,
+    replay_deterministic_with_verifier,
+};
 use router_feedback::{FeedbackStore, parse_feedback};
+use router_runtime::{CapabilityProofStore, StoredCapabilityProofVerifier};
 use router_types::{
     FeedbackFact, FeedbackFactKind, FeedbackInput, FeedbackOrigin, HostUsage, HumanVerdict,
     IntegrationOutcome, PerceivedCost, UsageField, VerificationOutcome,
@@ -302,6 +306,19 @@ fn validation(record: &ReplayRecord) -> SnapshotValidation {
     }
 }
 
+fn proof_verifier(fixture: &Fixture) -> StoredCapabilityProofVerifier {
+    let secret: [u8; 32] = fs::read(fixture.store.join("approval.key"))
+        .unwrap()
+        .try_into()
+        .unwrap();
+    let bindings = CapabilityProofStore::open_existing(&fixture.store)
+        .unwrap()
+        .verifier(&secret, vec![])
+        .unwrap()
+        .authenticated_bindings();
+    StoredCapabilityProofVerifier::open_existing(&fixture.store, secret, bindings).unwrap()
+}
+
 #[test]
 fn a_recorded_usage_replays_deterministically_without_manual_edits() {
     let case = Case::new();
@@ -324,8 +341,28 @@ fn a_recorded_usage_replays_deterministically_without_manual_edits() {
         ),
         (100, 40, 5)
     );
-    let first = replay_deterministic(&record, policy, validation(&record)).unwrap();
-    let second = replay_deterministic(&record, policy, validation(&record)).unwrap();
+    let unverified = replay_deterministic(&record, policy, validation(&record)).unwrap();
+    assert_eq!(
+        unverified.capability_evidence(),
+        CapabilityEvidenceVerification::Unverified
+    );
+    assert!(
+        unverified
+            .violations()
+            .iter()
+            .any(|violation| violation.code == "capability.evidence.unverified")
+    );
+    let verifier = proof_verifier(&case.f);
+    let first =
+        replay_deterministic_with_verifier(&record, policy, validation(&record), Some(&verifier))
+            .unwrap();
+    let second =
+        replay_deterministic_with_verifier(&record, policy, validation(&record), Some(&verifier))
+            .unwrap();
+    assert_eq!(
+        first.capability_evidence(),
+        CapabilityEvidenceVerification::Verified
+    );
     assert_eq!(first.trace_hash(), second.trace_hash());
     assert!(first.violations().is_empty());
     // 60 uncached at 1000, 40 cached at 100, 5 output at 5000 per million, rounded up.
@@ -348,7 +385,16 @@ fn an_undeclared_count_or_an_absent_usage_stays_unknown_never_zero() {
         assert!(record.input().observations[policy].usage.is_empty());
         assert_eq!(report["observations"]["usage"], "unknown");
         // Nothing to price the selected model with: no zero is invented.
-        assert!(replay_deterministic(&record, policy, validation(&record)).is_err());
+        let verifier = proof_verifier(&case.f);
+        assert!(
+            replay_deterministic_with_verifier(
+                &record,
+                policy,
+                validation(&record),
+                Some(&verifier),
+            )
+            .is_err()
+        );
     }
 }
 

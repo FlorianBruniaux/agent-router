@@ -25,9 +25,9 @@ The v1 examples below remain supported. New commands use separate contracts:
 
 | Surface | Contract and validation |
 | --- | --- |
-| Host observation | v1, full content digest, source provenance, observation time and tri-state capabilities |
+| Host observation | v1, full content digest, source provenance, observation time and tri-state capabilities; non-unknown claims require authenticated proofs |
 | Generated catalog | v2 envelope, source snapshot/prior/registry hashes, validated aliases and deprecation |
-| Phase route | v2 request and receipt, full context/catalog/policy/pool/registry hashes; missing permission fails closed |
+| Phase route | v2 request; receipt v5 when authenticated capability proofs are consumed, otherwise the existing receipt version; full context/catalog/policy/pool/registry hashes and fail-closed permission checks |
 | Retrieval | v1 unbound metadata or v2 envelope bound to exact catalog content; v2 operations require the matching digest |
 | Workflow | v1 normalized task and hashed acyclic plan, scope and downstream independent verification checks |
 | Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
@@ -58,6 +58,82 @@ quarantine, rollback or activation is detected before fresh execution. Explicit
 policy files override store selection when a command accepts both; an execution
 definition naming both is refused with `policy.composition.denied`. A change of
 authority source also changes the CLI approval digest.
+
+## Authenticated capability evidence
+
+A host observation's digest checks its bytes; `kind: host_runtime` alone is not
+execution evidence. Every non-`unknown` capability requires an explicit
+`CapabilityProofVerifier` at the shared `ValidatedHostObservation` boundary.
+Without one, a handwritten `supported` or `unsupported` claim fails with
+`capability.evidence.unauthenticated`. Model discovery and capability validation
+remain separate. A model cache or native stream never proves tools or writes.
+
+The v1 authenticated proof contract lives in `router-adapter-api`. It contains a
+random store identity, increasing sequence, proof identity, capability, tier,
+attempt outcome, model identity, nonce/effect digests and start/end/lifetime
+fields. Its binding names the exact host snapshot and harness, binary digest,
+observed CLI version, adapter/template, sandbox helper/wrapper/profile, OS,
+relative write roots and network setting. Network evidence additionally names
+`loopback_fetch`; it does not prove external egress, DNS or TLS. An `attested`
+record cannot enter the capability map or set `supported` in this batch.
+
+`capability-proofs.sqlite3` is a separate schema-1 database inside the private
+runtime root. Its MAC key is derived from `approval.key` with HKDF-SHA256, using
+the persistent random store identity as salt and
+`agent-router/capability-proof/v1` as the derivation context. The approval key is
+never used directly as the proof MAC key. The store accepts at most 4096 records
+of at most 32768 bytes each; a snapshot still accepts at most 64 evidence sources.
+Records append in sequence order. For one binding, capability and tier, the
+latest completed attempt decides; a newer failure revokes an earlier success.
+Future timestamps, expired records, changed pins and cross-store reuse fail
+closed. The same-user attacker remains outside this protection: that identity
+can read the key and alter its own store.
+
+`inspect --store ROOT --execution-config FILE` reads existing proofs and hashes
+the configured executables and compiled templates/profile. It does not execute
+a host or probe a sandbox. It folds only unexpired `proven` successes from one
+coherent binding. Without both arguments, inspection grants no capabilities.
+`route-phase` accepts the same pair and checks the actual requested scope and
+network setting. `prepare` manifests use `capability_store` and
+`execution_config`; `run` uses its existing `--store` and `--sandbox` arguments.
+`catalog` subcommands, `assets seal`, `index`, `search` and `refresh` accept
+that explicit pair for authenticated snapshot or generated-catalog inputs.
+`assets review` also checks the phase's actual scope. Legacy `route` has no
+execution scope and continues to refuse unauthenticated claims, as does the
+local API. Catalog and metadata operations verify the scope already bound to
+the proof; they grant no execution authority and emit no key or execution
+configuration. Historical replay does not validate the currently installed
+executables and never authorizes a new run.
+
+Each `generate-plan` node can name `capability_store` and `execution_config`;
+the pair is required together and the configuration bytes enter the captured
+source digest. Historical reconstruction authenticates the exact referenced
+runtime proofs and their sequence horizon, then verifies the original proposal
+and source hashes. Additional cache provenance is preserved but never becomes
+runtime authority. The coordinator keeps proofs in `--store/runtime`, validates
+each wave step against its own configuration, and uses run checkpoints only
+for historical reconstruction. All executing steps retain the live dispatch gate.
+
+These proof readers never create a proof database or an approval key. No production
+canary issuer is supplied by this batch, so real host capabilities remain UNKNOWN.
+
+A selected phase consuming proofs emits receipt schema 5. Its
+`capability_evidence` map records each required capability's proof digest, tier,
+observation time and expiry. Receipts with no consumed proofs retain their
+existing version and omit the empty map. The runtime records those compact
+values together with the decision clock and the highest sequence among all
+validated snapshot proofs, including capabilities unused by the phase.
+Historical reopen uses that recorded clock and sequence horizon; a later failed
+attempt in the same second cannot rewrite the old decision. A new run uses the
+live log and current clock. Immediately before spawning the main process, the
+runtime checks the live proof again, after the native version probe and other
+asynchronous preparation.
+
+`replay --store ROOT` and `eval compare --store ROOT` can authenticate store
+records. Without the store, replay reports `capability_evidence: unverified`,
+downgrades capability claims to UNKNOWN for evaluation and records a hard
+violation. This result is never execution authority. Historical proof validity
+also never authorizes a new dispatch.
 
 ## Feedback late facts
 

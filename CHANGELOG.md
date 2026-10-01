@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Breaking
 
+- Non-unknown host capability claims now require an authenticated proof verifier. A handwritten `host_runtime` source no longer passes shared snapshot validation. Proof-consuming phase receipts use schema 5 and include compact evidence metadata; exported replay without its proof store reports `unverified` and grants no execution authority.
+
 - Native Codex and Claude execute a verified private copy of the approved entry file per attempt, outside writable host state. Approval format v7 requires a new preview; other adapters, interpreters, modules and sandbox/helper binaries retain their existing boundaries.
 
 - Native Codex configuration rejects shebang launchers such as `codex.js` with `runtime.program.script_unsupported` (exit 2), on macOS and Linux. Configure the canonical native binary path; no Node lookup or PATH expansion is performed.
@@ -32,6 +34,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- ADR 0021 batch 6 adds bounded, append-only MAC capability records in the private runtime store. `inspect`, `route-phase`, catalog/asset and retrieval commands accept `--store` with `--execution-config`; generated-plan nodes take the equivalent manifest pair and coordinator waves validate each step against their private runtime proof store; readers never create the proof database or launch a host. Runtime dispatch rechecks live proof validity after version probing, while historical reopen uses its recorded decision clock and sequence horizon. Synthetic fixtures validate the plumbing; this adds no production canary issuer and establishes no real host capability.
 
 - `assets seal --kind contracts|availability --document FILE (--catalog FILE | --host-snapshot FILE) --json` prints a sealed contracts or availability document and its `content_hash`. It writes nothing, edits no manifest and approves nothing: the operator pins the hash independently in the asset-authority manifest. New codes: `assets.seal.input_required`, `assets.seal.document_invalid`.
 - `agent-router feedback summary`: one global total over every group of `feedback report` (same snapshot and classification), with the accepted rate and its Jeffreys interval, computed cost and cost per accepted change (null with a reason while any run is unpriced), time to acceptance p50 and p90, UNKNOWN counts and `attribution: not_established`. Human view by default, `--json` for the versioned result.

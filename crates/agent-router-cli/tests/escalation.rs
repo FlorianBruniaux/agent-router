@@ -22,6 +22,19 @@ use std::{
 fn read<T: serde::de::DeserializeOwned>(path: &Path) -> T {
     serde_json::from_slice(&fs::read(path).unwrap()).unwrap()
 }
+fn proof_store_fingerprints(path: &Path) -> BTreeMap<String, String> {
+    fs::read_dir(path)
+        .unwrap()
+        .map(|entry| {
+            let entry = entry.unwrap();
+            assert!(entry.file_type().unwrap().is_file());
+            (
+                entry.file_name().to_string_lossy().into_owned(),
+                router_adapter_api::content_digest(&fs::read(entry.path()).unwrap()),
+            )
+        })
+        .collect()
+}
 #[track_caller]
 fn rejected(cmd: &mut Command, expected: &str) {
     let output = cmd.output().unwrap();
@@ -69,7 +82,7 @@ impl Fixture {
         second.model = ModelId::parse("fixture-second").unwrap();
         route.candidates.push(second);
         let snapshot = ValidatedHostObservation::from_observation(
-            read(&root.join("snapshot.json")),
+            native_fixture::unknown_observation::from_example(read(&root.join("snapshot.json"))),
             SnapshotValidation {
                 now_unix_seconds: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -79,6 +92,7 @@ impl Fixture {
             },
         )
         .unwrap();
+        write(&root.join("snapshot.json"), snapshot.observation());
         let catalog = Catalog::from_json(&fs::read(root.join("catalog.json")).unwrap()).unwrap();
         let original: ExecutionRequest = read(&root.join("request.json"));
         let assets = native_fixture::asset_inputs(
@@ -368,9 +382,12 @@ impl Fixture {
                 cmd.arg("--retry");
             }
             let preview = checked(&mut cmd, 0);
+            let mut approved = self.run(&self.source());
+            if attempt == 2 {
+                approved.arg("--retry");
+            }
             let done = checked(
-                self.run(&self.source())
-                    .args(["--approve", preview["approval_digest"].as_str().unwrap()]),
+                approved.args(["--approve", preview["approval_digest"].as_str().unwrap()]),
                 3,
             );
             assert_eq!(done["completion"]["run"]["failure"], "crash");
@@ -489,20 +506,23 @@ fn accounting_previews_are_single_use_and_bound_to_the_current_ledger() {
 #[test]
 fn composition_and_recursive_sources_are_rejected_before_opening_the_store() {
     let fixture = Fixture::new();
+    let store_before = proof_store_fingerprints(&fixture.files.store);
     let original: Value = read(&fixture.source());
     for field in ["generated_plan", "escalation_decision"] {
         let mut source = original.clone();
         source[field] = json!("not-a-readable-authority.json");
         write(&fixture.source(), &source);
         rejected(&mut fixture.bound(1), "escalation.source.origin_denied");
-        assert!(!fixture.files.store.exists());
+        assert_eq!(proof_store_fingerprints(&fixture.files.store), store_before);
+        assert!(!fixture.files.store.join("runtime.sqlite3").exists());
     }
     let mut source = original;
     source["escalation_decision"] = json!("unused");
     source["backend_decision"] = json!("unused");
     write(&fixture.source(), &source);
     rejected(&mut fixture.bound(1), "escalation.composition.denied");
-    assert!(!fixture.files.store.exists());
+    assert_eq!(proof_store_fingerprints(&fixture.files.store), store_before);
+    assert!(!fixture.files.store.join("runtime.sqlite3").exists());
 }
 #[test]
 fn third_attempt_ceiling_is_required_and_bounded() {
@@ -696,6 +716,7 @@ fn native_cli_escalation_rejects_a_proposal_after_source_history_changes() {
 #[test]
 fn coordinator_bundle_source_is_a_distinct_exclusive_input() {
     let f = Fixture::new();
+    let store_before = proof_store_fingerprints(&f.files.store);
     let missing = f.files.root.join("missing-coordinator-bundle.json");
     let mut input = command();
     input
@@ -713,7 +734,8 @@ fn coordinator_bundle_source_is_a_distinct_exclusive_input() {
         "source bundle must be parsed, then rejected for missing source: {}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(!f.files.store.exists());
+    assert_eq!(proof_store_fingerprints(&f.files.store), store_before);
+    assert!(!f.files.store.join("runtime.sqlite3").exists());
     input.arg("--source-definition").arg(f.source());
     rejected(&mut input, "cli.invalid");
 }
@@ -732,7 +754,7 @@ impl CoordinatedFixture {
         let mut route = base.context.request().clone();
         route.task.budget.max_tokens = max_tokens;
         let snapshot = ValidatedHostObservation::from_observation(
-            read(&root.join("snapshot.json")),
+            native_fixture::unknown_observation::from_example(read(&root.join("snapshot.json"))),
             SnapshotValidation {
                 now_unix_seconds: base.context.snapshot().observed_at_unix_seconds,
                 max_age_seconds: 300,
@@ -867,7 +889,7 @@ impl CoordinatedFixture {
         route.phase = StageKind::Plan;
         write(&root.join("plan-context.json"), &route);
         let snapshot = ValidatedHostObservation::from_observation(
-            read(&root.join("snapshot.json")),
+            native_fixture::unknown_observation::from_example(read(&root.join("snapshot.json"))),
             SnapshotValidation {
                 now_unix_seconds: base.context.snapshot().observed_at_unix_seconds,
                 max_age_seconds: 300,
@@ -1104,7 +1126,12 @@ fn native_coordinator_escalation_preserves_handoff_approval_and_restart() {
     forged["inputs"][0]["artifact_id"] = json!("different-artifact-same-content");
     write(&root.join("failed1/artifacts.json"), &forged);
     let refused = f.prepare_target().output().unwrap();
-    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(
+        refused.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
     assert!(!root.join("co-target").exists());
     write(&root.join("failed1/artifacts.json"), &original_grants);
     // The saved final request must never receive its footer a second time.
@@ -1113,7 +1140,16 @@ fn native_coordinator_escalation_preserves_handoff_approval_and_restart() {
     changed_request.prompt.push_str(&original_request.prompt);
     write(&root.join("failed1/request.json"), &changed_request);
     let refused = f.prepare_target().output().unwrap();
-    assert_eq!(refused.status.code(), Some(2));
+    assert_eq!(
+        refused.status.code(),
+        Some(7),
+        "{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
+    assert_eq!(
+        refused.stderr,
+        b"{\"schema_version\":1,\"error\":\"runtime.integrity\"}\n"
+    );
     assert!(!root.join("co-target").exists());
     write(&root.join("failed1/request.json"), &original_request);
     let mut wrong_generation = manifest.clone();

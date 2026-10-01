@@ -1,7 +1,10 @@
 //! All reviewers, labels, keys and model observations here are synthetic.
 //! Positive tests exercise proof mechanics, never authorize a production backend.
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use ed25519_dalek::{Signer, SigningKey};
-use router_adapter_api::{HostObservation, SnapshotValidation, ValidatedHostObservation};
+use router_adapter_api::{HostObservation, SnapshotValidation};
 use router_backend_policy::*;
 use router_catalog::Catalog;
 use router_decision::BoundedDecisionContext;
@@ -121,7 +124,7 @@ impl Fixture {
             "../../../fixtures/examples/phase-snapshot.json"
         ))
         .unwrap();
-        let validated = ValidatedHostObservation::from_observation(
+        let validated = fixture_proofs::from_observation(
             snapshot.clone(),
             SnapshotValidation {
                 now_unix_seconds: 110,
@@ -291,13 +294,14 @@ impl Fixture {
                 registered_at_unix_seconds: 99,
             },
         );
-        let evaluation = evaluate_backend(
+        let evaluation = evaluate_backend_with_verifier(
             &artifact,
             &criteria,
             &registration,
             &cases,
             &authorities,
             120,
+            Some(&fixture_proofs::FixtureVerifier),
         )
         .unwrap();
         let trial = |stage, start, end, hash, cases| {
@@ -337,11 +341,12 @@ impl Fixture {
         }
     }
     fn promotion(&self) -> ValidatedBackendPromotion {
-        evaluate_promotion(
+        evaluate_promotion_with_verifier(
             &self.artifact,
             &self.evidence,
             &self.keys.authorities(),
             120,
+            Some(&fixture_proofs::FixtureVerifier),
         )
         .unwrap()
     }
@@ -738,11 +743,12 @@ fn fabricated_reports_unsigned_labels_and_late_or_leaked_criteria_do_not_promote
                 .sign(AuthorityRole::GateOwner, evidence.canary.statement);
         }
         assert!(
-            evaluate_promotion(
+            evaluate_promotion_with_verifier(
                 &fixture.artifact,
                 &evidence,
                 &fixture.keys.authorities(),
-                120
+                120,
+                Some(&fixture_proofs::FixtureVerifier)
             )
             .is_err(),
             "mutation {mutation}"
@@ -805,13 +811,14 @@ fn valid_resignatures_do_not_bypass_heldout_labels_diversity_or_unknown_outcomes
         fixture.resign_evaluation(&mut evidence);
         assert!(
             matches!(
-                evaluate_backend(
+                evaluate_backend_with_verifier(
                     &fixture.artifact,
                     &evidence.criteria,
                     &evidence.criteria_registration,
                     &evidence.cases,
                     &fixture.keys.authorities(),
-                    120
+                    120,
+                    Some(&fixture_proofs::FixtureVerifier)
                 ),
                 Err(PromotionError::Gate)
             ),
@@ -895,7 +902,7 @@ fn baseline_policy_is_pinned_before_inactive_active_and_rollback_fallback() {
         ..PhasePolicy::default()
     };
     let other_router = PhaseRouter::new(policy).unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         input.snapshot.clone(),
         SnapshotValidation {
             now_unix_seconds: 122,
@@ -976,22 +983,24 @@ fn aggregate_gain_cannot_hide_a_complete_heldout_family_regression() {
     // Aggregate accuracy stays 50%, cost improves 50%, but family 1 loses
     // its only correct selection. Every document has a valid external signature.
     assert!(matches!(
-        evaluate_backend(
+        evaluate_backend_with_verifier(
             &fixture.artifact,
             &evidence.criteria,
             &evidence.criteria_registration,
             &evidence.cases,
             &fixture.keys.authorities(),
-            120
+            120,
+            Some(&fixture_proofs::FixtureVerifier)
         ),
         Err(PromotionError::Gate)
     ));
     assert!(matches!(
-        evaluate_promotion(
+        evaluate_promotion_with_verifier(
             &fixture.artifact,
             &evidence,
             &fixture.keys.authorities(),
-            120
+            120,
+            Some(&fixture_proofs::FixtureVerifier)
         ),
         Err(PromotionError::Gate)
     ));
@@ -1015,13 +1024,14 @@ fn stable_family_needs_no_individual_gain_and_reports_are_bound() {
         .insert(model("fixture-second"), baseline_price);
     evidence.cases[1].record = ReplayRecord::seal(input).unwrap();
     fixture.resign_evaluation(&mut evidence);
-    let evaluation = evaluate_backend(
+    let evaluation = evaluate_backend_with_verifier(
         &fixture.artifact,
         &evidence.criteria,
         &evidence.criteria_registration,
         &evidence.cases,
         &fixture.keys.authorities(),
         120,
+        Some(&fixture_proofs::FixtureVerifier),
     )
     .unwrap();
     assert_eq!(evaluation.family_reports().len(), 2);
@@ -1048,11 +1058,12 @@ fn stable_family_needs_no_individual_gain_and_reports_are_bound() {
             .keys
             .sign(AuthorityRole::GateOwner, trial.statement.clone());
     }
-    let promotion = evaluate_promotion(
+    let promotion = evaluate_promotion_with_verifier(
         &fixture.artifact,
         &evidence,
         &fixture.keys.authorities(),
         120,
+        Some(&fixture_proofs::FixtureVerifier),
     )
     .unwrap();
     assert_eq!(promotion.family_reports(), evaluation.family_reports());

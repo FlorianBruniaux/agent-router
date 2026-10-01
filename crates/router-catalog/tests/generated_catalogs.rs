@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use std::collections::{BTreeMap, BTreeSet};
 
 use router_adapter_api::{
@@ -62,8 +65,7 @@ fn observation(runtime: bool) -> HostObservation {
 }
 
 fn snapshot(runtime: bool) -> ValidatedHostObservation {
-    ValidatedHostObservation::from_observation(observation(runtime).seal().unwrap(), validation())
-        .unwrap()
+    fixture_proofs::from_observation(observation(runtime).seal().unwrap(), validation()).unwrap()
 }
 
 fn registry_asset(kind: AssetKind, id: &str) -> RegistryAsset {
@@ -295,8 +297,7 @@ fn unobserved_models_unsupported_efforts_and_unknown_skills_are_rejected() {
     host.host
         .supported_efforts
         .insert(id, BTreeSet::from([EffortLevel::High]));
-    let host =
-        ValidatedHostObservation::from_observation(host.seal().unwrap(), validation()).unwrap();
+    let host = fixture_proofs::from_observation(host.seal().unwrap(), validation()).unwrap();
     assert_eq!(
         GeneratedCatalog::generate(&host, &prior, &GenerationConfig::default())
             .unwrap_err()
@@ -310,8 +311,7 @@ fn unobserved_models_unsupported_efforts_and_unknown_skills_are_rejected() {
         .next()
         .unwrap()
         .insert(EffortLevel::Ultra);
-    let host =
-        ValidatedHostObservation::from_observation(host.seal().unwrap(), validation()).unwrap();
+    let host = fixture_proofs::from_observation(host.seal().unwrap(), validation()).unwrap();
     assert_eq!(
         GeneratedCatalog::generate(&host, &prior, &GenerationConfig::default())
             .unwrap_err()

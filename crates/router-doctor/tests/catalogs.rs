@@ -1,6 +1,7 @@
-use router_adapter_api::{
-    EvidenceKind, EvidenceSource, HostObservation, SnapshotValidation, ValidatedHostObservation,
-};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
+use router_adapter_api::{EvidenceKind, EvidenceSource, HostObservation, SnapshotValidation};
 use router_catalog::{Catalog, GeneratedCatalog, GenerationConfig};
 use router_doctor::diagnose;
 use router_types::{
@@ -40,7 +41,7 @@ fn generated() -> Vec<u8> {
     }
     .seal()
     .unwrap();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         snapshot,
         SnapshotValidation {
             now_unix_seconds: 110,

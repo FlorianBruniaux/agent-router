@@ -201,6 +201,8 @@ pub enum PhaseAbstention {
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PhaseReceipt {
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub capability_evidence: BTreeMap<Capability, CapabilityReceiptEvidence>,
     pub schema_version: u32,
     pub receipt_id: String,
     pub phase: StageKind,
@@ -215,4 +217,14 @@ pub struct PhaseReceipt {
     pub exclusions: Vec<PhaseExclusion>,
     pub abstention: Option<PhaseAbstention>,
     pub unavailable: BTreeSet<String>,
+}
+
+/// Provenance consumed by a v5 receipt; a receipt is never execution authority.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct CapabilityReceiptEvidence {
+    pub proof_sha256: String,
+    pub tier: String,
+    pub observed_at_unix_seconds: u64,
+    pub expires_at_unix_seconds: u64,
 }

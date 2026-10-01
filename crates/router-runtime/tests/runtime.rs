@@ -1,6 +1,9 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use router_adapter_api::{
     AdapterError, HarnessAdapter, HostObservation, SnapshotValidation, ValidatedExecutionRequest,
-    ValidatedHostObservation, prepared_run,
+    prepared_run,
 };
 use router_catalog::Catalog;
 use router_policy::{PhaseRouter, ValidatedPhaseContext};
@@ -97,7 +100,7 @@ impl Fixture {
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = now;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: now,
@@ -152,7 +155,13 @@ impl Fixture {
         }
     }
     fn runtime(&self) -> Runtime {
-        Runtime::open(&self.temp.path().join("runtime"), RuntimeLimits::default()).unwrap()
+        Runtime::open(&self.temp.path().join("runtime"), RuntimeLimits::default())
+            .map(|runtime| {
+                runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier,
+                ))
+            })
+            .unwrap()
     }
     async fn review(&self, runtime: &Runtime) -> PendingRun {
         runtime
@@ -339,7 +348,13 @@ async fn historical_reopen_does_not_require_a_fresh_snapshot_but_execution_does(
     let root = fixture.temp.path().join("runtime");
     // Setup can outlive a one-second TTL on a busy runner. Approve under the
     // normal freshness window, then reopen with the deliberately short window.
-    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let runtime = Runtime::open(&root, RuntimeLimits::default())
+        .map(|runtime| {
+            runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                fixture_proofs::FixtureVerifier,
+            ))
+        })
+        .unwrap();
     let pending = fixture.review(&runtime).await;
     drop(runtime);
     tokio::time::sleep(Duration::from_secs(2)).await;
@@ -350,6 +365,9 @@ async fn historical_reopen_does_not_require_a_fresh_snapshot_but_execution_does(
             ..RuntimeLimits::default()
         },
     )
+    .map(|runtime| {
+        runtime.with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+    })
     .unwrap();
     let historical = runtime
         .reopen(
@@ -989,6 +1007,9 @@ fn retaining_runtime(fixture: &Fixture) -> Runtime {
             ..RuntimeLimits::default()
         },
     )
+    .map(|runtime| {
+        runtime.with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+    })
     .unwrap()
 }
 
@@ -1174,6 +1195,9 @@ async fn retention_policy_is_approval_bound_and_cannot_change_on_an_approved_han
             ..RuntimeLimits::default()
         },
     )
+    .map(|runtime| {
+        runtime.with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+    })
     .unwrap();
     let new_pending = fixture.review(&other).await;
     assert_ne!(
@@ -1291,7 +1315,7 @@ impl Fixture {
             route.candidates[0].model = ModelId::parse("fixture-second").unwrap();
             route.candidates[0].verification = PhaseVerification::Independent;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             self.context.snapshot().clone(),
             SnapshotValidation {
                 now_unix_seconds: SystemTime::now()
@@ -1616,7 +1640,7 @@ async fn workflow_generation_retry_is_cumulative_and_requires_fresh_approval() {
     secondary.id = "secondary".into();
     secondary.model = ModelId::parse("fixture-second").unwrap();
     route.candidates.push(secondary);
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         f.context.snapshot().clone(),
         SnapshotValidation {
             now_unix_seconds: SystemTime::now()
@@ -1837,7 +1861,13 @@ async fn native_supervisor_sigkill_recovery_waits_for_cleanup_proof() {
     assert_eq!(status.signal(), Some(nix::libc::SIGKILL));
     let mut proof = None;
     for _ in 0..500 {
-        let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+        let runtime = Runtime::open(&root, RuntimeLimits::default())
+            .map(|runtime| {
+                runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                    fixture_proofs::FixtureVerifier,
+                ))
+            })
+            .unwrap();
         let summary = runtime.summary("run-1").unwrap();
         assert_eq!(summary.state, RunState::Failed);
         assert_eq!(summary.failure, Some(RunFailure::Interrupted));
@@ -1901,7 +1931,7 @@ impl Fixture {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             self.context.snapshot().clone(),
             SnapshotValidation {
                 now_unix_seconds: now,
@@ -2186,7 +2216,7 @@ impl Fixture {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             self.context.snapshot().clone(),
             SnapshotValidation {
                 now_unix_seconds: now,
@@ -2312,7 +2342,7 @@ async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-    let snapshot = ValidatedHostObservation::from_observation(
+    let snapshot = fixture_proofs::from_observation(
         observation.seal().unwrap(),
         SnapshotValidation {
             now_unix_seconds: now,
@@ -2326,7 +2356,7 @@ async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
     .unwrap();
     let mut first_route = first.context.request().clone();
     first_route.task.budget.max_elapsed_ms = 60_000;
-    let first_snapshot = ValidatedHostObservation::from_observation(
+    let first_snapshot = fixture_proofs::from_observation(
         first.context.snapshot().clone(),
         SnapshotValidation {
             now_unix_seconds: now,
@@ -2366,6 +2396,9 @@ async fn two_hosts_bound_to_one_provider_share_provider_capacity() {
             ..RuntimeLimits::default()
         },
     )
+    .map(|runtime| {
+        runtime.with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier))
+    })
     .unwrap();
     let mut runs = Vec::new();
     for (id, f) in [("host-a", &mut first), ("host-b", &mut second)] {
@@ -2751,7 +2784,13 @@ async fn native_version_probe_sigkill_recovery_requires_its_bound_lease() {
     // open descriptor. Recovery must refuse the temporarily missing pathname.
     let held = root.join("held-probe-lease");
     fs::rename(&lease, &held).unwrap();
-    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let runtime = Runtime::open(&root, RuntimeLimits::default())
+        .map(|runtime| {
+            runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                fixture_proofs::FixtureVerifier,
+            ))
+        })
+        .unwrap();
     let db = rusqlite::Connection::open(root.join("runtime.sqlite3")).unwrap();
     let quarantined: u32 = db
         .query_row(
@@ -2789,7 +2828,13 @@ async fn native_version_probe_sigkill_recovery_requires_its_bound_lease() {
         "watchdog must finish cleanup before fixture disposal"
     );
     fs::rename(&held, &lease).unwrap();
-    let runtime = Runtime::open(&root, RuntimeLimits::default()).unwrap();
+    let runtime = Runtime::open(&root, RuntimeLimits::default())
+        .map(|runtime| {
+            runtime.with_capability_proof_verifier(std::sync::Arc::new(
+                fixture_proofs::FixtureVerifier,
+            ))
+        })
+        .unwrap();
     let run = runtime.summary("run-1").unwrap();
     assert_eq!(run.state, RunState::Failed);
     assert_eq!(run.failure, Some(RunFailure::Interrupted));
@@ -3222,4 +3267,254 @@ async fn a_finished_standalone_run_leaves_no_plan_semaphore_behind() {
         .await
         .unwrap();
     assert_eq!(runtime.plan_slots_held(), 0);
+}
+
+// A local fake native program exercises the complete review -> version probe ->
+// final spawn boundary. The proof store and its MAC checks are production code.
+struct DelayedCapabilityAdapter;
+impl HarnessAdapter for DelayedCapabilityAdapter {
+    fn host(&self) -> &'static str {
+        "codex"
+    }
+    fn supports_native_version_pin(&self) -> bool {
+        true
+    }
+    fn validate_native_version_pin(
+        &self,
+        stdout: &[u8],
+        expected: &str,
+    ) -> std::result::Result<(), AdapterError> {
+        if stdout == b"fixture-version\n" && expected == "fixture-version" {
+            Ok(())
+        } else {
+            Err(AdapterError::Protocol)
+        }
+    }
+    fn prepare(
+        &self,
+        request: &ValidatedExecutionRequest,
+    ) -> std::result::Result<PreparedRun, AdapterError> {
+        prepared_run(
+            request,
+            "delayed-capability-fixture",
+            vec!["run".into()],
+            vec![],
+        )
+    }
+    fn decode_stream(
+        &self,
+        _: &[u8],
+        _: TransportOutcome,
+        _: usize,
+    ) -> std::result::Result<RuntimeEvidence, AdapterError> {
+        Err(AdapterError::Protocol)
+    }
+}
+struct DelayedCapabilitySupervisor {
+    started: PathBuf,
+    release: PathBuf,
+    main_started: PathBuf,
+}
+impl SandboxSupervisor for DelayedCapabilitySupervisor {
+    fn resource_limits_enforced(&self) -> bool {
+        true
+    }
+    fn parent_lifetime_enforced(&self) -> bool {
+        true
+    }
+    fn command(&self, run: &PreparedRun, _: &SandboxPolicy) -> Result<tokio::process::Command> {
+        let mut command = tokio::process::Command::new("/bin/sh");
+        command
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .current_dir(&run.cwd);
+        if run.argv == ["--version"] {
+            command.args(["-c", "printf started > \"$1\"; while [ ! -f \"$2\" ]; do sleep 0.01; done; printf 'router-runtime-lease-v1:group-clean\\n' > \"$ROUTER_RUNTIME_LEASE\"; printf 'fixture-version\\n'", "fixture"])
+                .arg(&self.started).arg(&self.release);
+        } else {
+            command.args(["-c", "printf forbidden > \"$1\"; printf 'router-runtime-lease-v1:group-clean\\n' > \"$ROUTER_RUNTIME_LEASE\"", "fixture"])
+                .arg(&self.main_started);
+        }
+        Ok(command)
+    }
+}
+async fn proof_changed_during_native_version_probe(expire: bool) {
+    use router_adapter_api::{
+        AuthenticatedCapabilityProof, CapabilityAttemptOutcome, CapabilityEvidence,
+        CapabilityProofBinding, CapabilityProofKey, CapabilityProofRecord, CapabilityProofTier,
+        EvidenceKind, EvidenceSource, ValidatedHostObservation,
+    };
+    use std::{collections::BTreeSet, sync::Arc};
+    let mut fixture = Fixture::new(true).await;
+    let runtime = Runtime::open(
+        &fixture.temp.path().join("runtime"),
+        RuntimeLimits::default(),
+    )
+    .unwrap();
+    let mut store = CapabilityProofStore::create(runtime.storage_root()).unwrap();
+    let key = CapabilityProofKey::derive(&[42; 32], store.store_id()).unwrap();
+    let mut observation = fixture.context.snapshot().clone();
+    let clock = || {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+    };
+    let now = clock();
+    let binding = CapabilityProofBinding {
+        harness_id: "codex".into(),
+        host_snapshot_id: observation.host.id.clone(),
+        binary_sha256: "a".repeat(64),
+        observed_version: "fixture-version".into(),
+        adapter_id: "codex".into(),
+        argument_template_sha256: "b".repeat(64),
+        sandbox_helper_sha256: "c".repeat(64),
+        sandbox_wrapper_sha256: "d".repeat(64),
+        sandbox_profile_sha256: "e".repeat(64),
+        write_roots: BTreeSet::from(["src".into()]),
+        network: false,
+        os: std::env::consts::OS.into(),
+    };
+    let proof: AuthenticatedCapabilityProof = key
+        .authenticate(CapabilityProofRecord {
+            schema_version: 1,
+            proof_id: "delayed-native-success".into(),
+            sequence: 1,
+            store_id: store.store_id().into(),
+            capability: Capability::WorkspaceWrite,
+            tier: CapabilityProofTier::Proven,
+            network_scope: None,
+            binding: binding.clone(),
+            model_id: observation
+                .host
+                .supported_models
+                .first()
+                .unwrap()
+                .to_string(),
+            nonce_sha256: "7".repeat(64),
+            expected_effect_sha256: "8".repeat(64),
+            started_at_unix_seconds: now,
+            ended_at_unix_seconds: now,
+            max_age_seconds: if expire { 2 } else { 60 },
+            outcome: CapabilityAttemptOutcome::Succeeded,
+        })
+        .unwrap();
+    store.append(&proof, &[42; 32]).unwrap();
+    observation.observed_at_unix_seconds = now;
+    observation.host.capabilities = BTreeSet::from([Capability::WorkspaceWrite]);
+    for (capability, evidence) in &mut observation.capabilities {
+        *evidence = CapabilityEvidence {
+            support: if *capability == Capability::WorkspaceWrite {
+                CapabilitySupport::Supported
+            } else {
+                CapabilitySupport::Unknown
+            },
+            source_ids: if *capability == Capability::WorkspaceWrite {
+                BTreeSet::from([proof.record.proof_id.clone()])
+            } else {
+                BTreeSet::new()
+            },
+        };
+    }
+    observation.evidence = vec![EvidenceSource {
+        id: proof.record.proof_id.clone(),
+        kind: EvidenceKind::HostRuntime,
+        observed_version: Some("fixture-version".into()),
+        observed_at_unix_seconds: now,
+        content_sha256: proof.digest().unwrap(),
+    }];
+    let verifier = Arc::new(
+        StoredCapabilityProofVerifier::open_existing(
+            runtime.storage_root(),
+            [42; 32],
+            vec![binding],
+        )
+        .unwrap(),
+    );
+    let snapshot = ValidatedHostObservation::from_observation_with_verifier(
+        observation.seal().unwrap(),
+        SnapshotValidation {
+            now_unix_seconds: now,
+            max_age_seconds: 300,
+        },
+        Some(verifier.as_ref()),
+    )
+    .unwrap();
+    let catalog = Catalog::from_json(include_bytes!(
+        "../../../fixtures/examples/phase-catalog.json"
+    ))
+    .unwrap();
+    fixture.context = fixture
+        .router
+        .context(fixture.context.request().clone(), &snapshot, &catalog)
+        .unwrap();
+    let receipt = fixture.router.route(&fixture.context).unwrap();
+    fixture.request.receipt_id = receipt.receipt_id;
+    assert_eq!(
+        fixture.request.required_capabilities,
+        BTreeSet::from([Capability::WorkspaceWrite])
+    );
+    let runtime = runtime.with_capability_proof_verifier(verifier);
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let supervisor = DelayedCapabilitySupervisor {
+        started: fixture.temp.path().join("version-started"),
+        release: fixture.temp.path().join("release-version"),
+        main_started: fixture.temp.path().join("main-must-not-start"),
+    };
+    let mutate = async {
+        tokio::time::timeout(Duration::from_secs(3), async {
+            while !supervisor.started.exists() {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .expect("the native version process must really start");
+        if expire {
+            while clock() <= proof.record.ended_at_unix_seconds + proof.record.max_age_seconds {
+                tokio::time::sleep(Duration::from_millis(20)).await;
+            }
+        } else {
+            let mut failed = proof.record.clone();
+            failed.sequence = 2;
+            failed.proof_id = "delayed-native-failure".into();
+            failed.started_at_unix_seconds = clock();
+            failed.ended_at_unix_seconds = failed.started_at_unix_seconds;
+            failed.outcome = CapabilityAttemptOutcome::Failed;
+            store
+                .append(&key.authenticate(failed).unwrap(), &[42; 32])
+                .unwrap();
+        }
+        fs::write(&supervisor.release, "release").unwrap();
+    };
+    let cancel = Cancellation::default();
+    let (result, ()) = tokio::join!(
+        runtime.execute(approved, &DelayedCapabilityAdapter, &supervisor, cancel),
+        mutate
+    );
+    assert!(
+        matches!(result, Err(RuntimeError::Route)),
+        "proof changed during probe must refuse dispatch: {result:?}"
+    );
+    assert!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|event| event.kind == "native.version_validated")
+    );
+    assert!(
+        !supervisor.main_started.exists(),
+        "main process must never start after proof expiry or revocation"
+    );
+}
+#[tokio::test]
+async fn authenticated_proof_revoked_during_native_version_probe_prevents_main_spawn() {
+    proof_changed_during_native_version_probe(false).await;
+}
+#[tokio::test]
+async fn authenticated_proof_expired_during_native_version_probe_prevents_main_spawn() {
+    proof_changed_during_native_version_probe(true).await;
 }

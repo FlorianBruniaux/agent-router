@@ -1,7 +1,10 @@
+#[path = "../../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 // All reviewers, labels, keys and model observations here are synthetic.
 // Positive tests exercise proof mechanics, never authorize a production backend.
 use ed25519_dalek::{Signer, SigningKey};
-use router_adapter_api::{HostObservation, SnapshotValidation, ValidatedHostObservation};
+use router_adapter_api::{HostObservation, SnapshotValidation};
 use router_backend_policy::*;
 use router_catalog::Catalog;
 use router_decision::BoundedDecisionContext;
@@ -128,7 +131,7 @@ impl Fixture {
             "../../../../fixtures/examples/phase-snapshot.json"
         ))
         .unwrap();
-        let validated = ValidatedHostObservation::from_observation(
+        let validated = fixture_proofs::from_observation(
             snapshot.clone(),
             SnapshotValidation {
                 now_unix_seconds: 110,
@@ -298,14 +301,14 @@ impl Fixture {
                 registered_at_unix_seconds: 99,
             },
         );
-        let evaluation = evaluate_backend(
+        let evaluation = evaluate_backend_with_verifier(
             &artifact,
             &criteria,
             &registration,
             &cases,
             &authorities,
             120,
-        )
+         Some(&fixture_proofs::FixtureVerifier))
         .unwrap();
         let trial = |stage, start, end, hash, cases| {
             keys.sign(
@@ -344,12 +347,12 @@ impl Fixture {
         }
     }
     fn promotion(&self) -> ValidatedBackendPromotion {
-        evaluate_promotion(
+        evaluate_promotion_with_verifier(
             &self.artifact,
             &self.evidence,
             &self.keys.authorities(),
             120,
-        )
+         Some(&fixture_proofs::FixtureVerifier))
         .unwrap()
     }
     fn approval(

@@ -1,5 +1,10 @@
 use assert_cmd::Command;
+#[cfg(unix)]
+use native_fixture::unknown_observation;
 use serde_json::{Value, json};
+#[cfg(not(unix))]
+#[path = "support/unknown_observation.rs"]
+mod unknown_observation;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -110,7 +115,7 @@ fn phase_decision_human_view_keeps_receipt_identity_and_uncertainty() {
         cmd.args(["route-phase", "--context"])
             .arg(fixture("phase-request.json"))
             .arg("--host-snapshot")
-            .arg(fixture("phase-snapshot.json"))
+            .arg(unknown_observation::example_path())
             .arg("--catalog")
             .arg(fixture("phase-catalog.json"))
             .args(["--now", "100"]);
@@ -174,7 +179,7 @@ fn phase_decision_json_is_byte_identical_to_the_pinned_receipt() {
         .args(["route-phase", "--context"])
         .arg(fixture("phase-request.json"))
         .arg("--host-snapshot")
-        .arg(fixture("phase-snapshot.json"))
+        .arg(unknown_observation::example_path())
         .arg("--catalog")
         .arg(fixture("phase-catalog.json"))
         .args(["--now", "100", "--json"])
@@ -182,9 +187,10 @@ fn phase_decision_json_is_byte_identical_to_the_pinned_receipt() {
         .unwrap();
     assert!(output.status.success());
     assert!(output.stderr.is_empty());
-    let golden =
-        fs::read(Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/route-phase-plan.json"))
-            .unwrap();
+    let golden = fs::read(
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden/route-phase-plan-unknown.json"),
+    )
+    .unwrap();
     assert_eq!(
         String::from_utf8(output.stdout).unwrap(),
         String::from_utf8(golden).unwrap()

@@ -1,6 +1,9 @@
 //! Synthetic generated-plan decisions. Lives here because this crate already
 //! depends on the workflow builder; router-execution-decision does not.
-use router_adapter_api::{HostObservation, SnapshotValidation, ValidatedHostObservation};
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
+use router_adapter_api::{HostObservation, SnapshotValidation};
 use router_catalog::Catalog;
 use router_execution_decision::{DecisionError, ExecutionDecision};
 use router_policy::{
@@ -70,7 +73,7 @@ impl Fixture {
         for evidence in &mut observation.evidence {
             evidence.observed_at_unix_seconds = planned_at;
         }
-        let snapshot = ValidatedHostObservation::from_observation(
+        let snapshot = fixture_proofs::from_observation(
             observation.seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: planned_at,

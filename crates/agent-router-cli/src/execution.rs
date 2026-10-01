@@ -30,7 +30,7 @@ pub(crate) struct Definition {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) admission: Option<router_types::AdmissionConfig>,
     context: PathBuf,
-    host_snapshot: PathBuf,
+    pub(crate) host_snapshot: PathBuf,
     catalog: PathBuf,
     policy: Option<PathBuf>,
     policy_store: Option<PathBuf>,
@@ -292,18 +292,23 @@ pub(crate) fn plan(path: &Path) -> Result<WorkflowPlan, CliError> {
     router_workflow::validate_plan(&result).map_err(|_| CliError::Product("workflow.invalid"))?;
     Ok(result)
 }
-pub(crate) fn context(
+pub(crate) fn context_with_proofs(
     definition: &Definition,
     historical: bool,
+    verifier: Option<&dyn router_adapter_api::CapabilityProofVerifier>,
+    run_clock: Option<u64>,
 ) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
     // Historical reconstruction can only feed Runtime::reopen, whose stored
     // immutable definition must match. It is never fresh execution authority.
     let now = if historical {
         let snapshot: HostObservation =
             phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
-        Some(match &definition.asset_authority {
-            Some(path) => crate::assets::historical_time(path)?,
-            None => snapshot.observed_at_unix_seconds,
+        Some(match run_clock {
+            Some(clock) => clock,
+            None => match &definition.asset_authority {
+                Some(path) => crate::assets::historical_time(path)?,
+                None => snapshot.observed_at_unix_seconds,
+            },
         })
     } else {
         None
@@ -338,8 +343,10 @@ pub(crate) fn context(
     } else {
         None
     };
-    phases::load_with_policy(
+    phases::load_with_policy_and_verifier(
         &PhaseArgs {
+            store: None,
+            execution_config: None,
             context: definition.context.clone(),
             host_snapshot: definition.host_snapshot.clone(),
             catalog: definition.catalog.clone(),
@@ -350,6 +357,7 @@ pub(crate) fn context(
             snapshot_max_age_seconds: if historical { 86400 } else { 300 },
         },
         pinned,
+        verifier,
     )
 }
 fn open_existing(store: &Path, definition: &Definition) -> Result<(Runtime, PendingRun), CliError> {
@@ -399,16 +407,40 @@ pub(crate) struct ReplaySource {
 }
 pub(crate) fn replay_source(path: &Path, store: &Path) -> Result<ReplaySource, CliError> {
     let definition = load_definition(path)?;
-    let (_runtime, pending, loaded) = open_existing_decision(store, &definition)?;
+    let (runtime, pending, loaded) = open_existing_decision(store, &definition)?;
     let request: router_types::PhaseRouteRequest =
         phases::read_json(&definition.context, router_policy::MAX_PHASE_REQUEST_BYTES)?;
     let snapshot: HostObservation = phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
-    // The same historical clock `context` uses to reopen a run.
-    let now = match &definition.asset_authority {
-        Some(path) => crate::assets::historical_time(path)?,
-        None => snapshot.observed_at_unix_seconds,
+    let checkpoint = runtime
+        .capability_evidence_checkpoint(&definition.run_id)
+        .map_err(error)?;
+    let now = match checkpoint {
+        Some((clock, _)) => clock,
+        None => match &definition.asset_authority {
+            Some(path) => crate::assets::historical_time(path)?,
+            None => snapshot.observed_at_unix_seconds,
+        },
     };
-    let (catalog, _) = crate::catalogs::load(&definition.catalog, Some(now), 86400)?;
+    let verifier = if crate::capability_proofs::has_claims(&snapshot) {
+        let (_, sequence) = checkpoint.ok_or(CliError::Product(
+            "capability.evidence.historical_clock_missing",
+        ))?;
+        Some(crate::capability_proofs::historical_through(
+            store,
+            Some(sequence),
+        )?)
+    } else {
+        None
+    };
+    let (catalog, embedded) = crate::catalogs::load_with_verifier(
+        &definition.catalog,
+        Some(now),
+        86400,
+        verifier.as_deref(),
+    )?;
+    if embedded.is_some_and(|value| value.hash() != snapshot.snapshot_hash) {
+        return Err(CliError::Product("catalog.snapshot.mismatch"));
+    }
     let catalog = catalog
         .canonical_json()
         .map_err(|_| CliError::CatalogInvalid)
@@ -443,6 +475,74 @@ pub(crate) fn replay_source(path: &Path, store: &Path) -> Result<ReplaySource, C
         uses_assets: definition.asset_authority.is_some(),
     })
 }
+pub(crate) fn historical_context(
+    runtime: &Runtime,
+    definition: &Definition,
+) -> Result<(PhaseRouter, ValidatedPhaseContext), CliError> {
+    let observation: HostObservation =
+        phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
+    let checkpoint = runtime
+        .capability_evidence_checkpoint(&definition.run_id)
+        .map_err(error)?;
+    let verifier = if crate::capability_proofs::has_claims(&observation) {
+        let (_, sequence) = checkpoint.ok_or(CliError::Product(
+            "capability.evidence.historical_clock_missing",
+        ))?;
+        Some(crate::capability_proofs::historical_through(
+            runtime.storage_root(),
+            Some(sequence),
+        )?)
+    } else {
+        None
+    };
+    context_with_proofs(
+        definition,
+        true,
+        verifier.as_deref(),
+        checkpoint.map(|(clock, _)| clock),
+    )
+}
+
+pub(crate) fn validate_proof_binary_pins(
+    context: &ValidatedPhaseContext,
+    config: &SandboxConfig,
+    binaries: &BTreeMap<PathBuf, String>,
+) -> Result<(), CliError> {
+    let authenticated = context
+        .revalidate_snapshot(router_adapter_api::SnapshotValidation {
+            now_unix_seconds: crate::inspect::current_time(None)?,
+            max_age_seconds: 300,
+        })
+        .map_err(|e| CliError::Snapshot(e.code()))?;
+    for proof in authenticated.capability_proofs() {
+        let program = if proof.binding.harness_id == "claude-code" {
+            "claude"
+        } else {
+            proof.binding.harness_id.as_str()
+        };
+        let path = config
+            .programs
+            .get(program)
+            .ok_or(CliError::Product("capability.evidence.program_missing"))?;
+        if binaries.get(path) != Some(&proof.binding.binary_sha256)
+            || binaries.get(&config.helper) != Some(&proof.binding.sandbox_helper_sha256)
+        {
+            return Err(CliError::Product("capability.evidence.binding_mismatch"));
+        }
+        #[cfg(target_os = "macos")]
+        let wrapper = PathBuf::from("/usr/bin/sandbox-exec");
+        #[cfg(not(target_os = "macos"))]
+        let wrapper = config
+            .bubblewrap
+            .clone()
+            .ok_or(CliError::Product("runtime.sandbox.configuration"))?;
+        if binaries.get(&wrapper) != Some(&proof.binding.sandbox_wrapper_sha256) {
+            return Err(CliError::Product("capability.evidence.binding_mismatch"));
+        }
+    }
+    Ok(())
+}
+
 /// Reconstruct against an already-owned store; never acquire it recursively.
 pub(crate) fn reopen_in(
     runtime: &Runtime,
@@ -452,7 +552,7 @@ pub(crate) fn reopen_in(
     if definition.escalation_decision.is_some() != proposal.is_some() {
         return Err(CliError::Product("escalation.runtime.required"));
     }
-    let (router, context) = context(definition, true)?;
+    let (router, context) = historical_context(runtime, definition)?;
     let proof = selection(definition, &router, &context)?;
     let request: ExecutionRequest = phases::read_json(
         &definition.request,
@@ -747,6 +847,69 @@ fn approval_with_environment(
     .map_err(|_| CliError::Internal)?;
     Ok((content_digest(&bytes), hashes))
 }
+/// Recompute the binding from the exact local execution configuration. Hashing
+/// compiled source is conservative: even a non-behavioral edit voids old proofs.
+pub(crate) fn capability_binding(
+    config: &SandboxConfig,
+    host: &router_types::HostSnapshot,
+    version: &str,
+    write_roots: std::collections::BTreeSet<String>,
+    network: bool,
+) -> Result<router_adapter_api::CapabilityProofBinding, CliError> {
+    let (program, template) = match host.harness.as_str() {
+        "codex" => (
+            "codex",
+            include_str!("../../adapter-codex/src/execution.rs"),
+        ),
+        "claude-code" => (
+            "claude",
+            include_str!("../../adapter-claude/src/execution.rs"),
+        ),
+        "opencode" => (
+            "opencode",
+            include_str!("../../adapter-opencode/src/lib.rs"),
+        ),
+        "copilot" => ("copilot", include_str!("../../adapter-copilot/src/lib.rs")),
+        _ => return Err(CliError::Product("capability.evidence.host_unavailable")),
+    };
+    let binary = config
+        .programs
+        .get(program)
+        .ok_or(CliError::Product("capability.evidence.program_missing"))?;
+    #[cfg(target_os = "macos")]
+    let wrapper = PathBuf::from("/usr/bin/sandbox-exec");
+    #[cfg(not(target_os = "macos"))]
+    let wrapper = config
+        .bubblewrap
+        .clone()
+        .ok_or(CliError::Product("runtime.sandbox.configuration"))?;
+    let profile = serde_json::to_vec(&(
+        "capability-profile-v1",
+        include_str!("../../router-runtime/src/sandbox.rs"),
+        include_str!("../../router-runtime/src/bubblewrap.rs"),
+        include_str!("../../router-runtime/src/host_state.rs"),
+        include_str!("../../router-runtime/src/private_program.rs"),
+        serde_json::to_value(config).map_err(|_| CliError::Internal)?,
+        &write_roots,
+        network,
+    ))
+    .map_err(|_| CliError::Internal)?;
+    Ok(router_adapter_api::CapabilityProofBinding {
+        harness_id: host.harness.to_string(),
+        host_snapshot_id: host.id.clone(),
+        binary_sha256: binary_digest(binary, BINARY_LIMIT)?,
+        observed_version: version.into(),
+        adapter_id: host.harness.to_string(),
+        argument_template_sha256: content_digest(template.as_bytes()),
+        sandbox_helper_sha256: binary_digest(&config.helper, BINARY_LIMIT)?,
+        sandbox_wrapper_sha256: binary_digest(&wrapper, BINARY_LIMIT)?,
+        sandbox_profile_sha256: content_digest(&profile),
+        write_roots,
+        network,
+        os: std::env::consts::OS.into(),
+    })
+}
+
 pub(crate) async fn supervisor(
     store: &Path,
     config: SandboxConfig,
@@ -837,7 +1000,35 @@ pub(crate) fn run(
     let feedback_path = config.feedback_store.clone();
     let feedback_consent = crate::execution_feedback::consent(feedback_path.as_deref())?;
     block(async {
-        let (router, context) = context(&definition, false)?;
+        let observation: HostObservation =
+            phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
+        let proof_request: ExecutionRequest = phases::read_json(
+            &definition.request,
+            router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+        )?;
+        let proof_verifier = if crate::capability_proofs::has_claims(&observation) {
+            Some(crate::capability_proofs::fresh(
+                store,
+                &config,
+                &observation,
+                Some((
+                    &proof_request.scope,
+                    proof_request
+                        .required_capabilities
+                        .contains(&router_types::Capability::Network),
+                )),
+            )?)
+        } else {
+            None
+        };
+        let (router, context) = context_with_proofs(
+            &definition,
+            false,
+            proof_verifier
+                .as_deref()
+                .map(|v| v as &dyn router_adapter_api::CapabilityProofVerifier),
+            None,
+        )?;
         let proof = selection(&definition, &router, &context)?;
         let workflow = workflow_contract(&definition)?;
         let request: ExecutionRequest = phases::read_json(
@@ -868,6 +1059,10 @@ pub(crate) fn run(
                 definition.admission.as_ref(),
             )
             .map_err(error)
+            .map(|runtime| match &proof_verifier {
+                Some(verifier) => runtime.with_capability_proof_verifier(verifier.clone()),
+                None => runtime,
+            })
         };
         // Only escalation needs an existing owned journal while reconstructing.
         // Invalid ordinary/backend/generated inputs still cannot create a store.
@@ -960,6 +1155,44 @@ pub(crate) fn run(
             )?;
             (pending, computed)
         };
+        if let Some(verifier) = &proof_verifier {
+            let authenticated =
+                router_adapter_api::ValidatedHostObservation::from_observation_with_verifier(
+                    observation.clone(),
+                    router_adapter_api::SnapshotValidation {
+                        now_unix_seconds: crate::inspect::current_time(None)?,
+                        max_age_seconds: 300,
+                    },
+                    Some(verifier.as_ref()),
+                )
+                .map_err(|e| CliError::Snapshot(e.code()))?;
+            for proof in authenticated.capability_proofs() {
+                let program = if proof.binding.harness_id == "claude-code" {
+                    "claude"
+                } else {
+                    proof.binding.harness_id.as_str()
+                };
+                let path = config
+                    .programs
+                    .get(program)
+                    .ok_or(CliError::Product("capability.evidence.program_missing"))?;
+                if binaries.get(path) != Some(&proof.binding.binary_sha256)
+                    || binaries.get(&config.helper) != Some(&proof.binding.sandbox_helper_sha256)
+                {
+                    return Err(CliError::Product("capability.evidence.binding_mismatch"));
+                }
+                #[cfg(target_os = "macos")]
+                let wrapper = PathBuf::from("/usr/bin/sandbox-exec");
+                #[cfg(not(target_os = "macos"))]
+                let wrapper = config
+                    .bubblewrap
+                    .clone()
+                    .ok_or(CliError::Product("runtime.sandbox.configuration"))?;
+                if binaries.get(&wrapper) != Some(&proof.binding.sandbox_wrapper_sha256) {
+                    return Err(CliError::Product("capability.evidence.binding_mismatch"));
+                }
+            }
+        }
         let Some(approved) = approve else {
             return json_output(
                 &serde_json::json!({"schema_version":1,"run":pending.summary(),"approval_digest":digest,

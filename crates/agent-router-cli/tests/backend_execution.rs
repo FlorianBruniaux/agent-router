@@ -49,16 +49,15 @@ mod fixture {
                 let mut input = case.record.input().clone();
                 let mut snapshot = serde_json::to_value(&input.snapshot).unwrap();
                 shift(&mut snapshot, delta);
-                input.snapshot = serde_json::from_value::<HostObservation>(snapshot)
-                    .unwrap()
-                    .seal()
-                    .unwrap();
+                input.snapshot = super::native_fixture::unknown_observation::from_example(
+                    serde_json::from_value::<HostObservation>(snapshot).unwrap(),
+                );
                 input.pricing.observed_at_unix_seconds += delta;
                 case.record = ReplayRecord::seal(input).unwrap();
                 case.evaluated_at_unix_seconds += delta;
             }
             let input = fixture.evidence.cases[0].record.input();
-            let snapshot = ValidatedHostObservation::from_observation(
+            let snapshot = fixture_proofs::from_observation(
                 input.snapshot.clone(),
                 SnapshotValidation {
                     now_unix_seconds: now,
@@ -105,13 +104,14 @@ mod fixture {
                     registered_at_unix_seconds: 99 + delta,
                 },
             );
-            let evaluation = evaluate_backend(
+            let evaluation = evaluate_backend_with_verifier(
                 &fixture.artifact,
                 &fixture.evidence.criteria,
                 &fixture.evidence.criteria_registration,
                 &fixture.evidence.cases,
                 &fixture.keys.authorities(),
                 now,
+                Some(&fixture_proofs::FixtureVerifier),
             )
             .unwrap();
             for trial in [&mut fixture.evidence.shadow, &mut fixture.evidence.canary] {
@@ -196,9 +196,7 @@ mod fixture {
 }
 
 use native_fixture::{checked, command, write};
-use router_adapter_api::{
-    HostObservation, SnapshotValidation, ValidatedHostObservation, content_digest,
-};
+use router_adapter_api::{HostObservation, content_digest};
 use router_backend_policy::{ActivationAction, decide_active};
 use router_backend_store::BackendStore;
 use router_catalog::Catalog;
@@ -247,7 +245,7 @@ impl SemanticFixture {
             "printf isolated > src/result.txt\nprintf '%s' {}",
             native_fixture::shell_quote(native_fixture::STREAM)
         );
-        let files = if native {
+        let mut files = if native {
             native_fixture::Fixture::new(&body, 3000)
         } else {
             native_fixture::Fixture::metadata(&body, 3000)
@@ -271,14 +269,7 @@ impl SemanticFixture {
         request.candidates.push(secondary);
         let mut execution: ExecutionRequest = read(&files.root.join("request.json"));
         let snapshot: HostObservation = read(&files.root.join("snapshot.json"));
-        let snapshot = ValidatedHostObservation::from_observation(
-            snapshot,
-            SnapshotValidation {
-                now_unix_seconds: now,
-                max_age_seconds: 300,
-            },
-        )
-        .unwrap();
+        let snapshot = files.reprovision(&snapshot, "fixture-v1");
         let catalog =
             Catalog::from_json(&fs::read(files.root.join("catalog.json")).unwrap()).unwrap();
         let assets = native_fixture::asset_inputs(
@@ -300,7 +291,13 @@ impl SemanticFixture {
         } else {
             assert_eq!(baseline.selected.as_ref().unwrap().candidate.id, "primary");
         }
-        assert_eq!(baseline.schema_version, 3);
+        if ambiguous {
+            assert!(baseline.capability_evidence.is_empty());
+            assert_eq!(baseline.schema_version, 3);
+        } else {
+            assert!(!baseline.capability_evidence.is_empty());
+            assert_eq!(baseline.schema_version, 5);
+        }
         let mut live = fixture::Live::new(failure);
         live.config.scope_sha256 = content_digest(
             &serde_json::to_vec(&(
@@ -442,7 +439,7 @@ impl SemanticFixture {
         );
         write(
             &root.join("prepare.json"),
-            &json!({"schema_version":1,"run_id":"semantic-prepared","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"policy_store":null,"asset_authority":"asset-authority.json","backend_decision":"backend.json","plan":"plan.json","node_id":"execute","metadata":"index.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json","receipt":"receipt.json"}),
+            &json!({"schema_version":1,"run_id":"semantic-prepared","capability_store":self.files.store,"execution_config":"sandbox.json","context":"context.json","host_snapshot":"snapshot.json","catalog":"catalog.json","policy":null,"policy_store":null,"asset_authority":"asset-authority.json","backend_decision":"backend.json","plan":"plan.json","node_id":"execute","metadata":"index.json","body_root":".","template":"prompt.json","variables":"variables.json","options":"options.json","receipt":"receipt.json"}),
         );
     }
     fn prepare(&self) -> Command {
@@ -459,14 +456,7 @@ fn asset_authority_keeps_original_observation_time_when_preparation_crosses_a_se
     let files = native_fixture::Fixture::metadata("exit 0", 3000);
     let observation: HostObservation = read(&files.root.join("snapshot.json"));
     let later = observation.observed_at_unix_seconds + 2;
-    let snapshot = ValidatedHostObservation::from_observation(
-        observation,
-        SnapshotValidation {
-            now_unix_seconds: later,
-            max_age_seconds: 300,
-        },
-    )
-    .unwrap();
+    let snapshot = files.validated_snapshot(later);
     let request: PhaseRouteRequest = read(&files.root.join("context.json"));
     let execution: ExecutionRequest = read(&files.root.join("request.json"));
     let catalog = Catalog::from_json(&fs::read(files.root.join("catalog.json")).unwrap()).unwrap();
@@ -589,7 +579,7 @@ fn modified_external_pin_scope_signature_and_context_are_rejected_before_launch(
                 "runtime.backend.authority"
             },
         );
-        assert!(!fixture.files.store.exists());
+        assert!(!fixture.files.store.join("worktrees").exists());
     }
     let mut forged = original.clone();
     forged["proposal"]["signature_hex"] = json!("00".repeat(64));
@@ -598,22 +588,32 @@ fn modified_external_pin_scope_signature_and_context_are_rejected_before_launch(
     rejected(&mut fixture.files.run(), "runtime.backend.decision");
     write(&root.join("backend.json"), &original);
     let request: Value = read(&root.join("request.json"));
-    for (field, changed) in [
-        ("workspace", json!(root)),
-        ("source_state", json!("changed-source")),
-        ("scope", json!(["other"])),
+    for (field, changed, expected) in [
+        ("workspace", json!(root), "runtime.backend.scope"),
+        (
+            "source_state",
+            json!("changed-source"),
+            "runtime.backend.scope",
+        ),
+        (
+            "scope",
+            json!(["other"]),
+            "capability.evidence.binding_mismatch",
+        ),
     ] {
         let mut mismatch = request.clone();
         mismatch[field] = changed;
         write(&root.join("request.json"), &mismatch);
-        rejected(&mut fixture.files.run(), "runtime.backend.scope");
+        rejected(&mut fixture.files.run(), expected);
+        assert!(!fixture.files.store.join("worktrees").exists());
+        assert!(!fixture.files.repo.join("src/result.txt").exists());
     }
     write(&root.join("request.json"), &request);
     let mut cross_context = original;
     cross_context["proposal"]["statement"]["request_sha256"] = json!("0".repeat(64));
     write(&root.join("backend.json"), &cross_context);
     rejected(&mut fixture.files.run(), "runtime.backend.decision");
-    assert!(!fixture.files.store.exists());
+    assert!(!fixture.files.store.join("worktrees").exists());
 }
 
 #[test]

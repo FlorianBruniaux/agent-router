@@ -1,5 +1,8 @@
-#![allow(dead_code)]
 //! Synthetic publishers and keys only; no production roots or human approval.
+#![allow(dead_code)]
+#[path = "../../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.
+mod fixture_proofs;
 use ed25519_dalek::{Signer, SigningKey};
 use router_adapter_api::{
     HostObservation, SnapshotValidation, ValidatedHostObservation, content_digest,
@@ -246,7 +249,7 @@ impl Fixture {
             .unwrap()
     }
     pub fn snapshot(&self) -> ValidatedHostObservation {
-        ValidatedHostObservation::from_observation(
+        fixture_proofs::from_observation(
             self.observation.clone().seal().unwrap(),
             SnapshotValidation {
                 now_unix_seconds: 100,

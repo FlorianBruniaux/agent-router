@@ -225,16 +225,23 @@ mod tests {
 
     #[test]
     fn explicit_host_snapshot_is_byte_identical_to_the_cli() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("snapshot.json");
+        let mut snapshot: router_adapter_api::HostObservation =
+            serde_json::from_slice(&bytes("fixtures/examples/phase-snapshot.json")).unwrap();
+        snapshot.host.capabilities.clear();
+        for evidence in snapshot.capabilities.values_mut() {
+            evidence.support = router_types::CapabilitySupport::Unknown;
+        }
+        let snapshot = snapshot.seal().unwrap();
+        fs::write(&path, serde_json::to_vec(&snapshot).unwrap()).unwrap();
         let output = assert_identical(
             "tests/fixtures/requests/codex-implementation.json",
             CATALOG,
-            Some("fixtures/examples/phase-snapshot.json"),
+            Some(path.to_str().unwrap()),
             Some(100),
         );
-        assert!(
-            output.contains("\"host_snapshot_hash\": \"ba5100"),
-            "{output}"
-        );
+        assert!(output.contains(&snapshot.snapshot_hash), "{output}");
     }
 
     fn call(

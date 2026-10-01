@@ -18,7 +18,27 @@ pub fn inputs(
     bodies: &BTreeMap<SkillId, String>,
     input_budget: u64,
 ) -> PhaseAssetInputs {
-    let host = json!({"harness":snapshot.host().harness,"version":"fixture-v1"});
+    inputs_with_version(
+        request,
+        snapshot,
+        catalog,
+        scope,
+        bodies,
+        input_budget,
+        "fixture-v1",
+    )
+}
+
+pub fn inputs_with_version(
+    request: &PhaseRouteRequest,
+    snapshot: &ValidatedHostObservation,
+    catalog: &Catalog,
+    scope: PhaseExecutionScope,
+    bodies: &BTreeMap<SkillId, String>,
+    input_budget: u64,
+    host_version: &str,
+) -> PhaseAssetInputs {
+    let host = json!({"harness":snapshot.host().harness,"version":host_version});
     let features = json!({"audio_input":"supported","audio_output":"supported","image_input":"supported","file_input":"supported","citations":"supported","json_object":"supported","json_schema":"supported"});
     let provenance = json!({"source":"https://example.test/synthetic-assets","revision":"fixture-only","source_sha256":"b".repeat(64)});
     let models: BTreeSet<_> = request.candidates.iter().map(|c| c.model.clone()).collect();

@@ -1,3 +1,6 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+#[allow(clippy::duplicate_mod)]
+mod fixture_proofs;
 use std::collections::{BTreeMap, BTreeSet};
 
 use router_adapter_api::{EvidenceKind, EvidenceSource, HostObservation, SnapshotValidation};
@@ -723,4 +726,68 @@ fn an_unlisted_cost_regression_blocks_even_with_a_latency_gain() {
         report.promotion_blockers,
         ["promotion.metric_regression.Cost"]
     );
+}
+
+// Explicit authentication for this synthetic replay corpus only.
+fn replay_deterministic(
+    record: &ReplayRecord,
+    policy: &str,
+    validation: SnapshotValidation,
+) -> router_eval::Result<ReplayTrace> {
+    router_eval::replay_deterministic_with_verifier(
+        record,
+        policy,
+        validation,
+        Some(&fixture_proofs::FixtureVerifier),
+    )
+}
+fn run_replay<P>(
+    record: &ReplayRecord,
+    policy: &str,
+    validation: SnapshotValidation,
+    route: P,
+) -> router_eval::Result<ReplayTrace>
+where
+    P: FnOnce(&ReplayContext<'_>) -> router_eval::Result<PhaseReceipt>,
+{
+    router_eval::run_replay_with_verifier(
+        record,
+        policy,
+        validation,
+        Some(&fixture_proofs::FixtureVerifier),
+        route,
+    )
+}
+
+#[test]
+fn offline_replay_without_store_never_promotes_handwritten_capabilities() {
+    let mut input = input();
+    input.snapshot.evidence[0].kind = EvidenceKind::HostRuntime;
+    let source_id = input.snapshot.evidence[0].id.clone();
+    input
+        .snapshot
+        .host
+        .capabilities
+        .insert(Capability::WorkspaceWrite);
+    input.snapshot.capabilities.insert(
+        Capability::WorkspaceWrite,
+        router_adapter_api::CapabilityEvidence {
+            support: CapabilitySupport::Supported,
+            source_ids: BTreeSet::from([source_id]),
+        },
+    );
+    input.snapshot = input.snapshot.seal().unwrap();
+    let record = ReplayRecord::seal(input).unwrap();
+    let trace = router_eval::replay_deterministic(&record, "baseline", validation()).unwrap();
+    assert_eq!(
+        trace.capability_evidence(),
+        CapabilityEvidenceVerification::Unverified
+    );
+    assert!(
+        trace
+            .violations()
+            .iter()
+            .any(|v| v.code == "capability.evidence.unverified")
+    );
+    assert!(trace.receipt().capability_evidence.is_empty());
 }

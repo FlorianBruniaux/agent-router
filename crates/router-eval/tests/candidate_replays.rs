@@ -1,3 +1,5 @@
+#[path = "../../../tests/support/capability_verifier.rs"]
+mod fixture_proofs;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -18,8 +20,9 @@ fn bundles() -> Vec<CandidateReplay> {
         .unwrap()
         .iter()
         .map(|entry| {
-            let bundle = CandidateReplay::from_json(
+            let bundle = CandidateReplay::from_json_with_verifier(
                 &fs::read(root().join(entry["path"].as_str().unwrap())).unwrap(),
+                Some(&fixture_proofs::FixtureVerifier),
             )
             .unwrap();
             assert_eq!(
@@ -59,7 +62,10 @@ fn all_one_hundred_contexts_replay_to_frozen_receipts_without_claiming_human_lab
         if let Some(old) = families.insert(bundle.case().family_id.clone(), bundle.case().split) {
             assert_eq!(old, bundle.case().split);
         }
-        for (policy_id, trace) in bundle.replay().unwrap() {
+        for (policy_id, trace) in bundle
+            .replay_with_verifier(Some(&fixture_proofs::FixtureVerifier))
+            .unwrap()
+        {
             assert!(trace.violations().is_empty());
             assert_eq!(trace.receipt(), &bundle.expected_receipts()[&policy_id]);
             assert_eq!(
@@ -110,7 +116,9 @@ fn heldout_candidate_fixtures_cannot_promote_even_when_supplied_thresholds_are_z
     let pairs: Vec<_> = heldout
         .iter()
         .map(|bundle| {
-            let mut traces = bundle.replay().unwrap();
+            let mut traces = bundle
+                .replay_with_verifier(Some(&fixture_proofs::FixtureVerifier))
+                .unwrap();
             PairedTrace {
                 baseline: traces.remove("baseline").unwrap(),
                 semantic: traces.remove("shadow_candidate").unwrap(),
@@ -177,7 +185,11 @@ fn bundle_tampering_rehash_and_false_human_claims_are_rejected() {
         hash.update(raw.canonical_json().unwrap());
         value["content_hash"] = hex::encode(hash.finalize()).into();
         assert!(
-            CandidateReplay::from_json(&serde_json::to_vec(&value).unwrap()).is_err(),
+            CandidateReplay::from_json_with_verifier(
+                &serde_json::to_vec(&value).unwrap(),
+                Some(&fixture_proofs::FixtureVerifier)
+            )
+            .is_err(),
             "tamper {index}"
         );
     }

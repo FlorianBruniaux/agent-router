@@ -19,6 +19,7 @@ struct WorkflowFixture {
 }
 impl WorkflowFixture {
     fn new(native: Fixture) -> Self {
+        native.provision_coordinator_runtime();
         let plan: WorkflowPlan =
             serde_json::from_slice(&fs::read(native.root.join("plan.json")).unwrap()).unwrap();
         let request: ExecutionRequest =
@@ -243,6 +244,40 @@ fn coordinator_reopen_rejects_changed_final_prompt_and_seal_rejects_unknown_fiel
 }
 
 #[test]
+fn coordinator_revoked_proof_blocks_wave_but_preserves_historical_artifacts() {
+    let f = WorkflowFixture::new(Fixture::metadata(
+        "printf started > src/coordinator-should-not-run\nexit 93",
+        3000,
+    ));
+    let review = f.review();
+    let approval = review["approval_digest"].as_str().unwrap();
+    let before = checked(&mut f.artifact("keep"), 0);
+    assert_eq!(before["run"]["run_id"], review["run"]["run_id"]);
+
+    f.native.fail_coordinator_capability_after_review();
+    let historical = checked(&mut f.artifact("keep"), 0);
+    assert_eq!(historical["run"], before["run"]);
+    let denied = f.wave(approval).output().unwrap();
+    assert_eq!(denied.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&denied.stderr).contains("capability.evidence.revoked"),
+        "{}",
+        String::from_utf8_lossy(&denied.stderr)
+    );
+    assert_eq!(
+        checked(&mut f.action("status"), 0)["nodes"][0]["run_id"],
+        review["run"]["run_id"]
+    );
+    assert!(!f.native.store.join("runtime/worktrees").exists());
+    assert!(
+        !f.native
+            .repo
+            .join("src/coordinator-should-not-run")
+            .exists()
+    );
+}
+
+#[test]
 #[ignore = "requires native OS sandbox and built helper; no live model"]
 fn native_coordinator_cli_run_verify_service_apply_and_purge() {
     let body = format!(
@@ -313,9 +348,14 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
     assert_eq!(applied["feedback"]["recorded"], true);
     let late = f.native.exported_feedback();
     let key = &late["events"][0]["input"]["run_key_sha256"];
-    assert_eq!(late["facts"][0]["fact"]["run_key_sha256"], *key);
-    assert_eq!(late["facts"][0]["fact"]["kind"]["type"], "integration");
-    assert_eq!(late["facts"][0]["fact"]["kind"]["outcome"], "applied");
+    let integration = late["facts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|fact| fact["fact"]["kind"]["type"] == "integration")
+        .expect("integration fact recorded after apply");
+    assert_eq!(integration["fact"]["run_key_sha256"], *key);
+    assert_eq!(integration["fact"]["kind"]["outcome"], "applied");
     assert_eq!(
         fs::read(f.native.repo.join("src/result.txt")).unwrap(),
         b"isolated"
@@ -334,12 +374,11 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
 mod admission_fixture;
 #[test]
 fn coordinator_review_and_reopen_keep_the_shared_registry_pin() {
-    use std::os::unix::fs::DirBuilderExt;
     let f = WorkflowFixture::new(Fixture::metadata("exit 99", 3000));
-    fs::DirBuilder::new()
-        .mode(0o700)
-        .create(&f.native.store)
-        .unwrap();
+    assert!(
+        f.native.store.join("runtime").is_dir(),
+        "fixture provisions the coordinator runtime proof store"
+    );
     let registry = f.native.root.join("registry");
     let (_, hash) = admission_fixture::bind(
         &registry,
