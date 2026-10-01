@@ -10,8 +10,9 @@ This folder records batch 4 of [ADR 0021](../../../adr/0021-host-capability-evid
 | `results/v1-20260930T170911Z/` | Manifest and `codex.json` of run v1 |
 | `results/v2-20260930T173101Z/` | Manifest and `codex.json` of run v2 |
 | `results/v3-20260930T184024Z/` | Manifest, `codex.json` and `claude.json` of run v3 |
+| `results/v4-startup/` | Allowlist projections of the three v4 Claude startup records. Raw v4 files remain outside this repository |
 | `SHA256SUMS` | SHA-256 of every file above except itself, redacted copies included |
-| `REDACTIONS` | Original and redacted SHA-256 of each redacted file, and the substitution rule |
+| `REDACTIONS` | Original and redacted SHA-256 of each redacted file, including the v4 allowlist rule |
 
 | Harness | `spike_egress.py` SHA-256 | Fake-host test |
 | --- | --- | --- |
@@ -65,6 +66,12 @@ Claude (`results/v3-20260930T184024Z/claude.json`), with the deviations `write r
 
 - `S0`: `2.1.285 (Claude Code)`;
 - `S1` `auth status`: exit 1, empty stderr; the stdout excerpt reports `"loggedIn": false` and `"authMethod": "none"`. The private directory received `.claude.json`, `.claude.json.lock` and `backups`. No model call.
+
+### v4 startup projections
+
+The three projections under `results/v4-startup/` correspond only to `20260930T190002Z`, `20260930T190228Z` and `20260930T190433Z`. Each records the source schema, fake flag, start marker, host, source-file SHA-256 values, calls, catalog cost completeness, startup booleans and a reduced verdict. All three record zero calls, zero list cost and `startup.ok=false`; they are startup diagnostics, not evidence of a completed host run or a ready campaign.
+
+The projection omits argv, executable and configuration values, filesystem roots, environment names, keychain data, profile rules, stderr, launch details and free text. `REDACTIONS` records the combined source-pair hash, projected-file hash and allowlist rule. Verify the stored projections with `shasum -a 256 -c SHA256SUMS`.
 
 ## What the runs establish
 

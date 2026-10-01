@@ -65,6 +65,90 @@
           "count": 8
         }
       ]
+    },
+    {
+      "original_sha256": "c29a7adff4d8b3f1c74184376afc4f1ae3cfdcd7a432d3f3765527ddd0bbe0f6",
+      "path": "results/v4-startup/20260930T190002Z.json",
+      "redacted_sha256": "74e5cab45b3cc193e7c1fd06950bffdb3757c9e83ca643b4f300292dbdb01d7e",
+      "rules": [
+        {
+          "included_fields": [
+            "schema",
+            "run_id",
+            "source.schema",
+            "source.fake",
+            "source.started_at",
+            "source.host",
+            "source.sha256",
+            "observation.calls",
+            "observation.list_cost_microusd",
+            "observation.list_cost_complete",
+            "observation.startup",
+            "observation.verdict"
+          ],
+          "source_pair": [
+            "manifest.json",
+            "claude.json"
+          ],
+          "type": "allowlist-v1"
+        }
+      ]
+    },
+    {
+      "original_sha256": "8f92fd388a050f5ad317fac8ba5a23e98373c25535e2d6b78022c5bc03ba0c1a",
+      "path": "results/v4-startup/20260930T190228Z.json",
+      "redacted_sha256": "4d0372836353f7a7fd37438ed79e0a8b10cf6e9a975538d89852d534a55ff62c",
+      "rules": [
+        {
+          "included_fields": [
+            "schema",
+            "run_id",
+            "source.schema",
+            "source.fake",
+            "source.started_at",
+            "source.host",
+            "source.sha256",
+            "observation.calls",
+            "observation.list_cost_microusd",
+            "observation.list_cost_complete",
+            "observation.startup",
+            "observation.verdict"
+          ],
+          "source_pair": [
+            "manifest.json",
+            "claude.json"
+          ],
+          "type": "allowlist-v1"
+        }
+      ]
+    },
+    {
+      "original_sha256": "60ae5b15218a80b5caae64b63ccd15a625cc80f3203c5b1064b88ebcfcff2851",
+      "path": "results/v4-startup/20260930T190433Z.json",
+      "redacted_sha256": "592123c1c0d2c05a4d82c350e8d3026af58776cdbc72ccf7922f25d9ec8b032e",
+      "rules": [
+        {
+          "included_fields": [
+            "schema",
+            "run_id",
+            "source.schema",
+            "source.fake",
+            "source.started_at",
+            "source.host",
+            "source.sha256",
+            "observation.calls",
+            "observation.list_cost_microusd",
+            "observation.list_cost_complete",
+            "observation.startup",
+            "observation.verdict"
+          ],
+          "source_pair": [
+            "manifest.json",
+            "claude.json"
+          ],
+          "type": "allowlist-v1"
+        }
+      ]
     }
   ]
 }
