@@ -195,8 +195,17 @@ roots. A killed router may leave private orphan state, never reused by a run.
 
 Only named environment variables (plus runtime-owned host-state paths) are passed. Their values are not included in
 the preview. Binaries, helper and native sandbox wrapper are hashed in the
-approval and rechecked by the supervisor. Paths remain subject to the documented
-hash-to-exec race boundary in [runtime.md](runtime.md).
+approval and rechecked by the supervisor. Codex and Claude execute a private
+copy of their approved entry file for each attempt and version probe. Its
+0700 directory is outside the store and writable host state; its file is 0500
+and the child receives no write grant covering either. The verified copy stays
+alive through the attempt and is removed during cleanup. Original-file
+replacement cannot change the selected entry bytes. Other adapters, helper and
+wrapper paths retain the hash-to-exec boundary in [runtime.md](runtime.md).
+Interpreters and dynamically loaded modules are not copied or bound by this
+change. A Claude script that relies on files next to its original path may fail
+from a copy; Codex shebang entries remain refused. Another unsandboxed process
+running as the same user remains outside this protection.
 
 The approval also binds each named variable as read by the invoking process.
 `HOME`, `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and `SSL_CERT_FILE` are bound by
@@ -207,10 +216,11 @@ byte and the value. Neither the value nor its HMAC appears in the output or an
 error. An unset variable is bound as absent, distinct from an empty value.
 Review and `--approve` must therefore run with the same values: any change,
 removal or addition refuses the launch with
-`runtime.approval.required_or_changed`. This binding is approval format v6
-(`runtime-cli-approval-v6`, `-v6-backend`, `-v6-escalation`), which also binds the
-private host-state policy and Codex-only macOS preference-read rule. Digests
-produced by versions v1 to v5 are stale: review the run again for a new
+`runtime.approval.required_or_changed`. This binding is approval format v7
+(`runtime-cli-approval-v7`, `-v7-backend`, `-v7-escalation`), which also binds the
+private host-state policy, Codex-only macOS preference reads and execution from
+a private verified Codex/Claude entry copy. Digests
+produced by versions v1 to v6 are stale: review the run again for a new
 digest. The same applies to `coordinate` review, wave and verification digests.
 
 The approval key is 32 random bytes in `approval.key` inside the runtime store

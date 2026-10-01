@@ -719,13 +719,13 @@ fn approval_with_environment(
         let digest = binary_digest(&wrapper, BINARY_LIMIT)?;
         hashes.insert(wrapper, digest);
     }
-    // v6 also binds the Codex-only macOS preference-read rule; v1-v5 are stale.
+    // v7 binds execution from a private verified Codex/Claude entry copy.
     let bytes = if let Some(backend) = backend {
         serde_json::to_vec(&(
             if matches!(backend, crate::generation::SourceBinding::Escalated(_)) {
-                "runtime-cli-approval-v6-escalation"
+                "runtime-cli-approval-v7-escalation"
             } else {
-                "runtime-cli-approval-v6-backend"
+                "runtime-cli-approval-v7-backend"
             },
             inner_digest,
             definition,
@@ -736,7 +736,7 @@ fn approval_with_environment(
         ))
     } else {
         serde_json::to_vec(&(
-            "runtime-cli-approval-v6",
+            "runtime-cli-approval-v7",
             inner_digest,
             definition,
             config,

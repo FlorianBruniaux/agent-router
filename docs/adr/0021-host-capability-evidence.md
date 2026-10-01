@@ -4,7 +4,7 @@ title: Host capability evidence from supervised canaries
 status: amended
 created: 2026-09-30
 last_modified: 2026-10-01
-scope: "Batches 1 to 3 are implemented (Claude model identity, typed `prepare` errors, `assets seal`). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
+scope: "Batches 1 to 3 and batch 5 are implemented (Claude model identity, typed `prepare` errors, `assets seal`, private entry copies). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
 amended_by: ["0022"]
 supersedes: []
 superseded_by: []
@@ -344,6 +344,29 @@ separately from the native admission result.
    evaluation: an attestation never changes `host.capabilities` or `support`;
    a phase policy without an acceptance list rejects it; with the capability
    listed, the receipt shows `attested`.
+
+## Batch 5 result
+
+Codex and Claude attempts and version probes now execute an owner-only private
+copy of their approved entry file, outside the store and writable host state.
+The runtime bounds the source read, refuses symlinks and non-regular files,
+hashes during copying, closes the file, verifies its final hash and permissions,
+and grants the child no write access covering the copy. Cleanup includes both
+host state and the private entry. Approval v7 requires a fresh preview.
+
+A supervised synthetic executable test replaces the original entry after
+command preparation. The run still executes the approved bytes and cannot
+modify the private copy. Full local gates and independent review passed.
+A byte-identical copy of Codex 0.159.2 reported its version in a disposable
+unsandboxed state directory. Its separate nested-sandbox launch attempt was
+refused before execution, so this check adds no native sandbox or provider
+admission evidence. No paid request was made.
+
+The scope is the approved entry file. Interpreters, dynamically loaded modules,
+other adapters, sandbox wrappers and resource helpers retain their existing
+boundaries. On this macOS host, copied system executables can fail signature
+validation despite identical bytes; the router never re-signs or transforms
+them. Native host capabilities remain UNKNOWN.
 
 ## Batch 4 result
 

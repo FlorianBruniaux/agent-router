@@ -197,10 +197,19 @@ allowed and denied writes, and a denied connection to a loopback listener.
 The positive controls must also succeed. A failed or unavailable probe cannot
 produce a supervisor. Programs, extra readable roots and environment values
 are explicit trusted integration inputs. No home directory or environment is
-inherited implicitly. Native program hashes are checked before launch, but the
-program is then executed by path, so the check is not race-free: a principal who
-can write the binary or its directory can swap it after the hash (TOCTOU).
+inherited implicitly. Codex and Claude execute a per-attempt private copy of
+the approved entry file. The runtime hashes that copy after closing it and
+refuses a mismatch; the child cannot write its 0500 file or 0700 directory,
+which stay outside the store and writable host state. Replacing the original
+entry after command preparation does not replace the executed bytes.
+Interpreters, loaded modules, other adapters, helper and sandbox-wrapper paths
+retain their existing hash-to-exec race boundary. Another unsandboxed process
+running as the same user can still modify private files.
 Install approved binaries and the helper where the workload cannot write.
+Some macOS system executables fail signature validation when copied despite
+identical bytes. The router does not re-sign them or transform approved bytes.
+Hosts that load resources relative to their entry path may also fail from a
+copy; successful copying alone is not native-host readiness.
 Probe scratch files use fixed names below the private directory; stale entries
 from a killed probe are removed if owned and not symlinks, and every path is
 removed on every exit.
