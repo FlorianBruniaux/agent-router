@@ -283,6 +283,8 @@ where
                 // The original hash and structure were checked before authenticity.
                 // Offline exports retain the input hash but route only UNKNOWN claims.
                 let mut unverified = input.snapshot.clone();
+                unverified.schema_version = 1;
+                unverified.attestations = None;
                 unverified.host.capabilities.clear();
                 for evidence in unverified.capabilities.values_mut() {
                     evidence.support = router_types::CapabilitySupport::Unknown;
@@ -323,7 +325,9 @@ where
     let receipt = route(&context)?;
     let mut receipt_preimage = receipt.clone();
     receipt_preimage.receipt_id.clear();
-    let receipt_domain: &[u8] = if receipt.schema_version == 5 {
+    let receipt_domain: &[u8] = if receipt.schema_version == 6 {
+        b"phase-receipt-v6\0"
+    } else if receipt.schema_version == 5 {
         b"phase-receipt-v5\0"
     } else {
         b"phase-receipt-v2\0"
@@ -338,7 +342,7 @@ where
         || receipt.policy_hash != phase_context.policy_hash()
         || receipt.pool_hash != phase_context.pool_hash()
         || receipt.registry_hash != expected.registry_hash
-        || !matches!(receipt.schema_version, 2 | 5)
+        || !matches!(receipt.schema_version, 2 | 5 | 6)
         || receipt.capability_evidence != expected.capability_evidence
     {
         return Err(EvalError::Integrity);

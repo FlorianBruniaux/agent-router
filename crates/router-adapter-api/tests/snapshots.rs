@@ -9,6 +9,7 @@ use router_types::{Capability, CapabilitySupport, EffortLevel, HarnessId, HostSn
 fn observation() -> HostObservation {
     let model = ModelId::parse("fixture-model-v1").unwrap();
     HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "fixture-host".into(),

@@ -1,8 +1,9 @@
 //! Append-only authenticated capability records in the private runtime store.
 //! Opening an existing store for verification never creates a file or a key.
 use router_adapter_api::{
-    AuthenticatedCapabilityProof, CapabilityProofBinding, CapabilityProofError, CapabilityProofKey,
-    CapabilityProofSet, MAX_CAPABILITY_PROOF_BYTES, MAX_CAPABILITY_PROOFS,
+    AuthenticatedCapabilityAttestation, AuthenticatedCapabilityProof, CapabilityAttestationKey,
+    CapabilityProofBinding, CapabilityProofError, CapabilityProofKey, CapabilityProofSet,
+    MAX_CAPABILITY_PROOF_BYTES, MAX_CAPABILITY_PROOFS,
 };
 use rusqlite::{Connection, OpenFlags, params};
 use std::{
@@ -40,6 +41,7 @@ impl CapabilityStoreError {
 pub struct CapabilityProofStore {
     db: Connection,
     store_id: String,
+    schema_version: u32,
 }
 
 /// Reopens and authenticates the bounded log for every verification. A later
@@ -98,6 +100,19 @@ impl router_adapter_api::CapabilityProofVerifier for StoredCapabilityProofVerifi
                 _ => CapabilityProofError::Unauthenticated,
             })?
             .verify(source, capability, host, now)
+    }
+    fn verify_attestation(
+        &self,
+        reference: &router_adapter_api::CapabilityAttestationReference,
+        host: &router_types::HostSnapshot,
+        now: u64,
+    ) -> Result<router_adapter_api::VerifiedCapabilityProof, CapabilityProofError> {
+        self.snapshot()
+            .map_err(|error| match error {
+                CapabilityStoreError::Proof(error) => error,
+                _ => CapabilityProofError::Unauthenticated,
+            })?
+            .verify_attestation(reference, host, now)
     }
 }
 
@@ -184,7 +199,7 @@ impl CapabilityProofStore {
                 PRAGMA user_version=1;").map_err(|_| CapabilityStoreError::Integrity)?;
             tx.execute("INSERT INTO identity VALUES(1,?1)", [hex::encode(random)])
                 .map_err(|_| CapabilityStoreError::Integrity)?;
-        } else if version != 1 {
+        } else if !matches!(version, 1 | 2) {
             return Err(CapabilityStoreError::Integrity);
         }
         tx.commit().map_err(|_| CapabilityStoreError::Unavailable)?;
@@ -210,14 +225,18 @@ impl CapabilityProofStore {
         let version: u32 = db
             .pragma_query_value(None, "user_version", |r| r.get(0))
             .map_err(|_| CapabilityStoreError::Integrity)?;
-        if version != 1 {
+        if !matches!(version, 1 | 2) {
             return Err(CapabilityStoreError::Integrity);
         }
         let store_id: String = db.query_row("SELECT CASE WHEN length(CAST(store_id AS BLOB))=64 THEN store_id ELSE NULL END FROM identity WHERE id=1", [], |r| r.get(0)).map_err(|_| CapabilityStoreError::Integrity)?;
         if !router_adapter_api::is_digest(&store_id) {
             return Err(CapabilityStoreError::Integrity);
         }
-        Ok(Self { db, store_id })
+        Ok(Self {
+            db,
+            store_id,
+            schema_version: version,
+        })
     }
 
     pub fn store_id(&self) -> &str {
@@ -230,23 +249,32 @@ impl CapabilityProofStore {
         expected: Vec<CapabilityProofBinding>,
     ) -> Result<CapabilityProofSet, CapabilityStoreError> {
         let key = CapabilityProofKey::derive(secret, &self.store_id)?;
-        let records = self.records()?;
-        Ok(CapabilityProofSet::authenticate(
-            &self.store_id,
-            &key,
-            records,
-            expected,
-        )?)
+        let attestation_key = CapabilityAttestationKey::derive(secret, &self.store_id)?;
+        let (records, attestations) = self.records()?;
+        Ok(
+            CapabilityProofSet::authenticate(&self.store_id, &key, records, expected)?
+                .with_attestations(&self.store_id, &attestation_key, attestations)?,
+        )
     }
 
-    fn records(&self) -> Result<Vec<AuthenticatedCapabilityProof>, CapabilityStoreError> {
+    fn records(
+        &self,
+    ) -> Result<
+        (
+            Vec<AuthenticatedCapabilityProof>,
+            Vec<AuthenticatedCapabilityAttestation>,
+        ),
+        CapabilityStoreError,
+    > {
         let mut query = self.db.prepare("SELECT sequence,CASE WHEN length(CAST(proof_id AS BLOB))<=128 THEN proof_id ELSE NULL END,length(CAST(record AS BLOB)),CASE WHEN length(CAST(record AS BLOB))<=33024 THEN record ELSE NULL END FROM capability_proofs ORDER BY sequence LIMIT ?1").map_err(|_| CapabilityStoreError::Integrity)?;
         let mut rows = query
             .query([MAX_CAPABILITY_PROOFS + 1])
             .map_err(|_| CapabilityStoreError::Integrity)?;
         let mut proofs = Vec::new();
+        let mut attestations = Vec::new();
+        let mut prior_sequence = 0;
         while let Some(row) = rows.next().map_err(|_| CapabilityStoreError::Integrity)? {
-            if proofs.len() == MAX_CAPABILITY_PROOFS {
+            if proofs.len() + attestations.len() == MAX_CAPABILITY_PROOFS {
                 return Err(CapabilityProofError::Bounds.into());
             }
             let size: usize = row.get(2).map_err(|_| CapabilityStoreError::Integrity)?;
@@ -256,13 +284,79 @@ impl CapabilityProofStore {
             let sequence: u64 = row.get(0).map_err(|_| CapabilityStoreError::Integrity)?;
             let id: String = row.get(1).map_err(|_| CapabilityStoreError::Integrity)?;
             let text: String = row.get(3).map_err(|_| CapabilityStoreError::Integrity)?;
-            let proof = AuthenticatedCapabilityProof::from_json(text.as_bytes())?;
-            if proof.record.sequence != sequence || proof.record.proof_id != id {
+            if sequence <= prior_sequence {
                 return Err(CapabilityStoreError::Integrity);
             }
-            proofs.push(proof);
+            prior_sequence = sequence;
+            let value = router_adapter_api::strict_json(text.as_bytes())
+                .map_err(|_| CapabilityStoreError::Integrity)?;
+            match value["record"]["schema_version"].as_u64() {
+                Some(1) => {
+                    let proof = AuthenticatedCapabilityProof::from_json(text.as_bytes())?;
+                    if proof.record.sequence != sequence || proof.record.proof_id != id {
+                        return Err(CapabilityStoreError::Integrity);
+                    }
+                    proofs.push(proof);
+                }
+                Some(2) if self.schema_version == 2 => {
+                    let proof = AuthenticatedCapabilityAttestation::from_json(text.as_bytes())?;
+                    if proof.record.sequence != sequence || proof.record.record_id != id {
+                        return Err(CapabilityStoreError::Integrity);
+                    }
+                    attestations.push(proof);
+                }
+                _ => return Err(CapabilityStoreError::Integrity),
+            }
         }
-        Ok(proofs)
+        Ok((proofs, attestations))
+    }
+
+    /// Explicit issuing path only. Read-only opening never changes the schema.
+    /// SQLite commits the version change atomically with the authenticated check.
+    pub fn enable_attestations(&mut self, secret: &[u8; 32]) -> Result<(), CapabilityStoreError> {
+        self.enable_attestations_with(secret, || Ok(()))
+    }
+    fn enable_attestations_with(
+        &mut self,
+        secret: &[u8; 32],
+        before_commit: impl FnOnce() -> Result<(), CapabilityStoreError>,
+    ) -> Result<(), CapabilityStoreError> {
+        self.db
+            .execute_batch("BEGIN IMMEDIATE")
+            .map_err(|_| CapabilityStoreError::Unavailable)?;
+        let result = (|| {
+            self.verifier(secret, vec![])?;
+            self.db
+                .execute_batch("PRAGMA user_version=2")
+                .map_err(|_| CapabilityStoreError::Unavailable)?;
+            before_commit()?;
+            self.db
+                .execute_batch("COMMIT")
+                .map_err(|_| CapabilityStoreError::Unavailable)?;
+            Ok(())
+        })();
+        if result.is_err() {
+            let _ = self.db.execute_batch("ROLLBACK");
+        } else {
+            self.schema_version = 2;
+        }
+        result
+    }
+    pub fn next_sequence(&self, secret: &[u8; 32]) -> Result<u64, CapabilityStoreError> {
+        self.verifier(secret, vec![])?
+            .last_sequence()
+            .checked_add(1)
+            .ok_or(CapabilityStoreError::Integrity)
+    }
+    pub fn attestation(
+        &self,
+        secret: &[u8; 32],
+        id: &str,
+    ) -> Result<AuthenticatedCapabilityAttestation, CapabilityStoreError> {
+        self.verifier(secret, vec![])?
+            .attestation(id)
+            .cloned()
+            .ok_or(CapabilityStoreError::Unavailable)
     }
 
     /// Persist an already authenticated supervised attempt. This operation
@@ -272,36 +366,62 @@ impl CapabilityProofStore {
         proof: &AuthenticatedCapabilityProof,
         secret: &[u8; 32],
     ) -> Result<(), CapabilityStoreError> {
-        let key = CapabilityProofKey::derive(secret, &self.store_id)?;
-        key.verify(proof)?;
+        CapabilityProofKey::derive(secret, &self.store_id)?.verify(proof)?;
         if proof.record.store_id != self.store_id {
             return Err(CapabilityProofError::Unauthenticated.into());
         }
-        // Validate the entire prior sequence before extending it. The immediate
-        // transaction keeps that validation and insertion under one writer lock.
+        self.append_record(
+            proof.record.sequence,
+            &proof.record.proof_id,
+            &serde_json::to_string(proof).map_err(|_| CapabilityStoreError::Integrity)?,
+            secret,
+        )
+    }
+    pub fn append_attestation(
+        &mut self,
+        proof: &AuthenticatedCapabilityAttestation,
+        secret: &[u8; 32],
+    ) -> Result<(), CapabilityStoreError> {
+        if self.schema_version != 2 {
+            return Err(CapabilityStoreError::Integrity);
+        }
+        CapabilityAttestationKey::derive(secret, &self.store_id)?.verify(proof)?;
+        if proof.record.store_id != self.store_id {
+            return Err(CapabilityProofError::Unauthenticated.into());
+        }
+        self.append_record(
+            proof.record.sequence,
+            &proof.record.record_id,
+            &serde_json::to_string(proof).map_err(|_| CapabilityStoreError::Integrity)?,
+            secret,
+        )
+    }
+    fn append_record(
+        &mut self,
+        sequence: u64,
+        id: &str,
+        text: &str,
+        secret: &[u8; 32],
+    ) -> Result<(), CapabilityStoreError> {
         self.db
             .execute_batch("BEGIN IMMEDIATE")
             .map_err(|_| CapabilityStoreError::Unavailable)?;
         let result = (|| {
-            let records = self.records()?;
-            if records.len() >= MAX_CAPABILITY_PROOFS {
+            let prior = self.verifier(secret, vec![])?;
+            if prior.record_count() >= MAX_CAPABILITY_PROOFS {
                 return Err(CapabilityProofError::Bounds.into());
             }
-            let next = records
-                .last()
-                .map_or(Some(1), |p| p.record.sequence.checked_add(1))
-                .ok_or(CapabilityStoreError::Integrity)?;
-            CapabilityProofSet::authenticate(&self.store_id, &key, records, vec![])?;
-            if proof.record.sequence != next {
+            if prior.last_sequence().checked_add(1) != Some(sequence) {
                 return Err(CapabilityStoreError::Integrity);
             }
-            let text = serde_json::to_string(proof).map_err(|_| CapabilityStoreError::Integrity)?;
             self.db
                 .execute(
                     "INSERT INTO capability_proofs(sequence,proof_id,record) VALUES(?1,?2,?3)",
-                    params![proof.record.sequence, proof.record.proof_id, text],
+                    params![sequence, id, text],
                 )
                 .map_err(|_| CapabilityStoreError::Integrity)?;
+            // Includes cross-record revoke reference validation before commit.
+            self.verifier(secret, vec![])?;
             Ok(())
         })();
         match result {
@@ -320,6 +440,7 @@ impl CapabilityProofStore {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use router_types::Capability;
 
     #[test]
     fn identity_is_random_persistent_private_and_read_open_never_creates() {
@@ -474,7 +595,7 @@ mod tests {
             capabilities: Default::default(),
         };
         assert!(store.append(&first, &[43; 32]).is_err());
-        assert!(store.records().unwrap().is_empty());
+        assert!(store.records().unwrap().0.is_empty());
         store.append(&first, &[42; 32]).unwrap();
         assert!(store.append(&first, &[42; 32]).is_err());
         assert!(
@@ -546,6 +667,7 @@ mod tests {
                 .unwrap()
                 .records()
                 .unwrap()
+                .0
                 .len(),
             2
         );
@@ -697,5 +819,109 @@ mod tests {
             .unwrap();
         assert!(matches!(capture.await, Err(crate::RuntimeError::Route)));
         assert!(!marker.exists(), "refusal must precede the child effect");
+    }
+    #[test]
+    fn attestation_migration_is_explicit_atomic_and_preserves_old_rows() {
+        use router_adapter_api::*;
+        let temp = tempfile::Builder::new()
+            .permissions(fs::Permissions::from_mode(0o700))
+            .tempdir()
+            .unwrap();
+        let mut store = CapabilityProofStore::create(temp.path()).unwrap();
+        let first = attempt(store.store_id(), 1, true);
+        store.append(&first, &[42; 32]).unwrap();
+        let before: String = store
+            .db
+            .query_row(
+                "SELECT record FROM capability_proofs WHERE sequence=1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(store.schema_version, 1);
+        assert!(
+            store
+                .enable_attestations_with(&[42; 32], || Err(CapabilityStoreError::Unavailable))
+                .is_err()
+        );
+        assert_eq!(store.schema_version, 1);
+        let version: u32 = store
+            .db
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, 1);
+        drop(store);
+        let reader = CapabilityProofStore::open_existing(temp.path()).unwrap();
+        assert_eq!(reader.schema_version, 1);
+        drop(reader);
+        let mut store = CapabilityProofStore::create(temp.path()).unwrap();
+        store.enable_attestations(&[42; 32]).unwrap();
+        assert_eq!(store.schema_version, 2);
+        let after: String = store
+            .db
+            .query_row(
+                "SELECT record FROM capability_proofs WHERE sequence=1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(before, after);
+        assert_eq!(store.verifier(&[42; 32], vec![]).unwrap().record_count(), 1);
+        let key = CapabilityAttestationKey::derive(&[42; 32], store.store_id()).unwrap();
+        let grant = key
+            .authenticate(CapabilityAttestationRecord {
+                schema_version: 2,
+                record_id: "attestation-grant".into(),
+                sequence: 2,
+                store_id: store.store_id().into(),
+                capability: Capability::WorkspaceWrite,
+                binding: CapabilityAttestationBinding::from_execution_pins(
+                    first.record.binding.clone(),
+                ),
+                operator_label: "fixture-operator".into(),
+                reason: "Offline declaration".into(),
+                created_at_unix_seconds: 200,
+                action: CapabilityAttestationAction::Grant {
+                    max_age_seconds: 100,
+                },
+            })
+            .unwrap();
+        store.append_attestation(&grant, &[42; 32]).unwrap();
+        assert_eq!(store.next_sequence(&[42; 32]).unwrap(), 3);
+        assert_eq!(
+            store.attestation(&[42; 32], "attestation-grant").unwrap(),
+            grant
+        );
+        let mut invalid = grant.record.clone();
+        invalid.sequence = 3;
+        invalid.record_id = "invalid-revoke".into();
+        invalid.action = CapabilityAttestationAction::Revoke {
+            record_id: "missing".into(),
+            content_sha256: "9".repeat(64),
+        };
+        assert!(
+            store
+                .append_attestation(&key.authenticate(invalid).unwrap(), &[42; 32])
+                .is_err()
+        );
+        assert_eq!(store.next_sequence(&[42; 32]).unwrap(), 3);
+        let mut revoke = grant.record.clone();
+        revoke.sequence = 3;
+        revoke.record_id = "attestation-revoke".into();
+        revoke.action = CapabilityAttestationAction::Revoke {
+            record_id: grant.record.record_id.clone(),
+            content_sha256: grant.digest().unwrap(),
+        };
+        store
+            .append_attestation(&key.authenticate(revoke).unwrap(), &[42; 32])
+            .unwrap();
+        assert_eq!(store.verifier(&[42; 32], vec![]).unwrap().record_count(), 3);
+        drop(store);
+        let reader = CapabilityProofStore::open_existing(temp.path()).unwrap();
+        assert_eq!(reader.schema_version, 2);
+        assert_eq!(
+            reader.verifier(&[42; 32], vec![]).unwrap().last_sequence(),
+            3
+        );
     }
 }

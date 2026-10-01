@@ -14,6 +14,7 @@ fn validated(host: &str, tools: ToolSelection) -> ValidatedExecutionRequest {
     })
     .unwrap();
     let observation = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic".into(),

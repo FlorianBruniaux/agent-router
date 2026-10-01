@@ -16,8 +16,8 @@ pub use signed::{
 };
 
 use router_adapter_api::{
-    MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation, authorize_execution,
-    content_digest, strict_json,
+    MAX_EXECUTION_INPUT_BYTES, MAX_TRANSPORT_BYTES, SnapshotValidation,
+    authorize_execution_with_capability_acceptance, content_digest, strict_json,
 };
 use router_execution_decision::ExecutionDecision;
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
@@ -498,10 +498,11 @@ fn prepare_with_decision_inner(
     // is manufactured or returned, and no adapter or supervisor is invoked.
     let mut preflight = request.clone();
     preflight.mode = ExecutionMode::DryRun;
-    authorize_execution(
+    authorize_execution_with_capability_acceptance(
         preflight,
         &snapshot,
         &input.context.request().restrictions,
+        input.context.capability_acceptance(),
         None,
     )?;
     validate_prepared_input_inner(

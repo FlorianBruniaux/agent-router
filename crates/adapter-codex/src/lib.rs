@@ -126,6 +126,7 @@ impl HostProbe for CodexProbe {
         }
         let source_ids = BTreeSet::from([SOURCE_ID.to_owned()]);
         let observation = HostObservation {
+            attestations: None,
             schema_version: SNAPSHOT_SCHEMA_VERSION,
             host: HostSnapshot {
                 id: "codex-local-cache".into(),

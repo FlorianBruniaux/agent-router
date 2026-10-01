@@ -461,7 +461,9 @@ fn evaluation_receipt(
         .then_some(PhaseAbstention::Ambiguous);
     receipt.receipt_id.clear();
     receipt.receipt_id = digest(
-        if receipt.schema_version == 5 {
+        if receipt.schema_version == 6 {
+            "phase-receipt-v6\0"
+        } else if receipt.schema_version == 5 {
             "phase-receipt-v5\0"
         } else {
             "phase-receipt-v2\0"

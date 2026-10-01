@@ -1,5 +1,5 @@
 use crate::*;
-use router_adapter_api::content_digest;
+use router_adapter_api::{CapabilityAcceptance, content_digest};
 use router_types::*;
 use std::collections::BTreeSet;
 
@@ -121,9 +121,37 @@ pub fn preflight(
     policy: &AssetGatePolicy,
     now: u64,
 ) -> Result<EligibleAssetPlan> {
+    preflight_with_capability_acceptance(
+        contracts,
+        availability,
+        request,
+        policy,
+        &CapabilityAcceptance::proven_only(),
+        now,
+    )
+}
+
+/// Explicit phase-policy opt-in; the legacy entry point remains proven-only.
+pub fn preflight_with_capability_acceptance(
+    contracts: &ValidatedContracts,
+    availability: &ValidatedAvailability,
+    request: &AssetGateRequest,
+    policy: &AssetGatePolicy,
+    acceptance: &CapabilityAcceptance,
+    now: u64,
+) -> Result<EligibleAssetPlan> {
     validate_request(request)?;
     let policy_hash = policy_hash(policy)?;
     availability.check_fresh(now, policy.maximum_evidence_age_seconds)?;
+    // Retained authenticated evidence still has its own lifetime. This checks
+    // the caller's explicit clock; executable callers also need a live verifier.
+    let snapshot = availability
+        .snapshot()
+        .revalidate_at(router_adapter_api::SnapshotValidation {
+            now_unix_seconds: now,
+            max_age_seconds: policy.maximum_evidence_age_seconds,
+        })
+        .map_err(|_| excluded(GateCode::EvidenceStale))?;
     let model = contracts
         .model(&request.model)
         .ok_or(excluded(GateCode::ModelMissing))?;
@@ -222,14 +250,13 @@ pub fn preflight(
     {
         return Err(excluded(GateCode::MutationForbidden));
     }
-    let known = availability.snapshot().capabilities();
     if !capabilities.is_subset(&policy.allowed_capabilities)
         || !contracts
             .model_capabilities(&request.model)
             .is_some_and(|allowed| capabilities.is_subset(allowed))
         || capabilities
             .iter()
-            .any(|c| known.get(c) != Some(&CapabilitySupport::Supported))
+            .any(|c| !snapshot.permits_capability(*c, acceptance))
     {
         return Err(excluded(GateCode::CapabilityUnknownOrDenied));
     }
@@ -302,7 +329,41 @@ pub fn gate(
     approvals: &[SkillApproval],
     now: u64,
 ) -> Result<GatedAssets> {
-    let eligible = preflight(contracts, availability, request, policy, now)?;
+    gate_with_capability_acceptance(
+        contracts,
+        availability,
+        request,
+        policy,
+        prompt,
+        bodies,
+        approvals,
+        &CapabilityAcceptance::proven_only(),
+        now,
+    )
+}
+
+/// Final gate with a policy-bound acceptance. The resulting binding additionally
+/// includes that phase policy; skill-body approval remains bound to asset policy.
+#[allow(clippy::too_many_arguments)]
+pub fn gate_with_capability_acceptance(
+    contracts: &ValidatedContracts,
+    availability: &ValidatedAvailability,
+    request: &AssetGateRequest,
+    policy: &AssetGatePolicy,
+    prompt: &[u8],
+    bodies: &[SkillBody<'_>],
+    approvals: &[SkillApproval],
+    acceptance: &CapabilityAcceptance,
+    now: u64,
+) -> Result<GatedAssets> {
+    let eligible = preflight_with_capability_acceptance(
+        contracts,
+        availability,
+        request,
+        policy,
+        acceptance,
+        now,
+    )?;
     if prompt.is_empty()
         || prompt.len() > MAX_PROMPT_BYTES
         || bodies.len() > MAX_SELECTED_SKILLS
@@ -389,6 +450,18 @@ pub fn gate(
             total_bound,
         ),
     )?;
+    let binding_digest = if acceptance.accepted().is_empty() {
+        binding_digest
+    } else {
+        digest(
+            "agent-router:asset-gate:v2",
+            &(
+                &binding_digest,
+                acceptance.policy_hash(),
+                acceptance.accepted(),
+            ),
+        )?
+    };
     Ok(GatedAssets {
         binding_digest,
         prompt_sha256,

@@ -45,6 +45,7 @@ fn input() -> ReplayInput {
         {"id":"fixture-second","stages":["plan","execute","verify"],"efforts":["medium"],"capabilities":[],"quality_micros":700000,"cost_micros":50,"latency_micros":50,"source":"synthetic-test"}],"skills":[]});
     let models = [model("fixture-best"), model("fixture-second")];
     let snapshot = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "fixture-host".into(),

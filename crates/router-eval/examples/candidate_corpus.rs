@@ -64,6 +64,7 @@ fn build(case: CandidateCase) -> std::result::Result<CandidateReplay, Box<dyn Er
         model("fixture-gamma"),
     ];
     let mut snapshot = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic-corpus-host".into(),

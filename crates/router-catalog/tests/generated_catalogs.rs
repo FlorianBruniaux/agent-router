@@ -25,6 +25,7 @@ fn validation() -> SnapshotValidation {
 fn observation(runtime: bool) -> HostObservation {
     let id = ModelId::parse("fixture-model-v1").unwrap();
     let mut document = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "fixture-host".into(),

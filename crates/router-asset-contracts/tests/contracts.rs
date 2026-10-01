@@ -33,6 +33,7 @@ impl Fixture {
         let model = ModelId::parse("fixture-model").unwrap();
         let snapshot = fixture_proofs::from_observation(
             HostObservation {
+                attestations: None,
                 schema_version: 1,
                 host: HostSnapshot {
                     id: "fixture-host".into(),
@@ -918,4 +919,244 @@ fn license_expression_and_source_metadata_are_bounded_before_review() {
         let error = seal_contracts(fixture.contracts.clone(), &fixture.catalog).unwrap_err();
         assert!(!error.to_string().contains(source));
     }
+}
+
+#[test]
+fn standalone_asset_gates_require_explicit_authenticated_attestation_acceptance() {
+    use router_adapter_api::{
+        CapabilityAcceptance, CapabilityAttestationAction, CapabilityAttestationBinding,
+        CapabilityAttestationKey, CapabilityAttestationRecord, CapabilityAttestationReferences,
+        CapabilityProofKey, CapabilityProofSet,
+    };
+    use sha2::{Digest, Sha256};
+    let mut fixture = Fixture::new();
+    let store_id = "1".repeat(64);
+    let key = CapabilityAttestationKey::derive(&[42; 32], &store_id).unwrap();
+    let binding = CapabilityAttestationBinding {
+        harness_id: "fixture-host".into(),
+        host_snapshot_id: "fixture-host".into(),
+        binary_sha256: "2".repeat(64),
+        declared_version: "1.2.3".into(),
+        adapter_id: "fixture-host".into(),
+        argument_template_sha256: "3".repeat(64),
+        sandbox_helper_sha256: "4".repeat(64),
+        sandbox_wrapper_sha256: "5".repeat(64),
+        sandbox_profile_sha256: "6".repeat(64),
+        write_roots: BTreeSet::new(),
+        network: false,
+        os: "fixture-os".into(),
+    };
+    let grant = key
+        .authenticate(CapabilityAttestationRecord {
+            schema_version: 2,
+            record_id: "asset-tools-grant".into(),
+            sequence: 1,
+            store_id: store_id.clone(),
+            capability: Capability::Tools,
+            binding: binding.clone(),
+            operator_label: "fixture-operator".into(),
+            reason: "Offline asset fixture".into(),
+            created_at_unix_seconds: NOW,
+            action: CapabilityAttestationAction::Grant {
+                max_age_seconds: 100,
+            },
+        })
+        .unwrap();
+    let proof_key = CapabilityProofKey::derive(&[42; 32], &store_id).unwrap();
+    let verifier = CapabilityProofSet::authenticate(
+        &store_id,
+        &proof_key,
+        vec![],
+        vec![binding.execution_pins()],
+    )
+    .unwrap()
+    .with_attestations(&store_id, &key, vec![grant.clone()])
+    .unwrap();
+    let mut observation = fixture.snapshot.observation().clone();
+    observation.schema_version = 2;
+    observation.host.capabilities.clear();
+    for evidence in observation.capabilities.values_mut() {
+        evidence.support = CapabilitySupport::Unknown;
+        evidence.source_ids.clear();
+    }
+    observation.attestations = Some(CapabilityAttestationReferences {
+        schema_version: 1,
+        entries: vec![grant.reference().unwrap()],
+    });
+    let observation = observation.seal().unwrap();
+    fixture.snapshot = ValidatedHostObservation::from_observation_with_verifier(
+        observation.clone(),
+        SnapshotValidation {
+            now_unix_seconds: NOW,
+            max_age_seconds: 100,
+        },
+        Some(&verifier),
+    )
+    .unwrap();
+    fixture.availability.snapshot_hash = fixture.snapshot.hash().into();
+    fixture.availability.expires_at_unix_seconds = NOW + 1000;
+    fixture.policy.maximum_evidence_age_seconds = 500;
+    fixture
+        .request
+        .required_capabilities
+        .insert(Capability::Tools);
+    let (contracts, availability) = fixture.bound();
+    rejected(
+        preflight(
+            &contracts,
+            &availability,
+            &fixture.request,
+            &fixture.policy,
+            NOW,
+        ),
+        GateCode::CapabilityUnknownOrDenied,
+    );
+    let mut policy = PhasePolicy {
+        schema_version: 3,
+        version: "asset-attestation-v3".into(),
+        accepted_attestations: BTreeSet::from([Capability::Tools]),
+        ..Default::default()
+    };
+    let acceptance = |policy: &PhasePolicy| {
+        let mut hash = Sha256::new();
+        hash.update(b"phase-policy-v3\0");
+        hash.update(serde_json::to_vec(policy).unwrap());
+        CapabilityAcceptance::from_policy(policy, &hex::encode(hash.finalize())).unwrap()
+    };
+    assert!(CapabilityAcceptance::from_policy(&policy, &"9".repeat(64)).is_err());
+    let accepted = acceptance(&policy);
+    preflight_with_capability_acceptance(
+        &contracts,
+        &availability,
+        &fixture.request,
+        &fixture.policy,
+        &accepted,
+        NOW,
+    )
+    .unwrap();
+    // Metadata and availability remain fresh while the declaration expires.
+    preflight_with_capability_acceptance(
+        &contracts,
+        &availability,
+        &fixture.request,
+        &fixture.policy,
+        &accepted,
+        NOW + 100,
+    )
+    .unwrap();
+    rejected(
+        preflight_with_capability_acceptance(
+            &contracts,
+            &availability,
+            &fixture.request,
+            &fixture.policy,
+            &accepted,
+            NOW + 101,
+        ),
+        GateCode::EvidenceStale,
+    );
+    rejected(
+        preflight(
+            &contracts,
+            &availability,
+            &fixture.request,
+            &fixture.policy,
+            NOW + 101,
+        ),
+        GateCode::EvidenceStale,
+    );
+    assert_eq!(
+        availability.snapshot().capabilities()[&Capability::Tools],
+        CapabilitySupport::Unknown
+    );
+    assert!(availability.snapshot().host().capabilities.is_empty());
+    let approval = fixture.approved(&contracts, BODY);
+    let bodies = [SkillBody {
+        skill: &fixture.contracts.skills[0].skill,
+        bytes: BODY,
+    }];
+    rejected(
+        gate(
+            &contracts,
+            &availability,
+            &fixture.request,
+            &fixture.policy,
+            BODY,
+            &bodies,
+            std::slice::from_ref(&approval),
+            NOW,
+        ),
+        GateCode::CapabilityUnknownOrDenied,
+    );
+    let gated = gate_with_capability_acceptance(
+        &contracts,
+        &availability,
+        &fixture.request,
+        &fixture.policy,
+        BODY,
+        &bodies,
+        std::slice::from_ref(&approval),
+        &accepted,
+        NOW,
+    )
+    .unwrap();
+    rejected(
+        gate_with_capability_acceptance(
+            &contracts,
+            &availability,
+            &fixture.request,
+            &fixture.policy,
+            BODY,
+            &bodies,
+            std::slice::from_ref(&approval),
+            &accepted,
+            NOW + 101,
+        ),
+        GateCode::EvidenceStale,
+    );
+    policy.version = "changed-policy".into();
+    let changed = gate_with_capability_acceptance(
+        &contracts,
+        &availability,
+        &fixture.request,
+        &fixture.policy,
+        BODY,
+        &bodies,
+        &[approval],
+        &acceptance(&policy),
+        NOW,
+    )
+    .unwrap();
+    assert_ne!(gated.binding_digest(), changed.binding_digest());
+    let mut revoke = grant.record.clone();
+    revoke.record_id = "asset-tools-revoke".into();
+    revoke.sequence = 2;
+    revoke.action = CapabilityAttestationAction::Revoke {
+        record_id: grant.record.record_id.clone(),
+        content_sha256: grant.digest().unwrap(),
+    };
+    let revoked = CapabilityProofSet::authenticate(
+        &store_id,
+        &proof_key,
+        vec![],
+        vec![binding.execution_pins()],
+    )
+    .unwrap()
+    .with_attestations(
+        &store_id,
+        &key,
+        vec![grant, key.authenticate(revoke).unwrap()],
+    )
+    .unwrap();
+    assert!(
+        ValidatedHostObservation::from_observation_with_verifier(
+            observation,
+            SnapshotValidation {
+                now_unix_seconds: NOW,
+                max_age_seconds: 100
+            },
+            Some(&revoked)
+        )
+        .is_err()
+    );
 }

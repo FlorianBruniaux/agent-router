@@ -44,6 +44,7 @@ fn fixture(
     let model = ModelId::parse("synthetic/model-v1").unwrap();
     let capabilities: BTreeSet<_> = ALL_CAPABILITIES.into_iter().collect();
     let observation = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic-conformance".into(),

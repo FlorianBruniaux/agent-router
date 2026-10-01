@@ -9,6 +9,10 @@ pub(crate) fn has_claims(observation: &HostObservation) -> bool {
         .capabilities
         .values()
         .any(|e| e.support != router_types::CapabilitySupport::Unknown)
+        || observation
+            .attestations
+            .as_ref()
+            .is_some_and(|value| !value.entries.is_empty())
 }
 
 fn secret(store: &Path) -> Result<[u8; 32], CliError> {
@@ -103,6 +107,16 @@ pub(crate) fn historical_replay(
     let sequence = proofs
         .referenced_sequence(&observation.host, &sources)
         .map_err(|error| CliError::Product(error.code()))?;
+    let attestation_sequence = proofs
+        .referenced_attestation_sequence(
+            &observation.host,
+            observation
+                .attestations
+                .as_ref()
+                .map_or(&[], |value| value.entries.as_slice()),
+        )
+        .map_err(|error| CliError::Product(error.code()))?;
+    let sequence = sequence.max(attestation_sequence);
     historical_through(store, Some(sequence))
 }
 pub(crate) fn historical_through(

@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod attestations;
+pub use attestations::*;
+
 mod proofs;
 pub use proofs::*;
 
@@ -62,6 +65,8 @@ pub struct CapabilityEvidence {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct HostObservation {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub attestations: Option<CapabilityAttestationReferences>,
     pub schema_version: u32,
     pub host: HostSnapshot,
     pub capabilities: BTreeMap<Capability, CapabilityEvidence>,
@@ -176,12 +181,17 @@ impl HostObservation {
                 });
         }
         self.evidence.sort_by(|left, right| left.id.cmp(&right.id));
+        if let Some(attestations) = &mut self.attestations {
+            attestations.entries.sort_by_key(|entry| entry.capability);
+        }
     }
 
     fn compute_hash(&self) -> Result<String, SnapshotError> {
         #[derive(Serialize)]
         struct Payload<'a> {
             schema_version: u32,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            attestations: &'a Option<CapabilityAttestationReferences>,
             host: &'a HostSnapshot,
             capabilities: &'a BTreeMap<Capability, CapabilityEvidence>,
             evidence: &'a [EvidenceSource],
@@ -189,6 +199,7 @@ impl HostObservation {
         }
         let bytes = serde_json::to_vec(&Payload {
             schema_version: self.schema_version,
+            attestations: &self.attestations,
             host: &self.host,
             capabilities: &self.capabilities,
             evidence: &self.evidence,
@@ -196,14 +207,35 @@ impl HostObservation {
         })
         .map_err(|_| SnapshotError::InvalidJson)?;
         let mut hasher = Sha256::new();
-        hasher.update(b"agent-router:host-observation:v1\0");
+        hasher.update(if self.schema_version == 2 {
+            b"agent-router:host-observation:v2\0"
+        } else {
+            b"agent-router:host-observation:v1\0"
+        });
         hasher.update(bytes);
         Ok(hex::encode(hasher.finalize()))
     }
 
     fn validate_structure(&self) -> Result<(), SnapshotError> {
-        if self.schema_version != SNAPSHOT_SCHEMA_VERSION {
+        if !matches!(self.schema_version, 1 | 2)
+            || (self.schema_version == 1 && self.attestations.is_some())
+            || (self.schema_version == 2 && self.attestations.is_none())
+        {
             return Err(SnapshotError::UnsupportedSchema);
+        }
+        if let Some(attestations) = &self.attestations {
+            attestations.validate()?;
+            if attestations.entries.iter().any(|entry| {
+                self.host.capabilities.contains(&entry.capability)
+                    || self
+                        .capabilities
+                        .get(&entry.capability)
+                        .is_none_or(|e| e.support != CapabilitySupport::Unknown)
+            }) {
+                return Err(SnapshotError::Invalid(
+                    "attestation cannot promote capability support",
+                ));
+            }
         }
         if !valid_identifier(&self.host.id) || !valid_identifier(self.host.harness.as_str()) {
             return Err(SnapshotError::Invalid("host identity"));
@@ -358,6 +390,19 @@ impl ValidatedHostObservation {
                 authenticated_sources.insert(&source.id);
             }
         }
+        if let Some(attestations) = &observation.attestations {
+            for reference in &attestations.entries {
+                capability_proofs.push(
+                    verifier
+                        .ok_or(CapabilityProofError::Unauthenticated)?
+                        .verify_attestation(
+                            reference,
+                            &observation.host,
+                            validation.now_unix_seconds,
+                        )?,
+                );
+            }
+        }
         for source in &observation.evidence {
             if !authenticated_sources.contains(&source.id)
                 && validation.now_unix_seconds - source.observed_at_unix_seconds
@@ -411,12 +456,54 @@ impl ValidatedHostObservation {
                 }
                 Ok(proof.clone())
             }
+            fn verify_attestation(
+                &self,
+                reference: &CapabilityAttestationReference,
+                host: &HostSnapshot,
+                now: u64,
+            ) -> Result<VerifiedCapabilityProof, CapabilityProofError> {
+                if reference.capability == Capability::Network {
+                    return Err(CapabilityProofError::NetworkAdmissionRequired);
+                }
+                let proof = self
+                    .0
+                    .iter()
+                    .find(|p| {
+                        p.tier == CapabilityProofTier::Attested
+                            && p.capability == reference.capability
+                            && p.proof_id == reference.record_id
+                            && p.proof_sha256 == reference.content_sha256
+                            && p.observed_at_unix_seconds == reference.created_at_unix_seconds
+                            && p.binding.host_snapshot_id == host.id
+                            && p.binding.harness_id == host.harness.as_str()
+                    })
+                    .ok_or(CapabilityProofError::Unauthenticated)?;
+                if now < proof.observed_at_unix_seconds {
+                    return Err(CapabilityProofError::Future);
+                }
+                if now > proof.expires_at_unix_seconds {
+                    return Err(CapabilityProofError::Expired);
+                }
+                Ok(proof.clone())
+            }
         }
         Self::from_observation_with_verifier(
             self.observation.clone(),
             validation,
             Some(&Retained(&self.capability_proofs)),
         )
+    }
+
+    pub fn permits_capability(
+        &self,
+        capability: Capability,
+        acceptance: &CapabilityAcceptance,
+    ) -> bool {
+        self.capabilities().get(&capability) == Some(&CapabilitySupport::Supported)
+            || (acceptance.accepts(capability)
+                && self.capability_proofs.iter().any(|proof| {
+                    proof.capability == capability && proof.tier == CapabilityProofTier::Attested
+                }))
     }
 
     pub fn capability_proofs(&self) -> &[VerifiedCapabilityProof] {
@@ -628,5 +715,41 @@ mod strict_json_limited_tests {
             strict_json_limited(b"{\"a\":1,\"a\":2}", 1024),
             Err(SnapshotError::InvalidJson)
         ));
+    }
+}
+
+#[cfg(test)]
+mod attestation_schema_contract {
+    use super::*;
+    #[test]
+    fn version_two_empty_attestation_field_keeps_all_capabilities_unknown() {
+        let mut value: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../fixtures/examples/phase-snapshot.json"
+        ))
+        .unwrap();
+        value["schema_version"] = serde_json::json!(2);
+        value["attestations"] = serde_json::json!({"schema_version":1,"entries":[]});
+        value["host"]["capabilities"] = serde_json::json!([]);
+        for evidence in value["capabilities"].as_object_mut().unwrap().values_mut() {
+            evidence["support"] = serde_json::json!("unknown");
+            evidence["source_ids"] = serde_json::json!([]);
+        }
+        let observation: HostObservation =
+            serde_json::from_value(value).expect("schema-2 attestation envelope must decode");
+        let validated = ValidatedHostObservation::from_observation(
+            observation.seal().unwrap(),
+            SnapshotValidation {
+                now_unix_seconds: 110,
+                max_age_seconds: 300,
+            },
+        )
+        .unwrap();
+        assert!(validated.host().capabilities.is_empty());
+        assert!(
+            validated
+                .capabilities()
+                .values()
+                .all(|value| *value == CapabilitySupport::Unknown)
+        );
     }
 }

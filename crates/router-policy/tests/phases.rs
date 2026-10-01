@@ -35,6 +35,7 @@ fn catalog(value: Value) -> Catalog {
 fn observation() -> HostObservation {
     let models = [model("fixture-best"), model("fixture-second")];
     HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic-host".into(),

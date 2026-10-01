@@ -3,6 +3,7 @@
 mod admission;
 mod approval_key;
 mod assets;
+mod attestations;
 mod backend_activation;
 mod capability_proofs;
 mod catalogs;
@@ -307,6 +308,7 @@ fn run(mut command: Commands) -> Result<Outcome, CliError> {
 
 fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::Capability { command } => attestations::run(command),
         Commands::Schema { name, list, .. } => schema::run(name.as_deref(), list),
         Commands::Version { .. } => version_info::run(),
         Commands::Completions { shell } => completions::run(shell),

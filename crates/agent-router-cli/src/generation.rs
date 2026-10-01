@@ -215,6 +215,16 @@ fn historical_node_verifier(
     let sequence = proofs
         .referenced_sequence(&observation.host, &sources)
         .map_err(|error| CliError::Product(error.code()))?;
+    let attestation_sequence = proofs
+        .referenced_attestation_sequence(
+            &observation.host,
+            observation
+                .attestations
+                .as_ref()
+                .map_or(&[], |value| value.entries.as_slice()),
+        )
+        .map_err(|error| CliError::Product(error.code()))?;
+    let sequence = sequence.max(attestation_sequence);
     crate::capability_proofs::historical_through(store, Some(sequence))
 }
 

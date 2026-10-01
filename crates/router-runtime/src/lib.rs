@@ -45,8 +45,9 @@ pub use store::{observe, observe_cleanup, observe_events, request_cancel};
 pub use workspace::source_state;
 
 use router_adapter_api::{
-    HarnessAdapter, SnapshotValidation, ValidatedHostObservation, authorize_execution,
-    content_digest, execution_authorization_digest, is_digest,
+    HarnessAdapter, SnapshotValidation, ValidatedHostObservation,
+    authorize_execution_with_capability_acceptance, content_digest,
+    execution_authorization_digest_with_capability_acceptance, is_digest,
 };
 use router_execution_decision::{ActivationAuthority, ExecutionDecision};
 use router_policy::{PhaseRouter, ValidatedPhaseContext, ValidatedPhaseReceipt};
@@ -605,7 +606,13 @@ impl Runtime {
         // execution approval. The original execute request remains hash-bound.
         let mut check = request.clone();
         check.mode = ExecutionMode::DryRun;
-        authorize_execution(check, &snapshot, &context.request().restrictions, None)?;
+        authorize_execution_with_capability_acceptance(
+            check,
+            &snapshot,
+            &context.request().restrictions,
+            context.capability_acceptance(),
+            None,
+        )?;
         if let Some(shared) = &self.admission {
             shared.validate_request(context, &request, &node.owner)?;
         }
@@ -660,7 +667,11 @@ impl Runtime {
                             proof.capability,
                             CapabilityReceiptEvidence {
                                 proof_sha256: proof.proof_sha256.clone(),
-                                tier: "proven".into(),
+                                tier: match proof.tier {
+                                    router_adapter_api::CapabilityProofTier::Proven => "proven",
+                                    router_adapter_api::CapabilityProofTier::Attested => "attested",
+                                }
+                                .into(),
                                 observed_at_unix_seconds: proof.observed_at_unix_seconds,
                                 expires_at_unix_seconds: proof.expires_at_unix_seconds,
                             },
@@ -1557,15 +1568,17 @@ impl Runtime {
         let id = &pending.run.run_id;
         // A dry preparation verifies the native adapter/sandbox before creating
         // a worktree. Approval has already been recorded, but no process runs.
-        let auth = execution_authorization_digest(
+        let auth = execution_authorization_digest_with_capability_acceptance(
             &request,
             &snapshot,
             &pending.context.request().restrictions,
+            pending.context.capability_acceptance(),
         )?;
-        let validated = authorize_execution(
+        let validated = authorize_execution_with_capability_acceptance(
             request.clone(),
             &snapshot,
             &pending.context.request().restrictions,
+            pending.context.capability_acceptance(),
             Some(&auth),
         )?;
         let initial = adapter.prepare(&validated)?;
@@ -1686,15 +1699,17 @@ impl Runtime {
             return Err(RuntimeError::Cancelled);
         }
         workspace::safe_scope(Path::new(&request.workspace), &request.scope)?;
-        let auth = execution_authorization_digest(
+        let auth = execution_authorization_digest_with_capability_acceptance(
             &request,
             &snapshot,
             &pending.context.request().restrictions,
+            pending.context.capability_acceptance(),
         )?;
-        let validated = authorize_execution(
+        let validated = authorize_execution_with_capability_acceptance(
             request.clone(),
             &snapshot,
             &pending.context.request().restrictions,
+            pending.context.capability_acceptance(),
             Some(&auth),
         )?;
         let run = adapter.prepare(&validated)?;

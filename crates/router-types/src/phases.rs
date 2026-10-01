@@ -129,6 +129,8 @@ pub struct PhaseRouteRequest {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct PhasePolicy {
+    #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+    pub accepted_attestations: BTreeSet<Capability>,
     pub schema_version: u32,
     pub version: String,
     pub quality_weight: u32,
@@ -144,6 +146,7 @@ pub struct PhasePolicy {
 impl Default for PhasePolicy {
     fn default() -> Self {
         Self {
+            accepted_attestations: BTreeSet::new(),
             schema_version: 2,
             version: "phase-v2".into(),
             quality_weight: 100,

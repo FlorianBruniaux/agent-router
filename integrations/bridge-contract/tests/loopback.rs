@@ -18,6 +18,7 @@ const SECRET: &str = "sk-te\"st\\vAlue-9x";
 fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedExecutionRequest {
     let model = ModelId::parse("exact-test-model").unwrap();
     let observation = HostObservation {
+        attestations: None,
         schema_version: 1,
         host: HostSnapshot {
             id: "synthetic".into(),

@@ -7,11 +7,11 @@ use std::{
 };
 
 use router_types::{
-    AdapterDegradation, Capability, CapabilitySupport, EffectiveRestrictions, ExecutionMode,
-    ExecutionRequest, ExecutionSandbox, ExecutionSkillKind, ExecutionTarget, HostUsage, ModelId,
-    Mutation, ObservedModel, PreparedInput, PreparedRun, RuntimeEvidence, SkillTrust,
-    ToolSelection, TransportEvent, TransportEventKind, TransportOutcome, TransportTermination,
-    UsageField, VerificationOutcome,
+    AdapterDegradation, Capability, EffectiveRestrictions, ExecutionMode, ExecutionRequest,
+    ExecutionSandbox, ExecutionSkillKind, ExecutionTarget, HostUsage, ModelId, Mutation,
+    ObservedModel, PreparedInput, PreparedRun, RuntimeEvidence, SkillTrust, ToolSelection,
+    TransportEvent, TransportEventKind, TransportOutcome, TransportTermination, UsageField,
+    VerificationOutcome,
 };
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -60,6 +60,8 @@ pub enum NativeFailureProtocol {
 
 #[derive(Debug, Error, Eq, PartialEq)]
 pub enum AdapterError {
+    #[error("capability.attestation.network_admission_required")]
+    NetworkAdmissionRequired,
     #[error("adapter.input.invalid: {0}")]
     Invalid(&'static str),
     #[error("adapter.host.mismatch")]
@@ -457,19 +459,61 @@ pub fn execution_authorization_digest(
     snapshot: &ValidatedHostObservation,
     restrictions: &EffectiveRestrictions,
 ) -> Result<String, AdapterError> {
+    execution_authorization_digest_with_capability_acceptance(
+        request,
+        snapshot,
+        restrictions,
+        &crate::CapabilityAcceptance::proven_only(),
+    )
+}
+pub fn execution_authorization_digest_with_capability_acceptance(
+    request: &ExecutionRequest,
+    snapshot: &ValidatedHostObservation,
+    restrictions: &EffectiveRestrictions,
+    acceptance: &crate::CapabilityAcceptance,
+) -> Result<String, AdapterError> {
     let mut hash = Sha256::new();
-    hash.update(b"agent-router:execution-authorization:v1\0");
-    hash.update(
-        serde_json::to_vec(&(request, snapshot.hash(), restrictions))
+    if acceptance.accepted().is_empty() {
+        hash.update(b"agent-router:execution-authorization:v1\0");
+        hash.update(
+            serde_json::to_vec(&(request, snapshot.hash(), restrictions))
+                .map_err(|_| AdapterError::Invalid("serialization"))?,
+        );
+    } else {
+        hash.update(b"agent-router:execution-authorization:v2\0");
+        hash.update(
+            serde_json::to_vec(&(
+                request,
+                snapshot.hash(),
+                restrictions,
+                acceptance.policy_hash(),
+                acceptance.accepted(),
+                snapshot.capability_proofs(),
+            ))
             .map_err(|_| AdapterError::Invalid("serialization"))?,
-    );
+        );
+    }
     Ok(hex::encode(hash.finalize()))
 }
-
 pub fn authorize_execution(
     request: ExecutionRequest,
     snapshot: &ValidatedHostObservation,
     restrictions: &EffectiveRestrictions,
+    approved_digest: Option<&str>,
+) -> Result<ValidatedExecutionRequest, AdapterError> {
+    authorize_execution_with_capability_acceptance(
+        request,
+        snapshot,
+        restrictions,
+        &crate::CapabilityAcceptance::proven_only(),
+        approved_digest,
+    )
+}
+pub fn authorize_execution_with_capability_acceptance(
+    request: ExecutionRequest,
+    snapshot: &ValidatedHostObservation,
+    restrictions: &EffectiveRestrictions,
+    acceptance: &crate::CapabilityAcceptance,
     approved_digest: Option<&str>,
 ) -> Result<ValidatedExecutionRequest, AdapterError> {
     validate_request(&request)?;
@@ -502,9 +546,16 @@ pub fn authorize_execution(
     if request.sandbox == ExecutionSandbox::WorkspaceWrite {
         required.insert(Capability::WorkspaceWrite);
     }
-    let evidence = snapshot.capabilities();
     for capability in &required {
-        if evidence.get(capability) != Some(&CapabilitySupport::Supported)
+        if *capability == Capability::Network
+            && snapshot.capability_proofs().iter().any(|proof| {
+                proof.capability == *capability
+                    && proof.tier == crate::CapabilityProofTier::Attested
+            })
+        {
+            return Err(AdapterError::NetworkAdmissionRequired);
+        }
+        if !snapshot.permits_capability(*capability, acceptance)
             || restrictions
                 .allowed_capabilities
                 .as_ref()
@@ -529,7 +580,12 @@ pub fn authorize_execution(
             return Err(AdapterError::PermissionDenied);
         }
     }
-    let authorization_digest = execution_authorization_digest(&request, snapshot, restrictions)?;
+    let authorization_digest = execution_authorization_digest_with_capability_acceptance(
+        &request,
+        snapshot,
+        restrictions,
+        acceptance,
+    )?;
     if request.mode == ExecutionMode::Execute
         && approved_digest != Some(authorization_digest.as_str())
     {
