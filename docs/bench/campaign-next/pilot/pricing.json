@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "version": "pilot-2026-09-30-b",
+  "source": "Claude: platform.claude.com/docs/en/about-claude/pricing, consulted 2026-09-30. OpenAI: developers.openai.com/api/docs/pricing, Standard table, short context (<=272K) input, cached input, output, consulted 2026-09-30 through a summarizing fetch, verbatim rows in pricing-sources.md; human reread required. Cache writes: pricing-cache-writes.json.",
+  "observed_at_unix_seconds": 1790775683,
+  "models": {
+    "claude-fable-5-1": {
+      "input_microusd_per_million": 10000000,
+      "cached_input_microusd_per_million": 250000,
+      "output_microusd_per_million": 50000000
+    },
+    "claude-opus-5-5": {
+      "input_microusd_per_million": 4000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 20000000
+    },
+    "claude-sonnet-5-5": {
+      "input_microusd_per_million": 2000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 10000000
+    },
+    "claude-haiku-4-5": {
+      "input_microusd_per_million": 1000000,
+      "cached_input_microusd_per_million": 100000,
+      "output_microusd_per_million": 5000000
+    },
+    "claude-haiku-4-5-20251001": {
+      "input_microusd_per_million": 1000000,
+      "cached_input_microusd_per_million": 100000,
+      "output_microusd_per_million": 5000000
+    },
+    "gpt-5.6-sol": {
+      "input_microusd_per_million": 4000000,
+      "cached_input_microusd_per_million": 400000,
+      "output_microusd_per_million": 20000000
+    },
+    "gpt-5.6-terra": {
+      "input_microusd_per_million": 2000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 12000000
+    },
+    "gpt-5.6-luna": {
+      "input_microusd_per_million": 200000,
+      "cached_input_microusd_per_million": 20000,
+      "output_microusd_per_million": 1200000
+    },
+    "gpt-6-sol": {
+      "input_microusd_per_million": 2000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 10000000
+    },
+    "gpt-6-luna": {
+      "input_microusd_per_million": 100000,
+      "cached_input_microusd_per_million": 10000,
+      "output_microusd_per_million": 500000
+    },
+    "gpt-6-astra": {
+      "input_microusd_per_million": 10000000,
+      "cached_input_microusd_per_million": 1000000,
+      "output_microusd_per_million": 50000000
+    },
+    "gpt-6.1-sol": {
+      "input_microusd_per_million": 2000000,
+      "cached_input_microusd_per_million": 100000,
+      "output_microusd_per_million": 10000000
+    }
+  }
+}

@@ -1,0 +1,1 @@
+Implement `merge_half_open(intervals, merge_touching=False)` in `pilot_lib/intervals.py`. Sort and merge overlapping half-open integer intervals. Ignore empty intervals, reject reversed intervals, and merge adjacent intervals only when `merge_touching=True`. Return a new list and do not mutate the input.

@@ -1,0 +1,35 @@
+{
+  "agent_router": "../../../../target/debug/agent-router",
+  "programs": {
+    "claude": "claude",
+    "codex": "codex"
+  },
+  "providers": {
+    "claude": {
+      "frontier": "claude-opus-5-5",
+      "cheaper": "claude-sonnet-5-5",
+      "catalog": "catalogs/claude-pool.json",
+      "harness": "claude-code",
+      "cache_write_classes": ["write_5m", "write_1h"]
+    },
+    "codex": {
+      "frontier": "gpt-6.1-sol",
+      "cheaper": "gpt-5.6-terra",
+      "catalog": "catalogs/codex-pool.json",
+      "harness": "codex",
+      "cache_write_classes": []
+    }
+  },
+  "host_isolation_variant": {
+    "claude": [],
+    "codex": []
+  },
+  "tasks": ["t01", "t02", "t03"],
+  "arms": ["A", "B", "G", "C", "E"],
+  "optional_arms": [],
+  "seed": 20261001,
+  "repetitions": 1,
+  "python": "python3",
+  "phase_timeout_seconds": 300,
+  "acceptance_timeout_seconds": 120
+}

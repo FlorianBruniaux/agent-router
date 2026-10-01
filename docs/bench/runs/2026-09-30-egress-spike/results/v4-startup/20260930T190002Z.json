@@ -1,0 +1,29 @@
+{
+  "observation": {
+    "calls": 0,
+    "list_cost_complete": true,
+    "list_cost_microusd": 0,
+    "startup": {
+      "ok": false,
+      "status_ok": false,
+      "version_ok": true
+    },
+    "verdict": {
+      "abnormal": true,
+      "anomaly_count": 0,
+      "copy": null
+    }
+  },
+  "run_id": "20260930T190002Z",
+  "schema": "agent-router-egress-v4-startup-projection-v1",
+  "source": {
+    "fake": false,
+    "host": "claude",
+    "schema": "agent-router-egress-spike-v4",
+    "sha256": {
+      "claude.json": "f657859348b00b8549f97addfeb6b3047c1d87fc48c71e1ef2f1b97c02862e36",
+      "manifest.json": "e988d31142186d45fc3ec6d82843fa4f7ccfd903a44c1a599add8afae5cfa69a"
+    },
+    "started_at": "20260930T190002Z"
+  }
+}

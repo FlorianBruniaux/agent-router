@@ -238,12 +238,12 @@ Reading limits:
 
 ## Next campaign: harness fixes
 
-These fixes change sealed inputs, so they need a new campaign folder and a new manifest; the 2026-09-30 manifest stays as recorded.
+These fixes change sealed inputs, so they need a new campaign folder and a new manifest; the 2026-09-30 manifest stays as recorded. The review candidate is in [`campaign-next/`](campaign-next/README.md). It has no manifest, no campaign outputs and no real-provider results.
 
-- Out-of-scope check: either add a `.gitignore` with `__pycache__/` to `corpus/base/`, or make the scope check in `run_pilot.py` ignore paths with a `__pycache__` segment. Either way the corrected column becomes the protocol's verdict, stated before the first run.
-- Record the number of turns per host process, so that the share of the fixed host prefix can be estimated instead of bounded.
-- Check the pool before sealing: the model given the cheaper role must have lower list prices than the frontier model for every token class. In this pilot `gpt-5.6-terra` did not.
-- Use tasks that not every arm solves, so that acceptance can separate the arms.
+- The candidate places `__pycache__/` in the copied base repository, records completed turns per host process, and validates each price class before manifest creation. All three behavior changes have local Python tests.
+- Its three synthetic challenge fixtures are candidate material only. They still need merged-PR provenance, frozen source commits and independent leak review before they can enter a protocol campaign.
+- Use one global budget across providers and attempts. The current authorization is at most 5 USD total, including prior spend. A real `calibrate` or `run` needs explicit spend confirmation, a global cap no higher than the remaining authorization and a finite remaining-cost estimate; UNKNOWN cost or a projection above the cap fails closed. The candidate currently disables real host-direct work because it has no verified per-process hard cost ceiling. Do not treat the cap check as a spend guarantee until that ceiling is implemented.
+- Refresh and human-check the catalog prices before sealing. The copied snapshot is historical and does not pass the cheaper-role comparison for the current candidate pools.
 
 ## Limits of the 2026-09-30 pilot
 
