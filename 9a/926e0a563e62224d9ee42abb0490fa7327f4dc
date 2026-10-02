@@ -1,0 +1,49 @@
+docs/bench/egress-admission/README.md
+  s_9e80b85afcc43a::t_31f81629e0af38 25-29,52
+  s_9e80b85afcc43a::t_48d7db14e9fe67 122-123
+  s_9e80b85afcc43a::t_676f18af566e12 8-16
+  s_9e80b85afcc43a::t_f00afdf7891bd9 3-7,47-48,51,117-118,121,126-131
+docs/bench/egress-admission/claude_local.py
+  s_9e80b85afcc43a::t_6bc8a9392e8e86 180-182,200,202-204,206,247-248,250-252,260-262,307,381,542-543,561-562,610
+  s_9e80b85afcc43a::t_f023cdf763c600 264,470-479,537-541,563-564
+  s_9e80b85afcc43a::t_ca94d1ae99632b 273,278,309,320
+  s_9e80b85afcc43a::t_9d860ca14987b9 290-293
+  s_9e80b85afcc43a::t_d70b90edbfbe98 27-28,177-178,183-189,191-192,201,205,207-224,244-246,249,253-259,263,265,271-272,274-275,284-289,294-295,304-306,308,310-311,313-319,321-326,330-335,337,340-344,346-350,353-354,359-362,368-380,535-536,544,607,609,611-612
+  s_9e80b85afcc43a::t_884cc960efec2b 300-303
+  s_9e80b85afcc43a::t_4413d94e86cb3e 276-277,279-280
+  s_9e80b85afcc43a::t_13150e0acd920c 336,352,363-366
+  s_9e80b85afcc43a::t_d6bedc02f3d43c 480-485,556-557
+  s_9e80b85afcc43a::t_9d09d861ffec03 179,190,193-199,225-243,501,565
+  s_9e80b85afcc43a::t_360db9f96e63e9 269-270
+  s_9e80b85afcc43a::t_544022fab935f0 296-299,598
+docs/bench/egress-admission/test_provider_accounting.py
+  s_9e80b85afcc43a::t_403e9c93cac6dc 58-59,61-63,71,100,110-112,116-118,190-193
+  s_9e80b85afcc43a::t_7ff1e1a080a3b9 123-132,164
+  s_9e80b85afcc43a::t_0bb22f10bbcbdd 91-92,96,98,102-103,105,107-109,113-115,119-121
+  s_9e80b85afcc43a::t_d0b41ddd0f6c49 1-45,49-51,55-56,60,64-70,72-75,88-90,93-95,97,99,101,104,106,122,165-167,169-176,178-179,184-188,194,196-203
+  s_9e80b85afcc43a::t_ab730a9ee21e6e 52-54,57
+  s_9e80b85afcc43a::t_795dcce66c8bd3 46-47
+  s_9e80b85afcc43a::t_ad30cec93e9e8c 177
+  s_9e80b85afcc43a::t_edc0d3f8a76aaa 180-183,195
+  s_9e80b85afcc43a::t_7b60fd9c133b37 48,133-163
+  s_9e80b85afcc43a::t_eb15cd5f83660e 76-87,168
+  s_9e80b85afcc43a::t_f3fe1fb56882ec 189
+docs/bench/egress-admission/results/inventory-accounting-v2.json
+  s_9e80b85afcc43a::t_2a170157eeff23 1-104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9a926e0a563e62224d9ee42abb0490fa7327f4dc",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
