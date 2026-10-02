@@ -20,6 +20,42 @@ profile. Applying that profile from inside the controller's sandbox fails.
 These results support investigating a supervisor-launched sibling executor;
 they do not admit the native host or justify broadening its permissions.
 
+## Codex app-server callback probe
+
+Status on 2026-10-02: the pinned Codex 0.159.2 app-server completed one
+synthetic dynamic-tool round trip through a scripted Responses provider bound
+to `127.0.0.1`. It advertised `router_probe_tool`, emitted a correlated
+`item/tool/call`, accepted the callback response, and sent the matching
+`function_call_output` content in its second provider request. The turn
+completed in 1,884 ms in the latest validated rerun; runtime varies by run. The
+provider received no real credential; spend was USD 0. The full local
+egress-admission suite passed 20 tests. The binary SHA-256 was
+`61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
+
+This proves the app-server callback protocol with a local scripted provider.
+It does not prove Agent Router runtime integration, worker isolation or
+provider-egress isolation. The probe explicitly recorded
+`os_network_sandbox_status=NOT_APPLIED`; external egress remains UNKNOWN. The
+observed provider tool inventory also included `request_user_input`,
+`view_image`, `get_goal`, `create_goal` and `update_goal`, so built-in tool
+suppression remains UNKNOWN. The sanitized run summary is versioned at
+[`results/codex-appserver-local-v1.json`](results/codex-appserver-local-v1.json).
+
+Run the reproducible callback probe from the repository root on the pinned
+host:
+
+```sh
+python3 -B docs/bench/egress-admission/codex_appserver_local.py \
+  --timeout 45 --output /private/tmp/ar-codex-appserver-local-fixture.json
+```
+
+The test-only checks use no Codex process or provider:
+
+```sh
+python3 -B -m unittest discover \
+  -s docs/bench/egress-admission -p test_codex_appserver_local.py -v
+```
+
 ## Measured boundaries
 
 The archived 2026-10-01 v1 runs used Claude Code `2.1.286`, SHA-256

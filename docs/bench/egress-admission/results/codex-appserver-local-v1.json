@@ -1,0 +1,53 @@
+{
+  "schema": "agent-router-codex-appserver-local-v1",
+  "run_date": "2026-10-02",
+  "platform": "macOS 26.5.1 (25F80)",
+  "requested_model": "gpt-5-codex",
+  "model_execution": "scripted local Responses provider; no model inference",
+  "script_sha256": "b4fe70e51a2ed3e1651d2d86a177aa53f2becf023443aff64a1247e866c04dac",
+  "codex_version": "0.159.2",
+  "codex_binary_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+  "result": {
+    "success": true,
+    "elapsed_ms": 1884,
+    "app_server_exit_code": 0,
+    "provider_bind_address": "127.0.0.1",
+    "provider_url_loopback": true,
+    "provider_request_count": 2,
+    "advertised_function_tool_names": [
+      "request_user_input",
+      "view_image",
+      "get_goal",
+      "create_goal",
+      "update_goal",
+      "router_probe_tool"
+    ],
+    "target_dynamic_tool_advertised": true,
+    "callback_correlation": {
+      "jsonrpc_id": 0,
+      "call_id": "call_fixture_1",
+      "tool_name": "router_probe_tool",
+      "arguments_valid": true,
+      "thread_id_matches_current_thread": true,
+      "turn_id_matches_current_turn": true
+    },
+    "callback_response_sent": true,
+    "next_provider_request_has_matching_function_call_output": true,
+    "function_call_output_count": 1,
+    "turn_status": "completed",
+    "final_callback_confirmation": true,
+    "os_network_sandbox_applied": false,
+    "os_network_sandbox_status": "NOT_APPLIED",
+    "synthetic_key_only": true,
+    "provider_spend": "USD 0, scripted loopback provider"
+  },
+  "redactions": [
+    "ephemeral app-server thread ID",
+    "ephemeral app-server turn ID"
+  ],
+  "limits": [
+    "No Agent Router runtime integration was exercised.",
+    "External provider egress was not sandboxed or measured.",
+    "Built-in tool suppression was not verified."
+  ]
+}
