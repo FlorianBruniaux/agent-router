@@ -12,6 +12,7 @@ import queue
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -31,6 +32,12 @@ MAX_REQUEST_BYTES = 1024 * 1024
 MAX_TIMEOUT_SECONDS = 120
 MAX_VERSION_OUTPUT_BYTES = 4096
 VERSION_TIMEOUT_SECONDS = 10
+MAX_PROVIDER_HANDLERS = 4
+MAX_PROVIDER_CONNECTIONS = 8
+MAX_PROVIDER_REQUESTS = 2
+PROVIDER_IO_TIMEOUT_SECONDS = 2
+PROVIDER_CONNECTION_SECONDS = 5
+CLEANUP_TIMEOUT_SECONDS = 3
 
 
 class FixtureError(RuntimeError):
@@ -222,6 +229,25 @@ def callback_matches(callback: Any, thread_id: str | None, turn_id: str | None) 
     )
 
 
+def respond_to_tool_callback(
+    client: Any,
+    callback: Any,
+    arguments: Any,
+    thread_id: str | None,
+    turn_id: str | None,
+    *,
+    callback_consumed: bool,
+) -> bool:
+    if (callback_consumed or not callback_matches(callback, thread_id, turn_id)
+            or not valid_tool_arguments(arguments)):
+        raise FixtureError("app-server callback refused before response")
+    client.send({"id": callback["jsonrpc_id"], "result": {
+        "contentItems": [{"type": "inputText", "text": "LOCAL_FIXTURE_CALLBACK_ACCEPTED"}],
+        "success": True,
+    }})
+    return True
+
+
 def response_sse(index: int, callback_output_seen: bool) -> bytes:
     now = int(time.time())
     if index == 1:
@@ -268,19 +294,85 @@ def response_sse(index: int, callback_output_seen: bool) -> bytes:
     return "".join(frames).encode()
 
 
-class LocalProvider(http.server.ThreadingHTTPServer):
-    daemon_threads = True
+class LocalProvider(http.server.HTTPServer):
+    """Bound both concurrent work and total work for this one-roundtrip fixture."""
 
     def __init__(self, address: str = "127.0.0.1"):
         require_loopback(address)
-        super().__init__((address, 0), ProviderHandler)
-        require_loopback(str(self.server_address[0]))
+        self.lock = threading.Lock()
+        self.handler_threads: list[threading.Thread] = []
+        self.connections: set[socket.socket] = set()
+        self.closing = False
+        self.accepted_connections = 0
+        self.rejected_connections = 0
+        self.rejected_requests = 0
         self.request_count = 0
         self.function_tools: list[str] = []
         self.output_count = 0
         self.matching_output_seen = False
         self.second_request_matching_output = False
-        self.lock = threading.Lock()
+        super().__init__((address, 0), ProviderHandler)
+        require_loopback(str(self.server_address[0]))
+
+    def process_request(self, request: socket.socket, client_address: Any) -> None:
+        with self.lock:
+            if (self.closing or len(self.connections) >= MAX_PROVIDER_HANDLERS
+                    or self.accepted_connections >= MAX_PROVIDER_CONNECTIONS):
+                self.rejected_connections += 1
+                self.shutdown_request(request)
+                return
+            request.settimeout(PROVIDER_IO_TIMEOUT_SECONDS)
+            self.accepted_connections += 1
+            self.connections.add(request)
+            worker = threading.Thread(target=self._handle_connection,
+                                      args=(request, client_address), daemon=True)
+            self.handler_threads.append(worker)
+            try:
+                worker.start()
+            except RuntimeError:
+                self.connections.discard(request)
+                self.shutdown_request(request)
+                raise FixtureError("provider handler could not start")
+
+    @staticmethod
+    def _interrupt_connection(request: socket.socket) -> None:
+        # shutdown wakes a handler blocked in either read or write; close alone
+        # does not reliably interrupt another thread's socket operation.
+        try:
+            request.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
+
+    def _handle_connection(self, request: socket.socket, client_address: Any) -> None:
+        deadline = threading.Timer(PROVIDER_CONNECTION_SECONDS, self._interrupt_connection, (request,))
+        deadline.daemon = True
+        try:
+            deadline.start()
+            self.finish_request(request, client_address)
+        except OSError:
+            # Expected on deadline, peer disconnect or shutdown; no raw request logs.
+            pass
+        finally:
+            deadline.cancel()
+            if deadline.ident is not None:
+                deadline.join(timeout=CLEANUP_TIMEOUT_SECONDS)
+            self.shutdown_request(request)
+            with self.lock:
+                self.connections.discard(request)
+
+    def server_close(self) -> None:
+        with self.lock:
+            self.closing = True
+            for connection in self.connections:
+                self._interrupt_connection(connection)
+            workers = list(self.handler_threads)
+        super().server_close()
+        deadline = time.monotonic() + CLEANUP_TIMEOUT_SECONDS
+        for worker in workers:
+            if worker.ident is not None:
+                worker.join(timeout=max(0, deadline - time.monotonic()))
+        if any(worker.is_alive() for worker in workers):
+            raise FixtureError("provider handlers did not stop")
 
 
 class ProviderHandler(http.server.BaseHTTPRequestHandler):
@@ -290,6 +382,7 @@ class ProviderHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     def do_POST(self) -> None:
+        self.close_connection = True
         if urlsplit(self.path).path != "/v1/responses":
             self.send_error(404)
             return
@@ -302,7 +395,11 @@ class ProviderHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(413)
             return
         try:
-            request = json.loads(self.rfile.read(length))
+            body = self.rfile.read(length)
+            if len(body) != length:
+                self.send_error(400)
+                return
+            request = json.loads(body)
         except (ValueError, UnicodeError):
             self.send_error(400)
             return
@@ -310,6 +407,10 @@ class ProviderHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(400)
             return
         with self.server.lock:
+            if self.server.request_count >= MAX_PROVIDER_REQUESTS:
+                self.server.rejected_requests += 1
+                self.send_error(429)
+                return
             self.server.request_count += 1
             index = self.server.request_count
             if index == 1 and isinstance(request.get("tools"), list):
@@ -330,6 +431,7 @@ class ProviderHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "close")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -411,11 +513,22 @@ class AppServer:
             except OSError:
                 pass
         try:
-            self.process.wait(timeout=3)
+            self.process.wait(timeout=CLEANUP_TIMEOUT_SECONDS)
         except subprocess.TimeoutExpired:
-            _kill_group(self.process)
-        if self.process.poll() is None:
-            _kill_group(self.process)
+            pass
+        # A successful leader exit does not imply its process group is empty.
+        _kill_group(self.process)
+        deadline = time.monotonic() + CLEANUP_TIMEOUT_SECONDS
+        for reader in (self.stdout_thread, self.stderr_thread):
+            reader.join(timeout=max(0, deadline - time.monotonic()))
+        if self.process.poll() is None or any(
+            reader.is_alive() for reader in (self.stdout_thread, self.stderr_thread)
+        ):
+            raise FixtureError("app-server processes or output readers did not stop")
+        for stream in (self.process.stdout, self.process.stderr):
+            if stream is not None:
+                stream.close()
+
         return self.process.returncode
 
 
@@ -466,33 +579,33 @@ def run_turn(client: AppServer, workspace: Path, timeout: int) -> dict[str, Any]
         "threadId": thread_id,
         "input": [{"type": "text", "text": f"Call {TOOL_NAME} with nonce {NONCE}, then report the result."}],
     }})
+    turn_start = _response_for(client, 3, deadline)
+    active_turn = turn_start.get("result", {}).get("turn", {})
+    active_turn_id = active_turn.get("id") if isinstance(active_turn, dict) else None
+    if not isinstance(active_turn_id, str) or not active_turn_id:
+        raise FixtureError("app-server did not start a correlated turn")
     callback = None
     callback_response_sent = False
+    callback_consumed = False
     completed = None
     while completed is None:
         message = client.receive(deadline)
         if message.get("method") == "item/tool/call":
             params = message.get("params", {})
+            arguments = params.get("arguments") if isinstance(params, dict) else None
             callback = {
                 "jsonrpc_id": message.get("id"),
                 "thread_id": params.get("threadId") if isinstance(params, dict) else None,
                 "turn_id": params.get("turnId") if isinstance(params, dict) else None,
                 "call_id": params.get("callId") if isinstance(params, dict) else None,
                 "tool_name": params.get("tool") if isinstance(params, dict) else None,
-                "arguments_valid": valid_tool_arguments(params.get("arguments")) if isinstance(params, dict) else False,
+                "arguments_valid": valid_tool_arguments(arguments),
             }
-            request_id = callback["jsonrpc_id"]
-            if (callback["tool_name"] == TOOL_NAME and isinstance(request_id, (int, str))
-                    and not isinstance(request_id, bool)):
-                client.send({"id": callback["jsonrpc_id"], "result": {
-                    "contentItems": [{"type": "inputText", "text": (
-                        "LOCAL_FIXTURE_CALLBACK_ACCEPTED" if callback["arguments_valid"] else "INVALID_FIXTURE_ARGUMENTS"
-                    )}],
-                    "success": callback["arguments_valid"],
-                }})
-                callback_response_sent = True
-        if message.get("id") == 3 and "error" in message:
-            raise FixtureError("app-server rejected the local turn")
+            callback_response_sent = respond_to_tool_callback(
+                client, callback, arguments, thread_id, active_turn_id,
+                callback_consumed=callback_consumed,
+            )
+            callback_consumed = True
         if message.get("method") == "turn/completed":
             completed = message.get("params", {}).get("turn", {})
     status = completed.get("status") if isinstance(completed, dict) else None
@@ -514,11 +627,15 @@ def run_fixture(binary: str | None, timeout: int) -> dict[str, Any]:
     version, digest = verify_codex(executable, verified_executable)
     started_at = time.monotonic()
     evidence: dict[str, Any] = {
+        "script_sha256": sha256_file(Path(__file__).resolve()),
         "codex_version": version,
         "codex_binary_sha256": digest,
         "provider_bind_address": None,
         "provider_url_loopback": False,
         "provider_request_count": 0,
+        "provider_accepted_connections": 0,
+        "provider_rejected_connections": 0,
+        "provider_rejected_requests": 0,
         "advertised_function_tool_names": [],
         "target_dynamic_tool_advertised": False,
         "callback_correlation": None,
@@ -541,9 +658,10 @@ def run_fixture(binary: str | None, timeout: int) -> dict[str, Any]:
     turn = None
     failure = None
     scratch = None
+    cleanup_complete = True
     try:
-        scratch = tempfile.TemporaryDirectory(prefix="ar-codex-appserver-local-")
-        root = Path(scratch.name)
+        scratch = Path(tempfile.mkdtemp(prefix="ar-codex-appserver-local-"))
+        root = scratch
         home = root / "home"
         workspace = root / "workspace"
         for directory in (home, workspace, home / "tmp", home / "config", home / "cache", home / "data"):
@@ -593,25 +711,40 @@ supports_websockets = false
         finally:
             # Keep the isolated home/workspace alive until all children and the
             # loopback server have stopped using them.
-            if client is not None:
-                evidence["app_server_exit_code"] = client.stop()
-            elif process is not None:
-                _kill_group(process)
-                evidence["app_server_exit_code"] = process.returncode
+            cleanup_errors = []
+            try:
+                if client is not None:
+                    evidence["app_server_exit_code"] = client.stop()
+                elif process is not None:
+                    _kill_group(process)
+                    evidence["app_server_exit_code"] = process.returncode
+            except (FixtureError, OSError):
+                cleanup_errors.append("app-server cleanup incomplete")
             if provider is not None:
                 if provider_thread is not None and provider_thread.ident is not None:
                     provider.shutdown()
-                provider.server_close()
-                if provider_thread is not None:
-                    provider_thread.join(timeout=2)
+                try:
+                    provider.server_close()
+                except (FixtureError, OSError):
+                    cleanup_errors.append("provider handler cleanup incomplete")
+                if provider_thread is not None and provider_thread.ident is not None:
+                    provider_thread.join(timeout=CLEANUP_TIMEOUT_SECONDS)
+                    if provider_thread.is_alive():
+                        cleanup_errors.append("provider listener cleanup incomplete")
                 with provider.lock:
                     evidence["provider_request_count"] = provider.request_count
+                    evidence["provider_accepted_connections"] = provider.accepted_connections
+                    evidence["provider_rejected_connections"] = provider.rejected_connections
+                    evidence["provider_rejected_requests"] = provider.rejected_requests
                     evidence["advertised_function_tool_names"] = provider.function_tools
                     evidence["target_dynamic_tool_advertised"] = TOOL_NAME in provider.function_tools
                     evidence["next_provider_request_has_matching_function_call_output"] = (
                         provider.request_count == 2 and provider.second_request_matching_output
                     )
                     evidence["function_call_output_count"] = provider.output_count
+            if cleanup_errors:
+                cleanup_complete = False
+                raise FixtureError("; ".join(cleanup_errors))
             if turn is not None:
                 evidence["callback_correlation"] = turn["callback"]
                 evidence["callback_response_sent"] = turn["callback_response_sent"]
@@ -624,8 +757,9 @@ supports_websockets = false
     except OSError:
         failure = "local fixture failed before evidence was complete"
     finally:
-        if scratch is not None:
-            scratch.cleanup()
+        if scratch is not None and cleanup_complete:
+            shutil.rmtree(scratch)
+        evidence["cleanup_complete"] = cleanup_complete
         evidence["elapsed_ms"] = round((time.monotonic() - started_at) * 1000)
 
     callback_ok = callback_matches(
@@ -634,6 +768,8 @@ supports_websockets = false
     evidence["success"] = bool(
         failure is None
         and evidence["provider_url_loopback"]
+        and evidence["provider_rejected_connections"] == 0
+        and evidence["provider_rejected_requests"] == 0
         and evidence["target_dynamic_tool_advertised"]
         and callback_ok
         and bool(evidence.get("callback_correlation", {}).get("arguments_valid"))
@@ -661,7 +797,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = run_fixture(args.binary, args.timeout)
     except FixtureError as exc:
-        result = {"success": False, "failure": str(exc), "os_network_sandbox_applied": False,
+        result = {"success": False, "failure": str(exc),
+                  "script_sha256": sha256_file(Path(__file__).resolve()),
+                  "os_network_sandbox_applied": False,
                   "os_network_sandbox_status": "NOT_APPLIED", "provider_spend": "USD 0, no provider run"}
     output = json.dumps(result, indent=2, sort_keys=True) + "\n"
     if args.output:

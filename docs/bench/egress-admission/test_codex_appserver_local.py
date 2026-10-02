@@ -1,4 +1,17 @@
+import contextlib
+import hashlib
+import http.client
+import io
+import json
+import os
+import signal
+import socket
+import subprocess
+import sys
 import tempfile
+import threading
+import time
+from unittest import mock
 import unittest
 from pathlib import Path
 
@@ -45,6 +58,47 @@ class EvidenceTests(unittest.TestCase):
         self.assertFalse(fixture.callback_matches(callback, "other-thread", "turn"))
         self.assertFalse(fixture.callback_matches(callback, "thread", "other-turn"))
 
+    def test_callback_is_validated_before_any_response_is_sent(self):
+        callback = {"jsonrpc_id": 0, "thread_id": "thread", "turn_id": "turn",
+                    "call_id": "call_fixture_1", "tool_name": "router_probe_tool",
+                    "arguments_valid": True}
+
+        class RecordingClient:
+            def __init__(self):
+                self.messages = []
+
+            def send(self, message):
+                self.messages.append(message)
+
+        accepted = RecordingClient()
+        self.assertTrue(fixture.respond_to_tool_callback(
+            accepted, callback, {"nonce": fixture.NONCE}, "thread", "turn",
+            callback_consumed=False))
+        self.assertEqual(accepted.messages, [{
+            "id": 0, "result": {
+                "contentItems": [{"type": "inputText", "text": "LOCAL_FIXTURE_CALLBACK_ACCEPTED"}],
+                "success": True,
+            },
+        }])
+
+        invalid_callbacks = []
+        for field, value in (("jsonrpc_id", True), ("thread_id", "other-thread"),
+                             ("turn_id", "other-turn"), ("call_id", "other-call"),
+                             ("tool_name", "unapproved_tool")):
+            invalid = dict(callback)
+            invalid[field] = value
+            invalid_callbacks.append((invalid, {"nonce": fixture.NONCE}, False))
+        invalid_callbacks.append((dict(callback), {"nonce": "wrong"}, False))
+        invalid_callbacks.append((dict(callback), {"nonce": fixture.NONCE}, True))
+        for invalid, arguments, consumed in invalid_callbacks:
+            with self.subTest(callback=invalid, consumed=consumed):
+                refused = RecordingClient()
+                with self.assertRaisesRegex(fixture.FixtureError, "callback refused"):
+                    fixture.respond_to_tool_callback(
+                        refused, invalid, arguments, "thread", "turn",
+                        callback_consumed=consumed)
+                self.assertEqual(refused.messages, [])
+
     def test_dynamic_tool_arguments_require_exact_synthetic_nonce(self):
         self.assertTrue(fixture.valid_tool_arguments({"nonce": fixture.NONCE}))
         self.assertTrue(fixture.valid_tool_arguments('{"nonce":"' + fixture.NONCE + '"}'))
@@ -78,6 +132,185 @@ class EvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(fixture.FixtureError, "output limit"):
                 fixture.verify_codex(candidate.resolve())
             self.assertLess(__import__("time").monotonic() - started, 3)
+
+
+class LifecycleTests(unittest.TestCase):
+    def test_stop_kills_descendant_after_normal_leader_exit_and_joins_readers(self):
+        parent = (
+            "import json, subprocess, sys; "
+            "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)']); "
+            "print(json.dumps({'child_pid': child.pid}), flush=True); sys.stdin.read()"
+        )
+        process = subprocess.Popen(
+            [sys.executable, "-c", parent], stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True,
+        )
+        client = fixture.AppServer(process)
+        try:
+            client.receive(time.monotonic() + 3)
+            self.assertEqual(client.stop(), 0)
+            self.assertFalse(client.stdout_thread.is_alive(), "descendant still holds stdout")
+            self.assertFalse(client.stderr_thread.is_alive(), "descendant still holds stderr")
+            with self.assertRaises(ProcessLookupError):
+                os.killpg(process.pid, 0)
+        finally:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait(timeout=3)
+            for reader in (client.stdout_thread, client.stderr_thread):
+                reader.join(timeout=3)
+            for stream in (process.stdin, process.stdout, process.stderr):
+                stream.close()
+
+
+class ProviderBoundsTests(unittest.TestCase):
+    def setUp(self):
+        self.patches = mock.patch.multiple(
+            fixture, create=True, PROVIDER_IO_TIMEOUT_SECONDS=0.2,
+            PROVIDER_CONNECTION_SECONDS=0.6, MAX_PROVIDER_HANDLERS=2,
+            MAX_PROVIDER_CONNECTIONS=4, MAX_PROVIDER_REQUESTS=2,
+        )
+        self.patches.start()
+        self.provider = fixture.LocalProvider()
+        self.thread = threading.Thread(target=self.provider.serve_forever, daemon=True)
+        self.thread.start()
+        self.sockets = []
+
+    def tearDown(self):
+        for connection in self.sockets:
+            connection.close()
+        self.provider.shutdown()
+        self.provider.server_close()
+        self.thread.join(timeout=2)
+        self.patches.stop()
+
+    def connect(self):
+        connection = socket.create_connection(self.provider.server_address, timeout=1)
+        self.sockets.append(connection)
+        return connection
+
+    def assert_closed(self, connection):
+        try:
+            closed = connection.recv(4096) == b""
+        except ConnectionResetError:
+            closed = True
+        except socket.timeout:
+            closed = False
+        self.assertTrue(closed, "provider left the connection open past its bound")
+
+    def post(self, payload):
+        connection = http.client.HTTPConnection(*self.provider.server_address, timeout=1)
+        try:
+            connection.request("POST", "/v1/responses", json.dumps(payload),
+                               {"Content-Type": "application/json"})
+            response = connection.getresponse()
+            response.read()
+            return response.status, response.getheader("Connection")
+        finally:
+            connection.close()
+
+    def test_idle_connection_is_closed(self):
+        self.assert_closed(self.connect())
+
+    def test_incomplete_http_body_is_closed_without_accepting_a_request(self):
+        connection = self.connect()
+        connection.sendall(b"POST /v1/responses HTTP/1.1\r\nHost: localhost\r\n"
+                           b"Content-Length: 100\r\n\r\n{")
+        self.assert_closed(connection)
+        self.assertEqual(self.provider.request_count, 0)
+
+    def test_body_trickle_cannot_extend_absolute_connection_deadline(self):
+        connection = self.connect()
+        connection.sendall(b"POST /v1/responses HTTP/1.1\r\nHost: localhost\r\n"
+                           b"Content-Length: 100\r\n\r\n{")
+        started = time.monotonic()
+        def trickle():
+            for _ in range(16):
+                try:
+                    connection.sendall(b" ")
+                except OSError:
+                    return
+                time.sleep(0.08)
+
+        sender = threading.Thread(target=trickle)
+        sender.start()
+        try:
+            self.assert_closed(connection)
+            self.assertLess(time.monotonic() - started, 1)
+        finally:
+            connection.close()
+            sender.join(timeout=2)
+
+    def test_early_eof_does_not_accept_valid_json_in_a_short_body(self):
+        connection = self.connect()
+        connection.sendall(b"POST /v1/responses HTTP/1.1\r\nHost: localhost\r\n"
+                           b"Content-Length: 100\r\n\r\n{}")
+        connection.shutdown(socket.SHUT_WR)
+        self.assertIn(b"400", connection.recv(4096))
+        self.assertEqual(self.provider.request_count, 0)
+
+    def test_successful_response_closes_keep_alive_and_preserves_telemetry(self):
+        status, connection = self.post({"tools": [{"type": "function", "name": fixture.TOOL_NAME}]})
+        self.assertEqual(status, 200)
+        self.assertEqual(connection, "close")
+        status, _ = self.post({"input": [{"type": "function_call_output", "call_id": fixture.CALL_ID,
+                                          "output": "LOCAL_FIXTURE_CALLBACK_ACCEPTED"}]})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.provider.request_count, 2)
+        self.assertTrue(self.provider.second_request_matching_output)
+        self.assertEqual(self.provider.output_count, 1)
+        self.assertEqual(self.provider.function_tools, [fixture.TOOL_NAME])
+
+    def test_excess_concurrent_connections_are_refused(self):
+        # Headers stay incomplete, keeping both admitted handlers occupied.
+        with mock.patch.object(fixture, "PROVIDER_IO_TIMEOUT_SECONDS", 2, create=True):
+            first, second = self.connect(), self.connect()
+            first.sendall(b"POST ")
+            second.sendall(b"POST ")
+            time.sleep(0.05)
+            self.assert_closed(self.connect())
+
+    def test_aggregate_connection_limit_does_not_reset_after_handlers_exit(self):
+        for _ in range(4):
+            connection = self.connect()
+            connection.sendall(b"GET / HTTP/1.0\r\n\r\n")
+            self.assertIn(b"501", connection.recv(4096))
+            connection.close()
+            time.sleep(0.02)
+        self.assert_closed(self.connect())
+
+    def test_excess_requests_do_not_expand_accepted_request_telemetry(self):
+        self.assertEqual(self.post({})[0], 200)
+        self.assertEqual(self.post({})[0], 200)
+        self.assertEqual(self.post({})[0], 429)
+        self.assertEqual(self.provider.request_count, 2)
+
+    def test_server_close_joins_handlers_and_closes_stalled_connections(self):
+        with mock.patch.multiple(fixture, PROVIDER_IO_TIMEOUT_SECONDS=10,
+                                 PROVIDER_CONNECTION_SECONDS=10):
+            connection = self.connect()
+            connection.sendall(b"POST ")
+            time.sleep(0.05)
+            started = time.monotonic()
+            self.provider.shutdown()
+            self.provider.server_close()
+            self.assert_closed(connection)
+            self.assertLess(time.monotonic() - started, 1)
+            self.assertFalse(any(worker.is_alive() for worker in self.provider.handler_threads))
+
+
+class ScriptProvenanceTests(unittest.TestCase):
+    def test_failure_evidence_automatically_contains_current_script_digest(self):
+        expected = hashlib.sha256(Path(fixture.__file__).read_bytes()).hexdigest()
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory() as directory, contextlib.redirect_stdout(output):
+            destination = Path(directory) / "failure.json"
+            self.assertEqual(fixture.main(["--timeout", "1", "--output", str(destination)]), 1)
+            evidence = json.loads(destination.read_text())
+        self.assertEqual(evidence.get("script_sha256"), expected)
+        self.assertEqual(json.loads(output.getvalue()), evidence)
 
 
 if __name__ == "__main__":

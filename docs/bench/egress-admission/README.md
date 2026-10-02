@@ -22,34 +22,49 @@ they do not admit the native host or justify broadening its permissions.
 
 ## Codex app-server callback probe
 
-Status on 2026-10-02: the pinned Codex 0.159.2 app-server completed one
-synthetic dynamic-tool round trip through a scripted Responses provider bound
-to `127.0.0.1`. It advertised `router_probe_tool`, emitted a correlated
-`item/tool/call`, accepted the callback response, and sent the matching
-`function_call_output` content in its second provider request. The turn
-completed in 6,208 ms in the latest validated rerun; runtime varies by run. The
-provider received no real credential; spend was USD 0. The full local
-egress-admission suite passed 29 tests. The binary SHA-256 was
+Historical evidence on 2026-10-02: the pinned Codex 0.159.2 app-server
+completed one synthetic dynamic-tool round trip through a scripted Responses
+provider bound to `127.0.0.1`. It advertised `router_probe_tool`, emitted a
+correlated `item/tool/call`, accepted the callback response, and sent the
+matching `function_call_output` content in its second provider request. That
+run completed in 6,208 ms; runtime varies by run. The provider received no
+real credential; spend was USD 0. The binary SHA-256 was
 `61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
 
-This proves the app-server callback protocol with a local scripted provider.
-It does not prove Agent Router runtime integration, worker isolation or
-provider-egress isolation. The probe explicitly recorded
+[`results/codex-appserver-local-v1.json`](results/codex-appserver-local-v1.json)
+is historical evidence for script SHA-256
+`b4fe70e51a2ed3e1651d2d86a177aa53f2becf023443aff64a1247e866c04dac`.
+Its recorded result and the accompanying 29-test validation describe that
+older script, not the revised implementation. The current script validates
+callbacks before responding, kills remaining process-group descendants even
+after normal leader exit, and joins its output readers before scratch cleanup.
+The provider admits at most four concurrent handlers, eight connections in
+total, and two valid POST requests. It applies a two-second socket I/O timeout
+and a five-second absolute connection deadline, closes keep-alive after each
+response, and interrupts and joins handlers during shutdown. Rejected
+connections and excess requests are counted and prevent a successful probe
+verdict. New evidence includes the current `script_sha256` automatically,
+including early failure output. A native rerun of this revised source is
+pending; no v2 result is claimed here.
+
+The historical result proves the app-server callback protocol with a local
+scripted provider. It does not prove Agent Router runtime integration, worker
+isolation or provider-egress isolation. The probe explicitly recorded
 `os_network_sandbox_status=NOT_APPLIED`; external egress remains UNKNOWN. The
 observed provider tool inventory also included `request_user_input`,
 `view_image`, `get_goal`, `create_goal` and `update_goal`, so built-in tool
-suppression remains UNKNOWN. The sanitized run summary is versioned at
-[`results/codex-appserver-local-v1.json`](results/codex-appserver-local-v1.json).
+suppression remains UNKNOWN.
 
-Run the reproducible callback probe from the repository root on the pinned
-host:
+Run the callback probe from the repository root on the pinned host to collect
+fresh evidence for the current script:
 
 ```sh
 python3 -B docs/bench/egress-admission/codex_appserver_local.py \
   --timeout 45 --output /private/tmp/ar-codex-appserver-local-fixture.json
 ```
 
-The test-only checks use no Codex process or provider:
+The test-only checks start harmless subprocesses and in-process loopback HTTP
+fixtures. They launch no Codex process and contact no external provider:
 
 ```sh
 python3 -B -m unittest discover \
