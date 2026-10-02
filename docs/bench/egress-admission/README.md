@@ -44,8 +44,16 @@ and a five-second absolute connection deadline, closes keep-alive after each
 response, and interrupts and joins handlers during shutdown. Rejected
 connections and excess requests are counted and prevent a successful probe
 verdict. New evidence includes the current `script_sha256` automatically,
-including early failure output. A native rerun of this revised source is
-pending; no v2 result is claimed here.
+including early failure output.
+
+Fresh standalone probe evidence is recorded in
+[`results/codex-appserver-local-v2.json`](results/codex-appserver-local-v2.json).
+Codex 0.159.2 completed the scripted loopback round trip in 972 ms: two
+provider requests, one correlated callback, matching `function_call_output`
+in the second request, and a completed turn. The script SHA-256 is
+`4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8`; the
+Codex binary SHA-256 matches the v1 run above. The run used only the synthetic
+key and cost USD 0. Runtime varies by run.
 
 The historical result proves the app-server callback protocol with a local
 scripted provider. It does not prove Agent Router runtime integration, worker
@@ -55,8 +63,8 @@ observed provider tool inventory also included `request_user_input`,
 `view_image`, `get_goal`, `create_goal` and `update_goal`, so built-in tool
 suppression remains UNKNOWN.
 
-Run the callback probe from the repository root on the pinned host to collect
-fresh evidence for the current script:
+Re-run the callback probe from the repository root on the pinned host to
+collect new evidence for the current script:
 
 ```sh
 python3 -B docs/bench/egress-admission/codex_appserver_local.py \
