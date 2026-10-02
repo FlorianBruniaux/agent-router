@@ -263,3 +263,103 @@ fn normal_leader_exit_also_cleans_background_group_before_acknowledging() {
     thread::sleep(Duration::from_millis(120));
     assert_eq!(fs::metadata(root.join("heartbeat")).unwrap().len(), stopped);
 }
+
+// V2 application bytes travel through a socketpair, never through lifetime stdin.
+fn interactive_command(
+    root: &Path,
+    script: &str,
+) -> (
+    Child,
+    std::process::ChildStdin,
+    std::os::unix::net::UnixStream,
+) {
+    use std::os::fd::OwnedFd;
+    let (application, child_socket) = std::os::unix::net::UnixStream::pair().unwrap();
+    application
+        .set_read_timeout(Some(Duration::from_secs(3)))
+        .unwrap();
+    let original = command(root, script);
+    let args: Vec<_> = original
+        .get_args()
+        .map(|arg| {
+            if arg == "--supervise-v1" {
+                "--supervise-v2".into()
+            } else {
+                arg.to_owned()
+            }
+        })
+        .collect();
+    let mut launch = Command::new(env!("CARGO_BIN_EXE_router-sandbox-helper"));
+    launch
+        .args(args)
+        .env_clear()
+        .env("ROUTER_RUNTIME_SUPERVISION", "framed-v2")
+        .env("ROUTER_RUNTIME_LEASE", root.join("lease"))
+        .current_dir(root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(OwnedFd::from(child_socket)))
+        .stderr(Stdio::piped());
+    let mut child = launch.spawn().unwrap();
+    drop(launch);
+    let mut life = child.stdin.take().unwrap();
+    life.write_all(b"ARLIFE02").unwrap();
+    for value in [0_u64, 30_000, 10] {
+        life.write_all(&value.to_be_bytes()).unwrap();
+    }
+    (child, life, application)
+}
+
+#[test]
+fn interactive_application_round_trip_does_not_end_parent_lifetime() {
+    use std::io::Read;
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    pending(&root);
+    let (mut child, life, mut app) = interactive_command(
+        &root,
+        "test -z \"${ROUTER_RUNTIME_LEASE-}\" || exit 9; printf ready; read message; printf '%s' \"$message\"",
+    );
+    let mut ready = [0; 5];
+    app.read_exact(&mut ready).unwrap();
+    assert_eq!(&ready, b"ready");
+    app.write_all(b"ARLIFE01 is application data\n").unwrap();
+    let mut reply = [0; 28];
+    app.read_exact(&mut reply).unwrap();
+    assert_eq!(&reply, b"ARLIFE01 is application data");
+    assert!(bounded_wait(&mut child).success());
+    assert_eq!(
+        fs::read(root.join("lease")).unwrap(),
+        b"router-runtime-lease-v1:group-clean\n"
+    );
+    drop(life);
+}
+
+#[test]
+fn interactive_controller_cannot_keep_lifetime_alive_by_holding_duplex_fd() {
+    use std::io::Read;
+    let temp = tempfile::tempdir().unwrap();
+    let root = fs::canonicalize(temp.path()).unwrap();
+    pending(&root);
+    let (mut child, life, mut app) = interactive_command(
+        &root,
+        "printf ready; trap '' TERM; while :; do printf x >> heartbeat; sleep 0.01; done",
+    );
+    let mut ready = [0; 5];
+    app.read_exact(&mut ready).unwrap();
+    await_file(&root.join("heartbeat"));
+    drop(life);
+    assert_eq!(bounded_wait(&mut child).code(), Some(125));
+    let stopped = fs::metadata(root.join("heartbeat")).unwrap().len();
+    thread::sleep(Duration::from_millis(80));
+    assert_eq!(fs::metadata(root.join("heartbeat")).unwrap().len(), stopped);
+    assert_eq!(
+        fs::read(root.join("lease")).unwrap(),
+        b"router-runtime-lease-v1:group-clean\n"
+    );
+    let mut byte = [0; 1];
+    assert_eq!(
+        app.read(&mut byte).unwrap(),
+        0,
+        "controller's application descriptor must close"
+    );
+}

@@ -80,12 +80,12 @@ impl Drop for InputGuard {
 // Bytes live in shared storage so that an aborted reader still leaves every
 // byte it had already read. Dropping the guard aborts the task, which releases
 // the pipe even when the surrounding future is dropped abruptly.
-struct StreamReader {
+pub(crate) struct StreamReader {
     bytes: Arc<Mutex<Vec<u8>>>,
     task: tokio::task::JoinHandle<std::io::Result<()>>,
 }
 impl StreamReader {
-    fn spawn(
+    pub(crate) fn spawn(
         read: impl AsyncRead + Unpin + Send + 'static,
         count: Arc<AtomicUsize>,
         limit: usize,
@@ -97,7 +97,7 @@ impl StreamReader {
     }
     /// Never fails: a reader that is stuck, failed or panicked is aborted and
     /// reported as incomplete, keeping what it captured.
-    async fn finish(&mut self, wait: Duration) -> (Vec<u8>, bool) {
+    pub(crate) async fn finish(&mut self, wait: Duration) -> (Vec<u8>, bool) {
         let complete = matches!(
             tokio::time::timeout(wait, &mut self.task).await,
             Ok(Ok(Ok(())))
@@ -239,7 +239,7 @@ pub(crate) async fn capture_guarded(
         output_incomplete: !(stdout_complete && stderr_complete),
     })
 }
-async fn wait_without_reaping(id: u32) -> Result<()> {
+pub(crate) async fn wait_without_reaping(id: u32) -> Result<()> {
     use rustix::process::{Pid, WaitId, WaitIdOptions, waitid};
     let pid = Pid::from_raw(i32::try_from(id).map_err(|_| RuntimeError::Process)?)
         .ok_or(RuntimeError::Process)?;

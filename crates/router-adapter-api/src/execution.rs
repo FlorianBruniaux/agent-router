@@ -1118,3 +1118,49 @@ impl UsageCollector {
         .then_some(usage)
     }
 }
+
+/// Interactive preparation is a separate contract from the batch HarnessAdapter.
+/// Protocol v1 is provider-free and accepts only synthetic ping callbacks.
+pub trait InteractiveAdapter {
+    fn host(&self) -> &'static str;
+    fn requires_native_version(&self) -> bool {
+        false
+    }
+    fn validate_native_version(&self, _stdout: &[u8]) -> Result<(), AdapterError> {
+        Err(AdapterError::Unsupported("native-version"))
+    }
+    fn supports_native_version_pin(&self) -> bool {
+        false
+    }
+    fn validate_native_version_pin(
+        &self,
+        stdout: &[u8],
+        _expected: &str,
+    ) -> Result<(), AdapterError> {
+        self.validate_native_version(stdout)?;
+        Err(AdapterError::Unsupported("capability-version-pin"))
+    }
+    fn prepare_interactive(
+        &self,
+        request: &ValidatedExecutionRequest,
+        protocol: &router_types::InteractiveProtocol,
+    ) -> Result<router_types::PreparedInteractiveRun, AdapterError>;
+}
+
+pub fn validate_interactive_protocol(
+    protocol: &router_types::InteractiveProtocol,
+) -> Result<(), AdapterError> {
+    if protocol.schema_version != 1
+        || protocol.turn_id.is_empty()
+        || protocol.turn_id.len() > 64
+        || !protocol
+            .turn_id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b"-_.".contains(&b))
+        || !(128..=64 * 1024).contains(&protocol.max_frame_bytes)
+        || !(2..=128).contains(&protocol.max_messages)
+    {
+        return Err(AdapterError::Invalid("interactive protocol bounds"));
+    }
+    Ok(())
+}

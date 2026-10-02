@@ -331,3 +331,65 @@ impl HostUsage {
             .filter(|total| *total <= Self::MAX_TOKENS)
     }
 }
+
+/// A separately reviewed interactive transport. V1 permits one turn and at most
+/// one synthetic ping callback. It confers no tool, process or network authority.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InteractiveProtocol {
+    pub schema_version: u32,
+    pub turn_id: String,
+    pub max_frame_bytes: usize,
+    /// Inbound controller frames. The runtime emits at most a start and one pong.
+    pub max_messages: usize,
+}
+impl Default for InteractiveProtocol {
+    fn default() -> Self {
+        Self {
+            schema_version: 1,
+            turn_id: "turn-1".into(),
+            max_frame_bytes: 4096,
+            max_messages: 8,
+        }
+    }
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct InteractiveExecutionRequest {
+    pub execution: ExecutionRequest,
+    pub protocol: InteractiveProtocol,
+}
+/// The launch metadata reuses existing authorization bindings, but this value
+/// is accepted only by the interactive entrance. Batch preparation is unchanged.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct PreparedInteractiveRun {
+    pub launch: PreparedRun,
+    pub protocol: InteractiveProtocol,
+}
+/// Newline-delimited JSON on the application channel, never the lifetime pipe.
+/// IDs and payloads are validated by the supervisor before replying.
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum InteractiveControllerMessage {
+    Ping {
+        turn_id: String,
+        call_id: String,
+        payload: String,
+    },
+    Completed {
+        turn_id: String,
+    },
+}
+#[derive(Clone, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case", deny_unknown_fields)]
+pub enum InteractiveRuntimeMessage {
+    Start {
+        turn_id: String,
+        input: String,
+    },
+    Pong {
+        turn_id: String,
+        call_id: String,
+        payload: String,
+    },
+}

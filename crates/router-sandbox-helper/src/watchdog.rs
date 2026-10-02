@@ -28,10 +28,34 @@ pub(crate) fn supervise(
     limits: Vec<OsString>,
     arguments: Vec<OsString>,
 ) -> Result<i32, &'static str> {
+    supervise_protocol(limits, arguments, false)
+}
+
+pub(crate) fn supervise_interactive(
+    limits: Vec<OsString>,
+    arguments: Vec<OsString>,
+) -> Result<i32, &'static str> {
+    supervise_protocol(limits, arguments, true)
+}
+
+fn supervise_protocol(
+    limits: Vec<OsString>,
+    arguments: Vec<OsString>,
+    interactive: bool,
+) -> Result<i32, &'static str> {
     if arguments.is_empty() || arguments.len() > 257 || !Path::new(&arguments[0]).is_absolute() {
         return Err("arguments");
     }
-    if std::env::var_os("ROUTER_RUNTIME_SUPERVISION").as_deref() != Some("framed-v1".as_ref()) {
+    if std::env::var_os("ROUTER_RUNTIME_SUPERVISION").as_deref()
+        != Some(
+            if interactive {
+                "framed-v2"
+            } else {
+                "framed-v1"
+            }
+            .as_ref(),
+        )
+    {
         return Err("supervision_protocol");
     }
     let namespace = cfg!(target_os = "linux")
@@ -46,13 +70,23 @@ pub(crate) fn supervise(
     reader
         .read_exact(&mut header)
         .map_err(|_| "supervision_frame")?;
-    if &header[..8] != b"ARLIFE01" {
+    if &header[..8]
+        != if interactive {
+            b"ARLIFE02"
+        } else {
+            b"ARLIFE01"
+        }
+    {
         return Err("supervision_frame");
     }
     let length = u64::from_be_bytes(header[8..16].try_into().map_err(|_| "supervision_frame")?);
     let timeout = u64::from_be_bytes(header[16..24].try_into().map_err(|_| "supervision_frame")?);
     let grace = u64::from_be_bytes(header[24..32].try_into().map_err(|_| "supervision_frame")?);
-    if length > MAX_INPUT || !(1..=86_400_000).contains(&timeout) || grace > 5_000 {
+    if length > MAX_INPUT
+        || (interactive && length != 0)
+        || !(1..=86_400_000).contains(&timeout)
+        || grace > 5_000
+    {
         return Err("supervision_bounds");
     }
     let mut payload = vec![0; length as usize];
@@ -79,15 +113,31 @@ pub(crate) fn supervise(
         .env_remove("ROUTER_RUNTIME_SUPERVISION")
         .env_remove("ROUTER_RUNTIME_LEASE")
         .env_remove("ROUTER_RUNTIME_CONTAINMENT");
+    if interactive {
+        // stdout is the supervisor-created duplex socket. Duplicate it onto the
+        // controller's stdin; its stdout already inherits the same socket. The
+        // watchdog's lifetime stdin is never inherited by the controller.
+        let application = rustix::io::fcntl_dupfd_cloexec(std::io::stdout(), 3)
+            .map_err(|_| "application_descriptor")?;
+        command.stdin(Stdio::from(application));
+    }
     let mut child = command.spawn().map_err(|_| "worker_spawn")?;
     let pid =
         Pid::from_raw(i32::try_from(child.id()).map_err(|_| "worker_pid")?).ok_or("worker_pid")?;
-    let mut worker_input = child.stdin.take().ok_or("worker_stdin")?;
-    let writer = std::thread::Builder::new()
-        .name("worker-stdin".into())
-        .spawn(move || {
-            let _ = worker_input.write_all(&payload);
-        });
+    // Command retains its configured descriptors after spawn. Close our copy
+    // of the application stdin before waiting, including on the error path.
+    drop(command);
+    let writer = if interactive {
+        Ok(None)
+    } else {
+        let mut worker_input = child.stdin.take().ok_or("worker_stdin")?;
+        std::thread::Builder::new()
+            .name("worker-stdin".into())
+            .spawn(move || {
+                let _ = worker_input.write_all(&payload);
+            })
+            .map(Some)
+    };
     let start = Instant::now();
     let result = if writer.is_err() {
         Err("worker_stdin")
@@ -138,7 +188,7 @@ pub(crate) fn supervise(
         std::thread::sleep(Duration::from_millis(5));
     }
     let status = child.wait().map_err(|_| "worker_wait")?;
-    if let Ok(writer) = writer {
+    if let Ok(Some(writer)) = writer {
         if writer.is_finished() {
             let _ = writer.join();
         }

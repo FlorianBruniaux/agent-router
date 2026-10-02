@@ -14,6 +14,8 @@ mod error;
 mod escalation;
 mod generated;
 mod host_state;
+mod interactive;
+pub use interactive::{ApprovedInteractiveRun, PendingInteractiveRun};
 mod leases;
 mod native_version;
 mod outputs;
@@ -113,6 +115,7 @@ pub struct PendingRun {
     decision: ExecutionDecision,
     workflow: Option<WorkflowExecutionContract>,
     artifacts: Option<RunArtifactContract>,
+    interactive: Option<InteractiveProtocol>,
 }
 pub struct ApprovedRun {
     pending: PendingRun,
@@ -302,7 +305,20 @@ impl Runtime {
         decision: Option<&ExecutionDecisionBinding>,
         escalation: Option<&EscalationDecisionBinding>,
         generated: Option<&GeneratedDecisionBinding>,
+        interactive: Option<&InteractiveProtocol>,
     ) -> Result<String> {
+        if let Some(protocol) = interactive {
+            return digest(
+                "runtime-definition-interactive-v1",
+                &(
+                    self.definition_hash(
+                        request, receipt, plan, node_id, workflow, artifacts, decision, escalation,
+                        generated, None,
+                    )?,
+                    protocol,
+                ),
+            );
+        }
         if let Some(admission) = &self.admission {
             if let Some(budget) = admission.budget_config() {
                 return digest(
@@ -447,6 +463,7 @@ impl Runtime {
                 pending.decision.binding(),
                 pending.decision.escalation_binding(),
                 pending.decision.generated_binding(),
+                pending.interactive.as_ref(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -521,6 +538,25 @@ impl Runtime {
         node_id: &str,
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
+    ) -> Result<PendingRun> {
+        self.review_internal(
+            run_id, router, context, decision, request, plan, node_id, workflow, artifacts, None,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    async fn review_internal(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
+        interactive: Option<InteractiveProtocol>,
     ) -> Result<PendingRun> {
         if context.has_signed_catalog() {
             return Err(RuntimeError::Invalid(
@@ -626,6 +662,7 @@ impl Runtime {
             decision.binding(),
             decision.escalation_binding(),
             decision.generated_binding(),
+            interactive.as_ref(),
         )?;
         let approval_digest = digest(
             "runtime-approval-v1",
@@ -702,6 +739,7 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
+            interactive,
         };
         if let Some(shared) = &self.admission {
             shared.validate(&pending)?;
@@ -887,6 +925,7 @@ impl Runtime {
             decision.binding(),
             decision.escalation_binding(),
             decision.generated_binding(),
+            None,
         )?;
         if definition_hash != run.definition_hash || binding != run.workflow {
             return Err(RuntimeError::Integrity("definition changed"));
@@ -902,6 +941,7 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
+            interactive: None,
         };
         self.validate_pending_escalation(&pending, false)?;
         self.validate_pending_generated(&pending, false)?;
@@ -972,6 +1012,23 @@ impl Runtime {
             .await
     }
     pub async fn execute_decision(
+        &self,
+        approved: ApprovedRun,
+        adapter: &dyn HarnessAdapter,
+        supervisor: &dyn SandboxSupervisor,
+        cancel: Cancellation,
+        authority: Option<&dyn ActivationAuthority>,
+    ) -> Result<RunCompletion> {
+        if approved.pending.interactive.is_some() {
+            return Err(RuntimeError::Invalid(
+                "interactive execution entrance required",
+            ));
+        }
+        // Keep the shared executor out of the caller's async frame. Workflow
+        // joins can hold several executions at once on a bounded thread stack.
+        Box::pin(self.execute_mode(approved, adapter, supervisor, cancel, authority)).await
+    }
+    async fn execute_mode(
         &self,
         approved: ApprovedRun,
         adapter: &dyn HarnessAdapter,
@@ -1242,17 +1299,34 @@ impl Runtime {
             }
         };
         let validate_capabilities = || self.snapshot(&pending.context).map(|_| ());
-        let process = process::capture_guarded(
-            command,
-            run.stdin.as_bytes().to_vec(),
-            run.timeout_ms,
-            run.max_output_bytes,
-            self.limits.termination_grace_ms,
-            &cancel,
-            dispatch,
-            budget_dispatch,
-            Some(&validate_capabilities),
-        );
+        let process = async {
+            if let Some(protocol) = &pending.interactive {
+                interactive::capture_interactive(
+                    command,
+                    &run,
+                    protocol,
+                    self.limits.termination_grace_ms,
+                    &cancel,
+                    dispatch,
+                    budget_dispatch,
+                    &validate_capabilities,
+                )
+                .await
+            } else {
+                process::capture_guarded(
+                    command,
+                    run.stdin.as_bytes().to_vec(),
+                    run.timeout_ms,
+                    run.max_output_bytes,
+                    self.limits.termination_grace_ms,
+                    &cancel,
+                    dispatch,
+                    budget_dispatch,
+                    Some(&validate_capabilities),
+                )
+                .await
+            }
+        };
         tokio::pin!(process);
         let captured = loop {
             tokio::select! {
@@ -1295,10 +1369,21 @@ impl Runtime {
             Err(error) => {
                 // Expiry can cross its exclusive boundary between lease creation
                 // and the final synchronous spawn gate. No process was started.
-                let (reason, failure) = if matches!(error, RuntimeError::Decision(_)) {
-                    ("decision_rejected_at_dispatch", RunFailure::Policy)
-                } else {
-                    ("spawn_or_supervision_failed", RunFailure::Spawn)
+                let (reason, failure) = match &error {
+                    RuntimeError::Decision(_) => {
+                        ("decision_rejected_at_dispatch", RunFailure::Policy)
+                    }
+                    RuntimeError::Adapter(router_adapter_api::AdapterError::OutputLimit)
+                        if pending.interactive.is_some() =>
+                    {
+                        ("interactive_output_limit", RunFailure::OutputLimit)
+                    }
+                    RuntimeError::Adapter(router_adapter_api::AdapterError::Protocol)
+                        if pending.interactive.is_some() =>
+                    {
+                        ("interactive_protocol_rejected", RunFailure::Unclassified)
+                    }
+                    _ => ("spawn_or_supervision_failed", RunFailure::Spawn),
                 };
                 self.store.finish_attempt(id, reason)?;
                 self.store
@@ -1546,6 +1631,16 @@ impl Runtime {
         if cancel.is_cancelled() {
             return Err(RuntimeError::Cancelled);
         }
+        let prepare_command = |run: &PreparedRun, policy: &SandboxPolicy| {
+            if pending.interactive.is_some() {
+                if !supervisor.parent_lifetime_enforced() {
+                    return Err(RuntimeError::Sandbox);
+                }
+                supervisor.interactive_command(run, policy)
+            } else {
+                supervisor.command(run, policy)
+            }
+        };
         let root = Path::new(&pending.request.workspace);
         if workspace::source_state_observed(root, Some(preparation)).await?
             != pending.request.source_state
@@ -1621,7 +1716,7 @@ impl Runtime {
         if cancel.is_cancelled() {
             return Err(RuntimeError::Cancelled);
         }
-        supervisor.command(
+        prepare_command(
             &initial,
             &SandboxPolicy {
                 network: request.required_capabilities.contains(&Capability::Network),
@@ -1748,7 +1843,7 @@ impl Runtime {
             self.store
                 .event(id, "assets.final_gate", gated.binding_digest())?;
         }
-        let command = supervisor.command(
+        let command = prepare_command(
             &run,
             &SandboxPolicy {
                 network: request.required_capabilities.contains(&Capability::Network),

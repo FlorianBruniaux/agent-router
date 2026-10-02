@@ -61,6 +61,10 @@ fn run() -> Result<(), &'static str> {
         let code = watchdog::supervise(all_args[..10].to_vec(), args.collect())?;
         std::process::exit(code);
     }
+    if next == "--supervise-v2" {
+        let code = watchdog::supervise_interactive(all_args[..10].to_vec(), args.collect())?;
+        std::process::exit(code);
+    }
     let resources = [
         Resource::Cpu,
         Resource::As,

@@ -24,6 +24,11 @@ pub trait SandboxSupervisor: Send + Sync {
         Ok(None)
     }
     fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command>;
+    /// Separate lifetime protocol required for duplex application traffic.
+    /// Existing batch supervisors refuse this path unless explicitly implemented.
+    fn interactive_command(&self, _run: &PreparedRun, _policy: &SandboxPolicy) -> Result<Command> {
+        Err(RuntimeError::Sandbox)
+    }
     /// True only for a probe-bound sandbox whose workers enter a PID namespace.
     fn pid_namespace_isolated(&self) -> bool {
         false

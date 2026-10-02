@@ -120,15 +120,13 @@ impl<S: SandboxSupervisor> ResourceSupervisor<S> {
         })
     }
 }
-impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
-    fn create_host_state(
+impl<S: SandboxSupervisor> ResourceSupervisor<S> {
+    fn supervised_command(
         &self,
-        store: &Path,
         run: &PreparedRun,
-    ) -> Result<Option<crate::HostState>> {
-        self.inner.create_host_state(store, run)
-    }
-    fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
+        policy: &SandboxPolicy,
+        interactive: bool,
+    ) -> Result<Command> {
         if router_adapter_api::content_digest(&read_helper(&self.helper)?) != self.helper_hash {
             return Err(RuntimeError::Integrity("sandbox helper changed"));
         }
@@ -137,7 +135,11 @@ impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
         let mut command = Command::new(&self.helper);
         command
             .args(self.limits.args()?)
-            .arg("--supervise-v1")
+            .arg(if interactive {
+                "--supervise-v2"
+            } else {
+                "--supervise-v1"
+            })
             .arg(inner.get_program())
             .args(inner.get_args())
             .env_clear();
@@ -151,7 +153,14 @@ impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
         if let Some(cwd) = inner.get_current_dir() {
             command.current_dir(cwd);
         }
-        command.env("ROUTER_RUNTIME_SUPERVISION", "framed-v1");
+        command.env(
+            "ROUTER_RUNTIME_SUPERVISION",
+            if interactive {
+                "framed-v2"
+            } else {
+                "framed-v1"
+            },
+        );
         command.env(
             "ROUTER_RUNTIME_CONTAINMENT",
             if self.inner.pid_namespace_isolated() {
@@ -161,6 +170,21 @@ impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
             },
         );
         Ok(command)
+    }
+}
+impl<S: SandboxSupervisor> SandboxSupervisor for ResourceSupervisor<S> {
+    fn create_host_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+    ) -> Result<Option<crate::HostState>> {
+        self.inner.create_host_state(store, run)
+    }
+    fn command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
+        self.supervised_command(run, policy, false)
+    }
+    fn interactive_command(&self, run: &PreparedRun, policy: &SandboxPolicy) -> Result<Command> {
+        self.supervised_command(run, policy, true)
     }
     fn pid_namespace_isolated(&self) -> bool {
         self.inner.pid_namespace_isolated()
