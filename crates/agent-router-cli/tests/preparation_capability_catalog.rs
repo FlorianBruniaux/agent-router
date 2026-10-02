@@ -136,8 +136,28 @@ fn prepare_output_preserves_authenticated_generated_catalog() {
     assert_eq!(exported["written"], true);
     assert_eq!(exported["executed"], false);
     assert_eq!(exported["approved"], false);
-    assert_eq!(exported["preview"], preview["preview"]);
-    assert_eq!(exported["preparation_hash"], preview["preparation_hash"]);
+    assert_eq!(
+        preview["preview"]["preparation_hash"],
+        preview["preparation_hash"]
+    );
+    assert_eq!(
+        exported["preview"]["preparation_hash"],
+        exported["preparation_hash"]
+    );
+    let mut preview_without_hash = preview["preview"].clone();
+    preview_without_hash
+        .as_object_mut()
+        .unwrap()
+        .remove("preparation_hash");
+    let mut exported_preview_without_hash = exported["preview"].clone();
+    exported_preview_without_hash
+        .as_object_mut()
+        .unwrap()
+        .remove("preparation_hash");
+    assert_eq!(exported_preview_without_hash, preview_without_hash);
+    let persisted_preview: Value =
+        serde_json::from_slice(&fs::read(directory.join("preview.json")).unwrap()).unwrap();
+    assert_eq!(persisted_preview, exported["preview"]);
     let catalog = Catalog::from_json(&fs::read(directory.join("catalog.json")).unwrap()).unwrap();
     assert_eq!(catalog.content_hash().unwrap(), catalog_hash);
     let receipt: PhaseReceipt =
