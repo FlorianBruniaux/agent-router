@@ -1,0 +1,21 @@
+docs/bench/egress-admission/README.md
+  s_9e80b85afcc43a::t_0f140038974429 47-56,66-67
+docs/bench/egress-admission/results/codex-appserver-local-v2.json
+  s_9e80b85afcc43a::t_32e0bbc579b55f 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "9d77f5f7e1db8a7e5a45b2c5c5b3b9c3a619a981",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
