@@ -1,0 +1,43 @@
+crates/router-runtime/tests/interactive.rs
+  s_9e80b85afcc43a::t_04292e948719f0 1-29,31,36-96,98-190,192-267,287-297,303-326,328-343,347-349,356-358,407-416,424-941
+  s_9e80b85afcc43a::t_3908f83d073993 298-301
+  s_9e80b85afcc43a::t_fecf57a6115c69 30,32-35,97,191,268-286,302,327,344-346,350-355,359-406,417-423
+crates/router-runtime/src/interactive.rs
+  s_9e80b85afcc43a::t_8d237d56205b9a 114-117,123-125,171-175
+  s_9e80b85afcc43a::t_997e7cc730b448 3-4
+  s_9e80b85afcc43a::t_c07e29c1e8a444 1-2,5-113,118-122,126-170,176-625
+crates/router-adapter-api/src/execution.rs
+  s_9e80b85afcc43a::t_9aefbbd24088e3 1121-1166
+crates/router-runtime/src/lib.rs
+  s_9e80b85afcc43a::t_de1f806095302d 17-18,118,308,310-321,466,541-559,665,742,928,944,1021-1037,1302-1329,1372-1386,1634-1643,1719,1846
+crates/router-runtime/src/process.rs
+  s_9e80b85afcc43a::t_a87bdce2b9efc7 83,88,100,242
+crates/router-runtime/src/resources.rs
+  s_9e80b85afcc43a::t_7e9d19c55bf7f0 123-124,127-129,138-142,156-163,174-188
+crates/router-runtime/src/sandbox.rs
+  s_9e80b85afcc43a::t_c454de0a96d521 27-31
+crates/router-sandbox-helper/src/main.rs
+  s_9e80b85afcc43a::t_382341bda18681 64-67
+crates/router-sandbox-helper/src/watchdog.rs
+  s_9e80b85afcc43a::t_38d7b644edf0a6 30-44,49-58,73-79,85-89,116-123,127-140,191
+crates/router-sandbox-helper/tests/lifetime.rs
+  s_9e80b85afcc43a::t_1a9227c96aa14b 266-365
+crates/router-types/src/execution.rs
+  s_9e80b85afcc43a::t_a7f0c663dfe026 334-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d65718e01f6fee73dbc7184acb67e790624cc6b8",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
