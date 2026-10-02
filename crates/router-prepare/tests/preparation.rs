@@ -570,6 +570,21 @@ fn changing_a_variable_or_source_changes_preparation_identity() {
 }
 
 #[test]
+fn preparation_identity_binds_the_validation_clock() {
+    let mut fixture = Fixture::new();
+    let first = fixture.prepare().unwrap();
+    fixture.options.now_unix_seconds += 1;
+    let second = fixture.prepare().unwrap();
+
+    assert_eq!(first.receipt(), second.receipt());
+    assert_eq!(
+        first.preview().request_sha256,
+        second.preview().request_sha256
+    );
+    assert_ne!(first.preparation_hash(), second.preparation_hash());
+}
+
+#[test]
 fn native_host_tool_authority_is_preserved_and_never_inferred_from_instructions() {
     let mut fixture = Fixture::new();
     let mut request = fixture.context.request().clone();

@@ -1,10 +1,19 @@
 # Claude local provider and MCP investigation
 
-Status on 2026-10-01: **INCONCLUSIVE for native Claude admission**. Claude
-2.1.286 did not send a request to the local scripted provider before the
-bounded stop. The tools inventory, forced built-in refusal and native MCP
-round trip therefore remain UNKNOWN. No real API credential, personal host
-configuration, OAuth token or paid provider was used. Provider spend: USD 0.
+Status on 2026-10-02: **INCONCLUSIVE for native Claude admission**. The archived
+2026-10-01 runs used driver v1, which recorded only successfully parsed JSON
+POSTs. Their empty `provider_requests` arrays mean no valid JSON POST was
+recorded. They did not count accepted TCP connections, malformed HTTP or
+unsupported methods, so transport activity in those runs remains UNKNOWN.
+The updated driver reports accepted TCP connections, bounded HTTP response
+events and valid JSON POSTs separately. Its bounded v2 inventory run used
+Claude Code 2.1.287 and reached the local listener: one TCP connection sent a
+`HEAD` request to an unclassified route, which received HTTP 501. The process
+then timed out after 25 seconds without a valid JSON POST. The tools inventory,
+forced built-in refusal and native MCP round trip remain UNKNOWN. The debug log
+reports that the system managed-settings file was missing; behavior when that
+file is present remains UNKNOWN. No personal HOME/configuration or OAuth token
+was imported, and no paid provider was used. Provider spend: USD 0.
 
 The independent MCP fixture works under its own network-denying Seatbelt
 profile. Applying that profile from inside the controller's sandbox fails.
@@ -13,9 +22,11 @@ they do not admit the native host or justify broadening its permissions.
 
 ## Measured boundaries
 
-The native executable reported `2.1.286` and its SHA-256 was
-`75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433`.
-The sampled OS was macOS 26.5.1 (25F80). Linux was not tested.
+The archived 2026-10-01 v1 runs used Claude Code `2.1.286`, SHA-256
+`75e3016e9d2570767b08e43a7467d4817a4f149232c169ca295f2c95fef21433`, on
+macOS 26.5.1 (25F80). The 2026-10-02 v2 inventory used Claude Code `2.1.287`,
+SHA-256 `6eab8333fe2121553100d8f40bfada384a3e989b94f947e18ba6677a6fcb41ea`.
+Linux was not tested.
 
 Every controller run used fresh owner-only `HOME`, `CLAUDE_CONFIG_DIR` and
 workspace directories, an explicit synthetic API key and `ANTHROPIC_BASE_URL`
@@ -33,11 +44,12 @@ socket destination was granted to the child. There was no packet capture.
 | Result | Observed outcome |
 | --- | --- |
 | [Initial syntax diagnostic](results/inventory-initial.json) | Seatbelt rejected `127.0.0.1:port` in the profile before executing the child; use `localhost:port`. |
-| [Temporary-directory diagnostic](results/inventory-localhost.json) | Socket control passed; Claude exited 1 opening `/tmp/claude-501`. No provider request. |
-| [Three intended cases](results/local-v1.json) | After setting `CLAUDE_CODE_TMPDIR` to private state, inventory, forced Bash and MCP nonce each timed out at 25 seconds, before a provider request. |
+| [Temporary-directory diagnostic](results/inventory-localhost.json) | Socket control passed; Claude exited 1 opening `/tmp/claude-501`. Driver v1 recorded no valid JSON POST; TCP and other HTTP activity were not counted. |
+| [Three intended cases](results/local-v1.json) | After setting `CLAUDE_CODE_TMPDIR` to private state, inventory, forced Bash and MCP nonce each timed out at 25 seconds. Driver v1 recorded no valid JSON POST; TCP and other HTTP activity were not counted. |
 | [Startup debug](results/inventory-debug.json) | 15-second timeout. Debug reached MDM load, certificate initialization and private `.claude.json` writes. |
 | [Without restricted mode](results/inventory-without-restricted.json) | Removing only `--restricted` still timed out at 15 seconds. Debug also reached ToolSearch configuration for the local base URL. |
-| [Bounded stack sample](results/inventory-sampled.json) | 45-second timeout, zero provider requests. Sample shows native/JSC frames and signal handling; symbols do not identify a demonstrated root cause. |
+| [Bounded stack sample](results/inventory-sampled.json) | 45-second timeout, no valid JSON POST recorded by driver v1. TCP and other HTTP activity were not counted. Sample shows native/JSC frames and signal handling; symbols do not identify a demonstrated root cause. |
+| [Instrumented v2 inventory](results/inventory-accounting-v2.json) | Claude Code 2.1.287: one accepted local TCP connection, one `HEAD` response event for `/api/<other>` with status 501, no valid JSON POST, 25-second timeout. The remainder of the route is redacted. Preflight reached only the allowed port; the second loopback port was denied with EPERM. |
 | [Nested MCP control](results/mcp-protocol-control.json) | Exit 71: `sandbox-exec: sandbox_apply: Operation not permitted`. The MCP worker did not run. |
 | [Standalone MCP control](results/mcp-standalone-control.json) | Exit 0. Initialize, tools/list and tools/call completed; exact nonce written. Provider port, second port and controller-state read all returned EPERM. Credential variables absent in worker. |
 
@@ -102,16 +114,21 @@ headers are not retained.
 
 Artifact reads pin the parent directory and regular-file descriptor, reject
 symlinks and FIFOs, and enforce byte limits before exporting any content.
-The regression suite uses only synthetic files, including an external canary
-that the old sample destination overwrote through a workspace symlink:
+The artifact regression suite uses only synthetic files, including an external
+canary that the old sample destination overwrote through a workspace symlink:
 
 ```sh
-python3 -B -m unittest discover -s docs/bench/egress-admission -p test_artifact_reads.py -v
+python3 -B -m unittest discover -s docs/bench/egress-admission -p 'test_artifact_reads.py' -v
+
+python3 -B -m unittest discover -s docs/bench/egress-admission -p 'test_provider_accounting.py' -v
 ```
 
-Ten tests pass on macOS, including a real Seatbelt child denied attempts to
-write, unlink, create a symlink or rename the supervisor sample directory.
-The sample invocation itself is simulated in the overwrite regression.
+Ten artifact tests pass on macOS, including a real Seatbelt child denied
+attempts to write, unlink, create a symlink or rename the supervisor sample
+directory. The sample invocation itself is simulated in the overwrite
+regression. `test_provider_accounting.py` covers raw accepted connections,
+malformed and unsupported HTTP, bounded body handling, preflight exclusion,
+and body/header redaction. It must run outside a surrounding socket sandbox.
 See `results/sample-write-regression.json` for RED/GREEN provenance and the
 final standalone MCP result. Earlier results retain their historical driver
 hashes. These fixture checks do not establish native CLI admission.
