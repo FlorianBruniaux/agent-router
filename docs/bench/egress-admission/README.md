@@ -27,9 +27,9 @@ synthetic dynamic-tool round trip through a scripted Responses provider bound
 to `127.0.0.1`. It advertised `router_probe_tool`, emitted a correlated
 `item/tool/call`, accepted the callback response, and sent the matching
 `function_call_output` content in its second provider request. The turn
-completed in 1,884 ms in the latest validated rerun; runtime varies by run. The
+completed in 6,208 ms in the latest validated rerun; runtime varies by run. The
 provider received no real credential; spend was USD 0. The full local
-egress-admission suite passed 20 tests. The binary SHA-256 was
+egress-admission suite passed 29 tests. The binary SHA-256 was
 `61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
 
 This proves the app-server callback protocol with a local scripted provider.

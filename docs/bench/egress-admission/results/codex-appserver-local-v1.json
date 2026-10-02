@@ -9,7 +9,7 @@
   "codex_binary_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
   "result": {
     "success": true,
-    "elapsed_ms": 1884,
+    "elapsed_ms": 6208,
     "app_server_exit_code": 0,
     "provider_bind_address": "127.0.0.1",
     "provider_url_loopback": true,
