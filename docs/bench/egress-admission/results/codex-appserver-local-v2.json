@@ -1,0 +1,43 @@
+{
+  "advertised_function_tool_names": [
+    "request_user_input",
+    "view_image",
+    "get_goal",
+    "create_goal",
+    "update_goal",
+    "router_probe_tool"
+  ],
+  "app_server_exit_code": 0,
+  "callback_correlation": {
+    "arguments_valid": true,
+    "call_id": "call_fixture_1",
+    "jsonrpc_id": 0,
+    "thread_id": "01a0fe00-0757-74a2-9c11-8c5de19e2560",
+    "tool_name": "router_probe_tool",
+    "turn_id": "01a0fe00-0775-7833-8750-ac1adc32a8f4"
+  },
+  "callback_response_sent": true,
+  "cleanup_complete": true,
+  "codex_binary_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+  "codex_version": "0.159.2",
+  "elapsed_ms": 972,
+  "final_callback_confirmation": true,
+  "function_call_output_count": 1,
+  "next_provider_request_has_matching_function_call_output": true,
+  "os_network_sandbox_applied": false,
+  "os_network_sandbox_status": "NOT_APPLIED",
+  "provider_accepted_connections": 2,
+  "provider_bind_address": "127.0.0.1",
+  "provider_rejected_connections": 0,
+  "provider_rejected_requests": 0,
+  "provider_request_count": 2,
+  "provider_spend": "USD 0, scripted loopback provider",
+  "provider_url_loopback": true,
+  "script_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "success": true,
+  "synthetic_key_only": true,
+  "target_dynamic_tool_advertised": true,
+  "thread_id": "01a0fe00-0757-74a2-9c11-8c5de19e2560",
+  "turn_id": "01a0fe00-0775-7833-8750-ac1adc32a8f4",
+  "turn_status": "completed"
+}
