@@ -342,6 +342,36 @@ it may expire retained rows and advance the clock watermark. The same retained
 events, facts, pricing file and `--now` give byte-identical output: lists are
 sorted and every figure is an integer or a fixed-precision value in micros.
 
+Schema 2 adds `runs`: one row per retained automated run, ordered by event
+sequence, with its task/run binding, optional stable run key, observation time,
+model, effort, task kind, verdict, transport status, failure and usage. A task may
+have several runs; these rows do not aggregate all attempts. Human-origin
+feedback remains in the separate counts. The published schema also accepts the
+strict schema 1 shape, which has no `runs`; existing feedback events and the
+store format are unchanged. The report content hash uses `feedback-report-v2`.
+
+Each row's `evidence.source` is `feedback_store`. `feedback_event_hash`,
+`verification_fact_hash` and `integration_fact_hash` identify the retained source
+records; absent facts have null hashes. The binding is copied from feedback,
+including its declared receipt hash and producer provenance. These hashes are
+references, not proof that a runtime receipt or journal has been verified.
+`runtime_evidence` and `native_external_evidence` therefore remain `unknown`.
+This report does not import native external sessions or fabricate AR receipts
+for them. Authenticating those sources requires a separate capture/verification
+path.
+
+`usage: null` means no usage was stored. When present, every token field retains
+its `host_reported` or `unknown` provenance. Transport `passed` alone does not
+imply an accepted task; transport failures and failure reasons remain visible
+even if the outcome has no verification/integration fact and stays `unknown`.
+Omit `--json` for the human view, which renders `unknown` as `UNKNOWN` and null
+as `not set (null)`.
+
+The rows reuse the existing bounded store snapshot (at most 10,000 events and
+10,000 facts); no second authoritative store is created. Aggregates and pricing
+retain their existing semantics, including latest-snapshot selection and cache
+write pricing. This addition provides no measurement of router gains.
+
 Runs are grouped by `(model, effort, task_kind)`. Automated events join late
 facts by `run_key_sha256`:
 

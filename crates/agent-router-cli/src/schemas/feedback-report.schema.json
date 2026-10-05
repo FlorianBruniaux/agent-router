@@ -1,95 +1,205 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:agent-router:schema:feedback-report:1",
+  "$id": "urn:agent-router:schema:feedback-report:2",
   "title": "feedback report",
-  "description": "Output of `agent-router feedback report`: descriptive outcome measurement per model, effort and task kind. Associations, not a gain attributable to the router.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "schema_version",
-    "generated_at_unix_seconds",
-    "event_set_hash",
-    "fact_set_hash",
-    "automated_events",
-    "human_events",
-    "facts",
-    "unlinked",
-    "orphan_facts",
-    "superseded_events",
-    "pricing",
-    "groups",
-    "catalog_estimate_ratio",
-    "advisory",
-    "interpretation",
-    "content_hash"
-  ],
-  "properties": {
-    "schema_version": {
-      "const": 1
-    },
-    "generated_at_unix_seconds": {
-      "$ref": "#/$defs/u64"
-    },
-    "event_set_hash": {
-      "$ref": "#/$defs/hash"
-    },
-    "fact_set_hash": {
-      "$ref": "#/$defs/hash"
-    },
-    "automated_events": {
-      "$ref": "#/$defs/u64"
-    },
-    "human_events": {
-      "$ref": "#/$defs/u64"
-    },
-    "facts": {
-      "$ref": "#/$defs/u64"
-    },
-    "unlinked": {
-      "$ref": "#/$defs/u64"
-    },
-    "orphan_facts": {
-      "$ref": "#/$defs/u64"
-    },
-    "superseded_events": {
-      "$ref": "#/$defs/u64"
-    },
-    "pricing": {
-      "$ref": "#/$defs/pricing"
-    },
-    "groups": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/group"
-      }
-    },
-    "catalog_estimate_ratio": {
+  "description": "Feedback report v2 includes retained run rows with source provenance; the strict v1 shape remains valid. Associations, not gain attributable to the router.",
+  "oneOf": [
+    {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "value",
-        "reason"
+        "schema_version",
+        "generated_at_unix_seconds",
+        "event_set_hash",
+        "fact_set_hash",
+        "automated_events",
+        "human_events",
+        "facts",
+        "unlinked",
+        "orphan_facts",
+        "superseded_events",
+        "pricing",
+        "groups",
+        "catalog_estimate_ratio",
+        "advisory",
+        "interpretation",
+        "content_hash"
       ],
       "properties": {
-        "value": {
-          "type": "null"
+        "schema_version": {
+          "const": 1
         },
-        "reason": {
+        "generated_at_unix_seconds": {
+          "$ref": "#/$defs/u64"
+        },
+        "event_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "fact_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "automated_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "human_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "unlinked": {
+          "$ref": "#/$defs/u64"
+        },
+        "orphan_facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "superseded_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "pricing": {
+          "$ref": "#/$defs/pricing"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "catalog_estimate_ratio": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "reason"
+          ],
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "advisory": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "suggestion",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "const": true
+                },
+                "suggestion": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "interpretation": {
           "type": "string"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash"
         }
       }
     },
-    "advisory": {
-      "oneOf": [
-        {
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "generated_at_unix_seconds",
+        "event_set_hash",
+        "fact_set_hash",
+        "automated_events",
+        "human_events",
+        "facts",
+        "unlinked",
+        "orphan_facts",
+        "superseded_events",
+        "pricing",
+        "groups",
+        "catalog_estimate_ratio",
+        "advisory",
+        "interpretation",
+        "content_hash",
+        "runs"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 2
+        },
+        "generated_at_unix_seconds": {
+          "$ref": "#/$defs/u64"
+        },
+        "event_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "fact_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "automated_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "human_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "unlinked": {
+          "$ref": "#/$defs/u64"
+        },
+        "orphan_facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "superseded_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "pricing": {
+          "$ref": "#/$defs/pricing"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "catalog_estimate_ratio": {
           "type": "object",
           "additionalProperties": false,
           "required": [
-            "advisory",
+            "value",
             "reason"
           ],
           "properties": {
-            "advisory": {
+            "value": {
               "type": "null"
             },
             "reason": {
@@ -97,35 +207,62 @@
             }
           }
         },
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "advisory",
-            "suggestion",
-            "reason"
-          ],
-          "properties": {
-            "advisory": {
-              "const": true
+        "advisory": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
             },
-            "suggestion": {
-              "type": "null"
-            },
-            "reason": {
-              "type": "string"
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "suggestion",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "const": true
+                },
+                "suggestion": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
             }
-          }
+          ]
+        },
+        "interpretation": {
+          "type": "string"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/run"
+          },
+          "description": "One latest retained automated event per run key, in event sequence order; at most 10000 rows. Not a total over all task attempts."
         }
-      ]
-    },
-    "interpretation": {
-      "type": "string"
-    },
-    "content_hash": {
-      "$ref": "#/$defs/hash"
+      }
     }
-  },
+  ],
   "$defs": {
     "u64": {
       "type": "integer",
@@ -399,6 +536,245 @@
         },
         "cost": {
           "$ref": "#/$defs/cost"
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_hash",
+        "run_hash",
+        "receipt_hash",
+        "policy_hash",
+        "catalog_hash",
+        "snapshot_hash",
+        "producer_version",
+        "provenance_sha256"
+      ],
+      "properties": {
+        "task_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "run_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "receipt_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "policy_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "catalog_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "snapshot_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "producer_version": {
+          "type": "string"
+        },
+        "provenance_sha256": {
+          "$ref": "#/$defs/hash"
+        }
+      }
+    },
+    "usage_field": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tokens",
+            "provenance"
+          ],
+          "properties": {
+            "tokens": {
+              "$ref": "#/$defs/u64"
+            },
+            "provenance": {
+              "const": "host_reported"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tokens",
+            "provenance"
+          ],
+          "properties": {
+            "tokens": {
+              "type": "null"
+            },
+            "provenance": {
+              "const": "unknown"
+            }
+          }
+        }
+      ]
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_tokens",
+        "cached_input_tokens",
+        "cache_write_input_tokens",
+        "output_tokens",
+        "reasoning_output_tokens"
+      ],
+      "properties": {
+        "input_tokens": {
+          "$ref": "#/$defs/usage_field"
+        },
+        "cached_input_tokens": {
+          "$ref": "#/$defs/usage_field"
+        },
+        "cache_write_input_tokens": {
+          "$ref": "#/$defs/usage_field"
+        },
+        "output_tokens": {
+          "$ref": "#/$defs/usage_field"
+        },
+        "reasoning_output_tokens": {
+          "$ref": "#/$defs/usage_field"
+        }
+      }
+    },
+    "run_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source",
+        "feedback_event_hash",
+        "verification_fact_hash",
+        "integration_fact_hash",
+        "runtime_evidence",
+        "native_external_evidence"
+      ],
+      "properties": {
+        "source": {
+          "const": "feedback_store"
+        },
+        "feedback_event_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "verification_fact_hash": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/hash"
+            }
+          ]
+        },
+        "integration_fact_hash": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/hash"
+            }
+          ]
+        },
+        "runtime_evidence": {
+          "const": "unknown"
+        },
+        "native_external_evidence": {
+          "const": "unknown"
+        }
+      },
+      "description": "Source record identities only. This reader does not authenticate runtime journal/receipts or native external sessions."
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "run_key_sha256",
+        "observed_at_unix_seconds",
+        "model",
+        "effort",
+        "task_kind",
+        "verdict",
+        "transport",
+        "failure",
+        "usage",
+        "evidence"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/binding"
+        },
+        "run_key_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/hash"
+            }
+          ]
+        },
+        "observed_at_unix_seconds": {
+          "$ref": "#/$defs/u64"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string"
+        },
+        "task_kind": {
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "unknown"
+          ]
+        },
+        "transport": {
+          "enum": [
+            "passed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "failure": {
+          "enum": [
+            null,
+            "authentication",
+            "rate_limit",
+            "timeout",
+            "crash",
+            "network",
+            "policy",
+            "validation",
+            "objective",
+            "budget",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "usage": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/usage"
+            }
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/run_evidence"
         }
       }
     }

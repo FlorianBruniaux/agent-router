@@ -268,7 +268,7 @@ printf approved
             .command(
                 &run,
                 &SandboxPolicy {
-                    network: false,
+                    network: crate::NetworkAuthority::Deny,
                     host_state: Some(&state),
                 },
             )

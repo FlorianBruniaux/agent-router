@@ -59,7 +59,7 @@ fn list_names_every_contract_with_its_supported_versions() {
     let versions =
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
-    assert_eq!(versions("feedback-report"), json!([1]));
+    assert_eq!(versions("feedback-report"), json!([1, 2]));
     let mut again = command();
     again.args(["schema", "--list"]);
     assert_eq!(out, stdout(again));
@@ -461,7 +461,7 @@ fn the_feedback_schemas_reject_outputs_that_break_their_contract() {
             "{name}: extra key"
         );
         assert!(
-            !broken(&|v| v["schema_version"] = json!(2)).is_empty(),
+            !broken(&|v| v["schema_version"] = json!(99)).is_empty(),
             "{name}: version"
         );
         assert!(
@@ -511,4 +511,39 @@ fn the_checker_rejects_outputs_that_break_their_contract() {
         &json!({"schema_version":1,"version":"1","target":"t","features":[],"contracts":{"x":{"command":"c","schema_versions":[]}}}),
     );
     assert!(!version.is_empty());
+}
+
+#[test]
+fn feedback_schema_keeps_v1_strict_and_requires_v2_run_evidence() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let store = populated_store(&directory);
+    let report = feedback_json(&store, "report", None);
+    assert_eq!(report["schema_version"], 2);
+    assert_conforms("feedback-report", &report);
+    // The historical v1 output shape remains accepted, with no run rows.
+    let mut legacy = report.clone();
+    legacy.as_object_mut().unwrap().remove("runs");
+    legacy["schema_version"] = json!(1);
+    assert_conforms("feedback-report", &legacy);
+    legacy["runs"] = report["runs"].clone();
+    assert!(!json_schema::violations(&schema("feedback-report"), &legacy).is_empty());
+    for mutate in [
+        (|v: &mut Value| {
+            v.as_object_mut().unwrap().remove("runs");
+        }) as fn(&mut Value),
+        |v| v["runs"][0]["evidence"]["runtime_evidence"] = json!("passed"),
+        |v| v["runs"][0]["evidence"]["native_external_evidence"] = json!("passed"),
+        |v| v["runs"][0]["evidence"]["source"] = json!("native_external"),
+        |v| v["runs"][0]["binding"]["receipt_hash"] = json!("invented"),
+        |v| v["runs"][0]["verdict"] = json!("success"),
+        |v| v["runs"][0]["usage"]["input_tokens"]["tokens"] = json!(null),
+    ] {
+        let mut invalid = report.clone();
+        mutate(&mut invalid);
+        assert!(
+            !json_schema::violations(&schema("feedback-report"), &invalid).is_empty(),
+            "{invalid}"
+        );
+    }
 }

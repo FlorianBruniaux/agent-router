@@ -65,6 +65,8 @@ written in French.
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
+| [Calibration v2 candidate](bench/calibration-v2/README.md) (FR) | 2026-10-05: collection protocol and incomplete preparation template; no run authorization |
+| [Native Codex integration diagnostic](bench/native-integration-u02/README.md) | 2026-10-05: local app-server parameter and output evidence; automatic CLI integration not admitted |
 | [Feedback](feedback.md) | Local consented feedback and offline policies |
 
 ## Diagnostics, distribution and security
