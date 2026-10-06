@@ -1,0 +1,29 @@
+docs/bench/plan-critique-2026-10-06.md
+  s_9e80b85afcc43a::t_4f89cea188cadb 1-127
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_4f89cea188cadb 124-225
+  s_9e80b85afcc43a::t_b069ce3e0c7798 19,26-31
+  s_9e80b85afcc43a::t_c1c36128f10a81 22
+  s_9e80b85afcc43a::t_175c0e7d902939 10-18,20-21,23-25,32-36,43
+  s_9e80b85afcc43a::t_581dc927cb9c4c 37-42,44-48,105-109,226-240
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_d4cf10f65853fa 36-54
+docs/bench/verification-native-measurement-2026-10-06.json
+  s_9e80b85afcc43a::t_c97e850ae819d7 1-827
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59cb7e774fcfd28f03e09bd6dce7d1f6a25fa3fd",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
