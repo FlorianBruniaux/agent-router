@@ -1,0 +1,827 @@
+{
+  "schema_version": 1,
+  "kind": "local-development-verification",
+  "observed_date": "2026-10-06",
+  "verdict": "selected_checks_passed_across_runs",
+  "full_ci_equivalent": false,
+  "base_commit": "dc83886265f78f8d5fca78f2ae8b89bb51ae9f73",
+  "tested_state": "uncommitted candidate, bound by source inventory hashes",
+  "coverage_statement": "The complete delivery run failed only test-fixture cleanup. Its raw verdict is retained. A one-file Python test repair passed all 28 tests. Exact inventory comparison proves all other files, including Rust and the production check runner, unchanged between those runs. Later edits only report these observations.",
+  "counts": {
+    "rust_workspace_passed": 1593,
+    "rust_core_only_passed": 1,
+    "rust_native_ignored_executed_passed": 42,
+    "rust_passed_results_total": 1636,
+    "python_passed_total": 257,
+    "python_repaired_runner_suite_passed": 28,
+    "fuzz_targets_passed": 3,
+    "linux_checks_not_applicable": 3,
+    "note": "Rust totals sum successful result lines including subprocess invocations, not unique test definitions. Failed initial attempts are not added to passing totals."
+  },
+  "runs": {
+    "quality": {
+      "verdict": "incomplete_or_failed",
+      "summary_sha256": "a68f646eda624898df3f1129646342b249a5e14daa43e42c127c78793e2f0c4a",
+      "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+      "base_commit": "dc83886265f78f8d5fca78f2ae8b89bb51ae9f73",
+      "source_before_sha256": "9a893b53e231e9fd2010a135d3a5d51559c7a7d8c1cd22d3e3e220ae963546d5",
+      "source_after_sha256": "9a893b53e231e9fd2010a135d3a5d51559c7a7d8c1cd22d3e3e220ae963546d5",
+      "source_unchanged_during_checks": true,
+      "checks": [
+        {
+          "id": "workspace-tests",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "test",
+            "--workspace",
+            "--all-features",
+            "--locked",
+            "--",
+            "--test-threads=1"
+          ],
+          "exit_code": 101,
+          "status": "failed",
+          "duration_seconds": 220.394883,
+          "log_sha256": "46a016ad5e80a139cdb57ebf31480f3e61e9b793f88b6753f206aba7042d946a",
+          "rust_results": {
+            "passed": 383,
+            "failed": 1,
+            "ignored": 24,
+            "measured": 0,
+            "filtered": 0
+          }
+        }
+      ],
+      "coverage_gaps": [
+        "This run covers one host only; the other CI operating system is not evidenced.",
+        "Container/release workflows and real provider integrations are outside this runner.",
+        "workspace-tests: failed"
+      ],
+      "coverage_statement": "Earlier quality attempt: 18 of 19 checks passed, including 243 Python tests. Only the failing Rust check is expanded here; raw summary hash retains the whole run."
+    },
+    "delivery": {
+      "verdict": "incomplete_or_failed",
+      "summary_sha256": "ce76f8ad99f65aee272706414e147aff49394afb60af2610effc9042c84fcf30",
+      "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+      "base_commit": "dc83886265f78f8d5fca78f2ae8b89bb51ae9f73",
+      "source_before_sha256": "4396fb97bfcc5f653e226e84040e1630ffbb57dc50d447d7466d7ec36077a530",
+      "source_after_sha256": "4396fb97bfcc5f653e226e84040e1630ffbb57dc50d447d7466d7ec36077a530",
+      "source_unchanged_during_checks": true,
+      "checks": [
+        {
+          "id": "format",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 4.277507,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "id": "clippy-all",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--all-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 3.641594,
+          "log_sha256": "37d9299587410b3aaf944f85ae1dcf9dc8cbd47e93b7a9b415c637c79b9a7b30"
+        },
+        {
+          "id": "clippy-core",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "clippy",
+            "-p",
+            "agent-router-cli",
+            "--all-targets",
+            "--no-default-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 1.549863,
+          "log_sha256": "c1fdfd5d73529582309287de4c292fab9ee07a0633fd738b69047f8be64ea714"
+        },
+        {
+          "id": "workspace-tests",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "test",
+            "--workspace",
+            "--all-features",
+            "--locked",
+            "--",
+            "--test-threads=1"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 514.759583,
+          "log_sha256": "05d89937c9afabd7525696e7d6cf17ed502a56db6f9a8222c4b2fbe54edb9775",
+          "rust_results": {
+            "passed": 1593,
+            "failed": 0,
+            "ignored": 42,
+            "measured": 0,
+            "filtered": 302
+          }
+        },
+        {
+          "id": "local-api-absent",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "agent-router-cli",
+            "--no-default-features",
+            "--locked",
+            "--test",
+            "local_api_absent"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 2.942239,
+          "log_sha256": "453af360d2e03d92f7e07a572215a2457d19016fbb5473d87b0151b97aab24d1",
+          "rust_results": {
+            "passed": 1,
+            "failed": 0,
+            "ignored": 0,
+            "measured": 0,
+            "filtered": 0
+          }
+        },
+        {
+          "id": "harness",
+          "group": "quality",
+          "argv": [
+            "cargo",
+            "run",
+            "-p",
+            "xtask",
+            "--locked",
+            "--",
+            "check"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.974527,
+          "log_sha256": "8af2ac1bac5ed248277865dac9eec4130ee84f72b2df1f14b1ec85784020c149"
+        },
+        {
+          "id": "host-syntax",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/check-host-syntax.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.198267,
+          "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+        },
+        {
+          "id": "script-test-benchmark-startup",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-benchmark-startup.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.567192,
+          "log_sha256": "27c4a39d34ece4cbc66cc59cb0870c7abe4cc0a5f009205bdd0ea06a93f8b3ac",
+          "python_tests_executed": 3
+        },
+        {
+          "id": "script-test-check-adrs",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-check-adrs.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.400922,
+          "log_sha256": "aecc9a2ba30057642b9368dd886415450cdfb79d7699acafe0cc9282a65f4a84",
+          "python_tests_executed": 30
+        },
+        {
+          "id": "script-test-check-local",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-check-local.py"
+          ],
+          "exit_code": 1,
+          "status": "failed",
+          "duration_seconds": 10.910223,
+          "log_sha256": "d3c28f0c0e2aaf07d055e0513e1eebcef583f5a4a41800c8c09a15f89e559707",
+          "python_tests_executed": 27
+        },
+        {
+          "id": "script-test-package-binary",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-package-binary.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.457398,
+          "log_sha256": "02f93077f46945903bf0528874a49d96c9dadbf13cbb74878b59a94d17e7dbde",
+          "python_tests_executed": 12
+        },
+        {
+          "id": "script-test-package-core",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-package-core.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.496291,
+          "log_sha256": "30fc902d1ee50fb0e6a3dd318ecd6de7dbe951c0185b39c30da1d493172bec08",
+          "python_tests_executed": 26
+        },
+        {
+          "id": "script-test-release-local",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-release-local.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 9.696265,
+          "log_sha256": "4e6dd72b3cacab39feeeb87249060c9a93f50bc0020969ca89d54ab67039d5bb",
+          "python_tests_executed": 17
+        },
+        {
+          "id": "egress-tests",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/egress-admission",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 14.198232,
+          "log_sha256": "fd07dd3321c3b5b009e4546c25114c937378615f3407c2e0e6254fb302fdf1e4",
+          "python_tests_executed": 48
+        },
+        {
+          "id": "native-probe-tests",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/native-integration-u02",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 7.995141,
+          "log_sha256": "2d97d81b20fed584d12abd41cc9f2f38eb92df079c5128d4f0e9ef6331be4142",
+          "python_tests_executed": 33
+        },
+        {
+          "id": "native-decision-tests",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/native-integration-u06",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 3.206296,
+          "log_sha256": "38fb2f707586fc32dcf34c846dd71e91ae9d452b3328249b86846bd5f8218715",
+          "python_tests_executed": 13
+        },
+        {
+          "id": "campaign-tests",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/campaign-next/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.723669,
+          "log_sha256": "efe2b71894d4bcb1f12bd6ae63c59026a95169d2814415de9c252ed0e5274e68",
+          "python_tests_executed": 17
+        },
+        {
+          "id": "calibration-tests",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/calibration-v2/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 2.5116,
+          "log_sha256": "acf3b1063fc13f300e2af13ff2061f7728d47170dc83fbc6d33adcc6e3e90892",
+          "python_tests_executed": 30
+        },
+        {
+          "id": "secrets-dir",
+          "group": "quality",
+          "argv": [
+            "gitleaks",
+            "dir",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.93189,
+          "log_sha256": "a8f50617082a62eef5f8eab7e1c414cb7d04c6aeeb26a98bdb2cb82a74919d9b"
+        },
+        {
+          "id": "secrets-git",
+          "group": "quality",
+          "argv": [
+            "gitleaks",
+            "git",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 2.29666,
+          "log_sha256": "fed7b6da5e743aa3bbb668220930c0e5cb1265093f9fbe9b8b8aeda162c7a1a8"
+        },
+        {
+          "id": "native-build",
+          "group": "native",
+          "argv": [
+            "cargo",
+            "build",
+            "-p",
+            "agent-router-cli",
+            "-p",
+            "router-sandbox-helper",
+            "--all-features",
+            "--locked"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 22.564215,
+          "log_sha256": "ae96f0dfad214d0510fbf888545c832bb9ce7db8964d5c128e12c08cae7deb6a"
+        },
+        {
+          "id": "native-ignored",
+          "group": "native",
+          "argv": [
+            "cargo",
+            "test",
+            "--workspace",
+            "--all-features",
+            "--locked",
+            "--",
+            "--ignored",
+            "--test-threads=1",
+            "--nocapture"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 713.185846,
+          "log_sha256": "9cfe980ce32f07516f0654f28d372fa503bbfb47ac7f0c824a4581931ab66f8e",
+          "rust_results": {
+            "passed": 42,
+            "failed": 0,
+            "ignored": 0,
+            "measured": 0,
+            "filtered": 1591
+          }
+        },
+        {
+          "id": "linux-lifetime",
+          "group": "native",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-sandbox-helper",
+            "--test",
+            "lifetime",
+            "sigkill_bubblewrap_parent_stops_setsid_descendant",
+            "--locked",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0
+        },
+        {
+          "id": "linux-network",
+          "group": "native",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-runtime",
+            "--test",
+            "runtime",
+            "native_bubblewrap_read_write_and_network_canary",
+            "--locked",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ],
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0
+        },
+        {
+          "id": "linux-address-space",
+          "group": "native",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-sandbox-helper",
+            "--test",
+            "limits",
+            "address_space_limit_rejects_a_real_allocation",
+            "--locked",
+            "--",
+            "--exact"
+          ],
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0
+        },
+        {
+          "id": "audit-version",
+          "group": "audit",
+          "argv": [
+            "cargo-audit",
+            "--version"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.078031,
+          "log_sha256": "8748580845bee726903e69bc4543958fb01e2594317e6c68bf80114bff13d541"
+        },
+        {
+          "id": "dependency-audit",
+          "group": "audit",
+          "argv": [
+            "cargo-audit",
+            "audit",
+            "--file",
+            "Cargo.lock",
+            "--db",
+            "$PRIVATE_EVIDENCE/delivery/advisory-db",
+            "--deny",
+            "warnings"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 6.589423,
+          "log_sha256": "42ee1c8f9cbc6193a030cdbda25dfe46102a4254765521eda827e07386a0a5b2"
+        },
+        {
+          "id": "fetch-locked",
+          "group": "packaging",
+          "argv": [
+            "cargo",
+            "fetch",
+            "--locked"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.347147,
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "id": "package-core",
+          "group": "packaging",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/package-core.py",
+            "--distribution",
+            "core",
+            "--strict-licenses",
+            "--output",
+            "$PRIVATE_EVIDENCE/delivery/core.tar.gz"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 10.66055,
+          "log_sha256": "3c0cbcd7ad449b97b5ca266f9a7b3d55b7e584514ebb372c69b0d85403ad9c11"
+        },
+        {
+          "id": "verify-core",
+          "group": "packaging",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/package-core.py",
+            "--verify",
+            "$PRIVATE_EVIDENCE/delivery/core.tar.gz"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.880351,
+          "log_sha256": "ac0384b1d5f47ff08ea3645915ba7a634d015ea735e5423e6fc45cc808c10567"
+        }
+      ],
+      "coverage_gaps": [
+        "This run covers one host only; the other CI operating system is not evidenced.",
+        "Container/release workflows and real provider integrations are outside this runner.",
+        "script-test-check-local: failed",
+        "linux-lifetime: Linux-only sandbox regression is not evidenced on this host",
+        "linux-network: Linux-only sandbox regression is not evidenced on this host",
+        "linux-address-space: Linux-only address_space_limit_rejects_a_real_allocation is not evidenced on this host"
+      ]
+    },
+    "tooling-repair": {
+      "verdict": "selected_checks_passed",
+      "summary_sha256": "5011f09a0c483fb169202ea8d79cf30f10c0ee2849c620168fe04d680e79716c",
+      "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+      "base_commit": "dc83886265f78f8d5fca78f2ae8b89bb51ae9f73",
+      "source_before_sha256": "9190556b49597f92154053ed0b59f5f8ff408521ce392d01178e71063947a15e",
+      "source_after_sha256": "9190556b49597f92154053ed0b59f5f8ff408521ce392d01178e71063947a15e",
+      "source_unchanged_during_checks": true,
+      "checks": [
+        {
+          "id": "script-test-check-local",
+          "group": "quality",
+          "argv": [
+            "python3.14",
+            "-B",
+            "scripts/test-check-local.py"
+          ],
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 19.064496,
+          "log_sha256": "1e4072c742e6c284ec5e7b48eab97ca9e048bd6d908c1284375e240de2650a96",
+          "python_tests_executed": 28
+        }
+      ],
+      "coverage_gaps": [
+        "This run covers one host only; the other CI operating system is not evidenced.",
+        "Container/release workflows and real provider integrations are outside this runner."
+      ]
+    }
+  },
+  "repair_source_delta": [
+    {
+      "path": "scripts/test-check-local.py",
+      "before": {
+        "path": "scripts/test-check-local.py",
+        "mode": 420,
+        "kind": "file",
+        "sha256": "c89c1adda2da48c66d0e2687ba8eb07841dea4b591a34da94512f221beef3474"
+      },
+      "after": {
+        "path": "scripts/test-check-local.py",
+        "mode": 420,
+        "kind": "file",
+        "sha256": "3f5e6c226967c17724be2bd612565c2f73663888a858a90f4c9d56222140dd80"
+      }
+    }
+  ],
+  "historical_failures": [
+    {
+      "run": "quality",
+      "check": "workspace-tests",
+      "cause": "Test harness waited for child exit before draining a 512-byte stdout pipe. The child produced 1574 bytes; draining it unblocked exit while stdin remained open.",
+      "fix": "Test-only output capture into private temporary files; unchanged 10-second deadline; added more-than-256-KiB output regression.",
+      "proof_sha256": "87f7db52ebfc4b41c06eef0a94c4ccd92ecf909ee003f673294077dfd1ca4754"
+    },
+    {
+      "run": "delivery",
+      "check": "script-test-check-local",
+      "cause": "Inherited Git trace collector asynchronously wrote into disposable repositories during cleanup; two Directory not empty errors.",
+      "fix": "Override GIT_TRACE2_EVENT only during disposable test fixtures and their cleanup; restore ordinary tracing afterward. Regression uses a synthetic trace sink. No global config or production runner change.",
+      "repair_verification_sha256": "a12e45bec8df88d554203dcbc3b0b12745ca6b795f2666a8db197c1c3764997d"
+    }
+  ],
+  "fuzz": {
+    "status": "passed",
+    "source_manifest_sha256": "873840dcc5e4a19323af431c44b25d6c68fd2a3457cb923a6566b7be7a53573e",
+    "rust_and_manifest_source_files_verified_equal": 397,
+    "rust_sources_unchanged": true,
+    "copied_before_python_fixture_repair": true,
+    "cargo_fuzz": "0.13.2",
+    "nightly": "nightly-2026-09-12",
+    "offline": true,
+    "isolated_cargo_home_and_target": true,
+    "lockfiles_unchanged": true,
+    "lock_verification_sha256": "58228b889a86caae3b32ddcfb86ec21f0f9d970ad56cb3de9122175b32ba8623",
+    "script_sha256": "49bf429e5f0b8c60c26e79cc595e14c3812b7c1fc9a754a74ad30bdb257dbbfd",
+    "checks": [
+      {
+        "target": "host_snapshot",
+        "status": "passed",
+        "executions": 101695,
+        "elapsed_seconds_reported": 11,
+        "log_sha256": "a3fc684d2f571eab14198bc919400dcda8b2134e4bfca7b3ae6fdba4a3ac6a57",
+        "bounds": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "max_len": 4194305,
+          "rss_limit_mb": 1024
+        }
+      },
+      {
+        "target": "provider_sse",
+        "status": "passed",
+        "executions": 3876,
+        "elapsed_seconds_reported": 11,
+        "log_sha256": "20f1f76165a182d04cacdb1867f93fe8a867e6407f92b7ba27014c347afaa69d",
+        "bounds": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "max_len": 4194305,
+          "rss_limit_mb": 1024
+        }
+      },
+      {
+        "target": "phase_scope",
+        "status": "passed",
+        "executions": 31908,
+        "elapsed_seconds_reported": 11,
+        "log_sha256": "a96528de25da3e8270ffc09e7721ed2f973168611b7fffcec9a051e8336448f4",
+        "bounds": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "max_len": 262144,
+          "rss_limit_mb": 1024
+        }
+      }
+    ],
+    "limit": "Bounded smoke tests, not a guarantee of parser safety."
+  },
+  "rustsec_advisory_db_commit": "ef6173cbc5c50ec8166f9a5b28f07834144373ee",
+  "native_diagnostics": [
+    {
+      "id": "U02a",
+      "result": "docs/bench/native-integration-u02/result-v5.json",
+      "sha256": "26923fe71ca82a15816fce1940b158c1933bff4991ce458c897dad81f42e6afc",
+      "scope": "Code-mode fixed tool callback and result correlation, wrong nonce refusal, fresh disabled control, cleanup."
+    },
+    {
+      "id": "U02b",
+      "result": "docs/bench/native-integration-u02/u02b-ui-result.json",
+      "sha256": "f6736029bc28e381b2c7c002a96fa2684c9d5a2a140834a92120ceac0c813b7e",
+      "scope": "Native isolated hook trust UI, blocking observation, disable control. Hook routing and transport replay idempotency not proven; U02b incomplete."
+    },
+    {
+      "id": "U06",
+      "result": "docs/bench/native-integration-u06/result.json",
+      "sha256": "f0dd25935f2dd70063719a579b07b4f9c4c68e38a783f100626c9700911f9d4e",
+      "scope": "Real route CLI decision selects gpt-5.6-terra/medium, observed in one separate native Codex execute turn. Fresh disabled control uses gpt-6.1-sol/low. No selected skills or full workflow."
+    }
+  ],
+  "independent_reviews": {
+    "runtime_accounting_and_pricing": "passed after orphan-attempt integrity and SQLite sidecar corrections",
+    "native_and_calibration_preparation": "passed after cleanup review",
+    "u06": "passed after nonzero-native-exit and bytecode-write regressions",
+    "test_capture_and_git_trace_fixes": "passed independently"
+  },
+  "post_gate_reporting_changes": [
+    {
+      "path": "docs/bench/native-integration-u06/README.md",
+      "tested_sha256": "30bace4b57eb950d34d122eee7c011d70c5a0cba144c2eb92e5b296a4f63b909",
+      "reporting_sha256": "c3ba8298eb35a7b3236cb0a997378b654bc6a1ef59f9e711770f374b6beda85b"
+    },
+    {
+      "path": "docs/bench/playbook.md",
+      "tested_sha256": "7e811daad6d8a959efba31671beea730a2dcda4e63457138e7c16381a81f0e9a",
+      "reporting_sha256": "aa13cf440b59e7e65a1f23ac769eda43a8fe68969e8b1e41453a042a34b58ba2"
+    },
+    {
+      "path": "docs/bench/status-and-action-plan-2026-10-05.md",
+      "tested_sha256": "696b7e0cdf5a433ac5bddcb895744894acbfc0bc819c8f4f107af644fb4f8fa1",
+      "reporting_sha256": "4275f90df7d51fdf1e37c7127f68610707690126ca4ec6b5cceb4606ee4b475c"
+    }
+  ],
+  "source_files_sha256": {
+    "crates/agent-router-cli/src/command.rs": "edc22cf457965051008ae6d6c75d510165b03b15569d1a9d5d3e543b94a71323",
+    "crates/agent-router-cli/src/contracts.rs": "adc39ef480a3cefbd176c02fb806ff6381efeadeef065f299ee576f08830a0dd",
+    "crates/agent-router-cli/src/execution_feedback.rs": "7f8785a9fe27e44f22eda0a6e2263dedf5708d6e833d35abc3fb21bd3125f117",
+    "crates/agent-router-cli/src/feedback.rs": "9df657996359af3181dbf140d2f32b16209b743ab1a220e20d4d52f1d425139f",
+    "crates/agent-router-cli/src/replay_export.rs": "5db473e83e9e67b54e6dcab79f630e56aecbbeb5e9642c4026a9236a58d23e80",
+    "crates/agent-router-cli/src/schemas/feedback-report.schema.json": "5e39ebceb7fb2d0ef93f164359c16ce9081623389aa0d301ece740109974b89e",
+    "crates/agent-router-cli/src/schemas/feedback-summary.schema.json": "3fd83c2f04c4ba6c929b560828b75043f65d67774e9ccb3644d1420092ed15d4",
+    "crates/agent-router-cli/tests/escalation.rs": "fb4f00638abb7bcef6a960294c8ee51c376c03f0dfb226cc105413e585ac938a",
+    "crates/agent-router-cli/tests/feedback_summary.rs": "88740aa3bf3d167fd740625c4ae3c8b49701aa3091b462a608d55b6fe0a0bc7b",
+    "crates/agent-router-cli/tests/replay_export.rs": "f93d97527e8661b81453389958e1ffc01cd71de6da3a2d185dae771b2e3c70a7",
+    "crates/agent-router-cli/tests/schema.rs": "86d21616521a9a8e122db8add735a3fa62bb06c9b8b1e084e6233857396d78f5",
+    "crates/agent-router-cli/tests/task_guide.rs": "b3cf9dcbeb72c8d7214412a69b686639da3dc1914163d213ea6280a01edd23b3",
+    "crates/router-eval/src/lib.rs": "f23ee74da791e8be4a6d446d9ccb8b439ef101d8cda8972d6ccb32cb672d4381",
+    "crates/router-eval/src/qualified_pricing.rs": "8a08910fc86b9a2dca6544de504244ef5ac9c43bde29560882dc6ba3f840058b",
+    "crates/router-eval/tests/qualified_pricing.rs": "a562f6c0a6cd7d2378c30625ccfd00f6af88902b77dbae72daf5bd3cf2f362e6",
+    "crates/router-feedback/src/lib.rs": "d543c42c6aabe2d039032f813330e6f0937616397734ac6721843f99c91bb682",
+    "crates/router-feedback/src/report.rs": "b6a4f99716a4b267a6681dc7dcc84919feffade942805ba902c74592bbf013ba",
+    "crates/router-feedback/src/task_report.rs": "0564654c1d0a2f363e810278eb956d6e335cada695ad1cde40255920574b7d23",
+    "crates/router-feedback/tests/report.rs": "e41777e807c45767fd28fae9dc2cf222f8b8d15eeaab55c0ce98d08cd1fce745",
+    "crates/router-runtime/src/lib.rs": "68a3eb8f391e9aa27419d23af4fe30009b726030331b4b5e1bb0083e4418ba22",
+    "crates/router-runtime/src/store.rs": "22c7e2e4f4e6494fa161063fb0cb528e5a6aa22d70ac1254db611eee58993eab",
+    "crates/router-types/src/feedback.rs": "facec71d56b8e1811ce87724fa2c0768a37c786bfc139f6c14c2280a1ec2ae5e",
+    "docs/bench/calibration-v2/tests/test_manifest.py": "db5ad285392a3d6de0ffa9f84152b57b550ded1a80c58ed6085fe2e339226289",
+    "docs/bench/calibration-v2/validate_manifest.py": "ed240d05ba27419037ac2e692cafd19927e274b7d37e4108226ad85ffe0f8943",
+    "docs/bench/native-integration-u02/probe_v5.py": "30b3db5c73a9f567fb372f22430569f8e4506a8900d13510654f111f477b23b7",
+    "docs/bench/native-integration-u02/test_probe_v5.py": "da2ba7f42253aa798f6095677985c3cfcd83fcb4b1e7a40bcfade671ccd7a6e9",
+    "docs/bench/native-integration-u02/test_u02b_probe.py": "2283543bb62c3677cbeff03f66b0c9dbe172c3151be86273a6d89240013edafe",
+    "docs/bench/native-integration-u02/u02b-hook-candidate.toml": "8e2b79c508e5b6d2c5a8178f6c88b4ea91c434c95ea86395a368e26f359852fd",
+    "docs/bench/native-integration-u02/u02b_probe.py": "0f936ff7e0d07459b9de9f2be023e7a771e93710934a62803f506a3b383b880b",
+    "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+    "docs/bench/native-integration-u06/test_probe.py": "127ed4730e33806723528a594eb5346f17bbae39ff61f92fa1a8a400712d38ed",
+    "scripts/check-local.py": "f911165409f99745d14a9b6ed2235c583dd06f42bb6c27b14aa3f50f2e5e5fe7",
+    "scripts/test-check-local.py": "3f5e6c226967c17724be2bd612565c2f73663888a858a90f4c9d56222140dd80"
+  },
+  "remaining_gaps": [
+    "Three Linux-specific runtime behaviors are not evidenced on this Mac.",
+    "No GitHub Actions success on this candidate is claimed.",
+    "U02b hook-to-decision routing and replay idempotency remain incomplete.",
+    "U07 automatic daily activation and global installation are not implemented or approved.",
+    "Real U08 corpus, budget, consent and admitted provider path are missing; validator readiness never grants execution authority.",
+    "No real-provider calibration, held-out comparison, quality benefit, human-time saving or monetary saving was measured.",
+    "Native CLI diagnostics do not attest an AR supervised receipt, general network isolation, Codex desktop or Claude behavior.",
+    "Qualified-pricing detailed replay v2 is explicitly unsupported."
+  ]
+}
