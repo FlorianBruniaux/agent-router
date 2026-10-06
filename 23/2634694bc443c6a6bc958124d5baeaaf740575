@@ -1,0 +1,47 @@
+docs/README.fr.md
+  s_9e80b85afcc43a::t_9ff989573e3064 105
+scripts/test-check-local.py
+  s_9e80b85afcc43a::t_8b0c7ea6000614 73-75
+  s_9e80b85afcc43a::t_938a46adb87184 28-29,31,43-45,47,138-187,264
+  s_9e80b85afcc43a::t_9088e92434ad46 10,88-89,94-96,114-116,220,229
+  s_9e80b85afcc43a::t_f31fa1aee1a03b 80-83
+  s_9e80b85afcc43a::t_1196de55469cdd 77-79,84
+  s_9e80b85afcc43a::t_7bb2badb92454a 97,100-104,117
+  s_9e80b85afcc43a::t_1b4b269872640a 1-8,11-27,30,33-42,48-72,76,119-137,188-209,273-300
+  s_9e80b85afcc43a::t_715383287bc31c 32,46
+  s_9e80b85afcc43a::t_0b6cdc377bc02c 85-87,90-93,98-99,105-113,118,213-219,221,227-228,230-233
+  s_9e80b85afcc43a::t_62e52c76a1e8ce 9,210-212,222-226,234-263,265-272
+docs/README.md
+  s_9e80b85afcc43a::t_9ff989573e3064 105
+scripts/check-local.py
+  s_9e80b85afcc43a::t_905a894f7d5ea5 131,133-138,144,146-147
+  s_9e80b85afcc43a::t_41a2423b3f5914 195-197
+  s_9e80b85afcc43a::t_b56d7b6174cce3 139-143,145,148,187-191
+  s_9e80b85afcc43a::t_cfe1eafd88f598 1-19,21-65,68-93,124-130,132,149-186,192-194,198-234,236-240,249-290
+  s_9e80b85afcc43a::t_4cbb0cf021ac50 20,66-67,94-123,235,241-248
+scripts/test-release-local.py
+  s_9e80b85afcc43a::t_c8674c1fd38d76 326-337
+  s_9e80b85afcc43a::t_de866bea1db85e 343
+docs/release-local.md
+  s_9e80b85afcc43a::t_de866bea1db85e 15,19,24
+scripts/release-local.py
+  s_9e80b85afcc43a::t_de866bea1db85e 33
+docs/local-ci.md
+  s_9e80b85afcc43a::t_9ff989573e3064 1-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "232634694bc443c6a6bc958124d5baeaaf740575",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
