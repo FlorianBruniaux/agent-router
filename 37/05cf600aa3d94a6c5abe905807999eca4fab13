@@ -1,0 +1,74 @@
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_cb69159814f87f 19-36
+docs/bench/native-integration-u02/README.md
+  s_9e80b85afcc43a::t_02576c103bdb71 4-7,36-41
+  s_9e80b85afcc43a::t_6326b8b2a0665d 42
+.github/workflows/ci.yml
+  s_9e80b85afcc43a::t_0b9f8c88acc2f3 29-32
+CHANGELOG.md
+  s_9e80b85afcc43a::t_02576c103bdb71 23,27
+  s_9e80b85afcc43a::t_e925a3a1759af7 28
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_cb69159814f87f 20-26
+docs/bench/verification-2026-10-06.json
+  s_9e80b85afcc43a::t_1c2434a25ff5a3 36-37
+  s_9e80b85afcc43a::t_20a70b271edee8 1-35,38-81
+crates/agent-router-cli/src/contracts.rs
+  s_9e80b85afcc43a::t_ad9ef0ccad9641 34-38,44
+crates/agent-router-cli/src/execution_feedback.rs
+  s_9e80b85afcc43a::t_b2d424eac64c55 310,553-607
+crates/agent-router-cli/src/schemas/feedback-report.schema.json
+  s_9e80b85afcc43a::t_bef18033f4af38 3,5,264-396,913-1185
+crates/agent-router-cli/src/schemas/feedback-summary.schema.json
+  s_9e80b85afcc43a::t_a74b3770fd8715 3,5,176-493,495
+crates/agent-router-cli/tests/feedback_summary.rs
+  s_9e80b85afcc43a::t_1aeba1bb2f80d1 114,235
+crates/agent-router-cli/tests/schema.rs
+  s_9e80b85afcc43a::t_57bdb7fdbe7268 62,217,350,352-353,519,524,526-536,538-558,573-579
+crates/router-feedback/src/report.rs
+  s_9e80b85afcc43a::t_58a6c742e4d698 10-11,91,93,98-107,183-184,199,341,358-478,493-498,518-527,582,589,633-644,656,701,771,807,809,815-820,830,838,841-844
+crates/router-feedback/src/sidecar_export.rs
+  s_9e80b85afcc43a::t_34f1f143096fea 154
+crates/router-feedback/tests/feedback.rs
+  s_9e80b85afcc43a::t_10b42a4cb74986 50
+crates/router-feedback/tests/report.rs
+  s_9e80b85afcc43a::t_fd5ae7c0fbff37 66,147,346-347,484-489,824-825,944-1178
+crates/router-feedback/tests/support/sidecar.rs
+  s_9e80b85afcc43a::t_209235a8193e6e 59
+crates/router-types/src/feedback.rs
+  s_9e80b85afcc43a::t_1ba4d98b5b0f07 125-132,150-153
+docs/bench/native-integration-u02/canary-diagnosis/README.md
+  s_9e80b85afcc43a::t_a1af189490e8c6 1-23
+docs/bench/native-integration-u02/canary-diagnosis/bundled-models-projection.json
+  s_9e80b85afcc43a::t_89a4c1a9a11635 1-28
+docs/bench/native-integration-u02/canary-diagnosis/code-mode-enabled-only.json
+  s_9e80b85afcc43a::t_1f035e162987c9 1-80
+docs/bench/native-integration-u02/canary-diagnosis/isolated-feature-defaults.json
+  s_9e80b85afcc43a::t_7ac0fb8adcc4df 1-17
+docs/bench/native-integration-u02/canary-diagnosis/live-cache-model-projection.json
+  s_9e80b85afcc43a::t_0983a362c74253 1-27
+docs/bench/native-integration-u02/canary-diagnosis/manifest.json
+  s_9e80b85afcc43a::t_f44b99b7a699d3 1-8
+docs/bench/native-integration-u02/canary-diagnosis/selected-model-only.json
+  s_9e80b85afcc43a::t_efd9f1b4f1dfa3 1-90
+docs/feedback.md
+  s_9e80b85afcc43a::t_ed318f456d0979 345,347-351,371-373,393-413,430-442,495-498
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_a2d8825c853585 36-37,191,197-198,205-207,212,218-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3705cf600aa3d94a6c5abe905807999eca4fab13",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
