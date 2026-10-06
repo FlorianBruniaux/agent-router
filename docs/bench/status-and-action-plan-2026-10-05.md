@@ -9,7 +9,7 @@ Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités act
 
 Les PR [#125](https://github.com/FlorianBruniaux/agent-router/pull/125) et
 [#126](https://github.com/FlorianBruniaux/agent-router/pull/126) sont fusionnées.
-La référence livrée est `8983d23a2e8937e244cf64ca0f2ba422073b20ae` sur `main`.
+Ces deux PR sont livrées par `8983d23a2e8937e244cf64ca0f2ba422073b20ae` sur `main`.
 Le checkout principal de Florian reste préservé.
 
 | Périmètre | Livré ou observé | Limite restante |
@@ -39,7 +39,7 @@ la validation se poursuit en local sans budget Actions. Aucune modification
 de facturation n'a été effectuée.
 
 [Validation locale complète disponible sur ce Mac](verification-local-ci-2026-10-06.json),
-proposée dans la [PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127) :
+établie avant fusion pour la [PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127) :
 1 575 résultats de tests Rust workspace, 1 test du cœur minimal et les 42 tests
 ignorés ont réussi ; les suites Python totalisent 191 tests réussis. Formatage,
 Clippy complet et minimal, harnais, syntaxe hôte, recherche de secrets dans les
@@ -55,8 +55,9 @@ mis à jour de 3.6.4 vers 3.6.5, avec refus explicite des autres versions.
 
 Le [guide local](../local-ci.md) fournit la commande et les limites. Trois
 comportements Linux restent non vérifiés sur cette machine ; aucun moteur
-Linux local actif n'est disponible. La PR #127 n'est pas fusionnée et ces
-contrôles ne prouvent ni l'activation automatique ni un gain d'usage.
+Linux local actif n'est disponible. Le statut courant de fusion est visible
+dans la PR #127 ; ces contrôles ne prouvent ni l'activation automatique ni un
+gain d'usage.
 
 ## Prochaines livraisons et suivi
 

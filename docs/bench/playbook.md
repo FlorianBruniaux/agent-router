@@ -29,8 +29,9 @@ The first run's zero-test Python discovery failure remains recorded; the fix
 executes each hyphenated test file directly. Rust sources did not change.
 Fresh RustSec audit, both secret scans, strict core packaging and verification,
 and three isolated parser fuzz smokes also passed. Three Linux-specific
-behaviors remain unverified. The runner and evidence are proposed in
-[PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127), not merged.
+behaviors remain unverified. This record captures validation before merging
+[PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127); the PR shows
+its current merge status.
 
 Next: prove the complete Codex code-mode tool roundtrip and removal, finish task
 and cache accounting, then validate automatic invocation before a capped real
