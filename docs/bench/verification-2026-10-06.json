@@ -60,6 +60,13 @@
     },
     "native_fixture_tests": {
       "passed": 13
+    },
+    "callback_fixture_linux_portability_fix": {
+      "test_sha256": "da65e4058e00730f1653827d033439b13f43fb688c96898a65093b90f6fff0e1",
+      "local_passed": 29,
+      "independent_review": "no blocking findings",
+      "linux_recheck_at_recording": "pending",
+      "reason": "The newly enabled Linux job rejected a still-existing group after shutdown. The test now distinguishes an identified terminated zombie from a live descendant; product code and deadlines are unchanged."
     }
   },
   "log_sha256": {
