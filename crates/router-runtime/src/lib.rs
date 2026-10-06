@@ -43,7 +43,7 @@ pub use network_authority::NetworkAuthority;
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
-pub use store::{observe, observe_cleanup, observe_events, request_cancel};
+pub use store::{measurement_inventory, observe, observe_cleanup, observe_events, request_cancel};
 pub use workspace::source_state;
 
 use router_adapter_api::{

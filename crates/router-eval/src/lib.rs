@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod qualified_pricing;
+pub use qualified_pricing::*;
+
 mod candidate_replay;
 mod corpus;
 mod metrics;

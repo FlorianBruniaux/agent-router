@@ -1,0 +1,4 @@
+# Inert candidate for an isolated disposable CODEX_HOME only.
+# No hooks.state/trusted_hash entry is supplied.
+[[hooks.UserPromptSubmit]]
+hooks = [{ type = "command", command = "/usr/bin/printf '%s\\n' '{\"decision\":\"block\",\"reason\":\"U02B_FIXED_CANARY\"}'", timeout = 2 }]

@@ -1345,6 +1345,189 @@ pub(crate) fn private_file(path: &Path) -> Result<File> {
     Ok(file)
 }
 
+/// Inventory the existing durable attempts without acquiring ownership, recovery,
+/// schema migration or writing feedback. All reads and chain verification share
+/// one transaction. SQLite may create private WAL/SHM coordination files.
+/// The ceiling bounds memory and verification work explicitly.
+pub fn measurement_inventory(root: &Path) -> Result<router_types::FeedbackRuntimeInventory> {
+    use router_types::{FeedbackRuntimeInventory, FeedbackRuntimeRun};
+    use std::collections::{BTreeMap, BTreeSet};
+    const MAX_RUNS: usize = 10_000;
+    const MAX_JOURNAL_BYTES: u64 = 64 * 1024 * 1024;
+    let mut db = control_connection(root, false)?;
+    let tx = db.transaction()?;
+    let (count, bytes): (usize, u64) = tx.query_row(
+        "SELECT COUNT(*),COALESCE(SUM(length(CAST(summary AS BLOB))),0) FROM runs",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    let (event_count, event_bytes): (usize, u64) = tx.query_row(
+        "SELECT COUNT(*),COALESCE(SUM(length(CAST(detail AS BLOB))+length(run_id)+length(kind)+256),0) FROM events", [],
+        |row| Ok((row.get(0)?, row.get(1)?)))?;
+    if count > MAX_RUNS
+        || bytes > MAX_JOURNAL_BYTES
+        || event_count > 100_000
+        || event_bytes > MAX_JOURNAL_BYTES
+    {
+        return Err(RuntimeError::Limit);
+    }
+    let attempt_count: usize =
+        tx.query_row("SELECT COUNT(*) FROM run_attempts", [], |row| row.get(0))?;
+    if attempt_count > MAX_RUNS * 5 {
+        return Err(RuntimeError::Limit);
+    }
+    verify_events(&tx)?;
+    let events = read_events(&tx)?;
+    let mut query = tx.prepare("SELECT summary FROM runs ORDER BY run_id")?;
+    let runs = query
+        .query_map([], |row| row.get::<_, String>(0))?
+        .map(|row| Ok(serde_json::from_str::<RunSummary>(&row?)?))
+        .collect::<Result<Vec<_>>>()?;
+    drop(query);
+    let by_id: BTreeMap<_, _> = runs.iter().map(|run| (run.run_id.as_str(), run)).collect();
+    let mut predecessors = BTreeMap::new();
+    let mut starts: BTreeMap<&str, u32> = BTreeMap::new();
+    let mut last_states = BTreeMap::new();
+    let mut initial_source_states = BTreeMap::new();
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Claim {
+        decision_id: String,
+        target_run_id: String,
+        target_definition_hash: String,
+    }
+    for event in &events {
+        let source = by_id
+            .get(event.run_id.as_str())
+            .ok_or(RuntimeError::Integrity("measurement run missing"))?;
+        last_states.insert(event.run_id.as_str(), event.state);
+        if event.kind == "attempt.evidence.v1" {
+            let evidence: router_types::AttemptEvidence = serde_json::from_str(&event.detail)?;
+            if evidence.identity.run_id != source.run_id
+                || evidence.definition_hash != source.definition_hash
+            {
+                return Err(RuntimeError::Integrity("measurement attempt binding"));
+            }
+            if let Some(prior) =
+                initial_source_states.insert(source.run_id.as_str(), evidence.source_state.clone())
+            {
+                if prior != evidence.source_state {
+                    return Err(RuntimeError::Integrity("measurement source changed"));
+                }
+            }
+        }
+        if event.kind == "attempt.started" {
+            *starts.entry(event.run_id.as_str()).or_default() += 1;
+        }
+        if event.kind == "escalation.claim.v1" {
+            let claim: Claim = serde_json::from_str(&event.detail)?;
+            let target = by_id
+                .get(claim.target_run_id.as_str())
+                .ok_or(RuntimeError::Integrity("measurement orphan escalation"))?;
+            if claim.decision_id != target.receipt_id
+                || claim.target_definition_hash != target.definition_hash
+                || source.plan_id != target.plan_id
+                || source.node_id != target.node_id
+                || predecessors
+                    .insert(target.run_id.as_str(), source.run_id.as_str())
+                    .is_some()
+            {
+                return Err(RuntimeError::Integrity("measurement escalation lineage"));
+            }
+        }
+    }
+    let run_key = |run: &RunSummary| -> Result<String> {
+        Ok(router_adapter_api::content_digest(&serde_json::to_vec(&(
+            &run.run_id,
+            &run.definition_hash,
+            &run.approval_digest,
+        ))?))
+    };
+    let mut projected = Vec::new();
+    for run in &runs {
+        let mut query = tx
+            .prepare("SELECT attempt FROM run_attempts WHERE run_id=?1 ORDER BY attempt LIMIT 7")?;
+        let ordinals = query
+            .query_map([&run.run_id], |row| row.get::<_, u32>(0))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        if ordinals.len() > 5
+            || run.attempts as usize != ordinals.len()
+            || ordinals.iter().copied().ne(1..=run.attempts)
+            || starts.get(run.run_id.as_str()).copied().unwrap_or(0) != run.attempts
+            || last_states.get(run.run_id.as_str()) != Some(&run.state)
+        {
+            return Err(RuntimeError::Integrity("measurement attempts"));
+        }
+        let mut ancestor = run.run_id.as_str();
+        let mut seen = BTreeSet::new();
+        while let Some(parent) = predecessors.get(ancestor) {
+            if !seen.insert(ancestor) || seen.len() > 6 {
+                return Err(RuntimeError::Integrity(
+                    "measurement lineage cycle or limit",
+                ));
+            }
+            ancestor = parent;
+        }
+        let occurrence = match &run.workflow {
+            Some(binding) => digest(
+                "feedback-workflow-occurrence-v1",
+                &(&binding.instance_id, &run.node_id),
+            )?,
+            None => digest(
+                "feedback-run-occurrence-v1",
+                &(&by_id[ancestor].run_id, &by_id[ancestor].definition_hash),
+            )?,
+        };
+        let mut aliases = BTreeSet::from([run_key(run)?]);
+        if let Some(source_state) = initial_source_states.get(run.run_id.as_str()) {
+            let mut original = run.clone();
+            original.approval_digest = digest(
+                "runtime-approval-v1",
+                &(&run.run_id, &run.definition_hash, source_state),
+            )?;
+            aliases.insert(run_key(&original)?);
+        }
+        // These identities recover historical joins, never historical usage.
+        for ordinal in 2..=run.attempts {
+            let mut retry = run.clone();
+            retry.approval_digest = digest(
+                "runtime-retry-approval-v1",
+                &(&run.run_id, &run.definition_hash, ordinal - 1),
+            )?;
+            aliases.insert(run_key(&retry)?);
+        }
+        projected.push(FeedbackRuntimeRun {
+            feedback_run_keys_sha256: aliases.into_iter().collect(),
+            run_key_sha256: run_key(run)?,
+            occurrence_sha256: occurrence,
+            predecessor_run_key_sha256: predecessors
+                .get(run.run_id.as_str())
+                .map(|id| run_key(by_id[id]))
+                .transpose()?,
+            attempts: run.attempts,
+            state: run.state,
+        });
+    }
+    if projected
+        .iter()
+        .map(|run| run.attempts as usize)
+        .sum::<usize>()
+        != attempt_count
+    {
+        return Err(RuntimeError::Integrity("measurement orphan attempt"));
+    }
+    let journal_sha256 = digest(
+        "feedback-runtime-inventory-v1",
+        &(&projected, events.last().map(|event| &event.event_hash)),
+    )?;
+    tx.commit()?;
+    Ok(FeedbackRuntimeInventory {
+        schema_version: 1,
+        journal_sha256,
+        runs: projected,
+    })
+}
+
 /// Observation/control deliberately does not acquire the supervision flock.
 /// Control is a durable request; only the live owner may signal its own child.
 pub fn observe(root: &Path, id: &str) -> Result<RunSummary> {
@@ -2944,5 +3127,164 @@ pub(crate) mod tests {
                 "history={history} verify_plan_pin x100={pin:?} (register+verify_plan_pin) x100={register:?} escalation_history x100={escalation:?} events x100={events:?}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod measurement_tests {
+    use super::*;
+
+    fn attempted(store: &Store, id: &str, end: RunState) {
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition(id, state, "fixture", None).unwrap();
+        }
+        let prep = store.begin_preparation(id).unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        store.attempt(id, 5, false).unwrap();
+        store
+            .transition(id, RunState::Running, "fixture", None)
+            .unwrap();
+        store.finish_attempt(id, "fixture").unwrap();
+        store.transition(id, end, "fixture", None).unwrap();
+    }
+    fn claim(store: &Store, source: &str, target: &str) {
+        let run = store.get(target).unwrap();
+        store
+            .event(
+                source,
+                "escalation.claim.v1",
+                &serde_json::json!({
+                    "decision_id": run.receipt_id, "target_run_id": target,
+                    "target_definition_hash": run.definition_hash,
+                })
+                .to_string(),
+            )
+            .unwrap();
+    }
+    #[test]
+    fn measurement_snapshot_keeps_cancelled_attempts_and_escalation_occurrences() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let store = Store::open(&root).unwrap();
+        for id in ["first", "escalated", "repeated", "abandoned"] {
+            let mut run = tests::summary(id);
+            run.plan_id = "same-task-plan".into();
+            store.register(&run).unwrap();
+            attempted(
+                &store,
+                id,
+                if id == "abandoned" {
+                    RunState::Cancelled
+                } else {
+                    RunState::Failed
+                },
+            );
+        }
+        claim(&store, "first", "escalated");
+        let before = store.events().unwrap();
+        let first = measurement_inventory(&root).unwrap();
+        assert_eq!(first, measurement_inventory(&root).unwrap());
+        assert_eq!(before, store.events().unwrap());
+        assert_eq!(first.runs.iter().map(|run| run.attempts).sum::<u32>(), 4);
+        // Sorted by run id: abandoned, escalated, first, repeated.
+        assert_eq!(first.runs[0].state, RunState::Cancelled);
+        assert_eq!(
+            first.runs[1].occurrence_sha256,
+            first.runs[2].occurrence_sha256
+        );
+        assert_ne!(
+            first.runs[2].occurrence_sha256,
+            first.runs[3].occurrence_sha256
+        );
+        assert_eq!(
+            first.runs[1].predecessor_run_key_sha256.as_ref(),
+            Some(&first.runs[2].run_key_sha256)
+        );
+        claim(&store, "escalated", "first");
+        assert!(
+            measurement_inventory(&root).is_err(),
+            "cycle must not produce task totals"
+        );
+    }
+    #[test]
+    fn measurement_refuses_tampered_attempts_or_journal() {
+        for tamper in [
+            "DELETE FROM run_attempts",
+            "DROP TRIGGER events_no_update; UPDATE events SET detail='changed' WHERE sequence=1",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = temp.path().join("runtime");
+            let store = Store::open(&root).unwrap();
+            store.register(&tests::summary("one")).unwrap();
+            attempted(&store, "one", RunState::Cancelled);
+            let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
+            db.execute_batch(tamper).unwrap();
+            assert!(measurement_inventory(&root).is_err());
+        }
+    }
+    #[test]
+    fn measurement_refuses_attempt_rows_without_a_registered_run() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let store = Store::open(&root).unwrap();
+        let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
+        db.execute_batch(
+            "PRAGMA foreign_keys=OFF; INSERT INTO run_attempts VALUES('orphan',1,'started');",
+        )
+        .unwrap();
+        assert!(
+            measurement_inventory(&root).is_err(),
+            "orphan attempt must not disappear from totals"
+        );
+        drop(store);
+    }
+
+    #[test]
+    fn measurement_can_create_private_wal_coordination_files_without_mutating_domain_state() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let store = Store::open(&root).unwrap();
+        store.register(&tests::summary("one")).unwrap();
+        let journal = store.events().unwrap();
+        drop(store);
+        assert!(!root.join("runtime.sqlite3-wal").exists());
+        assert!(!root.join("runtime.sqlite3-shm").exists());
+        let before = fs::read(root.join("runtime.sqlite3")).unwrap();
+        let report = measurement_inventory(&root).unwrap();
+        assert_eq!(report.runs.len(), 1);
+        assert_eq!(before, fs::read(root.join("runtime.sqlite3")).unwrap());
+        assert_eq!(journal, observe_events(&root, "one").unwrap());
+        for suffix in ["-wal", "-shm"] {
+            let metadata = fs::metadata(root.join(format!("runtime.sqlite3{suffix}"))).unwrap();
+            assert_eq!(metadata.permissions().mode() & 0o077, 0);
+        }
+        assert_eq!(
+            fs::metadata(root.join("runtime.sqlite3-wal"))
+                .unwrap()
+                .len(),
+            0
+        );
+    }
+
+    #[test]
+    fn measurement_refuses_orphan_escalation_without_creating_a_run() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("runtime");
+        let store = Store::open(&root).unwrap();
+        store.register(&tests::summary("source")).unwrap();
+        store
+            .event(
+                "source",
+                "escalation.claim.v1",
+                &serde_json::json!({
+                    "decision_id": "c".repeat(64), "target_run_id": "absent",
+                    "target_definition_hash": "a".repeat(64),
+                })
+                .to_string(),
+            )
+            .unwrap();
+        assert!(measurement_inventory(&root).is_err());
+        assert!(store.get("absent").is_err());
     }
 }

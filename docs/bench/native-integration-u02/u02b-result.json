@@ -1,0 +1,72 @@
+{
+  "automatic_prompt_trigger": "NOT_TESTED_UNTRUSTED_CANDIDATE",
+  "candidate_command": "/usr/bin/printf '%s\\n' '{\"decision\":\"block\",\"reason\":\"U02B_FIXED_CANARY\"}'",
+  "codex_native_binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "codex_version": "0.159.2",
+  "diagnostic_complete": true,
+  "external_egress": "UNKNOWN",
+  "global_config_changed": false,
+  "group_inventory_contains_owned": false,
+  "group_inventory_status": "complete",
+  "group_signal_observation": "permission_error",
+  "helper_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "hook_discovery": {
+    "candidate_count": 1,
+    "candidates": [
+      {
+        "current_hash": "sha256:d1b5e9e0bb462b5e8b1a0b10374658006edd46708d6ed50de39d2afff9ad03d7",
+        "enabled": true,
+        "event": "userPromptSubmit",
+        "source": "user",
+        "trust_status": "untrusted"
+      }
+    ],
+    "error_count": 0,
+    "warning_count": 0
+  },
+  "hook_output_model_effort_application": "UNSUPPORTED_BY_EMBEDDED_OUTPUT_SCHEMA",
+  "os_network_sandbox_status": "NOT_APPLIED",
+  "owned_process_group_gone": true,
+  "process_exit_code": 0,
+  "provider_accepted_connections": 0,
+  "provider_request_count": 0,
+  "provider_threads_stopped": true,
+  "schema_evidence": {
+    "user-prompt-submit.command.input": {
+      "additionalProperties": false,
+      "canonical_sha256": "2a18472ba0f304f96fd0d73093d13bf265c7a977685b63dd5cedda0793dc8109",
+      "properties": [
+        "agent_id",
+        "agent_type",
+        "cwd",
+        "hook_event_name",
+        "model",
+        "permission_mode",
+        "prompt",
+        "session_id",
+        "transcript_path",
+        "turn_id"
+      ]
+    },
+    "user-prompt-submit.command.output": {
+      "additionalProperties": false,
+      "canonical_sha256": "8df130e417cb366fb5d0ada39a2f894090e127354923cc4a4447e2b08e37c29d",
+      "properties": [
+        "continue",
+        "decision",
+        "hookSpecificOutput",
+        "reason",
+        "stopReason",
+        "suppressOutput",
+        "systemMessage"
+      ]
+    }
+  },
+  "schema_version": 1,
+  "script_sha256": "0f936ff7e0d07459b9de9f2be023e7a771e93710934a62803f506a3b383b880b",
+  "temporary_state_removed": true,
+  "trusted_hash_written": false,
+  "turn_start_sent": false,
+  "u02b_complete": false,
+  "v5_probe_sha256": "30b3db5c73a9f567fb372f22430569f8e4506a8900d13510654f111f477b23b7"
+}

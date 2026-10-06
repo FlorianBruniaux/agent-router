@@ -225,7 +225,10 @@ impl Fixture {
             .args(["--max-attempts", "3", "--json"]);
         cmd
     }
-    fn attempts(&self) {
+    fn attempts(&self) -> Vec<RunCompletion> {
+        self.attempt_sequence(false)
+    }
+    fn attempt_sequence(&self, succeed_on_retry: bool) -> Vec<RunCompletion> {
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let runtime = Runtime::open(&self.files.store, RuntimeLimits::default()).unwrap();
             let request = read(&self.files.root.join("source/request.json"));
@@ -241,26 +244,50 @@ impl Fixture {
                 .await
                 .unwrap();
             let mut pending = pending;
+            let mut completions = Vec::new();
             for attempt in 1..=2 {
                 let approved = runtime
                     .approve(pending.clone(), pending.approval_digest())
                     .unwrap();
+                let worker: &dyn HarnessAdapter = if succeed_on_retry && attempt == 2 {
+                    &SuccessfulWorker
+                } else {
+                    &FailedWorker
+                };
                 let completion = runtime
-                    .execute(
-                        approved,
-                        &FailedWorker,
-                        &TestSupervisor,
-                        Cancellation::default(),
-                    )
+                    .execute(approved, worker, &TestSupervisor, Cancellation::default())
                     .await
                     .unwrap();
-                assert_eq!(completion.run.failure, Some(RunFailure::Crash));
+                assert_eq!(
+                    completion.run.failure,
+                    if succeed_on_retry && attempt == 2 {
+                        None
+                    } else {
+                        Some(RunFailure::Crash)
+                    }
+                );
                 assert_eq!(completion.run.attempts, attempt);
+                if succeed_on_retry && attempt == 2 {
+                    runtime
+                        .record_verification(
+                            &pending,
+                            VerificationRecord {
+                                verifier: "synthetic-review".into(),
+                                evidence_sha256: "a".repeat(64),
+                                artifact_sha256: None,
+                                validation: VerificationOutcome::Passed,
+                                objective: VerificationOutcome::Passed,
+                            },
+                        )
+                        .unwrap();
+                }
+                completions.push(completion);
                 if attempt == 1 {
                     pending = runtime.retry(pending).unwrap();
                 }
             }
-        });
+            completions
+        })
     }
     fn account(&self) {
         for attempt in 1..=2 {
@@ -291,6 +318,28 @@ impl HarnessAdapter for FailedWorker {
         _: usize,
     ) -> Result<RuntimeEvidence, AdapterError> {
         Err(AdapterError::Unsupported("synthetic-test"))
+    }
+}
+struct SuccessfulWorker;
+impl HarnessAdapter for SuccessfulWorker {
+    fn host(&self) -> &'static str {
+        "claude-code"
+    }
+    fn prepare(&self, request: &ValidatedExecutionRequest) -> Result<PreparedRun, AdapterError> {
+        prepared_run(
+            request,
+            "/bin/sh",
+            vec!["-c".into(), "exit 0".into()],
+            vec![],
+        )
+    }
+    fn decode_stream(
+        &self,
+        bytes: &[u8],
+        outcome: TransportOutcome,
+        limit: usize,
+    ) -> Result<RuntimeEvidence, AdapterError> {
+        FailedWorker.decode_stream(bytes, outcome, limit)
     }
 }
 // Intentionally test-only. These ordinary tests establish journal/CLI behavior,
@@ -1572,5 +1621,164 @@ fn native_coordinator_session_budget_charges_predecessor_failures_and_escalated_
             .attempts,
         1,
         "verified predecessor must not be executed again"
+    );
+}
+
+#[test]
+fn task_report_retains_durable_attempts_when_feedback_was_never_written() {
+    let fixture = Fixture::new();
+    fixture.attempts();
+    let feedback_path = fixture.files.root.join("measurement-feedback");
+    let feedback = router_feedback::FeedbackStore::open(&feedback_path).unwrap();
+    feedback
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                ..FeedbackPreferences::default()
+            },
+            100,
+        )
+        .unwrap();
+    drop(feedback);
+    let mut cmd = command();
+    cmd.args(["feedback", "--store"])
+        .arg(&feedback_path)
+        .args(["report", "--runtime-store"])
+        .arg(&fixture.files.store)
+        .args(["--now", "200", "--json"]);
+    let report = checked(&mut cmd, 0);
+    let tasks = &report["task_measurement"];
+    assert_eq!(tasks["occurrences"].as_array().unwrap().len(), 1);
+    assert_eq!(tasks["expected_attempts"], 2);
+    assert_eq!(tasks["feedback_attempts"], 0);
+    assert_eq!(tasks["missing_feedback_attempts"], 2);
+    assert_eq!(tasks["occurrences"][0]["status"], "failed");
+    assert!(tasks["total_microusd"].is_null());
+    assert_eq!(tasks["source"], "runtime_journal");
+    assert_eq!(report, checked(&mut cmd, 0));
+}
+
+#[test]
+fn task_report_merges_real_retry_approval_keys_without_counting_snapshots_twice() {
+    let fixture = Fixture::new();
+    let completions = fixture.attempt_sequence(true);
+    assert_ne!(
+        completions[0].run.approval_digest,
+        completions[1].run.approval_digest
+    );
+    let feedback_path = fixture.files.root.join("measurement-feedback");
+    let feedback = router_feedback::FeedbackStore::open(&feedback_path).unwrap();
+    feedback
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                ..FeedbackPreferences::default()
+            },
+            100,
+        )
+        .unwrap();
+    let base: Value = read(
+        &Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../tests/fixtures/feedback/automated-unknown-v1.json"),
+    );
+    for (index, completion) in completions
+        .iter()
+        .chain(std::iter::repeat_n(&completions[1], 3))
+        .enumerate()
+    {
+        let run = &completion.run;
+        let mut input = base.clone();
+        input["binding"]["run_hash"] = json!(format!("{index:064x}"));
+        input["run_key_sha256"] = json!(router_adapter_api::content_digest(
+            &serde_json::to_vec(&(&run.run_id, &run.definition_hash, &run.approval_digest))
+                .unwrap()
+        ));
+        input["measurements"]["attempts"] = json!(run.attempts);
+        input["measurements"]["usage_scope"] = json!("per_attempt");
+        input["measurements"]["usage"] = serde_json::to_value(HostUsage {
+            input_tokens: UsageField::host_reported(u64::from(run.attempts) * 10),
+            cached_input_tokens: UsageField::host_reported(0),
+            cache_write_input_tokens: UsageField::host_reported(0),
+            output_tokens: UsageField::host_reported(0),
+            reasoning_output_tokens: UsageField::UNKNOWN,
+        })
+        .unwrap();
+        feedback
+            .record(serde_json::from_value(input).unwrap(), 102)
+            .unwrap();
+    }
+    let accepted = &completions[1].run;
+    let accepted_key = router_adapter_api::content_digest(
+        &serde_json::to_vec(&(
+            &accepted.run_id,
+            &accepted.definition_hash,
+            &accepted.approval_digest,
+        ))
+        .unwrap(),
+    );
+    for kind in [
+        FeedbackFactKind::Verification {
+            validation: VerificationOutcome::Passed,
+            objective: VerificationOutcome::Passed,
+            evidence_sha256: "a".repeat(64),
+        },
+        FeedbackFactKind::Integration {
+            outcome: IntegrationOutcome::Applied,
+        },
+    ] {
+        feedback
+            .record_fact(
+                FeedbackFact {
+                    schema_version: 1,
+                    run_key_sha256: accepted_key.clone(),
+                    observed_at_unix_seconds: 120,
+                    kind,
+                },
+                120,
+            )
+            .unwrap();
+    }
+    drop(feedback);
+    let pricing = fixture.files.root.join("measurement-pricing.json");
+    write(
+        &pricing,
+        &json!({"schema_version":1,"version":"synthetic-v1","source":"synthetic","observed_at_unix_seconds":90,"models":{"fixture-model":{"input_microusd_per_million":1000000,"cached_input_microusd_per_million":0,"output_microusd_per_million":0}}}),
+    );
+    let mut cmd = command();
+    cmd.args(["feedback", "--store"])
+        .arg(&feedback_path)
+        .args(["report", "--runtime-store"])
+        .arg(&fixture.files.store)
+        .arg("--pricing")
+        .arg(&pricing)
+        .args(["--now", "200", "--json"]);
+    let report = checked(&mut cmd, 0);
+    let tasks = &report["task_measurement"];
+    assert_eq!(tasks["expected_attempts"], 2);
+    assert_eq!(tasks["feedback_attempts"], 2);
+    assert_eq!(tasks["missing_feedback_attempts"], 0);
+    assert_eq!(tasks["unmatched_feedback_runs"], 0);
+    assert_eq!(tasks["total_microusd"], 30);
+    assert_eq!(tasks["accepted_occurrences"], 1);
+    assert_eq!(tasks["per_accepted_microusd"], 30);
+    assert_eq!(report, checked(&mut cmd, 0));
+    let mut qualified = serde_json::json!({"schema_version":2,"version":"synthetic-v2","source":"synthetic","observed_at_unix_seconds":90,"models":{"fixture-model":{
+        "input_microusd_per_million":1000000,"cache_read_microusd_per_million":0,"cache_write_microusd_per_million":2000000,"cache_write_scope":"all_reported_writes","output_microusd_per_million":0,"reasoning":{"mode":"included_in_output"}
+    }}});
+    write(&pricing, &qualified);
+    let qualified_report = checked(&mut cmd, 0);
+    assert_eq!(qualified_report["schema_version"], 5);
+    assert_eq!(qualified_report["task_measurement"]["total_microusd"], 30);
+    assert_eq!(
+        qualified_report["task_measurement"]["per_accepted_microusd"],
+        30
+    );
+    qualified["models"]["fixture-model"]["cache_write_scope"] = Value::Null;
+    write(&pricing, &qualified);
+    let incomplete = checked(&mut cmd, 0);
+    assert!(incomplete["task_measurement"]["total_microusd"].is_null());
+    assert_eq!(
+        incomplete["task_measurement"]["known_subtotal_microusd"],
+        30
     );
 }

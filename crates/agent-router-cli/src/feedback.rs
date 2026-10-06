@@ -35,9 +35,37 @@ fn error(error: FeedbackError) -> CliError {
         FeedbackError::Evaluation(_) => "feedback.evaluation",
     })
 }
-fn read_pricing(path: Option<PathBuf>) -> Result<Option<router_eval::PricingTable>, CliError> {
-    path.map(|path| read_json(&path, 64 * 1024)).transpose()
+pub(crate) enum ReportPricing {
+    Legacy(router_eval::PricingTable),
+    Qualified(router_eval::QualifiedPricingTable),
 }
+impl ReportPricing {
+    fn borrowed(&self) -> router_feedback::FeedbackPricing<'_> {
+        match self {
+            Self::Legacy(p) => router_feedback::FeedbackPricing::Legacy(p),
+            Self::Qualified(p) => router_feedback::FeedbackPricing::Qualified(p),
+        }
+    }
+}
+pub(crate) fn read_report_pricing(path: &Path) -> Result<ReportPricing, CliError> {
+    let value: serde_json::Value = read_json(path, 64 * 1024)?;
+    match value
+        .get("schema_version")
+        .and_then(serde_json::Value::as_u64)
+    {
+        Some(1) => serde_json::from_value(value)
+            .map(ReportPricing::Legacy)
+            .map_err(|_| CliError::RequestJsonInvalid),
+        Some(2) => serde_json::from_value(value)
+            .map(ReportPricing::Qualified)
+            .map_err(|_| CliError::RequestJsonInvalid),
+        _ => Err(CliError::RequestJsonInvalid),
+    }
+}
+fn read_pricing(path: Option<PathBuf>) -> Result<Option<ReportPricing>, CliError> {
+    path.as_deref().map(read_report_pricing).transpose()
+}
+
 pub(crate) fn feedback(
     path: &Path,
     now: Option<u64>,
@@ -112,19 +140,43 @@ pub(crate) fn feedback(
             &store.drift(&read_json(&rules, 4096)?, now).map_err(error)?,
             ExitCode::SUCCESS,
         ),
-        FeedbackCommand::Report { pricing } => {
+        FeedbackCommand::Report {
+            pricing,
+            runtime_store,
+        } => {
             let pricing = read_pricing(pricing)?;
-            json_output(
-                &store.report(pricing.as_ref(), now).map_err(error)?,
-                ExitCode::SUCCESS,
-            )
+            let inventory = runtime_store
+                .as_deref()
+                .map(router_runtime::measurement_inventory)
+                .transpose()
+                .map_err(crate::execution::error)?;
+            let (report, _summary) = store
+                .report_and_summary_with_pricing(
+                    pricing.as_ref().map(ReportPricing::borrowed),
+                    inventory.as_ref(),
+                    now,
+                )
+                .map_err(error)?;
+            json_output(&report, ExitCode::SUCCESS)
         }
-        FeedbackCommand::Summary { pricing } => {
+        FeedbackCommand::Summary {
+            pricing,
+            runtime_store,
+        } => {
             let pricing = read_pricing(pricing)?;
-            json_output(
-                &store.summary(pricing.as_ref(), now).map_err(error)?,
-                ExitCode::SUCCESS,
-            )
+            let inventory = runtime_store
+                .as_deref()
+                .map(router_runtime::measurement_inventory)
+                .transpose()
+                .map_err(crate::execution::error)?;
+            let (_report, summary) = store
+                .report_and_summary_with_pricing(
+                    pricing.as_ref().map(ReportPricing::borrowed),
+                    inventory.as_ref(),
+                    now,
+                )
+                .map_err(error)?;
+            json_output(&summary, ExitCode::SUCCESS)
         }
     }
 }

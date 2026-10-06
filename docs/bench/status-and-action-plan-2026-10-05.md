@@ -7,6 +7,45 @@ Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités act
 
 ## État vérifié le 6 octobre 2026
 
+### Lot validé localement, en revue
+
+La branche `codex/native-measured-use-20261006`, issue de `dc838862`, contient
+les changements ci-dessous. Ils ne sont pas encore fusionnés. Les validations
+antérieures plus bas restent rattachées à leurs références historiques.
+
+| Unité | Résultat local | Preuve restante |
+| --- | --- | --- |
+| U02a | Le [probe v5](native-integration-u02/README-v5.md) observe un aller-retour code-mode corrélé, refuse le mauvais nonce, vérifie la session sans canari et le nettoyage | Ce fournisseur est simulé ; aucune décision Agent Router ni économie n'est prouvée par ce test |
+| U02b | Le [contrôle natif](native-integration-u02/README-u02b.md) observe confiance via l'interface, blocage corrélé et nouvelle session sans blocage après désactivation | Le schéma n'offre aucun champ de changement du modèle parent ; application d'une décision par le hook et absence de doublons de routage restent à prouver |
+| U04b | `feedback report` et `summary --runtime-store` incluent les tentatives sans feedback, les reprises et les escalades, sans joindre les tâches par leur texte | Revue indépendante et gates locales passées ; usage avec un vrai fournisseur non mesuré |
+| U05 | La tarification v2 distingue les catégories cache/raisonnement et conserve les sous-totaux incomplets ; les formats v1 restent inchangés | Revue indépendante passée ; replay détaillé v2 explicitement refusé, prix réels non vérifiés |
+| U06 | Le [raccord natif](native-integration-u06/README.md) applique une décision CLI réelle : `gpt-5.6-terra / medium` observé dans la requête ; une nouvelle session sans raccord conserve `gpt-6.1-sol / low` | Fournisseur simulé, une seule étape `execute`, sans skills appliqués ; ce résultat ne prouve ni le workflow complet, ni l'automatisation U07, ni un gain |
+| U08 | Le [validateur hors ligne](calibration-v2/README.md) contrôle fichiers, empreintes, assignations et données manquantes ; 30 tests passent après revue indépendante | Corpus réel, admission native, plafond et accord liés au manifeste manquent ; aucune campagne autorisée |
+
+La [preuve de livraison](verification-native-measurement-2026-10-06.json) conserve
+les passages initiaux en échec et les reprises : **1 636 résultats Rust**
+(1 593 workspace, 1 cœur minimal, 42 natifs ignorés) et **257 tests Python**
+réussissent. Formatage, les deux Clippy, harnais, syntaxe hôte, recherche de secrets,
+audit RustSec frais et paquet du cœur passent. Les trois smokes de fuzzing passent
+sur une copie isolée des mêmes sources Rust. Les résultats Rust comptent les
+lignes de succès, y compris les sous-processus, pas des définitions uniques.
+
+Deux défauts du harnais de test ont été reproduits puis corrigés sans modifier
+le comportement produit : une capture de sortie bloquée par un tampon de
+512 octets, puis des écritures asynchrones du collecteur Git dans les dépôts
+jetables pendant leur suppression. Le passage complet conserve son verdict
+brut en échec pour ce second défaut. Les 28 tests du lanceur passent ensuite ;
+seul leur fichier a changé, empreintes vérifiées. Le Rust et les tests natifs
+n'ont pas été rejoués après cette correction Python.
+
+Trois contrôles Linux restent non vérifiés sur ce Mac. Aucun appel à un vrai
+fournisseur, gain d'usage, automatisme quotidien ni changement de configuration
+globale n'est établi. Le suivi reste ouvert dans
+[#11](https://github.com/FlorianBruniaux/agent-router/issues/11) et
+[#5](https://github.com/FlorianBruniaux/agent-router/issues/5).
+
+### Référence fusionnée et validations précédentes
+
 Les PR [#125](https://github.com/FlorianBruniaux/agent-router/pull/125) et
 [#126](https://github.com/FlorianBruniaux/agent-router/pull/126) sont fusionnées.
 Ces deux PR sont livrées par `8983d23a2e8937e244cf64ca0f2ba422073b20ae` sur `main`.
@@ -63,10 +102,11 @@ gain d'usage.
 
 | Ordre | Action | Critère de sortie | Suivi |
 | --- | --- | --- | --- |
-| 1 | Prouver le parcours Codex CLI macOS avec fournisseur simulé | Appel d'outil code-mode corrélé, résultat repris par Codex, refus des appels inattendus, nettoyage et retrait vérifiés dans une nouvelle session | U02/U06, [roadmap #11](https://github.com/FlorianBruniaux/agent-router/issues/11) |
-| En parallèle | Compléter la comptabilité des tâches | Escalades, échecs, tentatives sans feedback et cache traités sans doublons ni total inventé | U04b/U05, [évaluation #5](https://github.com/FlorianBruniaux/agent-router/issues/5) |
-| Après preuve native | Préparer l'activation automatique | Déclenchement unique, choix appliqué ou refus explicite, panne et retour arrière testés ; candidat global approuvé avant installation | U07, roadmap #11 |
-| Après mesure et intégration validées | Calibrer puis comparer sur des tâches réelles | Plafond approuvé, tâches de confirmation distinctes, qualité, corrections, temps humain et coût par accepté, échecs et inconnus conservés | U08/U09/U10, évaluation #5 |
+| Réalisé localement | Aller-retour code-mode et raccord explicite d'une décision CLI à une session Codex séparée | Paramètres, réponse, refus et nettoyage observés face au fournisseur simulé ; ne valide pas un hook automatique | U02a/U06, [roadmap #11](https://github.com/FlorianBruniaux/agent-router/issues/11) |
+| Réalisé localement | Comptabilité des tâches et prix cache/raisonnement | Tentatives sans feedback et escalades conservées ; totaux incomplets explicites ; tarifs réels encore à qualifier | U04b/U05, [évaluation #5](https://github.com/FlorianBruniaux/agent-router/issues/5) |
+| 1 | Terminer le contrat du hook et préparer l'activation automatique | Déclenchement unique, décision appliquée à une session séparée ou refus explicite, panne sans boucle, retour arrière en nouvelle session ; candidat global approuvé avant installation | U02b/U07, roadmap #11 |
+| En parallèle | Compléter le manifeste réel avec le validateur U08 | Corpus, comparateur, collecte, trajet admis, plafond et accord liés au manifeste scellés ; aucune exécution à cette étape | U08, évaluation #5 |
+| Après admission et accord | Calibrer puis comparer sur des tâches réelles | Qualité, corrections, temps humain et coût par accepté, échecs et inconnus conservés ; confirmation distincte de la calibration | U09/U10, évaluation #5 |
 
 Codex CLI, l'application Codex et Claude ont des validations séparées. Aucun
 gain de coût ou de productivité n'est établi par les contrôles de développement.
@@ -80,6 +120,123 @@ Les résultats d'une campagne vont aussi dans le [playbook](playbook.md).
 Conserver les échecs historiques et les exports scellés. Distinguer implémenté,
 poussé, fusionné, CI avant/après fusion, usage natif et gain mesuré ; ne cocher
 une unité ou fermer une issue que lorsque ses critères sont satisfaits.
+
+## Plan consolide du 6 octobre
+
+La [critique du résumé en cinq étapes](plan-critique-2026-10-06.md) rétablit les
+conditions que ce résumé omettait. Les changements ci-dessous définissent le plan ;
+le tableau de tête indique les résultats obtenus depuis sa rédaction.
+Les identifiants U02a/U02b décomposent U02 ;
+ils ne clôturent ni ne remplacent une exigence historique.
+
+### Ce qui change
+
+- Le callback du diagnostic, le raccord de la décision Agent Router et le
+  déclenchement automatique ont trois preuves séparées.
+- Aucun appel distant dans le diagnostic initial. Le premier appartient à
+  U09 après validation de son trajet d'envoi et accord lié au manifeste.
+- Codex CLI macOS est la première surface. L'application Codex, Claude et la
+  supervision Agent Router gardent des validations distinctes.
+- L'essai personnel, la publication expérimentale et la livraison complète
+  ont des critères différents. Aucune exigence n'est supprimée.
+
+### Phases et décision de passage
+
+Phase 0 : relire le protocole installé, figer le scénario, les empreintes,
+les fichiers possédés et les limites du test. Préparer simultanément la
+fixture de comptabilité U04b et le manifeste U08 sans lancer de campagne.
+
+Phase 1 : U02a seul comme première modification de comportement. Le scénario
+fait demander un outil fixe par le fournisseur simulé, répond au callback et
+observe la réponse dans la requête suivante. Écrire le cas RED avant le
+correctif minimal ; garder le probe borné et refuser tout autre appel.
+
+Décision de passage : si U02a puis U02b prouvent les capacités requises,
+continuer vers U06. Si une capacité manque, consigner le verdict et le
+diagnostic nécessaire ; ne pas construire l'activation sur cette hypothèse.
+Le conseil explicite reste utilisable, sans promesse de routage automatique.
+
+Phase 2 : raccorder la décision à la session et au bilan en U06, puis tester
+le déclenchement U07 dans un environnement jetable. Les travaux de mesure
+avancent sur des fichiers attribués séparément. U05 suit U04b.
+
+Phase 3 : U09 calibre le trajet réellement validé ; U10 mesure le traitement
+figé sur des tâches distinctes. Claude et U11-U16 poursuivent leurs preuves
+propres avant U17. Le diagnostic Claude U12 peut avancer indépendamment,
+mais n'est pas requis pour le premier essai personnel Codex.
+
+### Unités immédiatement opérables et dépendances
+
+« Aucune » signifie que les preuves préalables U01/U03/U04a sont déjà livrées,
+pas que le code du prochain lot est validé. Un accord humain indiqué reste
+nécessaire avant l'effet concerné. Chaque arête requiert une preuve positive ;
+la simple fermeture d'un diagnostic négatif ne la satisfait pas.
+
+| Unité | Livre | Bloqué par | Validation observable |
+| --- | --- | --- | --- |
+| U02a | Verdict sur un aller-retour code-mode local | Aucune | Un appel fixe corrélé, son résultat dans la requête suivante, appel inattendu refusé sans effet, processus nettoyés et canari absent après retrait en nouvelle session |
+| U02b | Contrat natif de déclenchement et d'application | U02a | Sur une version épinglée, un événement identifié déclenche le chemin prévu ; cible et modèle/effort appliqués ou refusés sont observables ; bornes et doublons sont testés |
+| U04b | Bilan de toutes les tentatives d'une tâche | Aucune | Une fixture succès après reprise, abandon et tentative sans feedback conserve chaque tentative une fois malgré les snapshots et expose les usages manquants |
+| U05 | Qualification du coût cache | U04b | Tarifs/version/portée connus donnent le total attendu ; cache ou prix manquant donne UNKNOWN et sous-total, sans réécrire les anciens rapports |
+| U06 | Décision Agent Router reliée à une session native et au bilan | Contrat natif explicite observé ; U02b requis pour le chemin automatique | Une décision CLI réelle fournit les paramètres observés ; une seule session modèle, une vérification locale, résultat et refus corrélés ; aucun reçu AR fabriqué pour une session externe |
+| U07 | Intégration automatique réversible sur la surface admise | U06 | Nouvelle session : un déclenchement utile, aucun doublon effectif, panne sans boucle, usage normal restauré après retrait ; approbation du candidat exact avant toute installation globale |
+| U08 | Manifeste prêt pour la calibration | Aucune | Tâches/départs, comparateur, critères, ordre, collecte, trajets d'envoi, budget et arrêts sont renseignés, vérifiés et scellés ; rien n'est exécuté |
+| U09 | Premier bloc réel de calibration | U05, U07, U08 | Contrôle des envois vérifié et plafond concret approuvé ; chaque tâche assignée possède une ligne, échec ou inconnu inclus ; aucun gain déduit de ce bloc |
+| U10 | Verdict comparatif reproductible | U09 | Confirmation sur tâches hors calibration, règles et marges approuvées avant appels, résultat positif/négatif/inconclusif conservé |
+| U17 | Candidat à la publication complète | U08, U10, U16 | Critères MVP, matrice requise, licences, installation/retrait, performance et gates vérifiés sur le SHA candidat ; visibilité publique soumise à décision distincte |
+
+Frontière initiale de cette tranche : **U02a, U04b, U08**. Les preuves obtenues
+ont permis de préparer U05 et le contrôleur explicite U06. Ce dernier ne ferme
+pas U02b : le chemin automatique par hook attend toujours sa propre validation.
+U08 reste incomplet tant que ses entrées réelles manquent. Les responsabilités restent celles de la table
+historique : système/Rust pour l'intégration, back-end/Rust pour le bilan,
+agent principal et Florian pour le protocole. Attribuer les chemins avant
+délégation ; la revue de code est faite par une autre personne ou un autre agent.
+
+Le chemin de l'usage automatique est U02a → U02b → U06 → U07. U09 attend aussi
+U04b → U05 et U08. U11-U16 conservent le graphe de supervision plus bas : le
+parcours natif ne prouve pas le broker, l'exécutant isolé ou leurs budgets.
+Un runner qui exige un plafond strict reste désactivé tant que ce plafond
+n'est pas vérifié. Un autre chemin suivi mais non plafonné nécessite une
+proposition et un accord propres ; cette révision n'autorise aucun contournement.
+
+### Arrêts, restauration et preuve de réussite
+
+Arrêter les nouveaux appels sur identité perdue, version différente, dépassement
+des bornes ou issue fournisseur ambiguë. Conserver la tentative et son coût
+inconnu, sans reprise automatique. Une panne de mesure ne relance jamais le travail.
+
+Pour un essai jetable : arrêter seulement les processus possédés, conserver
+les preuves hors du scratch retiré et vérifier une nouvelle session sans
+canari. Pour une installation : inventaire et préimages, candidat inerte testé,
+diff expurgé et approbation liée au digest avant écriture. En cas de défaut,
+désactiver l'intégration, exclure les auteurs concurrents, comparer les fichiers
+à la dernière version écrite, restaurer les préimages et retirer uniquement les
+nouveaux fichiers inchangés. Ne retirer un dossier que vide. Toute divergence
+interdit l'écrasement. La preuve finale est une nouvelle session avec les
+paramètres antérieurs et sans déclenchement résiduel.
+
+Réussite du premier essai : une tâche Codex CLI acceptée selon son test et sa
+revue humaine, décision et application reliées, bilan avec provenance, retrait
+vérifié. Cela prouve l'utilisabilité du scénario, pas une économie. L'usage
+quotidien décrit les incidents ; U10 fournit la comparaison sur mêmes tâches et
+départs, avec ordre consigné, corrections et temps humain distincts. Tokens,
+quota observable, estimation API et facture ne sont pas interchangeables.
+
+Avant chaque passage réel, figer modèles/efforts, prompts, prix, versions et
+règles d'arrêt. Avant U10, figer aussi les marges de qualité/coût/temps et
+l'analyse ; si les observations ne permettent pas de conclure, garder le
+verdict inconclusif. Les tests locaux et une revue indépendante précèdent la
+livraison de chaque lot de code ; seuls les critères effectivement satisfaits
+sont cochés dans ce plan et les issues #11/#5.
+
+Hors du premier essai : application Codex, second hôte, Pixel, dashboards,
+Windows et fusion de projets. Les déclencheurs d'U18 restent applicables ;
+pour l'application Codex, rouvrir une admission de surface une fois le parcours
+CLI U07 validé. Claude reste requis par le périmètre complet. Le choix de licence
+et le démarrage à froid restent des critères explicites de publication. Une
+version expérimentale plus étroite exige une décision de périmètre et ne
+permet pas de marquer U17 ni le projet complet terminés.
 
 <details><summary>Historique des validations antérieures à la fusion de #126</summary>
 

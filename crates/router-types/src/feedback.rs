@@ -269,3 +269,23 @@ pub struct FeedbackExport {
     pub facts: Vec<FeedbackFactEvent>,
     pub content_hash: String,
 }
+
+/// Read-only measurement projection from a coherent runtime journal snapshot.
+/// This is correlation evidence, never execution authority or host usage.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct FeedbackRuntimeInventory {
+    pub schema_version: u32,
+    pub journal_sha256: String,
+    pub runs: Vec<FeedbackRuntimeRun>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct FeedbackRuntimeRun {
+    pub run_key_sha256: String,
+    /// Original feedback keys across fresh retry approvals, never inferred from task text.
+    pub feedback_run_keys_sha256: Vec<String>,
+    pub occurrence_sha256: String,
+    pub predecessor_run_key_sha256: Option<String>,
+    pub attempts: u32,
+    pub state: crate::RunState,
+}

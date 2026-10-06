@@ -7,7 +7,9 @@ mod policy;
 mod report;
 mod sidecar_export;
 mod store;
+mod task_report;
 pub use sidecar_export::{SidecarExportGuard, SidecarExportProjection};
+pub use task_report::{TaskMeasurementReport, TaskOccurrenceReport};
 
 pub use learning::*;
 pub use policy::*;

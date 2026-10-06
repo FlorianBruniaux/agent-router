@@ -21,6 +21,52 @@ use crate::{
     store::{read_consent, scrub, snapshot_in, timestamp},
 };
 
+/// V1 remains byte-compatible; qualified rates require the explicit v2 contract.
+#[derive(Clone, Copy)]
+pub enum FeedbackPricing<'a> {
+    Legacy(&'a PricingTable),
+    Qualified(&'a router_eval::QualifiedPricingTable),
+}
+impl FeedbackPricing<'_> {
+    fn citation(self) -> PricingCitation {
+        match self {
+            Self::Legacy(p) => PricingCitation {
+                contract_version: None,
+                version: p.version.clone(),
+                source: p.source.clone(),
+                observed_at_unix_seconds: p.observed_at_unix_seconds,
+            },
+            Self::Qualified(p) => PricingCitation {
+                contract_version: Some(2),
+                version: p.version.clone(),
+                source: p.source.clone(),
+                observed_at_unix_seconds: p.observed_at_unix_seconds,
+            },
+        }
+    }
+    fn valid(self) -> bool {
+        match self {
+            Self::Legacy(p) => valid_pricing(p),
+            Self::Qualified(p) => p.validate().is_ok(),
+        }
+    }
+    fn cost(self, model: &router_types::ModelId, usage: &HostUsage) -> (Option<u128>, bool) {
+        match self {
+            Self::Legacy(p) => {
+                let cost = p.models.get(model).and_then(|price| run_cost(usage, price));
+                (cost, cost.is_some())
+            }
+            Self::Qualified(p) => {
+                let cost = router_eval::price_host_usage(p, model, usage).unwrap_or_default();
+                (
+                    cost.known_subtotal_microusd.map(u128::from),
+                    cost.total_microusd.is_some(),
+                )
+            }
+        }
+    }
+}
+
 /// Percentile method: nearest rank on the sorted known values.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct Percentiles {
@@ -95,7 +141,8 @@ pub struct GroupCost {
     /// Priced runs with a declared cache write count above zero. Cache writes
     /// are priced at the input rate because the table has no write price.
     pub runs_with_cache_writes_priced_as_input: u64,
-    /// Sum of unambiguous priced attempts, even when coverage is incomplete.
+    /// Known charges even with incomplete coverage. Qualified pricing v2 also
+    /// preserves priced token classes within an otherwise unpriced attempt.
     pub known_subtotal_microusd: Option<u64>,
     pub expected_attempts: u64,
     pub observed_attempts: u64,
@@ -135,6 +182,8 @@ pub struct GroupReport {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct PricingCitation {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub contract_version: Option<u32>,
     pub version: String,
     pub source: String,
     pub observed_at_unix_seconds: u64,
@@ -202,6 +251,9 @@ pub struct RunReport {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct FeedbackReport {
+    /// Optional reconciliation with an independently captured runtime inventory.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_measurement: Option<crate::TaskMeasurementReport>,
     pub schema_version: u32,
     pub generated_at_unix_seconds: u64,
     pub event_set_hash: String,
@@ -253,6 +305,9 @@ pub struct UnknownCounts {
 /// gain attributable to the router.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct FeedbackSummary {
+    /// Optional reconciliation with an independently captured runtime inventory.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub task_measurement: Option<crate::TaskMeasurementReport>,
     pub schema_version: u32,
     pub generated_at_unix_seconds: u64,
     pub event_set_hash: String,
@@ -358,7 +413,7 @@ fn run_cost(usage: &HostUsage, price: &TokenPrice) -> Option<u128> {
 /// One entry per observed ordinal, never allocated from the declared maximum.
 /// The store bounds the event count; missing ordinals are counted by subtraction.
 #[derive(Default)]
-struct RunAttempts<'a> {
+pub(crate) struct RunAttempts<'a> {
     expected: u32,
     marked: BTreeMap<u32, AttemptSnapshot<'a>>,
     legacy_first: Option<AttemptSnapshot<'a>>,
@@ -383,7 +438,7 @@ impl<'a> AttemptSnapshot<'a> {
 }
 
 impl<'a> RunAttempts<'a> {
-    fn observe(&mut self, event: &'a FeedbackEvent) {
+    pub(crate) fn observe(&mut self, event: &'a FeedbackEvent) {
         let input = &event.input;
         let ordinal = input.measurements.attempts;
         self.expected = self.expected.max(ordinal);
@@ -413,7 +468,11 @@ impl<'a> RunAttempts<'a> {
             });
     }
 
-    fn cost(&self, pricing: Option<&PricingTable>) -> Accumulator<'a> {
+    pub(crate) fn measurement_cost(&self, pricing: Option<FeedbackPricing<'_>>) -> GroupCost {
+        group_cost(pricing, &self.cost(pricing))
+    }
+
+    fn cost(&self, pricing: Option<FeedbackPricing<'_>>) -> Accumulator<'a> {
         let mut result = Accumulator {
             expected_attempts: u64::from(self.expected),
             ..Accumulator::default()
@@ -451,18 +510,22 @@ impl<'a> RunAttempts<'a> {
             }
             let input = &snapshot.event.input;
             let cost = pricing
-                .and_then(|p| p.models.get(&input.context.model))
                 .zip(input.measurements.usage.as_ref())
-                .and_then(|(price, usage)| run_cost(usage, price));
-            if let Some(cost) = cost {
+                .map(|(pricing, usage)| pricing.cost(&input.context.model, usage))
+                .unwrap_or_default();
+            if let Some(subtotal) = cost.0 {
+                result.known_cost = true;
+                result.cost_total += subtotal;
+            }
+            if cost.1 {
                 result.priced_attempts += 1;
-                result.cost_total += cost;
-                cache_write |= input
-                    .measurements
-                    .usage
-                    .as_ref()
-                    .and_then(|u| u.cache_write_input_tokens.reported())
-                    .is_some_and(|writes| writes > 0);
+                cache_write |= matches!(pricing, Some(FeedbackPricing::Legacy(_)))
+                    && input
+                        .measurements
+                        .usage
+                        .as_ref()
+                        .and_then(|u| u.cache_write_input_tokens.reported())
+                        .is_some_and(|writes| writes > 0);
             }
         }
         result.cache_write_runs = u64::from(cache_write);
@@ -490,6 +553,7 @@ struct Accumulator<'a> {
     cost_unknown: u64,
     cache_write_runs: u64,
     cost_total: u128,
+    known_cost: bool,
     expected_attempts: u64,
     observed_attempts: u64,
     priced_attempts: u64,
@@ -529,6 +593,7 @@ impl<'a> Accumulator<'a> {
         self.cost_unknown += other.cost_unknown;
         self.cache_write_runs += other.cache_write_runs;
         self.cost_total += other.cost_total;
+        self.known_cost |= other.known_cost;
     }
 }
 
@@ -550,11 +615,11 @@ fn accepted_rate(a: &Accumulator<'_>) -> Option<AcceptedRate> {
 fn build_report(
     events: &[FeedbackEvent],
     fact_events: &[FeedbackFactEvent],
-    pricing: Option<&PricingTable>,
+    pricing: Option<FeedbackPricing<'_>>,
     learning_enabled: bool,
     now: u64,
 ) -> Result<(FeedbackReport, FeedbackSummary)> {
-    if pricing.is_some_and(|p| !valid_pricing(p)) {
+    if pricing.is_some_and(|p| !p.valid()) {
         return Err(FeedbackError::Invalid("pricing"));
     }
     let mut by_key: BTreeMap<&str, RunFacts<'_>> = BTreeMap::new();
@@ -698,16 +763,13 @@ fn build_report(
         &fact_events.iter().map(|f| &f.fact_hash).collect::<Vec<_>>(),
     )?;
     let mut summary = FeedbackSummary {
+        task_measurement: None,
         schema_version: 2,
         generated_at_unix_seconds: now,
         event_set_hash: event_set.clone(),
         fact_set_hash: fact_set.clone(),
         report_content_hash: String::new(),
-        pricing: pricing.map(|p| PricingCitation {
-            version: p.version.clone(),
-            source: p.source.clone(),
-            observed_at_unix_seconds: p.observed_at_unix_seconds,
-        }),
+        pricing: pricing.map(FeedbackPricing::citation),
         runs: total.events.len() as u64,
         accepted: total.accepted,
         rejected: total.rejected,
@@ -768,6 +830,7 @@ fn build_report(
         })
         .collect();
     let mut report = FeedbackReport {
+        task_measurement: None,
         schema_version: 3,
         generated_at_unix_seconds: now,
         event_set_hash: event_set,
@@ -778,11 +841,7 @@ fn build_report(
         unlinked,
         orphan_facts,
         superseded_events: superseded,
-        pricing: pricing.map(|p| PricingCitation {
-            version: p.version.clone(),
-            source: p.source.clone(),
-            observed_at_unix_seconds: p.observed_at_unix_seconds,
-        }),
+        pricing: pricing.map(FeedbackPricing::citation),
         groups,
         runs,
         catalog_estimate_ratio: NullFigure {
@@ -810,7 +869,7 @@ fn build_report(
     Ok((report, summary))
 }
 
-fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost {
+fn group_cost(pricing: Option<FeedbackPricing<'_>>, a: &Accumulator<'_>) -> GroupCost {
     let mut cost = GroupCost {
         expected_attempts: a.expected_attempts,
         observed_attempts: a.observed_attempts,
@@ -827,7 +886,7 @@ fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost 
         cost.reason = Some("no_pricing_table");
         return cost;
     }
-    if a.priced_attempts == 0 {
+    if !a.known_cost {
         cost.reason = Some("no_priced_runs");
         return cost;
     }
@@ -868,12 +927,63 @@ impl FeedbackStore {
             .map(|(_, summary)| summary)
     }
 
+    /// Adds task occurrence accounting without rewriting stored events or changing
+    /// the legacy report when no inventory was requested.
+    pub fn report_and_summary_with_inventory(
+        &self,
+        pricing: Option<&PricingTable>,
+        inventory: Option<&router_types::FeedbackRuntimeInventory>,
+        now: u64,
+    ) -> Result<(FeedbackReport, FeedbackSummary)> {
+        self.report_and_summary_with_pricing(pricing.map(FeedbackPricing::Legacy), inventory, now)
+    }
+
+    pub fn report_and_summary_with_pricing(
+        &self,
+        pricing: Option<FeedbackPricing<'_>>,
+        inventory: Option<&router_types::FeedbackRuntimeInventory>,
+        now: u64,
+    ) -> Result<(FeedbackReport, FeedbackSummary)> {
+        let (mut report, mut summary, events) = self.report_snapshot(pricing, now)?;
+        if let Some(inventory) = inventory {
+            let measurement = crate::task_report::measure(&report, inventory, &events, pricing)?;
+            report.schema_version = 4;
+            summary.schema_version = 3;
+            report.task_measurement = Some(measurement.clone());
+            summary.task_measurement = Some(measurement);
+            report.content_hash.clear();
+            report.content_hash = hash("feedback-report-v4", &report)?;
+            summary.report_content_hash = report.content_hash.clone();
+            summary.content_hash.clear();
+            summary.content_hash = hash("feedback-summary-v3", &summary)?;
+        }
+        if matches!(pricing, Some(FeedbackPricing::Qualified(_))) {
+            report.schema_version = 5;
+            summary.schema_version = 4;
+            report.content_hash.clear();
+            report.content_hash = hash("feedback-report-v5", &report)?;
+            summary.report_content_hash = report.content_hash.clone();
+            summary.content_hash.clear();
+            summary.content_hash = hash("feedback-summary-v4", &summary)?;
+        }
+        Ok((report, summary))
+    }
+
     /// Both views from one snapshot, so a test can compare them exactly.
     pub fn report_and_summary(
         &self,
         pricing: Option<&PricingTable>,
         now: u64,
     ) -> Result<(FeedbackReport, FeedbackSummary)> {
+        self.report_snapshot(pricing.map(FeedbackPricing::Legacy), now)
+            .map(|(report, summary, _)| (report, summary))
+    }
+
+    fn report_snapshot(
+        &self,
+        pricing: Option<FeedbackPricing<'_>>,
+        now: u64,
+    ) -> Result<(FeedbackReport, FeedbackSummary, Vec<FeedbackEvent>)> {
         timestamp(now)?;
         let mut db = self.lock()?;
         let tx = db.transaction()?;
@@ -886,13 +996,14 @@ impl FeedbackStore {
         if removed > 0 {
             scrub(&db)?;
         }
-        build_report(
+        let (report, summary) = build_report(
             &events,
             &facts,
             pricing,
             consent.preferences.learning_enabled,
             now,
-        )
+        )?;
+        Ok((report, summary, events))
     }
 }
 

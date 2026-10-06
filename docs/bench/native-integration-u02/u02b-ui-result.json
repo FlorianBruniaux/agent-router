@@ -1,0 +1,92 @@
+{
+  "ar_decision_application": "NOT_TESTED",
+  "artifact_sha256": {
+    "config-after.toml": "429f4a01325c0941095f3c76409c43536b2fb52928dd8b978c6298b5c13f8603",
+    "config-before.toml": "fe5aa8a9d9c2ffa9c52007cddff57dfb1089aef9b8dbb698efc09d1efd62a30e",
+    "disabled-session/terminal.log": "4ef9bccb4ecd5a71059e59d3a49976e172c296d7f3c1a2becb0c7dee17668806",
+    "preimages.json": "fff8101328ac681b9d17aa247fc956e84393498bdd1576d17b107caa24280bd4",
+    "rpc-correlation/rpc.json": "12a082581d6578b473411a11c384fe4acd96718c218036555307ae5212dbe45e",
+    "terminal.log": "3c1cbcc1b35e023ddbff417ac8b0aec3161bd22f571c1dba41547316c54390d3"
+  },
+  "automatic_route_delegation": "NOT_TESTED",
+  "bypass_flags_used": false,
+  "candidate_current_hash": "sha256:d1b5e9e0bb462b5e8b1a0b10374658006edd46708d6ed50de39d2afff9ad03d7",
+  "codex_native_binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "codex_version": "0.159.2",
+  "direct_trust_state_writes": false,
+  "driver_sha256": {
+    "ar-u02b-rpc-correlate.py": "21cffd86a2eac4cb35e013f5d61ecabc4046b2f22d649bd623141ca29a6600e3",
+    "ar-u02b-ui-disabled-driver.py": "3ca0906112c72c19091ac6b2d1ace5ab9f62269a226a3056ffaf3ab08ea791fe",
+    "ar-u02b-ui-driver.py": "ca7a177d672a7c6c24eeb0eed8efadd1736377e821df8e80f8041a3b92fd4ba9"
+  },
+  "duplicate_control": "Two intentional repeated prompts yielded two visible blocks; transport-replay idempotency NOT_TESTED",
+  "external_egress": "UNKNOWN: no packet capture or OS denial proof",
+  "global_configuration_changed": false,
+  "hook_direct_model_effort_application": "UNSUPPORTED_BY_EMBEDDED_OUTPUT_SCHEMA",
+  "limits": {
+    "disabled_ui_seconds": 120,
+    "first_ui_seconds": 180,
+    "provider_inference_requests_allowed": 0,
+    "rpc_seconds": 15,
+    "terminal_bytes_per_ui": 2097152
+  },
+  "pinned_cli_processes_remaining_at_cleanup": 0,
+  "rpc_correlation": {
+    "feedback_exact": true,
+    "hook_completed_count": 1,
+    "hook_run_id_sha256": "5da2f96cfcea7cc305ec9971af03760a7039dc4ac2bb82d8ff321771c9863295",
+    "hook_started_count": 1,
+    "owned_process_group_gone": true,
+    "provider_connections": 0,
+    "provider_requests": 0,
+    "same_hook_run_id": true,
+    "status": "blocked",
+    "thread_id": "01a1108a-8821-7632-89f7-ca6af044da5a",
+    "turn_id": "01a1108a-8871-7531-b056-88006b7629f8"
+  },
+  "schema_version": 1,
+  "surface": "Codex CLI native TUI plus app-server hook-notification correlation",
+  "temporary_session_removed": true,
+  "trigger_observed": true,
+  "trust_operation": "Native Review hooks / UserPromptSubmit details / t; native persisted hash read back and compared exactly",
+  "u02b_complete": false,
+  "ui_enabled": {
+    "config_after_sha256": "429f4a01325c0941095f3c76409c43536b2fb52928dd8b978c6298b5c13f8603",
+    "exit": 0,
+    "explicit_prompt_submissions": 2,
+    "owned_process_group_gone": true,
+    "provider_accepted_connections": 0,
+    "provider_rejected_requests": 0,
+    "provider_request_count": 0,
+    "provider_threads_stopped": true,
+    "stop_reason": "normal",
+    "visible_fixed_blocks": 2
+  },
+  "ui_fresh_disabled": {
+    "blocked_by_hook_visible": false,
+    "config_after_sha256": "341a698dfbc0407c678187fc752e0fca6b2b2ddf2f60fe10dc85da6fdae12fce",
+    "exit": 0,
+    "owned_process_group_gone": true,
+    "provider_accepted_connections": 2,
+    "provider_inference": "NONE: rejecting loopback returned HTTP 429",
+    "provider_rejected_requests": 2,
+    "provider_request_count": 2,
+    "provider_threads_stopped": true,
+    "stop_reason": "normal"
+  },
+  "ui_threads": [
+    {
+      "thread_id": "01a11083-b9e2-7292-a8e4-663cf43ee64f",
+      "turn_ids": [
+        "01a11084-b524-7d92-abe1-c8638c41f32b",
+        "01a11085-0ff5-7700-826e-ea7f97407bb7"
+      ]
+    },
+    {
+      "thread_id": "01a11088-3220-7772-82e2-8044df4dc627",
+      "turn_ids": [
+        "01a11088-7b03-7db2-9486-c40927871004"
+      ]
+    }
+  ]
+}

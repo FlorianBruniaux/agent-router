@@ -1,0 +1,121 @@
+{
+  "admission_basis": "explicit_platform_supported_fixture_subset; paid_provider_eligibility_UNKNOWN",
+  "ar_runtime_receipt": "NOT_APPLICABLE",
+  "automatic_daily_interception": "NOT_TESTED",
+  "cases": [
+    {
+      "attempt_outcome": "completed_and_locally_verified",
+      "callback_count": 0,
+      "cleanup_complete": true,
+      "failure": null,
+      "group_inventory_contains_owned": false,
+      "group_inventory_status": "complete",
+      "group_signal_observation": "permission_error",
+      "local_verification": true,
+      "mode": "enabled",
+      "output_complete": true,
+      "owned_process_group_gone": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "effort": "medium",
+          "model": "gpt-5.6-terra",
+          "prompt_exact": true
+        }
+      ],
+      "success": true,
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a110a0-7723-7363-b710-35aaa407f13a",
+      "turn_id": "01a110a0-7834-7c82-ba8d-d7445eddb9f5",
+      "turn_requested": {
+        "effort": "medium",
+        "model": "gpt-5.6-terra"
+      }
+    },
+    {
+      "attempt_outcome": "completed_and_locally_verified",
+      "callback_count": 0,
+      "cleanup_complete": true,
+      "failure": null,
+      "group_inventory_contains_owned": false,
+      "group_inventory_status": "complete",
+      "group_signal_observation": "permission_error",
+      "local_verification": true,
+      "mode": "disabled",
+      "output_complete": true,
+      "owned_process_group_gone": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "effort": "low",
+          "model": "gpt-6.1-sol",
+          "prompt_exact": true
+        }
+      ],
+      "success": true,
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a110a0-7c95-7761-8f35-07250545fe4a",
+      "turn_id": "01a110a0-7d5c-7282-9296-47dd11b65961",
+      "turn_requested": {
+        "effort": null,
+        "model": null
+      }
+    }
+  ],
+  "cost": "UNKNOWN",
+  "disabled_withdrawal_verified": true,
+  "external_egress_denial": "UNKNOWN",
+  "kind": "external_native_fixture",
+  "native": {
+    "binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "version": "0.159.2"
+  },
+  "parent_session_model_changed": false,
+  "real_provider_availability": "UNKNOWN",
+  "real_task_quality": "UNKNOWN",
+  "route": {
+    "catalog_sha256": "4e49598643c47fe86d3f8db1956c8b74a498b7a373e26682c1c1986cb7740052",
+    "output_sha256": "a6176edb9a4cc90a9539ccada0659def705dd6963dfe56ae5f9c6618fdaa00e8",
+    "request_sha256": "c2af5a7ef9c64e8d51d04a1187ec5174653a4faa3b0015504b6847dbd05e6d55",
+    "router_binary_sha256": "7244fc3d139bfb30e562cf089bcc94c2de3dffeba18fa690ba68d6e8ebf5bc9c",
+    "selection": {
+      "decision_id": "10ced74ca293e346792899b283d9206cc71e78e36e2a248581702c15d47265ca",
+      "effort": "medium",
+      "kind": "execute",
+      "model": "gpt-5.6-terra",
+      "not_executed_stages": [
+        "plan",
+        "verify"
+      ],
+      "selected_skills_applied": false,
+      "stage_index": 1
+    }
+  },
+  "schema_version": 1,
+  "selected_skills_applied": false,
+  "source_hashes": {
+    "appserver_helper": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+    "probe": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+    "u02_helper": "30b3db5c73a9f567fb372f22430569f8e4506a8900d13510654f111f477b23b7"
+  },
+  "success": true,
+  "usage": "SYNTHETIC_SCRIPTED_PROVIDER"
+}

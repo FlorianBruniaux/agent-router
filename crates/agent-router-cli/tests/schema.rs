@@ -59,7 +59,7 @@ fn list_names_every_contract_with_its_supported_versions() {
     let versions =
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
-    assert_eq!(versions("feedback-report"), json!([1, 2, 3]));
+    assert_eq!(versions("feedback-report"), json!([1, 2, 3, 4, 5]));
     let mut again = command();
     again.args(["schema", "--list"]);
     assert_eq!(out, stdout(again));
@@ -585,5 +585,67 @@ fn feedback_schema_keeps_legacy_shapes_strict_and_requires_attempt_coverage() {
             !json_schema::violations(&schema("feedback-report"), &invalid).is_empty(),
             "{invalid}"
         );
+    }
+}
+
+#[test]
+fn runtime_reconciled_reports_have_strict_versioned_public_schemas() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let store = populated_store(&directory);
+    let runtime_path = directory.join("runtime");
+    drop(
+        router_runtime::Runtime::open(&runtime_path, router_runtime::RuntimeLimits::default())
+            .unwrap(),
+    );
+    for (name, subcommand, version) in [
+        ("feedback-report", "report", 4),
+        ("feedback-summary", "summary", 3),
+    ] {
+        let mut cmd = command();
+        cmd.args(["feedback", "--store"])
+            .arg(&store)
+            .arg(subcommand)
+            .arg("--runtime-store")
+            .arg(&runtime_path)
+            .args(["--now", "300", "--json"]);
+        let output: Value = serde_json::from_slice(&stdout(cmd)).unwrap();
+        assert_eq!(output["schema_version"], version);
+        assert_conforms(name, &output);
+        let mut missing = output.clone();
+        missing.as_object_mut().unwrap().remove("task_measurement");
+        assert!(!json_schema::violations(&schema(name), &missing).is_empty());
+        let mut legacy = output.clone();
+        legacy["schema_version"] = json!(version - 1);
+        assert!(!json_schema::violations(&schema(name), &legacy).is_empty());
+        let mut malformed = output;
+        malformed["task_measurement"]["expected_attempts"] = json!(-1);
+        assert!(!json_schema::violations(&schema(name), &malformed).is_empty());
+    }
+}
+
+#[test]
+fn qualified_pricing_reports_publish_a_distinct_schema_with_explicit_contract_version() {
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let store = populated_store(&directory);
+    let pricing = directory.join("qualified.json");
+    fs::write(&pricing,serde_json::to_vec(&json!({"schema_version":2,"version":"fixture-v2","source":"synthetic","observed_at_unix_seconds":90,"models":{}})).unwrap()).unwrap();
+    for (name, subcommand, version) in [
+        ("feedback-report", "report", 5),
+        ("feedback-summary", "summary", 4),
+    ] {
+        let output = feedback_json(&store, subcommand, Some(&pricing));
+        assert_eq!(output["schema_version"], version);
+        assert_conforms(name, &output);
+        let mut invalid = output.clone();
+        invalid["pricing"]
+            .as_object_mut()
+            .unwrap()
+            .remove("contract_version");
+        assert!(!json_schema::violations(&schema(name), &invalid).is_empty());
+        let mut legacy = output;
+        legacy["schema_version"] = json!(version - 1);
+        assert!(!json_schema::violations(&schema(name), &legacy).is_empty());
     }
 }

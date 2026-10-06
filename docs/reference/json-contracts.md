@@ -35,6 +35,8 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
 | Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds`, `measurements.usage` and `measurements.usage_scope`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
 | Feedback summary | v2 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |
+| Runtime-reconciled feedback | `feedback report --runtime-store` emits report v4; `summary --runtime-store` emits summary v3. Adds bounded `task_measurement` from the runtime journal and optional feedback, including missing-feedback attempts. Default report v3/summary v2 and older published schemas remain accepted; see `docs/feedback.md` |
+| Qualified report pricing | Pricing table v2 gives report v5/summary v4 and `pricing.contract_version: 2`, with optional runtime reconciliation. Explicit cache-write scope and reasoning mode preserve unknown totals and known subtotals. V1 shapes/hashes remain unchanged; detailed replay with pricing v2 is refused |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
@@ -189,7 +191,9 @@ projection drops it.
 
 `agent-router feedback --store <dir> --json report [--pricing <file>]` prints a
 `FeedbackReport` (schema 3, with strict schema 1/2 output validation retained); the pricing file is a `PricingTable` (schema 1, unknown
-keys refused, at most 64 models). It needs collection consent. Top-level keys:
+keys refused, at most 64 models). It needs collection consent. The following
+describes the default v1 pricing report; the qualified v2 pricing extension
+and runtime reconciliation versions are listed above. Top-level keys:
 `schema_version`, `generated_at_unix_seconds`, `event_set_hash`, `fact_set_hash`,
 `automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `superseded_events`, `pricing`
 (`version`, `source`, `observed_at_unix_seconds`, or null), `groups`, `runs`,

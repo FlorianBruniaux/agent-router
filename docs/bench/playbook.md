@@ -33,10 +33,25 @@ behaviors remain unverified. This record captures validation before merging
 [PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127); the PR shows
 its current merge status.
 
-Next: prove the complete Codex code-mode tool roundtrip and removal, finish task
-and cache accounting, then validate automatic invocation before a capped real
-calibration and held-out comparison. CLI, desktop app and Claude evidence remain
-separate. No measured usage gain or new campaign follows from these source checks.
+[Native routing and measurement preparation, 2026-10-06](verification-native-measurement-2026-10-06.json)
+records 1,636 Rust results and 257 Python tests passed across the full run and
+one test-only repair. The full run's Git-fixture cleanup failure remains recorded;
+the repaired 28-test suite passes, with no intervening Rust changes. Formatting,
+both Clippy modes, native tests, fresh dependency audit, secret scans, strict core
+packaging and three isolated fuzz smokes pass. Three Linux checks remain unverified.
+
+The [U02a roundtrip](native-integration-u02/README-v5.md),
+[U02b native hook observations](native-integration-u02/README-u02b.md) and
+[U06 explicit decision handoff](native-integration-u06/README.md) now have separate
+records. U06 observes the real CLI-selected `gpt-5.6-terra / medium` pair in the
+separate Codex session's request. A fresh disabled session retains its baseline.
+The provider is scripted; only the selected execute stage runs, without selected
+skills. These diagnostics do not constitute a value campaign or AR runtime receipts.
+
+Next: complete the hook-to-decision contract and reversible automatic invocation,
+seal a real calibration manifest with an approved cap and admitted provider path,
+then run calibration followed by a held-out comparison. CLI, desktop and Claude
+remain separate surfaces. No automatic daily routing or user benefit is claimed.
 
 ## Earlier preparation and local evidence
 

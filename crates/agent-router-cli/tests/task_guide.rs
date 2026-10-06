@@ -3,6 +3,7 @@ use assert_cmd::Command;
 use serde_json::{Value, json};
 use std::{
     fs,
+    io::{Read, Seek},
     path::{Path, PathBuf},
     process::{Command as StdCommand, Output, Stdio},
     thread,
@@ -622,32 +623,49 @@ fn output_symlink_does_not_overwrite_its_target() {
 }
 
 fn output_with_stdin_held_open(args: &[&str]) -> Output {
+    // Waiting before draining pipes can block the child on stdout, even when
+    // it never reads stdin. Private files keep output capture out of that path.
+    let mut stdout = tempfile::tempfile().unwrap();
+    let mut stderr = tempfile::tempfile().unwrap();
     let mut child = StdCommand::new(assert_cmd::cargo::cargo_bin!("agent-router"))
         .args(args)
         .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stdout(stdout.try_clone().unwrap())
+        .stderr(stderr.try_clone().unwrap())
         .spawn()
         .unwrap();
+    // Keep the sole stdin writer alive through child exit. Child::wait must
+    // not close it and accidentally satisfy a regression that waits for EOF.
     let input = child.stdin.take().unwrap();
     let deadline = Instant::now() + Duration::from_secs(10);
-    loop {
+    let timed_out = loop {
         if child.try_wait().unwrap().is_some() {
-            break;
+            break false;
         }
         if Instant::now() >= deadline {
             let _ = child.kill();
-            let output = child.wait_with_output().unwrap();
-            drop(input);
-            panic!(
-                "CLI blocked on open stdin: status={:?}",
-                output.status.code()
-            );
+            break true;
         }
         thread::sleep(Duration::from_millis(10));
-    }
-    let output = child.wait_with_output().unwrap();
+    };
+    let status = child.wait().unwrap();
+    let mut output = Output {
+        status,
+        stdout: Vec::new(),
+        stderr: Vec::new(),
+    };
+    stdout.rewind().unwrap();
+    stderr.rewind().unwrap();
+    stdout.read_to_end(&mut output.stdout).unwrap();
+    stderr.read_to_end(&mut output.stderr).unwrap();
     drop(input);
+    assert!(
+        !timed_out,
+        "CLI did not exit with stdin held open: status={:?}; stdout_bytes={}; stderr={}",
+        output.status.code(),
+        output.stdout.len(),
+        String::from_utf8_lossy(&output.stderr),
+    );
     output
 }
 
@@ -671,6 +689,30 @@ fn already_complete_task_never_waits_for_stdin_even_with_interactive_flag() {
     ]);
     assert!(output.status.success());
     assert_eq!(parsed(&output)["status"], "complete");
+}
+
+#[test]
+fn complete_interactive_task_emits_large_report_with_stdin_held_open() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut input = task();
+    input["acceptance"] = json!(vec!["x".repeat(8192); 16]);
+    let path = input_file(dir.path(), &input);
+    let output = output_with_stdin_held_open(&[
+        "task-guide",
+        "--task",
+        path.to_str().unwrap(),
+        "--interactive",
+        "--json",
+    ]);
+    assert!(output.status.success());
+    assert!(
+        output.stderr.is_empty(),
+        "complete task must not ask a question"
+    );
+    assert!(output.stdout.len() > 256 * 1024);
+    let report = parsed(&output);
+    assert_eq!(report["status"], "complete");
+    assert_eq!(report["input"], input);
 }
 
 #[test]
