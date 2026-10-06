@@ -48,9 +48,17 @@ separate Codex session's request. A fresh disabled session retains its baseline.
 The provider is scripted; only the selected execute stage runs, without selected
 skills. These diagnostics do not constitute a value campaign or AR runtime receipts.
 
-Next: complete the hook-to-decision contract and reversible automatic invocation,
-seal a real calibration manifest with an approved cap and admitted provider path,
-then run calibration followed by a held-out comparison. CLI, desktop and Claude
+[U07 failure observations](native-integration-u07/observations.md) now record
+8 fresh sessions on Codex 0.159.2. Five unexpected hook failures each allow one
+parent request; valid block and exit 2 with a reason allow none. Native UI
+disabling is effective in a fresh session. Every request is rejected locally,
+with no child dispatch or inference. Child dispatch through this hook is not
+admitted under the single-effective-dispatch requirement.
+
+Next: qualify an entry point that owns submission without an already running
+parent turn; seal the [personal trial](calibration-v2/personal-trial.md) with an
+approved cap and admitted provider path, then run calibration followed by a
+held-out comparison. CLI, desktop and Claude
 remain separate surfaces. No automatic daily routing or user benefit is claimed.
 
 ## Earlier preparation and local evidence

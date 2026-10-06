@@ -7,11 +7,13 @@ Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités act
 
 ## État vérifié le 6 octobre 2026
 
-### Lot validé localement, en revue
+### Lot précédent fusionné
 
-La branche `codex/native-measured-use-20261006`, issue de `dc838862`, contient
-les changements ci-dessous. Ils ne sont pas encore fusionnés. Les validations
-antérieures plus bas restent rattachées à leurs références historiques.
+La [PR #128](https://github.com/FlorianBruniaux/agent-router/pull/128) est fusionnée
+sur `main` à `65cacfbf11d271f2bc659d2f565f3d90f1667b10`, depuis la tête revue
+`59cb7e774fcfd28f03e09bd6dce7d1f6a25fa3fd`. L’arbre fusionné correspond exactement
+au candidat validé localement. Les validations antérieures plus bas restent
+rattachées à leurs références historiques.
 
 | Unité | Résultat local | Preuve restante |
 | --- | --- | --- |
@@ -43,6 +45,29 @@ fournisseur, gain d'usage, automatisme quotidien ni changement de configuration
 globale n'est établi. Le suivi reste ouvert dans
 [#11](https://github.com/FlorianBruniaux/agent-router/issues/11) et
 [#5](https://github.com/FlorianBruniaux/agent-router/issues/5).
+
+### U07 : limite native prouvée, activation non admise
+
+Le [diagnostic des pannes du hook](native-integration-u07/observations.md)
+observe huit sessions neuves sur Codex 0.159.2. Le blocage JSON et `exit 2`
+avec motif empêchent tout contact fournisseur. Les cinq pannes testées
+(`exit 1`, JSON invalide, timeout, signal, `exit 2` sans motif) laissent chacune
+passer une requête parent. La désactivation par `/hooks` est effective dans
+une nouvelle session. Sorties, corrélations et nettoyage sont vérifiés.
+
+Toutes les requêtes ont reçu un refus HTTP 503 du fournisseur local factice.
+Aucun enfant ni fournisseur réel n’a travaillé. Aucun double travail n’est
+observé, mais une panne après lancement d’un enfant pourrait laisser travailler
+le parent. Le dispatch enfant dans ce hook ne satisfait donc pas l’exigence
+« un seul traitement effectif, même en cas de panne ». U07 reste ouvert.
+
+La prochaine voie proposée prolonge U06 avec une entrée qui possède la soumission,
+sans tour parent déjà engagé. Il faut encore prouver réservation de l’occurrence,
+absence de relance après résultat incertain, collecte et plafond avant une
+inférence réelle. Un hook de conseil sans enfant reste une option distincte,
+sans application du modèle conseillé. L’[essai personnel](calibration-v2/personal-trial.md)
+est préparé ; périmètre, facturation/plafond et accord final restent à fixer.
+Aucune configuration globale n’a changé.
 
 ### Référence fusionnée et validations précédentes
 
@@ -104,7 +129,7 @@ gain d'usage.
 | --- | --- | --- | --- |
 | Réalisé localement | Aller-retour code-mode et raccord explicite d'une décision CLI à une session Codex séparée | Paramètres, réponse, refus et nettoyage observés face au fournisseur simulé ; ne valide pas un hook automatique | U02a/U06, [roadmap #11](https://github.com/FlorianBruniaux/agent-router/issues/11) |
 | Réalisé localement | Comptabilité des tâches et prix cache/raisonnement | Tentatives sans feedback et escalades conservées ; totaux incomplets explicites ; tarifs réels encore à qualifier | U04b/U05, [évaluation #5](https://github.com/FlorianBruniaux/agent-router/issues/5) |
-| 1 | Terminer le contrat du hook et préparer l'activation automatique | Déclenchement unique, décision appliquée à une session séparée ou refus explicite, panne sans boucle, retour arrière en nouvelle session ; candidat global approuvé avant installation | U02b/U07, roadmap #11 |
+| 1 | Qualifier une entrée possédant la soumission après le constat de panne du hook | Pas de parent déjà lancé ; réservation unique, décision appliquée, aucun nouvel essai après résultat incertain, retour arrière ; activation globale séparément approuvée | U06/U07, roadmap #11 |
 | En parallèle | Compléter le manifeste réel avec le validateur U08 | Corpus, comparateur, collecte, trajet admis, plafond et accord liés au manifeste scellés ; aucune exécution à cette étape | U08, évaluation #5 |
 | Après admission et accord | Calibrer puis comparer sur des tâches réelles | Qualité, corrections, temps humain et coût par accepté, échecs et inconnus conservés ; confirmation distincte de la calibration | U09/U10, évaluation #5 |
 
