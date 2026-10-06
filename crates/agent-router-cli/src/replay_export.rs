@@ -1,9 +1,9 @@
 //! Export of a real run as a sealed replay record. The label comes only from a
 //! recorded late fact or a human verdict, never from transport success alone.
-use crate::{CliError, Outcome, execution, phases::read_json, product::json_output};
+use crate::{CliError, Outcome, execution, product::json_output};
 use router_eval::{
-    CaseLabel, DatasetSplit, ObservedOutcome, PricingTable, RecordedPhase, ReplayInput,
-    ReplayRecord, TokenUsage, VerificationOutcomes,
+    CaseLabel, DatasetSplit, ObservedOutcome, RecordedPhase, ReplayInput, ReplayRecord, TokenUsage,
+    VerificationOutcomes,
 };
 use router_feedback::FeedbackStore;
 use router_types::{
@@ -152,7 +152,14 @@ pub(crate) fn export(
 ) -> Result<Outcome, CliError> {
     let split: DatasetSplit = serde_json::from_value(serde_json::Value::String(args.split))
         .map_err(|_| CliError::InvalidCommand)?;
-    let pricing: PricingTable = read_json(&args.pricing, 64 * 1024)?;
+    let pricing = match crate::feedback::read_report_pricing(&args.pricing)? {
+        crate::feedback::ReportPricing::Legacy(pricing) => pricing,
+        crate::feedback::ReportPricing::Qualified(_) => {
+            return Err(CliError::Product(
+                "feedback.replay.qualified_pricing_unsupported",
+            ));
+        }
+    };
     let source = execution::replay_source(&args.definition, &args.runtime_store)?;
     let key = crate::execution_feedback::run_key(&source.run).map_err(|()| CliError::Internal)?;
     let feedback_error = |_| CliError::Product("feedback.storage_database");

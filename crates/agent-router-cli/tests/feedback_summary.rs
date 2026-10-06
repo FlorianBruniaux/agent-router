@@ -265,3 +265,70 @@ fn report_human_and_json_views_keep_each_task_outcome_and_source() {
         "missing task identity: {text}"
     );
 }
+
+#[test]
+fn qualified_prices_reach_report_and_summary_without_double_counting_subsets() {
+    use router_types::*;
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let store = directory.join("feedback");
+    let feedback_store = router_feedback::FeedbackStore::open(&store).unwrap();
+    feedback_store
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                ..FeedbackPreferences::default()
+            },
+            100,
+        )
+        .unwrap();
+    let mut input: Value = serde_json::from_slice(
+        &fs::read(root().join("tests/fixtures/feedback/automated-unknown-v1.json")).unwrap(),
+    )
+    .unwrap();
+    input["measurements"]["usage_scope"] = json!("per_attempt");
+    input["measurements"]["usage"] = serde_json::to_value(HostUsage {
+        input_tokens: UsageField::host_reported(100),
+        cached_input_tokens: UsageField::host_reported(20),
+        cache_write_input_tokens: UsageField::host_reported(30),
+        output_tokens: UsageField::host_reported(40),
+        reasoning_output_tokens: UsageField::host_reported(10),
+    })
+    .unwrap();
+    feedback_store
+        .record(serde_json::from_value(input).unwrap(), 102)
+        .unwrap();
+    drop(feedback_store);
+    let pricing = directory.join("qualified-pricing.json");
+    write(
+        &pricing,
+        &json!({"schema_version":2,"version":"synthetic-v2","source":"synthetic-test-only","observed_at_unix_seconds":90,"models":{"fixture-model":{
+            "input_microusd_per_million":1000000,"cache_read_microusd_per_million":500000,
+            "cache_write_microusd_per_million":2000000,"cache_write_scope":"all_reported_writes",
+            "output_microusd_per_million":3000000,"reasoning":{"mode":"separate","microusd_per_million":4000000}
+        }}}),
+    );
+    for subcommand in ["report", "summary"] {
+        let output = feedback(
+            &store,
+            subcommand,
+            &["--pricing", pricing.to_str().unwrap(), "--json"],
+        )
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+        let report: Value = serde_json::from_slice(&output).unwrap();
+        let cost = if subcommand == "report" {
+            &report["groups"][0]["cost"]
+        } else {
+            &report["cost"]
+        };
+        // 50 ordinary input + 10 reads + 60 writes + 90 output + 40 reasoning.
+        assert_eq!(cost["total_microusd"], 250);
+        assert_eq!(cost["known_subtotal_microusd"], 250);
+        assert_eq!(cost["runs_with_cache_writes_priced_as_input"], 0);
+        assert_eq!(report["pricing"]["contract_version"], 2);
+    }
+}

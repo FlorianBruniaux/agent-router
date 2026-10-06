@@ -337,8 +337,88 @@ configure`.
 agent-router feedback --store <dir> --json report [--pricing <file>] [--now <unix>]
 ```
 
-The report needs collection consent and writes nothing. Like the other readers
-it may expire retained rows and advance the clock watermark. The same retained
+To include durable runtime attempts whose feedback was never written, add
+`--runtime-store <private-runtime-dir>` to `report` or `summary`:
+
+```sh
+agent-router feedback --store <feedback-dir> --json report --runtime-store <runtime-dir>
+agent-router feedback --store <feedback-dir> --json summary --runtime-store <runtime-dir>
+```
+
+With legacy v1 pricing or no pricing, this opt-in path returns report schema 4 or summary schema 3 with
+`task_measurement`. Without that option, the schema 3 report and schema 2 summary
+retain their shapes and hash domains. The ordinary per-run groups remain present;
+`task_measurement` is a separate total scoped to the supplied runtime store.
+
+The inventory reads a coherent SQLite transaction and validates journal and
+attempt consistency. It does not update runtime rows, approvals, grants or the
+journal. SQLite may create private WAL/SHM coordination sidecars when reading an
+idle WAL database; this is not a guarantee of zero filesystem writes. The
+feedback reader retains its existing consent, expiry and watermark behavior.
+
+A task occurrence uses its workflow instance/node, or the root of its recorded
+escalation chain. Repeated task text is never a join key. Legacy feedback keys
+that change during retries are reconciled from retained runtime evidence; absent
+identity evidence remains unlinked. Snapshots do not become additional attempts.
+The inventory is bounded to 10,000 runs, 100,000 events, 64 MiB of projected
+payload and at most five attempts per run. Inconsistent or corrupt inventories
+are refused; a feedback snapshot ahead of its runtime snapshot is not truncated.
+
+Each occurrence exposes expected, observed, missing-feedback and priced attempt
+counts. Missing feedback stays in the denominator with unknown consumption.
+`known_subtotal_microusd` describes the known portion; `total_microusd` remains
+null unless coverage is complete. Acceptance still requires the corresponding
+feedback facts; a verified runtime without an acceptance fact stays unknown.
+Abandoned and failed occurrences remain visible. `per_accepted_microusd` is
+undefined when no occurrence was accepted or total cost is incomplete.
+
+`unmatched_feedback_runs` preserves feedback outside this runtime inventory,
+including external native sessions. The command cannot manufacture runtime
+receipts for those sessions. This reconciliation measures recorded attempts;
+it does not establish a gain attributable to routing.
+
+### Qualified pricing
+
+`--pricing` also accepts `schema_version: 2`. This produces report schema 5 or
+summary schema 4, with `pricing.contract_version: 2`, whether or not
+`--runtime-store` is present. The v1 pricing contract and its report hash domains
+remain unchanged. Pricing provenance is declared by the caller; the command
+does not retrieve tariffs or verify an invoice.
+
+Each model explicitly supplies nullable rates in microUSD per million tokens:
+`input_microusd_per_million`, `cache_read_microusd_per_million`,
+`cache_write_microusd_per_million` and `output_microusd_per_million`.
+A cache-write rate requires `cache_write_scope: "all_reported_writes"`.
+Host usage has no TTL classification, so a TTL-specific price cannot be applied
+to all writes by inference. `reasoning` is either
+`{"mode":"included_in_output"}` or
+`{"mode":"separate","microusd_per_million":4000000}`.
+The value in this example is synthetic, not a provider quote.
+
+Input totals include cache reads and writes; output totals include reasoning.
+The calculator subtracts those categories before charging separate rates and
+rounds upward once after adding the known charges for each attempt. Missing
+counts, scope or rates retain the known subtotal but leave the complete total
+null. An absent model price stays unknown; overlapping categories cannot
+produce a complete price.
+
+For the synthetic rates input 1, cache read 0.5, cache write 2, output 3 and
+separate reasoning 4 microUSD per token, usage of 100 input, 20 cache read,
+30 cache write, 40 output and 10 reasoning tokens costs
+`50 + 10 + 60 + 90 + 40 = 250` microUSD. Removing the cache-write rate leaves
+a known subtotal of 190 and an unknown total. This arithmetic fixture does
+not measure provider cost or routing benefit.
+
+`feedback replay-export` explicitly rejects pricing v2 with
+`feedback.replay.qualified_pricing_unsupported`: the existing replay usage
+format cannot preserve every required category. Detailed qualified replay
+remains unsupported; historical v1 replay exports retain their contract.
+
+### Retained feedback and report scope
+
+The report requires collection consent. It does not execute a task or change a
+routing policy. Like the other feedback readers, it may expire retained rows
+and advance the clock watermark. The same retained
 events, facts, pricing file and `--now` give byte-identical output: lists are
 sorted and every figure is an integer or a fixed-precision value in micros.
 

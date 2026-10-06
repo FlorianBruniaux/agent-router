@@ -806,12 +806,18 @@ pub enum FeedbackCommand {
         /// Versioned pricing table JSON; without it every cost is null.
         #[arg(long)]
         pricing: Option<PathBuf>,
+        /// Reconcile durable attempts from this local runtime journal.
+        #[arg(long)]
+        runtime_store: Option<PathBuf>,
     },
     /// One global total over every group of `report`: accepted rate, computed cost and UNKNOWN counts; requires collection consent.
     Summary {
         /// Versioned pricing table JSON; without it every cost is null.
         #[arg(long)]
         pricing: Option<PathBuf>,
+        /// Reconcile durable attempts from this local runtime journal.
+        #[arg(long)]
+        runtime_store: Option<PathBuf>,
     },
     /// Export a real run as a sealed replay record, labelled from recorded facts.
     ReplayExport {

@@ -1176,3 +1176,88 @@ fn mixed_scope_preserves_an_unambiguous_legacy_first_attempt() {
     assert_eq!(cost.total_microusd, Some(165));
     assert_eq!(cost.priced_attempts, 2);
 }
+
+fn inventory_run(
+    run: char,
+    occurrence: char,
+    attempts: u32,
+    state: RunState,
+) -> FeedbackRuntimeRun {
+    FeedbackRuntimeRun {
+        run_key_sha256: key(run),
+        feedback_run_keys_sha256: vec![key(run)],
+        occurrence_sha256: key(occurrence),
+        predecessor_run_key_sha256: None,
+        attempts,
+        state,
+    }
+}
+
+#[test]
+fn runtime_reconciliation_keeps_escalation_abandonment_and_missing_feedback_separate() {
+    let (_temp, store) = store(false);
+    for (name, run_key, count) in [("failed", '1', 10), ("success", '2', 20)] {
+        let mut event = with_usage(
+            automated(name, Some(run_key), "model-a"),
+            usage(count, 0, 0),
+        );
+        event.measurements.usage_scope = Some(FeedbackUsageScope::PerAttempt);
+        store.record(event, 130).unwrap();
+    }
+    store
+        .record_fact(verification('2', VerificationOutcome::Passed), 160)
+        .unwrap();
+    store
+        .record_fact(integration('2', IntegrationOutcome::Applied, 160), 160)
+        .unwrap();
+    let mut escalation = inventory_run('2', 'a', 1, RunState::Verified);
+    escalation.predecessor_run_key_sha256 = Some(key('1'));
+    let inventory = FeedbackRuntimeInventory {
+        schema_version: 1,
+        journal_sha256: key('f'),
+        runs: vec![
+            inventory_run('1', 'a', 1, RunState::Failed),
+            escalation,
+            inventory_run('3', 'b', 1, RunState::Cancelled),
+            inventory_run('4', 'c', 1, RunState::Verified),
+        ],
+    };
+    let (report, summary) = store
+        .report_and_summary_with_inventory(Some(&pricing()), Some(&inventory), 200)
+        .unwrap();
+    let tasks = report.task_measurement.unwrap();
+    assert_eq!(summary.task_measurement, Some(tasks.clone()));
+    assert_eq!(tasks.occurrences.len(), 3);
+    assert_eq!(tasks.occurrences[0].status, "accepted");
+    assert_eq!(tasks.occurrences[0].escalations, 1);
+    assert_eq!(tasks.occurrences[1].status, "abandoned");
+    // Verification is not task acceptance, and missing feedback is not failure.
+    assert_eq!(tasks.occurrences[2].status, "unknown");
+    assert_eq!(tasks.expected_attempts, 4);
+    assert_eq!(tasks.feedback_attempts, 2);
+    assert_eq!(tasks.missing_feedback_attempts, 2);
+    assert_eq!(tasks.accepted_occurrences, 1);
+    assert!(tasks.known_subtotal_microusd.unwrap() > 0);
+    assert_eq!(tasks.total_microusd, None);
+    assert_eq!(tasks.per_accepted_microusd, None);
+}
+
+#[test]
+fn verified_recovery_without_acceptance_feedback_is_not_reported_as_failed() {
+    let (_temp, store) = store(false);
+    let inventory = FeedbackRuntimeInventory {
+        schema_version: 1,
+        journal_sha256: key('f'),
+        runs: vec![
+            inventory_run('1', 'a', 1, RunState::Failed),
+            inventory_run('2', 'a', 1, RunState::Verified),
+        ],
+    };
+    let (report, _) = store
+        .report_and_summary_with_inventory(None, Some(&inventory), 200)
+        .unwrap();
+    assert_eq!(
+        report.task_measurement.unwrap().occurrences[0].status,
+        "unknown"
+    );
+}

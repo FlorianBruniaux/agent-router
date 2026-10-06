@@ -1002,4 +1002,53 @@ mod tests {
         let b = record_fact_at(Some(&path), &summary, verified(Passed), Some(1_504));
         assert_eq!(b["reason"], "already_recorded");
     }
+    #[test]
+    fn qualified_pricing_preserves_completion_usage_and_exposes_missing_cache_cost() {
+        let (_temp, path) = store(true);
+        let store = FeedbackStore::open(&path).unwrap();
+        let usage = HostUsage {
+            input_tokens: UsageField::host_reported(100),
+            cached_input_tokens: UsageField::host_reported(20),
+            cache_write_input_tokens: UsageField::host_reported(30),
+            output_tokens: UsageField::host_reported(40),
+            reasoning_output_tokens: UsageField::host_reported(10),
+        };
+        let completion = completion(Some(usage));
+        let mut input: FeedbackInput = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/feedback/automated-unknown-v1.json"
+        ))
+        .unwrap();
+        input.observed_at_unix_seconds = 1100;
+        input.run_key_sha256 = Some(run_key(&completion.run).unwrap());
+        input.measurements = measurements(&completion, 0);
+        store.record(input, 1100).unwrap();
+        let mut pricing:router_eval::QualifiedPricingTable=serde_json::from_value(serde_json::json!({"schema_version":2,"version":"fixture-v2","source":"synthetic","observed_at_unix_seconds":1000,"models":{"fixture-model":{
+            "input_microusd_per_million":1000000,"cache_read_microusd_per_million":500000,"cache_write_microusd_per_million":2000000,"cache_write_scope":"all_reported_writes","output_microusd_per_million":3000000,"reasoning":{"mode":"separate","microusd_per_million":4000000}
+        }}})).unwrap();
+        let events = store.events(1200).unwrap();
+        let (report, summary) = store
+            .report_and_summary_with_pricing(
+                Some(router_feedback::FeedbackPricing::Qualified(&pricing)),
+                None,
+                1200,
+            )
+            .unwrap();
+        assert_eq!(report.runs[0].usage, Some(usage));
+        assert_eq!(summary.cost.total_microusd, Some(250));
+        pricing
+            .models
+            .get_mut(&ModelId::parse("fixture-model").unwrap())
+            .unwrap()
+            .cache_write_microusd_per_million = None;
+        let (_, summary) = store
+            .report_and_summary_with_pricing(
+                Some(router_feedback::FeedbackPricing::Qualified(&pricing)),
+                None,
+                1200,
+            )
+            .unwrap();
+        assert_eq!(summary.cost.known_subtotal_microusd, Some(190));
+        assert_eq!(summary.cost.total_microusd, None);
+        assert_eq!(events, store.events(1200).unwrap());
+    }
 }

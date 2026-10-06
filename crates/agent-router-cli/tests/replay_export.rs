@@ -478,3 +478,25 @@ fn a_refused_or_failed_output_leaves_no_temporary_file() {
     assert_eq!(output.status.code(), Some(2));
     assert!(!missing.exists());
 }
+
+#[test]
+fn qualified_pricing_is_explicitly_refused_before_writing_a_lossy_v1_replay() {
+    let case = Case::new();
+    case.automated();
+    case.verified(VerificationOutcome::Passed, VerificationOutcome::Passed);
+    case.integrated(IntegrationOutcome::Applied);
+    write(
+        &case.pricing,
+        &json!({"schema_version":2,"version":"fixture-v2","source":"synthetic","observed_at_unix_seconds":90,"models":{}}),
+    );
+    let path = case.f.root.join("must-not-exist.json");
+    let output = case.export().arg("--output").arg(&path).output().unwrap();
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("feedback.replay.qualified_pricing_unsupported"),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(!path.exists());
+}
