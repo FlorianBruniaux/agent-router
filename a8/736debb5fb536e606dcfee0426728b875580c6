@@ -1,0 +1,100 @@
+docs/bench/native-integration-u06/result.json
+  s_9e80b85afcc43a::t_e5058ffb9bcc77 1-121
+docs/local-ci.md
+  s_9e80b85afcc43a::t_61ce2cd89ac357 68-69
+  s_9e80b85afcc43a::t_a5a0c3647ccb69 67,70-72
+scripts/test-check-local.py
+  s_9e80b85afcc43a::t_b60ff32cf545ad 241-271
+  s_9e80b85afcc43a::t_9dfffc7d359b32 16,24-29,371-403
+docs/bench/native-integration-u06/README.md
+  s_9e80b85afcc43a::t_c1c36128f10a81 1-88
+scripts/check-local.py
+  s_9e80b85afcc43a::t_39aa87e8b11691 52,54-55
+  s_9e80b85afcc43a::t_61ce2cd89ac357 53,56-57
+crates/agent-router-cli/tests/task_guide.rs
+  s_9e80b85afcc43a::t_d3fbcc46ecbcfe 6,626-629,633-634,637-638,641,643,647,650-660,662-668,694-717
+docs/bench/calibration-v2/README.md
+  s_9e80b85afcc43a::t_f369ccde28fd32 84,88-179
+docs/bench/calibration-v2/fixtures/synthetic/assets/1-acceptance_script.txt
+  s_9e80b85afcc43a::t_cef36fed582814 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/1-hidden_tests.txt
+  s_9e80b85afcc43a::t_67a014cea8557a 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/1-statement.txt
+  s_9e80b85afcc43a::t_6fcf96d0927f3c 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/2-acceptance_script.txt
+  s_9e80b85afcc43a::t_e3910f7795fdcc 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/2-hidden_tests.txt
+  s_9e80b85afcc43a::t_1f06170951cc64 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/2-statement.txt
+  s_9e80b85afcc43a::t_f9bde1015245b0 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/analysis_code.txt
+  s_9e80b85afcc43a::t_3be36f2d623753 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/corpus.txt
+  s_9e80b85afcc43a::t_39897720edadbd 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/dated_price_table.txt
+  s_9e80b85afcc43a::t_ffbbf18781a3a5 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/host_binary.txt
+  s_9e80b85afcc43a::t_d7218bad8cfa9c 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/policy_and_catalog.txt
+  s_9e80b85afcc43a::t_65837ba12f54e4 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/router_binary.txt
+  s_9e80b85afcc43a::t_b3182b05fe34b3 1
+docs/bench/calibration-v2/fixtures/synthetic/assets/sanitized_configuration.txt
+  s_9e80b85afcc43a::t_a9cdd909dd8a1d 1
+docs/bench/calibration-v2/fixtures/synthetic/manifest.json
+  s_9e80b85afcc43a::t_20bf034a4350b4 1-178
+docs/bench/calibration-v2/missing-inputs.json
+  s_9e80b85afcc43a::t_fa0456500659df 1-41
+docs/bench/calibration-v2/tests/test_manifest.py
+  s_9e80b85afcc43a::t_bc6d5f97b273c4 1-317
+docs/bench/calibration-v2/validate_manifest.py
+  s_9e80b85afcc43a::t_b25b8171d57ae4 1-352
+docs/bench/native-integration-u02/README-u02b.md
+  s_9e80b85afcc43a::t_21459b02e61519 1-99
+docs/bench/native-integration-u02/README-v5.md
+  s_9e80b85afcc43a::t_8a1ce13e28b7c9 1-111
+docs/bench/native-integration-u02/probe_v5.py
+  s_9e80b85afcc43a::t_2fe510e7d86a06 1-460
+docs/bench/native-integration-u02/protocol-v5.json
+  s_9e80b85afcc43a::t_edfd7aee8c14c5 1-132
+docs/bench/native-integration-u02/result-v5-before-review.json
+  s_9e80b85afcc43a::t_9d1a5d57f498f8 1-355
+docs/bench/native-integration-u02/result-v5-first-review-cleanup-unknown.json
+  s_9e80b85afcc43a::t_d88543fcdc26c5 1-356
+docs/bench/native-integration-u02/result-v5.json
+  s_9e80b85afcc43a::t_87a8fcf78e339e 1-363
+docs/bench/native-integration-u02/test_probe_v5.py
+  s_9e80b85afcc43a::t_e2c5c069c03f86 1-237
+docs/bench/native-integration-u02/test_u02b_probe.py
+  s_9e80b85afcc43a::t_6e76a67823c42e 1-17
+docs/bench/native-integration-u02/u02b-hook-candidate.toml
+  s_9e80b85afcc43a::t_ac1b0715c1df69 1-4
+docs/bench/native-integration-u02/u02b-hook-schemas.json
+  s_9e80b85afcc43a::t_aaafcad6f6b414 1-136
+docs/bench/native-integration-u02/u02b-result.json
+  s_9e80b85afcc43a::t_8f3a2ad5eb44df 1-72
+docs/bench/native-integration-u02/u02b-ui-result.json
+  s_9e80b85afcc43a::t_af75265afaf87a 1-92
+docs/bench/native-integration-u02/u02b_probe.py
+  s_9e80b85afcc43a::t_2bdafe55cc0df8 1-146
+docs/bench/native-integration-u06/probe.py
+  s_9e80b85afcc43a::t_413a7520da98ec 1-482
+docs/bench/native-integration-u06/test_probe.py
+  s_9e80b85afcc43a::t_5f1d83325677ca 1-224
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8736debb5fb536e606dcfee0426728b875580c6",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
