@@ -102,5 +102,6 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [Development harness](harness.md) | Project agents, skills and hooks for Claude Code and Codex |
+| [Local verification](local-ci.md) | Repeatable local checks, retained evidence and gaps when Actions is unavailable |
 | [Harness evidence](harness-evidence.md) | Validation evidence for the harness |
 | [Review grid](review-grid.md) | Checklist used for code review |

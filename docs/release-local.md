@@ -12,16 +12,16 @@ source, nothing more.
 
 ## Signature tool
 
-`openssl` 3.6.4 at `/opt/homebrew/bin/openssl`, Ed25519 raw signatures over
+`openssl` 3.6.5 at `/opt/homebrew/bin/openssl`, Ed25519 raw signatures over
 `agent-router-release-v1\0` followed by the manifest bytes. `ssh-keygen -Y` was
 not chosen because it needs an allowed-signers file and namespace handling;
 `minisign` is not installed here. The verifier requires the exact version token
-`OpenSSL 3.6.4` (so `3.6.40` or `3.6` are refused).
+`OpenSSL 3.6.5` (so `3.6.4`, `3.6.50` or `3.6` are refused).
 
 OpenSSL's output decides the verdict: exit 0 with `Signature Verified
 Successfully` is accepted, exit 1 with `Signature Verification Failure` is
 `release.signature_invalid`, and any other output or exit code is
-`release.openssl_failed`. This relies on OpenSSL 3.6.4's message text, which is
+`release.openssl_failed`. This relies on OpenSSL 3.6.5's message text, which is
 why the version is pinned exactly.
 
 ## Steps
