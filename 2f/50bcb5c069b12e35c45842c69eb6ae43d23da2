@@ -1,0 +1,22 @@
+docs/bench/egress-admission/test_codex_appserver_local.py
+  s_9e80b85afcc43a::t_0feb114476ee77 137,139,152-159,161-162,164-187,195-204,218,222
+  s_9e80b85afcc43a::t_4593e97df92d7e 138,140-151,160,163,188-194
+docs/bench/verification-2026-10-06.json
+  s_9e80b85afcc43a::t_d2dfebfdbd3d20 63-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f50bcb5c069b12e35c45842c69eb6ae43d23da2",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
