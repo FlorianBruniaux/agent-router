@@ -63,6 +63,7 @@ fn automated(run: &str, run_key: Option<char>, model_name: &str) -> FeedbackInpu
         human: None,
         failure: None,
         measurements: FeedbackMeasurements {
+            usage_scope: None,
             cost_microusd: None,
             latency_ms: Some(100),
             tokens: None,
@@ -143,7 +144,7 @@ fn store(learning: bool) -> (TempDir, FeedbackStore) {
         .unwrap();
     (temp, store)
 }
-fn json(report: &FeedbackReport) -> serde_json::Value {
+fn json(report: &impl serde::Serialize) -> serde_json::Value {
     serde_json::to_value(report).unwrap()
 }
 fn group<'a>(report: &'a serde_json::Value, model: &str) -> &'a serde_json::Value {
@@ -342,7 +343,8 @@ fn per_accepted_cost_is_null_while_a_run_of_the_group_is_unpriced() {
         .unwrap();
     let report = json(&store.report(Some(&pricing()), 300).unwrap());
     let cost = &group(&report, "model-a")["cost"];
-    assert_eq!(cost["total_microusd"], 9_420);
+    assert!(cost["total_microusd"].is_null());
+    assert_eq!(cost["known_subtotal_microusd"], 9_420);
     assert!(cost["per_accepted_microusd"].is_null());
     assert_eq!(cost["reason"], "cost_unknown_runs");
 }
@@ -479,6 +481,12 @@ fn an_event_without_usage_keeps_its_bytes() {
     let event: FeedbackEvent = serde_json::from_str(V1_EVENT).unwrap();
     assert!(event.input.measurements.usage.is_none());
     assert_eq!(serde_json::to_string(&event).unwrap(), V1_EVENT);
+    assert!(event.input.measurements.usage_scope.is_none());
+    let (_temp, store) = store(false);
+    assert_eq!(
+        store.record(event.input.clone(), 102).unwrap().event_hash,
+        event.event_hash
+    );
 }
 
 #[test]
@@ -813,7 +821,8 @@ fn summary_cost_per_accepted_is_null_with_a_reason_while_any_run_is_unpriced() {
     let (_temp, store) = multi_group();
     // model-a runs have no usage and model-b is not in the table.
     let with_table = store.summary(Some(&pricing()), 300).unwrap();
-    assert_eq!(with_table.cost.total_microusd, Some(1));
+    assert_eq!(with_table.cost.total_microusd, None);
+    assert_eq!(with_table.cost.known_subtotal_microusd, Some(1));
     assert_eq!(with_table.cost.per_accepted_microusd, None);
     assert_eq!(with_table.cost.reason, Some("cost_unknown_runs"));
     let without_table = store.summary(None, 300).unwrap();
@@ -931,4 +940,239 @@ fn run_rows_preserve_outcomes_missing_usage_and_feedback_provenance() {
     assert!(rows[2]["evidence"]["verification_fact_hash"].is_null());
     assert!(rows[2]["evidence"]["integration_fact_hash"].is_null());
     assert_eq!(report, json(&store.report(None, 300).unwrap()));
+}
+
+// Regressions: dropping earlier attempts, pricing duplicate snapshots twice,
+// and presenting incomplete retry coverage as a complete total.
+fn attempt(snapshot: &str, ordinal: u32, split: HostUsage) -> FeedbackInput {
+    let mut value =
+        serde_json::to_value(with_usage(automated(snapshot, Some('1'), "model-a"), split)).unwrap();
+    value["measurements"]["attempts"] = ordinal.into();
+    value["measurements"]["usage_scope"] = "per_attempt".into();
+    serde_json::from_value(value).unwrap()
+}
+
+#[test]
+fn attempts_are_priced_once_while_the_run_keeps_one_verdict() {
+    let (_temp, store) = store(true);
+    let mut first = attempt("failed-attempt-1", 1, usage(10, 0, 2));
+    first.transport = VerificationOutcome::Failed;
+    first.failure = Some(FeedbackFailure::Timeout);
+    store.record(first, 200).unwrap();
+    store
+        .record(attempt("attempt-2", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    store
+        .record(attempt("attempt-2-later-state", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Applied, 200), 250)
+        .unwrap();
+    let report = store.report(Some(&pricing()), 300).unwrap();
+    let summary = store.summary(Some(&pricing()), 300).unwrap();
+    let cost = json(&summary.cost);
+    assert_eq!(
+        (report.runs.len(), summary.runs, summary.accepted),
+        (1, 1, 1)
+    );
+    assert_eq!(cost["total_microusd"], 165); // (10*3 + 2*15) + (20*3 + 3*15)
+    assert_eq!(cost["known_subtotal_microusd"], 165);
+    assert_eq!(cost["priced_attempts"], 2);
+    assert_eq!(cost["expected_attempts"], 2);
+    assert_eq!(cost["missing_attempts"], 0);
+    assert_eq!(cost["per_accepted_microusd"], 165);
+    assert_eq!(json(&report.groups[0].cost), cost);
+}
+
+#[test]
+fn missing_attempts_keep_known_cost_without_claiming_a_total() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("attempt-3-only", 3, usage(20, 0, 3)), 200)
+        .unwrap();
+    let cost = json(&store.summary(Some(&pricing()), 300).unwrap().cost);
+    assert!(cost["total_microusd"].is_null());
+    assert_eq!(cost["known_subtotal_microusd"], 105);
+    assert_eq!(cost["expected_attempts"], 3);
+    assert_eq!(cost["priced_attempts"], 1);
+    assert_eq!(cost["missing_attempts"], 2);
+    assert_eq!(cost["cost_unknown"], 1);
+}
+
+#[test]
+fn conflicting_attempt_snapshots_are_unknown_not_last_writer_wins() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("attempt-1", 1, usage(10, 0, 2)), 200)
+        .unwrap();
+    store
+        .record(attempt("conflicting-attempt-1", 1, usage(11, 0, 2)), 200)
+        .unwrap();
+    store
+        .record(attempt("attempt-2", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    let cost = json(&store.summary(Some(&pricing()), 300).unwrap().cost);
+    assert!(cost["total_microusd"].is_null());
+    assert_eq!(cost["known_subtotal_microusd"], 105);
+    assert_eq!(cost["conflicting_attempts"], 1);
+    assert_eq!(cost["priced_attempts"], 1);
+    assert_eq!(cost["missing_attempts"], 0);
+}
+
+#[test]
+fn legacy_multi_attempt_usage_cannot_claim_complete_cost() {
+    let (_temp, store) = store(true);
+    let mut input = with_usage(
+        automated("legacy-retry", Some('1'), "model-a"),
+        usage(20, 0, 3),
+    );
+    input.measurements.attempts = 2;
+    store.record(input, 200).unwrap();
+    let cost = store.summary(Some(&pricing()), 300).unwrap().cost;
+    assert_eq!(cost.total_microusd, None);
+    assert_eq!(cost.cost_unknown, 1);
+}
+
+#[test]
+fn rejected_attempts_retain_cost_with_no_accepted_denominator() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("attempt-1", 1, usage(10, 0, 2)), 200)
+        .unwrap();
+    store
+        .record(attempt("attempt-2", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    store
+        .record_fact(integration('1', IntegrationOutcome::Discarded, 200), 250)
+        .unwrap();
+    let summary = store.summary(Some(&pricing()), 300).unwrap();
+    assert_eq!(summary.rejected, 1);
+    assert_eq!(summary.cost.total_microusd, Some(165));
+    assert_eq!(summary.cost.per_accepted_microusd, None);
+    assert_eq!(summary.cost.reason, Some("no_accepted_task"));
+}
+
+#[test]
+fn attempt_coverage_keeps_cost_when_usage_or_price_is_missing() {
+    for missing_price in [false, true] {
+        let (_temp, store) = store(true);
+        store
+            .record(attempt("first", 1, usage(10, 0, 2)), 200)
+            .unwrap();
+        let mut unknown = attempt("second", 2, usage(20, 0, 3));
+        if missing_price {
+            unknown.context.model = model("not-priced");
+        } else {
+            unknown.measurements.usage = None;
+            unknown.measurements.tokens = None;
+        }
+        store.record(unknown, 200).unwrap();
+        let summary = store.summary(Some(&pricing()), 300).unwrap();
+        assert_eq!(summary.cost.known_subtotal_microusd, Some(60));
+        assert_eq!(summary.cost.total_microusd, None);
+        assert_eq!(
+            (
+                summary.cost.observed_attempts,
+                summary.cost.priced_attempts,
+                summary.cost.missing_attempts
+            ),
+            (2, 1, 0)
+        );
+    }
+}
+
+#[test]
+fn attempt_models_are_priced_individually_under_latest_run_group() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("first", 1, usage(10, 0, 2)), 200)
+        .unwrap();
+    let mut second = attempt("second", 2, usage(20, 0, 3));
+    second.context.model = model("model-c");
+    store.record(second, 200).unwrap();
+    let report = store.report(Some(&pricing()), 300).unwrap();
+    assert_eq!(report.groups.len(), 1);
+    assert_eq!(report.groups[0].model, "model-c");
+    assert_eq!(report.groups[0].cost.total_microusd, Some(61));
+    assert_eq!(report.runs[0].cost, report.groups[0].cost);
+}
+
+#[test]
+fn a_later_snapshot_cannot_hide_the_highest_attempt_ordinal() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("third", 3, usage(20, 0, 3)), 200)
+        .unwrap();
+    store
+        .record(attempt("first-arrived-late", 1, usage(10, 0, 2)), 200)
+        .unwrap();
+    let cost = store.summary(Some(&pricing()), 300).unwrap().cost;
+    assert_eq!(cost.expected_attempts, 3);
+    assert_eq!(cost.missing_attempts, 1);
+    assert_eq!(cost.known_subtotal_microusd, Some(165));
+    assert_eq!(cost.total_microusd, None);
+}
+
+#[test]
+fn mixed_scope_conflicting_first_attempt_is_unknown() {
+    let (_temp, store) = store(true);
+    store
+        .record(
+            with_usage(
+                automated("legacy-first", Some('1'), "model-a"),
+                usage(10, 0, 2),
+            ),
+            200,
+        )
+        .unwrap();
+    store
+        .record(attempt("marked-first", 1, usage(20, 0, 3)), 200)
+        .unwrap();
+    let cost = store.summary(Some(&pricing()), 300).unwrap().cost;
+    assert_eq!(cost.total_microusd, None);
+    assert_eq!(cost.conflicting_attempts, 1);
+}
+
+#[test]
+fn mixed_scope_unmarked_retry_blocks_complete_total() {
+    let (_temp, store) = store(true);
+    store
+        .record(attempt("first", 1, usage(10, 0, 2)), 200)
+        .unwrap();
+    store
+        .record(attempt("second", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    let mut legacy = with_usage(
+        automated("legacy-retry", Some('1'), "model-a"),
+        usage(100, 0, 20),
+    );
+    legacy.measurements.attempts = 2;
+    store.record(legacy, 200).unwrap();
+    let cost = store.summary(Some(&pricing()), 300).unwrap().cost;
+    assert_eq!(cost.total_microusd, None);
+    assert_eq!(cost.known_subtotal_microusd, Some(165));
+    assert_eq!(cost.scope_unknown_runs, 1);
+}
+
+#[test]
+fn mixed_scope_preserves_an_unambiguous_legacy_first_attempt() {
+    let (_temp, store) = store(true);
+    store
+        .record(
+            with_usage(
+                automated("legacy-first", Some('1'), "model-a"),
+                usage(10, 0, 2),
+            ),
+            200,
+        )
+        .unwrap();
+    store
+        .record(attempt("marked-second", 2, usage(20, 0, 3)), 200)
+        .unwrap();
+    let cost = store.summary(Some(&pricing()), 300).unwrap().cost;
+    assert_eq!(cost.total_microusd, Some(165));
+    assert_eq!(cost.priced_attempts, 2);
 }

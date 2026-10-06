@@ -134,6 +134,74 @@ class EvidenceTests(unittest.TestCase):
             self.assertLess(__import__("time").monotonic() - started, 3)
 
 
+def assert_descendant_stopped(test, group_pid, child_pid):
+    try:
+        os.killpg(group_pid, 0)
+    except ProcessLookupError:
+        return
+    test.assertEqual(sys.platform, "linux", "descendant process group still exists")
+    # This fixture creates exactly one descendant. Linux may retain its zombie
+    # until PID 1 reaps it, even after SIGKILL and both pipe readers have exited.
+    try:
+        stat = Path(f"/proc/{child_pid}/stat").read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return  # Reaped after the group-existence probe.
+    fields = stat.rsplit(")", 1)[1].split()
+    test.assertEqual(int(fields[2]), group_pid, "unexpected descendant process group")
+    test.assertEqual(fields[0], "Z", "descendant is still live")
+
+
+class DescendantStateTests(unittest.TestCase):
+    def check_linux_stat(self, state, group=100):
+        # Linux comm may contain spaces and closing parentheses.
+        stat = f"101 (fixture ) child) {state} 1 {group} 100 0"
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(os, "killpg") as killpg, \
+                mock.patch.object(Path, "read_text", autospec=True, return_value=stat) as read_stat:
+            assert_descendant_stopped(self, 100, 101)
+        killpg.assert_called_once_with(100, 0)
+        read_stat.assert_called_once_with(Path("/proc/101/stat"), encoding="utf-8")
+
+    def test_linux_zombie_from_expected_group_is_stopped(self):
+        self.check_linux_stat("Z")
+
+    def test_linux_live_or_stopped_descendant_is_not_accepted(self):
+        for state in ("R", "S", "D", "T"):
+            with self.subTest(state=state), self.assertRaises(AssertionError):
+                self.check_linux_stat(state)
+
+    def test_linux_zombie_from_another_group_is_not_accepted(self):
+        with self.assertRaises(AssertionError):
+            self.check_linux_stat("Z", group=999)
+
+    def test_linux_reaped_between_group_probe_and_stat_is_stopped(self):
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(Path, "read_text", side_effect=FileNotFoundError):
+            assert_descendant_stopped(self, 100, 101)
+
+    def test_absent_group_needs_no_proc_observation(self):
+        with mock.patch.object(os, "killpg", side_effect=ProcessLookupError), \
+                mock.patch.object(Path, "read_text") as read_stat:
+            assert_descendant_stopped(self, 100, 101)
+        read_stat.assert_not_called()
+
+    def test_unreadable_proc_state_does_not_count_as_stopped(self):
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(Path, "read_text", side_effect=PermissionError), \
+                self.assertRaises(PermissionError):
+            assert_descendant_stopped(self, 100, 101)
+
+    def test_nonlinux_still_requires_absent_group(self):
+        with mock.patch.object(sys, "platform", "darwin"), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(Path, "read_text") as read_stat, \
+                self.assertRaises(AssertionError):
+            assert_descendant_stopped(self, 100, 101)
+        read_stat.assert_not_called()
+
+
 class LifecycleTests(unittest.TestCase):
     def test_stop_kills_descendant_after_normal_leader_exit_and_joins_readers(self):
         parent = (
@@ -147,12 +215,11 @@ class LifecycleTests(unittest.TestCase):
         )
         client = fixture.AppServer(process)
         try:
-            client.receive(time.monotonic() + 3)
+            child_pid = client.receive(time.monotonic() + 3)["child_pid"]
             self.assertEqual(client.stop(), 0)
             self.assertFalse(client.stdout_thread.is_alive(), "descendant still holds stdout")
             self.assertFalse(client.stderr_thread.is_alive(), "descendant still holds stderr")
-            with self.assertRaises(ProcessLookupError):
-                os.killpg(process.pid, 0)
+            assert_descendant_stopped(self, process.pid, child_pid)
         finally:
             try:
                 os.killpg(process.pid, signal.SIGKILL)

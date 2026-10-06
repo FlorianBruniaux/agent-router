@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "kind": "local_development_verification_not_campaign",
+  "observed_date": "2026-10-06",
+  "scope": "U04a recorded attempt accounting; native diagnostic projections",
+  "base_head": "8d2a3a89f4990733c559f8801b55311e8c405f3f",
+  "source_files_sha256": {
+    "crates/router-types/src/feedback.rs": "868a7062f5dafcab0f01c73c6cbcb83dd334ca20f18cb665ccaf109e20f3ef82",
+    "crates/router-feedback/src/report.rs": "679e5759ad3bd6415e38f6e8c175708525f14e4132877b501a98b38366c69fbe",
+    "crates/router-feedback/src/sidecar_export.rs": "3b4f982870b45497d9014eb2a5de010379ee9997d29dfb60c7e1b22d1d706c8c",
+    "crates/router-feedback/tests/report.rs": "49d23ca236784d4205471d3e40715dfa560a5893bd0284336e16d5a4f8c32998",
+    "crates/router-feedback/tests/feedback.rs": "7dd0704dffb2ddab476dd4c8bd5810f988e66963f80b3e003b63329bc9e89c98",
+    "crates/router-feedback/tests/support/sidecar.rs": "d08f5605b6f53a3e25c7ace13426d1ee550b735974a39a7dd4827583f7b76abf",
+    "crates/agent-router-cli/src/execution_feedback.rs": "a9ec3cc3612d62be33946539969c240a90a43e199176757fddda5b226285d1cd",
+    "crates/agent-router-cli/src/contracts.rs": "bf44cd7c5aa6cfdfa1e09b664dab8f92dbbefc5070e266ca8660b695e9f336ba",
+    "crates/agent-router-cli/src/schemas/feedback-report.schema.json": "11cb64f52a795ea778f921a30214e6c188ea06de4c0c5333497bf0d0d7a6a01f",
+    "crates/agent-router-cli/src/schemas/feedback-summary.schema.json": "2aa72c845bf933aaaaf0c8370214cc6b002cd5c03a70164d516e1d98ee2b5d29",
+    "crates/agent-router-cli/tests/schema.rs": "30e0234fbe49e01d360bc20f451e582545bdd06ef1a081e44d74a13e8360b611",
+    "crates/agent-router-cli/tests/feedback_summary.rs": "dbb81f385b34bbe1fdb2bec051d7f39bc73b5efec9dcb70bbed85967bda373ef",
+    "docs/feedback.md": "be9202b21b7a36fb8652b5d892f8588590a08da230b687488bacfdb4f21ad890",
+    "docs/reference/json-contracts.md": "7ea88eaedba5e73f45afe963ee5d69055e98c60a11bc9148f99d58f6d3a485e0"
+  },
+  "independent_review": {
+    "agent": "measurement_backend_review",
+    "blocking_findings": 0,
+    "resolved_findings": [
+      "ambiguous mixed legacy/per-attempt history could claim complete cost"
+    ],
+    "tests_independently_rerun": false
+  },
+  "checks": {
+    "format": "passed",
+    "workspace_clippy": "passed",
+    "harness_parity": "verified",
+    "harness_runtime_activation": "UNKNOWN",
+    "secrets_scan": "passed",
+    "scan_note": "The initial finding matched a verified manifest file digest. Its misleading filename was corrected; no allowlist was added.",
+    "workspace_parallel": {
+      "exit_code": 101,
+      "failed_test": "agent-router-cli::task_guide::already_complete_task_never_waits_for_stdin_even_with_interactive_flag",
+      "failure": "ten-second deadline; cause UNKNOWN; code path does not use feedback",
+      "tests_or_timeouts_changed": false
+    },
+    "isolated_failed_test": {
+      "passed": 1,
+      "failed": 0,
+      "filtered": 26
+    },
+    "workspace_serial": {
+      "exit_code": 0,
+      "passed": 1575,
+      "failed": 0,
+      "ignored": 42,
+      "filtered": 292,
+      "suites": 182,
+      "arguments": "cargo test --workspace --all-features --locked -- --test-threads=1"
+    },
+    "callback_fixture_tests": {
+      "passed": 22
+    },
+    "native_fixture_tests": {
+      "passed": 13
+    },
+    "callback_fixture_linux_portability_fix": {
+      "test_sha256": "da65e4058e00730f1653827d033439b13f43fb688c96898a65093b90f6fff0e1",
+      "local_passed": 29,
+      "independent_review": "no blocking findings",
+      "linux_recheck_at_recording": "pending",
+      "reason": "The newly enabled Linux job rejected a still-existing group after shutdown. The test now distinguishes an identified terminated zombie from a live descendant; product code and deadlines are unchanged."
+    }
+  },
+  "log_sha256": {
+    "workspace_parallel": "28e19cebe94a261316018e4088ade3df181b3e186d2c02b1d006d8b01fa1547f",
+    "workspace_serial": "3163817e2c76800fcacb07e75a9af1892af21060b718aa20300eb666a8a47ffc",
+    "clippy": "caa636ec9c7cba2c4f265005f356629e3a1e8fe35395de581375a782de9931bc",
+    "harness": "0b84427502372729f9a62d77c6e45d7ed3afe4e8f0fcb11c577801af655c70d8",
+    "isolated_failure_retry": "cb757d4efee26b26ac044a2a36d4db8370fc93d4115dfa40d7973d33c80f48f9",
+    "callback_tests": "016fb23002857b78006472c3e53e401a7a52e5052271ff93a55bd778ac877faa"
+  },
+  "evidence_retention": "Raw local gate logs are temporary; source hashes and outcomes are retained here.",
+  "scope_limits": [
+    "Only attempts represented or implied by retained feedback are covered.",
+    "Task occurrence identity, escalation joins and dispatches without feedback remain unresolved.",
+    "Prices still use the legacy three-rate estimate; actual billing and cache-write tariff are not established.",
+    "No automatic native integration, real model inference or productivity gain was established."
+  ],
+  "related_native_evidence": "native-integration-u02/canary-diagnosis/manifest.json"
+}

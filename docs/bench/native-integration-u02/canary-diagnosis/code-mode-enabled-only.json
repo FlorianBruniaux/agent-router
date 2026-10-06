@@ -1,0 +1,80 @@
+{
+  "case": {
+    "cleanup_complete": true,
+    "enabled": true,
+    "events": [
+      {
+        "method": "turn/started",
+        "status": "inProgress",
+        "thread_id": "01a10f6f-8664-7bc3-bbb7-b8252d25dd84",
+        "turn_id": "01a10f6f-8683-7d61-b8d0-15ade1dab95c"
+      },
+      {
+        "exact_synthetic_output": true,
+        "item_type": "agentMessage",
+        "method": "item/completed",
+        "thread_id": "01a10f6f-8664-7bc3-bbb7-b8252d25dd84",
+        "turn_id": "01a10f6f-8683-7d61-b8d0-15ade1dab95c"
+      },
+      {
+        "method": "turn/completed",
+        "status": "completed",
+        "thread_id": "01a10f6f-8664-7bc3-bbb7-b8252d25dd84",
+        "turn_id": "01a10f6f-8683-7d61-b8d0-15ade1dab95c"
+      }
+    ],
+    "invalid_effort_error_code": -32600,
+    "invalid_effort_rejected_before_provider": true,
+    "output_correlated": true,
+    "process_exit_code": 0,
+    "provider_accepted_connections": 1,
+    "provider_rejected_connections": 0,
+    "provider_rejected_requests": 0,
+    "provider_request_count": 1,
+    "provider_requests": [
+      {
+        "canary_in_instructions": false,
+        "canary_in_request": true,
+        "canary_in_tools_json": false,
+        "effort": "high",
+        "function_tools": [],
+        "model": "gpt-6-astra",
+        "tool_types": []
+      }
+    ],
+    "success": false,
+    "task_id": "5fa00e8e-ff94-4b52-a026-5d796a7435d1",
+    "temporary_state_removed": true,
+    "thread_defaults": {
+      "model": "gpt-6.1-sol",
+      "modelProvider": "local_fixture",
+      "reasoningEffort": "low"
+    },
+    "thread_id": "01a10f6f-8664-7bc3-bbb7-b8252d25dd84",
+    "turn_id": "01a10f6f-8683-7d61-b8d0-15ade1dab95c",
+    "turn_requested": {
+      "effort": "high",
+      "model": "gpt-6-astra",
+      "omission_means_inherit": false
+    }
+  },
+  "changed_variable": {
+    "features.code_mode": {
+      "after": true,
+      "before": "absent (default false)"
+    }
+  },
+  "codex_launcher_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+  "codex_native_binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "codex_version": "0.159.2",
+  "effective_probe_sha256": "c6295142314374ed223186687ef7446f85e17c4f069d008475c254102f2c11eb",
+  "helper_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "native_hash_provenance": "Wrapper asserted native binary SHA-256 and launcher SHA-256 before execution.",
+  "observation_only_extension": "boolean canary membership in tools, instructions and request; no contents recorded",
+  "probe_sha256": "2b12a4bee24bb5e8350684f90e0afb471a789e13a6b89e3f076c79c863ef74f0",
+  "provider": "scripted loopback only",
+  "real_inference": "NOT_TESTED",
+  "unchanged_base_model": "gpt-6.1-sol",
+  "variant": "code-mode-enabled-only",
+  "wrapper_sha256": "8049521228516111d45012cb4e4631769c7404083a584b2b311c758bb7484b4c"
+}

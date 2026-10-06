@@ -111,7 +111,7 @@ fn summary_is_byte_identical_and_its_totals_equal_the_sum_of_the_report_groups()
     assert_eq!(summary["runs"], 3);
     assert_eq!(summary["report_content_hash"], report["content_hash"]);
     assert_eq!(summary["event_set_hash"], report["event_set_hash"]);
-    assert_eq!(summary["schema_version"], 1);
+    assert_eq!(summary["schema_version"], 2);
     assert_eq!(summary["attribution"], "not_established");
     assert!(
         summary["attribution_note"]
@@ -232,7 +232,7 @@ fn report_human_and_json_views_keep_each_task_outcome_and_source() {
         .clone();
     assert_eq!(first, second);
     let report: Value = serde_json::from_slice(&first).unwrap();
-    assert_eq!(report["schema_version"], 2);
+    assert_eq!(report["schema_version"], 3);
     let rows = report["runs"].as_array().unwrap();
     assert_eq!(
         rows.iter()

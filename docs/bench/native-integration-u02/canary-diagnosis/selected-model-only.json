@@ -1,0 +1,90 @@
+{
+  "case": {
+    "cleanup_complete": true,
+    "enabled": true,
+    "events": [
+      {
+        "method": "turn/started",
+        "status": "inProgress",
+        "thread_id": "01a10f6e-46d4-7d30-b63f-090e2e8f09ff",
+        "turn_id": "01a10f6e-48ca-77e3-88bd-02635f880e33"
+      },
+      {
+        "exact_synthetic_output": true,
+        "item_type": "agentMessage",
+        "method": "item/completed",
+        "thread_id": "01a10f6e-46d4-7d30-b63f-090e2e8f09ff",
+        "turn_id": "01a10f6e-48ca-77e3-88bd-02635f880e33"
+      },
+      {
+        "method": "turn/completed",
+        "status": "completed",
+        "thread_id": "01a10f6e-46d4-7d30-b63f-090e2e8f09ff",
+        "turn_id": "01a10f6e-48ca-77e3-88bd-02635f880e33"
+      }
+    ],
+    "invalid_effort_error_code": -32600,
+    "invalid_effort_rejected_before_provider": true,
+    "output_correlated": true,
+    "process_exit_code": 0,
+    "provider_accepted_connections": 1,
+    "provider_rejected_connections": 0,
+    "provider_rejected_requests": 0,
+    "provider_request_count": 1,
+    "provider_requests": [
+      {
+        "effort": "high",
+        "function_tools": [
+          "request_user_input",
+          "view_image",
+          "close_agent",
+          "resume_agent",
+          "send_input",
+          "spawn_agent",
+          "wait_agent",
+          "get_goal",
+          "create_goal",
+          "update_goal",
+          "u02_registration_canary"
+        ],
+        "model": "gpt-5-codex",
+        "tool_types": [
+          "function",
+          "namespace"
+        ]
+      }
+    ],
+    "success": true,
+    "task_id": "6ac592b3-2f4c-4186-8746-dc65603c5707",
+    "temporary_state_removed": true,
+    "thread_defaults": {
+      "model": "gpt-6.1-sol",
+      "modelProvider": "local_fixture",
+      "reasoningEffort": "low"
+    },
+    "thread_id": "01a10f6e-46d4-7d30-b63f-090e2e8f09ff",
+    "turn_id": "01a10f6e-48ca-77e3-88bd-02635f880e33",
+    "turn_requested": {
+      "effort": "high",
+      "model": "gpt-5-codex",
+      "omission_means_inherit": false
+    }
+  },
+  "changed_variable": {
+    "SELECTED_MODEL": {
+      "after": "gpt-5-codex",
+      "before": "gpt-6-astra"
+    }
+  },
+  "codex_launcher_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+  "codex_native_binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "codex_version": "0.159.2",
+  "helper_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "native_hash_provenance": "Separate read-only installed binary SHA-256 measurement; wrapper field was a literal and was not asserted before this variant.",
+  "probe_sha256": "2b12a4bee24bb5e8350684f90e0afb471a789e13a6b89e3f076c79c863ef74f0",
+  "provider": "scripted loopback only",
+  "real_inference": "NOT_TESTED",
+  "unchanged_base_model": "gpt-6.1-sol",
+  "variant": "selected-model-only",
+  "wrapper_sha256": "65406f82788110096e1b5557d88abbf54fe8a8fb995161d6c126f79d644d862b"
+}

@@ -26,6 +26,10 @@ jobs:
           python-version: '3.12'
       - name: Use the repository Rust toolchain
         run: rustup show active-toolchain
+      - name: Check bounded native fixture regressions without a provider
+        run: |
+          python3 -B -m unittest discover -s docs/bench/egress-admission -p test_codex_appserver_local.py -v
+          python3 -B -m unittest discover -s docs/bench/native-integration-u02 -p test_probe.py -v
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - name: Check the CLI without bundled host adapters

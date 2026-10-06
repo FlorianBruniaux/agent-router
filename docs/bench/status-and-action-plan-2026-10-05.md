@@ -16,6 +16,24 @@ paramètres, la sortie et les compteurs corrigés, mais le canari d'outil manque
 toujours. U02/U06/U07 restent non validés. Aucun gain d'usage n'est établi.
 Les états non commités ci-dessous décrivent la référence historique du 5 octobre.
 
+La PR [#125](https://github.com/FlorianBruniaux/agent-router/pull/125) est fusionnée
+dans `main` au commit `87ee0752`, après réussite de tous ses contrôles GitHub.
+U04a est ensuite implémenté et revu : le rapport v3 et le résumé v2 comptent
+chaque tentative enregistrée une fois, conservent un sous-total connu et refusent
+un total complet si la couverture ou la portée manque. Les formats historiques
+restent validables. [Validation du 6 octobre](verification-2026-10-06.json) :
+1 575 tests workspace réussis en séquentiel, 42 ignorés et 292 filtrés ; un test
+de saisie interactive avait dépassé son délai en parallèle, puis réussi isolément.
+Aucun délai ni assertion n'a été modifié. Les 35 tests Python des deux fixtures,
+Clippy, le formatage, le harnais et la recherche de secrets passent.
+
+U04 reste partiel : U04b doit relier les escalades à une occurrence de tâche et
+conserver les tentatives sans feedback. U05 doit qualifier les prix cache.
+Le [diagnostic complémentaire Codex](native-integration-u02/canary-diagnosis/README.md)
+montre que `tools=[]` ne suffit pas à conclure à l'absence de canari dans la
+requête ; un callback code-mode complet reste à vérifier. U02/U06/U07, la
+campagne réelle et la publication du périmètre complet restent ouverts.
+
 ## Résultat recherché et limites actuelles
 
 Après installation consentie, une tâche éligible déclenche Agent Router dans

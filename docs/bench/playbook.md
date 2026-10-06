@@ -17,6 +17,13 @@ serial workspace suite. These are development checks, not a new value campaign.
 
 ## Campaign log
 
+[Attempt-accounting verification, 2026-10-06](verification-2026-10-06.json):
+1,575 active workspace tests passed sequentially after one interactive-input
+test timed out in parallel and then passed in isolation. The report now retains
+distinct recorded attempts and exposes incomplete cost coverage. Native
+[diagnostic variants](native-integration-u02/canary-diagnosis/README.md) refine
+the canary observation without proving a code-mode callback or automatic routing.
+
 Development verification, 2026-10-06: the unchanged Rust sources at `f637d0a`
 passed all 1,563 active workspace tests in parallel locally. GitHub also passed
 Linux/macOS quality, secret scans, dependency audit and native Linux checks on

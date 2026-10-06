@@ -122,6 +122,14 @@ pub struct FeedbackRoute {
     pub abstention: Option<PhaseAbstention>,
 }
 
+/// Explicit scope of the host usage attached to a feedback snapshot.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FeedbackUsageScope {
+    /// Usage for the one-based attempt ordinal in `measurements.attempts`.
+    PerAttempt,
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FeedbackMeasurements {
@@ -139,6 +147,10 @@ pub struct FeedbackMeasurements {
     /// in earlier events, so they keep their bytes and hash; None is UNKNOWN.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub usage: Option<HostUsage>,
+    /// Absent legacy usage has no retry scope guarantee. Omission preserves
+    /// existing event bytes and hashes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub usage_scope: Option<FeedbackUsageScope>,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

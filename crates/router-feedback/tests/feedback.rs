@@ -47,6 +47,7 @@ fn input(run: &str, observed: u64) -> FeedbackInput {
         human: None,
         failure: None,
         measurements: FeedbackMeasurements {
+            usage_scope: None,
             cost_microusd: Some(10),
             latency_ms: Some(100),
             tokens: Some(1000),

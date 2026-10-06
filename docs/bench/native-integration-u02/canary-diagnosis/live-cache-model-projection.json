@@ -1,0 +1,27 @@
+{
+  "cache_client_version": "0.159.2",
+  "models": [
+    {
+      "apply_patch_tool_type": "freeform",
+      "node_repl_disabled": false,
+      "shell_type": "unified_exec",
+      "slug": "gpt-6.1-sol",
+      "supported_in_api": true,
+      "supports_search_tool": true,
+      "tool_mode": "code_mode_only",
+      "use_responses_lite": true
+    },
+    {
+      "apply_patch_tool_type": "freeform",
+      "node_repl_disabled": false,
+      "shell_type": "unified_exec",
+      "slug": "gpt-6-astra",
+      "supported_in_api": true,
+      "supports_search_tool": true,
+      "tool_mode": "code_mode_only",
+      "use_responses_lite": true
+    }
+  ],
+  "source_kind": "live nonsecret model catalogue projection",
+  "source_sha256": "8f22a778088a65d3d053f1b01261dc7fe8e233d3e12e172df42d27e774fdc94e"
+}

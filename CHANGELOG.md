@@ -20,9 +20,11 @@ reasons); every change was verified locally on macOS.
 
 ### Breaking
 
-- `feedback report` now emits schema version 2 with retained per-run rows for identity, verdict, transport, failure, usage and feedback provenance. Consumers restricted to version 1 must update; the published schema still validates historical version 1 reports. Report hashes use the `feedback-report-v2` domain. Runtime and external native evidence remain explicitly unknown; the rows do not aggregate all attempts of a task. `feedback summary` remains version 1.
+- `feedback report` now emits schema version 3 with per-run evidence and attempt cost coverage; `feedback summary` emits version 2. Historical report versions 1/2 and summary version 1 remain valid. Hash domains follow these output versions. Runtime and external native evidence remain explicitly unknown.
 
 ### Fixed
+
+- Feedback pricing retains distinct recorded attempts while deduplicating their snapshots. Missing ordinals, ambiguous legacy retries or conflicting usage keep the complete total unknown, with a separate known subtotal. This does not establish complete task cost across escalations or dispatches without feedback.
 
 - The native integration diagnostic now counts refused HTTP requests and connections without a request. Its negative control requires the exact expected RPC error and zero provider contacts; historical probe results remain available.
 
