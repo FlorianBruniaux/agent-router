@@ -2,14 +2,54 @@
 
 How to rerun a campaign of the [router value protocol](router-value-protocol.md), check a recorded one, and log its figures. Each campaign lives in `docs/bench/runs/<date>-<name>/` with its sealed inputs, its harness, its results exported as metrics only, and a `SHA256SUMS` file.
 
+## Current delivery status
+
+The [current status and next acceptance criteria](status-and-action-plan-2026-10-05.md)
+are maintained with issues [#5](https://github.com/FlorianBruniaux/agent-router/issues/5)
+and [#11](https://github.com/FlorianBruniaux/agent-router/issues/11) after each
+validated delivery or new blocker. Campaign results also get a log entry below;
+sealed results and earlier failed checks are preserved.
+
+PRs [#125](https://github.com/FlorianBruniaux/agent-router/pull/125) and
+[#126](https://github.com/FlorianBruniaux/agent-router/pull/126) are merged through
+`8983d23a2e8937e244cf64ca0f2ba422073b20ae`. The 11 checks on PR #126's final head
+`2f50bcb5c069b12e35c45842c69eb6ae43d23da2` passed before merge, including
+Linux/macOS workspace tests and the 42 Python fixture tests (29 + 13).
+The four post-merge workflows did not execute any steps: GitHub reported a
+payment or Actions spending-limit problem
+([post-merge run](https://github.com/FlorianBruniaux/agent-router/actions/runs/37416315096)).
+GitHub post-merge validation remains unverified. Development checks now run
+locally using the [local verification guide](../local-ci.md); no billing change
+was made. This does not supply the missing Linux evidence.
+
+[Local verification without Actions, 2026-10-06](verification-local-ci-2026-10-06.json)
+records 1,575 workspace Rust results, 1 core-only test, all 42 ignored tests and
+191 Python tests passed across the original run and corrected tooling rerun.
+The first run's zero-test Python discovery failure remains recorded; the fix
+executes each hyphenated test file directly. Rust sources did not change.
+Fresh RustSec audit, both secret scans, strict core packaging and verification,
+and three isolated parser fuzz smokes also passed. Three Linux-specific
+behaviors remain unverified. This record captures validation before merging
+[PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127); the PR shows
+its current merge status.
+
+Next: prove the complete Codex code-mode tool roundtrip and removal, finish task
+and cache accounting, then validate automatic invocation before a capped real
+calibration and held-out comparison. CLI, desktop app and Claude evidence remain
+separate. No measured usage gain or new campaign follows from these source checks.
+
+## Earlier preparation and local evidence
+
 Next preparation, 2026-10-05: [calibration v2 candidate](calibration-v2/README.md)
 (French), a descriptive collection protocol with an incomplete manifest template.
 It does not authorize a run or amend the recorded pilot results.
 
 Local integration evidence, 2026-10-05: [native Codex diagnostic](native-integration-u02/README.md).
 Parameter transmission and output correlation passed against a scripted provider;
-the absent tool canary keeps the composite probe red. Automatic CLI integration
-is not admitted by this result.
+the canary absent from the direct tools projection keeps that historical probe
+red. The [later diagnostic](native-integration-u02/canary-diagnosis/README.md)
+does not establish absence from the whole request. Automatic CLI integration
+is not admitted by either result.
 
 [Local verification, 2026-10-05](verification-2026-10-05.json) records U03 source
 hashes and checks, including six parallel runtime timeouts followed by a passing
