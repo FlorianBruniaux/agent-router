@@ -42,8 +42,13 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
     add("quality", "local-api-absent", ["cargo", "test", "-p", "agent-router-cli", "--no-default-features", "--locked", "--test", "local_api_absent"], require_tests=True)
     add("quality", "harness", ["cargo", "run", "-p", "xtask", "--locked", "--", "check"])
     add("quality", "host-syntax", [PYTHON, "-B", "scripts/check-host-syntax.py"])
-    for name, folder, pattern in [("script-tests", "scripts", "test-*.py"),
-                                  ("egress-tests", "docs/bench/egress-admission", "test_*.py"),
+    if "quality" in groups:
+        scripts = sorted((root / "scripts").glob("test-*.py"))
+        for script in scripts:
+            add("quality", "script-" + script.stem, [PYTHON, "-B", script.relative_to(root).as_posix()], require_tests=True)
+        if not scripts:
+            add("quality", "script-tests-missing", [], unavailable="no scripts/test-*.py suites were found")
+    for name, folder, pattern in [("egress-tests", "docs/bench/egress-admission", "test_*.py"),
                                   ("native-probe-tests", "docs/bench/native-integration-u02", "test_probe.py"),
                                   ("campaign-tests", "docs/bench/campaign-next/tests", "test_*.py")]:
         add("quality", name, [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"], require_tests=True)

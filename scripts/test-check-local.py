@@ -196,11 +196,45 @@ class LocalCheckTests(unittest.TestCase):
         self.assertFalse(self.out.exists())
 
     def test_python_matrix_uses_current_absolute_interpreter(self):
+        scripts = self.root / "scripts"
+        scripts.mkdir()
+        (scripts / "test-foo.py").write_text("")
         checks = self.runner.build_checks(self.root, self.out, ["quality"])
         python_calls = [c["argv"] for c in checks if "scripts/check-host-syntax.py" in c["argv"]]
         self.assertEqual(len(python_calls), 1)
         self.assertEqual(python_calls[0][0], str(Path(sys.executable).resolve()))
-        self.assertTrue(any("test-*.py" in c["argv"] for c in checks))
+        script_calls = [c["argv"] for c in checks if "scripts/test-foo.py" in c["argv"]]
+        self.assertEqual(script_calls, [[str(Path(sys.executable).resolve()), "-B", "scripts/test-foo.py"]])
+
+    def test_hyphenated_scripts_all_execute_and_keep_individual_failures(self):
+        scripts = self.root / "scripts"
+        scripts.mkdir()
+        fail_marker = Path(self.temp.name) / "fail-ran"
+        pass_marker = Path(self.temp.name) / "pass-ran"
+        (scripts / "test-aaa-fail.py").write_text(
+            "import unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
+            "    def test_failure(self):\n"
+            f"        Path({str(fail_marker)!r}).touch()\n"
+            "        self.fail('expected fixture failure')\nunittest.main()\n")
+        (scripts / "test-zzz-pass.py").write_text(
+            "import unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
+            "    def test_pass(self):\n"
+            f"        Path({str(pass_marker)!r}).touch()\n"
+            "        self.assertEqual(2 + 3, 5)\nunittest.main()\n")
+        checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"]) if c["id"].startswith("script-")]
+        self.assertEqual(self.execute(checks), 1)
+        self.assertTrue(fail_marker.exists(), "hyphenated failing script must actually execute")
+        self.assertTrue(pass_marker.exists(), "subsequent script must execute after a failed script")
+        results = self.report()["checks"]
+        self.assertEqual([(r["status"], r["exit_code"]) for r in results], [("failed", 1), ("passed", 0)])
+        self.assertNotEqual(results[0]["log"], results[1]["log"])
+        self.assertIn("expected fixture failure", (self.out / results[0]["log"]).read_text())
+        self.assertEqual(results[1]["tests_passed_or_run"], 1)
+
+    def test_missing_script_suites_are_unavailable(self):
+        checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"]) if c["id"].startswith("script-")]
+        self.assertEqual(self.execute(checks), 1)
+        self.assertEqual(self.report()["checks"][0]["status"], "unavailable")
 
     def test_fuzz_group_reports_gap_without_mutating_corpus(self):
         code = self.execute(self.runner.build_checks(self.root, self.out, ["fuzz"]))
