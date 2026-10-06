@@ -7,7 +7,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use router_eval::{PricingTable, TokenPrice};
 use router_types::{
     FeedbackBinding, FeedbackEvent, FeedbackFact, FeedbackFactEvent, FeedbackFactKind,
-    FeedbackFailure, FeedbackOrigin, HostUsage, IntegrationOutcome, VerificationOutcome,
+    FeedbackFailure, FeedbackOrigin, FeedbackUsageScope, HostUsage, IntegrationOutcome,
+    VerificationOutcome,
 };
 use serde::Serialize;
 
@@ -87,14 +88,23 @@ pub struct IntegrationCounts {
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct GroupCost {
-    /// Runs priced from a stored usage split and a table entry.
+    /// Runs whose expected attempts all have unambiguous usage and a price.
     pub priced_runs: u64,
-    /// Runs without complete usage, or whose model is not in the table.
+    /// Runs with missing, ambiguous or unpriced attempts.
     pub cost_unknown: u64,
     /// Priced runs with a declared cache write count above zero. Cache writes
     /// are priced at the input rate because the table has no write price.
     pub runs_with_cache_writes_priced_as_input: u64,
-    /// Sum over priced runs only.
+    /// Sum of unambiguous priced attempts, even when coverage is incomplete.
+    pub known_subtotal_microusd: Option<u64>,
+    pub expected_attempts: u64,
+    pub observed_attempts: u64,
+    pub priced_attempts: u64,
+    pub missing_attempts: u64,
+    pub conflicting_attempts: u64,
+    /// Legacy retry records whose usage has no explicit attempt scope.
+    pub scope_unknown_runs: u64,
+    /// Complete total only when every expected attempt is observed and priced.
     pub total_microusd: Option<u64>,
     /// Total over all runs divided by accepted tasks; null unless every run is priced.
     pub per_accepted_microusd: Option<u64>,
@@ -170,7 +180,8 @@ pub struct RunEvidence {
 }
 
 /// One retained automated run snapshot. Multiple runs may share a task hash;
-/// this is not a total over a task's attempts. Ordering follows event sequence.
+/// Cost covers the observed attempts of this run, not separate escalated runs
+/// or repeated tasks. Ordering follows event sequence.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct RunReport {
     pub binding: FeedbackBinding,
@@ -185,6 +196,7 @@ pub struct RunReport {
     pub failure: Option<FeedbackFailure>,
     /// None means no usage was stored, never zero consumption.
     pub usage: Option<HostUsage>,
+    pub cost: GroupCost,
     pub evidence: RunEvidence,
 }
 
@@ -326,7 +338,7 @@ fn valid_pricing(pricing: &PricingTable) -> bool {
 }
 
 /// Same formula as `router_eval::price_usage`: uncached input, cached input and
-/// output, rounded up to a micro-dollar per run. Reasoning tokens are part of
+/// output, rounded up to a micro-dollar per attempt. Reasoning tokens are part of
 /// output and cache writes part of input, so neither is priced twice; the table
 /// has no cache write price, so writes are priced as input. A field the host
 /// did not declare makes the run unknown, never zero.
@@ -343,6 +355,127 @@ fn run_cost(usage: &HostUsage, price: &TokenPrice) -> Option<u128> {
     Some(numerator.div_ceil(1_000_000))
 }
 
+/// One entry per observed ordinal, never allocated from the declared maximum.
+/// The store bounds the event count; missing ordinals are counted by subtraction.
+#[derive(Default)]
+struct RunAttempts<'a> {
+    expected: u32,
+    marked: BTreeMap<u32, AttemptSnapshot<'a>>,
+    legacy_first: Option<AttemptSnapshot<'a>>,
+    unscoped_retry: bool,
+    latest: Option<&'a FeedbackEvent>,
+}
+
+#[derive(Clone, Copy)]
+struct AttemptSnapshot<'a> {
+    event: &'a FeedbackEvent,
+    conflict: bool,
+}
+
+impl<'a> AttemptSnapshot<'a> {
+    fn observe(&mut self, event: &'a FeedbackEvent) {
+        let prior = &self.event.input;
+        let input = &event.input;
+        self.conflict |= prior.measurements.usage != input.measurements.usage
+            || prior.context.model != input.context.model;
+        self.event = event;
+    }
+}
+
+impl<'a> RunAttempts<'a> {
+    fn observe(&mut self, event: &'a FeedbackEvent) {
+        let input = &event.input;
+        let ordinal = input.measurements.attempts;
+        self.expected = self.expected.max(ordinal);
+        self.latest = Some(event);
+        if input.measurements.usage_scope != Some(FeedbackUsageScope::PerAttempt) {
+            if ordinal == 1 {
+                match &mut self.legacy_first {
+                    Some(snapshot) => snapshot.observe(event),
+                    None => {
+                        self.legacy_first = Some(AttemptSnapshot {
+                            event,
+                            conflict: false,
+                        })
+                    }
+                }
+            } else {
+                self.unscoped_retry = true;
+            }
+            return;
+        }
+        self.marked
+            .entry(ordinal)
+            .and_modify(|snapshot| snapshot.observe(event))
+            .or_insert(AttemptSnapshot {
+                event,
+                conflict: false,
+            });
+    }
+
+    fn cost(&self, pricing: Option<&PricingTable>) -> Accumulator<'a> {
+        let mut result = Accumulator {
+            expected_attempts: u64::from(self.expected),
+            ..Accumulator::default()
+        };
+        // A legacy ordinal one is unambiguous, including during upgrades.
+        // Pure legacy single-attempt runs keep latest-snapshot compatibility.
+        // Any unscoped retry prevents a complete total, even with marked data.
+        let mut first = self.marked.get(&1).copied();
+        if let Some(legacy) = self.legacy_first {
+            if let Some(marked) = &mut first {
+                marked.observe(legacy.event);
+                marked.conflict |= legacy.conflict;
+            } else {
+                first = Some(legacy);
+            }
+        }
+        if self.marked.is_empty() && self.expected == 1 {
+            first = self.latest.map(|event| AttemptSnapshot {
+                event,
+                conflict: false,
+            });
+        }
+        result.scope_unknown_runs = u64::from(self.unscoped_retry);
+        let mut cache_write = false;
+        for snapshot in self
+            .marked
+            .range(2..)
+            .map(|(_, snapshot)| snapshot)
+            .chain(first.iter())
+        {
+            result.observed_attempts += 1;
+            if snapshot.conflict {
+                result.conflicting_attempts += 1;
+                continue;
+            }
+            let input = &snapshot.event.input;
+            let cost = pricing
+                .and_then(|p| p.models.get(&input.context.model))
+                .zip(input.measurements.usage.as_ref())
+                .and_then(|(price, usage)| run_cost(usage, price));
+            if let Some(cost) = cost {
+                result.priced_attempts += 1;
+                result.cost_total += cost;
+                cache_write |= input
+                    .measurements
+                    .usage
+                    .as_ref()
+                    .and_then(|u| u.cache_write_input_tokens.reported())
+                    .is_some_and(|writes| writes > 0);
+            }
+        }
+        result.cache_write_runs = u64::from(cache_write);
+        result.missing_attempts = result.expected_attempts - result.observed_attempts;
+        let complete = result.expected_attempts > 0
+            && result.priced_attempts == result.expected_attempts
+            && result.scope_unknown_runs == 0;
+        result.priced = u64::from(complete);
+        result.cost_unknown = u64::from(!complete);
+        result
+    }
+}
+
 #[derive(Default)]
 struct Accumulator<'a> {
     events: Vec<&'a FeedbackEvent>,
@@ -357,6 +490,12 @@ struct Accumulator<'a> {
     cost_unknown: u64,
     cache_write_runs: u64,
     cost_total: u128,
+    expected_attempts: u64,
+    observed_attempts: u64,
+    priced_attempts: u64,
+    missing_attempts: u64,
+    conflicting_attempts: u64,
+    scope_unknown_runs: u64,
 }
 
 impl<'a> Accumulator<'a> {
@@ -376,6 +515,16 @@ impl<'a> Accumulator<'a> {
         self.integration.unknown += other.integration.unknown;
         self.acceptance_seconds
             .extend(other.acceptance_seconds.iter().copied());
+        self.absorb_cost(other);
+    }
+
+    fn absorb_cost(&mut self, other: &Accumulator<'_>) {
+        self.expected_attempts += other.expected_attempts;
+        self.observed_attempts += other.observed_attempts;
+        self.priced_attempts += other.priced_attempts;
+        self.missing_attempts += other.missing_attempts;
+        self.conflicting_attempts += other.conflicting_attempts;
+        self.scope_unknown_runs += other.scope_unknown_runs;
         self.priced += other.priced;
         self.cost_unknown += other.cost_unknown;
         self.cache_write_runs += other.cache_write_runs;
@@ -430,12 +579,14 @@ fn build_report(
     // automated events. Late facts belong to the run, not to an event: count
     // each run key once, on its latest event.
     let mut latest: BTreeMap<&str, u64> = BTreeMap::new();
+    let mut attempts: BTreeMap<&str, RunAttempts<'_>> = BTreeMap::new();
     for event in events {
         if let (FeedbackOrigin::Automated, Some(run_key)) =
             (event.input.origin, event.input.run_key_sha256.as_deref())
         {
             let entry = latest.entry(run_key).or_default();
             *entry = (*entry).max(event.sequence);
+            attempts.entry(run_key).or_default().observe(event);
         }
     }
     let mut superseded = 0u64;
@@ -479,6 +630,18 @@ fn build_report(
                         &none
                     }
                 };
+                let mut standalone = RunAttempts::default();
+                let history = i
+                    .run_key_sha256
+                    .as_deref()
+                    .and_then(|key| attempts.get(key))
+                    .unwrap_or_else(|| {
+                        standalone.observe(event);
+                        &standalone
+                    });
+                let mut attempt_cost = history.cost(pricing);
+                attempt_cost.accepted = u64::from(facts.verdict() == RunVerdict::Accepted);
+                group.absorb_cost(&attempt_cost);
                 runs.push(RunReport {
                     binding: i.binding.clone(),
                     run_key_sha256: i.run_key_sha256.clone(),
@@ -490,6 +653,7 @@ fn build_report(
                     transport: i.transport,
                     failure: i.failure,
                     usage: i.measurements.usage,
+                    cost: group_cost(pricing, &attempt_cost),
                     evidence: RunEvidence {
                         source: "feedback_store",
                         feedback_event_hash: event.event_hash.clone(),
@@ -517,24 +681,6 @@ fn build_report(
                     Some(IntegrationOutcome::Discarded) => group.integration.discarded += 1,
                     None => group.integration.unknown += 1,
                 }
-                let cost = pricing
-                    .and_then(|p| p.models.get(&i.context.model))
-                    .zip(i.measurements.usage.as_ref())
-                    .and_then(|(price, usage)| run_cost(usage, price));
-                match cost {
-                    Some(cost) => {
-                        group.priced += 1;
-                        group.cache_write_runs += u64::from(
-                            i.measurements
-                                .usage
-                                .as_ref()
-                                .and_then(|u| u.cache_write_input_tokens.reported())
-                                .is_some_and(|w| w > 0),
-                        );
-                        group.cost_total += cost;
-                    }
-                    None => group.cost_unknown += 1,
-                }
             }
         }
     }
@@ -552,7 +698,7 @@ fn build_report(
         &fact_events.iter().map(|f| &f.fact_hash).collect::<Vec<_>>(),
     )?;
     let mut summary = FeedbackSummary {
-        schema_version: 1,
+        schema_version: 2,
         generated_at_unix_seconds: now,
         event_set_hash: event_set.clone(),
         fact_set_hash: fact_set.clone(),
@@ -622,7 +768,7 @@ fn build_report(
         })
         .collect();
     let mut report = FeedbackReport {
-        schema_version: 2,
+        schema_version: 3,
         generated_at_unix_seconds: now,
         event_set_hash: event_set,
         fact_set_hash: fact_set,
@@ -658,14 +804,20 @@ fn build_report(
         interpretation: "descriptive_associations_not_causal_or_router_gain",
         content_hash: String::new(),
     };
-    report.content_hash = hash("feedback-report-v2", &report)?;
+    report.content_hash = hash("feedback-report-v3", &report)?;
     summary.report_content_hash = report.content_hash.clone();
-    summary.content_hash = hash("feedback-summary-v1", &summary)?;
+    summary.content_hash = hash("feedback-summary-v2", &summary)?;
     Ok((report, summary))
 }
 
 fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost {
     let mut cost = GroupCost {
+        expected_attempts: a.expected_attempts,
+        observed_attempts: a.observed_attempts,
+        priced_attempts: a.priced_attempts,
+        missing_attempts: a.missing_attempts,
+        conflicting_attempts: a.conflicting_attempts,
+        scope_unknown_runs: a.scope_unknown_runs,
         priced_runs: a.priced,
         cost_unknown: a.cost_unknown,
         runs_with_cache_writes_priced_as_input: a.cache_write_runs,
@@ -675,7 +827,7 @@ fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost 
         cost.reason = Some("no_pricing_table");
         return cost;
     }
-    if a.priced == 0 {
+    if a.priced_attempts == 0 {
         cost.reason = Some("no_priced_runs");
         return cost;
     }
@@ -683,10 +835,13 @@ fn group_cost(pricing: Option<&PricingTable>, a: &Accumulator<'_>) -> GroupCost 
         cost.reason = Some("cost_overflow");
         return cost;
     };
-    cost.total_microusd = Some(total);
+    cost.known_subtotal_microusd = Some(total);
     if a.cost_unknown > 0 {
         cost.reason = Some("cost_unknown_runs");
-    } else if a.accepted == 0 {
+        return cost;
+    }
+    cost.total_microusd = Some(total);
+    if a.accepted == 0 {
         cost.reason = Some("no_accepted_task");
     } else {
         // Round half up, like the other ratios.

@@ -307,6 +307,7 @@ fn measurements(completion: &RunCompletion, escalations: u32) -> FeedbackMeasure
         attempts: completion.run.attempts,
         escalations,
         usage,
+        usage_scope: Some(FeedbackUsageScope::PerAttempt),
     }
 }
 fn feedback_input(
@@ -548,6 +549,61 @@ mod tests {
             assert_eq!(m.tokens, None);
             assert_eq!(m.usage, absent);
         }
+    }
+
+    #[test]
+    fn completion_attempt_measurements_survive_store_and_report() {
+        let (_temp, path) = store(true);
+        let store = FeedbackStore::open(&path).unwrap();
+        let usage = HostUsage {
+            input_tokens: UsageField::host_reported(10),
+            cached_input_tokens: UsageField::host_reported(0),
+            cache_write_input_tokens: UsageField::UNKNOWN,
+            output_tokens: UsageField::host_reported(2),
+            reasoning_output_tokens: UsageField::UNKNOWN,
+        };
+        for (ordinal, state) in [
+            (1, RunState::Failed),
+            (2, RunState::Verifying),
+            (2, RunState::Verified),
+        ] {
+            let mut completion = completion(Some(usage));
+            completion.run.attempts = ordinal;
+            completion.run.state = state;
+            let mut input: FeedbackInput = serde_json::from_str(include_str!(
+                "../../../tests/fixtures/feedback/automated-unknown-v1.json"
+            ))
+            .unwrap();
+            input.observed_at_unix_seconds = 1_100;
+            input.run_key_sha256 = Some(run_key(&completion.run).unwrap());
+            input.binding.run_hash = digest(&completion.run).unwrap();
+            input.measurements = measurements(&completion, 0);
+            let stored = store.record(input, 1_100).unwrap();
+            assert_eq!(
+                serde_json::to_value(stored).unwrap()["input"]["measurements"]["usage_scope"],
+                "per_attempt"
+            );
+        }
+        let pricing = router_eval::PricingTable {
+            schema_version: 1,
+            version: "fixture".into(),
+            source: "synthetic".into(),
+            observed_at_unix_seconds: 1_000,
+            models: [(
+                ModelId::parse("fixture-model").unwrap(),
+                router_eval::TokenPrice {
+                    input_microusd_per_million: 1_000_000,
+                    cached_input_microusd_per_million: 1_000_000,
+                    output_microusd_per_million: 1_000_000,
+                },
+            )]
+            .into(),
+        };
+        let report = store.report(Some(&pricing), 1_200).unwrap();
+        let summary = store.summary(Some(&pricing), 1_200).unwrap();
+        assert_eq!((report.runs.len(), report.superseded_events), (1, 2));
+        assert_eq!(summary.cost.total_microusd, Some(24));
+        assert_eq!(summary.cost.per_accepted_microusd, None);
     }
 
     #[test]

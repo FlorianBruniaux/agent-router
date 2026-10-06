@@ -151,6 +151,7 @@ fn project(event: &FeedbackEvent) -> Result<SidecarExportProjection> {
         // The token split is report input for the local store only; the
         // exported measurements keep their earlier shape.
         measurements: FeedbackMeasurements {
+            usage_scope: None,
             usage: None,
             ..i.measurements.clone()
         },

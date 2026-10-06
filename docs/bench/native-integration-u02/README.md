@@ -1,7 +1,10 @@
 # U02: native Codex API evidence, automatic CLI integration not validated
 
 Observed on 2026-10-05 and repeated on 2026-10-06 on macOS 26.5.1 arm64, Codex CLI 0.159.2,
-binary SHA-256 `61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
+launcher SHA-256 `61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
+The historical JSON field `codex_binary_sha256` identifies the npm JavaScript
+launcher, not its underlying native executable. The latter was separately
+measured on 2026-10-06; see the [canary diagnostic](canary-diagnosis/README.md).
 The candidate surface is the CLI binary's experimental app-server stdio API.
 This is a standalone diagnostic client, not an installed Agent Router integration.
 
@@ -29,6 +32,13 @@ Automatic CLI prompt interception remains unvalidated. **U06/U07 remain blocked.
 | Codex App / Claude surfaces | NOT_TESTED | No inference from the CLI app-server result. |
 | OS sandbox / external egress denial | NOT_APPLIED / UNKNOWN | Explicit execution-tool escalation permitted loopback listener. No OS network sandbox or packet capture. |
 | AR supervised execution | NOT_TESTED | No runtime receipt, approved execution or worker sandbox fabricated. |
+
+The [two subsequent variants](canary-diagnosis/README.md) narrow the missing
+canary observation: selecting `gpt-5-codex` exposes it directly; with the original
+gpt-6 models and code mode enabled, its name occurs elsewhere in the request
+despite `tools=[]`. The initial probe projected only direct function names.
+An empty projection therefore does not prove absence from the whole request.
+No code-mode callback was exercised, and automatic integration remains unvalidated.
 
 The current AR adapter separately rejects `ExecutionTarget::ParentConversation`
 with `AdapterError::Unsupported("parent-model-change")` in

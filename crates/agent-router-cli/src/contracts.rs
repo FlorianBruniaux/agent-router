@@ -31,13 +31,17 @@ pub(crate) const CONTRACTS: [Contract; 5] = [
     Contract {
         name: "feedback-report",
         command: "feedback report",
-        versions: &[SchemaVersion::Number(1), SchemaVersion::Number(2)],
+        versions: &[
+            SchemaVersion::Number(1),
+            SchemaVersion::Number(2),
+            SchemaVersion::Number(3),
+        ],
         schema: include_str!("schemas/feedback-report.schema.json"),
     },
     Contract {
         name: "feedback-summary",
         command: "feedback summary",
-        versions: &[SchemaVersion::Number(1)],
+        versions: &[SchemaVersion::Number(1), SchemaVersion::Number(2)],
         schema: include_str!("schemas/feedback-summary.schema.json"),
     },
     Contract {

@@ -342,13 +342,13 @@ it may expire retained rows and advance the clock watermark. The same retained
 events, facts, pricing file and `--now` give byte-identical output: lists are
 sorted and every figure is an integer or a fixed-precision value in micros.
 
-Schema 2 adds `runs`: one row per retained automated run, ordered by event
+Schema 3 includes `runs`: one row per retained automated run, ordered by event
 sequence, with its task/run binding, optional stable run key, observation time,
-model, effort, task kind, verdict, transport status, failure and usage. A task may
-have several runs; these rows do not aggregate all attempts. Human-origin
-feedback remains in the separate counts. The published schema also accepts the
-strict schema 1 shape, which has no `runs`; existing feedback events and the
-store format are unchanged. The report content hash uses `feedback-report-v2`.
+model, effort, task kind, verdict, transport status, failure, latest usage and
+attempt cost coverage. Human-origin feedback remains in separate counts.
+Published schemas 1 and 2 remain accepted with their original shapes. Existing
+feedback events and store format are unchanged. The report hash uses
+`feedback-report-v3`; summary schema 2 uses `feedback-summary-v2`.
 
 Each row's `evidence.source` is `feedback_store`. `feedback_event_hash`,
 `verification_fact_hash` and `integration_fact_hash` identify the retained source
@@ -368,9 +368,9 @@ Omit `--json` for the human view, which renders `unknown` as `UNKNOWN` and null
 as `not set (null)`.
 
 The rows reuse the existing bounded store snapshot (at most 10,000 events and
-10,000 facts); no second authoritative store is created. Aggregates and pricing
-retain their existing semantics, including latest-snapshot selection and cache
-write pricing. This addition provides no measurement of router gains.
+10,000 facts); no second authoritative store is created. Verdicts and token or
+latency percentiles use the latest snapshot. Attempt costs are separate from
+those latest-snapshot metrics. This provides no measurement of router gains.
 
 Runs are grouped by `(model, effort, task_kind)`. Automated events join late
 facts by `run_key_sha256`:
@@ -390,8 +390,27 @@ refused when recorded, so a passed objective always follows a passed validation.
 
 `run_hash` covers run state and attempts, so one run can hold several automated
 events. The report counts each run key once, on its latest event, and gives the
-number of others as `superseded_events`. Its groups, `automated_events` and costs
-count that one event.
+number of others as `superseded_events`. Its groups and `automated_events`
+count that one verdict. Report schema 3 and summary schema 2 price attempts
+separately; the published report 1/2 and summary 1 schemas remain accepted.
+
+The automatic producer sets `measurements.usage_scope: "per_attempt"`: usage
+belongs to the one-based ordinal in `measurements.attempts`. The report groups
+these snapshots by `(run_key_sha256, attempts)`, counting identical usage once.
+Conflicting usage or models for the same ordinal make that attempt UNKNOWN.
+The greatest observed ordinal determines expected coverage; missing ordinals,
+missing usage and missing prices prevent a complete total. Old events omit the
+marker and retain their bytes and hashes. Unmarked single-attempt runs retain
+legacy latest-snapshot pricing. During mixed-format histories, an unmarked
+ordinal one can contribute known cost, but disagreement with marked usage is a
+conflict. Any unmarked retry leaves scope UNKNOWN and blocks a complete total.
+Each v3 run row includes its own `cost` and coverage. Attempt prices use their
+own model; group attribution follows the latest run snapshot.
+
+Coverage applies only to attempts represented or implied by retained feedback.
+This does not detect dispatches with no feedback record, join escalated runs,
+or establish task occurrence identity. Identical task hashes never merge runs.
+Host declarations and cache-write approximation remain distinct from billed cost.
 
 Human-origin events are counted apart, by their `human.success`, and never
 change an automated outcome. Facts that match no retained automated event are
@@ -408,18 +427,19 @@ Per group the report gives:
   `started_at_unix_seconds`. A run without a start time is counted in `missing`;
 - `integration`: applied, discarded, unknown, and `rate_micros` as applied over
   applied plus discarded;
-- `cost`, only with `--pricing`, a `PricingTable` file whose `version` and
-  `source` the report cites. Each run is priced from its stored usage split, at
-  the uncached input, cached input and output rates, rounded up to a
-  micro-dollar per run like `router_eval::price_usage`. A run with no stored
-  usage, an undeclared input, cached input or output count, or a model missing
-  from the table is `cost_unknown`, never zero. `total_microusd` sums priced runs
-  only. `per_accepted_microusd` divides the total over all runs by accepted
-  tasks, and is null while any run of the group is unpriced. Cache writes are
-  priced as input, since the table has no cache write price, and
-  `runs_with_cache_writes_priced_as_input` counts the priced runs that declared
-  some. Reasoning tokens are priced as output. Without `--pricing` every cost is null with reason
-  `no_pricing_table`.
+- `cost`, only with `--pricing`, cites the table's `version` and `source`.
+  Each attempt uses uncached input, cached input and output rates, rounded up
+  to a micro-dollar. `known_subtotal_microusd` sums unambiguous priced attempts,
+  including failed attempts. `total_microusd` is null unless every expected
+  attempt is priced. `per_accepted_microusd` divides that complete total by
+  accepted runs and is null with zero acceptance or incomplete coverage.
+  `expected_attempts`, `observed_attempts`, `priced_attempts`, `missing_attempts`,
+  `conflicting_attempts` and `scope_unknown_runs` expose coverage. `priced_runs`
+  counts runs with complete cost; `cost_unknown` counts the rest. Cache writes
+  use the input rate and reasoning tokens use the output rate without double
+  charging. `runs_with_cache_writes_priced_as_input` counts runs with at least
+  one priced attempt declaring writes. Without `--pricing`, monetary figures
+  are null with reason `no_pricing_table`.
 
 The ratio between catalog estimate and observed usage that ADR 0019 lists is not
 computed: no catalog estimate is stored in feedback. It is reported as
@@ -472,10 +492,10 @@ averaged from group figures:
   counted as failures;
 - `time_to_acceptance_seconds`: p50 and p90 by nearest rank over accepted runs,
   with `samples` and `missing`;
-- `cost`: with `--pricing`, the sum over priced runs as `total_microusd`.
-  `per_accepted_microusd` divides the total over all runs by accepted tasks and
-  is null, with `reason`, while any run of any group is unpriced. Without
-  `--pricing`, or when no run is priced, the total is null with its reason;
+- `cost`: with `--pricing`, `known_subtotal_microusd` retains priced attempts.
+  `total_microusd` and `per_accepted_microusd` require complete coverage across
+  every group; zero accepted runs leaves the ratio null. Coverage counters sum
+  across groups. Without any priced attempt, monetary figures are null;
 - `unknown_counts`: `verdict`, `unlinked`, `cost`, `time_to_acceptance`,
   `integration`, `orphan_facts` and `superseded_events`, each a count of what the
   figures above could not establish;

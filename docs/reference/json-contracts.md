@@ -33,8 +33,8 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
-| Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds` and `measurements.usage`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
-| Feedback summary | v1 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |
+| Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds`, `measurements.usage` and `measurements.usage_scope`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
+| Feedback summary | v2 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
@@ -188,33 +188,50 @@ total (input plus output). The sidecar
 projection drops it.
 
 `agent-router feedback --store <dir> --json report [--pricing <file>]` prints a
-`FeedbackReport` (schema 2, with strict schema 1 output validation retained); the pricing file is a `PricingTable` (schema 1, unknown
+`FeedbackReport` (schema 3, with strict schema 1/2 output validation retained); the pricing file is a `PricingTable` (schema 1, unknown
 keys refused, at most 64 models). It needs collection consent. Top-level keys:
 `schema_version`, `generated_at_unix_seconds`, `event_set_hash`, `fact_set_hash`,
 `automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `superseded_events`, `pricing`
 (`version`, `source`, `observed_at_unix_seconds`, or null), `groups`, `runs`,
 `catalog_estimate_ratio` (always `{"value":null,"reason":...}`), `advisory`,
-`interpretation` and `content_hash` (domain `feedback-report-v2`; historical schema 1 uses
-`feedback-report-v1` and has no `runs`). Each group
+`interpretation` and `content_hash` (domain `feedback-report-v3`; historical schema 1/2 use
+`feedback-report-v1` / `feedback-report-v2`, and schema 1 has no `runs`). Each group
 sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
 `unknown`, `unlinked`, `human`, `accepted_rate` (counts, `point_micros`,
 `lower_micros`, `upper_micros`, `level_micros` 950000, `prior` `jeffreys`, or null),
 `integration`, the `tokens`, `latency_ms`, `attempts` and
 `time_to_acceptance_seconds` percentiles (`samples`, `missing`, `p50`, `p90`) and
 `cost` (`priced_runs`, `cost_unknown`, `runs_with_cache_writes_priced_as_input`, `total_microusd`, `per_accepted_microusd`,
-`reason`). No float appears in the output. `advisory` is
+`reason`, `known_subtotal_microusd`, `expected_attempts`, `observed_attempts`,
+`priced_attempts`, `missing_attempts`, `conflicting_attempts`, `scope_unknown_runs`).
+No float appears in the output. `advisory` is
 `{"advisory":null,"reason":"learning_disabled"}` or `{"advisory":true,"suggestion":null,"reason":...}`.
 `runs` contains at most 10,000 retained automated rows, in event sequence order.
 Each row carries the original `binding`, optional `run_key_sha256`, observation
 time, model/effort/task kind, `verdict` (`accepted`, `rejected`, `unknown`),
-`transport`, nullable `failure`, nullable `usage` and `evidence`. Usage preserves
+`transport`, nullable `failure`, nullable `usage`, `cost` and `evidence`. Usage preserves
 the five `HostUsage` fields and their provenance. Evidence names `feedback_store`
 as its `source`, the `feedback_event_hash`, and nullable `verification_fact_hash`
 and `integration_fact_hash`. `runtime_evidence` and `native_external_evidence`
 are always `unknown`: the report verifies neither runtime execution nor native
 external sessions. Bindings are source claims, not freshly authenticated
-receipts. Multiple rows may share a task hash; attempt totals are not added by
-this version. Summary remains schema 1 and cites the schema 2 report hash.
+receipts. Multiple rows may share a task hash; they are never merged by that hash.
+Summary schema 2 (hash domain `feedback-summary-v2`) cites the schema 3 report hash.
+Historical summary schema 1 retains its strict shape and `feedback-summary-v1` domain.
+
+`measurements.usage_scope` optionally equals `per_attempt`; absence is omitted
+from serialization, preserving v1 event bytes and hashes. It binds usage to the
+one-based ordinal in `measurements.attempts`. Report pricing deduplicates marked
+snapshots by `(run_key_sha256, ordinal)`. Usage or model conflicts for one ordinal
+are UNKNOWN. Expected coverage is the maximum observed ordinal, using bounded
+maps of stored events rather than allocating by that ordinal. The known subtotal
+includes failed attempts; the complete total is null for missing or unpriced
+attempts. Unmarked single attempts retain latest-snapshot pricing; unmarked
+retries cannot claim a complete total, even alongside marked snapshots. A legacy
+ordinal one contributes known usage but conflicts with differing marked usage.
+Group attribution uses the latest run
+snapshot, while each attempt is priced using its own model. Coverage does not
+prove that every dispatch produced feedback or join separate escalated runs.
 
 See [feedback](../feedback.md#feedback-report) for the join rules.
 

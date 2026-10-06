@@ -56,6 +56,7 @@ pub fn input(now: u64, human: bool) -> FeedbackInput {
         }),
         failure: None,
         measurements: FeedbackMeasurements {
+            usage_scope: None,
             cost_microusd: None,
             latency_ms: Some(50),
             tokens: None,

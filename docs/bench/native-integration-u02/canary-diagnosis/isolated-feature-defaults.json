@@ -1,0 +1,17 @@
+{
+  "command": "codex features list",
+  "exit_code": 0,
+  "feature_rows": [
+    "code_mode                                under development  false",
+    "code_mode_buffered_exec                  removed            false",
+    "code_mode_host                           stable             true",
+    "code_mode_interrupt                      under development  false",
+    "code_mode_only                           under development  false",
+    "code_mode_prewarm                        under development  false",
+    "guardian_enhanced_node_repl_transcripts  under development  false",
+    "guardian_node_repl_transcript_images     under development  false",
+    "js_repl                                  removed            false",
+    "js_repl_tools_only                       removed            false"
+  ],
+  "isolated_home": true
+}

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:agent-router:schema:feedback-report:2",
+  "$id": "urn:agent-router:schema:feedback-report:3",
   "title": "feedback report",
-  "description": "Feedback report v2 includes retained run rows with source provenance; the strict v1 shape remains valid. Associations, not gain attributable to the router.",
+  "description": "Report v3 prices explicit per-attempt usage with coverage and one verdict per run. Strict v1 and v2 shapes remain valid.",
   "oneOf": [
     {
       "type": "object",
@@ -257,6 +257,139 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/run"
+          },
+          "description": "One latest retained automated event per run key, in event sequence order; at most 10000 rows. Not a total over all task attempts."
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "generated_at_unix_seconds",
+        "event_set_hash",
+        "fact_set_hash",
+        "automated_events",
+        "human_events",
+        "facts",
+        "unlinked",
+        "orphan_facts",
+        "superseded_events",
+        "pricing",
+        "groups",
+        "catalog_estimate_ratio",
+        "advisory",
+        "interpretation",
+        "content_hash",
+        "runs"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 3
+        },
+        "generated_at_unix_seconds": {
+          "$ref": "#/$defs/u64"
+        },
+        "event_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "fact_set_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "automated_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "human_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "unlinked": {
+          "$ref": "#/$defs/u64"
+        },
+        "orphan_facts": {
+          "$ref": "#/$defs/u64"
+        },
+        "superseded_events": {
+          "$ref": "#/$defs/u64"
+        },
+        "pricing": {
+          "$ref": "#/$defs/pricing"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attempt_group"
+          }
+        },
+        "catalog_estimate_ratio": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "value",
+            "reason"
+          ],
+          "properties": {
+            "value": {
+              "type": "null"
+            },
+            "reason": {
+              "type": "string"
+            }
+          }
+        },
+        "advisory": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "advisory",
+                "suggestion",
+                "reason"
+              ],
+              "properties": {
+                "advisory": {
+                  "const": true
+                },
+                "suggestion": {
+                  "type": "null"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "interpretation": {
+          "type": "string"
+        },
+        "content_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "runs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attempt_run"
           },
           "description": "One latest retained automated event per run key, in event sequence order; at most 10000 rows. Not a total over all task attempts."
         }
@@ -775,6 +908,279 @@
         },
         "evidence": {
           "$ref": "#/$defs/run_evidence"
+        }
+      }
+    },
+    "attempt_cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "priced_runs",
+        "cost_unknown",
+        "runs_with_cache_writes_priced_as_input",
+        "total_microusd",
+        "per_accepted_microusd",
+        "reason",
+        "known_subtotal_microusd",
+        "expected_attempts",
+        "observed_attempts",
+        "priced_attempts",
+        "missing_attempts",
+        "conflicting_attempts",
+        "scope_unknown_runs"
+      ],
+      "properties": {
+        "priced_runs": {
+          "$ref": "#/$defs/u64"
+        },
+        "cost_unknown": {
+          "$ref": "#/$defs/u64"
+        },
+        "runs_with_cache_writes_priced_as_input": {
+          "$ref": "#/$defs/u64"
+        },
+        "total_microusd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "per_accepted_microusd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "known_subtotal_microusd": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "expected_attempts": {
+          "$ref": "#/$defs/u64"
+        },
+        "observed_attempts": {
+          "$ref": "#/$defs/u64"
+        },
+        "priced_attempts": {
+          "$ref": "#/$defs/u64"
+        },
+        "missing_attempts": {
+          "$ref": "#/$defs/u64"
+        },
+        "conflicting_attempts": {
+          "$ref": "#/$defs/u64"
+        },
+        "scope_unknown_runs": {
+          "$ref": "#/$defs/u64"
+        }
+      },
+      "description": "Attempt costs: known subtotal retains priced usage; total and per-accepted cost require complete attempt coverage. UNKNOWN is null."
+    },
+    "attempt_group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "effort",
+        "task_kind",
+        "runs",
+        "accepted",
+        "rejected",
+        "unknown",
+        "unlinked",
+        "human",
+        "accepted_rate",
+        "integration",
+        "tokens",
+        "latency_ms",
+        "attempts",
+        "time_to_acceptance_seconds",
+        "cost"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string"
+        },
+        "task_kind": {
+          "type": "string"
+        },
+        "runs": {
+          "$ref": "#/$defs/u64"
+        },
+        "accepted": {
+          "$ref": "#/$defs/u64"
+        },
+        "rejected": {
+          "$ref": "#/$defs/u64"
+        },
+        "unknown": {
+          "$ref": "#/$defs/u64"
+        },
+        "unlinked": {
+          "$ref": "#/$defs/u64"
+        },
+        "human": {
+          "$ref": "#/$defs/human_counts"
+        },
+        "accepted_rate": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/accepted_rate"
+            }
+          ]
+        },
+        "integration": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "applied",
+            "discarded",
+            "unknown",
+            "rate_micros"
+          ],
+          "properties": {
+            "applied": {
+              "$ref": "#/$defs/u64"
+            },
+            "discarded": {
+              "$ref": "#/$defs/u64"
+            },
+            "unknown": {
+              "$ref": "#/$defs/u64"
+            },
+            "rate_micros": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0
+            }
+          }
+        },
+        "tokens": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "latency_ms": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "attempts": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "time_to_acceptance_seconds": {
+          "$ref": "#/$defs/percentiles"
+        },
+        "cost": {
+          "$ref": "#/$defs/attempt_cost"
+        }
+      }
+    },
+    "attempt_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding",
+        "run_key_sha256",
+        "observed_at_unix_seconds",
+        "model",
+        "effort",
+        "task_kind",
+        "verdict",
+        "transport",
+        "failure",
+        "usage",
+        "evidence",
+        "cost"
+      ],
+      "properties": {
+        "binding": {
+          "$ref": "#/$defs/binding"
+        },
+        "run_key_sha256": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/hash"
+            }
+          ]
+        },
+        "observed_at_unix_seconds": {
+          "$ref": "#/$defs/u64"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "type": "string"
+        },
+        "task_kind": {
+          "type": "string"
+        },
+        "verdict": {
+          "enum": [
+            "accepted",
+            "rejected",
+            "unknown"
+          ]
+        },
+        "transport": {
+          "enum": [
+            "passed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "failure": {
+          "enum": [
+            null,
+            "authentication",
+            "rate_limit",
+            "timeout",
+            "crash",
+            "network",
+            "policy",
+            "validation",
+            "objective",
+            "budget",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "usage": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/usage"
+            }
+          ]
+        },
+        "evidence": {
+          "$ref": "#/$defs/run_evidence"
+        },
+        "cost": {
+          "$ref": "#/$defs/attempt_cost"
         }
       }
     }

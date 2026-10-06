@@ -1,0 +1,28 @@
+{
+  "embedded_catalog_length_chars": 471987,
+  "embedded_catalog_offset": 184314147,
+  "models": [
+    {
+      "apply_patch_tool_type": "freeform",
+      "node_repl_disabled": false,
+      "shell_type": "shell_command",
+      "slug": "gpt-6-astra",
+      "supported_in_api": true,
+      "supports_search_tool": true,
+      "tool_mode": "code_mode_only",
+      "use_responses_lite": true
+    },
+    {
+      "apply_patch_tool_type": "freeform",
+      "node_repl_disabled": false,
+      "shell_type": "shell_command",
+      "slug": "gpt-6.1-sol",
+      "supported_in_api": true,
+      "supports_search_tool": true,
+      "tool_mode": "code_mode_only",
+      "use_responses_lite": true
+    }
+  ],
+  "source_kind": "installed native executable embedded catalogue",
+  "source_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704"
+}

@@ -59,7 +59,7 @@ fn list_names_every_contract_with_its_supported_versions() {
     let versions =
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
-    assert_eq!(versions("feedback-report"), json!([1, 2]));
+    assert_eq!(versions("feedback-report"), json!([1, 2, 3]));
     let mut again = command();
     again.args(["schema", "--list"]);
     assert_eq!(out, stdout(again));
@@ -214,6 +214,7 @@ fn automated(run: &str, run_key: char, model: &str) -> FeedbackInput {
         human: None,
         failure: None,
         measurements: FeedbackMeasurements {
+            usage_scope: None,
             cost_microusd: None,
             latency_ms: Some(100),
             tokens: Some(1500),
@@ -346,9 +347,10 @@ fn feedback_report_and_summary_conform_to_their_schemas() {
         assert!(summary["accepted_rate"].is_object());
         assert_conforms("feedback-summary", &summary);
     }
-    // The priced summary has a total and, model-b being unpriced, no per-accepted figure.
+    // Model-b is unpriced: retain the known subtotal but no complete total or ratio.
     let summary = feedback_json(&store, "summary", Some(&pricing));
-    assert!(summary["cost"]["total_microusd"].is_u64());
+    assert!(summary["cost"]["known_subtotal_microusd"].is_u64());
+    assert!(summary["cost"]["total_microusd"].is_null());
     assert!(summary["cost"]["per_accepted_microusd"].is_null());
     assert_eq!(summary["cost"]["reason"], "cost_unknown_runs");
 }
@@ -514,15 +516,46 @@ fn the_checker_rejects_outputs_that_break_their_contract() {
 }
 
 #[test]
-fn feedback_schema_keeps_v1_strict_and_requires_v2_run_evidence() {
+fn feedback_schema_keeps_legacy_shapes_strict_and_requires_attempt_coverage() {
     let dir = tempfile::tempdir().unwrap();
     let directory = fs::canonicalize(dir.path()).unwrap();
     let store = populated_store(&directory);
     let report = feedback_json(&store, "report", None);
-    assert_eq!(report["schema_version"], 2);
+    assert_eq!(report["schema_version"], 3);
     assert_conforms("feedback-report", &report);
-    // The historical v1 output shape remains accepted, with no run rows.
+    let coverage = [
+        "known_subtotal_microusd",
+        "expected_attempts",
+        "observed_attempts",
+        "priced_attempts",
+        "missing_attempts",
+        "conflicting_attempts",
+        "scope_unknown_runs",
+    ];
+    // Published v2 costs retain their shape; the current fields cannot sneak
+    // into historical contracts by changing only the version number.
     let mut legacy = report.clone();
+    legacy["schema_version"] = json!(2);
+    assert!(!json_schema::violations(&schema("feedback-report"), &legacy).is_empty());
+    for group in legacy["groups"].as_array_mut().unwrap() {
+        for field in coverage {
+            group["cost"].as_object_mut().unwrap().remove(field);
+        }
+    }
+    for run in legacy["runs"].as_array_mut().unwrap() {
+        run.as_object_mut().unwrap().remove("cost");
+    }
+    assert_conforms("feedback-report", &legacy);
+    let mut summary = feedback_json(&store, "summary", None);
+    assert_eq!(summary["schema_version"], 2);
+    assert_conforms("feedback-summary", &summary);
+    summary["schema_version"] = json!(1);
+    assert!(!json_schema::violations(&schema("feedback-summary"), &summary).is_empty());
+    for field in coverage {
+        summary["cost"].as_object_mut().unwrap().remove(field);
+    }
+    assert_conforms("feedback-summary", &summary);
+    // The historical v1 output shape remains accepted, with no run rows.
     legacy.as_object_mut().unwrap().remove("runs");
     legacy["schema_version"] = json!(1);
     assert_conforms("feedback-report", &legacy);
@@ -537,6 +570,13 @@ fn feedback_schema_keeps_v1_strict_and_requires_v2_run_evidence() {
         |v| v["runs"][0]["evidence"]["source"] = json!("native_external"),
         |v| v["runs"][0]["binding"]["receipt_hash"] = json!("invented"),
         |v| v["runs"][0]["verdict"] = json!("success"),
+        |v| {
+            v["runs"][0]["cost"]
+                .as_object_mut()
+                .unwrap()
+                .remove("missing_attempts");
+        },
+        |v| v["groups"][0]["cost"]["priced_attempts"] = json!(-1),
         |v| v["runs"][0]["usage"]["input_tokens"]["tokens"] = json!(null),
     ] {
         let mut invalid = report.clone();
