@@ -49,10 +49,12 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
         if not scripts:
             add("quality", "script-tests-missing", [], unavailable="no scripts/test-*.py suites were found")
     for name, folder, pattern in [("egress-tests", "docs/bench/egress-admission", "test_*.py"),
-                                  ("native-probe-tests", "docs/bench/native-integration-u02", "test_probe.py"),
-                                  ("campaign-tests", "docs/bench/campaign-next/tests", "test_*.py")]:
-        add("quality", name, [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"], require_tests=True)
-    # calibration-v2 contains measured artifacts, with no Python tests to run.
+                                  ("native-probe-tests", "docs/bench/native-integration-u02", "test_*.py"),
+                                  ("native-decision-tests", "docs/bench/native-integration-u06", "test_*.py"),
+                                  ("campaign-tests", "docs/bench/campaign-next/tests", "test_*.py"),
+                                  ("calibration-tests", "docs/bench/calibration-v2/tests", "test_*.py")]:
+        options = {"env": {"AR_U06_REPO_ROOT": str(root)}} if name == "native-decision-tests" else {}
+        add("quality", name, [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"], require_tests=True, **options)
     for mode in ("dir", "git"):
         add("quality", f"secrets-{mode}", ["gitleaks", mode, ".", "--config", ".gitleaks.toml", "--redact", "--no-banner"])
     sandbox = "sandbox-exec" if sys.platform == "darwin" else "bwrap"

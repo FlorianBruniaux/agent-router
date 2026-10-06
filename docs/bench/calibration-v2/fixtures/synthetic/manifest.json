@@ -1,0 +1,178 @@
+{
+  "document_type": "campaign_preparation_manifest",
+  "template_version": 2,
+  "status": "sealed_preparation_not_authorized_to_run",
+  "campaign_id": "synthetic-offline-u08",
+  "stage": "calibration",
+  "execution_path": "native_external",
+  "host_surface_version": "synthetic-0",
+  "evidence_source": "synthetic_fixture",
+  "collection_consent": null,
+  "treatment": "A-v2",
+  "comparators": [
+    "E"
+  ],
+  "usual_usage_differs_from_E": false,
+  "include_D_if_distinct": true,
+  "static_rule_hypothesis": null,
+  "arm_model_effort_configurations": {
+    "A-v2": {
+      "model": "synthetic-model",
+      "effort": "synthetic-fixed",
+      "configuration_sha256": "f1750be76dfbb7026e861736b3c26501f50c62759d623138b60c6ff1c6fef8ca"
+    },
+    "E": {
+      "model": "synthetic-model",
+      "effort": "synthetic-fixed",
+      "configuration_sha256": "f1750be76dfbb7026e861736b3c26501f50c62759d623138b60c6ff1c6fef8ca"
+    }
+  },
+  "task_selection_rule": "Synthetic format fixture only; no representative corpus.",
+  "tasks": [
+    {
+      "task_id": "synthetic-task-1",
+      "source_commit": "1111111111111111111111111111111111111111",
+      "allowed_write_scope": [
+        "synthetic-project/src"
+      ],
+      "hidden_tests_separated": true,
+      "human_review_rule": "Synthetic fixture: check the frozen acceptance criterion.",
+      "statement_path": "assets/1-statement.txt",
+      "statement_sha256": "3018a8964b39882f9f749383fb3358692b7fbe5f31082ad0ce1af057079cebde",
+      "acceptance_script_path": "assets/1-acceptance_script.txt",
+      "acceptance_script_sha256": "9356a60402d990e66c124cfd2469ea6345e8ccb31a588e1204725b9af5e40e3f",
+      "hidden_tests_path": "assets/1-hidden_tests.txt",
+      "hidden_tests_sha256": "74c7f8925e87440262010b1ee7b31d2128010a29fe9a90903f663368ec031a77"
+    }
+  ],
+  "required_task_fields": [
+    "task_id",
+    "source_commit",
+    "allowed_write_scope",
+    "statement_sha256",
+    "acceptance_script_sha256",
+    "hidden_tests_separated",
+    "human_review_rule"
+  ],
+  "random_seed": 7,
+  "sealed_order": [
+    {
+      "task_id": "synthetic-task-1",
+      "arm": "E",
+      "repetition": 1
+    },
+    {
+      "task_id": "synthetic-task-1",
+      "arm": "A-v2",
+      "repetition": 1
+    }
+  ],
+  "repetitions": 1,
+  "input_hashes": {
+    "corpus": "05bd16e604b23732e3429609156099656ac298f106ac91d44c5d47692c645243",
+    "router_binary": "7258c1a7d1f6cec0e00b8afe2174256a206a67c0b0a74471ce71badc8401958b",
+    "policy_and_catalog": "f8dc5ab3332254fa4fe720221b44acfb2b0d9198405cf759997ef55be18b9646",
+    "host_binary": "758b0431ee04134be48d973a8096efd37c67860e3757cb9dfac596f1090c5abe",
+    "sanitized_configuration": "f1750be76dfbb7026e861736b3c26501f50c62759d623138b60c6ff1c6fef8ca",
+    "dated_price_table": "b5d5ceaf87f9d17f987446b3562480f3d4873b4a93de76d723e7fb36adf5dc5d",
+    "analysis_code": "1a55f0a66edc63ff93268cf9b6dbb9f45ac5f52cd63f9450cc2dd6bf87ae86ae"
+  },
+  "spending": {
+    "global_cap_usd": null,
+    "known_prior_spend_usd": null,
+    "unknown_prior_spend": null,
+    "enforcement_evidence_sha256": null,
+    "approved_manifest_sha256": null,
+    "estimated_remaining_usd": null,
+    "enforcement_evidence_path": null
+  },
+  "retry_policy": "stop_on_ambiguous_send_reconcile_before_new_approval",
+  "analysis": {
+    "mode": "descriptive_only",
+    "assigned_tasks_are_denominator": true,
+    "include_all_attempts_and_paid_probes": true,
+    "deduplicate_snapshots_only": true,
+    "missing_usage_or_price": "complete_total_unknown_with_known_subtotal_and_coverage",
+    "zero_accepted": "cost_per_accepted_undefined",
+    "human_time_separate": true,
+    "confirmation_corpus_overlap_allowed": false,
+    "adoption_verdict": "inconclusive"
+  },
+  "stop_on": [
+    "input_or_version_drift",
+    "unexpected_model",
+    "missing_session_identity",
+    "ambiguous_provider_result",
+    "unknown_spend_prevents_cap_enforcement"
+  ],
+  "export": {
+    "destination": "docs/bench/runs/synthetic-offline-u08",
+    "contains_raw_prompts_or_provider_responses": false,
+    "contains_personal_paths_or_credentials": false,
+    "runtime_receipt_for_external_native_session": false
+  },
+  "synthetic": true,
+  "confirmation_tasks": [
+    {
+      "task_id": "synthetic-task-2",
+      "source_commit": "2222222222222222222222222222222222222222",
+      "allowed_write_scope": [
+        "synthetic-project/src"
+      ],
+      "hidden_tests_separated": true,
+      "human_review_rule": "Synthetic fixture: check the frozen acceptance criterion.",
+      "statement_path": "assets/2-statement.txt",
+      "statement_sha256": "755b555168fbac0e9c0592888e2a9449e094f153736c216e7585a5b586ecedc4",
+      "acceptance_script_path": "assets/2-acceptance_script.txt",
+      "acceptance_script_sha256": "76e61f054fd34ceae84b62e693dd358e9b6becb7e0c75a7ea6affc66db3dd6ff",
+      "hidden_tests_path": "assets/2-hidden_tests.txt",
+      "hidden_tests_sha256": "2af8d20508fa194c6ba51cade083df32dac8955edced5a806a77ffe6ac52cd5c"
+    }
+  ],
+  "input_files": {
+    "corpus": "assets/corpus.txt",
+    "router_binary": "assets/router_binary.txt",
+    "policy_and_catalog": "assets/policy_and_catalog.txt",
+    "host_binary": "assets/host_binary.txt",
+    "sanitized_configuration": "assets/sanitized_configuration.txt",
+    "dated_price_table": "assets/dated_price_table.txt",
+    "analysis_code": "assets/analysis_code.txt"
+  },
+  "preconditions": {
+    "U02b": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "U04b": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "U05": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "U06": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "U07": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "send_control_verified": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    },
+    "provenance_review": {
+      "status": "UNKNOWN",
+      "evidence_path": null,
+      "evidence_sha256": null
+    }
+  }
+}

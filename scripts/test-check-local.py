@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).with_name("check-local.py")
 
@@ -20,6 +21,12 @@ SCRIPT = Path(__file__).with_name("check-local.py")
 class LocalCheckTests(unittest.TestCase):
     def setUp(self):
         self.assertTrue(SCRIPT.is_file(), "local verification runner is missing")
+        # Git's environment override disables an inherited trace2.eventTarget
+        # collector for disposable repos only. Register restoration first so
+        # unittest's LIFO cleanups remove the repo before restoring tracing.
+        trace = mock.patch.dict(os.environ, {"GIT_TRACE2_EVENT": "0"})
+        trace.start()
+        self.addCleanup(trace.stop)
         spec = importlib.util.spec_from_file_location("check_local", SCRIPT)
         self.runner = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(self.runner)
@@ -231,6 +238,37 @@ class LocalCheckTests(unittest.TestCase):
         self.assertIn("expected fixture failure", (self.out / results[0]["log"]).read_text())
         self.assertEqual(results[1]["tests_passed_or_run"], 1)
 
+    def test_versioned_native_probe_suite_is_executed(self):
+        folder = self.root / "docs/bench/native-integration-u02"
+        folder.mkdir(parents=True)
+        marker = Path(self.temp.name) / "native-probe-ran"
+        (folder / "test_probe_v5.py").write_text(
+            "import unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
+            "    def test_canary(self):\n"
+            f"        Path({str(marker)!r}).touch()\n")
+        checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"])
+                  if c["id"] == "native-probe-tests"]
+        self.assertEqual(self.execute(checks), 0)
+        self.assertTrue(marker.exists(), "versioned probe regression must execute")
+        self.assertEqual(self.report()["checks"][0]["tests_passed_or_run"], 1)
+
+    def test_calibration_failure_is_executed_and_retained(self):
+        folder = self.root / "docs/bench/calibration-v2/tests"
+        folder.mkdir(parents=True)
+        marker = Path(self.temp.name) / "calibration-ran"
+        (folder / "test_manifest.py").write_text(
+            "import unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
+            "    def test_invalid_manifest(self):\n"
+            f"        Path({str(marker)!r}).touch()\n"
+            "        self.fail('invalid manifest sentinel')\n")
+        checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"])
+                  if c["id"] == "calibration-tests"]
+        self.assertEqual(self.execute(checks), 1)
+        self.assertTrue(marker.exists(), "calibration regressions must execute")
+        result = self.report()["checks"][0]
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("invalid manifest sentinel", (self.out / result["log"]).read_text())
+
     def test_missing_script_suites_are_unavailable(self):
         checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"]) if c["id"].startswith("script-")]
         self.assertEqual(self.execute(checks), 1)
@@ -328,6 +366,39 @@ class LocalCheckTests(unittest.TestCase):
         self.assertFalse(late.exists())
         with self.assertRaises(ProcessLookupError):
             os.kill(int(marker.read_text()), 0)
+
+
+class GitTraceIsolationTests(unittest.TestCase):
+    def test_fixture_git_does_not_emit_to_inherited_trace_sink_and_restores_tracing(self):
+        with tempfile.TemporaryDirectory(prefix="check-local-trace-") as directory:
+            root = Path(directory)
+            sink = root / "events.jsonl"
+            config = root / "gitconfig"
+            # Model an inherited global collector without contacting the user's
+            # daemon or editing any real Git configuration.
+            config.write_text(f'[trace2]\n\teventTarget = "{sink}"\n')
+            with mock.patch.dict(os.environ, {"GIT_CONFIG_GLOBAL": str(config), "GIT_CONFIG_NOSYSTEM": "1"}):
+                os.environ.pop("GIT_TRACE2_EVENT", None)
+                def ordinary_git():
+                    subprocess.run(["git", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+                ordinary_git()
+                before = sink.read_bytes()
+                self.assertTrue(any(json.loads(line).get("event") == "start" for line in before.splitlines()),
+                                "ordinary Git must actually reach the inherited trace sink")
+                fixture = LocalCheckTests("test_stop_handles_child_that_already_exited")
+                try:
+                    fixture.setUp()
+                    # Git in a runner child and its snapshots must inherit the
+                    # same isolation as init/add/commit and fixture cleanups.
+                    fixture.addCleanup(ordinary_git)
+                    check = fixture.check("git-child", "import subprocess; subprocess.run(['git','status','--porcelain'],check=True)")
+                    self.assertEqual(fixture.execute([check]), 0)
+                finally:
+                    self.assertTrue(fixture.doCleanups(), "fixture cleanup must still fail on real errors")
+                self.assertEqual(sink.read_bytes(), before, "disposable repository operations escaped to the collector")
+                ordinary_git()
+                self.assertGreater(len(sink.read_bytes()), len(before), "ordinary Git tracing must resume after fixture cleanup")
 
 
 if __name__ == "__main__":

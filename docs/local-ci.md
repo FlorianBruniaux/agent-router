@@ -64,6 +64,12 @@ them with `run_pilot.py calibrate/run` or a direct host probe: those have separa
 approval and budget requirements. Source archive verification also does not
 establish a signed release, installation, automatic routing or measured savings.
 
+The quality group discovers every `test_*.py` native-probe suite, including
+versioned probes and the separate-session decision fixture under
+`native-integration-u06`, and the offline manifest tests under `calibration-v2/tests`.
+These checks validate fixtures and preparation rules. They do not run a native
+host campaign or turn a structurally valid manifest into an execution approval.
+
 ## Read and retain results
 
 `summary.json` records the selected commands, statuses, exit codes, log digests,

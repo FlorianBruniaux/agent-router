@@ -1,0 +1,136 @@
+{
+  "user-prompt-submit.command.input": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "NullableString": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "properties": {
+      "agent_id": {
+        "type": "string"
+      },
+      "agent_type": {
+        "type": "string"
+      },
+      "cwd": {
+        "type": "string"
+      },
+      "hook_event_name": {
+        "const": "UserPromptSubmit",
+        "type": "string"
+      },
+      "model": {
+        "type": "string"
+      },
+      "permission_mode": {
+        "enum": [
+          "default",
+          "acceptEdits",
+          "plan",
+          "dontAsk",
+          "bypassPermissions"
+        ],
+        "type": "string"
+      },
+      "prompt": {
+        "type": "string"
+      },
+      "session_id": {
+        "type": "string"
+      },
+      "transcript_path": {
+        "$ref": "#/definitions/NullableString"
+      },
+      "turn_id": {
+        "description": "Codex extension: expose the active turn id to internal turn-scoped hooks.",
+        "type": "string"
+      }
+    },
+    "required": [
+      "cwd",
+      "hook_event_name",
+      "model",
+      "permission_mode",
+      "prompt",
+      "session_id",
+      "transcript_path",
+      "turn_id"
+    ],
+    "title": "user-prompt-submit.command.input",
+    "type": "object"
+  },
+  "user-prompt-submit.command.output": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "additionalProperties": false,
+    "definitions": {
+      "BlockDecisionWire": {
+        "enum": [
+          "block"
+        ],
+        "type": "string"
+      },
+      "UserPromptSubmitHookSpecificOutputWire": {
+        "additionalProperties": false,
+        "properties": {
+          "additionalContext": {
+            "default": null,
+            "type": "string"
+          },
+          "hookEventName": {
+            "const": "UserPromptSubmit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hookEventName"
+        ],
+        "type": "object"
+      }
+    },
+    "properties": {
+      "continue": {
+        "default": true,
+        "type": "boolean"
+      },
+      "decision": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/BlockDecisionWire"
+          }
+        ],
+        "default": null
+      },
+      "hookSpecificOutput": {
+        "allOf": [
+          {
+            "$ref": "#/definitions/UserPromptSubmitHookSpecificOutputWire"
+          }
+        ],
+        "default": null
+      },
+      "reason": {
+        "default": null,
+        "type": "string"
+      },
+      "stopReason": {
+        "default": null,
+        "type": "string"
+      },
+      "suppressOutput": {
+        "default": false,
+        "type": "boolean"
+      },
+      "systemMessage": {
+        "default": null,
+        "type": "string"
+      }
+    },
+    "title": "user-prompt-submit.command.output",
+    "type": "object"
+  }
+}

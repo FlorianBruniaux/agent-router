@@ -1,0 +1,355 @@
+{
+  "ar_runtime_receipt": "NOT_APPLICABLE",
+  "automatic_prompt_interception": "NOT_TESTED",
+  "cases": [
+    {
+      "callback_count": 1,
+      "callback_item_correlated": true,
+      "callback_refused_count": 0,
+      "callbacks": [
+        {
+          "arguments_exact": true,
+          "call_id": "exec-e0a673db-76d8-4508-af7e-7b67255ceb27",
+          "request_id": 0,
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": "u02_registration_canary",
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        }
+      ],
+      "cleanup_complete": true,
+      "events": [
+        {
+          "method": "turn/started",
+          "status": "inProgress",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-2b1d-7c62-bc51-7e853c10fe65",
+          "item_type": "userMessage",
+          "method": "item/started",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": null,
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-2b1d-7c62-bc51-7e853c10fe65",
+          "item_type": "userMessage",
+          "method": "item/completed",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": null,
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "exec-e0a673db-76d8-4508-af7e-7b67255ceb27",
+          "item_type": "dynamicToolCall",
+          "method": "item/started",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": "u02_registration_canary",
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": true,
+          "exact_final_output": false,
+          "item_id": "exec-e0a673db-76d8-4508-af7e-7b67255ceb27",
+          "item_type": "dynamicToolCall",
+          "method": "item/completed",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": "u02_registration_canary",
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "msg_fixture_2",
+          "item_type": "agentMessage",
+          "method": "item/started",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": null,
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": true,
+          "item_id": "msg_fixture_2",
+          "item_type": "agentMessage",
+          "method": "item/completed",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "tool": null,
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        },
+        {
+          "method": "turn/completed",
+          "status": "completed",
+          "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+          "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec"
+        }
+      ],
+      "final_output_correlated": true,
+      "invalid_effort_rejected_before_provider": true,
+      "mode": "enabled",
+      "owned_process_group_gone": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 2,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 2,
+      "provider_requests": [
+        {
+          "canary_pointers": [
+            "/input/0/tools/0/tools/0/description"
+          ],
+          "custom_output_count": 0,
+          "effort": "high",
+          "exec_pointers": [
+            "/input/0/tools/0/tools/0"
+          ],
+          "matching_output": false,
+          "model": "gpt-6-astra"
+        },
+        {
+          "canary_pointers": [
+            "/input/0/tools/0/tools/0/description",
+            "/input/7/input"
+          ],
+          "custom_output_count": 1,
+          "effort": "high",
+          "exec_pointers": [
+            "/input/0/tools/0/tools/0"
+          ],
+          "matching_output": true,
+          "model": "gpt-6-astra"
+        }
+      ],
+      "success": true,
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a11064-2ac3-7930-9dcc-2f9db3ba44fb",
+      "turn_completed_correlated": true,
+      "turn_id": "01a11064-2b01-7fd1-aaeb-67ad9d884eec",
+      "turn_requested": {
+        "effort": "high",
+        "model": "gpt-6-astra"
+      },
+      "turn_started_correlated": true
+    },
+    {
+      "callback_count": 0,
+      "callback_item_correlated": false,
+      "callback_refused_count": 1,
+      "callbacks": [],
+      "cleanup_complete": true,
+      "events": [
+        {
+          "method": "turn/started",
+          "status": "inProgress",
+          "thread_id": "01a11064-2f59-7013-bb54-dd7137e5ead7",
+          "turn_id": "01a11064-2f7d-70f2-a6e9-8234f20b1f7f"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-2f89-76a2-a4d3-6925708f2339",
+          "item_type": "userMessage",
+          "method": "item/started",
+          "thread_id": "01a11064-2f59-7013-bb54-dd7137e5ead7",
+          "tool": null,
+          "turn_id": "01a11064-2f7d-70f2-a6e9-8234f20b1f7f"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-2f89-76a2-a4d3-6925708f2339",
+          "item_type": "userMessage",
+          "method": "item/completed",
+          "thread_id": "01a11064-2f59-7013-bb54-dd7137e5ead7",
+          "tool": null,
+          "turn_id": "01a11064-2f7d-70f2-a6e9-8234f20b1f7f"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "exec-b27cb04c-adfa-49d3-83d3-66a2f3e844e1",
+          "item_type": "dynamicToolCall",
+          "method": "item/started",
+          "thread_id": "01a11064-2f59-7013-bb54-dd7137e5ead7",
+          "tool": "u02_registration_canary",
+          "turn_id": "01a11064-2f7d-70f2-a6e9-8234f20b1f7f"
+        }
+      ],
+      "final_output_correlated": false,
+      "invalid_effort_rejected_before_provider": true,
+      "mode": "refused",
+      "owned_process_group_gone": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "canary_pointers": [
+            "/input/0/tools/0/tools/0/description"
+          ],
+          "custom_output_count": 0,
+          "effort": "high",
+          "exec_pointers": [
+            "/input/0/tools/0/tools/0"
+          ],
+          "matching_output": false,
+          "model": "gpt-6-astra"
+        }
+      ],
+      "refused_before_fixed_output": true,
+      "success": true,
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a11064-2f59-7013-bb54-dd7137e5ead7",
+      "turn_completed_correlated": false,
+      "turn_id": "01a11064-2f7d-70f2-a6e9-8234f20b1f7f",
+      "turn_requested": {
+        "effort": "high",
+        "model": "gpt-6-astra"
+      },
+      "turn_started_correlated": true
+    },
+    {
+      "callback_count": 0,
+      "callback_item_correlated": false,
+      "callback_refused_count": 0,
+      "callbacks": [],
+      "cleanup_complete": true,
+      "events": [
+        {
+          "method": "turn/started",
+          "status": "inProgress",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-3388-7de0-8c75-ce5dbc92a9b9",
+          "item_type": "userMessage",
+          "method": "item/started",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "tool": null,
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "01a11064-3388-7de0-8c75-ce5dbc92a9b9",
+          "item_type": "userMessage",
+          "method": "item/completed",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "tool": null,
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": false,
+          "item_id": "msg_fixture_2",
+          "item_type": "agentMessage",
+          "method": "item/started",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "tool": null,
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        },
+        {
+          "exact_callback_completion": false,
+          "exact_final_output": true,
+          "item_id": "msg_fixture_2",
+          "item_type": "agentMessage",
+          "method": "item/completed",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "tool": null,
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        },
+        {
+          "method": "turn/completed",
+          "status": "completed",
+          "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+          "turn_id": "01a11064-337b-7b83-a19e-12634985ba01"
+        }
+      ],
+      "final_output_correlated": true,
+      "invalid_effort_rejected_before_provider": true,
+      "mode": "disabled",
+      "owned_process_group_gone": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "canary_pointers": [],
+          "custom_output_count": 0,
+          "effort": "low",
+          "exec_pointers": [
+            "/input/0/tools/0/tools/0"
+          ],
+          "matching_output": false,
+          "model": "gpt-6.1-sol"
+        }
+      ],
+      "success": true,
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a11064-3365-7a82-8538-f5ca8277432d",
+      "turn_completed_correlated": true,
+      "turn_id": "01a11064-337b-7b83-a19e-12634985ba01",
+      "turn_requested": {
+        "effort": null,
+        "model": null
+      },
+      "turn_started_correlated": true
+    }
+  ],
+  "codex_code_mode_host_sha256": "ed79fbc9e1683feb29d73fb421f3e16932d178a459f63741754014c6c7ea6107",
+  "codex_native_binary_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "codex_version": "0.159.2",
+  "external_egress": "UNKNOWN: no packet capture or OS denial proof",
+  "fresh_session_withdrawal": true,
+  "helper_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "limits": {
+    "connections_per_case": 8,
+    "protocol_line_bytes": 262144,
+    "request_bytes": 1048576,
+    "requests_per_case": [
+      2,
+      1,
+      1
+    ],
+    "stderr_bytes": 2097152,
+    "stdout_bytes": 2097152,
+    "timeout_per_case_seconds": 20
+  },
+  "os_network_sandbox_status": "NOT_APPLIED",
+  "provider": "scripted loopback only",
+  "provider_spend": "USD 0",
+  "real_inference": "NOT_TESTED",
+  "schema_version": 5,
+  "script_sha256": "86c673727b7135355bb6024038bdea0ec55c9a0ea9a0fa30e9d9132fb22b5ba1",
+  "success": true,
+  "surface": "Codex CLI app-server stdio"
+}
