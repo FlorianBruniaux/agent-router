@@ -34,9 +34,29 @@ ont réussi avant fusion, dont les suites Linux/macOS et le runtime Linux natif
 Après fusion, les quatre workflows de `8983d23a` ont échoué sans exécution
 d'étape : GitHub indique un paiement en échec ou un plafond Actions à relever
 ([diagnostic post-fusion](https://github.com/FlorianBruniaux/agent-router/actions/runs/37416315096)).
-La validation post-fusion reste non obtenue. Florian doit vérifier la facturation
-Actions ; après rétablissement, relancer et vérifier ces contrôles. Aucune
-modification de facturation n'a été effectuée.
+La validation GitHub post-fusion reste non obtenue. À la demande de Florian,
+la validation se poursuit en local sans budget Actions. Aucune modification
+de facturation n'a été effectuée.
+
+[Validation locale complète disponible sur ce Mac](verification-local-ci-2026-10-06.json),
+proposée dans la [PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127) :
+1 575 résultats de tests Rust workspace, 1 test du cœur minimal et les 42 tests
+ignorés ont réussi ; les suites Python totalisent 191 tests réussis. Formatage,
+Clippy complet et minimal, harnais, syntaxe hôte, recherche de secrets dans les
+fichiers et l'historique, audit RustSec frais et archive du cœur passent.
+Les trois smokes de fuzzing passent aussi sur une copie isolée du même code Rust.
+
+Le premier passage sur `2326346` conserve son échec de découverte Python
+(0 test exécuté). Le correctif `1b3a2de` lance les six fichiers directement :
+113 tests de tooling passent, complétant les 78 tests Python du banc déjà réussis.
+Seuls le lanceur et ses tests ont changé entre ces deux références ; le Rust
+n'a pas été rejoué après cette correction. Le pin OpenSSL local a aussi été
+mis à jour de 3.6.4 vers 3.6.5, avec refus explicite des autres versions.
+
+Le [guide local](../local-ci.md) fournit la commande et les limites. Trois
+comportements Linux restent non vérifiés sur cette machine ; aucun moteur
+Linux local actif n'est disponible. La PR #127 n'est pas fusionnée et ces
+contrôles ne prouvent ni l'activation automatique ni un gain d'usage.
 
 ## Prochaines livraisons et suivi
 

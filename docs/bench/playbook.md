@@ -18,8 +18,19 @@ Linux/macOS workspace tests and the 42 Python fixture tests (29 + 13).
 The four post-merge workflows did not execute any steps: GitHub reported a
 payment or Actions spending-limit problem
 ([post-merge run](https://github.com/FlorianBruniaux/agent-router/actions/runs/37416315096)).
-Post-merge validation remains unverified until Actions is restored and the checks
-are rerun. No billing change was made.
+GitHub post-merge validation remains unverified. Development checks now run
+locally using the [local verification guide](../local-ci.md); no billing change
+was made. This does not supply the missing Linux evidence.
+
+[Local verification without Actions, 2026-10-06](verification-local-ci-2026-10-06.json)
+records 1,575 workspace Rust results, 1 core-only test, all 42 ignored tests and
+191 Python tests passed across the original run and corrected tooling rerun.
+The first run's zero-test Python discovery failure remains recorded; the fix
+executes each hyphenated test file directly. Rust sources did not change.
+Fresh RustSec audit, both secret scans, strict core packaging and verification,
+and three isolated parser fuzz smokes also passed. Three Linux-specific
+behaviors remain unverified. The runner and evidence are proposed in
+[PR #127](https://github.com/FlorianBruniaux/agent-router/pull/127), not merged.
 
 Next: prove the complete Codex code-mode tool roundtrip and removal, finish task
 and cache accounting, then validate automatic invocation before a capped real

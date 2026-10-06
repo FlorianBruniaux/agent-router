@@ -1,0 +1,705 @@
+{
+  "schema_version": 1,
+  "kind": "local-development-verification",
+  "observed_date": "2026-10-06",
+  "verdict": "selected_checks_passed_across_runs",
+  "full_ci_equivalent": false,
+  "coverage_statement": "The first four-group run failed only Python script discovery. The corrected six tooling suites passed separately. Other tested sources and commands were unchanged; the full command was not rerun after the correction.",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "machine": "arm64",
+  "tool_versions": {
+    "rustc": "rustc 1.85.1 (4eb161250 2025-03-15)",
+    "cargo": "cargo 1.85.1 (d73d2caf9 2024-12-31)",
+    "python": "Python 3.14.8",
+    "openssl": "OpenSSL 3.6.5 29 Sep 2026 (Library: OpenSSL 3.6.5 29 Sep 2026)",
+    "gitleaks": "8.30.1",
+    "cargo_audit": "cargo-audit 0.22.2",
+    "git": "git version 2.50.1 (Apple Git-155)"
+  },
+  "counts": {
+    "rust_workspace_passed": 1575,
+    "rust_core_only_passed": 1,
+    "rust_ignored_executed_passed": 42,
+    "rust_passed_results_total": 1618,
+    "python_tooling_passed": 113,
+    "python_egress_passed": 48,
+    "python_native_probe_passed": 13,
+    "python_campaign_passed": 17,
+    "python_passed_total": 191,
+    "fuzz_targets_passed": 3,
+    "linux_checks_not_applicable": 3,
+    "note": "Rust totals sum successful test-result lines, including subprocess test invocations; they are not a count of unique test definitions."
+  },
+  "runs": [
+    {
+      "id": "full-run",
+      "source_commit": "232634694bc443c6a6bc958124d5baeaaf740575",
+      "source_sha256": "d2888056998e6f835137ca0f401e2f01be9450ede815a61146e3b1f42d5f5857",
+      "clean_checkout": true,
+      "source_unchanged_during_run": true,
+      "runner_sha256": "27ee78bb258ddad24c2e43cfdfc3b9cc643341420dc1e4fd98769eb36f9fd487",
+      "raw_summary_sha256": "b8695d659d5221bf3fde45a2c9d5d1d65164b7f7dfd23aa622d8cdf60d24b651",
+      "verdict": "incomplete_or_failed",
+      "checks": [
+        {
+          "id": "format",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 1.579542,
+          "log": "format.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "argv": [
+            "cargo",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ]
+        },
+        {
+          "id": "clippy-all",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.878756,
+          "log": "clippy-all.log",
+          "log_sha256": "3bb679965f0a12982e07be2b1c71ba457c15ceb768859fabb10911106022ba16",
+          "argv": [
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--all-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings"
+          ]
+        },
+        {
+          "id": "clippy-core",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 21.460318,
+          "log": "clippy-core.log",
+          "log_sha256": "3cb9acc5e46e77224efa874d3ca9ff697b6be271a6a48dd6b27cebb9cc934b48",
+          "argv": [
+            "cargo",
+            "clippy",
+            "-p",
+            "agent-router-cli",
+            "--all-targets",
+            "--no-default-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings"
+          ]
+        },
+        {
+          "id": "workspace-tests",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 477.036474,
+          "log": "workspace-tests.log",
+          "log_sha256": "92c0cae241e0a898096e67df360d00c42de9e23bda180732e72ad6c978699d68",
+          "tests_passed_or_run": 1575,
+          "python_tests_skipped": 0,
+          "argv": [
+            "cargo",
+            "test",
+            "--workspace",
+            "--all-features",
+            "--locked",
+            "--",
+            "--test-threads=1"
+          ]
+        },
+        {
+          "id": "local-api-absent",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 34.320713,
+          "log": "local-api-absent.log",
+          "log_sha256": "d3d15b6585fb9dd054c8988b8662c9a6359d9c2a86f78a46656576b4200a0c47",
+          "tests_passed_or_run": 1,
+          "python_tests_skipped": 0,
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "agent-router-cli",
+            "--no-default-features",
+            "--locked",
+            "--test",
+            "local_api_absent"
+          ]
+        },
+        {
+          "id": "harness",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.940941,
+          "log": "harness.log",
+          "log_sha256": "4c65c63273acc8e31a8b241add483f29f869ad2487229bd6ccf3d8dbb4d5cf5e",
+          "argv": [
+            "cargo",
+            "run",
+            "-p",
+            "xtask",
+            "--locked",
+            "--",
+            "check"
+          ]
+        },
+        {
+          "id": "host-syntax",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.128875,
+          "log": "host-syntax.log",
+          "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87",
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/check-host-syntax.py"
+          ]
+        },
+        {
+          "id": "script-tests",
+          "group": "quality",
+          "exit_code": 5,
+          "status": "failed",
+          "duration_seconds": 0.126124,
+          "log": "script-tests.log",
+          "log_sha256": "e70fec2825d9bf206d27463a792768195039599cb39bcca66339f47283f84cce",
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "scripts",
+            "-p",
+            "test-*.py",
+            "-v"
+          ]
+        },
+        {
+          "id": "egress-tests",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 14.907398,
+          "log": "egress-tests.log",
+          "log_sha256": "5cde58dd90ea37684557dc528d2e4ba8fcd28166d2ee201f6bf03a716c79af8c",
+          "tests_passed_or_run": 48,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/egress-admission",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "id": "native-probe-tests",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 7.919047,
+          "log": "native-probe-tests.log",
+          "log_sha256": "d00fc853116fc564dc1a96922c37d246eda9ce9ac1aa9307309a68e7e96001f0",
+          "tests_passed_or_run": 13,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/native-integration-u02",
+            "-p",
+            "test_probe.py",
+            "-v"
+          ]
+        },
+        {
+          "id": "campaign-tests",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 3.030313,
+          "log": "campaign-tests.log",
+          "log_sha256": "c4a202f440bae225c00de57129833e279df229a25933abfbf5fb51a47e74e873",
+          "tests_passed_or_run": 17,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "docs/bench/campaign-next/tests",
+            "-p",
+            "test_*.py",
+            "-v"
+          ]
+        },
+        {
+          "id": "secrets-dir",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 3.535089,
+          "log": "secrets-dir.log",
+          "log_sha256": "599d14756b61ba9c20117b827ffe9afb201f5d6ff4ddbce85dc06968c442ca97",
+          "argv": [
+            "gitleaks",
+            "dir",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ]
+        },
+        {
+          "id": "secrets-git",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 3.48007,
+          "log": "secrets-git.log",
+          "log_sha256": "37b1db0dd54ee93bd7b5b08ad1455861e0ada27d9881f92c1b8e914cf73b4327",
+          "argv": [
+            "gitleaks",
+            "git",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ]
+        },
+        {
+          "id": "native-build",
+          "group": "native",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 34.012456,
+          "log": "native-build.log",
+          "log_sha256": "16bb42a42759dd6399892a477e4f941d611163e7f6a28621ef83e0fd642ad6be",
+          "argv": [
+            "cargo",
+            "build",
+            "-p",
+            "agent-router-cli",
+            "-p",
+            "router-sandbox-helper",
+            "--all-features",
+            "--locked"
+          ]
+        },
+        {
+          "id": "native-ignored",
+          "group": "native",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 882.581774,
+          "log": "native-ignored.log",
+          "log_sha256": "d1ec8878b1a4c87b51913b3e050b1b38638195f10b2b1dd921306a0b44d8486f",
+          "tests_passed_or_run": 42,
+          "python_tests_skipped": 0,
+          "argv": [
+            "cargo",
+            "test",
+            "--workspace",
+            "--all-features",
+            "--locked",
+            "--",
+            "--ignored",
+            "--test-threads=1",
+            "--nocapture"
+          ]
+        },
+        {
+          "id": "linux-lifetime",
+          "group": "native",
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0,
+          "reason": "Linux-only sandbox regression is not evidenced on this host",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-sandbox-helper",
+            "--test",
+            "lifetime",
+            "sigkill_bubblewrap_parent_stops_setsid_descendant",
+            "--locked",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ]
+        },
+        {
+          "id": "linux-network",
+          "group": "native",
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0,
+          "reason": "Linux-only sandbox regression is not evidenced on this host",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-runtime",
+            "--test",
+            "runtime",
+            "native_bubblewrap_read_write_and_network_canary",
+            "--locked",
+            "--",
+            "--ignored",
+            "--exact",
+            "--nocapture"
+          ]
+        },
+        {
+          "id": "linux-address-space",
+          "group": "native",
+          "exit_code": null,
+          "status": "not_applicable",
+          "duration_seconds": 0.0,
+          "reason": "Linux-only address_space_limit_rejects_a_real_allocation is not evidenced on this host",
+          "argv": [
+            "cargo",
+            "test",
+            "-p",
+            "router-sandbox-helper",
+            "--test",
+            "limits",
+            "address_space_limit_rejects_a_real_allocation",
+            "--locked",
+            "--",
+            "--exact"
+          ]
+        },
+        {
+          "id": "audit-version",
+          "group": "audit",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.162043,
+          "log": "audit-version.log",
+          "log_sha256": "8748580845bee726903e69bc4543958fb01e2594317e6c68bf80114bff13d541",
+          "version": "cargo-audit 0.22.2",
+          "argv": [
+            "cargo-audit",
+            "--version"
+          ]
+        },
+        {
+          "id": "dependency-audit",
+          "group": "audit",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 8.617853,
+          "log": "dependency-audit.log",
+          "log_sha256": "1d97d322184a30e3c029f1a983c9bcd1332bcc6415e586f26516008878c91ebc",
+          "advisory_db_sha": "ef6173cbc5c50ec8166f9a5b28f07834144373ee",
+          "fresh_advisory_db": true,
+          "argv": [
+            "cargo-audit",
+            "audit",
+            "--file",
+            "Cargo.lock",
+            "--db",
+            "<EVIDENCE>/advisory-db",
+            "--deny",
+            "warnings"
+          ]
+        },
+        {
+          "id": "fetch-locked",
+          "group": "packaging",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 1.018097,
+          "log": "fetch-locked.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "argv": [
+            "cargo",
+            "fetch",
+            "--locked"
+          ]
+        },
+        {
+          "id": "package-core",
+          "group": "packaging",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 12.184148,
+          "log": "package-core.log",
+          "log_sha256": "2ebccfcc1002d760c6b831c2d53655728595498d82e91597f03a6b6ba3955dfc",
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/package-core.py",
+            "--distribution",
+            "core",
+            "--strict-licenses",
+            "--output",
+            "<EVIDENCE>/core.tar.gz"
+          ]
+        },
+        {
+          "id": "verify-core",
+          "group": "packaging",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.796037,
+          "log": "verify-core.log",
+          "log_sha256": "d32eb35bd4043b2dd768e411c86a99a8726946f1f49e825aecc8e32548e02331",
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/package-core.py",
+            "--verify",
+            "<EVIDENCE>/core.tar.gz"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tooling-rerun",
+      "source_commit": "1b3a2de61b8ca8c5630ac15b66905595a4ac35f2",
+      "source_sha256": "e9abd021e2c0297d25007fa61abe1afb40c9849e585396a397407072c7c46f01",
+      "clean_checkout": true,
+      "source_unchanged_during_run": true,
+      "runner_sha256": "ac78615b7789275b4395a1befa85949bfa0e20be5afec5326cfd4c611f3e62b3",
+      "raw_summary_sha256": "d8f37784a7823d1de4595ca6660fa5b4f35eb668b6c392a731f9a24733d1677d",
+      "verdict": "selected_checks_passed",
+      "checks": [
+        {
+          "id": "script-test-benchmark-startup",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.868818,
+          "log": "script-test-benchmark-startup.log",
+          "log_sha256": "fd3429f6a39b0337f73fcc2e93bc92cfa556334244053e19baf5f74b054988a4",
+          "tests_passed_or_run": 3,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-benchmark-startup.py"
+          ]
+        },
+        {
+          "id": "script-test-check-adrs",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.723993,
+          "log": "script-test-check-adrs.log",
+          "log_sha256": "ba3029ee63def96db7b879fa5d3167d03bb32cca878a4855685b52a49efea201",
+          "tests_passed_or_run": 30,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-check-adrs.py"
+          ]
+        },
+        {
+          "id": "script-test-check-local",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 31.563671,
+          "log": "script-test-check-local.log",
+          "log_sha256": "f463ecdfa786b7086497e27a46e6b82b581c0c3024ce0d6ddbe634401fc1f020",
+          "tests_passed_or_run": 25,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-check-local.py"
+          ]
+        },
+        {
+          "id": "script-test-package-binary",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.649647,
+          "log": "script-test-package-binary.log",
+          "log_sha256": "e66583107f961d826d4bd77c9bd9043b422b859355170cc1d9f0ee3e124e22e3",
+          "tests_passed_or_run": 12,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-package-binary.py"
+          ]
+        },
+        {
+          "id": "script-test-package-core",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 0.580501,
+          "log": "script-test-package-core.log",
+          "log_sha256": "b65a4ef96144f26d0dad977368b7b8342e3dbfaf8e1531a6e341b8ecef2ddfbc",
+          "tests_passed_or_run": 26,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-package-core.py"
+          ]
+        },
+        {
+          "id": "script-test-release-local",
+          "group": "quality",
+          "exit_code": 0,
+          "status": "passed",
+          "duration_seconds": 23.927458,
+          "log": "script-test-release-local.log",
+          "log_sha256": "8edf098cd1fe903b3f0e0fab81512038c37037c9b1a587464c3e209175871929",
+          "tests_passed_or_run": 17,
+          "python_tests_skipped": 0,
+          "argv": [
+            "<PYTHON>",
+            "-B",
+            "scripts/test-release-local.py"
+          ]
+        }
+      ]
+    }
+  ],
+  "correction": {
+    "from_commit": "232634694bc443c6a6bc958124d5baeaaf740575",
+    "to_commit": "1b3a2de61b8ca8c5630ac15b66905595a4ac35f2",
+    "changed_paths": [
+      "scripts/check-local.py",
+      "scripts/test-check-local.py"
+    ],
+    "failed_check": "script-tests",
+    "cause": "unittest discovery does not import hyphenated test-*.py modules",
+    "replacement_checks": [
+      "script-test-benchmark-startup",
+      "script-test-check-adrs",
+      "script-test-check-local",
+      "script-test-package-binary",
+      "script-test-package-core",
+      "script-test-release-local"
+    ],
+    "new_regressions": "Hyphenated failing and passing suites both execute; empty collection is unavailable."
+  },
+  "openssl_preflight": {
+    "baseline_commit": "17c66adc65664772c7de2f1adfd135456c4d556d",
+    "tests_run": 17,
+    "failures": 11,
+    "log_sha256": "5ea8d6d3ca76a0dbb843d47af3cbc4823ed721e102ce4a5ff9fbf0e416e4ab3d",
+    "cause": "Exact 3.6.4 pin rejected installed OpenSSL 3.6.5",
+    "resolution": "Exact pin updated to 3.6.5; 3.6.4, 3.6, 3.6.50 and 3.6.6 explicitly rejected. All 17 release tests passed in tooling-rerun."
+  },
+  "fuzz": {
+    "source_commit": "17c66adc65664772c7de2f1adfd135456c4d556d",
+    "host": "aarch64-apple-darwin",
+    "toolchain": "nightly-2026-09-12",
+    "cargo_fuzz": "0.13.2",
+    "results": [
+      {
+        "target": "host_snapshot",
+        "exit_code": 0,
+        "duration_seconds": 12.655,
+        "log_sha256": "01e7b714ce7fcf023ab77b8bcc3e8008a87c480218722ab40b8e73c49321d1fa",
+        "fuzzer_iterations": 232031,
+        "reported_fuzz_seconds": 11,
+        "limits": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "rss_limit_mb": 1024,
+          "max_len": 4194305
+        }
+      },
+      {
+        "target": "provider_sse",
+        "exit_code": 0,
+        "duration_seconds": 12.604,
+        "log_sha256": "a4909fd25ff67c91c65b219ca41d29f83c753cebe5f5199412c3177de1aa3725",
+        "fuzzer_iterations": 16855,
+        "reported_fuzz_seconds": 11,
+        "limits": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "rss_limit_mb": 1024,
+          "max_len": 4194305
+        }
+      },
+      {
+        "target": "phase_scope",
+        "exit_code": 0,
+        "duration_seconds": 12.702,
+        "log_sha256": "96dfc45d8dc47bebe740f2985e9f892707ff526e94ae91e60f27c5d4a9752a5b",
+        "fuzzer_iterations": 190738,
+        "reported_fuzz_seconds": 11,
+        "limits": {
+          "max_total_time_seconds": 10,
+          "timeout_seconds": 3,
+          "rss_limit_mb": 1024,
+          "max_len": 262144
+        }
+      }
+    ],
+    "lockfiles_before": {
+      "Cargo.lock": "c5ae233315eea44ee1f58585e75daab930fe992e4327c611fa6fff868036cf73",
+      "fuzz/Cargo.lock": "293a68cd26e390b783927babd5659fdf2b6103ba0607cef76bc077fd4bab5332"
+    },
+    "lockfiles_after": {
+      "Cargo.lock": "c5ae233315eea44ee1f58585e75daab930fe992e4327c611fa6fff868036cf73",
+      "fuzz/Cargo.lock": "293a68cd26e390b783927babd5659fdf2b6103ba0607cef76bc077fd4bab5332"
+    },
+    "lockfiles_unchanged": true,
+    "canonical_corpus_modified": false,
+    "source_equivalence_to_tooling_commit": {
+      "changed_rust_and_fuzz_paths": []
+    },
+    "recipe": "docs/fuzzing.md",
+    "build_log_sha256": "a94a36ea9e2862258fb9f31a4a010d56f78ed503b59bac07f067065f8ad146e4"
+  },
+  "lockfiles": {
+    "Cargo.lock": "c5ae233315eea44ee1f58585e75daab930fe992e4327c611fa6fff868036cf73",
+    "fuzz/Cargo.lock": "293a68cd26e390b783927babd5659fdf2b6103ba0607cef76bc077fd4bab5332",
+    "unchanged": true
+  },
+  "core_archive_sha256": "ce4fd5a9e8f3355cfe2e8285f3e73539ed5a9145c07452c118565c4bc24c2429",
+  "limits": [
+    "macOS does not validate Linux Bubblewrap file/network isolation, parent-death cleanup or RLIMIT_AS allocation refusal.",
+    "GitHub Actions did not execute the post-merge checks because of account billing/spending limits. Local evidence does not change that remote result.",
+    "Local Python is 3.14.8; GitHub CI specifies 3.12. Cross-version behavior was not compared here.",
+    "These are development tests and bounded fuzz smokes. No real provider inference, native automatic routing, installation or user productivity/cost gain is established.",
+    "Private raw logs and source inventories remain outside the repository. This reviewed export retains hashes and results only."
+  ]
+}

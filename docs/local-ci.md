@@ -32,6 +32,12 @@ status in each log. Socket and Seatbelt tests need the host's normal local
 permissions; run outside an agent sandbox that denies these operations. The
 runner does not grant permissions or change global configuration.
 
+For a development change that does not need the native stress suites, select
+`--group quality`. Before a delivery, use the four-group command above and the
+separate fuzz recipe. In the [6 October observation](bench/verification-local-ci-2026-10-06.json),
+the workspace tests took 477 seconds and the ignored/native suites took
+883 seconds. These are observations on this Mac, not a duration guarantee.
+
 ## Coverage and prerequisites
 
 | Group | Checks | Prerequisites and limits |
@@ -65,6 +71,13 @@ source fingerprints, tool evidence and coverage gaps. A failure, missing tool,
 timeout, interruption or zero executed tests blocks a passing selected-checks
 verdict. Tests marked not applicable remain explicit. `full_ci_equivalent` stays
 false: one operating system cannot cover the two-system GitHub matrix.
+
+The [first local verification record](bench/verification-local-ci-2026-10-06.json)
+retains a failed discovery command and its corrected rerun: Python discovery
+does not import the hyphenated `scripts/test-*.py` names. The runner now invokes
+each of those files directly, retaining a separate verdict for each suite.
+That record combines unchanged Rust/bench checks with the corrected tooling
+run; it does not relabel the first full run as green.
 
 Logs remain local. Publish only a reviewed summary with the tested commit,
 source fingerprint, counts, failures and coverage limits in
