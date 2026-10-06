@@ -1,0 +1,37 @@
+docs/bench/native-integration-u02/result-v4.json
+  s_9e80b85afcc43a::t_61c92895e562c3 1-130
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_091bfb07ecb4ce 8-18
+docs/bench/native-integration-u02/test_probe.py
+  s_9e80b85afcc43a::t_53d3d3cb550d0a 84-95,181-192
+  s_9e80b85afcc43a::t_3f90a830a0f0f9 18-19
+  s_9e80b85afcc43a::t_4d9eb471e81ff3 3-5,66-83,96-160,162-180,193-200
+  s_9e80b85afcc43a::t_75742fdb38d862 161
+  s_9e80b85afcc43a::t_3ae71230e0592c 201-202
+docs/bench/native-integration-u02/probe.py
+  s_9e80b85afcc43a::t_3f90a830a0f0f9 66,68-69,85-95,114-118,203-208,242-243
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_091bfb07ecb4ce 20-27
+CHANGELOG.md
+  s_9e80b85afcc43a::t_091bfb07ecb4ce 27-28
+docs/bench/native-integration-u02/probe-v3.py
+  s_9e80b85afcc43a::t_321c0115e82ff7 1-259
+docs/bench/native-integration-u02/README.md
+  s_9e80b85afcc43a::t_29e79e2273b0a3 3,18,25,55-69,98,100-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8d2a3a89f4990733c559f8801b55311e8c405f3f",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
