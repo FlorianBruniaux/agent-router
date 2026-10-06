@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "kind": "local-development-verification",
+  "observed_date": "2026-10-06",
+  "base_commit": "65cacfbf11d271f2bc659d2f565f3d90f1667b10",
+  "verdict": "selected_checks_passed",
+  "full_ci_equivalent": false,
+  "tested_state": "Uncommitted candidate with unchanged source hashes during all selected checks. After the run, only this evidence JSON and a README link to it were added; executable sources remain unchanged.",
+  "summary_sha256": "87ef4e922c9f2958e9861f12a03ae5509257272aed0ea322b626b8929c751c4d",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "source_before_sha256": "15456f8e417208c5e4bca11856219379d1c6535c17f495bde8b8bf7f8a1bc50f",
+  "source_after_sha256": "15456f8e417208c5e4bca11856219379d1c6535c17f495bde8b8bf7f8a1bc50f",
+  "counts": {
+    "rust_passed_result_lines": 1594,
+    "python_tests_executed": 275,
+    "native_fixed_case_observations": 8,
+    "note": "Rust sums include subprocess result lines, not unique definitions. Standalone preflight reruns are not added to these totals."
+  },
+  "checks": [
+    {
+      "id": "format",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.941939,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.453292,
+      "log_sha256": "b2c020f27a01faabb96e5d55c11fd219cf7c484c9cf34b3342bfc8444d934c89"
+    },
+    {
+      "id": "clippy-core",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.185395,
+      "log_sha256": "a5f4c585ee974ca44916ac30a98bbc189e067a7e0a6bc6d2e8d6bc525be724af"
+    },
+    {
+      "id": "workspace-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 407.018896,
+      "log_sha256": "e0f55f43f4b3e319babffdcb50eeee0e8d69e60aac3d05d908c2d1111883e6c7",
+      "tests_passed_or_run": 1593,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "local-api-absent",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 1.575048,
+      "log_sha256": "e2e9faa80b97c55edacced41a2250b883caa9e285beababc2bd87ac457233f34",
+      "tests_passed_or_run": 1,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "harness",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.615621,
+      "log_sha256": "55d147077a8df5844005c985b0723e55228762074aaf12696dacc750cdd11078"
+    },
+    {
+      "id": "host-syntax",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.076649,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.238366,
+      "log_sha256": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+      "tests_passed_or_run": 3,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-check-adrs",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.129591,
+      "log_sha256": "085355190c86150fd5d8933fc916a71f0c3a031f9f65df29ac9f3b79683d696b",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-check-local",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 6.432487,
+      "log_sha256": "ce14b1df271ab4f9ece19d85c0cc479f65acfd912c0182be2016e1517541c1db",
+      "tests_passed_or_run": 29,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-package-binary",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.34555,
+      "log_sha256": "133029f4eccda5817b691d92130256784d90bcf50290b8c4ba4355ee0cf20a07",
+      "tests_passed_or_run": 12,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-package-core",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.296613,
+      "log_sha256": "7a31757b8fec5d02c9c343abb0d0f177bf436191356b6d5881bd8f8df507d538",
+      "tests_passed_or_run": 26,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-release-local",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 7.366454,
+      "log_sha256": "dc82dcc8bac76a885ffd47c9c3d1f4ac43a50e72b507d97c34f6cf13e40c2cba",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "egress-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 14.283403,
+      "log_sha256": "42abc335f40ff2ede98e1ecd7452bc5d7720df6fd67ee097617177259f0a95df",
+      "tests_passed_or_run": 48,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-probe-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 8.298496,
+      "log_sha256": "90b8a7d5f1c48b83f6af30575b19df82ca06769c7c2007768f4422e3e88ab896",
+      "tests_passed_or_run": 33,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-decision-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 3.210782,
+      "log_sha256": "6c0817ab08568d823df9b6fa8416e5ca57316a8ab258c7a950e9ea2a7486963c",
+      "tests_passed_or_run": 13,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 7.807137,
+      "log_sha256": "fe967ede3d7882c789e89b3a7c8e7125a2ddd89f4f87a9a7fa08c6c04b1445d5",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "campaign-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 2.964966,
+      "log_sha256": "847e93125c93833848737381cdee4672b3997d87911edaa49ac23f22bac2a5d3",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "calibration-tests",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 8.27296,
+      "log_sha256": "0762cb856c4dd3a9e02ee62911e7556d818b3930f0435c8ba9ed9fd30ca3817e",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "secrets-dir",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 3.441722,
+      "log_sha256": "46edac8eadbcc6e1225b39973a9f7ab7375c1353f409e159e52ecf58e25015c6"
+    },
+    {
+      "id": "secrets-git",
+      "group": "quality",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 4.218797,
+      "log_sha256": "d0a1c2c55e805d9f0b820af5a044bf2ad51d624e6422d66d4ceed3e9e1767ebc"
+    }
+  ],
+  "candidate_files_sha256": {
+    "scripts/check-local.py": "db8332dd6462bac10d351d6b63572aa474a91a65f95096a9b35105df86e3ddb2",
+    "scripts/test-check-local.py": "d6a684b3fa71b6e21cd6be12a3bf005c418012b96b22866779e36da5d9d487ea",
+    "docs/bench/calibration-v2/README.md": "51d2999a0199a8b49d3847cc9f15ca6bacfe962a24526c253b58dbb766ce9843",
+    "docs/bench/calibration-v2/personal-trial.md": "ff5d16f1188804dbf354c4a240063fe65907ec30662afebc31c44671407e191a",
+    "docs/bench/playbook.md": "8a2feed8d0457f7d6eb20344cf8ba8fa8a6e83927a73c32eef33c4aac61ec014",
+    "docs/bench/status-and-action-plan-2026-10-05.md": "517df9c808b4d393ceafe641e8138e2d2f14515310a1f934b360832ac0950705",
+    "docs/bench/native-integration-u07/README.md": "86c2175bf325b031f7cc5e447290eaf1fee1c8b38bc9a191bdcecb40dbca6fcd",
+    "docs/bench/native-integration-u07/failure_probe.py": "573bb1c9c18ab49a8d5908bfc1b377737f0477bec1445a0f16b37ad406188bac",
+    "docs/bench/native-integration-u07/test_failure_probe.py": "3dd5f5c3ae5983cf88beaa43eb6d66b63f24ac4e6402efa9d5e907596bc0f3fb",
+    "docs/bench/native-integration-u07/observations.md": "c0a3d246fd3d3461e1f4c9931a3a0f53b4747ba3141da633d9b806ace5af8622",
+    "docs/bench/native-integration-u07/result.json": "cb2d8a6be1f66c916cfe9ea1fa082ef6abfcfbb523c5a609b411edbadd32b438"
+  },
+  "independent_review": [
+    "Frozen U07 source and registration reviewed before native execution.",
+    "All eight native verdicts recomputed from private evidence.",
+    "Final documentation, sanitized evidence and archive hashes reviewed."
+  ],
+  "negative_regressions": [
+    "Missing U07 suite first failed registration, then a deliberately failing sentinel verified execution, environment, status and log retention.",
+    "A fatal malformed RPC followed by valid completion previously qualified as safe; recorded failure now forces UNKNOWN.",
+    "Hook identity/order, incomplete TCP observation and late timeout return cannot supply safe-refusal evidence."
+  ],
+  "coverage_gaps": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner.",
+    "Native ignored Rust tests, dependency audit, packaging and fuzz were not rerun for this Python/documentation change; prior evidence remains bound to its recorded runs.",
+    "Rust sources and lockfiles are unchanged from the merged base.",
+    "U07 child dispatch is not admitted: five observed unexpected hook failures each allowed a parent request.",
+    "No real provider inference, global hook installation, measured user benefit or public-release claim."
+  ],
+  "post_verification_documentation": {
+    "docs/bench/native-integration-u07/README.md": "04dd590b94fb34c3b423d3b2799ccf5a36f53f108f13bcbb1b48bb18136bb895"
+  }
+}

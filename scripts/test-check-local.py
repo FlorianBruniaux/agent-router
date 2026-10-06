@@ -252,6 +252,25 @@ class LocalCheckTests(unittest.TestCase):
         self.assertTrue(marker.exists(), "versioned probe regression must execute")
         self.assertEqual(self.report()["checks"][0]["tests_passed_or_run"], 1)
 
+    def test_hook_failure_diagnostic_executes_and_retains_failure(self):
+        folder = self.root / "docs/bench/native-integration-u07"
+        folder.mkdir(parents=True)
+        marker = Path(self.temp.name) / "hook-failure-probe-ran"
+        (folder / "test_failure_probe.py").write_text(
+            "import os, unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
+            "    def test_canary(self):\n"
+            f"        self.assertEqual(os.environ.get('U07_REPO_ROOT'), {str(self.root)!r})\n"
+            f"        Path({str(marker)!r}).touch()\n"
+            "        self.fail('hook diagnostic failure sentinel')\n")
+        checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"])
+                  if c["id"] == "native-hook-failure-tests"]
+        self.assertEqual(len(checks), 1, "hook failure diagnostic must be registered")
+        self.assertEqual(self.execute(checks), 1)
+        self.assertTrue(marker.exists(), "hook diagnostic must execute")
+        result = self.report()["checks"][0]
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("hook diagnostic failure sentinel", (self.out / result["log"]).read_text())
+
     def test_calibration_failure_is_executed_and_retained(self):
         folder = self.root / "docs/bench/calibration-v2/tests"
         folder.mkdir(parents=True)

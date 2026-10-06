@@ -5,6 +5,10 @@ Il ne lance aucune tâche. Le [manifeste à compléter](manifest.template.json)
 est un document de préparation, pas un format accepté par la CLI ou par le
 runner historique. Ses valeurs `null` restent des décisions manquantes.
 
+Le [protocole du premier essai personnel](personal-trial.md) précise les trois
+décisions humaines, les critères de réussite et les mesures à recueillir.
+Il reste un candidat sans autorisation d'exécution.
+
 ## Premier bloc
 
 Comparer A-v2, qui peut choisir une seule session, à E, une session avec le
