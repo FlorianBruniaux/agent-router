@@ -5,6 +5,17 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+Mise à jour du 6 octobre : le commit `f637d0a` est publié sur la branche dédiée.
+Les trois workflows GitHub ont réussi sur ce SHA, dont les tests Linux/macOS,
+l'audit des dépendances et le contrôle runtime Linux. La suite locale parallèle
+a également réussi : 1 563 tests, 42 ignorés, 292 filtrés, aucun échec.
+La revue a ensuite corrigé un faux positif du compteur HTTP du probe U02,
+reproduit par neuf cas de régression ; les 13 tests de fixture passent.
+Le [nouvel essai natif](native-integration-u02/result-v4.json) confirme les
+paramètres, la sortie et les compteurs corrigés, mais le canari d'outil manque
+toujours. U02/U06/U07 restent non validés. Aucun gain d'usage n'est établi.
+Les états non commités ci-dessous décrivent la référence historique du 5 octobre.
+
 ## Résultat recherché et limites actuelles
 
 Après installation consentie, une tâche éligible déclenche Agent Router dans

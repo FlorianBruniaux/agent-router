@@ -24,6 +24,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- The native integration diagnostic now counts refused HTTP requests and connections without a request. Its negative control requires the exact expected RPC error and zero provider contacts; historical probe results remain available.
+
 - Codex execution usage preserves a declared `cache_write_input_tokens` count, including zero. Missing, null or invalid counts stay unknown; input totals are not incremented again.
 
 ### Breaking

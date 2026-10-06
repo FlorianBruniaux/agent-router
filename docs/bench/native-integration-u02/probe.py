@@ -63,7 +63,10 @@ def verdict(case):
                 and e.get('turn_id') == turn_id and e.get('status') == 'completed' for e in events)
         and case.get('output_correlated') is True
         and case.get('invalid_effort_rejected_before_provider') is True
+        and case.get('invalid_effort_error_code') == -32600
         and case.get('cleanup_complete') is True
+        and case.get('provider_request_count') == 1
+        and case.get('provider_accepted_connections') == 1
         and case.get('provider_rejected_connections') == 0
         and case.get('provider_rejected_requests') == 0)
 
@@ -79,6 +82,17 @@ def run_case(h, binary, enabled, timeout):
             d.mkdir(mode=0o700, parents=True, exist_ok=True)
 
         class Handler(h.ProviderHandler):
+            def parse_request(self):
+                # Count attempts before parsing or dispatch can reject them.
+                with self.server.lock:
+                    self.server.request_count += 1
+                return super().parse_request()
+
+            def send_error(self, code, message=None, explain=None):
+                with self.server.lock:
+                    self.server.rejected_requests += 1
+                super().send_error(code, message, explain)
+
             def do_POST(self):
                 self.close_connection = True
                 if self.path != '/v1/responses':
@@ -97,11 +111,11 @@ def run_case(h, binary, enabled, timeout):
                 except (ValueError, TypeError, AttributeError, UnicodeError):
                     self.send_error(400); return
                 with self.server.lock:
-                    if self.server.request_count >= 1:
-                        self.server.rejected_requests += 1
-                        self.send_error(429); return
-                    self.server.request_count += 1
-                    self.server.projections.append(projection)
+                    accepted = self.server.request_count == 1
+                    if accepted:
+                        self.server.projections.append(projection)
+                if not accepted:
+                    self.send_error(429); return
                 # Reuse the existing bounded SSE final-message fixture, no tool call.
                 payload = h.response_sse(2, True).replace(h.CALLBACK_RESULT.encode(), OUTPUT.encode())
                 self.send_response(200)
@@ -186,7 +200,12 @@ supports_websockets = false
             rejected = response(3, deadline)
             case['invalid_effort_error_code'] = rejected.get('error',{}).get('code')
             with provider.lock:
-                case['invalid_effort_rejected_before_provider'] = 'error' in rejected and provider.request_count == 0
+                case['invalid_effort_rejected_before_provider'] = (
+                    case['invalid_effort_error_code'] == -32600
+                    and provider.request_count == 0
+                    and provider.accepted_connections == 0
+                    and provider.rejected_connections == 0
+                    and provider.rejected_requests == 0)
             if not case['invalid_effort_rejected_before_provider']:
                 raise h.FixtureError('invalid effort type unexpectedly accepted; stopping before another turn')
             if enabled:
@@ -220,6 +239,8 @@ supports_websockets = false
                     if listener.is_alive():
                         raise h.FixtureError('listener cleanup failed')
                 case['provider_requests'] = provider.projections
+                case['provider_request_count'] = provider.request_count
+                case['provider_accepted_connections'] = provider.accepted_connections
                 case['provider_rejected_connections'] = provider.rejected_connections
                 case['provider_rejected_requests'] = provider.rejected_requests
             case['cleanup_complete'] = True

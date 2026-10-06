@@ -17,6 +17,14 @@ serial workspace suite. These are development checks, not a new value campaign.
 
 ## Campaign log
 
+Development verification, 2026-10-06: the unchanged Rust sources at `f637d0a`
+passed all 1,563 active workspace tests in parallel locally. GitHub also passed
+Linux/macOS quality, secret scans, dependency audit and native Linux checks on
+that exact SHA. The U02 HTTP counter defect found during independent review was
+reproduced, corrected and checked with 13 fixture tests. Its
+[new native result](native-integration-u02/result-v4.json) still lacks the tool
+canary and does not admit automatic integration. This is not a value campaign.
+
 One line per campaign. The commit is the repository commit the `agent-router` binary was built from.
 
 | Date | Commit | Manifest | Scope | Status | Results |

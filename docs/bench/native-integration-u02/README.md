@@ -1,6 +1,6 @@
 # U02: native Codex API evidence, automatic CLI integration not validated
 
-Observed on 2026-10-05 on macOS 26.5.1 arm64, Codex CLI 0.159.2,
+Observed on 2026-10-05 and repeated on 2026-10-06 on macOS 26.5.1 arm64, Codex CLI 0.159.2,
 binary SHA-256 `61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70`.
 The candidate surface is the CLI binary's experimental app-server stdio API.
 This is a standalone diagnostic client, not an installed Agent Router integration.
@@ -15,14 +15,14 @@ Automatic CLI prompt interception remains unvalidated. **U06/U07 remain blocked.
 
 | Capability | Verdict and exact scope | Evidence |
 | --- | --- | --- |
-| Explicit native turn submission | VERIFIED for a client-issued `turn/start` | `turn/started` in both cases of [result-v3.json](result-v3.json) |
+| Explicit native turn submission | VERIFIED for a client-issued `turn/start` | `turn/started` in both cases of [result-v4.json](result-v4.json) |
 | Task/session/output correlation | VERIFIED in the client transcript | Fixture UUID sent as `clientUserMessageId`; response thread/turn IDs match native start, assistant item and completion. UUID echo from host was not asserted. |
 | Model/effort selection | VERIFIED as controller-to-fake-provider parameters | Enabled session starts with `gpt-6.1-sol` / `low`, turn override sends `gpt-6-astra` / `high`; exactly one accepted provider request. No claim that either model executed. |
 | Native output | VERIFIED synthetic output | `item/completed` contains exactly `U02_SCRIPTED_OUTPUT`, correct thread/turn IDs; turn completed. |
 | Disable per-turn overrides in a fresh session | VERIFIED for this disposable API client | Enabled process stopped; fresh isolated home, app-server and thread omit overrides, then provider sees `gpt-6.1-sol` / `low`; process exits 0, temporary state removed. |
 | Dynamic-tool canary registration | NOT_OBSERVED in this scenario | Correctly typed registration requested, provider tool inventory empty. Cause UNKNOWN. Composite probe exits 1, preserving this negative result. |
 | Dynamic-tool removal | UNKNOWN | Absent in disabled session, but positive registration prerequisite failed. |
-| Malformed effort type rejection | VERIFIED | Object-valued effort gets JSON-RPC error `-32600` before any provider request, both sessions. |
+| Malformed effort type rejection | VERIFIED in v4 | Object-valued effort gets exactly JSON-RPC error `-32600` with zero observed provider connections or requests before the valid turn, both sessions. Historical v3 counters did not establish this absence. |
 | Unknown effort string rejection | NOT_SUPPORTED by the tested protocol path | Initial run forwarded `invalid-u02-effort`; schema defines any nonempty string. Host model-advertised effort eligibility is not enforced by this test. |
 | Automatic CLI prompt hook | NOT_TESTED / integration not admitted | `turn/started` reports an already-started client turn; it is not a demonstrated pre-submission routing hook. |
 | Installed hook disable/restore | NOT_TESTED | No hook/configuration was installed. Fresh-client override removal does not establish global rollback. |
@@ -52,10 +52,21 @@ python3 -B -m unittest discover \
 
 On the recorded host the native probe exits **1** because dynamic registration
 is absent; consult individual capability rows instead of interpreting a blanket
-success. The eight offline checks pass. They exercise correlation, wrong model
-and effort, duplicate physical requests, cleanup and refusal evidence, absence
-of the canary, and sanitized nested tool-name projection. They do not launch
-Codex or independently establish native behavior.
+success. The 13 fixture checks pass, including actual loopback HTTP against a
+simulated app-server. They exercise correlation, wrong model and effort,
+duplicate or refused HTTP requests, connections without HTTP, the exact RPC
+error code, cleanup, absence of the canary and sanitized tool-name projection.
+They do not launch Codex or independently establish native behavior. The HTTP
+tests need loopback permission when the surrounding sandbox forbids listening.
+
+On 2026-10-06, independent review found that the old counter omitted malformed
+or refused HTTP requests. Nine failing regression cases reproduced false
+positive verdicts before the correction. The current probe counts requests
+before parsing, counts all HTTP error replies and requires exactly one observed
+connection and one request for the final case. The repeated native diagnostic
+[result-v4.json](result-v4.json) confirms these counts, correct parameter
+transmission, correlated output and clean shutdown. The dynamic-tool canary
+is still absent, so automatic integration remains unvalidated.
 
 The fixture imports bounded process/provider helpers from
 [the existing callback fixture](../egress-admission/codex_appserver_local.py).
@@ -84,9 +95,11 @@ historical script as the current control; it preserves that fixture mistake.
 [probe-v2.py](probe-v2.py) and [result-v2.json](result-v2.json) use an object-valued
 negative control and stop if it is unexpectedly accepted. Both native turns
 completed and the requested values were transmitted, but the tool registration
-omitted required `type`. The current [probe.py](probe.py) adds `type: function`;
+omitted required `type`. The archived [probe-v3.py](probe-v3.py) adds `type: function`;
 [result-v3.json](result-v3.json) still has no advertised canary. Do not attribute
-that absence solely to the v2 fixture omission. Investigating tool availability
+that absence solely to the v2 fixture omission. V3 also retained the incomplete
+HTTP counter; its result is preserved without retroactive reinterpretation.
+The current [probe.py](probe.py) corrects that counter. Investigating tool availability
 for these exact model IDs is separate from the confirmed parameter transmission.
 
 [local-schema-evidence.json](local-schema-evidence.json) records selected schema

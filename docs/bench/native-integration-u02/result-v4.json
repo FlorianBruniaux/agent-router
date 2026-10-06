@@ -1,0 +1,130 @@
+{
+  "ar_runtime_receipt": "NOT_APPLICABLE",
+  "automatic_cli_prompt_hook": "NOT_TESTED",
+  "cases": [
+    {
+      "cleanup_complete": true,
+      "enabled": true,
+      "events": [
+        {
+          "method": "turn/started",
+          "status": "inProgress",
+          "thread_id": "01a10f65-50c6-72b0-acc8-64cb0c1d088e",
+          "turn_id": "01a10f65-5177-7b20-82de-e266c933ef28"
+        },
+        {
+          "exact_synthetic_output": true,
+          "item_type": "agentMessage",
+          "method": "item/completed",
+          "thread_id": "01a10f65-50c6-72b0-acc8-64cb0c1d088e",
+          "turn_id": "01a10f65-5177-7b20-82de-e266c933ef28"
+        },
+        {
+          "method": "turn/completed",
+          "status": "completed",
+          "thread_id": "01a10f65-50c6-72b0-acc8-64cb0c1d088e",
+          "turn_id": "01a10f65-5177-7b20-82de-e266c933ef28"
+        }
+      ],
+      "invalid_effort_error_code": -32600,
+      "invalid_effort_rejected_before_provider": true,
+      "output_correlated": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "effort": "high",
+          "function_tools": [],
+          "model": "gpt-6-astra",
+          "tool_types": []
+        }
+      ],
+      "success": false,
+      "task_id": "553facad-7bc2-4b8b-af54-75ea52e7bded",
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a10f65-50c6-72b0-acc8-64cb0c1d088e",
+      "turn_id": "01a10f65-5177-7b20-82de-e266c933ef28",
+      "turn_requested": {
+        "effort": "high",
+        "model": "gpt-6-astra",
+        "omission_means_inherit": false
+      }
+    },
+    {
+      "cleanup_complete": true,
+      "enabled": false,
+      "events": [
+        {
+          "method": "turn/started",
+          "status": "inProgress",
+          "thread_id": "01a10f65-54ed-73c2-ad1a-d0e70f9716f0",
+          "turn_id": "01a10f65-5513-7731-b790-47b34467e3a2"
+        },
+        {
+          "exact_synthetic_output": true,
+          "item_type": "agentMessage",
+          "method": "item/completed",
+          "thread_id": "01a10f65-54ed-73c2-ad1a-d0e70f9716f0",
+          "turn_id": "01a10f65-5513-7731-b790-47b34467e3a2"
+        },
+        {
+          "method": "turn/completed",
+          "status": "completed",
+          "thread_id": "01a10f65-54ed-73c2-ad1a-d0e70f9716f0",
+          "turn_id": "01a10f65-5513-7731-b790-47b34467e3a2"
+        }
+      ],
+      "invalid_effort_error_code": -32600,
+      "invalid_effort_rejected_before_provider": true,
+      "output_correlated": true,
+      "process_exit_code": 0,
+      "provider_accepted_connections": 1,
+      "provider_rejected_connections": 0,
+      "provider_rejected_requests": 0,
+      "provider_request_count": 1,
+      "provider_requests": [
+        {
+          "effort": "low",
+          "function_tools": [],
+          "model": "gpt-6.1-sol",
+          "tool_types": []
+        }
+      ],
+      "success": true,
+      "task_id": "c7d5d798-8c0d-40e8-8e08-69045675fe66",
+      "temporary_state_removed": true,
+      "thread_defaults": {
+        "model": "gpt-6.1-sol",
+        "modelProvider": "local_fixture",
+        "reasoningEffort": "low"
+      },
+      "thread_id": "01a10f65-54ed-73c2-ad1a-d0e70f9716f0",
+      "turn_id": "01a10f65-5513-7731-b790-47b34467e3a2",
+      "turn_requested": {
+        "effort": null,
+        "model": null,
+        "omission_means_inherit": true
+      }
+    }
+  ],
+  "codex_binary_sha256": "61b0194f3bb6534439c8d26a3ed57d0805f84b884588b761795323eeb92fcf70",
+  "codex_version": "0.159.2",
+  "external_egress": "UNKNOWN, no packet capture or OS denial proof",
+  "helper_sha256": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+  "host": "macOS-26.5.1-arm64-arm-64bit",
+  "os_network_sandbox_status": "NOT_APPLIED",
+  "provider_spend": "USD 0, scripted loopback provider",
+  "schema_version": 1,
+  "script_sha256": "2b12a4bee24bb5e8350684f90e0afb471a789e13a6b89e3f076c79c863ef74f0",
+  "success": false,
+  "surface": "Codex CLI app-server stdio client API",
+  "synthetic_key_only": true
+}
