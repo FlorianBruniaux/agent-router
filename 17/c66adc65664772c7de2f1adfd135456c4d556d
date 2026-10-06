@@ -1,0 +1,21 @@
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_133d0c8509f66d 5-30,37-40
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_8cf8aa274cd5dc 1,8-64,94-99,114,116,194-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "17c66adc65664772c7de2f1adfd135456c4d556d",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
