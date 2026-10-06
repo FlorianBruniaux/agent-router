@@ -1,5 +1,7 @@
 //! The supervisor is trusted code, never an authority deserialized from a file.
-use crate::{Cancellation, Result, RuntimeError, process::capture, workspace::safe_scope};
+use crate::{
+    Cancellation, NetworkAuthority, Result, RuntimeError, process::capture, workspace::safe_scope,
+};
 use router_types::{ExecutionSandbox, PreparedRun};
 use std::{
     collections::BTreeMap,
@@ -10,7 +12,7 @@ use std::{
 use tokio::process::Command;
 
 pub struct SandboxPolicy<'a> {
-    pub network: bool,
+    pub network: NetworkAuthority,
     pub host_state: Option<&'a crate::HostState>,
 }
 /// Implementors must enforce read/write/network restrictions in the child and
@@ -58,9 +60,9 @@ pub struct SeatbeltSandbox {
     dns_resolution: DnsEvidence,
 }
 /// Whether a name lookup through the system resolver worked from inside a
-/// `network: false` profile. Evidence only: it never fails a probe or a run.
+/// `NetworkAuthority::Deny` profile. Evidence only: it never fails a probe or a run.
 /// `Resolved` shows that `mach-lookup` reaches the resolver daemon, so
-/// `network: false` does not prove the absence of DNS or LaunchServices channels.
+/// `NetworkAuthority::Deny` does not prove the absence of DNS or LaunchServices channels.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DnsEvidence {
     /// The control lookup resolved but the sandboxed one did not. One failed
@@ -113,18 +115,18 @@ async fn dns_evidence(wrapper_hash: &str, profile: &str) -> DnsEvidence {
     classify_dns(control, sandboxed)
 }
 impl SeatbeltSandbox {
-    /// DNS evidence for the `network: false` profile. `Unknown` until
+    /// DNS evidence for the `NetworkAuthority::Deny` profile. `Unknown` until
     /// `probe_dns_resolution` has been called; the normal probe never runs it.
     pub fn dns_resolution(&self) -> DnsEvidence {
         self.dns_resolution
     }
     /// On demand only. Performs ONE real outbound DNS query (`example.com`)
-    /// outside the sandbox as a control and one inside the `network: false`
+    /// outside the sandbox as a control and one inside the `NetworkAuthority::Deny`
     /// profile, each bounded to 2 s. `/usr/bin/dscacheutil` is a system binary
     /// outside the approved-binary hash table, so this is evidence, never an
     /// authorization input. Records and returns the result.
     pub async fn probe_dns_resolution(&mut self) -> DnsEvidence {
-        let profile = seatbelt_profile(&[], &[], false);
+        let profile = seatbelt_profile(&[], &[], NetworkAuthority::Deny);
         self.dns_resolution = match profile {
             Ok(profile) => dns_evidence(&self.wrapper_hash, &profile).await,
             Err(_) => DnsEvidence::Unknown,
@@ -191,7 +193,8 @@ impl SeatbeltSandbox {
         let denied = probe.join("denied");
         crate::stale::create_canary(&denied_read, b"synthetic-read-canary")?;
         fs::write(allowed.join("read"), b"read-control")?;
-        let profile = seatbelt_profile(&[probe.clone()], &[allowed.clone()], false)?;
+        let profile =
+            seatbelt_profile(&[probe.clone()], &[allowed.clone()], NetworkAuthority::Deny)?;
         let check = async {
             let mut command = checked_seatbelt_command(
                 &wrapper_hash,
@@ -477,11 +480,15 @@ pub(crate) fn check_expected(
     Ok(())
 }
 // LIMIT: `mach-lookup` is allowed globally because the loader and system
-// libraries need several services. `network: false` therefore proves only that
+// libraries need several services. `NetworkAuthority::Deny` therefore proves only that
 // socket networking is denied, not the absence of DNS (mDNSResponder) or
 // LaunchServices channels; `SeatbeltSandbox::dns_resolution` records what the
 // probe observed. A mach service allowlist is deferred to a native canary.
-fn seatbelt_profile(reads: &[PathBuf], writes: &[PathBuf], network: bool) -> Result<String> {
+fn seatbelt_profile(
+    reads: &[PathBuf],
+    writes: &[PathBuf],
+    network: NetworkAuthority,
+) -> Result<String> {
     let mut profile = String::from(
         "(version 1)\n(deny default)\n(allow process-exec process-fork sysctl-read mach-lookup)\n(allow signal (target self))\n(allow file-read-metadata)\n(allow file-read* (literal \"/\") (subpath \"/bin\") (subpath \"/sbin\") (subpath \"/usr\") (subpath \"/System\") (subpath \"/Library\") (literal \"/dev/null\") (literal \"/dev/urandom\") (literal \"/private/etc/resolv.conf\") (literal \"/private/etc/hosts\"))\n(allow file-write* (literal \"/dev/null\"))\n",
     );
@@ -500,9 +507,7 @@ fn seatbelt_profile(reads: &[PathBuf], writes: &[PathBuf], network: bool) -> Res
     // A child may read Git metadata but may never redirect its private .git file.
     // Default APFS folds case, so every spelling of `.git` is denied.
     profile.push_str("(deny file-write* (regex #\"(^|/)\\.[Gg][Ii][Tt](/|$)\"))\n");
-    if network {
-        profile.push_str("(allow network*)\n");
-    }
+    profile.push_str(network.seatbelt_rule()?);
     Ok(profile)
 }
 // The npm entry uses /usr/bin/env node, outside the fixed child PATH. Refuse
@@ -628,30 +633,40 @@ mod tests {
     }
     #[test]
     fn profile_grants_only_listed_paths_and_network_on_request() {
-        let profile = seatbelt_profile(&["/r".into()], &["/w".into()], false).unwrap();
+        let profile =
+            seatbelt_profile(&["/r".into()], &["/w".into()], NetworkAuthority::Deny).unwrap();
         assert!(profile.starts_with("(version 1)\n(deny default)\n"));
         assert!(profile.contains("(allow file-read* (literal \"/r\") (subpath \"/r\"))\n"));
         assert!(profile.contains("(allow file-write* (literal \"/w\") (subpath \"/w\"))\n"));
         assert!(!profile.contains("network"));
         assert!(!profile.contains("(allow file-write* (literal \"/r\")"));
-        let online = seatbelt_profile(&[], &[], true).unwrap();
+        let online = seatbelt_profile(&[], &[], NetworkAuthority::PhaseGranted).unwrap();
         assert!(online.ends_with("(allow network*)\n"));
         assert!(online.contains("(deny file-write* (regex"));
     }
     #[test]
+    fn controller_broker_only_policy_fails_closed_until_seatbelt_can_scope_it() {
+        assert!(matches!(
+            seatbelt_profile(&[], &[], crate::NetworkAuthority::ControllerBrokerOnly),
+            Err(RuntimeError::Sandbox)
+        ));
+    }
+    #[test]
     fn profile_rejects_a_path_that_would_break_out_of_its_literal() {
-        assert!(seatbelt_profile(&["rel".into()], &[], false).is_err());
-        assert!(seatbelt_profile(&[], &["/w\n(allow default)".into()], false).is_err());
+        assert!(seatbelt_profile(&["rel".into()], &[], NetworkAuthority::Deny).is_err());
+        assert!(
+            seatbelt_profile(&[], &["/w\n(allow default)".into()], NetworkAuthority::Deny).is_err()
+        );
     }
     #[test]
     fn profile_documents_the_global_mach_lookup_allowance() {
-        let profile = seatbelt_profile(&[], &[], false).unwrap();
+        let profile = seatbelt_profile(&[], &[], NetworkAuthority::Deny).unwrap();
         assert!(profile.contains("mach-lookup"));
     }
 
     #[test]
     fn profile_denies_writes_below_git_in_every_case() {
-        let profile = seatbelt_profile(&[], &["/w/src".into()], false).unwrap();
+        let profile = seatbelt_profile(&[], &["/w/src".into()], NetworkAuthority::Deny).unwrap();
         let line = profile
             .lines()
             .find(|l| l.starts_with("(deny file-write* (regex"))

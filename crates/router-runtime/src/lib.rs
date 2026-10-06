@@ -16,6 +16,7 @@ mod generated;
 mod host_state;
 mod leases;
 mod native_version;
+mod network_authority;
 mod outputs;
 mod private_program;
 mod process;
@@ -38,6 +39,7 @@ pub use error::{Result, RuntimeError};
 pub use escalation::{EscalationError, EscalationProof, ReviewedAttemptBound};
 pub use host_state::HostState;
 pub use native_version::{NativeVersionProbe, probe_native_version};
+pub use network_authority::NetworkAuthority;
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
@@ -1624,7 +1626,11 @@ impl Runtime {
         supervisor.command(
             &initial,
             &SandboxPolicy {
-                network: request.required_capabilities.contains(&Capability::Network),
+                network: if request.required_capabilities.contains(&Capability::Network) {
+                    NetworkAuthority::PhaseGranted
+                } else {
+                    NetworkAuthority::Deny
+                },
                 host_state: host_state.as_ref(),
             },
         )?;
@@ -1751,7 +1757,11 @@ impl Runtime {
         let command = supervisor.command(
             &run,
             &SandboxPolicy {
-                network: request.required_capabilities.contains(&Capability::Network),
+                network: if request.required_capabilities.contains(&Capability::Network) {
+                    NetworkAuthority::PhaseGranted
+                } else {
+                    NetworkAuthority::Deny
+                },
                 host_state: host_state.as_ref(),
             },
         )?;

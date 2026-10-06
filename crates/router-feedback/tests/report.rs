@@ -562,6 +562,14 @@ fn a_run_key_is_counted_once_on_its_latest_event() {
     let g = group(&report, "model-a");
     assert_eq!(report["superseded_events"], 1);
     assert_eq!(report["automated_events"], 1);
+    let rows = report["runs"].as_array().unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(
+        rows[0]["binding"]["run_hash"],
+        redacted_digest("state-2").unwrap()
+    );
+    assert_eq!(rows[0]["usage"]["cached_input_tokens"]["tokens"], 0);
+    assert_eq!(rows[0]["verdict"], "accepted");
     assert_eq!(
         (g["runs"].clone(), g["accepted"].clone()),
         (1.into(), 1.into())
@@ -850,4 +858,77 @@ fn summary_of_an_empty_store_has_no_rate_and_needs_consent() {
         closed.summary(None, 300),
         Err(FeedbackError::Consent)
     ));
+}
+
+#[test]
+fn run_rows_preserve_outcomes_missing_usage_and_feedback_provenance() {
+    let (_temp, store) = store(false);
+    let accepted = store
+        .record(
+            with_usage(automated("accepted", Some('1'), "model-a"), usage(10, 0, 5)),
+            200,
+        )
+        .unwrap();
+    let mut failed = automated("failed", Some('2'), "model-a");
+    failed.binding.task_hash = key('2');
+    failed.transport = VerificationOutcome::Failed;
+    failed.failure = Some(FeedbackFailure::Timeout);
+    let failed = store.record(failed, 200).unwrap();
+    let mut missing = automated("missing", None, "model-a");
+    missing.binding.task_hash = key('3');
+    let missing = store.record(missing, 200).unwrap();
+    let verified = store
+        .record_fact(verification('1', VerificationOutcome::Passed), 250)
+        .unwrap();
+    let applied = store
+        .record_fact(integration('1', IntegrationOutcome::Applied, 200), 250)
+        .unwrap();
+    store
+        .record_fact(verification('2', VerificationOutcome::Failed), 250)
+        .unwrap();
+    let report = json(&store.report(None, 300).unwrap());
+    let rows = report["runs"]
+        .as_array()
+        .expect("report must expose retained run rows");
+    assert_eq!(rows.len(), 3);
+    for (row, event) in rows.iter().zip([&accepted, &failed, &missing]) {
+        assert_eq!(
+            row["binding"],
+            serde_json::to_value(&event.input.binding).unwrap()
+        );
+        assert_eq!(row["evidence"]["feedback_event_hash"], event.event_hash);
+        assert_eq!(row["evidence"]["source"], "feedback_store");
+        assert_eq!(row["evidence"]["runtime_evidence"], "unknown");
+        assert_eq!(row["evidence"]["native_external_evidence"], "unknown");
+        assert_eq!(row["model"], "model-a");
+    }
+    assert_eq!(rows[0]["verdict"], "accepted");
+    assert_eq!(
+        rows[0]["evidence"]["verification_fact_hash"],
+        verified.fact_hash
+    );
+    assert_eq!(
+        rows[0]["evidence"]["integration_fact_hash"],
+        applied.fact_hash
+    );
+    assert_eq!(rows[0]["usage"]["input_tokens"]["tokens"], 10);
+    assert_eq!(
+        rows[0]["usage"]["input_tokens"]["provenance"],
+        "host_reported"
+    );
+    assert_eq!(
+        rows[0]["usage"]["cache_write_input_tokens"]["provenance"],
+        "unknown"
+    );
+    assert_eq!(rows[1]["verdict"], "rejected");
+    assert_eq!(rows[1]["transport"], "failed");
+    assert_eq!(rows[1]["failure"], "timeout");
+    assert!(rows[1]["usage"].is_null());
+    assert_eq!(rows[2]["verdict"], "unknown");
+    assert_eq!(rows[2]["transport"], "passed");
+    assert!(rows[2]["usage"].is_null());
+    assert!(rows[2]["run_key_sha256"].is_null());
+    assert!(rows[2]["evidence"]["verification_fact_hash"].is_null());
+    assert!(rows[2]["evidence"]["integration_fact_hash"].is_null());
+    assert_eq!(report, json(&store.report(None, 300).unwrap()));
 }

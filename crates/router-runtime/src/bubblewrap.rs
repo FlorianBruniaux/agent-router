@@ -1,7 +1,7 @@
 //! Linux mount/PID/network isolation. Missing user namespaces or bubblewrap deny
 //! execution; no profile-only result is treated as an enforcement proof.
 use crate::{
-    Cancellation, Result, RuntimeError, SandboxPolicy, SandboxSupervisor,
+    Cancellation, NetworkAuthority, Result, RuntimeError, SandboxPolicy, SandboxSupervisor,
     process::capture,
     sandbox::{binary_hash, require_canonical_paths, validate_configuration},
     workspace::safe_scope,
@@ -111,7 +111,7 @@ impl BubblewrapSandbox {
                     &probe,
                     std::slice::from_ref(&probe),
                     std::slice::from_ref(&allowed),
-                    false,
+                    NetworkAuthority::Deny,
                     &BTreeMap::new(),
                 )?;
                 let output =
@@ -152,7 +152,7 @@ impl BubblewrapSandbox {
                 &probe,
                 std::slice::from_ref(&probe),
                 &[],
-                false,
+                NetworkAuthority::Deny,
                 &BTreeMap::new(),
             )?;
             if capture(command, vec![], 2_000, 16_384, 0, &Cancellation::default())
@@ -289,7 +289,7 @@ fn wrap(
     cwd: &Path,
     reads: &[PathBuf],
     writes: &[PathBuf],
-    network: bool,
+    network: NetworkAuthority,
     environment: &BTreeMap<String, String>,
 ) -> Result<Command> {
     let mut command = Command::new(wrapper);
@@ -300,9 +300,7 @@ fn wrap(
         "--cap-drop",
         "ALL",
     ]);
-    if network {
-        command.arg("--share-net");
-    }
+    command.args(network.bubblewrap_args()?);
     for root in [
         "/usr",
         "/bin",
@@ -367,6 +365,47 @@ mod tests {
         (temp, root)
     }
     #[test]
+    fn controller_broker_only_policy_fails_closed_until_relay_is_enforced() {
+        let (_temp, root) = tree();
+        assert!(matches!(
+            wrap(
+                Path::new("/usr/bin/bwrap"),
+                "/bin/true",
+                &[],
+                &root,
+                std::slice::from_ref(&root),
+                &[],
+                crate::NetworkAuthority::ControllerBrokerOnly,
+                &BTreeMap::new(),
+            ),
+            Err(RuntimeError::Sandbox)
+        ));
+    }
+    #[test]
+    fn wrap_shares_network_only_for_an_explicit_phase_grant() {
+        let (_temp, root) = tree();
+        for (authority, expected) in [
+            (NetworkAuthority::Deny, false),
+            (NetworkAuthority::PhaseGranted, true),
+        ] {
+            let command = wrap(
+                Path::new("/usr/bin/bwrap"),
+                "/bin/true",
+                &[],
+                &root,
+                std::slice::from_ref(&root),
+                &[],
+                authority,
+                &BTreeMap::new(),
+            )
+            .unwrap();
+            assert_eq!(
+                argv(&command).iter().any(|arg| arg == "--share-net"),
+                expected
+            );
+        }
+    }
+    #[test]
     fn writable_binds_remount_a_scope_root_git_read_only_after_the_bind() {
         let (_temp, root) = tree();
         let (src, src2) = (root.join("src"), root.join("src2"));
@@ -377,7 +416,7 @@ mod tests {
             &root,
             std::slice::from_ref(&root),
             &[src.clone(), src2.clone()],
-            false,
+            NetworkAuthority::Deny,
             &BTreeMap::new(),
         )
         .unwrap();
@@ -427,7 +466,7 @@ mod tests {
                 &root,
                 std::slice::from_ref(&root),
                 std::slice::from_ref(&write),
-                false,
+                NetworkAuthority::Deny,
                 &BTreeMap::new(),
             )
         };

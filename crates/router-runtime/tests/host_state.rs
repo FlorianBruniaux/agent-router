@@ -1,5 +1,5 @@
 //! Native local canary, no provider process or credentials.
-use router_runtime::{SandboxPolicy, SandboxSupervisor};
+use router_runtime::{NetworkAuthority, SandboxPolicy, SandboxSupervisor};
 use router_types::*;
 use std::{
     collections::BTreeMap,
@@ -114,7 +114,7 @@ printf '%s' "$state"
             .command(
                 &run,
                 &SandboxPolicy {
-                    network: false,
+                    network: NetworkAuthority::Deny,
                     host_state: state.as_ref(),
                 },
             )

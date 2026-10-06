@@ -164,3 +164,104 @@ fn summary_has_a_human_view_that_keeps_null_and_unknown_visible() {
     assert!(text.contains("not set (null)"), "{text}");
     assert!(!text.trim_start().starts_with('{'), "{text}");
 }
+
+#[test]
+fn report_human_and_json_views_keep_each_task_outcome_and_source() {
+    use router_feedback::FeedbackStore;
+    use router_types::{FeedbackFact, FeedbackInput, FeedbackPreferences};
+    let dir = tempfile::tempdir().unwrap();
+    let directory = fs::canonicalize(dir.path()).unwrap();
+    let path = directory.join("feedback");
+    let store = FeedbackStore::open(&path).unwrap();
+    store
+        .configure(
+            FeedbackPreferences {
+                collection_enabled: true,
+                ..Default::default()
+            },
+            100,
+        )
+        .unwrap();
+    let base: Value = serde_json::from_slice(
+        &fs::read(root().join("tests/fixtures/feedback/automated-unknown-v1.json")).unwrap(),
+    )
+    .unwrap();
+    for index in 1..=3 {
+        let mut input = base.clone();
+        let key = format!("{index:064x}");
+        input["binding"]["task_hash"] = json!(key);
+        input["binding"]["run_hash"] = json!(key);
+        input["run_key_sha256"] = json!(key);
+        if index == 2 {
+            input["transport"] = json!("failed");
+            input["failure"] = json!("timeout");
+        }
+        store
+            .record(serde_json::from_value::<FeedbackInput>(input).unwrap(), 120)
+            .unwrap();
+        if index != 3 {
+            let fact = json!({
+                "schema_version":1,"run_key_sha256":key,"observed_at_unix_seconds":110,
+                "kind":{"type":"verification","validation":if index == 1 {"passed"} else {"failed"},
+                    "objective":if index == 1 {"passed"} else {"failed"},"evidence_sha256":"9".repeat(64)}
+            });
+            store
+                .record_fact(serde_json::from_value::<FeedbackFact>(fact).unwrap(), 120)
+                .unwrap();
+        }
+        if index == 1 {
+            let fact = json!({"schema_version":1,"run_key_sha256":key,"observed_at_unix_seconds":115,
+                "kind":{"type":"integration","outcome":"applied"}});
+            store
+                .record_fact(serde_json::from_value::<FeedbackFact>(fact).unwrap(), 120)
+                .unwrap();
+        }
+    }
+    drop(store);
+    let first = feedback(&path, "report", &["--json"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let second = feedback(&path, "report", &["--json"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    assert_eq!(first, second);
+    let report: Value = serde_json::from_slice(&first).unwrap();
+    assert_eq!(report["schema_version"], 2);
+    let rows = report["runs"].as_array().unwrap();
+    assert_eq!(
+        rows.iter()
+            .map(|r| r["verdict"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["accepted", "rejected", "unknown"]
+    );
+    assert!(rows.iter().all(|r| r["usage"].is_null()));
+    let output = feedback(&path, "report", &[])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let text = String::from_utf8(output).unwrap();
+    for expected in [
+        "Verdict: accepted",
+        "Verdict: rejected",
+        "Verdict: UNKNOWN",
+        "Failure: timeout",
+        "Source: feedback_store",
+        "Runtime evidence: UNKNOWN",
+        "Native external evidence: UNKNOWN",
+        "Usage: not set (null)",
+    ] {
+        assert!(text.contains(expected), "missing {expected}: {text}");
+    }
+    assert!(
+        text.contains(&format!("{:064x}", 3)),
+        "missing task identity: {text}"
+    );
+}

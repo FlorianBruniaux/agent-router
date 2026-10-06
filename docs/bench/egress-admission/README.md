@@ -55,13 +55,24 @@ in the second request, and a completed turn. The script SHA-256 is
 Codex binary SHA-256 matches the v1 run above. The run used only the synthetic
 key and cost USD 0. Runtime varies by run.
 
+Fresh rerun on 2026-10-05 is recorded in
+[`results/codex-appserver-local-2026-10-05.json`](results/codex-appserver-local-2026-10-05.json).
+Codex 0.159.2 completed the same loopback callback round trip in 800 ms, with
+two accepted connections and provider requests, one correlated callback, a
+matching `function_call_output`, and clean process/provider shutdown. Cost was
+USD 0 using only the synthetic key. The provider-visible function inventory
+contained `request_user_input`, `view_image`, `get_goal`, `create_goal`,
+`update_goal`, and `router_probe_tool`. This confirms those five extra names
+were advertised in this run; whether calls to them can be refused remains
+UNKNOWN because the fixture did not request them. The binary and script hashes
+match the v2 run above.
+
 The historical result proves the app-server callback protocol with a local
 scripted provider. It does not prove Agent Router runtime integration, worker
 isolation or provider-egress isolation. The probe explicitly recorded
 `os_network_sandbox_status=NOT_APPLIED`; external egress remains UNKNOWN. The
-observed provider tool inventory also included `request_user_input`,
-`view_image`, `get_goal`, `create_goal` and `update_goal`, so built-in tool
-suppression remains UNKNOWN.
+observed provider tool inventory includes five Codex built-ins alongside the
+dynamic tool. The test intentionally does not invoke them.
 
 Re-run the callback probe from the repository root on the pinned host to
 collect new evidence for the current script:
@@ -78,6 +89,10 @@ fixtures. They launch no Codex process and contact no external provider:
 python3 -B -m unittest discover \
   -s docs/bench/egress-admission -p test_codex_appserver_local.py -v
 ```
+
+On 2026-10-05, all 22 fixture tests passed. They validate callback correlation,
+synthetic nonce checks, loopback-only binding, request bounds and child cleanup;
+they do not launch Codex or contact a provider.
 
 ## Measured boundaries
 

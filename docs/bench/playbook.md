@@ -2,7 +2,28 @@
 
 How to rerun a campaign of the [router value protocol](router-value-protocol.md), check a recorded one, and log its figures. Each campaign lives in `docs/bench/runs/<date>-<name>/` with its sealed inputs, its harness, its results exported as metrics only, and a `SHA256SUMS` file.
 
+Next preparation, 2026-10-05: [calibration v2 candidate](calibration-v2/README.md)
+(French), a descriptive collection protocol with an incomplete manifest template.
+It does not authorize a run or amend the recorded pilot results.
+
+Local integration evidence, 2026-10-05: [native Codex diagnostic](native-integration-u02/README.md).
+Parameter transmission and output correlation passed against a scripted provider;
+the absent tool canary keeps the composite probe red. Automatic CLI integration
+is not admitted by this result.
+
+[Local verification, 2026-10-05](verification-2026-10-05.json) records U03 source
+hashes and checks, including six parallel runtime timeouts followed by a passing
+serial workspace suite. These are development checks, not a new value campaign.
+
 ## Campaign log
+
+Development verification, 2026-10-06: the unchanged Rust sources at `f637d0a`
+passed all 1,563 active workspace tests in parallel locally. GitHub also passed
+Linux/macOS quality, secret scans, dependency audit and native Linux checks on
+that exact SHA. The U02 HTTP counter defect found during independent review was
+reproduced, corrected and checked with 13 fixture tests. Its
+[new native result](native-integration-u02/result-v4.json) still lacks the tool
+canary and does not admit automatic integration. This is not a value campaign.
 
 One line per campaign. The commit is the repository commit the `agent-router` binary was built from.
 

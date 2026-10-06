@@ -31,7 +31,7 @@ pub(crate) const CONTRACTS: [Contract; 5] = [
     Contract {
         name: "feedback-report",
         command: "feedback report",
-        versions: &[SchemaVersion::Number(1)],
+        versions: &[SchemaVersion::Number(1), SchemaVersion::Number(2)],
         schema: include_str!("schemas/feedback-report.schema.json"),
     },
     Contract {

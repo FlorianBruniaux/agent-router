@@ -188,13 +188,14 @@ total (input plus output). The sidecar
 projection drops it.
 
 `agent-router feedback --store <dir> --json report [--pricing <file>]` prints a
-`FeedbackReport` (schema 1); the pricing file is a `PricingTable` (schema 1, unknown
+`FeedbackReport` (schema 2, with strict schema 1 output validation retained); the pricing file is a `PricingTable` (schema 1, unknown
 keys refused, at most 64 models). It needs collection consent. Top-level keys:
 `schema_version`, `generated_at_unix_seconds`, `event_set_hash`, `fact_set_hash`,
 `automated_events`, `human_events`, `facts`, `unlinked`, `orphan_facts`, `superseded_events`, `pricing`
-(`version`, `source`, `observed_at_unix_seconds`, or null), `groups`,
+(`version`, `source`, `observed_at_unix_seconds`, or null), `groups`, `runs`,
 `catalog_estimate_ratio` (always `{"value":null,"reason":...}`), `advisory`,
-`interpretation` and `content_hash` (domain `feedback-report-v1`). Each group
+`interpretation` and `content_hash` (domain `feedback-report-v2`; historical schema 1 uses
+`feedback-report-v1` and has no `runs`). Each group
 sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
 `unknown`, `unlinked`, `human`, `accepted_rate` (counts, `point_micros`,
 `lower_micros`, `upper_micros`, `level_micros` 950000, `prior` `jeffreys`, or null),
@@ -203,6 +204,18 @@ sorted by `(model, effort, task_kind)` has `runs`, `accepted`, `rejected`,
 `cost` (`priced_runs`, `cost_unknown`, `runs_with_cache_writes_priced_as_input`, `total_microusd`, `per_accepted_microusd`,
 `reason`). No float appears in the output. `advisory` is
 `{"advisory":null,"reason":"learning_disabled"}` or `{"advisory":true,"suggestion":null,"reason":...}`.
+`runs` contains at most 10,000 retained automated rows, in event sequence order.
+Each row carries the original `binding`, optional `run_key_sha256`, observation
+time, model/effort/task kind, `verdict` (`accepted`, `rejected`, `unknown`),
+`transport`, nullable `failure`, nullable `usage` and `evidence`. Usage preserves
+the five `HostUsage` fields and their provenance. Evidence names `feedback_store`
+as its `source`, the `feedback_event_hash`, and nullable `verification_fact_hash`
+and `integration_fact_hash`. `runtime_evidence` and `native_external_evidence`
+are always `unknown`: the report verifies neither runtime execution nor native
+external sessions. Bindings are source claims, not freshly authenticated
+receipts. Multiple rows may share a task hash; attempt totals are not added by
+this version. Summary remains schema 1 and cites the schema 2 report hash.
+
 See [feedback](../feedback.md#feedback-report) for the join rules.
 
 `feedback replay-export` prints a report (`schema_version` 1) and, without

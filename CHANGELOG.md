@@ -14,7 +14,17 @@ reasons); every change was verified locally on macOS.
 
 ## [Unreleased]
 
+### Documentation
+
+- 2026-10-05: add a calibration v2 preparation protocol and incomplete manifest template, linked from the documentation indexes and bench playbook. No real campaign is authorized by these documents.
+
+### Breaking
+
+- `feedback report` now emits schema version 2 with retained per-run rows for identity, verdict, transport, failure, usage and feedback provenance. Consumers restricted to version 1 must update; the published schema still validates historical version 1 reports. Report hashes use the `feedback-report-v2` domain. Runtime and external native evidence remain explicitly unknown; the rows do not aggregate all attempts of a task. `feedback summary` remains version 1.
+
 ### Fixed
+
+- The native integration diagnostic now counts refused HTTP requests and connections without a request. Its negative control requires the exact expected RPC error and zero provider contacts; historical probe results remain available.
 
 - Codex execution usage preserves a declared `cache_write_input_tokens` count, including zero. Missing, null or invalid counts stay unknown; input totals are not incremented again.
 

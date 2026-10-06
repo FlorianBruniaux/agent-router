@@ -1,0 +1,185 @@
+{
+  "codex_version": "0.159.2",
+  "source": "generated locally from installed binary",
+  "files": {
+    "ThreadStartParams": {
+      "sha256": "80a40a7fac15b4bf70efb7f893fb353acc0a0d30c68f54aee4f01923deca85de",
+      "properties": {
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dynamicTools": {
+          "default": null,
+          "items": {
+            "$ref": "#/definitions/DynamicToolSpec"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "ephemeral": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      },
+      "DynamicToolSpec": {
+        "oneOf": [
+          {
+            "properties": {
+              "deferLoading": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              },
+              "inputSchema": true,
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "function"
+                ],
+                "title": "FunctionDynamicToolSpecType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "description",
+              "inputSchema",
+              "name",
+              "type"
+            ],
+            "title": "FunctionDynamicToolSpec",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tools": {
+                "items": {
+                  "$ref": "#/definitions/DynamicToolNamespaceTool"
+                },
+                "type": "array"
+              },
+              "type": {
+                "enum": [
+                  "namespace"
+                ],
+                "title": "NamespaceDynamicToolSpecType",
+                "type": "string"
+              }
+            },
+            "required": [
+              "description",
+              "name",
+              "tools",
+              "type"
+            ],
+            "title": "NamespaceDynamicToolSpec",
+            "type": "object"
+          }
+        ]
+      }
+    },
+    "ThreadStartResponse": {
+      "sha256": "92f5ddc37717b922de1dc0b0405e9a6d463f370554e2091610c6e595bc2616d4",
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "reasoningEffort": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ReasoningEffort"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "TurnStartParams": {
+      "sha256": "07771223642e1b61bd9aac0069fc0f98143a1c047724ca02c7ceb13653442738",
+      "properties": {
+        "model": {
+          "description": "Override the model for this turn and subsequent turns.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effort": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/ReasoningEffort"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Override the reasoning effort for this turn and subsequent turns."
+        },
+        "clientUserMessageId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "ReasoningEffort": {
+        "description": "A non-empty reasoning effort value advertised by the model.",
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    "TurnStartedNotification": {
+      "sha256": "2e9a109ee549c1e266223304c9e0580075cda03feb65473363b124f18e9a3769",
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "turn": {
+          "$ref": "#/definitions/Turn"
+        }
+      }
+    },
+    "TurnCompletedNotification": {
+      "sha256": "016870158603b0f84bd9f8f65f927161c9fd5128e5ec632087616462dc44e085",
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "turn": {
+          "$ref": "#/definitions/Turn"
+        }
+      }
+    },
+    "ItemCompletedNotification": {
+      "sha256": "d04b9153de38cd8302a2a418a44a65e8265d4c7586d46ea2cc801b594c6acf5b",
+      "properties": {
+        "threadId": {
+          "type": "string"
+        },
+        "turnId": {
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/definitions/ThreadItem"
+        }
+      }
+    }
+  }
+}

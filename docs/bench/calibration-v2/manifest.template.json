@@ -1,0 +1,64 @@
+{
+  "document_type": "campaign_preparation_template",
+  "template_version": 1,
+  "status": "incomplete_not_authorized_to_run",
+  "campaign_id": null,
+  "stage": "calibration",
+  "execution_path": "native_external",
+  "host_surface_version": null,
+  "evidence_source": null,
+  "collection_consent": null,
+  "treatment": "A-v2",
+  "comparators": ["E"],
+  "usual_usage_differs_from_E": null,
+  "include_D_if_distinct": true,
+  "static_rule_hypothesis": null,
+  "arm_model_effort_configurations": null,
+  "task_selection_rule": null,
+  "tasks": [],
+  "required_task_fields": [
+    "task_id", "source_commit", "allowed_write_scope", "statement_sha256",
+    "acceptance_script_sha256", "hidden_tests_separated", "human_review_rule"
+  ],
+  "random_seed": null,
+  "sealed_order": [],
+  "repetitions": null,
+  "input_hashes": {
+    "corpus": null,
+    "router_binary": null,
+    "policy_and_catalog": null,
+    "host_binary": null,
+    "sanitized_configuration": null,
+    "dated_price_table": null,
+    "analysis_code": null
+  },
+  "spending": {
+    "global_cap_usd": null,
+    "known_prior_spend_usd": null,
+    "unknown_prior_spend": null,
+    "enforcement_evidence_sha256": null,
+    "approved_manifest_sha256": null
+  },
+  "retry_policy": "stop_on_ambiguous_send_reconcile_before_new_approval",
+  "analysis": {
+    "mode": "descriptive_only",
+    "assigned_tasks_are_denominator": true,
+    "include_all_attempts_and_paid_probes": true,
+    "deduplicate_snapshots_only": true,
+    "missing_usage_or_price": "complete_total_unknown_with_known_subtotal_and_coverage",
+    "zero_accepted": "cost_per_accepted_undefined",
+    "human_time_separate": true,
+    "confirmation_corpus_overlap_allowed": false,
+    "adoption_verdict": "inconclusive"
+  },
+  "stop_on": [
+    "input_or_version_drift", "unexpected_model", "missing_session_identity",
+    "ambiguous_provider_result", "unknown_spend_prevents_cap_enforcement"
+  ],
+  "export": {
+    "destination": null,
+    "contains_raw_prompts_or_provider_responses": false,
+    "contains_personal_paths_or_credentials": false,
+    "runtime_receipt_for_external_native_session": false
+  }
+}

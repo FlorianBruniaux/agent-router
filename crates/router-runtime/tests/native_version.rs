@@ -1,8 +1,8 @@
 //! Real OS sandbox tests use only local fake version executables, never a model.
 use router_adapter_api::content_digest;
 use router_runtime::{
-    Cancellation, DenySandbox, ResourceLimits, ResourceSupervisor, Result, RuntimeError,
-    SandboxPolicy, SandboxSupervisor, probe_native_version,
+    Cancellation, DenySandbox, NetworkAuthority, ResourceLimits, ResourceSupervisor, Result,
+    RuntimeError, SandboxPolicy, SandboxSupervisor, probe_native_version,
 };
 use router_types::*;
 use std::{
@@ -126,7 +126,7 @@ impl SandboxSupervisor for InspectSupervisor {
         assert_eq!(run.argv, ["--version"]);
         assert!(run.stdin.as_bytes().is_empty());
         assert!(run.scope.is_empty());
-        assert!(!policy.network);
+        assert_eq!(policy.network, NetworkAuthority::Deny);
         assert_eq!(run.sandbox, ExecutionSandbox::ReadOnly);
         assert_eq!(run.timeout_ms, 5000);
         assert_eq!(run.max_output_bytes, 8192);

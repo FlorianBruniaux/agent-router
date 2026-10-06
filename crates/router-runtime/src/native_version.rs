@@ -1,7 +1,7 @@
 //! A version pin is a requirement, never evidence until this probe succeeds.
 use crate::{
-    Cancellation, Result, RuntimeError, SandboxPolicy, SandboxSupervisor, leases::LeaseStorage,
-    process::capture,
+    Cancellation, NetworkAuthority, Result, RuntimeError, SandboxPolicy, SandboxSupervisor,
+    leases::LeaseStorage, process::capture,
 };
 use router_adapter_api::content_digest;
 use router_types::{
@@ -113,7 +113,7 @@ async fn probe_native_version_inner(
     let mut command = supervisor.command(
         &run,
         &SandboxPolicy {
-            network: false,
+            network: NetworkAuthority::Deny,
             host_state: host_state.as_ref(),
         },
     )?;

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "kind": "local_development_verification_not_campaign",
+  "observed_date": "2026-10-05",
+  "base_head": "9d77f5f7e1db8a7e5a45b2c5c5b3b9c3a619a981",
+  "uncommitted": true,
+  "state_scope": "Working-tree state at verification time; later commits and pushes do not alter the recorded test results.",
+  "source_files_sha256": {
+    "crates/router-feedback/src/report.rs": "bba3aa42d361145b650e6215a99e916c68f167f650732ce7d6b937e44a1e3f11",
+    "crates/router-feedback/tests/report.rs": "dc001df943c5ba7504678417fa7d116f564726c961be2ab0cf0c8ad48db0d37f",
+    "crates/agent-router-cli/src/schemas/feedback-report.schema.json": "65bcb0b5ccb4d757a7ccbdec4c3c83df9fac70088f869007f0899dd9c656d921",
+    "crates/agent-router-cli/tests/feedback_summary.rs": "41d46735d93252db5e46aa1a4faa5909ada5de1cc4c1e53417af32617e7123bd",
+    "crates/agent-router-cli/src/contracts.rs": "35247d93239e4dd6e357f4c2922cf2f6af8ee5931b63dc4d9e1e9b9f0f0d7322",
+    "crates/agent-router-cli/tests/schema.rs": "1ea58983d6fa80c8a94af1aae70a06d8a622e7b75606141bab89a203c790d59e",
+    "docs/reference/json-contracts.md": "5025d4cf848b97a710cdd5f5c678f0d0529c53f3bd3bcf1798b2582bc39813e4",
+    "docs/feedback.md": "ce19e063585f7d2711760fca482afbff43b6fa4e74385a1acdfa88590c5d1beb"
+  },
+  "preserved_runtime_preimages": {
+    "crates/router-runtime/src/bubblewrap.rs": "4a4973392ba9ba6e5df4f77e04f0373dbee7a8b42096446757e2d1fbb30aaf8e",
+    "crates/router-runtime/src/host_state.rs": "9038ad6ac266030491ee6f1cc94a223a6a017a8234b982e741c0e032d3fb2724",
+    "crates/router-runtime/src/lib.rs": "b5018d0efdef8af6c558bbd1044be12ab8e7370263bac89ed6cb34645b84d5b2",
+    "crates/router-runtime/src/native_version.rs": "6301423dcca14c0c477560727c8ed59c5408a78e7aa38105e1ec8ca9ab186378",
+    "crates/router-runtime/src/network_authority.rs": "dd1f15d6dce4bc6c1cbac1987762a8e4f272d32bddc7b78131facea95104f75c",
+    "crates/router-runtime/src/sandbox.rs": "fdf353ea515792174c6df25251dce1b309f40c466b9df8df4754fb7059cc84ff",
+    "crates/router-runtime/tests/host_state.rs": "0e0a92bb0ef5749df71e8beee51939f4f8660d1e6bafe515e7287c667ce255bb",
+    "crates/router-runtime/tests/native_version.rs": "e1a3ec44f5f587c9be2306d9ff04153f22aadc35dfe14c2bdacb7d05064a3d23"
+  },
+  "independent_review": {
+    "agent": "measurement_backend_review",
+    "model": "gpt-6-astra",
+    "reasoning": "high",
+    "blocking_findings": 0,
+    "scope": "8 U03 files; source and compatibility review; tests not independently rerun by reviewer"
+  },
+  "checks": {
+    "format": "passed",
+    "workspace_clippy": "passed",
+    "secrets_scan": "passed_no_findings",
+    "harness_parity": "verified",
+    "harness_runtime_activation": "UNKNOWN",
+    "workspace_parallel": {
+      "exit_code": 101,
+      "log_sha256": "5a826c8b940b42de6fc30ae56f9654a096186da860addf0735ea7cc014a82328",
+      "completed_suites": 138,
+      "passed": 1439,
+      "failed": 6,
+      "ignored": 42,
+      "filtered": 292,
+      "arguments": "cargo test --workspace --all-features --locked"
+    },
+    "runtime_serial": {
+      "exit_code": 0,
+      "log_sha256": "1bd4bb08f1965265fd65ea15a35ac06669341e1ec94dcf017266fb006c16e3d6",
+      "completed_suites": 1,
+      "passed": 45,
+      "failed": 0,
+      "ignored": 6,
+      "filtered": 0,
+      "arguments": "cargo test -p router-runtime --test runtime --all-features --locked -- --test-threads=1"
+    },
+    "workspace_serial": {
+      "exit_code": 0,
+      "log_sha256": "9b4294cedcac8e2e399b49a2969d594c2766bc7e9b4374a7d802c427a8e65d02",
+      "completed_suites": 182,
+      "passed": 1563,
+      "failed": 0,
+      "ignored": 42,
+      "filtered": 292,
+      "arguments": "cargo test --workspace --all-features --locked -- --test-threads=1"
+    },
+    "candidate_bench_python": {
+      "passed": 17
+    },
+    "native_probe_python": {
+      "passed": 8
+    }
+  },
+  "native_probe": {
+    "result": "native-integration-u02/result-v3.json",
+    "composite_success": false,
+    "parameters_sent_to_scripted_provider": "verified",
+    "output_correlation": "verified",
+    "automatic_cli_hook": "NOT_TESTED",
+    "dynamic_tool_canary": "NOT_OBSERVED",
+    "upstream_model_inference": "NOT_PERFORMED",
+    "os_network_sandbox": "NOT_APPLIED",
+    "scripted_provider_spend_usd": 0
+  },
+  "limitations": [
+    "parallel runtime suite had six timeout failures; contention hypothesis supported but not proven",
+    "per-run rows do not prove complete per-task attempt cost",
+    "no daily automatic routing activation or productivity savings measured",
+    "development agent token usage and monetary cost unavailable"
+  ],
+  "status": "passed_for_serial_execution_parallel_execution_failed",
+  "evidence_retention": {
+    "logs": "temporary local logs; SHA256 recorded here",
+    "source_preimages": "temporary local archive; source was uncommitted at verification time"
+  }
+}

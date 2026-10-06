@@ -65,6 +65,8 @@ sauf celles marquées (FR).
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
+| [Candidat de calibration v2](bench/calibration-v2/README.md) (FR) | 2026-10-05 : protocole de collecte et modèle de préparation incomplet, sans autorisation d'exécution |
+| [Diagnostic d'intégration native Codex](bench/native-integration-u02/README.md) | 2026-10-05 : paramètres et sortie vérifiés sur app-server local, intégration automatique CLI non admise |
 | [Feedback](feedback.md) | Feedback local donné avec consentement, politiques hors ligne |
 
 ## Diagnostic, distribution et sécurité

@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use router_eval::{PricingTable, TokenPrice};
 use router_types::{
-    FeedbackEvent, FeedbackFact, FeedbackFactEvent, FeedbackFactKind, FeedbackOrigin, HostUsage,
-    IntegrationOutcome, VerificationOutcome,
+    FeedbackBinding, FeedbackEvent, FeedbackFact, FeedbackFactEvent, FeedbackFactKind,
+    FeedbackFailure, FeedbackOrigin, HostUsage, IntegrationOutcome, VerificationOutcome,
 };
 use serde::Serialize;
 
@@ -156,6 +156,38 @@ pub enum Advisory {
     },
 }
 
+/// Evidence retained in the feedback store, not a verified runtime receipt.
+/// Hashes identify source records; this projection does not open the runtime
+/// journal or authenticate native external captures.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct RunEvidence {
+    pub source: &'static str,
+    pub feedback_event_hash: String,
+    pub verification_fact_hash: Option<String>,
+    pub integration_fact_hash: Option<String>,
+    pub runtime_evidence: VerificationOutcome,
+    pub native_external_evidence: VerificationOutcome,
+}
+
+/// One retained automated run snapshot. Multiple runs may share a task hash;
+/// this is not a total over a task's attempts. Ordering follows event sequence.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct RunReport {
+    pub binding: FeedbackBinding,
+    pub run_key_sha256: Option<String>,
+    pub observed_at_unix_seconds: u64,
+    pub model: String,
+    pub effort: String,
+    pub task_kind: String,
+    pub verdict: RunVerdict,
+    /// Transport success is not objective success or acceptance.
+    pub transport: VerificationOutcome,
+    pub failure: Option<FeedbackFailure>,
+    /// None means no usage was stored, never zero consumption.
+    pub usage: Option<HostUsage>,
+    pub evidence: RunEvidence,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct FeedbackReport {
     pub schema_version: u32,
@@ -174,6 +206,8 @@ pub struct FeedbackReport {
     pub superseded_events: u64,
     pub pricing: Option<PricingCitation>,
     pub groups: Vec<GroupReport>,
+    /// At most MAX_EVENTS rows, using the same retained events as the groups.
+    pub runs: Vec<RunReport>,
     pub catalog_estimate_ratio: NullFigure,
     pub advisory: Advisory,
     pub interpretation: &'static str,
@@ -228,8 +262,9 @@ pub struct FeedbackSummary {
     pub content_hash: String,
 }
 
-#[derive(Clone, Copy, Eq, PartialEq)]
-enum Verdict {
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RunVerdict {
     Accepted,
     Rejected,
     Unknown,
@@ -239,6 +274,8 @@ enum Verdict {
 struct RunFacts<'a> {
     verification: Option<&'a FeedbackFact>,
     integration: Option<&'a FeedbackFact>,
+    verification_hash: Option<&'a str>,
+    integration_hash: Option<&'a str>,
 }
 
 impl RunFacts<'_> {
@@ -256,19 +293,19 @@ impl RunFacts<'_> {
     }
     /// A rejection signal wins over acceptance. Anything else is unknown,
     /// never a failure.
-    fn verdict(&self) -> Verdict {
+    fn verdict(&self) -> RunVerdict {
         let integration = self.integration_outcome();
         let objective = self.objective();
         if integration == Some(IntegrationOutcome::Discarded)
             || objective == Some(VerificationOutcome::Failed)
         {
-            Verdict::Rejected
+            RunVerdict::Rejected
         } else if integration == Some(IntegrationOutcome::Applied)
             && objective == Some(VerificationOutcome::Passed)
         {
-            Verdict::Accepted
+            RunVerdict::Accepted
         } else {
-            Verdict::Unknown
+            RunVerdict::Unknown
         }
     }
 }
@@ -375,8 +412,14 @@ fn build_report(
     for event in fact_events {
         let entry = by_key.entry(&event.fact.run_key_sha256).or_default();
         match event.fact.kind {
-            FeedbackFactKind::Verification { .. } => entry.verification = Some(&event.fact),
-            FeedbackFactKind::Integration { .. } => entry.integration = Some(&event.fact),
+            FeedbackFactKind::Verification { .. } => {
+                entry.verification = Some(&event.fact);
+                entry.verification_hash = Some(&event.fact_hash);
+            }
+            FeedbackFactKind::Integration { .. } => {
+                entry.integration = Some(&event.fact);
+                entry.integration_hash = Some(&event.fact_hash);
+            }
         }
     }
     let mut groups: BTreeMap<(String, String, String), Accumulator<'_>> = BTreeMap::new();
@@ -396,6 +439,7 @@ fn build_report(
         }
     }
     let mut superseded = 0u64;
+    let mut runs = Vec::new();
     for event in events {
         let i = &event.input;
         if i.origin == FeedbackOrigin::Automated
@@ -435,8 +479,28 @@ fn build_report(
                         &none
                     }
                 };
+                runs.push(RunReport {
+                    binding: i.binding.clone(),
+                    run_key_sha256: i.run_key_sha256.clone(),
+                    observed_at_unix_seconds: i.observed_at_unix_seconds,
+                    model: i.context.model.to_string(),
+                    effort: label(&i.context.effort)?,
+                    task_kind: label(&i.context.task_kind)?,
+                    verdict: facts.verdict(),
+                    transport: i.transport,
+                    failure: i.failure,
+                    usage: i.measurements.usage,
+                    evidence: RunEvidence {
+                        source: "feedback_store",
+                        feedback_event_hash: event.event_hash.clone(),
+                        verification_fact_hash: facts.verification_hash.map(str::to_owned),
+                        integration_fact_hash: facts.integration_hash.map(str::to_owned),
+                        runtime_evidence: VerificationOutcome::Unknown,
+                        native_external_evidence: VerificationOutcome::Unknown,
+                    },
+                });
                 match facts.verdict() {
-                    Verdict::Accepted => {
+                    RunVerdict::Accepted => {
                         group.accepted += 1;
                         let applied = facts.integration.map(|f| f.observed_at_unix_seconds);
                         group.acceptance_seconds.push(
@@ -445,8 +509,8 @@ fn build_report(
                                 .and_then(|(start, end)| end.checked_sub(start)),
                         );
                     }
-                    Verdict::Rejected => group.rejected += 1,
-                    Verdict::Unknown => group.unknown += 1,
+                    RunVerdict::Rejected => group.rejected += 1,
+                    RunVerdict::Unknown => group.unknown += 1,
                 }
                 match facts.integration_outcome() {
                     Some(IntegrationOutcome::Applied) => group.integration.applied += 1,
@@ -558,7 +622,7 @@ fn build_report(
         })
         .collect();
     let mut report = FeedbackReport {
-        schema_version: 1,
+        schema_version: 2,
         generated_at_unix_seconds: now,
         event_set_hash: event_set,
         fact_set_hash: fact_set,
@@ -574,6 +638,7 @@ fn build_report(
             observed_at_unix_seconds: p.observed_at_unix_seconds,
         }),
         groups,
+        runs,
         catalog_estimate_ratio: NullFigure {
             value: None,
             reason: "no_catalog_estimate_stored_in_feedback",
@@ -593,7 +658,7 @@ fn build_report(
         interpretation: "descriptive_associations_not_causal_or_router_gain",
         content_hash: String::new(),
     };
-    report.content_hash = hash("feedback-report-v1", &report)?;
+    report.content_hash = hash("feedback-report-v2", &report)?;
     summary.report_content_hash = report.content_hash.clone();
     summary.content_hash = hash("feedback-summary-v1", &summary)?;
     Ok((report, summary))
