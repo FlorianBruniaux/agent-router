@@ -1,0 +1,21 @@
+scripts/check-local.py
+  s_666c3e1d11a38e::t_66cc2194ab919d 45-51
+scripts/test-check-local.py
+  s_666c3e1d11a38e::t_b6c492e8ec3708 199-201,206-237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b3a2de61b8ca8c5630ac15b66905595a4ac35f2",
+  "prompts": {},
+  "sessions": {
+    "s_666c3e1d11a38e": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10f67-f120-74b3-8fdb-9d087dbce65e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
