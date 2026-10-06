@@ -1,0 +1,66 @@
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_17351f880b316a 39,194-196
+  s_9e80b85afcc43a::t_7d115ad4798434 38
+docs/feedback.md
+  s_9e80b85afcc43a::t_7d115ad4798434 340-347,349-378,418
+  s_9e80b85afcc43a::t_17351f880b316a 348,379-417
+  s_9e80b85afcc43a::t_dc71ba1e2a77fb 419-421
+crates/agent-router-cli/src/command.rs
+  s_9e80b85afcc43a::t_e1b9b1218fb76c 809-811,818-820
+crates/agent-router-cli/src/contracts.rs
+  s_9e80b85afcc43a::t_a8c15916a47833 38-39,46-51
+crates/agent-router-cli/src/execution_feedback.rs
+  s_9e80b85afcc43a::t_c6175aa3ad3148 1005-1053
+crates/agent-router-cli/src/feedback.rs
+  s_9e80b85afcc43a::t_cdca4aba53bb6d 38-40,42-68,143-146,148-160,162-165,167-179
+crates/agent-router-cli/src/replay_export.rs
+  s_9e80b85afcc43a::t_0dcfd851e36794 3,5-6,155-162
+crates/agent-router-cli/src/schemas/feedback-report.schema.json
+  s_9e80b85afcc43a::t_c7cd17d964ba0c 3,5,397-669,1459-1625
+crates/agent-router-cli/src/schemas/feedback-summary.schema.json
+  s_9e80b85afcc43a::t_ce7bd3526acc4f 3,5,252-418,661-907
+crates/agent-router-cli/tests/escalation.rs
+  s_9e80b85afcc43a::t_4388fc33d4dd69 228-231,247,252-256,258,261-268,270-284,289-290,323-344,1626-1784
+crates/agent-router-cli/tests/feedback_summary.rs
+  s_9e80b85afcc43a::t_0dab6ad0da6519 268-334
+crates/agent-router-cli/tests/replay_export.rs
+  s_9e80b85afcc43a::t_e5d9caf977ac08 481-502
+crates/agent-router-cli/tests/schema.rs
+  s_9e80b85afcc43a::t_0c58d7f54d4b9d 62,590-651
+crates/router-eval/src/lib.rs
+  s_9e80b85afcc43a::t_df291eaee8c0e3 3-5
+crates/router-eval/src/qualified_pricing.rs
+  s_9e80b85afcc43a::t_ec26c5466f4ab7 1-146
+crates/router-eval/tests/qualified_pricing.rs
+  s_9e80b85afcc43a::t_6a70c623591ad0 1-79
+crates/router-feedback/src/lib.rs
+  s_9e80b85afcc43a::t_e2ae25ce6cb650 10,12
+crates/router-feedback/src/report.rs
+  s_9e80b85afcc43a::t_f7e862d15bf2f0 24-69,144-145,185-186,254-256,308-310,416,441,471-475,514-520,522-528,556,596,618,622,766,772,833,844,872,889,930-971,978-986,999,1005-1006
+crates/router-feedback/src/task_report.rs
+  s_9e80b85afcc43a::t_bd332e6b9556b5 1-205
+crates/router-feedback/tests/report.rs
+  s_9e80b85afcc43a::t_88a5cae9f3a28b 1179-1263
+crates/router-runtime/src/lib.rs
+  s_9e80b85afcc43a::t_1583c51e397683 46
+crates/router-runtime/src/store.rs
+  s_9e80b85afcc43a::t_a0200a070f260e 1348-1530,3132-3290
+crates/router-types/src/feedback.rs
+  s_9e80b85afcc43a::t_c954f1e8813094 272-291
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e623199fb3d3260d608f6ac7758b0e5589437e9d",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
