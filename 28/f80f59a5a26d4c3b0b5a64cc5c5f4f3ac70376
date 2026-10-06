@@ -1,0 +1,41 @@
+docs/bench/calibration-v2/README.md
+  s_9e80b85afcc43a::t_49f92065cead17 8-11
+docs/bench/calibration-v2/personal-trial.md
+  s_9e80b85afcc43a::t_f8381952c73367 1-108
+docs/bench/native-integration-u07/README.md
+  s_9e80b85afcc43a::t_d4c8e01c809b51 1-148
+docs/bench/native-integration-u07/failure_probe.py
+  s_9e80b85afcc43a::t_d2d1432a1c9843 1-500
+docs/bench/native-integration-u07/observations.md
+  s_9e80b85afcc43a::t_476c84213692d9 1-70
+docs/bench/native-integration-u07/result.json
+  s_9e80b85afcc43a::t_e1f45478ab376b 1-297
+docs/bench/native-integration-u07/test_failure_probe.py
+  s_9e80b85afcc43a::t_47dac403f6e3ce 1-288
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_9cf84f44ec8a46 51-61
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_4720cdbad064aa 10,12-16,49-71,132
+docs/bench/verification-hook-failure-2026-10-06.json
+  s_9e80b85afcc43a::t_84eb7646d95e12 1-251
+scripts/check-local.py
+  s_9e80b85afcc43a::t_35311b13928e94 54,57-58
+scripts/test-check-local.py
+  s_9e80b85afcc43a::t_57bfce4c84716e 255-273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "28f80f59a5a26d4c3b0b5a64cc5c5f4f3ac70376",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
