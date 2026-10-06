@@ -1,9 +1,66 @@
-# Agent Router : plan consolidé v3 après critique
+# Agent Router : état courant et plan de validation
 
 5 octobre 2026. Ce document remplace le plan A1-A8 après les revues
 `critique-arch` et `critique-plan`. Le [rapport de critique](finalization-critique-2026-10-05.md)
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
+
+## État vérifié le 6 octobre 2026
+
+Les PR [#125](https://github.com/FlorianBruniaux/agent-router/pull/125) et
+[#126](https://github.com/FlorianBruniaux/agent-router/pull/126) sont fusionnées.
+La référence livrée est `8983d23a2e8937e244cf64ca0f2ba422073b20ae` sur `main`.
+Le checkout principal de Florian reste préservé.
+
+| Périmètre | Livré ou observé | Limite restante |
+| --- | --- | --- |
+| U03, bilan par exécution | Lignes et provenance dans le rapport ; formats historiques lisibles | Une ligne de feedback ne prouve pas le succès fonctionnel |
+| U04a, coût des tentatives enregistrées | Rapport v3 et résumé v2 : chaque tentative comptée une fois, sous-total connu, couverture explicite | U04b doit relier escalades et occurrences de tâche, et conserver les tentatives sans feedback ; U05 doit qualifier le cache |
+| Autorité réseau | Contrat explicite et refus du mode `ControllerBrokerOnly` non implémenté | La composition complète du runtime reste à prouver |
+| U02, diagnostic Codex | Compteur HTTP corrigé ; paramètres et sortie corrélés face à un fournisseur simulé | La présence du canari dans la requête ne prouve pas son appel ni le routage automatique |
+
+[Validation locale du 6 octobre](verification-2026-10-06.json) : 1 575 tests
+workspace réussis en séquentiel, 42 ignorés et 292 filtrés. Un test de saisie
+interactive avait dépassé son délai en parallèle, puis réussi isolément ; sa
+cause reste inconnue et aucun délai ni assertion de ce test n'a changé.
+Les deux suites Python totalisent désormais 42 tests réussis (29 + 13).
+Le test de nettoyage Linux distingue un descendant mort en attente de récupération
+d'un processus vivant, sans modifier le nettoyage produit. Formatage, Clippy,
+harnais et recherche de secrets ont réussi.
+
+Les 11 contrôles GitHub de la tête `2f50bcb5c069b12e35c45842c69eb6ae43d23da2`
+ont réussi avant fusion, dont les suites Linux/macOS et le runtime Linux natif
+([contrôles de la PR](https://github.com/FlorianBruniaux/agent-router/pull/126/checks)).
+Après fusion, les quatre workflows de `8983d23a` ont échoué sans exécution
+d'étape : GitHub indique un paiement en échec ou un plafond Actions à relever
+([diagnostic post-fusion](https://github.com/FlorianBruniaux/agent-router/actions/runs/37416315096)).
+La validation post-fusion reste non obtenue. Florian doit vérifier la facturation
+Actions ; après rétablissement, relancer et vérifier ces contrôles. Aucune
+modification de facturation n'a été effectuée.
+
+## Prochaines livraisons et suivi
+
+| Ordre | Action | Critère de sortie | Suivi |
+| --- | --- | --- | --- |
+| 1 | Prouver le parcours Codex CLI macOS avec fournisseur simulé | Appel d'outil code-mode corrélé, résultat repris par Codex, refus des appels inattendus, nettoyage et retrait vérifiés dans une nouvelle session | U02/U06, [roadmap #11](https://github.com/FlorianBruniaux/agent-router/issues/11) |
+| En parallèle | Compléter la comptabilité des tâches | Escalades, échecs, tentatives sans feedback et cache traités sans doublons ni total inventé | U04b/U05, [évaluation #5](https://github.com/FlorianBruniaux/agent-router/issues/5) |
+| Après preuve native | Préparer l'activation automatique | Déclenchement unique, choix appliqué ou refus explicite, panne et retour arrière testés ; candidat global approuvé avant installation | U07, roadmap #11 |
+| Après mesure et intégration validées | Calibrer puis comparer sur des tâches réelles | Plafond approuvé, tâches de confirmation distinctes, qualité, corrections, temps humain et coût par accepté, échecs et inconnus conservés | U08/U09/U10, évaluation #5 |
+
+Codex CLI, l'application Codex et Claude ont des validations séparées. Aucun
+gain de coût ou de productivité n'est établi par les contrôles de développement.
+L'[epic d'observabilité #115](https://github.com/FlorianBruniaux/agent-router/issues/115)
+reste ouverte avec ses propres critères ; U03/U04a ne la clôturent pas.
+
+À chaque lot validé ou blocage nouveau, l'agent chargé du lot met à jour cette
+section et l'issue concernée avec le comportement livré, la PR et le SHA,
+les tests réellement exécutés, les limites et la prochaine preuve attendue.
+Les résultats d'une campagne vont aussi dans le [playbook](playbook.md).
+Conserver les échecs historiques et les exports scellés. Distinguer implémenté,
+poussé, fusionné, CI avant/après fusion, usage natif et gain mesuré ; ne cocher
+une unité ou fermer une issue que lorsque ses critères sont satisfaits.
+
+<details><summary>Historique des validations antérieures à la fusion de #126</summary>
 
 Mise à jour du 6 octobre : le commit `f637d0a` est publié sur la branche dédiée.
 Les trois workflows GitHub ont réussi sur ce SHA, dont les tests Linux/macOS,
@@ -34,6 +91,12 @@ montre que `tools=[]` ne suffit pas à conclure à l'absence de canari dans la
 requête ; un callback code-mode complet reste à vérifier. U02/U06/U07, la
 campagne réelle et la publication du périmètre complet restent ouverts.
 
+</details>
+
+Les sections suivantes conservent le plan et les observations du 5 octobre.
+Leurs états locaux historiques sont remplacés, pour l'avancement courant,
+par les deux sections ci-dessus ; leurs critères non satisfaits restent applicables.
+
 ## Résultat recherché et limites actuelles
 
 Après installation consentie, une tâche éligible déclenche Agent Router dans
@@ -48,9 +111,9 @@ parcours Claude isolé non concluant ; supervision complète non prouvée.
 Le résultat Codex de 800 ms et 0 USD est une preuve de protocole locale, sans
 sandbox réseau, pas une mesure de productivité.
 
-La suite antérieure de cette conversation rapportait 1 560 tests réussis,
+Au moment de la critique du 5 octobre, la suite antérieure rapportait 1 560 tests réussis,
 42 ignorés et 292 filtrés, avec formatage et Clippy verts. Aucun de ces tests
-n'a été relancé pour cette critique. Les changements réseau restent non commités.
+n'avait été relancé pour cette critique. Les changements réseau étaient alors non commités.
 
 ## Ce qui change par rapport au plan précédent
 
@@ -128,8 +191,10 @@ comparaison de chaque préimage et vérification des huit empreintes finales.
 
 Le [diagnostic U02](native-integration-u02/README.md) confirme la transmission
 de paramètres et la corrélation de sortie sur Codex app-server 0.159.2 face à
-un fournisseur simulé. Le canari d'outil est absent ; le probe global reste
-rouge et l'intégration automatique n'est pas admise. U06/U07 restent bloqués.
+un fournisseur simulé. Le canari d'outil était absent de la projection directe ;
+le probe global restait rouge. Le [diagnostic complémentaire du 6 octobre](native-integration-u02/canary-diagnosis/README.md)
+ne permet pas d'en déduire son absence de la requête entière. L'intégration
+automatique n'est pas admise ; U06/U07 restent bloqués.
 Le [candidat U08](calibration-v2/README.md) fournit le protocole et le modèle
 de manifeste ; corpus final, paramètres et approbation de campagne restent à remplir.
 
