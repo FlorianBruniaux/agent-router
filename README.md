@@ -448,12 +448,14 @@ of reports.
 Several tools route model choice for coding agents or LLM calls. Most proxies
 and hosted routers decide per request while the call is in flight; Agent
 Router decides per phase, before the run, under hard constraints, and leaves
-a replayable receipt. The table compares documented design properties, read
-on 2026-09-30, not measured quality or cost.
+a replayable receipt. Kimchi also uses roles and phases inside its own coding
+agent. The table compares documented design properties, read on 2026-09-30
+(Kimchi added on 2026-10-07), not measured quality or cost.
 
 | Project | Routing unit | How the choice is made | Where it runs | Reasoning effort | Decision record | License |
 | --- | --- | --- | --- | --- | --- | --- |
 | **Agent Router** | Each phase (plan, execute, verify), before the run | Constraints filter, then deterministic scoring | Local CLI, offline | Per phase | Replayable receipt with exclusions | FSL-1.1-ALv2 |
+| [Kimchi Coding](https://github.com/getkimchi/kimchi) | Task delegation by role/phase during a session | LLM orchestrator selects from configured role pools | Local coding CLI, Kimchi Inference for model access | Per-role effort not documented in sources read | Session history; model/phase usage tags | Apache-2.0 (CLI) |
 | [claude-code-router](https://github.com/musistudio/claude-code-router) | Each request | User rules, route scripts, fallbacks | Local gateway | Not documented | Request logs | MIT |
 | [Omnigent Smart Routing](https://omnigent.ai/docs/build/routing) | Session, from the first message | LLM judge or external router | Local server | Not documented | Reason on failure | Apache-2.0 |
 | [OpenRouter Auto Router](https://openrouter.ai/docs/guides/routing/routers/auto-router) | Each turn | Task classifier ranked by community spend | Hosted | Not available on `openrouter/auto` | Chosen model, opt-in task type | Hosted service |

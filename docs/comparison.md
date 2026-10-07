@@ -1,9 +1,11 @@
 # Agent Router compared with similar projects
 
-Research date: 2026-09-30. Documentation-only comparison: no project below was
+Research date: 2026-09-30; Kimchi added on 2026-10-07. Documentation-only
+comparison: no project below was
 installed or run for this page. Each cell comes from the project's own
 repository or documentation, read on the date above; a cell the sources did
-not settle is written "not documented". Star counts, release tags and push
+not settle is written "not documented". Kimchi sources have their own date
+and a pinned repository revision below. Star counts, release tags and push
 dates were read from the GitHub API on the same day and will drift.
 
 This page compares design properties. It does not compare quality, cost or
@@ -24,6 +26,8 @@ claimed yet") and the 2026-09-30 pilot is 10 tasks with one repetition
    [Omnigent comparison](omnigent-comparison.md).
 3. Verification: each kept project's README, documentation pages and GitHub
    metadata (license, latest release, last push), fetched on 2026-09-30.
+   Kimchi was added from its README and Coding overview on 2026-10-07.
+   The other entries were not re-verified for that addition.
 4. Agent Router side: every claim cites a line of this repository.
 
 A project is kept when it chooses a model (or a model and effort) for coding
@@ -31,6 +35,22 @@ work or LLM calls from the task or request. Plain provider gateways that only
 load-balance or fail over between deployments of a chosen model are dropped.
 
 ## Projects kept
+
+### Kimchi Coding
+
+Kimchi is a coding agent with an LLM orchestrator that selects models from
+configured role pools during a session. Its roles include planning, building,
+review, exploration and research; requests carry model and phase tags for
+usage attribution. This overlaps with Agent Router's phase-based selection,
+but the documented choice is made by an orchestrator during execution.
+
+Keep the products distinct: Kimchi Coding uses Kimchi Inference for model
+access; Inference is a separate serverless API. The CLI's Apache-2.0 license
+does not describe the hosted service's terms. Per-role reasoning effort and
+a replayable routing receipt are not established by the sources read.
+
+- [Model roles and delegation](https://github.com/getkimchi/kimchi/blob/74f4ecef40ba182c6fed3a9bca2934057119e52d/README.md#model-roles), [phase tracking](https://github.com/getkimchi/kimchi/blob/74f4ecef40ba182c6fed3a9bca2934057119e52d/README.md#phase-tracking) and [CLI license](https://github.com/getkimchi/kimchi/blob/74f4ecef40ba182c6fed3a9bca2934057119e52d/README.md#license) (read 2026-10-07).
+- [Coding overview and Coding vs. Inference](https://docs.kimchi.dev/docs/coding-overview) (read 2026-10-07). No installation, execution or performance comparison was performed for this entry.
 
 ### claude-code-router (musistudio)
 
@@ -189,6 +209,7 @@ settings; Claude chooses which subagent to delegate to from the subagent's
 | Project | Routing unit | How the choice is made | Where it runs | Reasoning effort | What the decision leaves behind | Run gate before execution | License |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Agent Router** | Each phase of a task (plan, execute, verify), decided before the run | Constraints filter first, then deterministic scoring; optional semantic proposals stay advisory inside the admissible pool | Local CLI, offline for routing | Chosen per phase with the model | Receipt, explanation, exclusions, missing evidence; same inputs replay to the same receipt | Approved digest, fresh capability evidence, verified OS sandbox, Git worktree for writes | FSL-1.1-ALv2 (source-available, not OSI) |
+| Kimchi Coding | Task delegation by role/phase during a session | LLM orchestrator selects from configured role pools | Local coding CLI; Kimchi Inference for model access | Per-role effort not documented in sources read | Session history; model/phase usage tags | Not established by sources read | Apache-2.0 (CLI); hosted service separate |
 | claude-code-router | Each request through the gateway | User rules on headers and body, route scripts, subagent tag, ordered fallbacks | Local gateway | Not documented | Request logs: resolved provider, model, status, latency, tokens, estimated cost | Not applicable (proxy); client keys with request and token limits | MIT |
 | Omnigent Smart Routing | Session, from the first message | LLM judge, or an external routing API | Omnigent server on the user's machine; the judge calls a configured LLM | Not documented | Error reason on router failure, then fallback to the default harness | Not documented on the routing page | Apache-2.0 |
 | OpenRouter Auto Router | Each turn, with session stickiness | Task-type classifier ranked by community spend, within a cost tier | Hosted | Not available on `openrouter/auto` | Chosen model; opt-in task classification header | Not applicable (hosted API); per-request price cap | Hosted service |
@@ -213,9 +234,10 @@ Agent Router cells cite [README.md:74](../README.md) (per phase),
 These are design properties, not measured outcomes.
 
 - **Phase as the routing unit.** Plan, execute and verify can each get a
-  model, effort and skills ([README.md:74](../README.md)). Proxies above route
-  one request at a time; Omnigent routes one session; Aider fixes two roles by
-  configuration.
+  model, effort and skills ([README.md:74](../README.md)). Kimchi also uses
+  roles and phases, with orchestration during the session; Agent Router
+  decides before the run. Proxies above route one request at a time; Omnigent
+  routes one session; Aider fixes two roles by configuration.
 - **Hard constraints before scoring.** Permissions, budgets, risk and missing
   evidence remove candidates before any score, and "a higher score never makes
   an inadmissible candidate valid" ([README.md:120](../README.md)). vLLM
@@ -287,6 +309,8 @@ These are design properties, not measured outcomes.
 - A fixed planner/editor split is enough: Aider architect mode, or a Claude
   Code subagent or Codex profile with its own model and effort.
 - You want a session product across harnesses with a UI: Omnigent.
+- You want a coding agent that orchestrates role-specific models during a
+  session: Kimchi Coding.
 
 Agent Router fits when the routing decision itself must be checked before
 anything runs: per phase, under explicit permissions and budgets, with a
