@@ -136,10 +136,11 @@ command above.
 
 `scripts/release-local.py verify` can render a Homebrew formula from
 `distribution/homebrew/agent-router.rb.in`, pointing at the local archive by
-`file://` URL. Installing it is UNKNOWN: it has not been exercised. Only
-`ruby -c` syntax was checked on a rendered formula. The `install` block, the
-`file://` handling and the formula's `test` block are untested
-([limits](release-local.md#limits)).
+`file://` URL. The [2026-10-07 isolated trial](bench/release-qualification-2026-10-07.md)
+recognized the local tap and fetched the exact hash-pinned archive. Installation
+then failed on nested sandboxing; Homebrew's supported opt-out refused the
+administrator account. Installation remains unqualified. The formula's `test`
+and Homebrew uninstall were not exercised ([limits](release-local.md#limits)).
 
 If you try it, use a private Homebrew prefix. Installing with the system `brew`
 has global effects. The formula installs `bin/agent-router` and the license

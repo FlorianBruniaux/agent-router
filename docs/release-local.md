@@ -10,6 +10,10 @@ A binary built before the latest fixes is not a final release. Nothing here
 marks a candidate as final: the manifest records what was built from which
 source, nothing more.
 
+The [2026-10-07 qualification](bench/release-qualification-2026-10-07.md)
+exercises real core archives with a disposable signing key and records the
+remaining Homebrew, publication and publisher-trust limits.
+
 ## Signature tool
 
 `openssl` 3.6.5 at `/opt/homebrew/bin/openssl`, Ed25519 raw signatures over
@@ -89,19 +93,19 @@ archive, changed formula template, substituted public key with a matching pin,
 wrong pin, signature over another message, existing formula output, wrong
 candidate or source pin, truncated and malformed candidate archives (JSON error,
 no traceback, no path), inexact OpenSSL version, unrecognised OpenSSL verdict
-and a missing candidate. Replacing the signature verdict with acceptance makes
+a missing candidate, and multiline toolchain observations with bounded full-output
+validation. The manifest retains each first line and the hash of the complete
+observations. Replacing the signature verdict with acceptance makes
 five of them fail.
 
 ## Limits
 
-- Homebrew installation was not exercised. A private prefix needs its own
-  Homebrew clone, which needs network, and installing with the system `brew`
-  has global effects. Status: `UNKNOWN`. The `install` block assumes Homebrew
-  enters the archive's single top-level directory (`agent-router-binary/`, per
-  `verify_binary_archive` in `scripts/package-binary.py`) and uses paths
-  relative to it. That assumption, `file://` URL handling and the formula's
-  `test` block are untested. Only `ruby -c` syntax was checked on a rendered
-  formula.
+- Homebrew installation remains unqualified. On 2026-10-07, an isolated copy
+  recognized the local tap and fetched the exact hash-pinned `file://` archive.
+  Installation then failed on nested sandboxing; the supported opt-out refused
+  the account's administrator group. No Homebrew safety check was changed.
+  The install and test blocks remain unverified; see the qualification report.
+  The manual archive's route/explain and controlled removal did pass.
 - Symlinks: `prepare` and `verify` reject a symlinked candidate, template,
   manifest or output leaf, and a symlinked output parent. They do not reject
   symlinked ancestors further up. Rejecting every component would refuse
@@ -113,4 +117,6 @@ five of them fail.
   unchanged.
 - The signature proves only that the holder of the pinned key signed these
   bytes. Key custody and rotation are outside this tool.
-- The fixture archives in the tests are synthetic; no real build was verified.
+- Unit-test archives are synthetic. The separate 2026-10-07 qualification
+  verifies two identical real builds and a fixture-key attestation; it does
+  not establish publisher identity or release authority.

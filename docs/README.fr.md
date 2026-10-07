@@ -10,6 +10,7 @@ sauf celles marquées (FR).
 
 | Page | Contenu |
 | --- | --- |
+| [Essai expérimental](experimental-release.md) (EN) | 2026-10-07 : candidat source, exemple hors ligne et limites des preuves par host ; sans annonce de publication |
 | [Installation](install.fr.md) (FR) | Prérequis, features de build, release locale, désinstallation |
 | [Sortie de la CLI](cli-output.md) | Sortie lisible et `--json`, codes de sortie et codes d'erreur |
 | [Formats de configuration](configuration-formats.md) | Couches de configuration JSON, TOML et YAML strictes |
@@ -77,6 +78,7 @@ sauf celles marquées (FR).
 | [Distribution](distribution.md) | Distributions source et preuves de licence |
 | [Distribution binaire](binary-distribution.md) | Export d'un binaire natif local |
 | [Release locale](release-local.md) | Procédure de release locale vérifiable |
+| [Qualification de release, 2026-10-07](bench/release-qualification-2026-10-07.md) (EN) | Artefacts exacts, installation/retrait locaux, correction de release, inventaire sécurité et limites de publication |
 | [Audit des dépendances](dependency-audit.md) | Audit RustSec des dépendances verrouillées |
 | [Fuzzing](fuzzing.md) | Fuzzing borné des parseurs |
 | [Correctif SQLite WAL](sqlite-wal-fix.md) | Correction du reset WAL du SQLite embarqué |

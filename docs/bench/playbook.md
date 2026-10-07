@@ -4,6 +4,14 @@ How to rerun a campaign of the [router value protocol](router-value-protocol.md)
 
 ## Current delivery status
 
+[Experimental release qualification, 2026-10-07](release-qualification-2026-10-07.md)
+records the exact core artifacts, 1,593 passing Rust test executions (42 ignored),
+57 packaging/release Python tests, two matching builds and successful manual
+installation/removal. Homebrew remains unqualified. Three live-cache routing
+requests abstained on unknown tool capabilities; no savings claim follows.
+This release check is separate from the value campaigns below.
+
+
 The [current status and next acceptance criteria](status-and-action-plan-2026-10-05.md)
 are maintained with issues [#5](https://github.com/FlorianBruniaux/agent-router/issues/5)
 and [#11](https://github.com/FlorianBruniaux/agent-router/issues/11) after each
@@ -294,7 +302,7 @@ Both providers:
 
 - E, a single session with the frontier model at high effort, had the lowest cost per accepted task of every arm on both providers, in both columns, with the same acceptance as B. B cost 2.823 times E on Claude and 2.518 times E on Codex. This is the protocol's E1 contrast; the pilot does not isolate its cause, and the loss of the prompt cache between separate phase processes is one candidate the protocol names.
 
-The README tagline, "Frontier models for the hard steps, cheaper ones for the rest", is a product claim, not a result of this pilot. Against it:
+The README tagline at the time of this pilot, "Frontier models for the hard steps, cheaper ones for the rest", was a product claim, not a result of this pilot. Against it:
 
 | Provider | Criterion | A vs B | A vs G | A vs C | A vs E |
 | --- | --- | --- | --- | --- | --- |

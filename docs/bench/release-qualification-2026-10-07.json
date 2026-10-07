@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-07",
+  "source_commit": "882a246236de5864bee5a2f0f9771e03438c6a46",
+  "source_archive_sha256": "0e5b886a3ca8c68d05f7f0bace6e7190a071e2d78f8626a322ec39f338459798",
+  "binary_archive_sha256": "b1525a9c4928353cbd9949da6a077cca552238fc88ccf239eb437071a8953772",
+  "binary_sha256": "4109e153bd0a9083b70eb2399d4ee9df08d3750bbef60c3b50da83ba1d4446cd",
+  "core_export_excludes": [
+    "scripts/",
+    "docs/"
+  ],
+  "selected_core_bytes_unchanged": true,
+  "local_tooling_sha256": {
+    "scripts/release-local.py": "cd2be8b48f19b0e59662f4a03f23db5cb2f7279884fee7eb74d3d83b477278a2",
+    "scripts/test-release-local.py": "87a721e37bba907ae4265e66908a418301bb2fb331a399a966989ec179cdeae5"
+  },
+  "checks": [
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.54
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 120.268
+    },
+    {
+      "check": "tests",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 549.16
+    },
+    {
+      "check": "harness",
+      "command": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.257
+    }
+  ],
+  "rust_test_executions": {
+    "passed": 1593,
+    "failed": 0,
+    "ignored": 42
+  },
+  "python_tests": {
+    "package_core": 26,
+    "package_binary": 12,
+    "release": 19
+  },
+  "independent_review_extra_test_methods": 3,
+  "source_export_count": 3,
+  "byte_identical_binary_builds": 2,
+  "installation": {
+    "source_commit": "882a246236de5864bee5a2f0f9771e03438c6a46",
+    "source_archive_sha256": "0e5b886a3ca8c68d05f7f0bace6e7190a071e2d78f8626a322ec39f338459798",
+    "binary_sha256": "4109e153bd0a9083b70eb2399d4ee9df08d3750bbef60c3b50da83ba1d4446cd",
+    "route_exit": 0,
+    "explain_exit": 0,
+    "decision_sha256": "a6176edb9a4cc90a9539ccada0659def705dd6963dfe56ae5f9c6618fdaa00e8",
+    "example": "legacy route with synthetic bundled request/catalog, no live capability proof",
+    "confinement": "network denied; writes only in private installation directory",
+    "original_documented_phase_example": "exit2 capability.evidence.unauthenticated; retained installed-smoke.json",
+    "initial_command_sandbox_attempt": "nested sandbox_apply rejected; retried outside command sandbox"
+  },
+  "removal": {
+    "scope": "Archive extraction prefix only, not Homebrew uninstall",
+    "removed_files": 290,
+    "remaining_files": {
+      "qualification-preexisting-marker.txt": {
+        "sha256": "c306087efea5dc0cfa6ca83d785224d76b060e11ff644dbead7e982c30151dd8",
+        "mode": "0o600"
+      }
+    },
+    "preexisting_preserved": true,
+    "installed_command_absent": true,
+    "unexpected_entries": [],
+    "evidence_preserved_outside_prefix": true,
+    "secure_erasure_claim": false
+  },
+  "fixture_attestation": {
+    "fixture_only": true,
+    "publisher_trust": "NOT_ESTABLISHED",
+    "source_archive_sha256": "0e5b886a3ca8c68d05f7f0bace6e7190a071e2d78f8626a322ec39f338459798",
+    "candidate_archive_sha256": "b1525a9c4928353cbd9949da6a077cca552238fc88ccf239eb437071a8953772",
+    "manifest_sha256": "ee171a80d9d34c5cbddfe6577f2575dbe530a4afd8c47dbb07d0777bfc660c41",
+    "public_key_sha256": "c04560999194057494c21e7e46a4d687d567a0f1515fd35ea59313c390276c65",
+    "signature_sha256": "2e68023a392a778fe66339887aaefe6420bf0e673fd36dc7a7d6e92a77e99296",
+    "verification_exit": 0,
+    "private_fixture_key_removed": true
+  },
+  "homebrew": {
+    "outside_write_exit": 1,
+    "outside_file_exists": false,
+    "loopback_connect_exit": 1,
+    "connection_accepted": false,
+    "profile_sha256": "5fdc08689963398716f670e4e468198ce4d7657a54ed36623818a0d316f0e1ee",
+    "global_brew_entry_unchanged": true,
+    "global_ruby_unchanged": true,
+    "installed_brew_binary_exists": false,
+    "installed_keg_version_exists": false,
+    "homebrew_verdict": "NOT_QUALIFIED: nested sandbox refused; opt-in requires unprivileged account"
+  },
+  "router_live": [
+    {
+      "name": "publication-audit",
+      "exit_code": 3,
+      "repeat_byte_identical": true,
+      "stdout_sha256": "b16ca6006f0da9bd4278f53f66ac7ba18b1fea42914dab5606499d78890e95a8"
+    },
+    {
+      "name": "release-install",
+      "exit_code": 3,
+      "repeat_byte_identical": true,
+      "stdout_sha256": "115fabd48a072db99b8d949951996241cdb3973b8e0c955595139fa0e57a23c6"
+    },
+    {
+      "name": "release-docs",
+      "exit_code": 3,
+      "repeat_byte_identical": true,
+      "stdout_sha256": "aeb808abce11c0bb84b3192b59c7f771fa5c9bd6069c7abf47f8f030a8fc566d"
+    }
+  ],
+  "router_agent_dispatch": false,
+  "savings": "UNKNOWN",
+  "evidence_limits": [
+    "local evidence, not remote CI",
+    "42 ignored tests were not executed",
+    "no fresh Linux or native provider qualification",
+    "signature key is a disposable fixture, not publisher identity",
+    "Homebrew installation did not complete",
+    "license and visibility decisions pending",
+    "secret scans are heuristics, not security or legal approval"
+  ],
+  "private_evidence_sha256": {
+    "security/report.md": "ed9fec15f22159a6ca7ecdc600d2f7b346ddd2e2a6df2ac5f07f62d70a8a8b20",
+    "security/github-text-summary.json": "3d639869da2c814e68ca16e596c3cfa68c6c9cba13c93d207f54bc62f69e437a",
+    "review/REVIEW.md": "c23e5d6a50f4e4fe64c2a125ffbc8b9442b1091ba0fa011c4ac777452b5d8217",
+    "quality/tests.log": "39d75ee20a471ac53eeeb9425b29719499897dc84f7ca15593bbd0f45c092d92",
+    "install/uninstall-result.json": "31434288aa9f52e7234d923245418c0344dd785fd6b75b52a4724ca50e977489",
+    "install/homebrew-final-check.json": "4f3dd245d32b4da2b8476edfee0b87105c20ee495324731c3bb00feab87b935b",
+    "security/github-surfaces-summary.json": "deeb4fd13b880330976254a3b5f0966a64c5e6ef8bb1000ae2b3e3c1a7f4f302"
+  },
+  "github_metadata": {
+    "release_count": 0,
+    "release_asset_count": 0,
+    "formal_review_prs_queried": 109,
+    "formal_review_count": 0,
+    "actions_run_count": 1003,
+    "actions_artifact_count": 0,
+    "discussions_enabled": false,
+    "wiki_enabled": true,
+    "not_inspected": [
+      "Actions logs",
+      "wiki contents",
+      "attachment/media payloads"
+    ]
+  }
+}

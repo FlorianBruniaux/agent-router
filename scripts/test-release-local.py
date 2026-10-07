@@ -70,7 +70,7 @@ class LocalReleaseTests(unittest.TestCase):
         path.write_bytes(PACKAGE.CORE.archive_bytes(files, "core"))
         return path, sha(path.read_bytes()), source_commit
 
-    def make_candidate(self, name="agent-router-aarch64-apple-darwin-core.tar.gz", features=None):
+    def make_candidate(self, name="agent-router-aarch64-apple-darwin-core.tar.gz", features=None, versions=None):
         source = PACKAGE.checked_archive(self.source_archive, self.source_sha)
         features = [] if features is None else features
         proof = {
@@ -90,6 +90,8 @@ class LocalReleaseTests(unittest.TestCase):
             "sdk": "macOS SDK fixture",
             "dynamic_libraries_declared": [],
         }
+        if versions is not None:
+            proof.update(versions)
         path = self.root / name
         path.write_bytes(PACKAGE.archive_payload(b"fixture binary bytes", proof, source))
         return path, sha(path.read_bytes())
@@ -184,6 +186,34 @@ class LocalReleaseTests(unittest.TestCase):
         self.assertIn("# features: []", rendered)
         self.assertIn('bin.install "bin/agent-router"', rendered)
         self.assertFalse(self.formula.is_symlink())
+
+    def test_verbose_toolchain_observations_prepare_sign_and_verify(self):
+        # Synthetic harness fixture matches the real package-binary -Vv format.
+        versions = {
+            "cargo_version": "cargo 1.85.1 (d73d2caf9 2024-12-31)\nrelease: 1.85.1\nhost: aarch64-apple-darwin\n",
+            "rustc_version": "rustc 1.85.1 (4eb161250 2025-03-15)\nbinary: rustc\nrelease: 1.85.1\nLLVM version: 19.1.7\n",
+        }
+        self.candidate, self.candidate_sha = self.make_candidate(versions=versions)
+        self.signed_preparation()
+        manifest = json.loads(self.manifest.read_bytes())
+        record = manifest["artifacts"][0]
+        for name, value in versions.items():
+            self.assertEqual(record["toolchain"][name], value.partition("\n")[0])
+        archive = PACKAGE.verify_binary_archive(self.candidate.read_bytes())
+        self.assertEqual(record["build_observations_sha256"], sha(archive["BUILD-OBSERVATIONS.json"]))
+        self.assertEqual(self.verify().returncode, 0)
+
+    def test_verbose_toolchain_rejects_private_tail_controls_and_oversized_values(self):
+        invalid = [
+            "", "\ncargo 1.85.1", "cargo 1.85.1\r\nrelease: 1.85.1",
+            "cargo 1.85.1\nsecret\0value", "cargo 1.85.1\n" + "x" * 4096,
+            "cargo 1.85.1\npath: /Users/tester/private",
+            "cargo 1.85.1\npath: /private/tmp/build",
+        ]
+        for value in invalid:
+            with self.subTest(value=value):
+                self.candidate, self.candidate_sha = self.make_candidate(versions={"cargo_version": value})
+                self.assert_fails(self.prepare(), "release.toolchain_version_invalid", self.out)
 
     def test_candidate_manifest_signature_and_key_substitution_fail_without_formula(self):
         self.signed_preparation()

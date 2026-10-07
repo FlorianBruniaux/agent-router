@@ -1,9 +1,12 @@
 # Agent Router
 
-**Frontier models for the hard steps, cheaper ones for the rest.**
+**Choose model, effort and skills for each coding phase.**
 
-Local, explainable routing for Claude Code and Codex, with the cost of each
-accepted change.
+Experimental, local and explainable routing for Claude Code and Codex.
+
+This source-available candidate uses [FSL-1.1-ALv2](LICENSE.md), with future
+Apache 2.0 conversion. Start with the [experimental onboarding](docs/experimental-release.md)
+for the reproducible offline example and the limits of host integration.
 
 <table>
   <tr>
@@ -81,8 +84,9 @@ budget limits may only show up once the agent is already working.
   sandboxed, any write goes to a Git worktree, and you preview the patch before
   applying it.
 
-No measured cost or quality gain is claimed yet: the human-labelled evaluation
-corpus is still open work.
+No general cost or quality gain is established. The [host-direct pilot](docs/bench/playbook.md#conclusions-of-the-full-run)
+reports results on 10 small Python tasks with one repetition; it does not exercise
+the Agent Router supervised runtime or validate automatic daily host integration.
 
 ```mermaid
 sequenceDiagram
@@ -137,7 +141,7 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 - **Durable, coordinated execution**: track runs, cancel, recover and isolate writes in Git worktrees; run approved waves; preview, apply or discard a verified patch; reserve shared capacity and session budgets.
 - **Evaluate and optional semantics**: replay decisions, evaluate explicit cohorts and retain consented feedback locally; compare optional semantic proposals and local ranking sidecar outcomes (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
 - **Output, configuration and diagnostics**: human and `--json` output, layered configuration, `doctor` and a redacted `audit` trail.
-- **Distribution and release**: source workspaces, local native binary, dependency checks, an opt-in local route-only API (`serve`) and a verifiable local release that never signs, publishes or installs (the Homebrew install itself is not yet tested).
+- **Distribution and release**: source workspaces, local native binary, dependency checks, an opt-in local route-only API (`serve`) and a verifiable local release that never signs, publishes or installs (Homebrew installation remains unqualified after an isolated local trial).
 
 <!-- infographic:features -->
 <p align="center"><img src="docs/media/readme-features.jpg" alt="Agent Router capabilities at a glance" width="820"></p>
@@ -169,7 +173,7 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 | **Separate distributions** | Export source workspaces or build a local native binary with verified licenses, inventories and reproducibility checks. | [Distribution](docs/distribution.md) |
 | **Dependency checks** | Verify source license evidence and audit the committed dependency lock against a fresh RustSec database in CI. | [License evidence](docs/distribution.md#continuous-integration-license-evidence-gate), [security audit](docs/dependency-audit.md) |
 | **Local route-only API** | Serve route decisions over a private Unix socket with a token; no execution, feedback or activation endpoint. Opt-in build feature. | `serve` (`--features local-api`), [local API](docs/local-api.md) |
-| **Verifiable local release** | Bind source and binary archives to a canonical manifest, verify an externally produced Ed25519 signature and render a Homebrew formula. It never signs, publishes or installs; the Homebrew install itself is not yet tested. | [Local release](docs/release-local.md) |
+| **Verifiable local release** | Bind source and binary archives to a canonical manifest, verify an externally produced Ed25519 signature and render a Homebrew formula. It never signs, publishes or installs; Homebrew installation remains unqualified after an isolated local trial. | [Local release](docs/release-local.md) |
 
 </details>
 
@@ -192,7 +196,8 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 The project is under active development. Human validation of the evaluation
 corpus, the full startup target and additional native host evidence remain open.
 See the [completion ledger](docs/completion.md) and [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11)
-for acceptance criteria. Public release is still gated by license and security review.
+for acceptance criteria. This is an experimental source candidate; publication
+still requires the release review and does not imply production readiness.
 
 ---
 
@@ -203,10 +208,10 @@ for acceptance criteria. Public release is still gated by license and security r
 The [installation guide](docs/install.md) covers prerequisites, optional build
 features, the verifiable local release and uninstalling. Use Rust 1.85 or newer. The repository pins the development toolchain in
 [`rust-toolchain.toml`](rust-toolchain.toml). Clone access is required while the
-repository is private.
+repository is private; these instructions do not announce publication.
 
 ```sh
-git clone git@github.com:FlorianBruniaux/agent-router.git
+git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
 cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 ./target/release/agent-router --help
@@ -227,6 +232,8 @@ or automatic global configuration step.
 
 These commands use the bundled example catalog and request. They only produce
 a decision and explanation; they do not launch a host or call a model.
+Model names and capability declarations in these synthetic fixtures are not
+evidence of current model availability, authentication or native host support.
 
 ```sh
 ./target/release/agent-router route \
@@ -388,6 +395,11 @@ Host CLIs and credentials are supplied separately. Agent Router does not
 silently install them, bypass their permission systems or change the model of
 an existing parent conversation.
 
+Automatic prompt interception and daily Claude/Codex integration remain
+unvalidated. The [Codex app-server diagnostic](docs/bench/native-integration-u02/README.md)
+observed explicit turn parameters and scripted output in a disposable client;
+it was not an installed Agent Router integration or a real model inference.
+
 ---
 
 ## Documentation
@@ -399,6 +411,7 @@ The [full documentation index](docs/README.md) lists every guide by task. The mo
 
 | Start here | Go deeper |
 | --- | --- |
+| [Try the experimental offline surface](docs/experimental-release.md) | [Host integration evidence](docs/bench/native-integration-u02/README.md) |
 | [Install Agent Router](docs/install.md) | [Changelog](CHANGELOG.md) |
 | [Serve the local route API](docs/local-api.md) | [Build a verifiable local release](docs/release-local.md) |
 | [Prepare an execution](docs/preparation.md) | [Asset contracts and trust](docs/asset-contracts.md) |
@@ -466,9 +479,9 @@ agent. The table compares documented design properties, read on 2026-09-30
 
 Others are stronger on maturity and adoption, on re-routing every request of
 a live session, on provider breadth and failover, on learned routing from data,
-and on permissive licenses. Agent Router is not yet published (publication is
-gated by license and security review), has no Windows native execution and has
-no measured gain yet. The [full comparison](docs/comparison.md)
+and on permissive licenses. Agent Router is an experimental source candidate
+whose publication requires release review, has no Windows native execution and
+has no established general cost or quality gain. The [full comparison](docs/comparison.md)
 adds Plano, RouteLLM and Not Diamond, cites a source for every cell, and covers
 when to pick something else and the limits of a documentation-only review.
 

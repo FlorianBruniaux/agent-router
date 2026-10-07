@@ -141,10 +141,12 @@ commande de build ci-dessus.
 
 `scripts/release-local.py verify` peut générer une formule Homebrew à partir de
 `distribution/homebrew/agent-router.rb.in`, qui pointe vers l'archive locale via
-une URL `file://`. Son installation est UNKNOWN : elle n'a pas été exercée. Seule
-la syntaxe a été vérifiée, avec `ruby -c`, sur une formule générée. Le bloc
-`install`, la gestion de `file://` et le bloc `test` de la formule ne sont pas
-testés ([limites](release-local.md#limits)).
+une URL `file://`. L'[essai isolé du 2026-10-07](bench/release-qualification-2026-10-07.md)
+a reconnu le tap local, récupéré l'archive exacte et vérifié son empreinte.
+L'installation a ensuite échoué sur le sandbox imbriqué ; l'option prévue par
+Homebrew a refusé le compte administrateur. L'installation reste non qualifiée.
+Le bloc `test` et la désinstallation Homebrew n'ont pas été exécutés
+([limites](release-local.md#limits)).
 
 Si vous l'essayez, utilisez un préfixe Homebrew privé. Installer avec le `brew` du
 système a des effets globaux. La formule installe uniquement `bin/agent-router` et

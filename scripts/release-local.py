@@ -238,12 +238,16 @@ def validate_candidate(path: Path, source: dict[str, bytes], source_meta: dict,
         fail("release.license_or_sbom_mismatch")
     for field in ("cargo_binary_sha256", "rustc_binary_sha256"):
         require_sha(observations.get(field), "release.toolchain_hash_invalid")
+    toolchain_versions = {}
     for field in ("cargo_version", "rustc_version"):
         value = observations.get(field)
-        if (not isinstance(value, str) or not value or len(value.encode()) > 4096
-                or any(c in value for c in "\0\r\n")
+        if (not isinstance(value, str) or not value.partition("\n")[0] or len(value.encode()) > 4096
+                or any(c in value for c in "\0\r")
                 or any(prefix in value for prefix in ("/Users/", "/private/", "/tmp/", "/home/", "/opt/homebrew/"))):
             fail("release.toolchain_version_invalid")
+        # The packager records -Vv output. Keep the manifest label on one line;
+        # build_observations_sha256 still binds the complete validated output.
+        toolchain_versions[field] = value.partition("\n")[0]
     return {
         "archive": safe_archive_name(path.name),
         "archive_sha256": sha(archive_payload),
@@ -262,9 +266,9 @@ def validate_candidate(path: Path, source: dict[str, bytes], source_meta: dict,
         "build_observations_sha256": sha(archive_files["BUILD-OBSERVATIONS.json"]),
         "build_evidence": {"independent_builds": 2, "binary_bytes_equal": True,
                            "normalized_archive_bytes_equal": True},
-        "toolchain": {"cargo_version": observations["cargo_version"],
+        "toolchain": {"cargo_version": toolchain_versions["cargo_version"],
                       "cargo_binary_sha256": observations["cargo_binary_sha256"],
-                      "rustc_version": observations["rustc_version"],
+                      "rustc_version": toolchain_versions["rustc_version"],
                       "rustc_binary_sha256": observations["rustc_binary_sha256"]},
     }
 

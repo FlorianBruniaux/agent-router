@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-07: add the [experimental offline onboarding](docs/experimental-release.md), with a reproducible routing example, explicit synthetic-fixture provenance and separate host-integration limits. The source-available candidate retains FSL-1.1-ALv2; this documentation does not publish the repository or establish daily-use savings.
+
 - 2026-10-05: add a calibration v2 preparation protocol and incomplete manifest template, linked from the documentation indexes and bench playbook. No real campaign is authorized by these documents.
 
 ### Breaking
@@ -23,6 +25,8 @@ reasons); every change was verified locally on macOS.
 - `feedback report` now emits schema version 3 with per-run evidence and attempt cost coverage; `feedback summary` emits version 2. Historical report versions 1/2 and summary version 1 remain valid. Hash domains follow these output versions. Runtime and external native evidence remain explicitly unknown.
 
 ### Fixed
+
+- Local release attestation accepts real multiline Cargo/Rust compiler version observations while validating the complete bounded output and retaining its hash. The manifest keeps a single-line version label. Regression tests preserve refusal of private paths and invalid controls; the [release qualification](docs/bench/release-qualification-2026-10-07.md) records the real-archive result and Homebrew limit.
 
 - Feedback pricing retains distinct recorded attempts while deduplicating their snapshots. Missing ordinals, ambiguous legacy retries or conflicting usage keep the complete total unknown, with a separate known subtotal. This does not establish complete task cost across escalations or dispatches without feedback.
 
