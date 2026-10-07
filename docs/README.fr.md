@@ -8,6 +8,8 @@ sauf celles marquées (FR).
 
 ## Démarrer
 
+[Plan de finalisation actuel](bench/finalization-plan-2026-10-07.md) (FR), 2026-10-07 : ordre des livraisons, critères de réussite, essai réel et publication. Travail planifié, sans preuve d’activation.
+
 | Page | Contenu |
 | --- | --- |
 | [Essai expérimental](experimental-release.md) (EN) | 2026-10-07 : candidat source, exemple hors ligne et limites des preuves par host ; sans annonce de publication |
@@ -78,6 +80,10 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Doctor](doctor.md) | Diagnostic en lecture seule et audit expurgé |
+| [Observation passive d’une exécution](run-observation.md) | 2026-10-07 : F04a implémenté, testé et revu ; 20 références d’état en texte et JSON borné complet ; F04b et F05a complet restent ouverts |
+| [Validation de l’observation](bench/verification-observation-2026-10-07.json) | 21 contrôles sélectionnés réussis : 1 633 résultats Rust workspace + 1 cœur, 290 Python ; sommes des lignes de résultats, 42 tests natifs opt-in ignorés ; sans équivalence avec toute la CI |
+| [Annulation du broker absent au lancement](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent avant lancement, interruption/terminal corrélés et nettoyage physique, zéro provider ; F01r peut démarrer, qualification positive et admission globale encore ouvertes |
+| [Faisabilité du contrôle des envois](bench/physical-send-feasibility-2026-10-07/README.md) | 2026-10-07 : six cas natifs passent, absence du broker en timeout ; NO-GO global, sans admission provider réel |
 | [Distribution](distribution.md) | Distributions source et preuves de licence |
 | [Distribution binaire](binary-distribution.md) | Export d'un binaire natif local |
 | [Release locale](release-local.md) | Procédure de release locale vérifiable |

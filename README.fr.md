@@ -4,6 +4,13 @@
 
 Un routage expérimental, local et explicable pour Claude Code et Codex.
 
+État au 7 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
+acceptée sont disponibles. L’usage automatique quotidien et les économies réelles
+restent à prouver. Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md)
+sépare le premier essai utile, les mesures et la publication.
+
+L’[observation passive](docs/run-observation.md) (EN) lit un snapshot borné et expurgé du store existant, avec sortie lisible et JSON. Les 21 [contrôles locaux sélectionnés](docs/bench/verification-observation-2026-10-07.json) passent ; F04b et la timeline complète restent ouverts. Le [diagnostic natif initial](docs/bench/physical-send-feasibility-2026-10-07/README.md) conserve son NO-GO. Un [essai séparé de panne au démarrage](docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) valide l’annulation contrôlée et le nettoyage, ce qui permet de commencer la qualification d’un client Codex dédié. L’admission d’un fournisseur réel reste à vérifier.
+
 Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
 conversion future vers Apache 2.0. Le [guide d'essai expérimental](docs/experimental-release.md)
 (EN) fournit l'exemple hors ligne reproductible et les limites de l'intégration aux hosts.

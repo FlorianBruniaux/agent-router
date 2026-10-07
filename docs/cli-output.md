@@ -66,6 +66,8 @@ unchanged `baseline_receipt_id`; changing the output format adds no authority.
 
 ## Commands for programmatic callers
 
+`observe --store ROOT --run-id ID` uses a dedicated compact renderer for the [passive run snapshot](run-observation.md). It shows the snapshot identity, recorded state/cleanup, explicit unknown native fields and the last 20 selected-run state/sequence references; any omitted references are counted. `--json` returns all references in the same bounded projection. These are recorded references, not a timestamped native timeline. F04b’s published JSON Schema is still open, so this command is not added to `schema --list`.
+
 Three commands help a script or an agent use the CLI without reading the source:
 `schema`, `version --json` and `completions`. None of them reads a store, a
 file, the network or the environment. A fourth, `feedback summary`, gives one

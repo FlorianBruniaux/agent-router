@@ -1,0 +1,55 @@
+{
+  "native": {
+    "case": "broker_absent",
+    "failure": null,
+    "cleanup_complete": true,
+    "socket_control": [
+      "allowed",
+      1
+    ],
+    "turn_status": "interrupted",
+    "turn_correlated": true,
+    "final_output_observed": false,
+    "process_exit_code": 0,
+    "process_group_gone": true,
+    "output_complete": true,
+    "broker_receives": 0,
+    "broker_body_hashes": [],
+    "broker_http_requests": 0,
+    "broker_rejected_connections": 0,
+    "provider_receives": 0,
+    "provider_body_hashes": [],
+    "provider_http_requests": 0,
+    "provider_rejected_connections": 0,
+    "decisions": [],
+    "reserved": 0,
+    "checks_pass": false
+  },
+  "native_launch_count": 1,
+  "provider_accepted_connections": 0,
+  "provider_rejected_connections": 0,
+  "provider_handlers_stopped": true,
+  "broker_handlers_stopped": true,
+  "listeners_closed": true,
+  "listener_checks": [
+    {
+      "fd_closed": true,
+      "connect_errno": 61
+    },
+    {
+      "fd_closed": true,
+      "connect_errno": 61
+    }
+  ],
+  "pin_unchanged": true,
+  "source_hashes_unchanged": true,
+  "elapsed_seconds": 1.182,
+  "protocol_limit_seconds": 15,
+  "post_interrupt_limit_seconds": 3,
+  "global_admission": "NO_GO",
+  "original_v2_unmodified": true,
+  "candidate_pass": true,
+  "interrupt_requests": 1,
+  "interrupt_acknowledged": true,
+  "retry_notifications": 1
+}

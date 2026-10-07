@@ -1,0 +1,260 @@
+{
+  "budget_unit": "one reserved upstream HTTP request",
+  "cases": [
+    {
+      "broker_body_hashes": [
+        "e0aae119068aae0920fbc3a2ac491dbeb0f8700727e67ecf49376406360ef15c"
+      ],
+      "broker_http_requests": 1,
+      "broker_receives": 1,
+      "broker_rejected_connections": 0,
+      "case": "allow",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": true,
+          "ordinal": 1,
+          "reason": "allow"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": true,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [
+        "e0aae119068aae0920fbc3a2ac491dbeb0f8700727e67ecf49376406360ef15c"
+      ],
+      "provider_http_requests": 1,
+      "provider_receives": 1,
+      "provider_rejected_connections": 0,
+      "reserved": 1,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "completed"
+    },
+    {
+      "broker_body_hashes": [
+        "5e749e11e525d53899984aed6dc53384981fdc39257f64a4555bf95f6210511e"
+      ],
+      "broker_http_requests": 1,
+      "broker_receives": 1,
+      "broker_rejected_connections": 0,
+      "case": "deny_first",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": false,
+          "ordinal": 1,
+          "reason": "ceiling"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": false,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [],
+      "provider_http_requests": 0,
+      "provider_receives": 0,
+      "provider_rejected_connections": 0,
+      "reserved": 0,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "failed"
+    },
+    {
+      "broker_body_hashes": [
+        "79dbfcba800e0e6099997f67c99166b3f2110abef91cf19838fec3f797810fbb",
+        "79dbfcba800e0e6099997f67c99166b3f2110abef91cf19838fec3f797810fbb"
+      ],
+      "broker_http_requests": 2,
+      "broker_receives": 2,
+      "broker_rejected_connections": 0,
+      "case": "retry_allow",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": true,
+          "ordinal": 1,
+          "reason": "allow"
+        },
+        {
+          "allowed": true,
+          "ordinal": 2,
+          "reason": "allow"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": true,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [
+        "79dbfcba800e0e6099997f67c99166b3f2110abef91cf19838fec3f797810fbb",
+        "79dbfcba800e0e6099997f67c99166b3f2110abef91cf19838fec3f797810fbb"
+      ],
+      "provider_http_requests": 2,
+      "provider_receives": 2,
+      "provider_rejected_connections": 0,
+      "reserved": 2,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "completed"
+    },
+    {
+      "broker_body_hashes": [
+        "aefb1b74fd1fb916e42e2e39bddb5d0a44885b6d6ca372a825506605856550d0",
+        "aefb1b74fd1fb916e42e2e39bddb5d0a44885b6d6ca372a825506605856550d0"
+      ],
+      "broker_http_requests": 2,
+      "broker_receives": 2,
+      "broker_rejected_connections": 0,
+      "case": "retry_deny",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": true,
+          "ordinal": 1,
+          "reason": "allow"
+        },
+        {
+          "allowed": false,
+          "ordinal": 2,
+          "reason": "ceiling"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": false,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [
+        "aefb1b74fd1fb916e42e2e39bddb5d0a44885b6d6ca372a825506605856550d0"
+      ],
+      "provider_http_requests": 1,
+      "provider_receives": 1,
+      "provider_rejected_connections": 0,
+      "reserved": 1,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "failed"
+    },
+    {
+      "broker_body_hashes": [
+        "0980c8cabbcc09eb9d4ed31a7afe38f7d12af514411207979de5aab9759b2ab8"
+      ],
+      "broker_http_requests": 1,
+      "broker_receives": 1,
+      "broker_rejected_connections": 0,
+      "case": "guard_disabled",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": false,
+          "ordinal": 1,
+          "reason": "disabled"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": false,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [],
+      "provider_http_requests": 0,
+      "provider_receives": 0,
+      "provider_rejected_connections": 0,
+      "reserved": 0,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "failed"
+    },
+    {
+      "broker_body_hashes": [
+        "b5128ccfd5611c5bd86cf3ea7714690bff4b56e11322d5c7ebae2a53740ee8ee"
+      ],
+      "broker_http_requests": 1,
+      "broker_receives": 1,
+      "broker_rejected_connections": 0,
+      "case": "guard_failed",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "decisions": [
+        {
+          "allowed": false,
+          "ordinal": 1,
+          "reason": "guard_error"
+        }
+      ],
+      "failure": null,
+      "final_output_observed": false,
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [],
+      "provider_http_requests": 0,
+      "provider_receives": 0,
+      "provider_rejected_connections": 0,
+      "reserved": 0,
+      "socket_control": [
+        "allowed",
+        1
+      ],
+      "turn_correlated": true,
+      "turn_status": "failed"
+    },
+    {
+      "broker_body_hashes": [],
+      "broker_http_requests": 0,
+      "broker_receives": 0,
+      "broker_rejected_connections": 0,
+      "case": "broker_absent",
+      "checks_pass": false,
+      "cleanup_complete": true,
+      "decisions": [],
+      "failure": "FixtureError",
+      "output_complete": true,
+      "process_exit_code": 0,
+      "process_group_gone": true,
+      "provider_body_hashes": [],
+      "provider_http_requests": 0,
+      "provider_receives": 0,
+      "provider_rejected_connections": 0,
+      "reserved": 0,
+      "socket_control": [
+        "allowed",
+        1
+      ]
+    }
+  ],
+  "evidence_kind": "local_native_broker_diagnostic",
+  "global_admission": "NO_GO",
+  "local_transport_feasibility": "NO_GO",
+  "native_pin_unchanged": true,
+  "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "native_version": "0.159.2",
+  "os_admission": "UNKNOWN",
+  "paid_provider_calls": 0,
+  "schema_version": 1
+}

@@ -8,6 +8,8 @@ written in French.
 
 ## Get started
 
+[Current finalization plan](bench/finalization-plan-2026-10-07.md) (FR), 2026-10-07: delivery order, pass conditions, real-trial and publication boundaries. Planned work, not activation evidence.
+
 | Page | What it covers |
 | --- | --- |
 | [Experimental onboarding](experimental-release.md) | 2026-10-07: source candidate, offline example and host evidence limits; publication not implied |
@@ -79,6 +81,10 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [Doctor](doctor.md) | Read-only diagnostics and redacted audit |
+| [Passive run observation](run-observation.md) | 2026-10-07: implemented, tested and reviewed F04a; 20 human state references and full bounded JSON; F04b and complete F05a remain open |
+| [Observation verification](bench/verification-observation-2026-10-07.json) | 21 selected checks passed: 1,633 workspace Rust results + 1 core, 290 Python; result-line counts, 42 native opt-in tests ignored; not full CI equivalence |
+| [Startup-outage cancellation](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent before launch, correlated interrupt/terminal and physical cleanup, zero provider; F01r may start, positive qualification and global admission remain open |
+| [Physical-send feasibility](bench/physical-send-feasibility-2026-10-07/README.md) | 2026-10-07: six native cases pass, broker absence times out; overall NO-GO, no real provider admission |
 | [Distribution](distribution.md) | Source distributions and license evidence |
 | [Binary distribution](binary-distribution.md) | Local native binary export |
 | [Local release](release-local.md) | Verifiable local release recipe |

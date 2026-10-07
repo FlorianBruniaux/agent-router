@@ -1,0 +1,996 @@
+{
+  "schema_version": 1,
+  "scope": "F04a passive run observation plus bounded local native-send diagnostics",
+  "date": "2026-10-07",
+  "base_head_sha": "0b94bdfc6c1782b090af2d175947defca604fae8",
+  "quality_summary_sha256": "e766fb81d7e359ad4b1387f07ca4bee761b7ad069b986ab8441e5b5f1632d11b",
+  "quality_source_sha256": "3d1d50656c5d7ee4bf517b803f3648cf9714594b8a1cf0d33edab7668a4d725f",
+  "source_unchanged_during_quality": true,
+  "full_ci_equivalent": false,
+  "selected_source_inventory": [
+    {
+      "path": "CHANGELOG.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "18d912a31708d0c7f2795ee480811ad4956bab2ee082fdbf07768cb02ab97a04"
+    },
+    {
+      "path": "README.fr.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f60bb4c8d5a382d64eb81445ef9abeb4c4f3e5041a0c22f2b36d1b0817221a31"
+    },
+    {
+      "path": "README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "5a184e2867d280642adb286a1eaf299beacdfae7fb462e287be362a656f2e693"
+    },
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "06b54e0aebe9ba27bbd3740daa36b021e18b71459960485d02b2ce938e6da4d1"
+    },
+    {
+      "path": "crates/agent-router-cli/src/main.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "9efcc8cb4b7d4c03551e43debed7ddad8f39d8164bc086a88ebd449ee5c098ed"
+    },
+    {
+      "path": "crates/agent-router-cli/src/run_observation.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "1818594c43fa86fd2661f1297f1d0752d8ddfe84656d200f768b28f28cd02ddd"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/execution.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "c0cad109ed30004da3754b8220539d67b163dc70e6421423403eff313734e236"
+    },
+    {
+      "path": "crates/router-runtime/src/lib.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "4ff661ba8b4b4c7ad336ff091144be29ae71f1b8b8e218feedfde215cbe862f1"
+    },
+    {
+      "path": "crates/router-runtime/src/observation.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f886e5151f0a4462e290f0f36622b5baddf9c5ed9f54ebbe9fc0bdde3aa51ffc"
+    },
+    {
+      "path": "crates/router-runtime/src/store.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f3c483ce1a05170259260b2b712ff7d6b0096c1a0783315f1b90613a9dbfb314"
+    },
+    {
+      "path": "crates/router-runtime/src/store/observation.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "0eab15451180c279b59d4891e88a727b1d8aec3dc95b3798153aa0257313e34b"
+    },
+    {
+      "path": "crates/router-runtime/tests/observation.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "5a28e9dcd35a21cb97d1a75ded75d359c2e6d29a934ff796d6a1e1f5b21d5d86"
+    },
+    {
+      "path": "docs/README.fr.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "e7b1951e289771bb223cc3d93465f4556f74ed444574b83bfd2308f02becf0a8"
+    },
+    {
+      "path": "docs/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b5e604408a14a9cf6f84ed623ae811cfdace1024c32688de0adeec5d0bfcb4d3"
+    },
+    {
+      "path": "docs/adr/0025-run-observation.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "17d1db67a3e2e45e47ea83481e54369ecb9530d2f34f48ea3a456ea1ef4b2ef1"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "77eb2c20c1f171bbd0a3a0860e0373b5afa07effbb747cf8963586b8016e9225"
+    },
+    {
+      "path": "docs/bench/calibration-v2/personal-trial.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "c84f628c88e2e06243cc12bbb5a435fd3e476e26518e708cba5042ea6942b4e5"
+    },
+    {
+      "path": "docs/bench/finalization-plan-2026-10-07.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ed0f04b3e8416b57205ae35cf9f37dd9d0b9471d78c307c1eb2fc973b351ec4b"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "7e26580940c61314f59979fc682f7622e690ae797a7039ea3839fe66e469ad17"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "2b0dd2baf64ec0532817e89910a7e3022beb38655d89d2b894b96bf5ec6022ed"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/outage.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "135559d296d01a307f7eee83ca5933036c2747c23ff57d1553b8cbe339aaabe0"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/result.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "2b7113d960747c02c42d93265b93ef457f8ef89d63460a947d0fbca861726358"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/test_outage.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "e311de2fe65139c638f76b311014cb8c1b2dea39339d5c6d8ed8ad27f5be1a6b"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/verification.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "cbf85c504719e455d532a7853591a9d97555d5e86581c8cf86d89f8215b3a61a"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/probe.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/results.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "6d530e9375d1f6abf62ed8b2aec00365572df20080a6df18b2ffee2ecb2539b9"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/test_probe.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ca1ec430e54ac557bbc3b794ec6be5021c4c89e8a9ce4c01d537aa49d40a5e5d"
+    },
+    {
+      "path": "docs/bench/physical-send-feasibility-2026-10-07/verification.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "d95477c4590288e773ddea5620ef327cc9b85efb631151767b68b91734dec3f8"
+    },
+    {
+      "path": "docs/bench/playbook.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "0793e9b4fc5b2ade08fe5407d29dc0be8c3f10e05edc414460906cf084805bc2"
+    },
+    {
+      "path": "docs/bench/status-and-action-plan-2026-10-05.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b42543911f901ee8093f854bae353f87abe84b23264ad352440a47e5d9b89b67"
+    },
+    {
+      "path": "docs/cli-output.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b1dae355846ce831a75fc8e5751634822818a5917fd0ca6f8cadab67b3b1b995"
+    },
+    {
+      "path": "docs/reference/json-contracts.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "80356e133851bf53cd4395f9bc348041573fd7884288c614a3ea7221e5363443"
+    },
+    {
+      "path": "docs/run-observation.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "15812cf193cab4e4973ad8dfd7cac892020abd1a6528ff8e01e2daf41e464134"
+    }
+  ],
+  "checks": [
+    {
+      "id": "format",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 1.887612,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 31.565563,
+      "log_sha256": "77d5be54ee6267bfeeef992c4146292954971b3de351ea78f5577a77499a4fb1"
+    },
+    {
+      "id": "clippy-core",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 12.179443,
+      "log_sha256": "248f8c5ca59b7042990cee5620700230cf45db406586d4216dad6a111787f27d"
+    },
+    {
+      "id": "workspace-tests",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 606.595469,
+      "log_sha256": "bcc8edc4d9620be5a1ac55382e61d705f43f06e7f698efc19de5299ed24ff6e8",
+      "tests_passed_or_run": 1633,
+      "python_tests_skipped": 0,
+      "rust_results": {
+        "passed": 1633,
+        "failed": 0,
+        "ignored": 42,
+        "measured": 0,
+        "filtered_out": 302,
+        "result_lines": 186
+      }
+    },
+    {
+      "id": "local-api-absent",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 20.719253,
+      "log_sha256": "5384795f4ff4affa344a0330568feb0a1d1f1aa1a3ea264122e813921798eb36",
+      "tests_passed_or_run": 1,
+      "python_tests_skipped": 0,
+      "rust_results": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered_out": 0,
+        "result_lines": 1
+      }
+    },
+    {
+      "id": "harness",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.990568,
+      "log_sha256": "da7a92e59f04cf11d2139f4b24499f01bf0d117892109bbc4a02dc40f5236557"
+    },
+    {
+      "id": "host-syntax",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.084729,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.408911,
+      "log_sha256": "41cee9cc70f8e2902ff4277cf9577cbdf05c130cf7652490990fd48efa2e4859",
+      "tests_passed_or_run": 3,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 3,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-adrs",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.362768,
+      "log_sha256": "590d40137f9c521f8d7b4c9679753b8d830c837b1db08dbe4df038a53e6d352c",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 10.360008,
+      "log_sha256": "7ef73e37de7f84abf211daa574409cc98df415cf67b51445342bae6f2177f84d",
+      "tests_passed_or_run": 29,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 29,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-binary",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.524198,
+      "log_sha256": "489765746403ee894e3649ddb0765c01501e5bbf069359dfcd4821fb0c0225fa",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-core",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.41107,
+      "log_sha256": "ceb9069316166a9e9017c88523f511d8f1c0f51ed9f3c33d84ba4f6aadbb0b20",
+      "tests_passed_or_run": 26,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 26,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-release-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 19.72917,
+      "log_sha256": "48b5dfc0921bbd7674b9bcc752c4b4ca17a246af1f011ac3b7b9ce1161017dae",
+      "tests_passed_or_run": 27,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 27,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "egress-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 14.675587,
+      "log_sha256": "9b5361d609074dc48c202bf2cedf57d85508b1f6179ea7bdcbdf95aabe51dd68",
+      "tests_passed_or_run": 48,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 48,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-probe-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 8.147416,
+      "log_sha256": "e0edfbbd8d03eb9f0a915b4f6f33854a40dabd68b4810400dbd9bc97e4df11ee",
+      "tests_passed_or_run": 33,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 33,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-decision-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 4.029291,
+      "log_sha256": "00645f332a92e5b36e7110307f355e7b534937500db227f1218ca9bb0beeec07",
+      "tests_passed_or_run": 13,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 13,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 5.492747,
+      "log_sha256": "982d2d53a5b98c29185c42ef296de7cbeb2eb0a4d401086a27d57595e1c9cab7",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "campaign-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 1.147608,
+      "log_sha256": "cb7939562eadc7cb784bdc47e8a7c624b7659fc913fbfe9497d44aca696f9eb0",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "calibration-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 5.76956,
+      "log_sha256": "08f38816db097a7f3b84dfc1d73fb3dba067a6e090b9f48c690bfbd3f29004f0",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0,
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "secrets-dir",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 3.310207,
+      "log_sha256": "6eef44c5e5f39f349c34050be0aba12f79e649a6281e45829069bc71c8225997"
+    },
+    {
+      "id": "secrets-git",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 2.469963,
+      "log_sha256": "4917eaeb48d002b8cd8bc0df0222c78e55101fe75e938e3689fb81fd403ef809"
+    }
+  ],
+  "rust_results_by_check": {
+    "workspace-tests": {
+      "passed": 1633,
+      "failed": 0,
+      "ignored": 42,
+      "measured": 0,
+      "filtered_out": 302,
+      "result_lines": 186
+    },
+    "local-api-absent": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered_out": 0,
+      "result_lines": 1
+    }
+  },
+  "python_results_by_check": {
+    "script-test-benchmark-startup": {
+      "run": 3,
+      "skipped": 0
+    },
+    "script-test-check-adrs": {
+      "run": 30,
+      "skipped": 0
+    },
+    "script-test-check-local": {
+      "run": 29,
+      "skipped": 0
+    },
+    "script-test-package-binary": {
+      "run": 17,
+      "skipped": 0
+    },
+    "script-test-package-core": {
+      "run": 26,
+      "skipped": 0
+    },
+    "script-test-release-local": {
+      "run": 27,
+      "skipped": 0
+    },
+    "egress-tests": {
+      "run": 48,
+      "skipped": 0
+    },
+    "native-probe-tests": {
+      "run": 33,
+      "skipped": 0
+    },
+    "native-decision-tests": {
+      "run": 13,
+      "skipped": 0
+    },
+    "native-hook-failure-tests": {
+      "run": 17,
+      "skipped": 0
+    },
+    "campaign-tests": {
+      "run": 17,
+      "skipped": 0
+    },
+    "calibration-tests": {
+      "run": 30,
+      "skipped": 0
+    }
+  },
+  "counts_note": "Rust counts sum successful result lines including subprocess invocations, not unique definitions. The 12 runtime and 3 CLI focused tests are included in the workspace result. Diagnostic suites below are separate from the quality runner and not counted twice when rerun by reviewers.",
+  "independent_review": {
+    "observation": {
+      "verdict": "no_confirmed_blocker",
+      "probe_results": [
+        {
+          "name": "baseline",
+          "exit": 0,
+          "stdout_bytes": 1626,
+          "stderr": ""
+        },
+        {
+          "name": "deterministic",
+          "exit": 0,
+          "stdout_bytes": 1626,
+          "stderr": ""
+        },
+        {
+          "name": "4096_events_accepted",
+          "exit": 0,
+          "stdout_bytes": 671944,
+          "stderr": ""
+        },
+        {
+          "name": "human_20_event_limit",
+          "stdout_bytes": 1059
+        },
+        {
+          "name": "4097_events_refused",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "unicode_bytes",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "embedded_null_bytes",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "oversize_state",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "malformed_state",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "malformed_summary",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "binding_substitution",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "invalid_digest",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "bad_attempt_ordinal",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "six_attempts",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "sqlite_type_confusion",
+          "exit": 4,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.storage\"}"
+        },
+        {
+          "name": "resolved_invalid_evidence",
+          "exit": 7,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.integrity\"}"
+        },
+        {
+          "name": "100001_global_events_refused",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "64MiB_total_refused",
+          "exit": 2,
+          "stdout_bytes": 0,
+          "stderr": "{\"schema_version\":1,\"error\":\"runtime.limit\"}"
+        },
+        {
+          "name": "independent_concurrent_wal",
+          "reads": 21,
+          "distinct_horizons": 21,
+          "final_sequence": 122
+        }
+      ],
+      "rust_source_hashes_unchanged_since_review": true,
+      "adr_change_after_review": "usage-guide cross-link only"
+    },
+    "send": {
+      "review_verdict": "No remaining confirmed defect in reviewed scope",
+      "resolved_finding": {
+        "priority": "P2",
+        "initial_probe_sha256": "ab9c30f2c1d8df0b15615305c6a3134c65fd5d3c22a2d662a53310b72fe77a9f",
+        "proof": "Exact initial checks_pass predicate accepted deny_first with provider_http_requests changed from 0 to 1",
+        "fix": "Independent HTTP counts and complete body hash list lengths now required"
+      },
+      "checks": {
+        "current_suite": {
+          "tests": 12,
+          "failures": 0
+        },
+        "independent_loopback_tests": {
+          "tests": 4,
+          "failures": 0,
+          "cases": [
+            "duplicate Content-Length and chunked refusal",
+            "scalar/malformed JSON refusal without upstream connection",
+            "invalid provider HTTP increments total count without valid body",
+            "oversize upstream response retains reservation"
+          ]
+        },
+        "independent_classifier_mutations_rejected": 84,
+        "public_raw_semantic_equality": true,
+        "native_body_files_and_rpc_correlations_verified": 7,
+        "native_binary_hash_matches_pin": true,
+        "source_manifest_hashes_match": true
+      },
+      "limitations": [
+        "No native rerun by reviewer or after classifier fix",
+        "Six native captures pass; broker_absent terminal UNKNOWN after 15-second deadline, both HTTP counts zero",
+        "Historical cleanup flags supported by implementation and retained results, not fresh observation",
+        "Loopback scripted provider only; no inference, money/token cap or full OS admission",
+        "local_transport_feasibility and global_admission remain NO_GO"
+      ],
+      "reviewed_sha256": {
+        "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770",
+        "docs/bench/physical-send-feasibility-2026-10-07/test_probe.py": "ca1ec430e54ac557bbc3b794ec6be5021c4c89e8a9ce4c01d537aa49d40a5e5d",
+        "docs/bench/physical-send-feasibility-2026-10-07/README.md": "7e26580940c61314f59979fc682f7622e690ae797a7039ea3839fe66e469ad17",
+        "docs/bench/physical-send-feasibility-2026-10-07/results.json": "6d530e9375d1f6abf62ed8b2aec00365572df20080a6df18b2ffee2ecb2539b9",
+        "docs/bench/physical-send-feasibility-2026-10-07/verification.json": "d95477c4590288e773ddea5620ef327cc9b85efb631151767b68b91734dec3f8",
+        "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+        "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47"
+      },
+      "documentation_followup_review": {
+        "parent_readme_rechecked": true,
+        "scope": "Separate commanded cancellation when broker already unavailable at native startup; original and global NO_GO retained",
+        "repository_files_written_by_reviewer": false
+      }
+    },
+    "startup_outage_cancellation": {
+      "verdict": "No remaining confirmed code or documentation defect in reviewed scope",
+      "resolved_finding": {
+        "priority": "P2",
+        "description": "Qualifier accepted contradictory body hashes, rejected-connection count, terminal summary and raw listener closure",
+        "status": "Fixed and independently rechecked"
+      },
+      "documentation_correction": {
+        "path": "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md",
+        "line": 4,
+        "current_text": "Broker unavailable at native startup; listener closed before launching native process; disappearance during active session not tested",
+        "required_scope": "Broker already unavailable at native startup; no mid-session outage was tested",
+        "owner_acknowledged": true,
+        "applied_at_review_freeze": true,
+        "status": "Resolved; both README files reread after correction"
+      },
+      "checks": {
+        "unit_tests": 8,
+        "unit_failures": 0,
+        "independent_qualifier_mutations_rejected": 18,
+        "negative_interrupt_selections": 6,
+        "raw_public_report_byte_identity": true,
+        "only_qualifier_differs_from_executed_source_ast": true,
+        "executed_and_current_source_manifest_hashes_match": true,
+        "native_pin_and_initialization_version_checked": true,
+        "initial_v2_scripts_results_verification_byte_unchanged": true
+      },
+      "observation": {
+        "native_launches": 1,
+        "turn_starts": 1,
+        "interrupt_commands": 1,
+        "sequence": "correlated willRetry then interrupt ack then correlated interrupted terminal",
+        "provider_tcp_connections": 0,
+        "provider_http_requests": 0,
+        "broker_http_requests": 0,
+        "elapsed_seconds": 1.182,
+        "protocol_ceiling_seconds": 15,
+        "post_interrupt_ceiling_seconds": 3,
+        "process_exit_code": 0,
+        "output_complete_eof": true,
+        "owned_process_group_absent": true,
+        "handlers_stopped": true,
+        "listener_fds_closed_and_ports_refused": true
+      },
+      "limits": [
+        "Native was not rerun by reviewer",
+        "Final capture reclassified after qualifier-only corrections, without native rerun",
+        "Broker absent before native launch, no mid-session loss or ambiguous upstream effect tested",
+        "Cleanup derived from retained checks and inspected implementation, not a fresh process observation",
+        "No model inference, monetary/token ceiling, complete OS admission, tool isolation or remote-provider proof",
+        "Initial v2 and global admission remain NO_GO"
+      ],
+      "reviewed_sha256": {
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md": "2b0dd2baf64ec0532817e89910a7e3022beb38655d89d2b894b96bf5ec6022ed",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/outage.py": "135559d296d01a307f7eee83ca5933036c2747c23ff57d1553b8cbe339aaabe0",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/result.json": "2b7113d960747c02c42d93265b93ef457f8ef89d63460a947d0fbca861726358",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/test_outage.py": "e311de2fe65139c638f76b311014cb8c1b2dea39339d5c6d8ed8ad27f5be1a6b",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/verification.json": "cbf85c504719e455d532a7853591a9d97555d5e86581c8cf86d89f8215b3a61a"
+      },
+      "documentation_followup_review": {
+        "parent_readme_sha256": "7e26580940c61314f59979fc682f7622e690ae797a7039ea3839fe66e469ad17",
+        "repository_files_written_by_reviewer": false,
+        "additional_tests_run": false
+      }
+    },
+    "private_evidence_sha256": {
+      "observation-review.md": "57dfc1808ff9f9df341121b2ee08098c04631fce5436b1c79f680a6ce420a84f",
+      "observation-probe.py": "bc59f00b2d41d6393957c52854d45df55c2b00eee2b3eeadf48a390c2fb996ea",
+      "observation-probe-results.json": "e12bce62ca254f8dd1e45916f649044705545f5b4dfc918fd332ad13c3b82235",
+      "observation-freeze.json": "27ea39b628f8ab6e8a583a73bab646f15a9c327ef0f7664341daf141b7794f82",
+      "send-final-review.json": "3db2fdc65272b041b61a146b7e82391b75b54a6a13338433e48b0d92fad5fa55",
+      "send-outage-final-review.json": "c2d5ec1aa563b543bb590038e9fab5ca6f08cb9fd90f712d641329687af73069"
+    }
+  },
+  "initial_failures_retained": [
+    "Runtime observation API absent before implementation.",
+    "Malformed private JSON leaked canary in Debug error before static integrity mapping.",
+    "CLI observe command absent before implementation; corrupt fixture initially hit append-only trigger, setup corrected before valid RED.",
+    "First CLI build interrupted after accidental default target selection; corrected shared target used for retained RED/GREEN.",
+    "Send classifier initially ignored independent HTTP counts; three failing mutations reproduced then fixed.",
+    "Startup-outage qualifier initially accepted contradictory evidence; regressions reproduced then fixed.",
+    "Native broker-absent uncontrolled scenario timed out at 15 seconds. Initial NO_GO remains; controlled interruption is a separate contract and capture."
+  ],
+  "not_rerun": [
+    "42 opt-in ignored native tests",
+    "Linux-specific execution",
+    "fresh dependency audit",
+    "fuzz campaigns",
+    "current candidate binary packaging and installation",
+    "real provider integrations"
+  ],
+  "limits": [
+    "No real model inference, monetary/token cap, useful accepted patch, full native admission or savings are established.",
+    "Broker absence at startup was tested; loss during an active native session was not.",
+    "F04b provenance/schema, full timeline, trustworthy durations and external correlation remain open.",
+    "Final documentation and this public evidence file are added after the quality freeze; product source hashes are rechecked before delivery."
+  ],
+  "coverage_gaps": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner."
+  ]
+}

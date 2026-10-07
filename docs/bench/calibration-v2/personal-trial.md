@@ -23,6 +23,43 @@ Le [relevé existant](missing-inputs.json) conserve les entrées manquantes exac
 Réutiliser le [template](manifest.template.json) et sa [forme v2](README.md#forme-renseignée-et-vocabulaire-conservé).
 Aucun nouveau runner, collecteur ou stockage n'est nécessaire à ce protocole.
 
+## Candidat concret du 7 octobre 2026
+
+Proposition pour le premier essai d'utilisabilité : rendre la sortie humaine de
+`eval accepted-changes` lisible sans changer le résultat `--json`. La relecture
+de la fixture `tests/fixtures/evaluation/accepted-changes-v1.json` sur la source
+`68af153b561517007ca66ce8693e996f99c33305` produit 318 lignes et 13 540 octets.
+Les deux modes sortent avec le code 0 ; ces données sont synthétiques, aucun
+appel fournisseur n'a été exécuté. Le SHA-256 JSON de référence est
+`66e50a7bb3498d891cee4fea0bc937dd6ea89dbfa980394bb18b7887e43c2282`.
+Ce constat justifie la tâche ; il ne mesure aucun bénéfice du routage.
+
+Critères proposés, à lier au manifeste avant exécution :
+
+- Sur cette fixture, au plus 20 lignes lisibles indiquent le verdict de la
+  révision sélectionnée, le nombre de révisions acceptées et la couverture des
+  coûts modèle, CI et revue humaine, avec unités explicites.
+- Les totaux inconnus et le ratio sans révision acceptée restent inconnus ou
+  indéfinis ; aucune valeur manquante ne devient zéro.
+- Les sorties JSON restent identiques octet pour octet sur les cas retenus,
+  avec les mêmes codes de sortie, montants et règles de validation.
+- Les contrôles ciblés puis les gates du projet passent ; Florian accepte
+  le rendu de la révision exacte.
+
+Le périmètre candidat est le rendu CLI et ses tests, avec documentation de la
+commande si nécessaire. Avant l'appel, fixer les chemins exacts à partir du
+code retenu et un départ propre. Ne pas modifier le calcul comptable, le
+format JSON, le runtime ou la configuration globale pour cette tâche.
+L'amélioration reste volontairement non implémentée afin que son résultat
+puisse être produit par le futur parcours évalué.
+
+La collecte conservera modèle demandé/observé, toutes les tentatives, tests,
+corrections humaines, temps et consommation effectivement disponibles. Le
+premier passage restera hors comparaison si son affectation et son ordre
+n'ont pas été scellés au préalable. Le trajet natif qualifié, le mode de
+facturation, l'unité, le plafond, la dépense antérieure et l'accord final
+restent requis ; ce candidat n'est ni un manifeste exécutable ni un accord.
+
 ## Choisir et sceller une tâche réelle
 
 Choisir avant toute solution du modèle. Figer le SHA Git complet, un départ

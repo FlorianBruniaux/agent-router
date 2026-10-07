@@ -27,6 +27,7 @@ mod preparation;
 mod product;
 mod render;
 mod replay_export;
+mod run_observation;
 mod schema;
 #[cfg(all(feature = "local-api", unix))]
 mod serve;
@@ -374,6 +375,11 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             run_id,
             json,
         } => execution::status(&store, &run_id, json),
+        Commands::Observe {
+            store,
+            run_id,
+            json,
+        } => run_observation::run(&store, &run_id, json),
         Commands::Cancel {
             store,
             run_id,
