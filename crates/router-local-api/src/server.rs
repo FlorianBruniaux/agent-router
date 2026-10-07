@@ -878,9 +878,13 @@ mod tests {
         let context = harness.context();
         thread::scope(|scope| {
             let serving = scope.spawn(|| accept_loop(queue, &context, &shutdown));
-            let out = client();
+            let out = catch_unwind(AssertUnwindSafe(client));
             shutdown.store(true, Ordering::Release);
-            (out, serving.join().expect("loop must not panic"))
+            let served = serving.join();
+            match out {
+                Ok(out) => (out, served.expect("loop must not panic")),
+                Err(panic) => std::panic::resume_unwind(panic),
+            }
         })
     }
 
@@ -908,6 +912,32 @@ mod tests {
             }
             thread::sleep(Duration::from_millis(20));
         }
+    }
+
+    #[test]
+    fn a_panicking_client_stops_the_loop_and_preserves_its_panic() {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let worker = thread::spawn(move || {
+            let harness = Harness::new(Limits::default());
+            let queue = Queue::new();
+            let outcome = catch_unwind(AssertUnwindSafe(|| {
+                with_loop::<()>(&harness, &queue, || {
+                    panic!("client failure injected by a test");
+                })
+            }));
+            let _ = sender.send(outcome);
+        });
+        // Do not join before the timeout: the old helper strands its scoped
+        // server thread when the client panics, so joining would hang this test.
+        let outcome = receiver
+            .recv_timeout(Duration::from_secs(2))
+            .expect("client panic must not strand the accept loop");
+        worker.join().expect("test worker must not panic");
+        let panic = outcome.expect_err("client panic must propagate");
+        assert_eq!(
+            panic.downcast_ref::<&str>(),
+            Some(&"client failure injected by a test")
+        );
     }
 
     #[test]
