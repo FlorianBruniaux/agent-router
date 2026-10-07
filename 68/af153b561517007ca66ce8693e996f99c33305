@@ -1,0 +1,101 @@
+CHANGELOG.md
+  s_171eaa146c92b2::t_bd3a7f12f17468 19-22,68-69
+crates/agent-router-cli/src/command.rs
+  s_9e80b85afcc43a::t_9938a2e60ecb9b 925-931,1103-1104
+crates/agent-router-cli/src/evaluation.rs
+  s_9e80b85afcc43a::t_b62ce58931b2ab 66-79
+crates/agent-router-cli/tests/accepted_changes.rs
+  s_ff0b4928a9c31c::t_79e9e20d12f315 1-111
+crates/router-feedback/src/accepted_changes.rs
+  s_9e80b85afcc43a::t_1b6d2ca9d9ff38 1-703
+crates/router-feedback/src/lib.rs
+  s_9e80b85afcc43a::t_3b141d6192f224 3-5
+crates/router-feedback/tests/accepted_changes.rs
+  s_488c1f2a8a73a2::t_9d301ed50bf72d 1-395
+docs/README.fr.md
+  s_171eaa146c92b2::t_05a017920ebc37 67,72,96
+docs/README.md
+  s_171eaa146c92b2::t_12182d84d7243a 16,68,73,97
+docs/accepted-changes.md
+  s_ff0b4928a9c31c::t_6029ef4e6a1a6d 1-84
+docs/adr/0023-owned-task-entry.md
+  s_9e80b85afcc43a::t_bfb1811f7a06e9 1-155
+docs/adr/0024-accepted-revision-accounting.md
+  s_9e80b85afcc43a::t_5a22839499c952 1-171
+docs/adr/README.md
+  s_9e80b85afcc43a::t_9a06fca31c05b0 34-36
+docs/bench/owned-entry-2026-10-07/README.md
+  s_0a1d4be7a783f8::t_3916d95ba0c99d 1-92
+docs/bench/owned-entry-2026-10-07/decision.json
+  s_0a1d4be7a783f8::t_0719d11d1660dd 1-140
+docs/bench/owned-entry-2026-10-07/inspect_native.py
+  s_0a1d4be7a783f8::t_35d6e7267fc2c1 1-90
+docs/bench/owned-entry-2026-10-07/native-schema.json
+  s_0a1d4be7a783f8::t_cc48522c207376 1-54
+docs/bench/playbook.md
+  s_171eaa146c92b2::t_fd1b98217620b8 7-17
+docs/bench/reproducibility-investigation-2026-10-07.json
+  s_171eaa146c92b2::t_655643332f03a0 1-303
+docs/bench/reproducibility-investigation-2026-10-07.md
+  s_171eaa146c92b2::t_1948c6ddfe913f 1-20
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_171eaa146c92b2::t_919421fe7fc945 8-15
+docs/bench/verification-owned-entry-2026-10-07.json
+  s_9e80b85afcc43a::t_60d9d8d72ed519 1-683
+docs/evaluation.md
+  s_9e80b85afcc43a::t_28027514800f76 52-58
+docs/feedback.md
+  s_9e80b85afcc43a::t_64f967175d6645 550-557
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_87f398f79c4891 598-612
+tests/fixtures/evaluation/accepted-changes-v1.json
+  s_9e80b85afcc43a::t_efafd536286d91 1-303
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68af153b561517007ca66ce8693e996f99c33305",
+  "prompts": {},
+  "sessions": {
+    "s_0a1d4be7a783f8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11648-eba2-7801-975a-ca73226330e3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_171eaa146c92b2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11624-4612-7882-bd9f-6b20054770eb",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_488c1f2a8a73a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07172-9765-7811-8998-5776ebeb40d9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff0b4928a9c31c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11684-6957-7f32-89fe-ab1d6c4c05ff",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
