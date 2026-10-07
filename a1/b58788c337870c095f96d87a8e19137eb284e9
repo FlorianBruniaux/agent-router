@@ -1,0 +1,19 @@
+crates/router-local-api/src/server.rs
+  s_ff0b4928a9c31c::t_528957b6d3f163 881,883-887,917-942
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a1b58788c337870c095f96d87a8e19137eb284e9",
+  "prompts": {},
+  "sessions": {
+    "s_ff0b4928a9c31c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11684-6957-7f32-89fe-ab1d6c4c05ff",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
