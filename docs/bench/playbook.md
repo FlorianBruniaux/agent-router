@@ -1,8 +1,18 @@
 # Bench playbook
 
+The [current finalization plan](finalization-plan-2026-10-07.md) (FR), 2026-10-07, orders the useful trial, measurement and release work. It separates completed local checks from the remaining trial and admission criteria.
+
 How to rerun a campaign of the [router value protocol](router-value-protocol.md), check a recorded one, and log its figures. Each campaign lives in `docs/bench/runs/<date>-<name>/` with its sealed inputs, its harness, its results exported as metrics only, and a `SHA256SUMS` file.
 
 ## Current delivery status
+
+The [broker-outage cancellation follow-up](physical-send-feasibility-2026-10-07/outage-cancellation/README.md) closes the broker listener before native launch. A correlated retry notification triggers one interrupt; its acknowledgement and terminal `interrupted` match the thread/turn. Physical process, output, handler and socket cleanup are checked separately, with zero provider requests or connections. The initial v2 and global `NO_GO` remain unchanged. Broker loss during an active session is untested; no production or financial admission follows.
+
+The local [F04a observation implementation](../run-observation.md) is tested and independently reviewed. It reads one coherent, redacted snapshot of an existing store and shows at most 20 human state/sequence references, not a complete native timeline. Twelve runtime and three CLI focused tests passed; 19 independent probes found no confirmed blocker. The [source-bound verification record](verification-observation-2026-10-07.json) records all 21 selected quality checks passed: 1,633 successful workspace Rust results plus one core check, and 290 Python tests. Rust totals sum result lines, including subprocess invocations, rather than unique definitions; the focused tests are included. The 42 ignored opt-in native tests are not successes, and this selection is not full CI equivalence. F04b and complete F05a remain open.
+
+The [F03a diagnostic](physical-send-feasibility-2026-10-07/README.md) retains an overall NO-GO: six of seven native cases pass, but absent broker means zero HTTP requests and a 15-second timeout, with native terminal behavior UNKNOWN. The corrected verdict classifier passed 12 tests and four independent probes; 84 verdict mutations were checked. These results do not admit real provider execution or close #131/#132/#133.
+
+The six issue bodies #5, #11, #131, #132, #133 and #136 were reconciled and read back on 2026-10-07; 17 issues remain open. The [personal trial candidate](calibration-v2/personal-trial.md) now names a concrete useful task for preparation; it has not been implemented or executed by this pass.
 
 [Exact-revision accounting](../accepted-changes.md) now has an offline CLI, synthetic example and independent review. The [local verification record](verification-owned-entry-2026-10-07.json) binds the selected quality checks to source hashes. Supplied costs are not collected provider usage or observed savings.
 
@@ -10,9 +20,14 @@ The [bounded build investigation](reproducibility-investigation-2026-10-07.md) r
 
 [Owned-entry decision, 2026-10-07](owned-entry-2026-10-07/README.md) records
 an early NO-GO for both unmodified app-server and ACP transports under the
-required physical-send admission contract. The next independent native
-investigation is a local broker/send diagnostic (#133/F03a); a positive result
-is needed to reconsider the entry before useful-patch qualification (#132).
+required physical-send admission contract. The [local broker/send diagnostic](physical-send-feasibility-2026-10-07/README.md)
+(#133/F03a) retains its original overall NO-GO. Its separate controlled-cancellation
+follow-up now permits F01r to start on a pinned dedicated app-server client,
+HTTP broker and controlled interruption, without waiting for #132/F03b.
+First qualify task/thread/turn/model/effort binding and refusal of an unadmitted
+choice before provider contact. A positive entry decision precedes the useful
+#132 path and final F03b composition; it is not inferred from the local probe.
+The remaining measurement frontier is F04b, F05a/F05b and F06a.
 The behavioral comparison remains incomplete. No automatic route is activated.
 
 [Homebrew and Cargo qualification, 2026-10-07](distribution-qualification-2026-10-07.md)

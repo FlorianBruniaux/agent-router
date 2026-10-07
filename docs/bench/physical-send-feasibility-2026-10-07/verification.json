@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-07",
+  "global_admission": "NO_GO",
+  "native": {
+    "cases_passed": 6,
+    "cases_unknown_or_failed": 1,
+    "cleanup_complete": true,
+    "command": "rtk proxy python3 -B docs/bench/physical-send-feasibility-2026-10-07/probe.py --binary \"$NATIVE\" --state \"$STATE\"",
+    "executed_source_sha256": {
+      "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+      "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+      "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "ab9c30f2c1d8df0b15615305c6a3134c65fd5d3c22a2d662a53310b72fe77a9f",
+      "docs/bench/physical-send-feasibility-2026-10-07/test_probe.py": "9ab45974e9b1191a2344f14d126925a75fa3b804d675baacda914729808a4cb3"
+    },
+    "exit_code": 2,
+    "failed_case": "broker_absent",
+    "reason": "15-second protocol timeout; no terminal native turn observed",
+    "zero_provider_http_during_failed_case": true
+  },
+  "private_raw_retained": true,
+  "reclassification": {
+    "all_original_outcomes_preserved": true,
+    "case_verdicts": {
+      "allow": true,
+      "broker_absent": false,
+      "deny_first": true,
+      "guard_disabled": true,
+      "guard_failed": true,
+      "retry_allow": true,
+      "retry_deny": true
+    },
+    "command": "rtk proxy python3 -B docs/bench/physical-send-feasibility-2026-10-07/test_probe.py VerdictTests",
+    "input": "unchanged native-v2/report.json and byte-preserved public results.json",
+    "native_timeout_preserved": true,
+    "private_native_report_sha256": "bdc1a4e9be7344056b68cf8f3483db8e6fe5759f7c84e9674c47ddfc7073950d",
+    "public_results_sha256": "6d530e9375d1f6abf62ed8b2aec00365572df20080a6df18b2ffee2ecb2539b9"
+  },
+  "red_phase": {
+    "assertion_failures": 5,
+    "reason": "always-allow placeholder violates initial, repeated, failed, disabled and concurrent refusal",
+    "tests_run": 4
+  },
+  "repository_wide_checks": "Owned by coordinating agent; not claimed by this diagnostic",
+  "review_regression": {
+    "confirmed_defect": "classifier omitted independent HTTP counts and complete body-hash counts",
+    "fix": "require broker/provider HTTP counts and hash-list lengths to equal expected counts before passing",
+    "green_failures": 0,
+    "green_tests_run": 12,
+    "native_rerun": false,
+    "red_assertion_failures": 3,
+    "red_tests_run": 4
+  },
+  "source_head": "68af153b561517007ca66ce8693e996f99c33305",
+  "source_sha256": {
+    "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+    "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+    "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770",
+    "docs/bench/physical-send-feasibility-2026-10-07/test_probe.py": "ca1ec430e54ac557bbc3b794ec6be5021c4c89e8a9ce4c01d537aa49d40a5e5d"
+  },
+  "tests": {
+    "command": "rtk proxy python3 -B docs/bench/physical-send-feasibility-2026-10-07/test_probe.py",
+    "exit_code": 0,
+    "failures": 0,
+    "tests_run": 12
+  }
+}

@@ -16,6 +16,10 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-07: add the [passive observation guide](docs/run-observation.md) and [ADR 0025](docs/adr/0025-run-observation.md): F04a reads one bounded, redacted snapshot of an existing runtime store; native fields remain unknown, and F04b and the full timeline stay open. Index the [F03a diagnostic](docs/bench/physical-send-feasibility-2026-10-07/README.md), retaining its overall NO-GO and timeout limitation; reconcile the six issue updates without closing them.
+
+- 2026-10-07: add the [finalization plan](docs/bench/finalization-plan-2026-10-07.md) with dependency-aware delivery units, personal-trial measurements, release gates and a disposition for every open issue. Link the current plan from both READMEs, documentation indexes and the bench; no native activation or publication is implied.
+
 - 2026-10-07: retain the [two-pair native build investigation](docs/bench/reproducibility-investigation-2026-10-07.md). Four historical-source builds match exactly; the original mismatch remains unexplained and no reproducibility fix is claimed.
 
 - 2026-10-07: record [ADR 0023](docs/adr/0023-owned-task-entry.md), the early NO-GO for unmodified direct app-server and ACP under the physical-send contract, pinned schema/source evidence and an independent broker diagnostic frontier. No native activation or complete behavioral parity is claimed.
@@ -64,6 +68,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- `observe --store ROOT --run-id ID [--json]` reads a coherent passive run projection from an existing runtime store. Human output shows the last 20 state/sequence references; JSON keeps the complete bounded snapshot. Missing stores are not created; no recovery, migration, execution or permit release occurs, although SQLite may coordinate WAL/SHM. Native model/effort, outcomes, timing and liveness remain unknown.
 
 - `eval accepted-changes --input FILE --json` adds a standalone offline schema for exact revision acceptance, revocation and cost frontiers. All assignments and physical work remain visible, duplicate observations count once, and incomplete costs retain null totals. Existing feedback formats and stores are unchanged; supplied evidence is not authenticated and no native usage gain is claimed.
 

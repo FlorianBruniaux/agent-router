@@ -17,7 +17,13 @@ mod host_state;
 mod leases;
 mod native_version;
 mod network_authority;
+mod observation;
 mod outputs;
+pub use observation::{
+    ObservationDetailCoverage, ObservationJournalCoverage, ObservationUnknown, RunEventReference,
+    RunObservation, RunObservationCompleteness, RunObservationHorizon, RunObservationIdentity,
+    RunObservationKnown, RunObservationUnknowns,
+};
 mod private_program;
 mod process;
 mod resources;
@@ -43,7 +49,9 @@ pub use network_authority::NetworkAuthority;
 pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
-pub use store::{measurement_inventory, observe, observe_cleanup, observe_events, request_cancel};
+pub use store::{
+    measurement_inventory, observe, observe_cleanup, observe_events, observe_run, request_cancel,
+};
 pub use workspace::source_state;
 
 use router_adapter_api::{

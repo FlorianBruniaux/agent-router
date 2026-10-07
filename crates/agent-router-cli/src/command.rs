@@ -215,6 +215,18 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Read one coherent, bounded and redacted runtime snapshot without executing work.
+    Observe {
+        /// Existing private runtime store directory.
+        #[arg(long)]
+        store: PathBuf,
+        /// Run identifier (hashed in the observation output).
+        #[arg(long)]
+        run_id: String,
+        /// Print the complete versioned JSON projection instead of the compact view.
+        #[arg(long)]
+        json: bool,
+    },
     /// Request cancellation of one run.
     Cancel {
         /// Private runtime store directory.
@@ -1115,7 +1127,7 @@ impl Commands {
             },
             Self::Version { json } => (json, "Version"),
             Self::Schema { .. } | Self::Completions { .. } => return None,
-            Self::Route { .. } | Self::Explain { .. } => return None,
+            Self::Route { .. } | Self::Explain { .. } | Self::Observe { .. } => return None,
             #[cfg(all(feature = "local-api", unix))]
             Self::Serve { .. } => return None,
         };

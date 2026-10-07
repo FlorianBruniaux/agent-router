@@ -1179,3 +1179,108 @@ fn a_store_database_that_is_not_sqlite_exits_with_the_integrity_class() {
         .stdout(predicates::str::is_empty())
         .stderr("{\"schema_version\":1,\"error\":\"runtime.storage_corrupt\"}\n");
 }
+
+#[test]
+fn observation_reads_one_redacted_snapshot_without_changing_legacy_state() {
+    let f = Fixture::new();
+    f.run().assert().success();
+    let legacy = |verb| {
+        command()
+            .args([verb, "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone()
+    };
+    let before_status = legacy("status");
+    let before_events = legacy("events");
+    let read = || {
+        command()
+            .args(["observe", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone()
+    };
+    let first = read();
+    assert_eq!(first, read());
+    let report: Value = serde_json::from_slice(&first).unwrap();
+    assert_eq!(report["schema_version"], 1);
+    assert_eq!(report["known"]["state"], "awaiting_approval");
+    assert_eq!(report["known"]["attempts"], 0);
+    assert_eq!(report["unknown"]["observed_model"], "unknown");
+    assert_eq!(report["unknown"]["duration"], "unknown");
+    assert_eq!(report["completeness"]["journal"], "complete");
+    assert_eq!(report["completeness"]["external_observations"], "unknown");
+    assert_eq!(report["completeness"]["detail"], "redacted");
+    let human = command()
+        .args(["observe", "--store"])
+        .arg(&f.store)
+        .args(["--run-id", "cli-run"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let human = String::from_utf8(human).unwrap();
+    assert!(human.contains(report["snapshot_sha256"].as_str().unwrap()));
+    assert!(human.contains("awaiting_approval"));
+    assert!(human.contains("Duration: unknown"));
+    assert!(human.lines().count() <= 32);
+    for text in [String::from_utf8(first).unwrap(), human] {
+        assert!(!text.contains("private runtime prompt"));
+        assert!(!text.contains("cli-run"));
+        assert!(!text.contains(f.root.to_str().unwrap()));
+    }
+    assert_eq!(before_status, legacy("status"));
+    assert_eq!(before_events, legacy("events"));
+}
+
+#[test]
+fn observation_refuses_absent_store_without_creating_it() {
+    let temp = tempfile::tempdir().unwrap();
+    let missing = temp.path().join("missing");
+    let result = command()
+        .args(["observe", "--store"])
+        .arg(&missing)
+        .args(["--run-id", "missing", "--json"])
+        .assert()
+        .code(2)
+        .get_output()
+        .clone();
+    assert!(result.stdout.is_empty());
+    let error: Value = serde_json::from_slice(&result.stderr).unwrap();
+    assert_eq!(error["error"], "runtime.io");
+    assert!(!missing.exists());
+}
+
+#[test]
+fn observation_refuses_corrupt_journal_without_leaking_private_detail() {
+    let f = Fixture::new();
+    f.run().assert().success();
+    let conn = rusqlite::Connection::open(f.store.join("runtime.sqlite3")).unwrap();
+    conn.execute_batch(
+        "DROP TRIGGER events_no_update; UPDATE events SET detail='observation-secret-canary';",
+    )
+    .unwrap();
+    for json in [true, false] {
+        let mut cmd = command();
+        cmd.args(["observe", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run"]);
+        if json {
+            cmd.arg("--json");
+        }
+        let result = cmd.assert().code(7).get_output().clone();
+        assert!(result.stdout.is_empty());
+        let stderr = String::from_utf8(result.stderr).unwrap();
+        assert!(stderr.contains("runtime.integrity"));
+        assert!(!stderr.contains("observation-secret-canary"));
+    }
+}

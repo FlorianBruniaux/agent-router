@@ -1,0 +1,48 @@
+{
+  "actual_capture_mutations_candidate_pass": {
+    "ack_removed": false,
+    "body_hash_disagreement": false,
+    "connection_disagreement": false,
+    "duplicate_turn": false,
+    "group_alive": false,
+    "listener_disagreement": false,
+    "listener_open": false,
+    "provider_http": false,
+    "provider_tcp": false,
+    "terminal_removed": false,
+    "turn_disagreement": false
+  },
+  "current_candidate_sha256": {
+    "outage.py": "135559d296d01a307f7eee83ca5933036c2747c23ff57d1553b8cbe339aaabe0",
+    "test_outage.py": "e311de2fe65139c638f76b311014cb8c1b2dea39339d5c6d8ed8ad27f5be1a6b"
+  },
+  "date": "2026-10-07",
+  "final_native_elapsed_seconds": 1.182,
+  "final_native_exit_code": 0,
+  "global_admission": "NO_GO",
+  "native_executed_source_sha256": {
+    "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+    "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+    "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770",
+    "outage.py": "bef8619236a8ccbe45cce7e594d68f8446863c480085a32211a79ab699c93b0d",
+    "test_outage.py": "6bfb9f1ead81d3c945aa41ed123b11bd18b6df63d3dc0a27d9051637ec963e2b"
+  },
+  "native_raw_sha256": "e2df934867a1dea532ee0029dfb89e089bfeca080f96825ec795b1c152fb83bd",
+  "native_runs": 2,
+  "original_v2_verdict": "NO_GO",
+  "post_interrupt_deadline_seconds": 3,
+  "protocol_deadline_seconds": 15,
+  "review_correction": {
+    "native_rerun_after_classifier_correction": false,
+    "reason": "reject disagreements between native counters, body hashes, turn status and listener facts",
+    "reclassified_candidate_pass": true,
+    "red_assertions": 4
+  },
+  "sanitized_result_sha256": "2b7113d960747c02c42d93265b93ef457f8ef89d63460a947d0fbca861726358",
+  "source_head": "68af153b561517007ca66ce8693e996f99c33305",
+  "tests": {
+    "command": "rtk proxy python3 -B docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/test_outage.py",
+    "count": 8,
+    "exit_code": 0
+  }
+}

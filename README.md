@@ -4,6 +4,13 @@
 
 Experimental, local and explainable routing for Claude Code and Codex.
 
+Current status, 2026-10-07: offline routing and accepted-revision cost calculation
+are available. Automatic daily use and real savings remain unproven. The
+[finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) tracks the first useful trial,
+measurement and publication separately.
+
+[Passive run observation](docs/run-observation.md) reads one bounded, redacted snapshot of an existing store, with a compact human view and JSON. All 21 selected [local quality checks](docs/bench/verification-observation-2026-10-07.json) passed; F04b and the full timeline remain open. The [initial native-send diagnostic](docs/bench/physical-send-feasibility-2026-10-07/README.md) retains its NO-GO. A separate [controlled startup-outage test](docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) verifies cancellation and cleanup, allowing qualification of a dedicated Codex client to begin. Real-provider admission remains unverified.
+
 This source-available candidate uses [FSL-1.1-ALv2](LICENSE.md), with future
 Apache 2.0 conversion. Start with the [experimental onboarding](docs/experimental-release.md)
 for the reproducible offline example and the limits of host integration.
