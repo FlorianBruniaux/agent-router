@@ -13,6 +13,29 @@ competing commercial use. It is not an OSI open source license. Each version
 converts to Apache 2.0 two years after it is made available, under the license's
 terms. This guide does not change the license or announce repository publication.
 
+## Choose an installation channel
+
+[Pinned Cargo installation](install.md#cargo-from-a-pinned-git-revision) builds
+from a complete Git workspace. The [local Homebrew formula](install.md#homebrew-local-formula)
+installs a verified native archive. Both provide `agent-router` with exactly
+`claude` and `codex` features and `router-sandbox-helper`; optional features need
+a separate source build. The helper's absolute configuration path and approval
+hash remain explicit, and no hook, credential or permission is installed.
+
+The repository remains private. Local Cargo installation and removal passed on
+macOS ARM64 using a `file://` Git source and offline dependencies; remote HTTPS
+acquisition was not exercised. The complete v2 archive passed Homebrew install,
+test, same-version reinstall, retest and uninstall with both hashes checked,
+in an isolated macOS ARM64 prefix classified Tier 3, with Homebrew's sandbox
+enabled. This does not qualify a default prefix, public tap or version upgrade.
+See the [current distribution qualification](bench/distribution-qualification-2026-10-07.md)
+for exact artifact and lifecycle observations. No public tap, crates.io package
+or release asset is announced.
+
+The first two-build pair mismatched and was refused; the second pair matched.
+The initial cause remains `UNKNOWN`. Successful local installation is not a
+general reproducibility, security, publisher-identity or host-execution verdict.
+
 ## Try one offline decision
 
 Build from an authorized checkout with the [installation guide](install.md).
@@ -63,7 +86,7 @@ before interpreting a nonzero status as a successful selection.
 | Native Codex app-server diagnostic | Recorded on macOS in October 2026: an explicit client turn transmitted model/effort parameters and received scripted provider output. Automatic prompt interception and an installed Agent Router integration remain unvalidated; Codex App and Claude surfaces were not tested by that diagnostic. [U02 evidence](bench/native-integration-u02/README.md). |
 | Supervised runtime on macOS / Linux | Seatbelt / Bubblewrap implementations and fake-host native canary evidence are documented separately. A host process exit is transport evidence; task verification is another step. Windows native execution is not implemented. [Runtime evidence and limits](runtime.md#reproducible-checks). |
 | OpenCode / Copilot | Optional adapter features with protocol fixtures and fake-host canaries. Installed native hosts and providers remain unverified. [Other-host setup and limits](other-hosts.md). |
-| Distribution | Source and local binary export procedures exist. Homebrew formula generation does not prove installation; the archive installation/removal was exercised on macOS ARM64, while Homebrew installation remains unqualified. See the [2026-10-07 qualification](bench/release-qualification-2026-10-07.md). [Installation](install.md), [local release](release-local.md). |
+| Distribution | Cargo and v2 archives carry the same two default product components. Local lifecycle qualification is separate from HTTPS acquisition, version upgrades, host execution and publication. See the [current qualification](bench/distribution-qualification-2026-10-07.md), [installation](install.md) and [local release](release-local.md). The [old core-only report](bench/release-qualification-2026-10-07.md) remains historical. |
 
 The table summarizes checked source contracts and recorded evidence. It does
 not claim those native canaries were rerun for a future release artifact.

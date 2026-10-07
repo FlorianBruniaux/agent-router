@@ -141,7 +141,7 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 - **Durable, coordinated execution**: track runs, cancel, recover and isolate writes in Git worktrees; run approved waves; preview, apply or discard a verified patch; reserve shared capacity and session budgets.
 - **Evaluate and optional semantics**: replay decisions, evaluate explicit cohorts and retain consented feedback locally; compare optional semantic proposals and local ranking sidecar outcomes (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
 - **Output, configuration and diagnostics**: human and `--json` output, layered configuration, `doctor` and a redacted `audit` trail.
-- **Distribution and release**: source workspaces, local native binary, dependency checks, an opt-in local route-only API (`serve`) and a verifiable local release that never signs, publishes or installs (Homebrew installation remains unqualified after an isolated local trial).
+- **Distribution and release**: a native CLI plus sandbox helper, pinned Cargo installation, a local Homebrew formula and verifiable release bindings. Public packages are not announced; [qualification](docs/bench/distribution-qualification-2026-10-07.md) records the channel evidence.
 
 <!-- infographic:features -->
 <p align="center"><img src="docs/media/readme-features.jpg" alt="Agent Router capabilities at a glance" width="820"></p>
@@ -170,10 +170,10 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 | **Local ranking sidecar** | Compare bounded ranking proposals and explicitly send selected outcomes or feedback under current consent. | `sidecar`, [protocol and consent](docs/standard-sidecar.md) |
 | **Diagnostics and audit** | Inspect configuration and active runtime storage without recovery; keep process and cleanup authority unknown, and export a redacted audit trail. | `doctor`, `audit`, [diagnostics](docs/doctor.md) |
 | **Programmatic callers** | Print the JSON Schema of an output contract, report the build and supported contract versions as JSON, summarize feedback in one global total, and generate shell completions. | `schema`, `version --json`, `feedback summary`, `completions`, [CLI output](docs/cli-output.md#commands-for-programmatic-callers) |
-| **Separate distributions** | Export source workspaces or build a local native binary with verified licenses, inventories and reproducibility checks. | [Distribution](docs/distribution.md) |
+| **Separate distributions** | Export source workspaces or build the default Claude/Codex CLI and sandbox helper with license inventories and two-build reproducibility checks. | [Distribution](docs/distribution.md), [binary export](docs/binary-distribution.md) |
 | **Dependency checks** | Verify source license evidence and audit the committed dependency lock against a fresh RustSec database in CI. | [License evidence](docs/distribution.md#continuous-integration-license-evidence-gate), [security audit](docs/dependency-audit.md) |
 | **Local route-only API** | Serve route decisions over a private Unix socket with a token; no execution, feedback or activation endpoint. Opt-in build feature. | `serve` (`--features local-api`), [local API](docs/local-api.md) |
-| **Verifiable local release** | Bind source and binary archives to a canonical manifest, verify an externally produced Ed25519 signature and render a Homebrew formula. It never signs, publishes or installs; Homebrew installation remains unqualified after an isolated local trial. | [Local release](docs/release-local.md) |
+| **Verifiable local release** | Bind both binaries to a v2 manifest, verify an external Ed25519 signature and render a local or canonical HTTPS Homebrew formula. Rendering does not sign, publish, install or establish remote asset availability. | [Local release](docs/release-local.md) |
 
 </details>
 
@@ -203,6 +203,14 @@ still requires the release review and does not imply production readiness.
 
 ## Quick start
 
+Use [Cargo from a pinned Git revision](docs/install.md#cargo-from-a-pinned-git-revision)
+or a [verified local Homebrew formula](docs/install.md#homebrew-local-formula).
+Both install `agent-router` with default Claude/Codex adapters and
+`router-sandbox-helper`; helper configuration and approvals remain explicit.
+The repository is private, and no public tap, crates.io package or release asset
+is announced. [Current qualification](docs/bench/distribution-qualification-2026-10-07.md)
+separates local lifecycle checks from remote acquisition and native host execution.
+
 ### Build from source
 
 The [installation guide](docs/install.md) covers prerequisites, optional build
@@ -223,8 +231,9 @@ cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 The default CLI includes the Codex and Claude adapter features. To build the
 routing CLI without those host adapters, use `--no-default-features`. Routing
 works offline once Cargo dependencies are available; no Python or semantic
-service is required at runtime. There is no published package-manager install
-or automatic global configuration step.
+service is required at runtime. Cargo's pinned Git channel builds source;
+Homebrew uses an explicitly generated local formula. Installation performs no
+automatic global host configuration.
 
 </details>
 

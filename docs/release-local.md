@@ -10,14 +10,21 @@ A binary built before the latest fixes is not a final release. Nothing here
 marks a candidate as final: the manifest records what was built from which
 source, nothing more.
 
-The [2026-10-07 qualification](bench/release-qualification-2026-10-07.md)
-exercises real core archives with a disposable signing key and records the
-remaining Homebrew, publication and publisher-trust limits.
+The v2 recipe binds `agent-router` with exactly `claude` and `codex` features
+and `router-sandbox-helper` without features. Each artifact record binds both
+binary hashes and both clean-build hash maps. Old v1 manifests and single-binary
+archives are refused; regenerate the archive, manifest and external signature.
+This format change is separate from the product version, which remains `0.0.1`.
+
+The [current distribution qualification](bench/distribution-qualification-2026-10-07.md)
+records the v2 build and installation observations. The
+[earlier core-only qualification](bench/release-qualification-2026-10-07.md) remains
+historical and does not qualify this complete archive.
 
 ## Signature tool
 
 `openssl` 3.6.5 at `/opt/homebrew/bin/openssl`, Ed25519 raw signatures over
-`agent-router-release-v1\0` followed by the manifest bytes. `ssh-keygen -Y` was
+`agent-router-release-v2\0` followed by the manifest bytes. `ssh-keygen -Y` was
 not chosen because it needs an allowed-signers file and namespace handling;
 `minisign` is not installed here. The verifier requires the exact version token
 `OpenSSL 3.6.5` (so `3.6.4`, `3.6.50` or `3.6` are refused).
@@ -37,7 +44,7 @@ python3 scripts/release-local.py prepare \
   --source-archive "$TMPDIR/agent-router-core.tar.gz" \
   --source-sha256 <independently-verified-sha256> \
   --source-commit <40-hex-commit> \
-  --candidate "$TMPDIR/agent-router-aarch64-apple-darwin-core.tar.gz" \
+  --candidate "$TMPDIR/agent-router-aarch64-apple-darwin.tar.gz" \
   --output-dir "$TMPDIR/release-prepared"
 ```
 
@@ -68,17 +75,46 @@ python3 scripts/release-local.py verify \
   --manifest "$TMPDIR/release-prepared/MANIFEST.json" --signature "$TMPDIR/MANIFEST.sig" \
   --public-key "$TMPDIR/release-public.der" --public-key-sha256 <sha256> \
   --expected-manifest-sha256 <sha256> --expected-candidate-sha256 <sha256> \
-  --candidate "$TMPDIR/agent-router-aarch64-apple-darwin-core.tar.gz" \
-  --target aarch64-apple-darwin --features-json '[]' \
+  --candidate "$TMPDIR/agent-router-aarch64-apple-darwin.tar.gz" \
+  --target aarch64-apple-darwin --features-json '["claude","codex"]' \
   --formula-output "$TMPDIR/agent-router.rb"
 ```
 
 The signed formula hash covers a formula rendered with a neutral archive URL, so
-moving a candidate between `prepare` and `verify` is allowed. The real `file://`
-URL of the candidate is injected only into the written formula.
+moving a candidate between `prepare` and `verify` is allowed. The selected
+archive URL is injected only into the written formula.
 
 Output is one JSON line. Failures print `{"error": "<code>", "ok": false}`
 with no key material and write no formula.
+
+## Archive URL and publication
+
+Without `--archive-url`, `verify` uses the local candidate's canonical `file://`
+URL. An opt-in public URL must match this exact shape, using the source version
+and the local candidate's basename:
+
+```text
+https://github.com/FlorianBruniaux/agent-router/releases/download/v{version}/{archivebasename}
+```
+
+For the `0.0.1` source and candidate filename in the command above, append this
+argument to `verify`, with a new formula output path:
+
+```sh
+--archive-url https://github.com/FlorianBruniaux/agent-router/releases/download/v0.0.1/agent-router-aarch64-apple-darwin.tar.gz
+```
+
+This is a rendering example, not a claim that this asset exists. The command
+makes no HTTP request, uploads nothing and changes no repository visibility.
+The signature binds archive content and the neutral formula, not availability
+or transport origin. A published asset and a public tap require their own
+authorized delivery and verification.
+
+The formula installs both binaries and refuses an OS/CPU mismatch. Its test
+creates synthetic request/catalog files and exercises route/explain plus the
+helper's argument refusal. It proves neither host authentication nor native
+provider execution. Configure the helper's absolute path and review its hash
+separately before any supervised run ([installation](install.md)).
 
 ## Tests
 
@@ -96,16 +132,26 @@ no traceback, no path), inexact OpenSSL version, unrecognised OpenSSL verdict
 a missing candidate, and multiline toolchain observations with bounded full-output
 validation. The manifest retains each first line and the hash of the complete
 observations. Replacing the signature verdict with acceptance makes
-five of them fail.
+five of them fail. V2 coverage additionally refuses missing/substituted binary
+evidence, single-binary archives, wrong features and platform targets, and
+noncanonical archive URLs; it checks the complete local/public formula shapes.
 
 ## Limits
 
-- Homebrew installation remains unqualified. On 2026-10-07, an isolated copy
-  recognized the local tap and fetched the exact hash-pinned `file://` archive.
-  Installation then failed on nested sandboxing; the supported opt-out refused
-  the account's administrator group. No Homebrew safety check was changed.
-  The install and test blocks remain unverified; see the qualification report.
-  The manual archive's route/explain and controlled removal did pass.
+- The complete v2 archive passed Homebrew install, test, same-version reinstall,
+  retest and uninstall on macOS ARM64 with both binary hashes verified and the
+  unrelated marker preserved. Its custom non-`/tmp` prefix was classified Tier 3;
+  Homebrew's own sandbox remained enabled, without an outer sandbox or override.
+  Ordinary core catalog files were supplied from a shallow pinned copy. This
+  qualifies only the exact local artifact and environment in the current report,
+  not a default prefix, public tap, HTTPS retrieval or different-version upgrade.
+- The first real two-build pair mismatched and the archive was refused. A
+  subsequent pair matched for both executables and produced the qualified
+  archive. The initial mismatch's cause remains `UNKNOWN`; retained per-build
+  hashes improve diagnosis without establishing a fix or general reproducibility.
+  Source bindings identify `f378afad4f584bac0efabbbb9dab37c48db4298f`, before the
+  distribution-tooling and test-only edits. Regenerate release bindings after
+  accepting the changed revision.
 - Symlinks: `prepare` and `verify` reject a symlinked candidate, template,
   manifest or output leaf, and a symlinked output parent. They do not reject
   symlinked ancestors further up. Rejecting every component would refuse
@@ -113,10 +159,9 @@ five of them fail.
   the formula URL and then used as given, so a directory swapped by a
   concurrent local writer between checks and use is not defended against.
 - `scripts/package-binary.py` checks the source archive path and size before
-  reading it (check then use). That is existing code outside this tool and is
-  unchanged.
+  reading it (check then use). This guard is separate from signature verification.
 - The signature proves only that the holder of the pinned key signed these
   bytes. Key custody and rotation are outside this tool.
-- Unit-test archives are synthetic. The separate 2026-10-07 qualification
-  verifies two identical real builds and a fixture-key attestation; it does
-  not establish publisher identity or release authority.
+- Unit-test archives are synthetic. Real build and installation observations
+  apply to the exact artifacts in the current qualification report; a fixture
+  signature establishes neither publisher identity nor release authority.

@@ -17,6 +17,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 
 sys_path = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location("package_binary", sys_path / "package-binary.py")
@@ -149,27 +150,138 @@ class BinaryPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(PACKAGE.PackageError, "vendor.crate_missing_or_ambiguous"):
             PACKAGE.vendor(bad_lock, self.root / "cargo", self.root / "vendor-bad")
 
+    def cargo_fixture(self):
+        target = self.root / "target"
+        executables = {name: target / "aarch64-apple-darwin/release" / name for name in PACKAGE.BINARY_PACKAGES}
+        events = [{"reason": "compiler-artifact", "package_id": "path+file:///tmp/src/crates/" + package + "#0.1.0",
+                   "target": {"name": name, "kind": ["bin"]},
+                   "features": PACKAGE.DEFAULT_FEATURES if name == "agent-router" else [],
+                   "executable": str(executables[name]), "filenames": [str(executables[name])]}
+                  for name, package in PACKAGE.BINARY_PACKAGES.items()]
+        return target, executables, events
+
+    def check_events(self, events, exit_code=0, finished=None):
+        target, executables, _ = self.cargo_fixture()
+        packages, binaries, _ = PACKAGE.cargo_events("\n".join(json.dumps(event) for event in events).encode())
+        return PACKAGE.check_build_event_contract(exit_code, [True] if finished is None else finished,
+                    binaries, target, executables, PACKAGE.DEFAULT_FEATURES,
+                    {package: "0.1.0" for package in PACKAGE.BINARY_PACKAGES.values()})
+
     def test_cargo_log_truncation_failure_extra_binary_and_outside_artifact_fail(self):
         with self.assertRaisesRegex(PACKAGE.PackageError, "build.log_truncated_or_invalid"):
             PACKAGE.cargo_events(b'{"reason":"build-finished","success":')
-        event = {"reason": "compiler-artifact", "package_id": "path+file:///tmp/src/crates/agent-router-cli#0.1.0",
-                 "target": {"name": "agent-router", "kind": ["bin"]}, "features": [],
-                 "filenames": [str(self.root / "target/aarch64-apple-darwin/release/agent-router")]}
-        finish = {"reason": "build-finished", "success": True}
-        artifacts, binaries, finished = PACKAGE.cargo_events((json.dumps(event) + "\n" + json.dumps(finish)).encode())
-        target = self.root / "target"
-        executable = target / "aarch64-apple-darwin/release/agent-router"
-        self.assertEqual(artifacts, [("agent-router-cli", "0.1.0")])
-        PACKAGE.check_build_event_contract(0, finished, binaries, target, executable, [])
+        _, _, events = self.cargo_fixture()
+        observed = self.check_events(events)
+        self.assertEqual([event["target"] for event in observed], list(PACKAGE.BINARY_PACKAGES))
+        self.assertEqual(observed[0]["features"], ["claude", "codex"])
+        self.assertEqual(observed[1]["features"], [])
+        for bad in (events[:1], events + [events[1]], [events[0], events[0]]):
+            with self.subTest(events=bad), self.assertRaisesRegex(PACKAGE.PackageError, "build.expected_two_binary_artifacts"):
+                self.check_events(bad)
+        for field, value, error in (("package_id", "path+file:///tmp/src/crates/wrong#0.1.0", "build.binary_package_mismatch"),
+                                    ("package_id", "path+file:///tmp/src/crates/router-sandbox-helper#9.0.0", "build.binary_package_mismatch"),
+                                    ("filenames", ["/tmp/not-target/router-sandbox-helper"], "build.executable_not_in_cargo_event"),
+                                    ("executable", "/tmp/not-target/router-sandbox-helper", "build.executable_not_in_cargo_event"),
+                                    ("features", ["default"], "build.feature_set_mismatch")):
+            bad = json.loads(json.dumps(events)); bad[1][field] = value
+            with self.subTest(field=field, value=value), self.assertRaisesRegex(PACKAGE.PackageError, error):
+                self.check_events(bad)
+        bad = json.loads(json.dumps(events)); bad[0]["features"] = ["codex"]
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.feature_set_mismatch"):
+            self.check_events(bad)
+        extra = json.loads(json.dumps(events)); extra.append(dict(events[1], target={"name": "extra", "kind": ["bin"]}))
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.expected_two_binary_artifacts"):
+            self.check_events(extra)
         with self.assertRaisesRegex(PACKAGE.PackageError, "build.failed.exit_1"):
-            PACKAGE.check_build_event_contract(1, [False], binaries, target, executable, [])
-        with self.assertRaisesRegex(PACKAGE.PackageError, "build.expected_single_binary_artifact"):
-            PACKAGE.check_build_event_contract(0, [True], binaries * 2, target, executable, [])
-        outside = json.loads(json.dumps(event))
-        outside["filenames"] = ["/tmp/not-target/agent-router"]
-        _, bad_binaries, _ = PACKAGE.cargo_events(json.dumps(outside).encode())
-        with self.assertRaisesRegex(PACKAGE.PackageError, "build.executable_not_in_cargo_event"):
-            PACKAGE.check_build_event_contract(0, [True], bad_binaries, target, executable, [])
+            self.check_events(events, exit_code=1)
+
+    def test_helper_must_be_regular_nonempty_and_exact_mode(self):
+        _, executables, _ = self.cargo_fixture()
+        for path in executables.values():
+            path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(b"binary"); path.chmod(0o755)
+        self.assertEqual(set(PACKAGE.read_build_binaries(executables)), set(PACKAGE.BINARY_PACKAGES))
+        helper = executables["router-sandbox-helper"]
+        helper.unlink()
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.binary_missing_or_oversized"):
+            PACKAGE.read_build_binaries(executables)
+        helper.symlink_to(executables["agent-router"])
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.binary_missing_or_oversized"):
+            PACKAGE.read_build_binaries(executables)
+        helper.unlink(); helper.write_bytes(b""); helper.chmod(0o755)
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.binary_empty"):
+            PACKAGE.read_build_binaries(executables)
+        helper.write_bytes(b"helper"); helper.chmod(0o700)
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.binary_mode_mismatch"):
+            PACKAGE.read_build_binaries(executables)
+
+    def test_helper_only_reproducibility_difference_is_refused(self):
+        binaries = {"agent-router": b"same", "router-sandbox-helper": b"helper"}
+        PACKAGE.check_reproducibility([binaries, dict(binaries)])
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.reproducibility_mismatch"):
+            PACKAGE.check_reproducibility([binaries, dict(binaries, **{"router-sandbox-helper": b"different"})])
+
+    def test_main_preserves_both_hash_reports_when_only_helper_differs(self):
+        output = self.root / "refused.tar.gz"
+        diagnostics = self.root / "diagnostics"
+        builds = []
+        for helper in (b"helper first", b"helper second"):
+            binaries = {"agent-router": b"same CLI", "router-sandbox-helper": helper}
+            builds.append({"binaries": binaries,
+                           "binaries_sha256": {name: PACKAGE.sha(data) for name, data in binaries.items()},
+                           "features": PACKAGE.DEFAULT_FEATURES, "events": [], "exit_code": 0})
+        expected = [{key: value for key, value in build.items() if key != "binaries"} for build in builds]
+        argv = ["package-binary.py", "--source-archive", str(self.root / "source.tar.gz"),
+                "--source-sha256", "a" * 64, "--target", "aarch64-apple-darwin",
+                "--output", str(output), "--diagnostics-dir", str(diagnostics)]
+        def fake_version(cmd, **kwargs):
+            stdout = (b"release: 1.85.1\nhost: aarch64-apple-darwin\n" if Path(cmd[0]).name == "rustc"
+                      else b"cargo 1.85.1 (fixture)\n")
+            return mock.Mock(stdout=stdout, returncode=0)
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(PACKAGE, "checked_archive", return_value=self.source()), mock.patch.object(PACKAGE, "resolve_tool", side_effect=lambda path, name: self.root / name), mock.patch.object(PACKAGE.subprocess, "run", side_effect=fake_version), mock.patch.object(PACKAGE, "vendor", return_value=({}, "d" * 64)), mock.patch.object(PACKAGE, "run_build", side_effect=builds), contextlib.redirect_stdout(io.StringIO()) as captured:
+            self.assertEqual(PACKAGE.main(), 2)
+        self.assertEqual(json.loads(captured.getvalue())["error"], "build.reproducibility_mismatch")
+        self.assertFalse(output.exists())
+        for index, report in enumerate(expected, 1):
+            report["vendor_sha256"] = "d" * 64
+            path = diagnostics / f"run-{index}.json"
+            self.assertEqual(json.loads(path.read_bytes()), report)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            self.assertNotIn("binaries", json.loads(path.read_bytes()))
+        self.assertEqual(diagnostics.stat().st_mode & 0o777, 0o700)
+        self.assertEqual(expected[0]["binaries_sha256"]["agent-router"], expected[1]["binaries_sha256"]["agent-router"])
+        self.assertNotEqual(expected[0]["binaries_sha256"]["router-sandbox-helper"], expected[1]["binaries_sha256"]["router-sandbox-helper"])
+
+    def test_run_build_selects_both_packages_and_scopes_cli_features(self):
+        source = self.source()
+        source["Cargo.lock"] += b"\n[[package]]\nname='router-sandbox-helper'\nversion='0.1.0'\n"
+        run_root = self.root / "run"; run_root.mkdir()
+        cargo = self.root / "cargo"; cargo.write_bytes(b"cargo fixture")
+        rustc = self.root / "rustc"; rustc.write_bytes(b"rustc fixture")
+        def fake_build(cmd, cwd, env, timeout):
+            self.assertEqual([cmd[i + 1] for i, arg in enumerate(cmd) if arg == "-p"], list(PACKAGE.BINARY_PACKAGES.values()))
+            self.assertEqual([cmd[i + 1] for i, arg in enumerate(cmd) if arg == "--bin"], list(PACKAGE.BINARY_PACKAGES))
+            self.assertEqual(cmd[cmd.index("--features") + 1], "agent-router-cli/claude,agent-router-cli/codex")
+            self.assertIn("--no-default-features", cmd)
+            self.assertEqual(env["CARGO_NET_OFFLINE"], "true")
+            events = []
+            for name, package in PACKAGE.BINARY_PACKAGES.items():
+                binary = Path(env["CARGO_TARGET_DIR"]) / "x86_64-unknown-linux-gnu/release" / name
+                binary.parent.mkdir(parents=True, exist_ok=True); binary.write_bytes(name.encode()); binary.chmod(0o755)
+                events.append({"reason": "compiler-artifact", "package_id": "path+file://" + str(cwd / "crates" / package) + "#0.1.0",
+                               "target": {"name": name, "kind": ["bin"]}, "features": PACKAGE.DEFAULT_FEATURES if name == "agent-router" else [],
+                               "filenames": [str(binary)], "executable": str(binary)})
+            events.append({"reason": "build-finished", "success": True})
+            return 0, "\n".join(json.dumps(event) for event in events).encode(), b""
+        def fake_version(cmd, **kwargs):
+            stdout = b"release: 1.85.1\nhost: x86_64-unknown-linux-gnu\n" if cmd[0] == str(rustc) else b"cargo 1.85.1 (fixture)\n"
+            return mock.Mock(stdout=stdout, returncode=0)
+        with mock.patch.object(PACKAGE, "run_bounded_process", side_effect=fake_build), mock.patch.object(PACKAGE.subprocess, "run", side_effect=fake_version), mock.patch.object(PACKAGE.shutil, "which", return_value=None):
+            result = PACKAGE.run_build(source, self.root / "vendor", run_root, cargo, rustc,
+                                       self.root / "rustup", "x86_64-unknown-linux-gnu", PACKAGE.DEFAULT_FEATURES, {}, self.root / "run.log")
+        self.assertEqual(result["binaries"], {name: name.encode() for name in PACKAGE.BINARY_PACKAGES})
+        self.assertEqual(result["binaries_sha256"], {name: PACKAGE.sha(name.encode()) for name in PACKAGE.BINARY_PACKAGES})
+        self.assertEqual(len(result["events"]), 2)
+        self.assertEqual((self.root / "run.log").stat().st_mode & 0o777, 0o600)
 
     def test_binary_archive_rejects_extra_paths_symlinks_and_modes(self):
         proof = {"features": [], "target": "aarch64-apple-darwin", "vendor_inventory": {},
@@ -179,21 +291,29 @@ class BinaryPackageTests(unittest.TestCase):
                  "rustc_binary_sha256": "2" * 64, "c_compiler": "not_available", "sdk": "not_available",
                  "dynamic_libraries_declared": "not_inspected"}
         source = self.source()
-        files = PACKAGE.verify_binary_archive(PACKAGE.archive_payload(b"binary", proof, source))
+        files = PACKAGE.verify_binary_archive(self.package(b"binary", proof, source))
         for member_name, mode, link_type in (("agent-router-binary/extra.txt", 0o644, None),
                                              ("agent-router-binary/../../escape", 0o644, None),
                                              ("agent-router-binary/extra-link", 0o777, tarfile.SYMTYPE),
-                                             ("agent-router-binary/BUILD-RECIPE.json", 0o755, None)):
+                                             ("agent-router-binary/BUILD-RECIPE.json", 0o755, None),
+                                             ("agent-router-binary/bin/router-sandbox-helper", 0o644, None),
+                                             ("agent-router-binary/bin/router-sandbox-helper", 0o755, tarfile.SYMTYPE)):
             buffer = io.BytesIO()
             with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
                 for name, data in sorted(files.items()):
                     item = tarfile.TarInfo("agent-router-binary/" + name)
                     item.size = len(data)
-                    item.mode = 0o755 if name == "bin/agent-router" else 0o644
+                    item.mode = 0o755 if name in {"bin/agent-router", "bin/router-sandbox-helper"} else 0o644
                     if member_name.endswith("BUILD-RECIPE.json") and name == "BUILD-RECIPE.json":
                         item.mode = 0o755
+                    if member_name == "agent-router-binary/bin/router-sandbox-helper" and name == "bin/router-sandbox-helper":
+                        item.mode = mode
+                        if link_type:
+                            item.type, item.linkname, item.size = link_type, "agent-router", 0
+                            archive.addfile(item)
+                            continue
                     archive.addfile(item, io.BytesIO(data))
-                if member_name.endswith("BUILD-RECIPE.json"):
+                if member_name.endswith(("BUILD-RECIPE.json", "bin/router-sandbox-helper")):
                     pass
                 else:
                     extra = tarfile.TarInfo(member_name)
@@ -215,7 +335,7 @@ class BinaryPackageTests(unittest.TestCase):
                  "rustc_version": "rustc test", "cargo_binary_sha256": "1" * 64,
                  "rustc_binary_sha256": "2" * 64, "c_compiler": "not_available", "sdk": "not_available",
                  "dynamic_libraries_declared": "not_inspected"}
-        payload = PACKAGE.archive_payload(b"fake executable", proof, source)
+        payload = self.package(b"fake executable", proof, source)
         files = PACKAGE.verify_binary_archive(payload)
         self.assertEqual(files["bin/agent-router"], b"fake executable")
         changed = dict(files)
@@ -225,7 +345,7 @@ class BinaryPackageTests(unittest.TestCase):
             for name, data in sorted(changed.items()):
                 item = tarfile.TarInfo("agent-router-binary/" + name)
                 item.size = len(data)
-                item.mode = 0o755 if name == "bin/agent-router" else 0o644
+                item.mode = 0o755 if name in {"bin/agent-router", "bin/router-sandbox-helper"} else 0o644
                 archive.addfile(item, io.BytesIO(data))
         with self.assertRaisesRegex(PACKAGE.PackageError, "archive.integrity_mismatch"):
             PACKAGE.verify_binary_archive(buffer.getvalue())
@@ -244,7 +364,7 @@ class BinaryPackageTests(unittest.TestCase):
                  "rustc_version": "rustc test", "cargo_binary_sha256": "1" * 64,
                  "rustc_binary_sha256": "2" * 64, "c_compiler": "not_available", "sdk": "not_available",
                  "dynamic_libraries_declared": "not_inspected"}
-        files = PACKAGE.verify_binary_archive(PACKAGE.archive_payload(b"binary", proof, source))
+        files = PACKAGE.verify_binary_archive(self.package(b"binary", proof, source))
         sbom = json.loads(files["BUILD-SBOM.json"])
         self.assertEqual(sbom["packages"][0]["license_declared"], "MIT")
         self.assertEqual(files[license_path], license_text)
@@ -256,7 +376,7 @@ class BinaryPackageTests(unittest.TestCase):
             PACKAGE.verify_binary_archive(self.make_archive(damaged))
         proof["vendor_inventory"][("tiny", "1.0.0", "registry+https://example.invalid")]["checksum"] = "f" * 64
         with self.assertRaisesRegex(PACKAGE.PackageError, "sbom.license_record_mismatch"):
-            PACKAGE.archive_payload(b"binary", proof, source)
+            self.package(b"binary", proof, source)
 
     def test_dev_only_lock_entry_is_not_claimed_build_observed(self):
         source = self.source()
@@ -269,8 +389,47 @@ class BinaryPackageTests(unittest.TestCase):
                  "rustc_version": "rustc test", "cargo_binary_sha256": "1" * 64,
                  "rustc_binary_sha256": "2" * 64, "c_compiler": "not_available", "sdk": "not_available",
                  "dynamic_libraries_declared": "not_inspected"}
-        sbom = json.loads(PACKAGE.verify_binary_archive(PACKAGE.archive_payload(b"binary", proof, source))["BUILD-SBOM.json"])
+        sbom = json.loads(PACKAGE.verify_binary_archive(self.package(b"binary", proof, source))["BUILD-SBOM.json"])
         self.assertEqual(sbom["packages"], [])
+
+    @staticmethod
+    def package(binary, proof, source):
+        binaries = {"agent-router": binary, "router-sandbox-helper": b"sandbox helper"}
+        hashes = {name: PACKAGE.sha(data) for name, data in binaries.items()}
+        proof = dict(proof, builds=[{"binaries_sha256": hashes}, {"binaries_sha256": hashes}])
+        return PACKAGE.archive_payload(binaries, proof, source)
+
+    def test_v2_archive_refuses_incomplete_or_inconsistent_helper_evidence(self):
+        proof = {"features": PACKAGE.DEFAULT_FEATURES, "target": "aarch64-apple-darwin", "vendor_inventory": {},
+                 "build_packages": [], "source_sha256": "a" * 64, "source_manifest_sha256": "b" * 64,
+                 "lock_sha256": "c" * 64, "vendor_sha256": "d" * 64, "cargo_version": "cargo test",
+                 "rustc_version": "rustc test", "cargo_binary_sha256": "1" * 64,
+                 "rustc_binary_sha256": "2" * 64, "c_compiler": "not_available", "sdk": "not_available",
+                 "dynamic_libraries_declared": {name: "not_inspected" for name in PACKAGE.BINARY_PACKAGES}}
+        original = PACKAGE.verify_binary_archive(self.package(b"cli", proof, self.source()))
+        self.assertEqual(original["bin/router-sandbox-helper"], b"sandbox helper")
+        for mutation in ("missing", "empty", "changed_helper", "recipe_v1", "recipe_missing", "observation_hash", "second_build_hash", "cli_features"):
+            files = dict(original)
+            recipe = json.loads(files["BUILD-RECIPE.json"])
+            observations = json.loads(files["BUILD-OBSERVATIONS.json"])
+            if mutation == "missing": files.pop("bin/router-sandbox-helper")
+            if mutation == "empty": files["bin/router-sandbox-helper"] = b""
+            if mutation == "changed_helper": files["bin/router-sandbox-helper"] = b"changed helper"
+            if mutation == "recipe_v1": recipe["schema"] = "agent-router-build-recipe-v1"
+            if mutation == "recipe_missing": recipe["binaries"].pop()
+            if mutation == "observation_hash": observations["binaries"][1]["sha256"] = "0" * 64
+            if mutation == "second_build_hash": observations["builds"][1]["binaries_sha256"]["router-sandbox-helper"] = "0" * 64
+            if mutation == "cli_features": recipe["binaries"][0]["features"] = ["codex"]
+            files["BUILD-RECIPE.json"] = PACKAGE.canonical(recipe)
+            files["BUILD-OBSERVATIONS.json"] = PACKAGE.canonical(observations)
+            files["INTEGRITY.json"] = PACKAGE.canonical({name: PACKAGE.sha(data) for name, data in files.items() if name != "INTEGRITY.json"})
+            with self.subTest(mutation=mutation), self.assertRaises(PACKAGE.PackageError):
+                PACKAGE.verify_binary_archive(self.make_archive(files))
+        binaries = {"agent-router": b"cli", "router-sandbox-helper": b"helper"}
+        with self.assertRaisesRegex(PACKAGE.PackageError, "build.reproducibility_evidence_mismatch"):
+            PACKAGE.archive_payload(binaries, proof, self.source())
+        with self.assertRaisesRegex(PACKAGE.PackageError, "archive.binary_inventory_mismatch"):
+            PACKAGE.archive_payload({"agent-router": b"cli"}, proof, self.source())
 
     @staticmethod
     def make_archive(files):
@@ -279,7 +438,7 @@ class BinaryPackageTests(unittest.TestCase):
             for name, data in sorted(files.items()):
                 item = tarfile.TarInfo("agent-router-binary/" + name)
                 item.size = len(data)
-                item.mode = 0o755 if name == "bin/agent-router" else 0o644
+                item.mode = 0o755 if name in {"bin/agent-router", "bin/router-sandbox-helper"} else 0o644
                 archive.addfile(item, io.BytesIO(data))
         return buffer.getvalue()
 

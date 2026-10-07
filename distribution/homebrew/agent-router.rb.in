@@ -1,3 +1,6 @@
+require "json"
+require "shellwords"
+
 class AgentRouter < Formula
   desc "Provider-neutral Agent Router command-line tool"
   homepage "https://github.com/FlorianBruniaux/agent-router"
@@ -13,7 +16,22 @@ class AgentRouter < Formula
   # Homebrew enters the archive's single top-level directory, so paths here
   # are relative to it (agent-router-binary/ in the archive).
   def install
-    bin.install "bin/agent-router"
+    target = {{TARGET_GUARD_JSON}}
+    expected_os = target.end_with?("-apple-darwin") ? :macos : :linux
+    expected_cpu = target.start_with?("aarch64-") ? :arm64 : :x86_64
+    host_os = if OS.mac?
+      :macos
+    elsif OS.linux?
+      :linux
+    end
+    host_cpu = if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
+      :arm64
+    elsif Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
+      :x86_64
+    end
+    odie "This Agent Router archive requires #{target}" unless host_os == expected_os && host_cpu == expected_cpu
+
+    bin.install "bin/agent-router", "bin/router-sandbox-helper"
     doc.install "LICENSE.md", "NOTICE", "THIRD_PARTY_NOTICES.md",
                 "LICENSE-INVENTORY.json", "BUILD-SBOM.json"
     doc.install "SOURCE-SBOM.spdx.json" if File.exist?("SOURCE-SBOM.spdx.json")
@@ -21,6 +39,22 @@ class AgentRouter < Formula
   end
 
   test do
-    system bin/"agent-router", "--help"
+    # Self-contained policy-only smoke: no provider, hooks or host execution.
+    (testpath/"request.json").write <<~JSON
+      {"task":{"objective":"Implement a bounded parser change","kind":"implement","risk":"medium","required_capabilities":["tools"],"acceptance":["workspace tests pass"]},"host":{"id":"codex-local","harness":"codex","supported_models":["gpt-5.6-luna","gpt-5.6-sol","gpt-5.6-terra"],"supported_efforts":{"gpt-5.6-luna":["low","medium","high"],"gpt-5.6-sol":["high","xhigh","max"],"gpt-5.6-terra":["medium","high","xhigh"]},"capabilities":["tools","subagents"]},"skill_candidates":[{"skill":"tdd","source":"ai-agents-bm25-v1","score_micros":910000}]}
+    JSON
+    (testpath/"catalog.json").write <<~JSON
+      {"schema_version":1,"version":"codex-core-v1","models":[{"id":"gpt-5.6-sol","stages":["plan","execute","verify"],"efforts":["high","xhigh","max"],"capabilities":["tools","subagents"],"quality_micros":950000,"cost_micros":900000,"latency_micros":900000,"source":"builtin-policy-prior"},{"id":"gpt-5.6-terra","stages":["execute","verify"],"efforts":["medium","high","xhigh"],"capabilities":["tools","subagents"],"quality_micros":820000,"cost_micros":550000,"latency_micros":550000,"source":"builtin-policy-prior"},{"id":"gpt-5.6-luna","stages":["execute"],"efforts":["low","medium","high"],"capabilities":["tools"],"quality_micros":650000,"cost_micros":200000,"latency_micros":200000,"source":"builtin-policy-prior"}],"skills":[{"id":"tdd","description":"Guides a red-green-refactor implementation cycle.","task_kinds":["implement"],"required_capabilities":["tools"],"trust":"builtin"},{"id":"critique-plan","description":"Challenges implementation plans for omissions and unsafe assumptions.","task_kinds":["architecture","migration","security"],"required_capabilities":[],"trust":"builtin"},{"id":"security-guardian","description":"Reviews changes for security boundaries and unsafe behavior.","task_kinds":["security","review"],"required_capabilities":["tools"],"trust":"builtin"}]}
+    JSON
+    decision = shell_output(Shellwords.join([bin/"agent-router", "route", "--request", testpath/"request.json",
+                                            "--catalog", testpath/"catalog.json", "--json"]))
+    assert_equal "1", JSON.parse(decision).fetch("schema_version")
+    (testpath/"decision.json").write decision
+    explanation = shell_output(Shellwords.join([bin/"agent-router", "explain", "--decision", testpath/"decision.json"]))
+    assert_match "Preset: plan-execute-verify", explanation
+    assert_match "Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high", explanation
+    # Invalid arguments prove the installed helper starts and refuses execution.
+    refusal = shell_output("#{(bin/"router-sandbox-helper").to_s.shellescape} 2>&1", 125)
+    assert_equal "sandbox-helper.arguments\n", refusal
   end
 end
