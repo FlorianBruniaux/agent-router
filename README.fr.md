@@ -143,7 +143,7 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 - **Exécution durable et coordonnée** : suivre les exécutions, annuler, reprendre et isoler les écritures dans des worktrees Git ; lancer des vagues approuvées ; prévisualiser, appliquer ou écarter un patch vérifié ; réserver de la capacité partagée et des budgets de session.
 - **Évaluation et sémantique optionnelle** : rejouer des décisions, évaluer des cohortes explicites et conserver en local le feedback donné avec consentement ; comparer des propositions sémantiques optionnelles et les résultats du sidecar de classement local (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
 - **Sortie, configuration et diagnostic** : sortie lisible ou `--json`, configuration en couches, `doctor` et une trace d'audit expurgée (`audit`).
-- **Distribution et release** : workspaces source, binaire natif local, contrôle des dépendances, une API locale limitée au routage et activable en opt-in (`serve`), et une release locale vérifiable qui ne signe, ne publie et n'installe jamais rien (l'installation Homebrew reste non qualifiée après un essai local isolé).
+- **Distribution et release** : CLI native et helper de sandbox, installation Cargo épinglée, formule Homebrew locale et liaisons de release vérifiables. Aucun paquet public n'est annoncé ; la [qualification](docs/bench/distribution-qualification-2026-10-07.md) consigne les preuves par canal.
 
 <!-- infographic:features -->
 <p align="center"><img src="docs/media/readme-features.fr.jpg" alt="Les capacités d'Agent Router en un coup d'œil" width="820"></p>
@@ -172,10 +172,10 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 | **Sidecar de classement local** | Comparer des propositions de classement bornées et envoyer explicitement les résultats ou le feedback choisis, dans le cadre du consentement en cours. | `sidecar`, [protocole et consentement](docs/standard-sidecar.md) |
 | **Diagnostic et audit** | Inspecter la configuration et le stockage runtime actif sans déclencher de reprise ; laisser inconnue l'autorité sur les processus et le nettoyage, et exporter une trace d'audit expurgée. | `doctor`, `audit`, [diagnostic](docs/doctor.md) |
 | **Appelants programmatiques** | Afficher le JSON Schema d'un contrat de sortie, indiquer en JSON la version du binaire et des contrats pris en charge, résumer les retours en un total global, et générer les complétions shell. | `schema`, `version --json`, `feedback summary`, `completions`, [sortie de la CLI](docs/cli-output.md#commands-for-programmatic-callers) |
-| **Distributions séparées** | Exporter des workspaces source ou construire un binaire natif local, avec licences, inventaires et contrôles de reproductibilité vérifiés. | [Distribution](docs/distribution.md) |
+| **Distributions séparées** | Exporter des workspaces source ou construire la CLI Claude/Codex par défaut et le helper, avec inventaires de licence et contrôles de reproductibilité sur deux builds. | [Distribution](docs/distribution.md), [export binaire](docs/binary-distribution.md) |
 | **Contrôle des dépendances** | Vérifier les preuves de licence des sources et auditer en CI le lockfile commité contre une base RustSec à jour. | [Preuves de licence](docs/distribution.md#continuous-integration-license-evidence-gate), [audit de sécurité](docs/dependency-audit.md) |
 | **API locale limitée au routage** | Servir les décisions de routage sur un socket Unix privé, avec un token ; aucun endpoint d'exécution, de feedback ou d'activation. Feature de build à activer en opt-in. | `serve` (`--features local-api`), [API locale](docs/local-api.md) |
-| **Release locale vérifiable** | Lier les archives source et binaire à un manifeste canonique, vérifier une signature Ed25519 produite en externe et générer une formule Homebrew. Elle ne signe, ne publie et n'installe jamais rien ; l'installation Homebrew reste non qualifiée après un essai local isolé. | [Release locale](docs/release-local.md) |
+| **Release locale vérifiable** | Lier les deux binaires à un manifeste v2, vérifier une signature Ed25519 externe et rendre une formule Homebrew locale ou HTTPS canonique. Le rendu ne signe, ne publie, n'installe rien et ne prouve pas la disponibilité distante de l'asset. | [Release locale](docs/release-local.md) |
 
 </details>
 
@@ -205,6 +205,14 @@ revue de release et ne vaut pas validation pour la production.
 
 ## Démarrage rapide
 
+Utilisez [Cargo depuis une révision Git épinglée](docs/install.fr.md#cargo-depuis-une-révision-git-épinglée)
+ou une [formule Homebrew locale vérifiée](docs/install.fr.md#homebrew-formule-locale).
+Tous deux installent `agent-router` avec les adaptateurs Claude/Codex par défaut
+et `router-sandbox-helper` ; configuration du helper et approbations restent
+explicites. Le dépôt est privé, sans annonce de tap public, paquet crates.io ni
+asset de release public. La [qualification actuelle](docs/bench/distribution-qualification-2026-10-07.md)
+sépare les contrôles de cycle de vie locaux de l'acquisition distante et de l'exécution native.
+
 ### Compiler depuis les sources
 
 Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
@@ -225,8 +233,9 @@ cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 La CLI par défaut inclut les features d'adaptateur Codex et Claude. Pour compiler la CLI de
 routage sans ces adaptateurs de host, utilisez `--no-default-features`. Le routage
 fonctionne hors ligne dès que les dépendances Cargo sont disponibles ; ni Python ni service
-sémantique ne sont nécessaires à l'exécution. Il n'existe ni installation via un gestionnaire de paquets publié,
-ni étape automatique de configuration globale.
+sémantique ne sont nécessaires à l'exécution. Le canal Git épinglé de Cargo
+compile les sources ; Homebrew utilise une formule locale explicitement générée.
+L'installation ne configure pas automatiquement les hosts au niveau global.
 
 </details>
 

@@ -11,7 +11,8 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [Experimental onboarding](experimental-release.md) | 2026-10-07: source candidate, offline example and host evidence limits; publication not implied |
-| [Installation](install.md) | Prerequisites, build features, local release, uninstall |
+| [Installation](install.md), [Français](install.fr.md) | Pinned Cargo and local Homebrew channels, two binaries, prerequisites and scoped uninstall |
+| [Distribution qualification](bench/distribution-qualification-2026-10-07.md) | 2026-10-07: current v2 artifacts and local channel evidence; no publication or native-provider claim |
 | [CLI output](cli-output.md) | Human and `--json` output, exit codes and error codes |
 | [Configuration formats](configuration-formats.md) | Strict JSON, TOML and YAML configuration layers |
 | [Guided task intake](task-guide.md) | Collect missing task facts without implied permissions |

@@ -16,15 +16,25 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-07: document pinned Git Cargo installation and the complete two-binary Homebrew channel, standalone fixture smoke checks, scoped removal and [current distribution qualification](docs/bench/distribution-qualification-2026-10-07.md). The earlier core-only trial remains historical; no public tap, crates.io package or release asset is announced.
+
 - 2026-10-07: add the [experimental offline onboarding](docs/experimental-release.md), with a reproducible routing example, explicit synthetic-fixture provenance and separate host-integration limits. The source-available candidate retains FSL-1.1-ALv2; this documentation does not publish the repository or establish daily-use savings.
 
 - 2026-10-05: add a calibration v2 preparation protocol and incomplete manifest template, linked from the documentation indexes and bench playbook. No real campaign is authorized by these documents.
 
 ### Breaking
 
+- Binary recipe, observations and run report advance to v2 with both `agent-router` and `router-sandbox-helper` hashes. Release attestation uses `agent-router-release-v2` and its matching signature domain, requires exact CLI features `claude` and `codex`, and refuses old v1 or single-binary artifacts. Rebuild and externally re-sign rather than relabel an old archive.
+
+- The local Homebrew formula installs both binaries, refuses OS/CPU mismatches and tests synthetic route/explain plus helper argument refusal. The release verifier can render an exact canonical GitHub HTTPS archive URL without requesting or publishing that asset.
+
 - `feedback report` now emits schema version 3 with per-run evidence and attempt cost coverage; `feedback summary` emits version 2. Historical report versions 1/2 and summary version 1 remain valid. Hash domains follow these output versions. Runtime and external native evidence remain explicitly unknown.
 
 ### Fixed
+
+- The local API's test-only server helper now shuts down and joins its accept loop when the client panics, then propagates the original panic. A bounded regression test covers the previously stranded test loop; production request handling is unchanged.
+
+- Binary packaging persists a private JSON report for each completed build before comparing hashes. The qualification retains an initial refused mismatch and a later matching pair; the initial cause remains `UNKNOWN`, with no general reproducibility fix claimed.
 
 - Local release attestation accepts real multiline Cargo/Rust compiler version observations while validating the complete bounded output and retaining its hash. The manifest keeps a single-line version label. Regression tests preserve refusal of private paths and invalid controls; the [release qualification](docs/bench/release-qualification-2026-10-07.md) records the real-archive result and Homebrew limit.
 

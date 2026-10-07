@@ -1,0 +1,395 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "scope": "local macOS ARM64 distribution, not publication or provider execution",
+  "product_source_commit": "f378afad4f584bac0efabbbb9dab37c48db4298f",
+  "target": "aarch64-apple-darwin",
+  "product_version": "0.0.1",
+  "installed_packages": [
+    "agent-router-cli",
+    "router-sandbox-helper"
+  ],
+  "features": [
+    "claude",
+    "codex"
+  ],
+  "artifacts": {
+    "source_commit": "f378afad4f584bac0efabbbb9dab37c48db4298f",
+    "commands": [
+      {
+        "name": "prepare",
+        "exit_code": 0
+      },
+      {
+        "name": "fixture-key",
+        "exit_code": 0
+      },
+      {
+        "name": "fixture-public",
+        "exit_code": 0
+      },
+      {
+        "name": "fixture-sign",
+        "exit_code": 0
+      },
+      {
+        "name": "verify-local",
+        "exit_code": 0
+      },
+      {
+        "name": "verify-https-candidate",
+        "exit_code": 0
+      }
+    ],
+    "source_archive_sha256": "dd712f106495a10a04053b6723f63955d7d578e60084bf17c90f53264501e2f0",
+    "binary_archive_sha256": "3f262b1eba3bc745051bb2756ae0025c7ccf496768e8aa40adeec3300d51e988",
+    "manifest_sha256": "635283c58292df014515b6eea9fdb636cab3b03ed0bd6d99e7bf996dd4698273",
+    "public_key_sha256": "b77c33030a4b0cb33dec87b1ba3505c7e51c8254a7c95a88439d77f1ae3bfbfd",
+    "signature_sha256": "138c0445f6b3d20e28f9b8cfff8b6cdbb4a1a9eca189d9d1e3cefa3de2dfdd9c",
+    "local_formula_sha256": "cddec975875b700b41b8951c1516947a246fc30637834394888bba81c0923ccb",
+    "https_formula_sha256": "838108c5123ec7e7155e0daa07ca40d3c983f0bf5442245df1fd032b934f6605",
+    "publisher_trust": "NOT_ESTABLISHED",
+    "public_asset_availability": "NOT_TESTED",
+    "signing_key": "disposable fixture",
+    "fixture_private_key_removed": true
+  },
+  "build_observations": {
+    "first_pair": "REFUSED_REPRODUCIBILITY_MISMATCH",
+    "first_pair_cause": "UNKNOWN",
+    "diagnostic_pair": "BOTH_BINARIES_AND_ARCHIVE_EQUAL",
+    "successful_binaries_sha256": {
+      "agent-router": "d399de52f6f64accff366a359207d856f88bdcb729d57473bfd1bfa28a2c898c",
+      "router-sandbox-helper": "18da96646ee192e54ca9e30e168e71a251e1fa06bf7b33e725337d3d8d95c606"
+    },
+    "source_archive_sha256": "dd712f106495a10a04053b6723f63955d7d578e60084bf17c90f53264501e2f0",
+    "archive_sha256": "3f262b1eba3bc745051bb2756ae0025c7ccf496768e8aa40adeec3300d51e988",
+    "independent_builds_in_successful_pair": 2,
+    "followup_issue": "https://github.com/FlorianBruniaux/agent-router/issues/136",
+    "diagnostic_wrapper": "Captured copies and reports before normal cleanup; did not change build flags or equality gate",
+    "real_build_before_persistent_diagnostics_change": true
+  },
+  "cargo": {
+    "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+    "toolchain": {
+      "cargo-version": "cargo 1.85.1 (d73d2caf9 2024-12-31)",
+      "rustc-version": "rustc 1.85.1 (4eb161250 2025-03-15)"
+    },
+    "local_installation": "PASS",
+    "binary_hashes": {
+      "agent-router": "6223c7adf5d772b3d035755b8af9a2dd79736d174c024a7360ca28e804416087",
+      "router-sandbox-helper": "48558cf2a4bd1016a4fc8b326134d584087bcc9b3e595073a9fe77b62629ed87"
+    },
+    "qualification": {
+      "route_explain_outside_checkout_source_and_cached_checkouts_hidden": "PASS",
+      "claude_root_actual_model_sidechain_ignored_and_output_sanitized": "PASS",
+      "codex_cache_models_output_sanitized_capabilities_unknown": "PASS",
+      "codex_native_stream_inspection": "UNSUPPORTED_SAFE_REJECTION",
+      "helper_noargs_rejected_without_launch": "PASS",
+      "same_pin_repeat_install_no_content_metadata_mutation": "PASS",
+      "same_pin_force_replacement_binary_hashes_stable": "PASS",
+      "uninstall_both_owned_binaries_preserving_preexisting_marker": "PASS",
+      "upgrade_between_distinct_product_versions": "UNKNOWN",
+      "native_provider_execution_confinement": "NOT_RUN",
+      "remote_git_acquisition_publication_and_other_platforms": "NOT_RUN"
+    },
+    "limitations": [
+      "Cargo Git URL was file:// from a local clone pinned at the exact product base commit.",
+      "Registry dependencies were vendored offline from the existing local cache; no network download.",
+      "Same-pin --force trial is replacement proof only, not version-upgrade proof.",
+      "Codex inspect accepts model caches and explicitly rejects native-stream arguments.",
+      "No provider, harness, confinement, global installation or configuration change was invoked."
+    ],
+    "elapsed_seconds_by_command": {
+      "cargo-version": 0.063,
+      "rustc-version": 0.142,
+      "clone": 1.202,
+      "checkout": 0.131,
+      "head": 0.023,
+      "vendor": 4.321,
+      "seed": 2.318,
+      "install-cli": 271.942,
+      "install-helper": 9.174,
+      "version": 0.72,
+      "help": 0.013,
+      "route": 0.02,
+      "explain": 0.07,
+      "inspect-claude": 0.017,
+      "inspect-codex-cache": 0.017,
+      "inspect-codex-native-stream-rejection": 0.008,
+      "helper-no-arguments": 0.374,
+      "repeat-cli": 0.347,
+      "repeat-helper": 0.179,
+      "force-reinstall-cli": 0.522,
+      "force-reinstall-helper": 0.273,
+      "uninstall-agent-router-cli": 0.056,
+      "uninstall-router-sandbox-helper": 0.143,
+      "previous-pin-full-tree-diff": 0.04,
+      "tree-5673574": 0.034,
+      "tree-f378afa": 0.032
+    },
+    "retained_log_sha256": {
+      "inspect-claude.log": "5120cc62d76eea04b109708aece165b287cbc83da64e95cd1f898979502d2fcb",
+      "uninstall-agent-router-cli.log": "8f9422c7e71eadb907c6c17337edf4f503dcefb6a588bdd0a09ef578bf25816f",
+      "rustc-version.log": "21fccbced6f95f2ece3212fd048d958d33fa3f254b10f700e2ca3b3de290e5c8",
+      "tree-f378afa.log": "eea02f226f88ff35f77d9dd7fe6aa5cc4bd6f2f65965ad6e758e16686846d76d",
+      "inspect-codex-cache.log": "6e5dda867837e53ddb9addb05d29aaa2a6565a8fbb31387a055ba8ef94a7f667",
+      "repeat-cli.log": "a1b80463255e1aa4147b09f2339d12fe146d1c95b40e4d7882fe1cb5910fddc6",
+      "help.log": "08f3b7264f3b31e107c14239ccac084c3d2153829483a91aa12149bced30e273",
+      "seed.log": "dcfc9dae0e5470b5076a9ce0579e7f3b17b33976fba4a3473ba89866c12eb3e1",
+      "version.log": "a92d0a725144c1355b07461df2e0e9d79ab76371dc4575306f4ab47a94077845",
+      "previous-pin-full-tree-diff.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "route.log": "a6176edb9a4cc90a9539ccada0659def705dd6963dfe56ae5f9c6618fdaa00e8",
+      "head.log": "7443db34a9899fcffd566361efbba33e7949e0569eda94f1c060bc0bf0d2e725",
+      "tree-5673574.log": "eea02f226f88ff35f77d9dd7fe6aa5cc4bd6f2f65965ad6e758e16686846d76d",
+      "vendor.log": "63ca7419b709563e24a4f06c886247bac2cdf3398f03e2e984967a1fc70b5acc",
+      "install-helper.log": "33e38acad28eba31b405a57e3d8971e511b766b4b24eff1ab3096d40a98c432f",
+      "repeat-helper.log": "5a24d8e6adc8574495307a7f1645d45937408af4ff24fd90c58fe9a7985327b6",
+      "helper-no-arguments.log": "782deca34eea663d4acdd00ad17baa05f45767ca4bee77cbdbdcbce96af046d0",
+      "inspect-codex-native-stream-rejection.log": "619a146e579c3d7bc55fa4167ed097a94f04b00c4c291b05e79f29a4b2a01ef0",
+      "force-reinstall-cli.log": "d17c2ba52c659d7115cdf092a21ca07e513fc538ed40dd73a1e8947797f1cd2c",
+      "checkout.log": "ad40a0deea30c5a69c0d3f435d2fa16ecb736a38ca9537d4959a9435f598840e",
+      "clone.log": "4a146f8d4ad6230a0974c61a162a62c04c6ea39dc0ca96c455d79d46961c4331",
+      "install-cli.log": "2879fd8f15e3f1816e32a8b54934defdc333a94ce839335b015932dc06f43a83",
+      "explain.log": "bdadc90a96a94ffd428788dece970116eaf87b9e1d5b6a92ef65e4a433c0541e",
+      "uninstall-router-sandbox-helper.log": "796036057a68f8dfefdd4a7a8675c02acd442ee27d6ffb024e6c3f42855aea0e",
+      "force-reinstall-helper.log": "82cc2aa97da4fc4ea44438166e4d095db33148d7e8ae30536d982880655fb23f",
+      "cargo-version.log": "c8cd2e547fb0745a8738926a5c1318d17af1507f07b382d13dc704cc38684566"
+    },
+    "fixture_sha256": {
+      "request.json": "c2af5a7ef9c64e8d51d04a1187ec5174653a4faa3b0015504b6847dbd05e6d55",
+      "claude.jsonl": "e3926a01b342270794563f2f111113e4a95ecc82b5b0bd179b24da3a0ff091b2",
+      "codex.jsonl": "fac17aa4340a368de43781166c7376133324ac51ed45e63256d79120a270b6af",
+      "models-cache.json": "b74b894586b9b85870e448aa82d7eed8b93fc97fde2b62c372ae8fdaed8fbb34",
+      "catalog.json": "4e49598643c47fe86d3f8db1956c8b74a498b7a373e26682c1c1986cb7740052"
+    }
+  },
+  "homebrew": {
+    "archive_sha256": "3f262b1eba3bc745051bb2756ae0025c7ccf496768e8aa40adeec3300d51e988",
+    "formula_sha256": "cddec975875b700b41b8951c1516947a246fc30637834394888bba81c0923ccb",
+    "binary_hashes": {
+      "agent-router": "d399de52f6f64accff366a359207d856f88bdcb729d57473bfd1bfa28a2c898c",
+      "router-sandbox-helper": "18da96646ee192e54ca9e30e168e71a251e1fa06bf7b33e725337d3d8d95c606"
+    },
+    "features": [
+      "claude",
+      "codex"
+    ],
+    "homebrew_source_commit": "a57af195cf9d7addb48bdb1204c9151313cd0057",
+    "qualification": {
+      "install": "PASS",
+      "formula_functional_test": "PASS",
+      "outside_checkout_route_explain": "PASS",
+      "claude_and_codex_fixture_inspection": "PASS",
+      "helper_noargs_refusal": "PASS",
+      "same_version_reinstall": "PASS",
+      "formula_test_after_reinstall": "PASS",
+      "uninstall_both_binaries": "PASS",
+      "unrelated_marker_preserved": "PASS",
+      "homebrew_code_hashes_unchanged": "PASS",
+      "cross_version_upgrade": "NOT_TESTED",
+      "default_prefix_or_public_tap": "NOT_TESTED",
+      "other_platforms": "NOT_TESTED",
+      "provider_execution": "NOT_RUN"
+    },
+    "own_homebrew_sandbox_enabled": true,
+    "custom_prefix_outside_system_temp": true,
+    "outer_sandbox": false,
+    "command_results": [
+      {
+        "name": "install",
+        "exit_code": 0,
+        "seconds": 3.137
+      },
+      {
+        "name": "version",
+        "exit_code": 0,
+        "seconds": 0.616
+      },
+      {
+        "name": "formula-test",
+        "exit_code": 0,
+        "seconds": 2.866
+      },
+      {
+        "name": "route",
+        "exit_code": 0,
+        "seconds": 0.011
+      },
+      {
+        "name": "explain",
+        "exit_code": 0,
+        "seconds": 0.012
+      },
+      {
+        "name": "inspect-claude",
+        "exit_code": 0,
+        "seconds": 0.012
+      },
+      {
+        "name": "inspect-codex-cache",
+        "exit_code": 0,
+        "seconds": 0.012
+      },
+      {
+        "name": "helper-rejects-noargs",
+        "exit_code": 125,
+        "seconds": 0.006
+      },
+      {
+        "name": "reinstall",
+        "exit_code": 0,
+        "seconds": 2.706
+      },
+      {
+        "name": "formula-test-after-reinstall",
+        "exit_code": 0,
+        "seconds": 3.642
+      },
+      {
+        "name": "uninstall",
+        "exit_code": 0,
+        "seconds": 0.715
+      }
+    ],
+    "log_sha256": {
+      "formula-test.stdout.log": "a5ddc7629e7b84cd0a00bb0d57e9563ae0f2c065c7d5216e4d9fb9b13be1f6d2",
+      "explain.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "version.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inspect-codex-cache.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uninstall.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "install.stderr.log": "c9aae55298154f2e74a4db047e817584c8a4aa54a59402fd284484affced4208",
+      "reinstall.stderr.log": "c9aae55298154f2e74a4db047e817584c8a4aa54a59402fd284484affced4208",
+      "route.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "inspect-claude.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "helper-rejects-noargs.stdout.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "formula-test-after-reinstall.stdout.log": "a5ddc7629e7b84cd0a00bb0d57e9563ae0f2c065c7d5216e4d9fb9b13be1f6d2",
+      "version.stdout.log": "a92d0a725144c1355b07461df2e0e9d79ab76371dc4575306f4ab47a94077845",
+      "inspect-codex-cache.stdout.log": "6e5dda867837e53ddb9addb05d29aaa2a6565a8fbb31387a055ba8ef94a7f667",
+      "explain.stdout.log": "bdadc90a96a94ffd428788dece970116eaf87b9e1d5b6a92ef65e4a433c0541e",
+      "uninstall.stdout.log": "91ad247ad6e427899adcee2d528fc6b044086b7730a217517e3a412770527db5",
+      "formula-test.stderr.log": "74b287044d7c5696638b80f926f49d33f09f5f0c5ea64381409c9a5429db0cb5",
+      "route.stdout.log": "a6176edb9a4cc90a9539ccada0659def705dd6963dfe56ae5f9c6618fdaa00e8",
+      "reinstall.stdout.log": "fa7f911879ba1f5da99f5d8352b3861dce685319b95b3add8f3a5702d17355cd",
+      "install.stdout.log": "459208bb74883a3ae9d7b325f4207273fa47498e10d94a2dc5673239dd61352f",
+      "inspect-claude.stdout.log": "b311922519b1825b85db6f1488919eddb0461ccbc7e4d28c4fff1f033ec57ad5",
+      "formula-test-after-reinstall.stderr.log": "74b287044d7c5696638b80f926f49d33f09f5f0c5ea64381409c9a5429db0cb5",
+      "helper-rejects-noargs.stderr.log": "782deca34eea663d4acdd00ad17baa05f45767ca4bee77cbdbdcbce96af046d0"
+    }
+  },
+  "homebrew_core_catalog": {
+    "source": "https://github.com/Homebrew/homebrew-core",
+    "commit": "4f9eb5afc65d3af7f0205d77ec94fdba66c1e739",
+    "shallow": true
+  },
+  "local_checks": {
+    "required_commands": [
+      {
+        "name": "fmt",
+        "command": [
+          "rtk",
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "seconds": 2.072
+      },
+      {
+        "name": "clippy",
+        "command": [
+          "rtk",
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "seconds": 6.275
+      },
+      {
+        "name": "tests",
+        "command": [
+          "rtk",
+          "proxy",
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked"
+        ],
+        "exit_code": 0,
+        "seconds": 356.572
+      },
+      {
+        "name": "harness",
+        "command": [
+          "rtk",
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "seconds": 0.72
+      }
+    ],
+    "rust_tests": {
+      "passed": 1594,
+      "failed": 0,
+      "ignored": 42
+    },
+    "python_tests": {
+      "source": 26,
+      "binary": 17,
+      "release": 27
+    },
+    "independent_python_probes": 36,
+    "gitleaks_configured_scan": "PASS_NO_FINDINGS",
+    "gitleaks_scope": "current worktree before report, then scoped final files",
+    "rust_test_cleanup": {
+      "regression_before_fix": "FAIL_TIMEOUT_2_SECONDS",
+      "package_after_fix": {
+        "unit_passed": 36,
+        "integration_passed": 10
+      },
+      "initial_full_suite_hang": "STOPPED_AFTER_STACK_CAPTURE",
+      "original_triggering_client_assertion": "UNKNOWN",
+      "old_exact_test_repetitions": 10,
+      "old_exact_test_failures": 0,
+      "production_rust_change": false
+    }
+  },
+  "reviewed_files_sha256": {
+    "scripts/package-binary.py": "fa4ba588dfa4dbbc554a1524b962d3d5210ce272f75dd1ac8a4cb9a37b4950af",
+    "scripts/release-local.py": "6a298c0a3e0d3833c72243d5604b577d15c2da1688fb3d4e25439cefb87695a3",
+    "scripts/test-package-binary.py": "e7c34a437a3faaf79cc2ca99cf6942f2ed402a65501b03dce6a94a3ebb35d03b",
+    "scripts/test-release-local.py": "f49e4539e7821a626f3ace7bbead2a23daa9bd1c3fcb683b8883c62ddbe16a35",
+    "distribution/homebrew/agent-router.rb.in": "d400e97ac1f56d5aa9c2b7a6f58aec4613ece1a1840b7107086723949e5ca04f",
+    "crates/router-local-api/src/server.rs": "e8b6e55f352cc70786e13c7bd5b6f580e76855f5ffb568d9e7363666117a6f32"
+  },
+  "review_limits": {
+    "python_review": "independent direct file inspection, suites and probes",
+    "rust_review": "independent supplied-code review; parent executed regression and gates",
+    "documentation": "link and command checks; no provider claims"
+  },
+  "remaining": {
+    "first_build_mismatch_cause": "UNKNOWN",
+    "cross_version_upgrade": "NOT_TESTED",
+    "cargo_https_acquisition": "NOT_TESTED",
+    "public_tap_and_release_asset": "NOT_PUBLISHED",
+    "other_platforms": "NOT_TESTED",
+    "publisher_trust": "NOT_ESTABLISHED",
+    "native_provider_execution": "NOT_RUN",
+    "license": "FSL-1.1-ALv2 unchanged"
+  }
+}

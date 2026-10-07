@@ -22,8 +22,8 @@ PACKAGE_SPEC = importlib.util.spec_from_file_location("package_binary", SCRIPT_D
 PACKAGE = importlib.util.module_from_spec(PACKAGE_SPEC)
 PACKAGE_SPEC.loader.exec_module(PACKAGE)
 
-SCHEMA = "agent-router-release-v1"
-DOMAIN = b"agent-router-release-v1\0"
+SCHEMA = "agent-router-release-v2"
+DOMAIN = b"agent-router-release-v2\0"
 MAX_MANIFEST = 1024 * 1024
 MAX_ARTIFACTS = 8
 MAX_SIGNATURE = 64
@@ -39,7 +39,15 @@ FEATURE_NAME = re.compile(r"^[a-z][a-z0-9_-]{0,63}$")
 COMMIT = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 VERSION = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?$")
 HEX_SHA = re.compile(r"^[0-9a-f]{64}$")
-TEMPLATE_FIELDS = ("ARCHIVE_URL_JSON", "ARCHIVE_SHA256", "VERSION_JSON", "TARGET_JSON", "FEATURES_JSON")
+RELEASE_FEATURES = ["claude", "codex"]
+SUPPORTED_TARGETS = {"aarch64-apple-darwin", "x86_64-apple-darwin",
+                     "aarch64-unknown-linux-gnu", "x86_64-unknown-linux-gnu"}
+BINARY_RECIPES = [
+    {"package": "agent-router-cli", "binary": "agent-router", "path": "bin/agent-router", "features": RELEASE_FEATURES},
+    {"package": "router-sandbox-helper", "binary": "router-sandbox-helper", "path": "bin/router-sandbox-helper", "features": []},
+]
+BINARY_NAMES = {item["binary"] for item in BINARY_RECIPES}
+TEMPLATE_FIELDS = ("ARCHIVE_URL_JSON", "ARCHIVE_SHA256", "VERSION_JSON", "TARGET_JSON", "FEATURES_JSON", "TARGET_GUARD_JSON")
 
 
 class ReleaseError(Exception):
@@ -180,6 +188,17 @@ def archive_uri(archive_path: Path) -> str:
         raise ReleaseError("release.candidate_invalid") from error
 
 
+def selected_archive_uri(path: Path, version: str, requested_url: str | None) -> str:
+    if requested_url is None:
+        return archive_uri(path)
+    # The signature binds content and the neutral formula, not transport origin
+    # or remote availability. Only this canonical public candidate URL is allowed.
+    expected = f"https://github.com/FlorianBruniaux/agent-router/releases/download/v{version}/{safe_archive_name(path.name)}"
+    if requested_url != expected:
+        fail("release.archive_url_invalid")
+    return requested_url
+
+
 def render_formula(template: bytes, archive_url: str, archive_sha: str, version: str,
                    target: str, features: list[str]) -> bytes:
     try:
@@ -195,6 +214,7 @@ def render_formula(template: bytes, archive_url: str, archive_sha: str, version:
         "{{ARCHIVE_SHA256}}": archive_sha,
         "{{VERSION_JSON}}": json.dumps(version),
         "{{TARGET_JSON}}": json.dumps(target),
+        "{{TARGET_GUARD_JSON}}": json.dumps(target),
         "{{FEATURES_JSON}}": json.dumps(features, separators=(",", ":")),
     }
     for name, replacement in replacements.items():
@@ -211,15 +231,23 @@ def validate_candidate(path: Path, source: dict[str, bytes], source_meta: dict,
     recipe = strict_json(archive_files["BUILD-RECIPE.json"], "release.build_recipe_invalid", 65536)
     observations = strict_json(archive_files["BUILD-OBSERVATIONS.json"], "release.build_observations_invalid", 65536)
     build_sbom = strict_json(archive_files["BUILD-SBOM.json"], "release.build_sbom_invalid", 1024 * 1024)
-    if (recipe.get("schema") != "agent-router-build-recipe-v1" or recipe.get("package") != "agent-router-cli"
-            or recipe.get("binary") != "agent-router" or recipe.get("profile") != "release"
-            or observations.get("schema") != "agent-router-build-observations-v1"
+    if (recipe.get("schema") != "agent-router-build-recipe-v2"
+            or recipe.get("binaries") != BINARY_RECIPES or recipe.get("profile") != "release"
+            or observations.get("schema") != "agent-router-build-observations-v2"
             or build_sbom.get("schema") != "agent-router-build-sbom-v1"):
         fail("release.candidate_metadata_invalid")
     target = recipe.get("target")
-    if not isinstance(target, str) or not TARGET_NAME.fullmatch(target):
+    if not isinstance(target, str) or target not in SUPPORTED_TARGETS:
         fail("release.target_invalid")
     features = validate_features(recipe.get("features"))
+    if features != RELEASE_FEATURES:
+        fail("release.features_invalid")
+    binary_hashes = {item["binary"]: sha(archive_files[item["path"]]) for item in BINARY_RECIPES}
+    expected_binaries = [dict(item, sha256=binary_hashes[item["binary"]]) for item in BINARY_RECIPES]
+    if observations.get("binaries") != expected_binaries:
+        fail("release.binary_evidence_mismatch")
+    if observations.get("builds") != [{"binaries_sha256": binary_hashes}] * 2:
+        fail("release.two_build_evidence_missing")
     if (observations.get("target") != target or observations.get("profile") != "release"
             or validate_features(observations.get("features")) != features):
         fail("release.build_configuration_mismatch")
@@ -251,7 +279,7 @@ def validate_candidate(path: Path, source: dict[str, bytes], source_meta: dict,
     return {
         "archive": safe_archive_name(path.name),
         "archive_sha256": sha(archive_payload),
-        "binary_sha256": sha(archive_files["bin/agent-router"]),
+        "binaries_sha256": binary_hashes,
         "target": target,
         "features": features,
         "profile": "release",
@@ -289,7 +317,7 @@ def check_manifest_shape(manifest: dict) -> None:
     if not isinstance(artifacts, list) or not 1 <= len(artifacts) <= MAX_ARTIFACTS:
         fail("release.artifact_count_invalid")
     names, pairs = set(), set()
-    fields = {"archive", "archive_sha256", "binary_sha256", "target", "features", "profile",
+    fields = {"archive", "archive_sha256", "binaries_sha256", "target", "features", "profile",
               "source_commit", "source_archive_sha256", "source_manifest_sha256", "cargo_lock_sha256",
               "license_inventory_sha256", "notices_sha256", "source_sbom_sha256", "build_sbom_sha256",
               "build_observations_sha256", "build_evidence", "toolchain", "formula_sha256"}
@@ -301,9 +329,16 @@ def check_manifest_shape(manifest: dict) -> None:
             fail("release.archive_name_duplicate")
         names.add(name)
         target = item["target"]
-        if not isinstance(target, str) or not TARGET_NAME.fullmatch(target):
+        if not isinstance(target, str) or target not in SUPPORTED_TARGETS:
             fail("release.target_invalid")
         features = validate_features(item["features"])
+        if features != RELEASE_FEATURES:
+            fail("release.features_invalid")
+        binary_hashes = item["binaries_sha256"]
+        if not isinstance(binary_hashes, dict) or set(binary_hashes) != BINARY_NAMES:
+            fail("release.binary_evidence_mismatch")
+        for digest in binary_hashes.values():
+            require_sha(digest, "release.binary_evidence_mismatch")
         pair = target, tuple(features)
         if pair in pairs:
             fail("release.artifact_pair_duplicate")
@@ -311,7 +346,7 @@ def check_manifest_shape(manifest: dict) -> None:
         if item["profile"] != "release":
             fail("release.profile_invalid")
         require_commit(item["source_commit"], "release.artifact_source_invalid")
-        for field in fields - {"archive", "target", "features", "profile", "source_commit", "build_evidence", "toolchain"}:
+        for field in fields - {"archive", "target", "features", "profile", "source_commit", "build_evidence", "toolchain", "binaries_sha256"}:
             require_sha(item[field], "release.artifact_record_invalid")
         if item["build_evidence"] != {"independent_builds": 2, "binary_bytes_equal": True,
                                       "normalized_archive_bytes_equal": True}:
@@ -519,7 +554,7 @@ def verify(args: argparse.Namespace) -> dict:
         if sha(payload) != record["archive_sha256"]:
             fail("release.candidate_sha256_mismatch")
         actual = validate_candidate(path, source_files, source_meta, args.source_sha256, payload)
-        for key in ("archive_sha256", "binary_sha256", "target", "features", "profile", "source_commit",
+        for key in ("archive_sha256", "binaries_sha256", "target", "features", "profile", "source_commit",
                     "source_archive_sha256", "source_manifest_sha256", "cargo_lock_sha256",
                     "license_inventory_sha256", "notices_sha256", "source_sbom_sha256", "build_sbom_sha256",
                     "build_observations_sha256", "build_evidence", "toolchain"):
@@ -539,7 +574,7 @@ def verify(args: argparse.Namespace) -> dict:
                              source_meta["version"], record["target"], record["features"])
     if sha(neutral) != record["formula_sha256"]:
         fail("release.formula_hash_mismatch")
-    formula = render_formula(template, archive_uri(candidate_path), record["archive_sha256"],
+    formula = render_formula(template, selected_archive_uri(candidate_path, source_meta["version"], args.archive_url), record["archive_sha256"],
                              source_meta["version"], record["target"], record["features"])
     write_new_file(args.formula_output, formula)
     return {"ok": True, "schema": SCHEMA, "selected_archive_sha256": record["archive_sha256"],
@@ -593,6 +628,7 @@ def main() -> int:
     verify_parser.add_argument("--target", required=True)
     verify_parser.add_argument("--features-json", required=True)
     verify_parser.add_argument("--formula-output", type=Path, required=True)
+    verify_parser.add_argument("--archive-url", help="opt-in canonical GitHub release URL; does not check publication")
     args = parser.parse_args()
     try:
         result = prepare(args) if args.command == "prepare" else verify(args)

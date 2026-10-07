@@ -4,12 +4,15 @@ How to rerun a campaign of the [router value protocol](router-value-protocol.md)
 
 ## Current delivery status
 
-[Experimental release qualification, 2026-10-07](release-qualification-2026-10-07.md)
-records the exact core artifacts, 1,593 passing Rust test executions (42 ignored),
-57 packaging/release Python tests, two matching builds and successful manual
-installation/removal. Homebrew remains unqualified. Three live-cache routing
-requests abstained on unknown tool capabilities; no savings claim follows.
-This release check is separate from the value campaigns below.
+[Homebrew and Cargo qualification, 2026-10-07](distribution-qualification-2026-10-07.md)
+records both local installation lifecycles, 1,594 passing Rust test executions
+(42 ignored), 70 packaging/release Python tests and a matching diagnostic build
+pair. The first build mismatch remains unexplained in
+[issue #136](https://github.com/FlorianBruniaux/agent-router/issues/136).
+Public distribution and distinct-version upgrades remain unqualified.
+The [earlier core-only trial](release-qualification-2026-10-07.md) retains its
+original results and failed Homebrew experiment. These delivery checks are
+separate from the value campaigns below and establish no productivity savings.
 
 
 The [current status and next acceptance criteria](status-and-action-plan-2026-10-05.md)

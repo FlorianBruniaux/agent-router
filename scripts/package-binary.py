@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and locally export one provider-neutral Agent Router binary."""
+"""Build and locally export the Agent Router CLI and sandbox helper."""
 
 from __future__ import annotations
 
@@ -27,6 +27,8 @@ MAX_CRATE_FILE = 32 * 1024 * 1024
 MAX_LOG = 64 * 1024 * 1024
 MAX_LINE = 1024 * 1024
 MAX_EVENTS = 100_000
+BINARY_PACKAGES = {"agent-router": "agent-router-cli", "router-sandbox-helper": "router-sandbox-helper"}
+DEFAULT_FEATURES = ["claude", "codex"]
 PYTHON = Path(__file__).with_name("package-core.py")
 SPEC = importlib.util.spec_from_file_location("package_core", PYTHON)
 CORE = importlib.util.module_from_spec(SPEC)
@@ -282,33 +284,75 @@ def cargo_events(stdout: bytes) -> tuple[list[tuple[str, str]], list[dict], list
             elif separator and package_version:
                 packages.append((Path(package_source).name, package_version))
             target_info = event.get("target", {})
-            if target_info.get("name") == "agent-router" and "bin" in target_info.get("kind", []):
+            if "bin" in target_info.get("kind", []):
                 binaries.append({"package_id": event.get("package_id"), "target": target_info["name"],
                                  "kind": target_info["kind"], "features": sorted(event.get("features", [])),
-                                 "filename_paths": event.get("filenames", [])})
+                                 "filename_paths": event.get("filenames", []), "executable_path": event.get("executable")})
         if event.get("reason") == "build-finished":
             finished.append(event.get("success"))
     return sorted(set(packages)), binaries, finished
 
 
+def binary_inventory(features: list[str]) -> list[dict]:
+    return [{"package": package, "binary": name, "path": "bin/" + name,
+             "features": features if name == "agent-router" else []}
+            for name, package in BINARY_PACKAGES.items()]
+
+
 def check_build_event_contract(exit_code: int, finished: list[bool], binaries: list[dict],
-                               target_dir: Path, executable: Path, features: list[str]) -> dict:
+                               target_dir: Path, executables: dict[str, Path], features: list[str],
+                               package_versions: dict[str, str]) -> list[dict]:
     if exit_code or finished != [True]:
         raise PackageError(f"build.failed.exit_{exit_code}")
-    package_id = binaries[0].get("package_id", "") if len(binaries) == 1 else ""
-    if (len(binaries) != 1 or "#agent-router-cli@" not in package_id
-            and not package_id.rsplit("#", 1)[0].endswith("/crates/agent-router-cli")):
-        raise PackageError("build.expected_single_binary_artifact")
-    artifact = binaries[0]
-    paths = [Path(path).resolve() for path in artifact.get("filename_paths", [])]
-    if executable.resolve() not in paths or any(not path.is_relative_to(target_dir.resolve()) for path in paths):
-        raise PackageError("build.executable_not_in_cargo_event")
-    if sorted(artifact.get("features", [])) != sorted(set(features)):
-        raise PackageError("build.feature_set_mismatch")
-    artifact["filenames"] = ["agent-router"]
-    artifact.pop("filename_paths", None)
-    artifact["package_id"] = "path#agent-router-cli@0.0.1"
-    return artifact
+    if (len(binaries) != len(BINARY_PACKAGES)
+            or sorted(item.get("target", "") for item in binaries) != sorted(BINARY_PACKAGES)):
+        raise PackageError("build.expected_two_binary_artifacts")
+    observed = []
+    for artifact in sorted(binaries, key=lambda item: item["target"]):
+        name = artifact["target"]
+        package = BINARY_PACKAGES[name]
+        package_id = artifact.get("package_id", "")
+        source_id, separator, identity = package_id.rpartition("#")
+        expected_version = package_versions[package]
+        if (not source_id.startswith("path+file://") or not separator
+                or not source_id.endswith("/crates/" + package)
+                or identity not in (expected_version, package + "@" + expected_version)
+                or artifact.get("kind") != ["bin"]):
+            raise PackageError("build.binary_package_mismatch")
+        paths = [Path(path).resolve() for path in artifact.get("filename_paths", [])]
+        executable = executables[name].resolve()
+        if (executable not in paths or not paths
+                or any(not path.is_relative_to(target_dir.resolve()) for path in paths)
+                or artifact.get("executable_path") is None
+                or Path(artifact["executable_path"]).resolve() != executable):
+            raise PackageError("build.executable_not_in_cargo_event")
+        expected_features = features if name == "agent-router" else []
+        if artifact.get("features") != expected_features:
+            raise PackageError("build.feature_set_mismatch")
+        observed.append({"package_id": "path#" + package + "@" + expected_version,
+                         "target": name, "kind": ["bin"], "features": expected_features,
+                         "filenames": [name]})
+    return observed
+
+
+def read_build_binaries(executables: dict[str, Path]) -> dict[str, bytes]:
+    binaries = {}
+    for name, executable in executables.items():
+        if not executable.is_file() or executable.is_symlink() or executable.stat().st_size > MAX_BINARY:
+            raise PackageError("build.binary_missing_or_oversized")
+        if executable.stat().st_mode & 0o7777 != 0o755:
+            raise PackageError("build.binary_mode_mismatch")
+        binary = executable.read_bytes()
+        if not binary:
+            raise PackageError("build.binary_empty")
+        binaries[name] = binary
+    return binaries
+
+
+def check_reproducibility(outputs: list[dict[str, bytes]]) -> None:
+    if (len(outputs) != 2 or any(set(output) != set(BINARY_PACKAGES) for output in outputs)
+            or outputs[0] != outputs[1]):
+        raise PackageError("build.reproducibility_mismatch")
 
 
 def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo: Path, rustc: Path,
@@ -327,9 +371,10 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
     config_path = cargo_home / "config.toml"
     config_path.write_bytes(config)
     cmd = [str(cargo), "build", "--release", "--locked", "--offline", "--message-format=json",
-           "-p", "agent-router-cli", "--bin", "agent-router", "--no-default-features", "--target", target]
+           "-p", "agent-router-cli", "-p", "router-sandbox-helper",
+           "--bin", "agent-router", "--bin", "router-sandbox-helper", "--no-default-features", "--target", target]
     if features:
-        cmd.extend(["--features", ",".join(sorted(set(features)))])
+        cmd.extend(["--features", ",".join("agent-router-cli/" + feature for feature in sorted(set(features)))])
     remap_flags = "\x1f".join([f"--remap-path-prefix={source_root}=/agent-router/source",
                                  f"--remap-path-prefix={vendor_root}=/agent-router/vendor"])
     env = {"PATH": os.pathsep.join([str(cargo.parent), "/usr/bin", "/bin"]), "HOME": str(run_root),
@@ -343,19 +388,15 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
     log_path = log_destination
     log_path.write_bytes(raw)
     log_path.chmod(0o600)
-    executable = target_dir / target / "release" / "agent-router"
-    if not executable.is_file() or executable.is_symlink() or executable.stat().st_size > MAX_BINARY:
-        raise PackageError("build.binary_missing_or_oversized")
-    binary = executable.read_bytes()
-    if not binary or not os.access(executable, os.X_OK):
-        raise PackageError("build.binary_not_executable")
-    executables = [p for p in (target_dir / target / "release").iterdir() if p.is_file() and os.access(p, os.X_OK)]
-    if executables != [executable] and set(executables) != {executable}:
+    executables = {name: target_dir / target / "release" / name for name in BINARY_PACKAGES}
+    binaries_bytes = read_build_binaries(executables)
+    emitted = {p for p in (target_dir / target / "release").iterdir() if p.is_file() and os.access(p, os.X_OK)}
+    if emitted != set(executables.values()):
         raise PackageError("build.extra_executable")
-    observed = check_build_event_contract(return_code, seen_build_finished, binaries, target_dir, executable, features)
-    feature_set = sorted(observed["features"])
-    if feature_set != sorted(set(features)):
-        raise PackageError("build.feature_set_mismatch")
+    package_versions = {item["name"]: item["version"] for item in tomllib.loads(source["Cargo.lock"].decode())["package"]
+                        if item["name"] in BINARY_PACKAGES.values() and "source" not in item}
+    observed = check_build_event_contract(return_code, seen_build_finished, binaries, target_dir, executables, features, package_versions)
+    feature_set = features
     rustc_version = subprocess.run([str(rustc), "-Vv"], capture_output=True, env=env, timeout=10, check=True).stdout.decode()
     cargo_version = subprocess.run([str(cargo), "-Vv"], capture_output=True, env=env, timeout=10, check=True).stdout.decode()
     rustc_host = next((line.split(": ", 1)[1] for line in rustc_version.splitlines() if line.startswith("host: ")), None)
@@ -374,12 +415,14 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
         return data.decode(errors="replace").strip()
     c_compiler = tool_observation(["clang", "--version"])
     sdk = tool_observation(["xcrun", "--sdk", "macosx", "--show-sdk-version"])
-    dynamic = "not_inspected"
+    dynamic = {name: "not_inspected" for name in BINARY_PACKAGES}
     if target.endswith("apple-darwin") and Path("/usr/bin/otool").is_file():
-        linked = subprocess.run(["/usr/bin/otool", "-L", str(executable)], capture_output=True, env=env, timeout=10, check=False)
-        lines = linked.stdout.decode(errors="replace").splitlines()
-        dynamic = lines[1:] if linked.returncode == 0 and len(lines) <= 4096 else "unavailable_or_over_limit"
-    return {"binary": binary, "features": feature_set, "event": observed, "rustc": rustc_version,
+        for name, executable in executables.items():
+            linked = subprocess.run(["/usr/bin/otool", "-L", str(executable)], capture_output=True, env=env, timeout=10, check=False)
+            lines = linked.stdout.decode(errors="replace").splitlines()
+            dynamic[name] = lines[1:] if linked.returncode == 0 and len(lines) <= 4096 else "unavailable_or_over_limit"
+    return {"binaries": binaries_bytes, "binaries_sha256": {name: sha(data) for name, data in binaries_bytes.items()},
+            "features": feature_set, "events": observed, "rustc": rustc_version,
             "cargo": cargo_version, "rustc_binary_sha256": sha(rustc.read_bytes()),
             "cargo_binary_sha256": sha(cargo.read_bytes()), "c_compiler": c_compiler,
             "sdk": sdk, "dynamic_libraries_declared": dynamic, "target": target, "lock_sha256": sha(source["Cargo.lock"]),
@@ -388,8 +431,13 @@ def run_build(source: dict[str, bytes], vendor_root: Path, run_root: Path, cargo
             "build_packages": sorted(set(all_artifacts)), "exit_code": return_code}
 
 
-def archive_payload(binary: bytes, proof: dict, source: dict[str, bytes]) -> bytes:
-    files = {"bin/agent-router": binary, "LICENSE.md": source["LICENSE.md"],
+def archive_payload(binaries: dict[str, bytes], proof: dict, source: dict[str, bytes]) -> bytes:
+    if set(binaries) != set(BINARY_PACKAGES):
+        raise PackageError("archive.binary_inventory_mismatch")
+    hashes = {name: sha(data) for name, data in binaries.items()}
+    if proof.get("builds") != [{"binaries_sha256": hashes}, {"binaries_sha256": hashes}]:
+        raise PackageError("build.reproducibility_evidence_mismatch")
+    files = {**{"bin/" + name: data for name, data in binaries.items()}, "LICENSE.md": source["LICENSE.md"],
              "NOTICE": source["NOTICE"], "THIRD_PARTY_NOTICES.md": source["THIRD_PARTY_NOTICES.md"],
              "LICENSE-INVENTORY.json": source["LICENSE-INVENTORY.json"]}
     if "SBOM.spdx.json" in source:
@@ -428,8 +476,8 @@ def archive_payload(binary: bytes, proof: dict, source: dict[str, bytes]) -> byt
                          "license_concluded": "NOASSERTION", "build_observed": True,
                          "license_files": lic.get("license_files", [])})
     files["BUILD-SBOM.json"] = canonical({"schema": "agent-router-build-sbom-v1", "scope": "Cargo compiler-artifact events and checksum-verified vendor set; not a complete unit graph or static-link proof", "packages": packages})
-    files["BUILD-RECIPE.json"] = canonical({"schema": "agent-router-build-recipe-v1", "package": "agent-router-cli", "binary": "agent-router", "profile": "release", "features": proof["features"], "target": proof["target"], "options": ["--locked", "--offline", "--no-default-features", "--remap-path-prefix=<private-source>=/agent-router/source", "--remap-path-prefix=<private-vendor>=/agent-router/vendor"]})
-    files["BUILD-OBSERVATIONS.json"] = canonical({"schema": "agent-router-build-observations-v1", "source_archive_sha256": proof["source_sha256"], "source_manifest_sha256": proof["source_manifest_sha256"], "cargo_lock_sha256": proof["lock_sha256"], "vendor_sha256": proof["vendor_sha256"], "cargo_version": proof["cargo_version"], "cargo_binary_sha256": proof["cargo_binary_sha256"], "rustc_version": proof["rustc_version"], "rustc_binary_sha256": proof["rustc_binary_sha256"], "c_compiler": proof["c_compiler"], "sdk": proof["sdk"], "target": proof["target"], "profile": "release", "features": proof["features"], "build_observed_packages": [list(p) for p in proof["build_packages"]], "independent_builds": 2, "binary_bytes_equal": True, "normalized_archive_bytes_equal": True, "dependency_graph": "Cargo metadata and compiler-artifact observations are not an exact compilation-unit or static-link graph", "dynamic_libraries_declared_by_otool": proof["dynamic_libraries_declared"], "security_review": "UNKNOWN", "security_note": "No general security clearance is asserted. Review findings and dependency status are tied to the source archive identified above."})
+    files["BUILD-RECIPE.json"] = canonical({"schema": "agent-router-build-recipe-v2", "binaries": binary_inventory(proof["features"]), "profile": "release", "features": proof["features"], "target": proof["target"], "options": ["--locked", "--offline", "--no-default-features", "--remap-path-prefix=<private-source>=/agent-router/source", "--remap-path-prefix=<private-vendor>=/agent-router/vendor"]})
+    files["BUILD-OBSERVATIONS.json"] = canonical({"schema": "agent-router-build-observations-v2", "binaries": [dict(item, sha256=hashes[item["binary"]]) for item in binary_inventory(proof["features"])], "builds": proof["builds"], "source_archive_sha256": proof["source_sha256"], "source_manifest_sha256": proof["source_manifest_sha256"], "cargo_lock_sha256": proof["lock_sha256"], "vendor_sha256": proof["vendor_sha256"], "cargo_version": proof["cargo_version"], "cargo_binary_sha256": proof["cargo_binary_sha256"], "rustc_version": proof["rustc_version"], "rustc_binary_sha256": proof["rustc_binary_sha256"], "c_compiler": proof["c_compiler"], "sdk": proof["sdk"], "target": proof["target"], "profile": "release", "features": proof["features"], "build_observed_packages": [list(p) for p in proof["build_packages"]], "independent_builds": 2, "binary_bytes_equal": True, "normalized_archive_bytes_equal": True, "dependency_graph": "Cargo metadata and compiler-artifact observations are not an exact compilation-unit or static-link graph", "dynamic_libraries_declared_by_otool": proof["dynamic_libraries_declared"], "security_review": "UNKNOWN", "security_note": "No general security clearance is asserted. Review findings and dependency status are tied to the source archive identified above."})
     files["INTEGRITY.json"] = canonical({name: sha(data) for name, data in sorted(files.items())})
     import io
     buffer = io.BytesIO()
@@ -438,7 +486,7 @@ def archive_payload(binary: bytes, proof: dict, source: dict[str, bytes]) -> byt
             for name, data in sorted(files.items()):
                 info = tarfile.TarInfo("agent-router-binary/" + name)
                 info.size, info.mtime = len(data), 0
-                info.mode = 0o755 if name == "bin/agent-router" else 0o644
+                info.mode = 0o755 if name in {"bin/" + binary for binary in BINARY_PACKAGES} else 0o644
                 info.uid = info.gid = 0
                 info.uname = info.gname = ""
                 archive.addfile(info, io.BytesIO(data))
@@ -468,15 +516,15 @@ def verify_binary_archive(payload: bytes) -> dict[str, bytes]:
             if len(data) != member.size:
                 raise PackageError("archive.member_invalid")
             files[name], modes[name] = data, member.mode
-    fixed_names = {"bin/agent-router", "LICENSE.md", "NOTICE", "THIRD_PARTY_NOTICES.md",
+    fixed_names = {"bin/agent-router", "bin/router-sandbox-helper", "LICENSE.md", "NOTICE", "THIRD_PARTY_NOTICES.md",
                    "LICENSE-INVENTORY.json", "BUILD-SBOM.json", "BUILD-RECIPE.json",
                    "BUILD-OBSERVATIONS.json", "INTEGRITY.json"}
     if "SOURCE-SBOM.spdx.json" in files:
         fixed_names.add("SOURCE-SBOM.spdx.json")
     license_names = {name for name in files if name.startswith(("licenses/dependencies/", "licenses/third-party/"))}
-    if set(files) != fixed_names | license_names or modes.get("bin/agent-router") != 0o755:
+    if set(files) != fixed_names | license_names or any(modes.get("bin/" + name) != 0o755 for name in BINARY_PACKAGES):
         raise PackageError("archive.inventory_mismatch")
-    if any(mode != 0o644 for name, mode in modes.items() if name != "bin/agent-router"):
+    if any(mode != 0o644 for name, mode in modes.items() if name not in {"bin/" + binary for binary in BINARY_PACKAGES}):
         raise PackageError("archive.mode_mismatch")
     integrity = json.loads(files["INTEGRITY.json"])
     actual = {name: sha(data) for name, data in files.items() if name != "INTEGRITY.json"}
@@ -496,8 +544,23 @@ def verify_binary_archive(payload: bytes) -> dict[str, bytes]:
         for record in package.get("license_files", []):
             if record["path"] not in files or sha(files[record["path"]]) != record["sha256"]:
                 raise PackageError("archive.sbom_license_link_invalid")
-    if not files["bin/agent-router"]:
+    if any(not files["bin/" + name] for name in BINARY_PACKAGES):
         raise PackageError("archive.binary_empty")
+    recipe = json.loads(files["BUILD-RECIPE.json"])
+    observations = json.loads(files["BUILD-OBSERVATIONS.json"])
+    features = recipe.get("features")
+    if (not isinstance(features, list) or any(not isinstance(feature, str) for feature in features)
+            or features != sorted(set(features))):
+        raise PackageError("archive.features_invalid")
+    inventory = binary_inventory(features)
+    hashes = {name: sha(files["bin/" + name]) for name in BINARY_PACKAGES}
+    if (recipe.get("schema") != "agent-router-build-recipe-v2"
+            or recipe.get("binaries") != inventory
+            or observations.get("schema") != "agent-router-build-observations-v2"
+            or observations.get("features") != features
+            or observations.get("binaries") != [dict(item, sha256=hashes[item["binary"]]) for item in inventory]
+            or observations.get("builds") != [{"binaries_sha256": hashes}, {"binaries_sha256": hashes}]):
+        raise PackageError("archive.binary_evidence_mismatch")
     return files
 
 
@@ -512,7 +575,7 @@ def main() -> int:
     parser.add_argument("--rustc", type=Path, default=Path(shutil.which("rustc") or "rustc"))
     parser.add_argument("--rustup-home", type=Path, default=Path.home() / ".rustup")
     parser.add_argument("--target", required=True)
-    parser.add_argument("--features", default="")
+    parser.add_argument("--features", default=",".join(DEFAULT_FEATURES))
     args = parser.parse_args()
     try:
         if not re_hex(args.source_sha256):
@@ -547,13 +610,18 @@ def main() -> int:
                 run_root.mkdir()
                 result = run_build(source, vendor_root, run_root, cargo_binary, rustc_binary, args.rustup_home.resolve(), args.target, features, vendor_inventory, args.diagnostics_dir / f"run-{index}.log")
                 result["vendor_sha256"] = vendor_digest
-                outputs.append(result.pop("binary"))
+                outputs.append(result.pop("binaries"))
+                report_bytes = canonical(result)
+                if len(report_bytes) > MAX_LOG:
+                    raise PackageError("build.report_limit")
+                report_path = args.diagnostics_dir / f"run-{index}.json"
+                with os.fdopen(os.open(report_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as report_file:
+                    report_file.write(report_bytes)
                 reports.append(result)
-            if outputs[0] != outputs[1]:
-                raise PackageError("build.reproducibility_mismatch")
+            check_reproducibility(outputs)
             if reports[0]["build_packages"] != reports[1]["build_packages"]:
                 raise PackageError("build.observed_package_set_mismatch")
-            proof = {"features": features, "target": args.target, "vendor_inventory": vendor_inventory,
+            proof = {"builds": [{"binaries_sha256": report["binaries_sha256"]} for report in reports], "features": features, "target": args.target, "vendor_inventory": vendor_inventory,
                      "build_packages": reports[0]["build_packages"], "source_sha256": args.source_sha256,
                      "source_manifest_sha256": reports[0]["source_manifest_sha256"],
                      "lock_sha256": reports[0]["lock_sha256"], "vendor_sha256": vendor_digest,
@@ -580,12 +648,12 @@ def main() -> int:
                 os.link(staged, args.output)
             finally:
                 staged.unlink()
-            report = {"schema": "agent-router-binary-run-v1", "source_sha256": args.source_sha256,
-                      "binary_sha256": sha(outputs[0]), "archive_sha256": sha(payload), "reproducible": True,
+            report = {"schema": "agent-router-binary-run-v2", "source_sha256": args.source_sha256,
+                      "binaries_sha256": {name: sha(data) for name, data in outputs[0].items()}, "archive_sha256": sha(payload), "reproducible": True,
                       "diagnostics": str(args.diagnostics_dir), "builds": reports}
             print(json.dumps(report, sort_keys=True))
     except (PackageError, OSError, ValueError, KeyError, TypeError, tarfile.TarError, subprocess.SubprocessError) as error:
-        print(json.dumps({"schema": "agent-router-binary-run-v1", "error": str(error) if isinstance(error, PackageError) else type(error).__name__}, sort_keys=True))
+        print(json.dumps({"schema": "agent-router-binary-run-v2", "error": str(error) if isinstance(error, PackageError) else type(error).__name__}, sort_keys=True))
         return 2
     return 0
 

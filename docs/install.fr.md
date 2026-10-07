@@ -2,13 +2,18 @@
 
 [English](install.md) | Français
 
-Agent Router se compile depuis les sources. Il n'existe ni paquet publié dans un
-gestionnaire de paquets, ni étape automatique de configuration globale. L'installation
-n'active jamais d'intégration de host, de hook ni de permission (voir [Ce que l'installation ne
-fait pas](#ce-que-linstallation-ne-fait-pas)).
+Agent Router propose deux canaux d'installation expérimentaux : Cargo depuis
+une révision Git épinglée, et une formule Homebrew générée pour une archive
+locale vérifiée. Tous deux installent `agent-router` avec ses adaptateurs
+Claude/Codex par défaut et `router-sandbox-helper`. L'installation n'active
+aucune intégration de host, aucun hook ni permission (voir [Ce que l'installation
+ne fait pas](#ce-que-linstallation-ne-fait-pas)).
 
 Le dépôt est privé : pour le cloner, il faut un accès à
-`FlorianBruniaux/agent-router`.
+`FlorianBruniaux/agent-router`. Aucun paquet crates.io, tap Homebrew public ni
+asset de release public n'est annoncé ici. Les observations actuelles sont dans
+la [qualification de distribution](bench/distribution-qualification-2026-10-07.md) ;
+l'[ancien essai de la CLI seule](bench/release-qualification-2026-10-07.md) reste historique.
 
 ## Prérequis
 
@@ -16,6 +21,7 @@ Le dépôt est privé : pour le cloner, il faut un accès à
 | --- | --- |
 | Système d'exploitation | macOS ou Linux pour l'exécution supervisée. L'exécution native sous Windows n'est pas implémentée ([hosts supportés](../README.fr.md#hosts-supportés)). Le routage, `explain` et les autres commandes en lecture seule ne lancent rien. |
 | Rust | 1.85 ou plus récent. `rust-toolchain.toml` épingle le canal `1.85` avec `rustfmt` et `clippy`, donc `rustup` le sélectionne dans le clone. |
+| Toolchain C | Compilateur C natif, linker et SDK de la plateforme pour les builds source, y compris Cargo, car SQLite est compilé depuis les sources embarquées. |
 | Git | Pour cloner le dépôt. |
 | Sandbox Linux | L'exécution supervisée a besoin d'un binaire bubblewrap et de namespaces non privilégiés fonctionnels ([runtime](runtime.md#native-sandbox-evidence)). |
 | Sandbox macOS | L'exécution supervisée utilise `/usr/bin/sandbox-exec` (Seatbelt). |
@@ -26,10 +32,45 @@ Une fois les dépendances Cargo disponibles, le routage fonctionne hors ligne.
 Aucun service sémantique ni téléchargement de modèle n'est nécessaire à
 l'exécution.
 
-## Compiler depuis les sources
+## Cargo depuis une révision Git épinglée
+
+Choisissez un préfixe d'installation absolu appartenant à votre utilisateur.
+Remplacez le chemin d'exemple avant de lancer la commande. Cargo y écrit les
+binaires et ses métadonnées d'installation, et télécharge les sources et les
+dépendances dans son cache. Tant que le dépôt est privé, utilisez votre accès
+Git authentifié existant.
 
 ```sh
-git clone git@github.com:FlorianBruniaux/agent-router.git
+install_prefix="/absolute/user-prefix"
+cargo install --git https://github.com/FlorianBruniaux/agent-router \
+  --rev f378afad4f584bac0efabbbb9dab37c48db4298f --locked \
+  --root "$install_prefix" agent-router-cli router-sandbox-helper
+
+"$install_prefix/bin/agent-router" version --json
+```
+
+La révision épinglée identifie le code produit utilisé pour cette qualification,
+pas les changements d'outillage de distribution non publiés. Les features CLI
+attendues sont `claude` et `codex`. Le helper reste un programme interne : son
+chemin absolu et son hash figurent explicitement dans la configuration et
+l'approbation d'exécution décrites ci-dessous. Ajouter les binaires au `PATH`
+reste un choix de l'utilisateur.
+
+Les dépendances du workspace utilisent des chemins locaux ; installer
+`agent-router-cli` par son nom depuis crates.io n'est pas un canal pris en
+charge. La commande Git épinglée fournit le workspace complet. Sur macOS ARM64,
+les deux paquets ont été installés séparément depuis un clone Git local
+`file://` à cette révision, avec les dépendances vendoriées hors ligne.
+Route/explain ont passé hors du clone, avec les sources et clones en cache
+masqués ; la répétition, le remplacement avec `--force` à la même révision et
+la désinstallation ont préservé le marqueur préexistant. L'acquisition Git en
+HTTPS n'a pas été exercée. Le remplacement à une seule révision ne valide pas
+une montée de version du produit, qui reste `UNKNOWN`. Voir la qualification liée.
+
+## Compiler depuis un clone
+
+```sh
+git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
 cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 ```
@@ -69,24 +110,34 @@ cargo build --release --locked -p agent-router-cli -p router-sandbox-helper \
 
 ## Vérifier l'installation
 
-À lancer depuis la racine du dépôt. Ces commandes utilisent des fixtures
-synthétiques fournies avec le projet, n'appellent aucun modèle et ne lancent aucun host.
+Les fixtures sont synthétiques, n'appellent aucun modèle et ne lancent aucun
+host. Pour un build source, lancez les contrôles de version suivants depuis la
+racine du dépôt :
 
 ```sh
 ./target/release/agent-router --version
 ./target/release/agent-router --help
 ```
 
-Puis routez une fixture et lisez l'explication :
+Pour Cargo ou Homebrew, utilisez le chemin absolu du binaire installé.
+Obtenez un clone autorisé de la même révision pour les deux fixtures et
+remplacez les deux chemins ci-dessous. Les commandes copient uniquement ces
+entrées, puis routent depuis un répertoire temporaire extérieur au clone :
 
 ```sh
-./target/release/agent-router route \
-  --request tests/fixtures/requests/codex-implementation.json \
-  --catalog assets/catalogs/codex-core-v1.json \
-  --json > "${TMPDIR:-/tmp}/agent-router-decision.json"
-
-./target/release/agent-router explain \
-  --decision "${TMPDIR:-/tmp}/agent-router-decision.json"
+source_checkout="/absolute/agent-router-checkout"
+agent_router_bin="/absolute/user-prefix/bin/agent-router"
+example_dir=$(mktemp -d)
+cp "$source_checkout/tests/fixtures/requests/codex-implementation.json" "$example_dir/request.json"
+cp "$source_checkout/assets/catalogs/codex-core-v1.json" "$example_dir/catalog.json"
+(
+  cd "$example_dir" || exit
+  "$agent_router_bin" route --request request.json --catalog catalog.json \
+    --json > decision.json
+  "$agent_router_bin" explain --decision decision.json
+)
+rm "$example_dir/request.json" "$example_dir/catalog.json" "$example_dir/decision.json"
+rmdir "$example_dir"
 ```
 
 Sortie attendue, à la ligne du hash de décision près :
@@ -97,6 +148,10 @@ Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
 Excluded candidates: 13
 Missing evidence: 0
 ```
+
+`Missing evidence: 0` décrit la fixture fournie, pas votre host installé ni ses
+identifiants. Pour un build source, `agent_router_bin` peut désigner le chemin
+absolu de `target/release/agent-router` dans le clone.
 
 `route` sort avec `0` pour une sélection, `3` pour un résultat valide sans route,
 `2` pour une entrée invalide, `4` pour une erreur interne et `7` pour une erreur
@@ -132,25 +187,53 @@ la [procédure de release locale](release-local.md). Elle s'appuie sur la
 [distribution des sources](distribution.md) (les archives source séparées). Rien, dans ces
 étapes, ne signe, ne publie ni n'installe à votre place.
 
-L'archive binaire est compilée avec `--no-default-features` et ne contient que
-`agent-router`. Elle ne contient pas `router-sandbox-helper` : pour une exécution
-supervisée depuis cette archive, il faut compiler le helper à part avec la
-commande de build ci-dessus.
+L'archive binaire v2 contient `agent-router` (features exactes `claude` et
+`codex`) et `router-sandbox-helper`. Ce sont les mêmes composants produit par
+défaut que ceux de la commande Cargo. Les features optionnelles demandent
+toujours un build source séparé. La présence du helper ne configure aucun
+sandbox et n'autorise aucune exécution : son chemin absolu `helper` et son hash
+restent des entrées explicites.
 
-### Homebrew, préfixe privé
+### Homebrew, formule locale
 
 `scripts/release-local.py verify` peut générer une formule Homebrew à partir de
 `distribution/homebrew/agent-router.rb.in`, qui pointe vers l'archive locale via
-une URL `file://`. L'[essai isolé du 2026-10-07](bench/release-qualification-2026-10-07.md)
-a reconnu le tap local, récupéré l'archive exacte et vérifié son empreinte.
-L'installation a ensuite échoué sur le sandbox imbriqué ; l'option prévue par
-Homebrew a refusé le compte administrateur. L'installation reste non qualifiée.
-Le bloc `test` et la désinstallation Homebrew n'ont pas été exécutés
-([limites](release-local.md#limits)).
+une URL `file://` par défaut. La formule installe les deux binaires et les
+documents de licence, et refuse une plateforme ou un CPU incompatible. Son
+test autonome exerce route/explain et le refus d'arguments du helper, sans
+lancer de host ni prouver le confinement natif.
 
-Si vous l'essayez, utilisez un préfixe Homebrew privé. Installer avec le `brew` du
-système a des effets globaux. La formule installe uniquement `bin/agent-router` et
-les documents de licence.
+Sur macOS ARM64, l'archive v2 complète a passé l'installation locale, le test de
+formule, la réinstallation à version identique, un second test et la
+désinstallation. Les hashes des deux binaires correspondaient à l'archive ; le
+helper a refusé les arguments absents avec le code `125`, et la suppression a
+préservé le marqueur sans lien avec l'installation. Le sandbox Homebrew est
+resté actif, sans sandbox extérieur ni contournement de ses contrôles. Homebrew
+a classé le préfixe personnalisé hors de `/tmp` en Tier 3 : cela ne qualifie ni
+préfixe par défaut, ni tap public, téléchargement HTTPS, montée de version ou
+autre plateforme. Voir la [qualification actuelle](bench/distribution-qualification-2026-10-07.md).
+
+Utilisez un préfixe isolé déjà préparé hors de `/tmp`, avec le catalogue core
+habituel de Homebrew disponible en local et ses contrôles conservés. L'essai a
+copié un catalogue core complet, shallow et épinglé, après deux tentatives
+d'autoclonage profond interrompues. Les révisions et contrôles d'environnement
+exacts sont dans la qualification. Ce guide ne prépare aucun préfixe et ne
+modifie pas le Homebrew du système ; l'ancien échec de sandbox imbriqué reste historique.
+
+Une formule locale exige un tap local. Placez la formule vérifiée sous
+`Library/Taps/local/homebrew-agent-router/Formula/agent-router.rb` dans le
+dépôt de ce Homebrew, puis choisissez le chemin absolu de son exécutable :
+
+```sh
+brew_bin="/absolute/isolated-homebrew/bin/brew"
+"$brew_bin" install local/agent-router/agent-router
+"$brew_bin" test local/agent-router/agent-router
+```
+
+Le tap et l'archive doivent déjà exister. Ces commandes désignent votre tap
+local, pas un tap amont publié. Une URL HTTPS canonique peut être rendue pour
+une publication future ; cela ne téléverse aucun asset et ne vérifie pas son
+existence ([attestation de release](release-local.md#archive-url-and-publication)).
 
 ## Features optionnelles
 
@@ -179,13 +262,26 @@ ci-dessus.
 
 ## Désinstaller
 
-Le build écrit dans le clone (`target/`) et dans le cache de Cargo
-(`~/.cargo`, partagé avec vos autres projets Rust ; laissez-le, sauf si vous voulez
-récupérer de la place). Désinstaller revient à supprimer ce que vous avez créé.
+Retirez les paquets avec le canal qui les a installés. Préservez les paquets,
+fichiers et caches Cargo sans lien avec cette installation. Pour le même
+préfixe que ci-dessus :
 
-1. Supprimez le clone, qui contient `target/` et les deux binaires. Si vous avez
-   copié `agent-router` ou `router-sandbox-helper` ailleurs, supprimez aussi ces
-   copies.
+```sh
+cargo uninstall --root "$install_prefix" agent-router-cli router-sandbox-helper
+```
+
+Pour Homebrew, utilisez le même exécutable isolé :
+
+```sh
+"$brew_bin" uninstall local/agent-router/agent-router
+```
+
+La qualification actuelle indique quelles désinstallations ont été observées.
+Ces commandes ne suppriment ni état du runtime ni clone source.
+
+1. Pour un build depuis un clone, retirez uniquement les sorties de build ou
+   copies de binaires créées par cette installation. Inspectez les changements
+   sans lien avec elle avant de supprimer le clone. Le cache Cargo est partagé.
 2. Supprimez les répertoires d'état privés que vous avez choisis. Agent Router
    n'utilise aucun emplacement par défaut : chacun est un chemin que vous avez
    passé explicitement.
@@ -197,8 +293,6 @@ récupérer de la place). Désinstaller revient à supprimer ce que vous avez cr
      (`router.sock`, `token`, `lock`).
    - Stores de feedback et de catalogue, ainsi que les fichiers de sandbox ou
      d'approbation que vous avez écrits, aux chemins choisis.
-3. Si vous avez généré puis installé une formule Homebrew, désinstallez-la avec
-   Homebrew, dans le préfixe utilisé. Ce chemin est UNKNOWN, comme expliqué plus haut.
 
 Avant de supprimer un store de runtime, vérifiez s'il reste des exécutions
 interrompues ou des sorties conservées dont vous avez encore besoin. La suppression
@@ -218,7 +312,8 @@ retire les entrées de répertoire et ne prétend pas effacer le support de faç
   que lorsque vous lancez une commande qui leur désigne un chemin.
 - Elle ne télécharge ni embeddings, ni backend sémantique, ni dépendances à
   l'exécution.
-- Elle ne publie, ne signe ni n'installe aucune archive de release.
+- Elle ne publie ni ne signe de release. Cargo compile les sources ; Homebrew
+  installe l'archive explicitement choisie.
 
 Ensuite : [préparation](preparation.md), puis le
 [guide d'une exécution unique](cli-execution.md) ou le [guide des workflows](coordinator.md).

@@ -11,7 +11,8 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Essai expérimental](experimental-release.md) (EN) | 2026-10-07 : candidat source, exemple hors ligne et limites des preuves par host ; sans annonce de publication |
-| [Installation](install.fr.md) (FR) | Prérequis, features de build, release locale, désinstallation |
+| [Installation](install.fr.md) (FR) | Canaux Cargo épinglé et Homebrew local, deux binaires, prérequis et désinstallation ciblée |
+| [Qualification de distribution](bench/distribution-qualification-2026-10-07.md) | 2026-10-07 : artefacts v2 actuels et preuves locales par canal ; sans publication ni preuve d'exécution provider |
 | [Sortie de la CLI](cli-output.md) | Sortie lisible et `--json`, codes de sortie et codes d'erreur |
 | [Formats de configuration](configuration-formats.md) | Couches de configuration JSON, TOML et YAML strictes |
 | [Saisie guidée de la tâche](task-guide.md) | Compléter les faits manquants sans permission implicite |

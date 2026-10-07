@@ -72,7 +72,7 @@ class LocalReleaseTests(unittest.TestCase):
 
     def make_candidate(self, name="agent-router-aarch64-apple-darwin-core.tar.gz", features=None, versions=None):
         source = PACKAGE.checked_archive(self.source_archive, self.source_sha)
-        features = [] if features is None else features
+        features = ["claude", "codex"] if features is None else features
         proof = {
             "features": features,
             "target": "aarch64-apple-darwin",
@@ -88,12 +88,14 @@ class LocalReleaseTests(unittest.TestCase):
             "rustc_binary_sha256": "2" * 64,
             "c_compiler": "clang fixture",
             "sdk": "macOS SDK fixture",
-            "dynamic_libraries_declared": [],
+            "dynamic_libraries_declared": {"agent-router": [], "router-sandbox-helper": []},
+            "builds": [{"binaries_sha256": {"agent-router": sha(b"fixture binary bytes"),
+                       "router-sandbox-helper": sha(b"fixture helper bytes")}}] * 2,
         }
         if versions is not None:
             proof.update(versions)
         path = self.root / name
-        path.write_bytes(PACKAGE.archive_payload(b"fixture binary bytes", proof, source))
+        path.write_bytes(PACKAGE.archive_payload({"agent-router": b"fixture binary bytes", "router-sandbox-helper": b"fixture helper bytes"}, proof, source))
         return path, sha(path.read_bytes())
 
     def make_key_pair(self):
@@ -123,7 +125,7 @@ class LocalReleaseTests(unittest.TestCase):
                              "-in", message or self.signing_message, "-out", signature or self.signature])
 
     def verify(self, *, manifest=None, signature=None, public_key=None, expected_manifest_sha=None,
-               expected_candidate_sha=None, source_commit=None, formula=None, candidates=None, script=SCRIPT):
+               expected_candidate_sha=None, source_commit=None, formula=None, candidates=None, archive_url=None, script=SCRIPT):
         manifest = manifest or self.manifest
         signature = signature or self.signature
         public_key = public_key or self.public_key
@@ -135,7 +137,9 @@ class LocalReleaseTests(unittest.TestCase):
                 "--public-key-sha256", sha(public_key.read_bytes()),
                 "--expected-manifest-sha256", expected_manifest_sha or sha(manifest.read_bytes()),
                 "--expected-candidate-sha256", expected_candidate_sha or self.candidate_sha,
-                "--target", "aarch64-apple-darwin", "--features-json", "[]", "--formula-output", formula]
+                "--target", "aarch64-apple-darwin", "--features-json", '["claude","codex"]', "--formula-output", formula]
+        if archive_url is not None:
+            args.extend(["--archive-url", archive_url])
         for candidate in candidates:
             args.extend(["--candidate", candidate])
         return self.cli(args, script)
@@ -168,10 +172,10 @@ class LocalReleaseTests(unittest.TestCase):
         data = self.manifest.read_bytes()
         manifest = json.loads(data)
         self.assertEqual(data, PACKAGE.canonical(manifest))
-        self.assertEqual(manifest["schema"], "agent-router-release-v1")
+        self.assertEqual(manifest["schema"], "agent-router-release-v2")
         self.assertEqual(manifest["source"]["commit"], self.source_commit)
         self.assertEqual(manifest["artifacts"][0]["archive_sha256"], self.candidate_sha)
-        self.assertEqual(self.signing_message.read_bytes(), b"agent-router-release-v1\0" + data)
+        self.assertEqual(self.signing_message.read_bytes(), b"agent-router-release-v2\0" + data)
         self.assertNotIn(str(self.root).encode(), data)
         self.assertNotIn(b"/Users/", data)
         self.assertNotIn(b"raw_log", data)
@@ -183,8 +187,8 @@ class LocalReleaseTests(unittest.TestCase):
         rendered = self.formula.read_text()
         self.assertIn(f'sha256 "{self.candidate_sha}"', rendered)
         self.assertIn('# target: "aarch64-apple-darwin"', rendered)
-        self.assertIn("# features: []", rendered)
-        self.assertIn('bin.install "bin/agent-router"', rendered)
+        self.assertIn('# features: ["claude","codex"]', rendered)
+        self.assertIn('bin.install "bin/agent-router", "bin/router-sandbox-helper"', rendered)
         self.assertFalse(self.formula.is_symlink())
 
     def test_verbose_toolchain_observations_prepare_sign_and_verify(self):
@@ -222,7 +226,7 @@ class LocalReleaseTests(unittest.TestCase):
         wrong_source = self.verify(source_commit="b" * 40, formula=self.root / "wrong-source.rb")
         self.assert_fails(wrong_source, "release.source_commit_mismatch", self.root / "wrong-source.rb")
         tampered = self.root / "tampered.json"
-        tampered.write_bytes(self.manifest.read_bytes().replace(b"release-v1", b"release-v0", 1))
+        tampered.write_bytes(self.manifest.read_bytes().replace(b"release-v2", b"release-v0", 1))
         result = self.verify(manifest=tampered, formula=self.root / "tampered.rb",
                              expected_manifest_sha=sha(self.manifest.read_bytes()))
         self.assert_fails(result, "release.manifest_pin_mismatch", self.root / "tampered.rb")
@@ -239,7 +243,7 @@ class LocalReleaseTests(unittest.TestCase):
                         "--public-key-sha256", "0" * 64,
                         "--expected-manifest-sha256", sha(self.manifest.read_bytes()),
                         "--expected-candidate-sha256", self.candidate_sha, "--candidate", self.candidate,
-                        "--target", "aarch64-apple-darwin", "--features-json", "[]",
+                        "--target", "aarch64-apple-darwin", "--features-json", '["claude","codex"]',
                         "--formula-output", self.root / "bad-key.rb"]
         pinned = self.cli(bad_pin_args)
         self.assert_fails(pinned, "release.public_key_pin_mismatch", self.root / "bad-key.rb")
@@ -385,6 +389,200 @@ class LocalReleaseTests(unittest.TestCase):
         second, _ = self.make_candidate(name="agent-router-second-core.tar.gz")
         result = self.verify(candidates=[second], formula=self.root / "missing.rb")
         self.assert_fails(result, "release.candidate_set_mismatch", self.root / "missing.rb")
+
+    def mutate_candidate(self, transform):
+        files = PACKAGE.verify_binary_archive(self.candidate.read_bytes())
+        transform(files)
+        files["INTEGRITY.json"] = PACKAGE.canonical({name: sha(data) for name, data in sorted(files.items())
+                                                    if name != "INTEGRITY.json"})
+        with tarfile.open(self.candidate, "w:gz") as archive:
+            for name, data in sorted(files.items()):
+                member = tarfile.TarInfo("agent-router-binary/" + name)
+                member.size = len(data)
+                member.mode = 0o755 if name.startswith("bin/") else 0o644
+                archive.addfile(member, io.BytesIO(data))
+        self.candidate_sha = sha(self.candidate.read_bytes())
+
+    def test_both_binary_hashes_are_signed_and_revalidated(self):
+        self.signed_preparation()
+        record = json.loads(self.manifest.read_bytes())["artifacts"][0]
+        self.assertEqual(record["binaries_sha256"], {"agent-router": sha(b"fixture binary bytes"),
+                                                   "router-sandbox-helper": sha(b"fixture helper bytes")})
+        for omit in (False, True):
+            with self.subTest(omit=omit):
+                manifest = json.loads(self.manifest.read_bytes())
+                hashes = manifest["artifacts"][0]["binaries_sha256"]
+                if omit:
+                    del hashes["router-sandbox-helper"]
+                else:
+                    hashes["router-sandbox-helper"] = "0" * 64
+                altered = self.root / f"helper-{omit}.json"
+                altered.write_bytes(PACKAGE.canonical(manifest))
+                message = self.root / f"helper-{omit}.bin"
+                message.write_bytes(b"agent-router-release-v2\0" + altered.read_bytes())
+                self.sign(message=message)
+                result = self.verify(manifest=altered)
+                self.assert_fails(result, "release.binary_evidence_mismatch" if omit else "release.candidate_metadata_mismatch", self.formula)
+
+    def test_missing_changed_or_incomplete_helper_evidence_is_rejected(self):
+        original = self.candidate.read_bytes()
+        def observation_mutation(files, mode):
+            observations = json.loads(files["BUILD-OBSERVATIONS.json"])
+            if mode == "omitted":
+                del observations["builds"][1]["binaries_sha256"]["router-sandbox-helper"]
+            elif mode == "changed":
+                observations["builds"][1]["binaries_sha256"]["router-sandbox-helper"] = "0" * 64
+            elif mode == "one-build":
+                observations["builds"].pop()
+            elif mode == "v1":
+                observations["schema"] = "agent-router-build-observations-v1"
+            files["BUILD-OBSERVATIONS.json"] = PACKAGE.canonical(observations)
+        for mode in ("omitted", "changed", "one-build", "v1", "helper-bytes", "helper-missing"):
+            with self.subTest(mode=mode):
+                self.candidate.write_bytes(original)
+                def mutate(files):
+                    if mode == "helper-bytes":
+                        files["bin/router-sandbox-helper"] = b"substituted helper"
+                    elif mode == "helper-missing":
+                        del files["bin/router-sandbox-helper"]
+                    else:
+                        observation_mutation(files, mode)
+                self.mutate_candidate(mutate)
+                self.assert_fails(self.prepare(), "release.candidate_archive_invalid", self.out)
+
+    def test_v1_manifest_and_v1_domain_cannot_be_used_as_v2(self):
+        self.signed_preparation()
+        v1 = json.loads(self.manifest.read_bytes())
+        v1["schema"] = "agent-router-release-v1"
+        old = self.root / "v1.json"
+        old.write_bytes(PACKAGE.canonical(v1))
+        self.assert_fails(self.verify(manifest=old), "release.manifest_schema_invalid", self.formula)
+        old_message = self.root / "old-domain.bin"
+        old_message.write_bytes(b"agent-router-release-v1\0" + self.manifest.read_bytes())
+        self.sign(message=old_message)
+        self.assert_fails(self.verify(), "release.signature_invalid", self.formula)
+
+    def test_formula_os_and_cpu_guards_run_before_any_install(self):
+        if shutil.which("ruby") is None:
+            self.skipTest("Ruby unavailable for Homebrew DSL fixture")
+        self.signed_preparation()
+        self.assertEqual(self.verify().returncode, 0)
+        stub = self.root / "formula-harness.rb"
+        stub.write_text('''require "json"
+module OS
+  def self.mac?; ENV.fetch("TEST_OS") == "macos"; end
+  def self.linux?; ENV.fetch("TEST_OS") == "linux"; end
+end
+module Hardware
+  module CPU
+    def self.arm?; ENV.fetch("TEST_CPU") == "arm"; end
+    def self.intel?; ENV.fetch("TEST_CPU") == "intel"; end
+    def self.is_64_bit?; ENV.fetch("TEST_BITS") == "64"; end
+  end
+end
+$installs = []
+class Destination
+  def install(*paths); $installs.concat(paths); end
+end
+class Formula
+  def self.desc(*); end
+  def self.homepage(*); end
+  def self.url(*); end
+  def self.sha256(*); end
+  def self.version(*); end
+  def self.test(&block); end
+  def bin; Destination.new; end
+  def doc; Destination.new; end
+  def odie(message); raise message; end
+end
+load ARGV.fetch(0)
+begin
+  AgentRouter.new.install
+  puts JSON.generate({installed: $installs})
+rescue => error
+  puts JSON.generate({error: error.message, installed: $installs})
+  exit 1
+end
+''')
+        source = self.formula.read_text()
+        targets = {"aarch64-apple-darwin": ("macos", "arm"), "x86_64-apple-darwin": ("macos", "intel"),
+                   "aarch64-unknown-linux-gnu": ("linux", "arm"), "x86_64-unknown-linux-gnu": ("linux", "intel")}
+        for target, (expected_os, expected_cpu) in targets.items():
+            rendered = self.root / f"formula-{target}.rb"
+            rendered.write_text(source.replace("aarch64-apple-darwin", target))
+            for os_name, cpu, bits in ((expected_os, expected_cpu, "64"),
+                                       ("linux" if expected_os == "macos" else "macos", expected_cpu, "64"),
+                                       (expected_os, "intel" if expected_cpu == "arm" else "arm", "64"),
+                                       (expected_os, expected_cpu, "32")):
+                with self.subTest(target=target, os=os_name, cpu=cpu, bits=bits):
+                    result = subprocess.run(["ruby", str(stub), str(rendered)], cwd=self.root, capture_output=True,
+                                            timeout=10, env={**os.environ, "TEST_OS": os_name, "TEST_CPU": cpu, "TEST_BITS": bits})
+                    observed = json.loads(result.stdout)
+                    compatible = (os_name, cpu, bits) == (expected_os, expected_cpu, "64")
+                    self.assertEqual(result.returncode, 0 if compatible else 1, result.stderr)
+                    if compatible:
+                        self.assertIn("bin/agent-router", observed["installed"])
+                        self.assertIn("bin/router-sandbox-helper", observed["installed"])
+                    else:
+                        self.assertEqual(observed["installed"], [])
+                        self.assertIn(target, observed["error"])
+
+
+    def test_unsupported_target_and_incomplete_feature_set_are_refused(self):
+        original = self.candidate.read_bytes()
+        for target in ("x86_64-pc-windows-msvc", "x86_64-unknown-freebsd", "aarch64-unknown-linux-musl"):
+            with self.subTest(target=target):
+                self.candidate.write_bytes(original)
+                def mutate(files):
+                    for name in ("BUILD-RECIPE.json", "BUILD-OBSERVATIONS.json"):
+                        document = json.loads(files[name])
+                        document["target"] = target
+                        files[name] = PACKAGE.canonical(document)
+                self.mutate_candidate(mutate)
+                self.assert_fails(self.prepare(), "release.target_invalid", self.out)
+        self.candidate, self.candidate_sha = self.make_candidate(features=[])
+        self.assert_fails(self.prepare(), "release.candidate_metadata_invalid", self.out)
+
+    def test_mono_binary_manifest_cannot_claim_v2(self):
+        self.signed_preparation()
+        manifest = json.loads(self.manifest.read_bytes())
+        record = manifest["artifacts"][0]
+        record["binary_sha256"] = record.pop("binaries_sha256")["agent-router"]
+        altered = self.root / "mono-v2.json"
+        altered.write_bytes(PACKAGE.canonical(manifest))
+        self.assert_fails(self.verify(manifest=altered), "release.artifact_record_invalid", self.formula)
+
+
+    def test_public_formula_is_explicit_and_keeps_signed_content_pins(self):
+        self.signed_preparation()
+        local = self.verify()
+        self.assertEqual(local.returncode, 0, local.stderr)
+        remote_formula = self.root / "public.rb"
+        url = f"https://github.com/FlorianBruniaux/agent-router/releases/download/v0.1.0/{self.candidate.name}"
+        remote = self.verify(formula=remote_formula, archive_url=url)
+        self.assertEqual(remote.returncode, 0, remote.stderr)
+        self.assertIn(f'url "{url}"', remote_formula.read_text())
+        self.assertEqual(remote_formula.read_text(), self.formula.read_text().replace(self.candidate.resolve().as_uri(), url))
+        local_result, remote_result = json.loads(local.stdout), json.loads(remote.stdout)
+        self.assertEqual(local_result["neutral_formula_sha256"], remote_result["neutral_formula_sha256"])
+        self.assertEqual(local_result["selected_archive_sha256"], remote_result["selected_archive_sha256"])
+        self.assertNotEqual(local_result["formula_sha256"], remote_result["formula_sha256"])
+        self.signature.write_bytes(b"x" * 64)
+        self.assert_fails(self.verify(formula=self.root / "bad-public.rb", archive_url=url),
+                          "release.signature_invalid", self.root / "bad-public.rb")
+
+    def test_public_formula_refuses_ambiguous_or_unapproved_urls(self):
+        self.signed_preparation()
+        url = f"https://github.com/FlorianBruniaux/agent-router/releases/download/v0.1.0/{self.candidate.name}"
+        invalid = [url.replace("https://", "http://"), url.replace("github.com/", "github.com.evil.test/"),
+                   url.replace("github.com/", "github.com:443/"), url.replace("github.com/", "user@github.com/"),
+                   url.replace("FlorianBruniaux", "another-owner"), url.replace("agent-router/releases", "other-repo/releases"),
+                   url.replace("v0.1.0", "v0.1.1"), url + "?download=1", url + "#fragment", url + "/suffix",
+                   url.replace("/v0.1.0/", "/v0.1.0/../v0.1.0/"), url.replace("/v0.1.0/", "/%760.1.0/"),
+                   url.replace(self.candidate.name, "other.tar.gz"), self.candidate.resolve().as_uri()]
+        for value in invalid:
+            with self.subTest(url=value):
+                self.assert_fails(self.verify(archive_url=value), "release.archive_url_invalid", self.formula)
 
 
 if __name__ == "__main__":

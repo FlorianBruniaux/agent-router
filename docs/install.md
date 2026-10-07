@@ -2,13 +2,17 @@
 
 English | [Français](install.fr.md)
 
-Agent Router is built from source. There is no published package-manager
-install and no automatic global configuration step. Installing it never enables
-a host integration, a hook or a permission (see [What installation does not
-do](#what-installation-does-not-do)).
+Agent Router has two experimental installation channels: Cargo from a pinned
+Git revision, and a generated Homebrew formula for a verified local archive.
+Both install `agent-router` with its default Claude/Codex adapters and
+`router-sandbox-helper`. Installation enables no host integration, hook or
+permission (see [What installation does not do](#what-installation-does-not-do)).
 
 The repository is private, so cloning requires access to
-`FlorianBruniaux/agent-router`.
+`FlorianBruniaux/agent-router`. No crates.io package, public Homebrew tap or
+public release asset is announced here. Current qualification is recorded in
+the [distribution qualification](bench/distribution-qualification-2026-10-07.md);
+the earlier [core-only trial](bench/release-qualification-2026-10-07.md) remains historical.
 
 ## Prerequisites
 
@@ -16,6 +20,7 @@ The repository is private, so cloning requires access to
 | --- | --- |
 | Operating system | macOS or Linux for supervised execution. Windows native execution is not implemented ([host support](../README.md#host-support)). Routing, `explain` and the other read-only commands do not launch anything. |
 | Rust | 1.85 or newer. `rust-toolchain.toml` pins channel `1.85` with `rustfmt` and `clippy`, so `rustup` selects it inside the checkout. |
+| C toolchain | A native C compiler/linker and platform SDK for source builds, including Cargo installation, because SQLite is built from bundled source. |
 | Git | To clone the repository. |
 | Linux sandbox | Supervised execution needs a bubblewrap binary and working unprivileged namespaces ([runtime](runtime.md#native-sandbox-evidence)). |
 | macOS sandbox | Supervised execution uses `/usr/bin/sandbox-exec` (Seatbelt). |
@@ -25,10 +30,43 @@ The repository is private, so cloning requires access to
 Routing works offline once Cargo dependencies are available. No semantic
 service or model download is required at runtime.
 
-## Build from source
+## Cargo from a pinned Git revision
+
+Choose an absolute installation prefix owned by your user. Replace the example
+path before running the command; Cargo writes binaries and installation
+metadata there, and downloads source/dependencies into its cache. Use your
+existing authenticated Git access while the repository is private.
 
 ```sh
-git clone git@github.com:FlorianBruniaux/agent-router.git
+install_prefix="/absolute/user-prefix"
+cargo install --git https://github.com/FlorianBruniaux/agent-router \
+  --rev f378afad4f584bac0efabbbb9dab37c48db4298f --locked \
+  --root "$install_prefix" agent-router-cli router-sandbox-helper
+
+"$install_prefix/bin/agent-router" version --json
+```
+
+The pinned revision identifies the product source used for this qualification;
+it does not point to unpublished distribution-tooling edits. Expected CLI
+features are `claude` and `codex`. The installed helper remains an internal
+program: configure its absolute path and review its hash in the execution
+approval, as described below. Adding binaries to your shell's `PATH` is a
+separate user choice.
+
+Workspace dependencies use local paths, so installing `agent-router-cli` by
+name from crates.io is not a supported channel. The pinned Git command provides
+the complete workspace. On macOS ARM64, separate installs of both packages from
+a local `file://` Git clone at this exact revision passed, with offline vendored
+dependencies. Route/explain passed outside the checkout with source and cached
+checkouts hidden; repeat installation, same-pin `--force` replacement and
+removal preserved the pre-existing marker. HTTPS Git acquisition was not
+exercised. Replacement at one pin does not establish an upgrade between product
+versions; that result remains `UNKNOWN`. See the linked qualification report.
+
+## Build from a checkout
+
+```sh
+git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
 cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 ```
@@ -66,24 +104,33 @@ cargo build --release --locked -p agent-router-cli -p router-sandbox-helper \
 
 ## Verify the installation
 
-Run these from the repository root. They use bundled synthetic fixtures, make no
-model call and launch no host.
+The fixtures are synthetic, make no model call and launch no host. For a source
+build, run the following version check from the repository root:
 
 ```sh
 ./target/release/agent-router --version
 ./target/release/agent-router --help
 ```
 
-Then route a fixture and read the explanation:
+For Cargo or Homebrew, use the installed executable's absolute path instead.
+Obtain an authorized checkout of the same revision for the two fixture files.
+Replace both paths below. The commands copy only those inputs and then route
+from a temporary directory outside the checkout:
 
 ```sh
-./target/release/agent-router route \
-  --request tests/fixtures/requests/codex-implementation.json \
-  --catalog assets/catalogs/codex-core-v1.json \
-  --json > "${TMPDIR:-/tmp}/agent-router-decision.json"
-
-./target/release/agent-router explain \
-  --decision "${TMPDIR:-/tmp}/agent-router-decision.json"
+source_checkout="/absolute/agent-router-checkout"
+agent_router_bin="/absolute/user-prefix/bin/agent-router"
+example_dir=$(mktemp -d)
+cp "$source_checkout/tests/fixtures/requests/codex-implementation.json" "$example_dir/request.json"
+cp "$source_checkout/assets/catalogs/codex-core-v1.json" "$example_dir/catalog.json"
+(
+  cd "$example_dir" || exit
+  "$agent_router_bin" route --request request.json --catalog catalog.json \
+    --json > decision.json
+  "$agent_router_bin" explain --decision decision.json
+)
+rm "$example_dir/request.json" "$example_dir/catalog.json" "$example_dir/decision.json"
+rmdir "$example_dir"
 ```
 
 Expected output, apart from the decision hash line:
@@ -94,6 +141,10 @@ Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
 Excluded candidates: 13
 Missing evidence: 0
 ```
+
+`Missing evidence: 0` describes the supplied fixture, not your installed host
+or its credentials. For a source build, `agent_router_bin` can instead point
+to the checkout's `target/release/agent-router` by absolute path.
 
 `route` exits `0` for a selection, `3` for a valid no-route result, `2` for
 invalid input, `4` for an internal error and `7` for an integrity error; see
@@ -127,24 +178,51 @@ For a reproducible local binary archive with a signed manifest, follow
 [distribution.md](distribution.md) (the separate source archives). Nothing
 there signs, publishes or installs for you.
 
-The binary archive is built with `--no-default-features` and contains
-`agent-router` only. It does not contain `router-sandbox-helper`, so supervised
-execution from that archive needs the helper built separately with the build
-command above.
+The v2 binary archive contains both `agent-router` (exact features `claude` and
+`codex`) and `router-sandbox-helper`. These are the same default product
+components installed by the Cargo command. Optional features still require a
+separate source build. Supplying the helper does not configure a sandbox or
+authorize execution: its absolute `helper` path and hash remain explicit inputs.
 
-### Homebrew, private prefix
+### Homebrew, local formula
 
 `scripts/release-local.py verify` can render a Homebrew formula from
 `distribution/homebrew/agent-router.rb.in`, pointing at the local archive by
-`file://` URL. The [2026-10-07 isolated trial](bench/release-qualification-2026-10-07.md)
-recognized the local tap and fetched the exact hash-pinned archive. Installation
-then failed on nested sandboxing; Homebrew's supported opt-out refused the
-administrator account. Installation remains unqualified. The formula's `test`
-and Homebrew uninstall were not exercised ([limits](release-local.md#limits)).
+`file://` URL by default. The formula installs both binaries and the license
+documents, and refuses a mismatched OS or CPU. It has a self-contained
+route/explain test and a helper argument-refusal test; these do not execute a
+host or prove native sandbox enforcement.
 
-If you try it, use a private Homebrew prefix. Installing with the system `brew`
-has global effects. The formula installs `bin/agent-router` and the license
-documents only.
+On macOS ARM64, the complete v2 archive passed local install, formula test,
+same-version reinstall, a second test and uninstall. Both binary hashes matched
+the archive, the helper refused missing arguments with exit `125`, and removal
+preserved the unrelated marker. Homebrew's own sandbox stayed enabled, without
+an outer sandbox or safety override. The custom prefix outside `/tmp` was
+classified Tier 3 by Homebrew; this does not qualify a default prefix, public
+tap, HTTPS download, different-version upgrade or another platform. See the
+[current qualification](bench/distribution-qualification-2026-10-07.md).
+
+Use a separately provisioned isolated prefix outside `/tmp`, with Homebrew's
+ordinary core catalog available locally and its safety checks intact. The
+trial copied a complete shallow pinned core catalog after two stopped automatic
+deep-clone attempts. The exact source pins and environment controls are in the
+qualification report. This guide does not provision a prefix or modify system
+Homebrew; the older nested-sandbox failure remains historical.
+
+A local formula requires a local tap. After placing the verified formula at
+`Library/Taps/local/homebrew-agent-router/Formula/agent-router.rb` beneath that
+Homebrew's repository, select its absolute executable path:
+
+```sh
+brew_bin="/absolute/isolated-homebrew/bin/brew"
+"$brew_bin" install local/agent-router/agent-router
+"$brew_bin" test local/agent-router/agent-router
+```
+
+The tap and archive must already exist. These commands refer to your local tap,
+not a published upstream tap. An optional canonical HTTPS archive URL can be
+rendered for future publication; it neither uploads an asset nor checks that
+one exists ([release attestation](release-local.md#archive-url-and-publication)).
 
 ## Optional features
 
@@ -172,12 +250,25 @@ their effects come from the Cargo manifest and the guides above.
 
 ## Uninstall
 
-The build writes to the checkout (`target/`) and to Cargo's own cache
-(`~/.cargo`, shared with your other Rust projects; leave it unless you want to
-reclaim space). Removal is deleting what you created.
+Remove the packages through the channel that installed them. Keep unrelated
+packages, files and Cargo caches. For the same prefix used above:
 
-1. Delete the checkout, which contains `target/` and both binaries. If you copied
-   `agent-router` or `router-sandbox-helper` elsewhere, delete those copies.
+```sh
+cargo uninstall --root "$install_prefix" agent-router-cli router-sandbox-helper
+```
+
+For a local Homebrew installation, use the same isolated Homebrew executable:
+
+```sh
+"$brew_bin" uninstall local/agent-router/agent-router
+```
+
+The current qualification reports which channel removals were observed. These
+commands do not remove runtime state or a source checkout.
+
+1. If you built from a checkout, remove only the build outputs or copied
+   binaries you created. Inspect any unrelated checkout edits before deleting
+   it. Cargo's cache is shared with other Rust projects.
 2. Delete any private state directories you chose. Agent Router uses no default
    location: each is a path you passed explicitly.
    - Runtime and workflow stores: the `--store` and `--runtime-root` paths. These
@@ -187,8 +278,6 @@ reclaim space). Removal is deleting what you created.
      `token`, `lock`).
    - Feedback and catalog stores, and sandbox or approval files you wrote, at
      the paths you chose.
-3. If you rendered a Homebrew formula and installed it, remove it with Homebrew
-   in the same prefix you used. This path is UNKNOWN as described above.
 
 Before deleting a runtime store, check for interrupted runs or retained output
 you still need. Deletion removes directory entries and makes no claim of secure
@@ -206,7 +295,8 @@ media erasure ([runtime](runtime.md#durable-state-and-control)).
   when you run a command that names a path for them.
 - It does not download embeddings, a semantic backend or dependencies at
   runtime.
-- It does not publish, sign or install a release archive.
+- It does not publish or sign a release. Cargo builds from source; Homebrew
+  installs the explicitly selected archive.
 
 Next: [preparation](preparation.md), then the
 [single-run guide](cli-execution.md) or [workflow guide](coordinator.md).
