@@ -1,0 +1,52 @@
+README.fr.md
+  s_9e80b85afcc43a::t_78c20f92bf239c 3,5-9,88-91,146,178,201-202,213,216,237-238,400-404,416,484-486
+README.md
+  s_9e80b85afcc43a::t_78c20f92bf239c 3,5-9,87-89,144,176,199-200,211,214,235-236,398-402,414,482-484
+docs/README.fr.md
+  s_9e80b85afcc43a::t_78c20f92bf239c 13
+  s_9e80b85afcc43a::t_c8b26e065e35f2 81
+docs/experimental-release.md
+  s_9e80b85afcc43a::t_34887662699ee8 85-94
+  s_9e80b85afcc43a::t_78c20f92bf239c 1-84,95-99
+docs/README.md
+  s_9e80b85afcc43a::t_78c20f92bf239c 13
+  s_9e80b85afcc43a::t_b72c1328e9b781 81
+CHANGELOG.md
+  s_9e80b85afcc43a::t_90bc1f79657948 19-20,29-30
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_0c214fdad5db7b 7-14,305
+docs/bench/release-qualification-2026-10-07.json
+  s_9e80b85afcc43a::t_2c435f795bcb24 1-191
+docs/bench/release-qualification-2026-10-07.md
+  s_9e80b85afcc43a::t_6c18ca5f77e616 1-175
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_69489b07d97f46 650
+docs/binary-distribution.md
+  s_9e80b85afcc43a::t_d796e0ab5db35b 12-15,73-76,79-84
+docs/install.fr.md
+  s_9e80b85afcc43a::t_31cd81dc6753e4 144-149
+docs/install.md
+  s_9e80b85afcc43a::t_0dc63c068957e1 139-143
+docs/release-local.md
+  s_9e80b85afcc43a::t_d6b46c7bf39eea 13-16,96-98,103-108,120-122
+scripts/release-local.py
+  s_9e80b85afcc43a::t_60b24779099ad7 241,244-245,248-250,269,271
+scripts/test-release-local.py
+  s_9e80b85afcc43a::t_96fcbf4ac41ff4 73,93-94,190-217
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "56735746281395314d695ee7d578b8111c7dbe30",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
