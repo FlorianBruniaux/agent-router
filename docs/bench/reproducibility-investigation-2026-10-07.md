@@ -1,0 +1,20 @@
+# Bounded native build investigation, 2026-10-07
+
+The original `build.reproducibility_mismatch` refusal was not reproduced within this predeclared two-pair campaign on 2026-10-07. Four native builds produced equal exact executable bytes within each pair and across both pairs. The historical failed attempt discarded its executable bytes, so its differing sections and cause remain `UNKNOWN`. This campaign does not qualify the current product or certify a release.
+
+| Pair | Build 1 seconds | Build 2 seconds | Exact executable bytes equal | Normalized archive bytes equal |
+| --- | ---: | ---: | --- | --- |
+| 1 | 462.585 | 480.282 | True | True |
+| 2 | 723.427 | 577.582 | True | True |
+
+The product source was the historical core export from commit `f378afad4f584bac0efabbbb9dab37c48db4298f`, SHA-256 `dd712f106495a10a04053b6723f63955d7d578e60084bf17c90f53264501e2f0`. Packaging scripts were snapshotted from `e822bc7b3984d3f9e25f5c02b570405f75ca41fc`. Their hashes were `fa4ba588dfa4dbbc554a1524b962d3d5210ce272f75dd1ac8a4cb9a37b4950af` for `scripts/package-binary.py` and `f51201d1856001b705f0b03ff9d2aea1db66089f2a70f266e3356fd1a16d6a7c` for `scripts/package-core.py`. Rust/Cargo 1.85.1 built native `aarch64-apple-darwin` binaries with `claude,codex` enabled for the CLI. The plan fixed a maximum of two sequential pairs, two build jobs, a 1800-second limit per build and an immediate stop on the first packaging-gate mismatch. It preserved command arguments and Rust flags. The wrapper added only `CARGO_BUILD_JOBS=2` to the pinned packager's build environment; prior complete environment identity remains `UNKNOWN`.
+
+All four CLI captures have SHA-256 `f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455` and size 20,866,368 bytes. All four helper captures have SHA-256 `4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6` and size 534,528 bytes. Their exact bytes, raw logs, per-build JSON reports, Mach-O section/load-command maps and signature observations were retained privately before the equality gate and temporary-directory cleanup. Public JSON records artifact hashes without payloads or local machine paths.
+
+Compared with the prior retained successful capture, the fresh CLI differs in 47 bytes and the helper in 48. Each delta occupies the 16-byte `LC_UUID` value and the 32-byte CodeDirectory slot-0 digest for the first 4096-byte page, which includes the UUID. All parsed sections remain equal. Both old and new first-page digests were independently recomputed and verified. This localizes the observed successful-capture delta; it cannot establish the cause or location of the discarded original failure.
+
+The installed default Apple linker reports version 1267; its SHA-256 is `28d85b9af18c923db12e0b4ce70b80ee217f2b7cade0e872baa9e8ddc396c08d`. Its local manual documents a content-derived UUID by default and `-reproducible` as a way to ignore some input properties or use alternative algorithms. Actual linker subprocess arguments were not intercepted and remain `UNKNOWN`. No random-UUID cause is established. An Apple-only `-C link-arg=-Wl,-reproducible` recipe is an untested candidate, with no flag change applied here. UUID removal is excluded because the manual warns about debugger and crash-report inspection limits. The exact-byte equality gate was neither weakened nor normalized.
+
+Keep issue #136 open. The original gate refusal remains unreproduced in this bounded campaign; cause and fix are `UNKNOWN`. These builds used the historical f378 source export, so their results do not certify the e822 current-product source. No executable runtime scenario, network publication or repository mutation was performed by this campaign.
+
+[Machine-readable report](reproducibility-investigation-2026-10-07.json) records the pins and artifact hashes. The [local verification record](verification-owned-entry-2026-10-07.json) includes the independent review. The [earlier qualification](distribution-qualification-2026-10-07.md) retains its original observations.

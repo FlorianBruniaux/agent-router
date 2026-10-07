@@ -1,0 +1,683 @@
+{
+  "schema_version": 1,
+  "kind": "local-development-verification",
+  "observed_date": "2026-10-07",
+  "verdict": "selected_checks_passed",
+  "full_ci_equivalent": false,
+  "base_commit": "e822bc7b3984d3f9e25f5c02b570405f75ca41fc",
+  "tested_state": "uncommitted candidate bound by complete source inventory; only documentation and evidence appended after this run",
+  "coverage_statement": "All selected quality checks passed on a frozen macOS source tree. Independent probes and the historical-source build campaign have separate scopes. No paid provider, native admission, daily activation or user benefit was tested.",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "summary_sha256": "d2160fb47c48552e39260b4b91089f988ea46c4133762aacd3f1425beb42de15",
+  "source_before_sha256": "8b3bd471d9d57ccb937c6d2207b4729b5ba8f8025cb13cd2224ef9ecc40f40d3",
+  "source_after_sha256": "8b3bd471d9d57ccb937c6d2207b4729b5ba8f8025cb13cd2224ef9ecc40f40d3",
+  "source_unchanged_during_checks": true,
+  "reviewed_source_inventory": [
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "e3cd19baf4795b14b52b2fb351385078ea0ac209475acd33a7f640b3bd0606ea"
+    },
+    {
+      "path": "crates/agent-router-cli/src/evaluation.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "af40e8d83f1fbb79dc93c67ccb0e78e2fbe0a659f992bde338588a51c22ff984"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/accepted_changes.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ccc843e63d5a7a2b766a47a2c734c798f06fc2ba57636f7e978ffc683483e4c5"
+    },
+    {
+      "path": "crates/router-feedback/src/accepted_changes.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f4ab1df69a3150aab572894b6d914f19bee292d11d4426c2f84fb0486d45bb3c"
+    },
+    {
+      "path": "crates/router-feedback/src/lib.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "7e87cdd5a82ca2bb6c1fb6db0edcb0ac6108240534a2656597536a83e85c6cf2"
+    },
+    {
+      "path": "crates/router-feedback/tests/accepted_changes.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "c05b8631ce7e216b37721cc241ae6a69cb03268c454f88dc901476648a949755"
+    },
+    {
+      "path": "docs/accepted-changes.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "81195765d79bd48288f1e445b1e631f15e6f13940efcb1d0dc270f269c7c7955"
+    },
+    {
+      "path": "docs/adr/0023-owned-task-entry.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b4e766838cb002712b8caa9b74e69e10c139149fa695c6cd92f64885685ba2df"
+    },
+    {
+      "path": "docs/adr/0024-accepted-revision-accounting.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "1771c8a1dd702326977665fcc4f901150dd6adfc74f486c0dcb982fe5d8b7025"
+    },
+    {
+      "path": "docs/bench/owned-entry-2026-10-07/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "eeeb67a827358d60a152acb563743ac003471ade1702f58df93dd14d48426078"
+    },
+    {
+      "path": "docs/bench/owned-entry-2026-10-07/decision.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "70a69b04642744e4d96bbb5b9f8c531b2144be5d1b9259f86afa39b3fb976539"
+    },
+    {
+      "path": "docs/bench/owned-entry-2026-10-07/inspect_native.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "78382df10fd4743a02b51c72310b0124fcccd4963c4f7f506d064e6e2532e50c"
+    },
+    {
+      "path": "docs/bench/owned-entry-2026-10-07/native-schema.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "465bbbc2344599b631381fc834b7ade8ed33c9a8b5479ac9f67dd4e37f6aef71"
+    },
+    {
+      "path": "tests/fixtures/evaluation/accepted-changes-v1.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "1e4e993a1105c95e7381edc5f372835b08c37d3eea4eae1a5f0b556f3ce2769f"
+    }
+  ],
+  "inventory_retention": "Complete frozen source inventory retained in the private quality summary; selected independently reviewed file hashes are included here.",
+  "checks": [
+    {
+      "id": "format",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 9.680302,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 53.624781,
+      "log_sha256": "9e4fd4f7868e4c36042460a0b4b05968a7f24276904c886d39baab09f31678ce"
+    },
+    {
+      "id": "clippy-core",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 42.971519,
+      "log_sha256": "3d7a57fdf2cdea71c6bfc19609c4ea526f408645eb3736f7290134dd904356b6"
+    },
+    {
+      "id": "workspace-tests",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 1178.851983,
+      "log_sha256": "cb1ffd7b5b6a624bc9bacea789c9be094f87e721a5b44c631a854118078ec4f6",
+      "rust_results": {
+        "passed": 1618,
+        "failed": 0,
+        "ignored": 42,
+        "measured": 0,
+        "filtered": 302
+      }
+    },
+    {
+      "id": "local-api-absent",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 29.44076,
+      "log_sha256": "bb5eb9362a45b16bc71431a587b784aa717c914dabed1e9137e478a08cd8a9df",
+      "rust_results": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered": 0
+      }
+    },
+    {
+      "id": "harness",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 1.623428,
+      "log_sha256": "04b047449a0c611b2f3074430343ec3b830490e9fe3ab6171b3da8d5bc71be56"
+    },
+    {
+      "id": "host-syntax",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.129303,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.402754,
+      "log_sha256": "27c4a39d34ece4cbc66cc59cb0870c7abe4cc0a5f009205bdd0ea06a93f8b3ac",
+      "python_results": {
+        "run": 3,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-adrs",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.286178,
+      "log_sha256": "e672f5c5b5876eb16f7c01ff1671ebdeecd7dc401ae147fe56a2d6de7244ce8c",
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 16.255012,
+      "log_sha256": "bfa63bb23c34feb0c91bf43f7890ff09831b0bfbf1a0fec695c424def444a383",
+      "python_results": {
+        "run": 29,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-binary",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.731403,
+      "log_sha256": "fc3b929afdebd880846809fcbb7ec8e1decfc1c3f4e545284788caa743e3db68",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-core",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.700082,
+      "log_sha256": "b2cc2f1952ddd160c560c0a6aef31ca62961814cf4ae941b07ac6bd3c3e9a73b",
+      "python_results": {
+        "run": 26,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-release-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 26.631041,
+      "log_sha256": "82c6667e37ffbc7152205fb85af4d508061813da376c10d67bf4a0a3824a8d2b",
+      "python_results": {
+        "run": 27,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "egress-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 14.878613,
+      "log_sha256": "52b8d704e9a824b399c7d1569c192577ca3fff83b8f43bd08a967d9d3b9e884e",
+      "python_results": {
+        "run": 48,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-probe-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 10.420328,
+      "log_sha256": "c2baf223057265a80bdcee27f37da2bc0c1c9e96c7fe5bd58914a6d1f6d60ba6",
+      "python_results": {
+        "run": 33,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-decision-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 7.729622,
+      "log_sha256": "6041e971706c273823e0d46d30f37ab667e16e97fc59d62145e903aeb98a65dc",
+      "python_results": {
+        "run": 13,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 7.788374,
+      "log_sha256": "af78e7d9de5d5367b0a41423c93e36a90d687bb335382e6ad6ec2e3dfc656f71",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "campaign-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 6.271078,
+      "log_sha256": "f2d36e9b39355814f67fc1c23f947955eb6fd34682abbe5b84a0b546a5370b3d",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "calibration-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 23.200051,
+      "log_sha256": "0249628a1135d02ad2da9e691a44e2118c18d790e9aa52c3572fa0be1ecc1c29",
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "secrets-dir",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 3.935442,
+      "log_sha256": "37f48dfe452a443449a18439e1dda5deaccecace5b3c29232d371a3f36ba8490"
+    },
+    {
+      "id": "secrets-git",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 6.89436,
+      "log_sha256": "286907613a1724afd688710a72b75b197cdbf53f2c8ea018191758f404497a89"
+    }
+  ],
+  "rust_results_by_check": {
+    "workspace-tests": {
+      "passed": 1618,
+      "failed": 0,
+      "ignored": 42,
+      "measured": 0,
+      "filtered": 302
+    },
+    "local-api-absent": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0,
+      "measured": 0,
+      "filtered": 0
+    }
+  },
+  "python_results_by_check": {
+    "script-test-benchmark-startup": {
+      "run": 3,
+      "skipped": 0
+    },
+    "script-test-check-adrs": {
+      "run": 30,
+      "skipped": 0
+    },
+    "script-test-check-local": {
+      "run": 29,
+      "skipped": 0
+    },
+    "script-test-package-binary": {
+      "run": 17,
+      "skipped": 0
+    },
+    "script-test-package-core": {
+      "run": 26,
+      "skipped": 0
+    },
+    "script-test-release-local": {
+      "run": 27,
+      "skipped": 0
+    },
+    "egress-tests": {
+      "run": 48,
+      "skipped": 0
+    },
+    "native-probe-tests": {
+      "run": 33,
+      "skipped": 0
+    },
+    "native-decision-tests": {
+      "run": 13,
+      "skipped": 0
+    },
+    "native-hook-failure-tests": {
+      "run": 17,
+      "skipped": 0
+    },
+    "campaign-tests": {
+      "run": 17,
+      "skipped": 0
+    },
+    "calibration-tests": {
+      "run": 30,
+      "skipped": 0
+    }
+  },
+  "counts_note": "Rust results sum successful result lines including subprocess invocations, not unique test definitions. The 24 focused tests are included in the workspace result and are not added twice. Independent CLI and inspector probes are separate.",
+  "independent_review": {
+    "accepted_changes": {
+      "verdict": "no_open_confirmed_finding",
+      "cli_fixture_probes_passed": 36,
+      "cli_boundary_probes_passed": 3,
+      "successful_reports_byte_stable": true,
+      "evidence_trust": "supplied_unverified"
+    },
+    "owned_entry": {
+      "verdict": "no_open_confirmed_finding",
+      "inert_inspector_probes_passed": 7,
+      "native_schema_reproduction": "byte_identical",
+      "equivalent_behavioral_scenarios_executed": 0
+    },
+    "reproducibility": {
+      "schema": "independent-repro-review-v1",
+      "verdict": "NO_OPEN_CONFIRMED_FINDING",
+      "source_commit": "f378afad4f584bac0efabbbb9dab37c48db4298f",
+      "packager_commit": "e822bc7b3984d3f9e25f5c02b570405f75ca41fc",
+      "toolchain_version": "1.85.1",
+      "completed_native_builds": 4,
+      "completed_pairs": 2,
+      "original_exact_byte_equality_gate_unchanged": true,
+      "recorded_build_environment_delta_from_pinned_packager": {
+        "CARGO_BUILD_JOBS": "2"
+      },
+      "exact_bytes_equal_within_and_across_pairs": true,
+      "archives_equal_across_pairs": true,
+      "archive_sha256": "e83aaa6735c32a4621389570416268b2540c1d1cd88658d1508e0be1fe02ee28",
+      "prior_retained_successful_pair_comparison": {
+        "all_other_bytes_equal": true,
+        "all_file_backed_sections_equal": true,
+        "differences_only": [
+          "LC_UUID",
+          "CodeDirectory_first_page_SHA256"
+        ],
+        "first_page_hashes_independently_verified_both_versions": true
+      },
+      "selected_prior_observation_fields_independently_joined": 12,
+      "original_gate_failure_reproduced": false,
+      "original_failure_cause": "UNKNOWN",
+      "fix": "UNKNOWN",
+      "actual_linker_invocation": "UNKNOWN",
+      "current_product_qualification": "NOT_ASSERTED",
+      "release_certification": "NOT_ASSERTED",
+      "reviewer_started_builds": 0,
+      "reviewed_public_report_sha256": "0c786272af1d780502f1b405913f0b481bb39350eb79f981ae28b0820a8ce150",
+      "reviewed_report_markdown_sha256": "fc9311b170fa8d1017feb80cc2c98f3059f569058299900de5fd4ab98f30e10f"
+    },
+    "private_evidence_sha256": {
+      "f07a-REVIEW.md": "7943a5d9dccf136ada58e725eac134f10ea733b84c24d4f5562bd66e3f60619a",
+      "f07a-probes.py": "dcdd3b0312d7a377d73746d7c93a0f816d58a6502b8aeb796e9d18c58ad2aa05",
+      "f07a-probe-results.json": "098a6e45b1d376230db61012742c203e5a7db238b8c38d26e301dae746310735",
+      "f07a-cli-boundary-results.json": "af7fef0a4712b7a5f3d805ba26ecd32631a4de2d648b3e4f378e1d9c84ddb828",
+      "f07a-reviewed-final-sha256.txt": "320a8dd6e099709fafb632cc8613f537446b0b7b07581e711c7f20ddf91148d0",
+      "131-REVIEW.md": "ddcf268b09d7588cfb3cd690e75ae55a0069e50f763f560a76954d60e761d974",
+      "131-probes.py": "c8a40e80828908188b28230702d1c6db3c501b240554e1d4c29449fa99e62553",
+      "131-probe-results.json": "7fe639844b1082d274fa6e9f1f79ce16b90ad6772f39be03d6ab5e96f6a91130",
+      "131-reviewed-sha256.txt": "b4f8370753d5eaed10a34e8a7a147fd8225b3ac9c0d28ef3cb72115d62a17881",
+      "136-REVIEW.md": "3c2efad420127e82622b145b6f5fb5c5b8ea52b4970b29cda588ccabf35f5c4e",
+      "136-sanitized-review.json": "2824c41403b05e888e1b61227f3f3cd71b11fcd2bdaa906fe54d1af12ee71506",
+      "136-reviewed-artifacts.json": "203f5627c876a870e2f3810b8c426d89a1acbdca5e9a33d4bcf387e407d1e21d"
+    }
+  },
+  "synthetic_example": {
+    "report_sha256": "66e50a7bb3498d891cee4fea0bc937dd6ea89dbfa980394bb18b7887e43c2282",
+    "selected_accepted_revisions": 0,
+    "analysis_model_microusd": 700,
+    "cohort_model_at_A_microusd": 300,
+    "assignment_model_at_A_microusd": 200,
+    "analysis_ci_microusd": 50,
+    "analysis_human_microusd": 30,
+    "ratio": null,
+    "real_measurement": false
+  },
+  "prior_implementation_attempts": {
+    "manifest_sha256": "be8b993ce7e926b7ed21948ba8e7f8610838ecc3d839420befd376ccfff66e75",
+    "scope": "Missing command, no-output attempt, assignment/cohort distinction and obsolete acceptance revocation were reproduced before repair. An incorrect no-JSON test assumption was corrected to the inherited human adapter. Earlier failures remain in the private manifest; final complete quality run is recorded here."
+  },
+  "not_rerun": [
+    "42 opt-in ignored native tests",
+    "Linux-specific execution",
+    "fresh dependency audit",
+    "fuzz campaigns",
+    "current-product binary packaging and installation",
+    "real provider integrations"
+  ],
+  "coverage_gaps": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner."
+  ],
+  "counts": {
+    "rust_workspace_passed": 1618,
+    "rust_core_only_passed": 1,
+    "rust_workspace_ignored": 42,
+    "python_passed_total": 290,
+    "independent_accounting_probes_passed": 39,
+    "independent_inspector_probes_passed": 7
+  }
+}

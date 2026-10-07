@@ -5,6 +5,14 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+## Mise à jour du 7 octobre 2026
+
+Le [calcul par révision acceptée](../accepted-changes.md) est disponible hors ligne : il sépare coûts de la tâche, coûts de la cohorte, reprises et preuves manquantes. Ses montants restent fournis par l'appelant. La [validation locale](verification-owned-entry-2026-10-07.json) conserve les empreintes, les résultats des contrôles et les revues indépendantes ; elle ne mesure pas de gain réel.
+
+La [décision d'entrée native](owned-entry-2026-10-07/README.md) est un NO-GO anticipé pour les interfaces directes et ACP inchangées : leurs reprises internes ne fournissent pas le contrôle requis avant chaque envoi. Les neuf scénarios de comparaison comportementale restent non exécutés. Le prochain travail est #133/F03a, un diagnostic local du point d'envoi et des reprises avec fournisseur simulé, indépendant de #132. Un résultat positif permettrait de réexaminer #131, puis de qualifier le patch utile #132 avant l'admission complète F03b. Les travaux d'observation #116 et de raccordement des coûts #5 peuvent avancer séparément.
+
+La [campagne de reconstruction](reproducibility-investigation-2026-10-07.md) obtient quatre binaires identiques sur la source historique f378. La cause du refus initial reste inconnue et #136 reste ouvert. Aucune activation automatique, campagne payante, économie réelle ni diffusion publique n'est établie par ces résultats. Les sections suivantes conservent leur état historique.
+
 ## État vérifié le 6 octobre 2026
 
 ### Lot précédent fusionné

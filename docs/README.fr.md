@@ -64,10 +64,12 @@ sauf celles marquées (FR).
 | [Promotion de backend](backend-promotion.md) | Preuves de promotion signées et gates |
 | [Store d'activation des backends](backend-store.md) | Activation durable, rollback et révocation |
 | [Exécution d'un backend](backend-execution.md) | Exécuter une décision de backend signée |
+| [Coûts de la révision acceptée](accepted-changes.md) | 2026-10-07 : calcul hors ligne, révocation et coûts incomplets ; données fournies, sans collecte native |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Candidat de calibration v2](bench/calibration-v2/README.md) (FR) | 2026-10-05 : protocole de collecte et modèle de préparation incomplet, sans autorisation d'exécution |
+| [Décision sur l'entrée automatique](bench/owned-entry-2026-10-07/README.md) | 2026-10-07 : app-server direct et ACP non admis ; contrôle par envoi et comparaison comportementale encore incomplets |
 | [Diagnostic d'intégration native Codex](bench/native-integration-u02/README.md) | 2026-10-05 : paramètres et sortie vérifiés sur app-server local, intégration automatique CLI non admise |
 | [Feedback](feedback.md) | Feedback local donné avec consentement, politiques hors ligne |
 
@@ -91,7 +93,7 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Contrats JSON](reference/json-contracts.md) | Contrats d'entrée et de sortie versionnés, règles de confiance |
-| [Décisions d'architecture](adr/README.md) | ADR 0001 à 0019, avec frontmatter et index |
+| [Décisions d'architecture](adr/README.md) | Décisions ADR, avec frontmatter et index |
 | [Registre d'avancement](completion.md) | Ce qui est livré, avec les preuves |
 | [Acceptation restante](remaining-acceptance.md) (FR) | Exigences ouvertes et gates de preuve |
 | [Spécification fonctionnelle](specs/functional-specification.md) (FR) | Exigences produit |

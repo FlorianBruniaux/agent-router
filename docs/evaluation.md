@@ -49,6 +49,13 @@ semantic-model invocation. Both traces keep transport, validation and functional
 outcomes unknown. Prices and usage are synthetic; elapsed time is unknown. The
 generator and replay call no model or external provider.
 
+## Exact revision accounting
+
+[Accepted revision costs](accepted-changes.md) calculate supplied offline
+evidence for an explicitly selected revision, including revocation, failed
+attempts and incomplete inventories. This separate command does not alter the
+replay or historical feedback contracts.
+
 ## Records from real runs
 
 `agent-router feedback replay-export` builds a sealed `ReplayRecord` from an

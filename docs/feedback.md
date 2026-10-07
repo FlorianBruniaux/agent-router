@@ -547,6 +547,14 @@ What the report does not prove:
   and rounded to micros, so it is stable on one build and can differ in the last
   digit elsewhere.
 
+## Separate exact-revision calculation
+
+[`eval accepted-changes`](accepted-changes.md) consumes a sealed offline input
+without opening this store. It retains exact revision and revocation history,
+physical work identities and incomplete costs. Existing `report` and `summary`
+acceptance semantics are unchanged. Supplied evidence is not authenticated by
+the calculator.
+
 ## Feedback summary
 
 ```sh

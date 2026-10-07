@@ -63,6 +63,20 @@ pub(crate) fn replay(
 }
 pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
     match command {
+        EvalCommand::AcceptedChanges { input, json } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let raw = read_bounded(
+                &input,
+                router_feedback::MAX_ACCEPTED_CHANGES_BYTES,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )?;
+            let report = router_feedback::accepted_changes_report(&raw)
+                .map_err(|_| CliError::Product("eval.accepted_changes.invalid"))?;
+            json_output(&report, ExitCode::SUCCESS)
+        }
         EvalCommand::Tradeoffs {
             cohort,
             records,
