@@ -1,9 +1,12 @@
 # Agent Router
 
-**Les modèles frontier pour les étapes difficiles, des modèles moins chers pour le reste.**
+**Choisir le modèle, l'effort et les skills pour chaque phase de code.**
 
-Un routage local et explicable pour Claude Code et Codex, avec le coût de
-chaque changement accepté.
+Un routage expérimental, local et explicable pour Claude Code et Codex.
+
+Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
+conversion future vers Apache 2.0. Le [guide d'essai expérimental](docs/experimental-release.md)
+(EN) fournit l'exemple hors ligne reproductible et les limites de l'intégration aux hosts.
 
 <table>
   <tr>
@@ -82,8 +85,10 @@ n'apparaître qu'une fois l'agent au travail.
   tourne dans un sandbox, toute écriture passe par un worktree Git et vous
   prévisualisez le patch avant de l'appliquer.
 
-Aucun gain mesuré de coût ou de qualité n'est encore revendiqué : le corpus
-d'évaluation annoté par des humains est encore en chantier.
+Aucun gain général de coût ou de qualité n'est établi. Le [pilote host-direct](docs/bench/playbook.md#conclusions-of-the-full-run)
+rapporte les résultats de 10 petites tâches Python, avec une répétition ; il
+n'exerce pas le runtime supervisé d'Agent Router et ne valide pas une intégration
+automatique quotidienne aux hosts.
 
 ```mermaid
 sequenceDiagram
@@ -138,7 +143,7 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 - **Exécution durable et coordonnée** : suivre les exécutions, annuler, reprendre et isoler les écritures dans des worktrees Git ; lancer des vagues approuvées ; prévisualiser, appliquer ou écarter un patch vérifié ; réserver de la capacité partagée et des budgets de session.
 - **Évaluation et sémantique optionnelle** : rejouer des décisions, évaluer des cohortes explicites et conserver en local le feedback donné avec consentement ; comparer des propositions sémantiques optionnelles et les résultats du sidecar de classement local (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
 - **Sortie, configuration et diagnostic** : sortie lisible ou `--json`, configuration en couches, `doctor` et une trace d'audit expurgée (`audit`).
-- **Distribution et release** : workspaces source, binaire natif local, contrôle des dépendances, une API locale limitée au routage et activable en opt-in (`serve`), et une release locale vérifiable qui ne signe, ne publie et n'installe jamais rien (l'installation Homebrew elle-même n'est pas encore testée).
+- **Distribution et release** : workspaces source, binaire natif local, contrôle des dépendances, une API locale limitée au routage et activable en opt-in (`serve`), et une release locale vérifiable qui ne signe, ne publie et n'installe jamais rien (l'installation Homebrew reste non qualifiée après un essai local isolé).
 
 <!-- infographic:features -->
 <p align="center"><img src="docs/media/readme-features.fr.jpg" alt="Les capacités d'Agent Router en un coup d'œil" width="820"></p>
@@ -170,7 +175,7 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 | **Distributions séparées** | Exporter des workspaces source ou construire un binaire natif local, avec licences, inventaires et contrôles de reproductibilité vérifiés. | [Distribution](docs/distribution.md) |
 | **Contrôle des dépendances** | Vérifier les preuves de licence des sources et auditer en CI le lockfile commité contre une base RustSec à jour. | [Preuves de licence](docs/distribution.md#continuous-integration-license-evidence-gate), [audit de sécurité](docs/dependency-audit.md) |
 | **API locale limitée au routage** | Servir les décisions de routage sur un socket Unix privé, avec un token ; aucun endpoint d'exécution, de feedback ou d'activation. Feature de build à activer en opt-in. | `serve` (`--features local-api`), [API locale](docs/local-api.md) |
-| **Release locale vérifiable** | Lier les archives source et binaire à un manifeste canonique, vérifier une signature Ed25519 produite en externe et générer une formule Homebrew. Elle ne signe, ne publie et n'installe jamais rien ; l'installation Homebrew elle-même n'est pas encore testée. | [Release locale](docs/release-local.md) |
+| **Release locale vérifiable** | Lier les archives source et binaire à un manifeste canonique, vérifier une signature Ed25519 produite en externe et générer une formule Homebrew. Elle ne signe, ne publie et n'installe jamais rien ; l'installation Homebrew reste non qualifiée après un essai local isolé. | [Release locale](docs/release-local.md) |
 
 </details>
 
@@ -193,7 +198,8 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 Le projet est en développement actif. La validation humaine du corpus d'évaluation,
 l'objectif complet de temps de démarrage et des preuves natives supplémentaires côté host restent ouverts.
 Les critères d'acceptation sont dans le [registre d'avancement](docs/completion.md) et la [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11).
-La release publique attend encore une revue de licence et de sécurité.
+Il s'agit d'un candidat source expérimental ; sa publication exige encore une
+revue de release et ne vaut pas validation pour la production.
 
 ---
 
@@ -204,10 +210,10 @@ La release publique attend encore une revue de licence et de sécurité.
 Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
 la release locale vérifiable et la désinstallation. Il faut Rust 1.85 ou plus récent. Le dépôt épingle la toolchain de développement dans
 [`rust-toolchain.toml`](rust-toolchain.toml). Tant que le dépôt est privé, il faut un accès
-pour le cloner.
+pour le cloner ; ces instructions n'annoncent pas sa publication.
 
 ```sh
-git clone git@github.com:FlorianBruniaux/agent-router.git
+git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
 cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
 ./target/release/agent-router --help
@@ -228,6 +234,8 @@ ni étape automatique de configuration globale.
 
 Ces commandes utilisent le catalogue et la requête d'exemple fournis avec le projet. Elles produisent
 seulement une décision et son explication ; elles ne lancent aucun host et n'appellent aucun modèle.
+Les noms de modèles et les capacités déclarées dans ces fixtures synthétiques
+ne prouvent ni disponibilité actuelle des modèles, ni authentification, ni support natif du host.
 
 ```sh
 ./target/release/agent-router route \
@@ -389,6 +397,11 @@ Les CLI des hosts et les identifiants sont fournis à part. Agent Router ne les 
 en silence, ne contourne pas leurs systèmes de permissions et ne change pas le modèle
 d'une conversation parente existante.
 
+L'interception automatique des prompts et l'intégration quotidienne à Claude/Codex
+restent non validées. Le [diagnostic app-server Codex](docs/bench/native-integration-u02/README.md)
+a observé des paramètres de tour explicites et une sortie scriptée dans un client
+jetable ; il ne s'agissait ni d'une intégration Agent Router installée, ni d'une inférence réelle.
+
 ---
 
 ## Documentation
@@ -400,6 +413,7 @@ L'[index complet de la documentation](docs/README.fr.md) classe tous les guides 
 
 | Pour commencer | Pour aller plus loin |
 | --- | --- |
+| [Essayer le routage expérimental hors ligne](docs/experimental-release.md) (EN) | [Preuves d'intégration aux hosts](docs/bench/native-integration-u02/README.md) |
 | [Installer Agent Router](docs/install.fr.md) | [Changelog](CHANGELOG.md) |
 | [Servir l'API locale de routage](docs/local-api.md) | [Construire une release locale vérifiable](docs/release-local.md) |
 | [Préparer une exécution](docs/preparation.md) | [Contrats d'assets et confiance](docs/asset-contracts.md) |
@@ -467,9 +481,9 @@ un coût mesurés.
 Les autres sont plus forts sur la maturité et l'adoption, sur le reroutage de
 chaque requête d'une session en cours, sur l'étendue des fournisseurs et le
 basculement, sur le routage appris à partir de données, et sur des licences
-permissives. Agent Router n'est pas encore publié (la publication attend une
-revue de licence et de sécurité), n'a pas d'exécution native sous Windows et
-n'a pas encore de gain mesuré. La
+permissives. Agent Router est un candidat source expérimental dont la publication
+exige une revue de release, sans exécution native sous Windows ni gain général
+de coût ou de qualité établi. La
 [comparaison complète](docs/comparison.md) (en anglais) ajoute Plano, RouteLLM
 et Not Diamond, cite une source pour chaque cellule, et indique quand choisir
 autre chose et les limites d'une revue fondée sur la seule documentation.

@@ -10,6 +10,7 @@ written in French.
 
 | Page | What it covers |
 | --- | --- |
+| [Experimental onboarding](experimental-release.md) | 2026-10-07: source candidate, offline example and host evidence limits; publication not implied |
 | [Installation](install.md) | Prerequisites, build features, local release, uninstall |
 | [CLI output](cli-output.md) | Human and `--json` output, exit codes and error codes |
 | [Configuration formats](configuration-formats.md) | Strict JSON, TOML and YAML configuration layers |
@@ -77,6 +78,7 @@ written in French.
 | [Distribution](distribution.md) | Source distributions and license evidence |
 | [Binary distribution](binary-distribution.md) | Local native binary export |
 | [Local release](release-local.md) | Verifiable local release recipe |
+| [Release qualification, 2026-10-07](bench/release-qualification-2026-10-07.md) | Exact artifacts, local install/removal, release fix, security inventory and unresolved publication gates |
 | [Dependency audit](dependency-audit.md) | RustSec audit of the locked dependencies |
 | [Fuzzing](fuzzing.md) | Bounded parser fuzzing |
 | [SQLite WAL fix](sqlite-wal-fix.md) | Bundled SQLite WAL-reset correction |

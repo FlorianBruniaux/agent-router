@@ -9,6 +9,10 @@ the local archive only when the binary bytes and normalized archive bytes match
 across both builds. This is a measured result for that toolchain, target and
 input archive, not a general reproducibility guarantee.
 
+The [2026-10-07 qualification](bench/release-qualification-2026-10-07.md)
+records two matching builds, an extracted-binary smoke test and controlled
+removal on macOS ARM64. Its Homebrew trial did not qualify installation.
+
 ## Prepare and build
 
 Create a source archive from the chosen core checkout. Keep its digest separate
@@ -66,16 +70,18 @@ fixtures from the source archive:
 ```sh
 tar -xzf /private/tmp/agent-router-binary.tar.gz -C /private/tmp
 tar -xzf /private/tmp/agent-router-core.tar.gz -C /private/tmp
-/private/tmp/agent-router-binary/bin/agent-router route-phase \
-  --context /private/tmp/agent-router-core/fixtures/examples/phase-request.json \
-  --host-snapshot /private/tmp/agent-router-core/fixtures/examples/phase-snapshot.json \
-  --catalog /private/tmp/agent-router-core/fixtures/examples/phase-catalog.json \
-  --now 100 --json
+/private/tmp/agent-router-binary/bin/agent-router route \
+  --request /private/tmp/agent-router-core/tests/fixtures/requests/codex-implementation.json \
+  --catalog /private/tmp/agent-router-core/assets/catalogs/codex-core-v1.json \
+  --json
 ```
 
-This verifies routing from the extracted native binary against synthetic local
-fixtures. It does not exercise a provider, host integration, sandbox, or live
-service.
+This prints a routing decision from the extracted native binary against synthetic
+local fixtures. It does not exercise a provider, host integration, sandbox, or
+live service. The bundled `fixtures/examples/phase-snapshot.json` is a library
+fixture with unauthenticated capability declarations; using it with `route-phase`
+is refused by the CLI with `capability.evidence.unauthenticated`. Do not turn
+those declarations into trusted evidence to make an example pass.
 
 ## Included evidence and limits
 

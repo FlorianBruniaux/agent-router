@@ -647,6 +647,6 @@ globale et choix de publication/licence. Aucune estimation calendaire n'est inve
 Ces nombres ne sont pas un décompte de défauts et n'ont pas été rafraîchis pour
 cette critique. Base du worktree : `9d77f5f7e1db8a7e5a45b2c5c5b3b9c3a619a981`,
 avec changements locaux préservés. Worktree :
-`/Users/florianbruniaux/.codex/worktrees/role-network-policy/agent-router`.
+`<private-worktree>/agent-router`.
 Cette révision modifie deux documents seulement, sans code produit, appel
 fournisseur, configuration, commit, push ni publication.
