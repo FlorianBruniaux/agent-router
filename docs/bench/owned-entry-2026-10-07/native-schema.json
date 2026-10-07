@@ -1,0 +1,54 @@
+{
+  "command_exit_codes": {
+    "help": 0,
+    "schema": 0,
+    "version": 0
+  },
+  "evidence_kind": "native_schema_discovery",
+  "generated_provider_send_admission_callback": "ABSENT_IN_ENUMERATED_SERVER_REQUESTS",
+  "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "native_transport_compatibility": "UNKNOWN",
+  "native_version": "0.159.2",
+  "physical_send_budget_enforcement": "UNKNOWN",
+  "provider_call_executed": false,
+  "schema_version": 1,
+  "schemas": {
+    "ServerRequest.json": {
+      "methods": [
+        "account/chatgptAuthTokens/refresh",
+        "applyPatchApproval",
+        "attestation/generate",
+        "currentTime/read",
+        "execCommandApproval",
+        "item/commandExecution/requestApproval",
+        "item/fileChange/requestApproval",
+        "item/permissions/requestApproval",
+        "item/tool/call",
+        "item/tool/requestUserInput",
+        "mcpServer/elicitation/request"
+      ],
+      "sha256": "3d7bc481f84dc042984a74420e65c5a8d3c423f37a91b7d5df2365c903a12ac6"
+    },
+    "v2/ThreadStartParams.json": {
+      "selected_parameter_fields": [
+        "approvalPolicy",
+        "approvalsReviewer",
+        "config",
+        "model",
+        "modelProvider",
+        "sandbox"
+      ],
+      "sha256": "80a40a7fac15b4bf70efb7f893fb353acc0a0d30c68f54aee4f01923deca85de"
+    },
+    "v2/TurnStartParams.json": {
+      "selected_parameter_fields": [
+        "approvalPolicy",
+        "approvalsReviewer",
+        "effort",
+        "model",
+        "sandboxPolicy"
+      ],
+      "sha256": "07771223642e1b61bd9aac0069fc0f98143a1c047724ca02c7ceb13653442738"
+    }
+  }
+}

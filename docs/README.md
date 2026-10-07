@@ -13,6 +13,7 @@ written in French.
 | [Experimental onboarding](experimental-release.md) | 2026-10-07: source candidate, offline example and host evidence limits; publication not implied |
 | [Installation](install.md), [Français](install.fr.md) | Pinned Cargo and local Homebrew channels, two binaries, prerequisites and scoped uninstall |
 | [Distribution qualification](bench/distribution-qualification-2026-10-07.md) | 2026-10-07: current v2 artifacts and local channel evidence; no publication or native-provider claim |
+| [Bounded build investigation](bench/reproducibility-investigation-2026-10-07.md) | Four matching historical-source builds; original mismatch and cause remain unresolved |
 | [CLI output](cli-output.md) | Human and `--json` output, exit codes and error codes |
 | [Configuration formats](configuration-formats.md) | Strict JSON, TOML and YAML configuration layers |
 | [Guided task intake](task-guide.md) | Collect missing task facts without implied permissions |
@@ -64,10 +65,12 @@ written in French.
 | [Backend promotion](backend-promotion.md) | Signed promotion evidence and gates |
 | [Backend activation store](backend-store.md) | Durable activation, rollback and revocation |
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
+| [Accepted revision costs](accepted-changes.md) | 2026-10-07: offline exact-revision accounting, revocation and missing-cost coverage; supplied evidence only |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Calibration v2 candidate](bench/calibration-v2/README.md) (FR) | 2026-10-05: collection protocol and incomplete preparation template; no run authorization |
+| [Owned-entry decision](bench/owned-entry-2026-10-07/README.md) | 2026-10-07: direct app-server and ACP stopped before activation; per-send control and behavioral parity remain unqualified |
 | [Native Codex integration diagnostic](bench/native-integration-u02/README.md) | 2026-10-05: local app-server parameter and output evidence; automatic CLI integration not admitted |
 | [Feedback](feedback.md) | Local consented feedback and offline policies |
 
@@ -91,7 +94,7 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [JSON contracts](reference/json-contracts.md) | Versioned input and output contracts, trust rules |
-| [Architecture decisions](adr/README.md) | ADR 0001 to 0019, with frontmatter and index |
+| [Architecture decisions](adr/README.md) | ADR decisions, with frontmatter and index |
 | [Completion ledger](completion.md) | What is delivered, with evidence |
 | [Remaining acceptance](remaining-acceptance.md) (FR) | Open requirements and proof gates |
 | [Functional specification](specs/functional-specification.md) (FR) | Product requirements |

@@ -922,6 +922,13 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    /// Account supplied offline evidence for exact accepted revisions.
+    AcceptedChanges {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     /// Compare pinned policies: descriptive regret and quality/cost frontier.
     Tradeoffs {
         #[arg(long)]
@@ -1093,7 +1100,8 @@ impl Commands {
                 }
             },
             Self::Eval { command } => match command {
-                EvalCommand::Tradeoffs { json, .. }
+                EvalCommand::AcceptedChanges { json, .. }
+                | EvalCommand::Tradeoffs { json, .. }
                 | EvalCommand::Metrics { json, .. }
                 | EvalCommand::Seal { json, .. }
                 | EvalCommand::Compare { json, .. }

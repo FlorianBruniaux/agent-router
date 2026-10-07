@@ -1,0 +1,303 @@
+{
+  "bounds": {
+    "bytes_normalized_or_signatures_removed": false,
+    "completed_native_builds": 4,
+    "completed_pairs": 2,
+    "exact_equality_gate_changed": false,
+    "jobs": 2,
+    "max_pairs": 2,
+    "per_build_timeout_seconds": 1800,
+    "stop_on_first_packaging_gate_mismatch": true
+  },
+  "campaign_elapsed_seconds": 2294.0659983330006,
+  "conclusion": "Original packaging gate mismatch not reproduced within predeclared bounded campaign; cause and fix remain UNKNOWN",
+  "cross_pair_normalized_archive_bytes_equal": true,
+  "cross_pair_run_1_comparison": {
+    "agent-router": {
+      "differing_bytes": 0,
+      "equal": true,
+      "sha256": [
+        "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+        "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455"
+      ],
+      "size_a": 20866368,
+      "size_b": 20866368
+    },
+    "router-sandbox-helper": {
+      "differing_bytes": 0,
+      "equal": true,
+      "sha256": [
+        "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+        "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6"
+      ],
+      "size_a": 534528,
+      "size_b": 534528
+    }
+  },
+  "date_utc": "2026-10-07",
+  "evidence_limits": {
+    "actual_linker_subprocess_argv": "UNKNOWN; not intercepted",
+    "current_product_qualification": "NOT_ASSERTED",
+    "declared_build_environment_delta_from_pinned_packager": {
+      "CARGO_BUILD_JOBS": "2"
+    },
+    "fix": "UNKNOWN",
+    "observed_baseline_delta_cause": "UNKNOWN",
+    "original_failed_attempt_changed_sections_and_cause": "UNKNOWN",
+    "original_failed_attempt_executable_bytes": "NOT_RETAINED",
+    "prior_complete_build_environment_identity": "UNKNOWN",
+    "release_certification": "NOT_ASSERTED",
+    "runtime_behavior": "NOT_TESTED"
+  },
+  "installed_default_linker": {
+    "actual_invocation_observed": false,
+    "candidate_recipe_change": "Apple-only -C link-arg=-Wl,-reproducible, NOT_TESTED and NOT_APPLIED",
+    "documented_default_uuid": "Derived from a hash of output content",
+    "documented_reproducible_option": "-reproducible ignores certain input properties or selects alternative algorithms",
+    "local_manual_sha256": "8570994697756ef9bf0146983a6971892d99cb830a2b36f93fb0d049835e81d5",
+    "no_uuid_option": "Excluded; local manual warns of debugger/crash-report tracking and inspection limits",
+    "sha256": "28d85b9af18c923db12e0b4ce70b80ee217f2b7cade0e872baa9e8ddc396c08d",
+    "version": "1267"
+  },
+  "original_gate_mismatch_reproduced": false,
+  "pairs": [
+    {
+      "elapsed_seconds": 972.0662800000027,
+      "exact_executable_bytes_equal": true,
+      "exit_code": 0,
+      "historical_source_binary_archive_sha256": "e83aaa6735c32a4621389570416268b2540c1d1cd88658d1508e0be1fe02ee28",
+      "normalized_archive_bytes_equal": true,
+      "packaging_gate_error": null,
+      "pair": 1,
+      "runs": [
+        {
+          "binaries": {
+            "agent-router": {
+              "sha256": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+              "size": 20866368
+            },
+            "router-sandbox-helper": {
+              "sha256": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+              "size": 534528
+            }
+          },
+          "elapsed_seconds": 462.58524054199734,
+          "run": 1
+        },
+        {
+          "binaries": {
+            "agent-router": {
+              "sha256": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+              "size": 20866368
+            },
+            "router-sandbox-helper": {
+              "sha256": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+              "size": 534528
+            }
+          },
+          "elapsed_seconds": 480.28236795799967,
+          "run": 2
+        }
+      ]
+    },
+    {
+      "elapsed_seconds": 1321.4911349579997,
+      "exact_executable_bytes_equal": true,
+      "exit_code": 0,
+      "historical_source_binary_archive_sha256": "e83aaa6735c32a4621389570416268b2540c1d1cd88658d1508e0be1fe02ee28",
+      "normalized_archive_bytes_equal": true,
+      "packaging_gate_error": null,
+      "pair": 2,
+      "runs": [
+        {
+          "binaries": {
+            "agent-router": {
+              "sha256": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+              "size": 20866368
+            },
+            "router-sandbox-helper": {
+              "sha256": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+              "size": 534528
+            }
+          },
+          "elapsed_seconds": 723.4269327090005,
+          "run": 1
+        },
+        {
+          "binaries": {
+            "agent-router": {
+              "sha256": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+              "size": 20866368
+            },
+            "router-sandbox-helper": {
+              "sha256": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+              "size": 534528
+            }
+          },
+          "elapsed_seconds": 577.581702042,
+          "run": 2
+        }
+      ]
+    }
+  ],
+  "pins": {
+    "driver_sha256": "2974e2e93fd42c2b1a0884bcfebcb2000ba906157cbb7521fc155dcba61d05e3",
+    "features": [
+      "claude",
+      "codex"
+    ],
+    "packager_commit": "e822bc7b3984d3f9e25f5c02b570405f75ca41fc",
+    "script_snapshot_sha256": {
+      "package-binary.py": "fa4ba588dfa4dbbc554a1524b962d3d5210ce272f75dd1ac8a4cb9a37b4950af",
+      "package-core.py": "f51201d1856001b705f0b03ff9d2aea1db66089f2a70f266e3356fd1a16d6a7c"
+    },
+    "source_archive_sha256": "dd712f106495a10a04053b6723f63955d7d578e60084bf17c90f53264501e2f0",
+    "source_commit": "f378afad4f584bac0efabbbb9dab37c48db4298f",
+    "target": "aarch64-apple-darwin",
+    "toolchain_binary_sha256": {
+      "cargo": "ca274de824f0741d809e115eab77c40208c5ad6484646c381c04f12ec49e6a79",
+      "rustc": "731d78259541b7e845568083df94b541176af5669509d077ee23a88d81f27d41"
+    },
+    "toolchain_version": "1.85.1"
+  },
+  "prior_retained_capture_delta": {
+    "agent-router": {
+      "all_parsed_sections_equal": true,
+      "code_directory_slot": 0,
+      "differing_bytes": 47,
+      "digest_size": 32,
+      "first_offset": 1944,
+      "first_page_sha256_file_offset": 20704608,
+      "first_page_size": 4096,
+      "fresh_page_digest_recomputed": true,
+      "fresh_uuid": "7e81bdb1ae4f3ec1bcb9c8c0832f02ef",
+      "last_offset": 20704639,
+      "only_uuid_and_first_page_signature_digest_differ": true,
+      "prior_page_digest_recomputed": true,
+      "prior_uuid": "f27bd708717432f2a0f3d06371cc1c71",
+      "size_fresh": 20866368,
+      "size_prior": 20866368,
+      "uuid_file_offset": 1944,
+      "uuid_size": 16
+    },
+    "router-sandbox-helper": {
+      "all_parsed_sections_equal": true,
+      "code_directory_slot": 0,
+      "differing_bytes": 48,
+      "digest_size": 32,
+      "first_offset": 1864,
+      "first_page_sha256_file_offset": 530368,
+      "first_page_size": 4096,
+      "fresh_page_digest_recomputed": true,
+      "fresh_uuid": "14cb8bf237ed35a987ed3f9e2fbdbe62",
+      "last_offset": 530399,
+      "only_uuid_and_first_page_signature_digest_differ": true,
+      "prior_page_digest_recomputed": true,
+      "prior_uuid": "98bddde7a51334faab377cf89ad45a66",
+      "size_fresh": 534528,
+      "size_prior": 534528,
+      "uuid_file_offset": 1864,
+      "uuid_size": 16
+    }
+  },
+  "purpose": "Bounded diagnostics on a historical source baseline; not release certification or current-product qualification",
+  "retained_private_artifact_sha256": {
+    "pair-1/diagnostics/run-1.json": "eb207173a26b84bc148bc6d791f770b6a66b7b9c4774222caf35422918ea189f",
+    "pair-1/diagnostics/run-1.log": "6eea486d35859f396733fdfbf2ff5a8570e832054cfbbcf4a60328fc738b4e2d",
+    "pair-1/diagnostics/run-2.json": "76d5c64e732fac543cb64eea96a078efd54aa7245cc1fa2c3df064d3209663ef",
+    "pair-1/diagnostics/run-2.log": "f592e45e861b472935d90beba7f8dd5ecd8adff7fe5dbe4ed41abcc4d2e26405",
+    "pair-1/run-1-agent-router.bytes": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+    "pair-1/run-1-agent-router.codesign-verify.txt": "861feb27b66a3a9cec1b2f07b1e21620c54fd3c9f1c3a72356b097afcafd99b9",
+    "pair-1/run-1-agent-router.codesign.txt": "12d82b3b9e45554bec6e6f581205f8e04573ee386fd57ee782ec0533ac296877",
+    "pair-1/run-1-agent-router.map.json": "3c261693b0051bd4a33466d959301d3a23ef3588f2ed5255824afab830172d1b",
+    "pair-1/run-1-agent-router.otool-headers.txt": "97a158bfeaead68e724b25aaca85f04b8c929ea7e4bfc5fe2ac3aae21ab0b3df",
+    "pair-1/run-1-agent-router.otool-libraries.txt": "804662d5da92fbe5eaf9eb7650b08bdbaf6c210e0709f6f685bb8dd1c5fe47da",
+    "pair-1/run-1-agent-router.otool-load.txt": "d0cbe3f8a0c5cf2689c0ad0c46e3539306d2a1a7e86fc925024b4ed8171f5b78",
+    "pair-1/run-1-capture.json": "44999ee2496f6d5f5856b4ff7f07fd78c4e9f9f3fbc1573b20cfdc216e8a9790",
+    "pair-1/run-1-invocation.json": "3cca438baa7cd2b7ffef93563b3d24cd1ee5dba665a3d53f558e2a36c6c828c2",
+    "pair-1/run-1-router-sandbox-helper.bytes": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+    "pair-1/run-1-router-sandbox-helper.codesign-verify.txt": "e9fb6ed3cefd8163319cb8c0b2b6df9104c6e46a162d91f87b997a78352332e3",
+    "pair-1/run-1-router-sandbox-helper.codesign.txt": "a168ed87c8ea577f5c3c9e8ea542f662f289de5f7950851b3ba7db86d048a46a",
+    "pair-1/run-1-router-sandbox-helper.map.json": "8674cc71abc4c58a165b9641733a27c10d086d156cce52d14fac21dfc3f8e0c0",
+    "pair-1/run-1-router-sandbox-helper.otool-headers.txt": "5654b8649fdbb781728bde48fe48548b5942609f08d9e9e67ae1ca91747f1d1c",
+    "pair-1/run-1-router-sandbox-helper.otool-libraries.txt": "addd327503309048ef235c5072f7191eb07baae51495328ac590f7bd2c7e4e0b",
+    "pair-1/run-1-router-sandbox-helper.otool-load.txt": "d0150d655ebaf58a350281d2907de47a87d2522e7f28c1098732ed7086de8b84",
+    "pair-1/run-2-agent-router.bytes": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+    "pair-1/run-2-agent-router.codesign-verify.txt": "bb611e16c6e3160e9c87570a920eaba5e9e5eff899a724eafa40f9228c5e64d4",
+    "pair-1/run-2-agent-router.codesign.txt": "5cb5d839d88375b105b0419a06629bcf6cdab354464a0e821e78b68ed5472c28",
+    "pair-1/run-2-agent-router.map.json": "3c261693b0051bd4a33466d959301d3a23ef3588f2ed5255824afab830172d1b",
+    "pair-1/run-2-agent-router.otool-headers.txt": "5b8f5bea5ca4cfb8e8fe5603d70b3b252af5a33cd784761887c99e445085d660",
+    "pair-1/run-2-agent-router.otool-libraries.txt": "e194721e6b793d41f6bd926e324ec39fd2e7b5f967e9d93e7be8554fe51dbc15",
+    "pair-1/run-2-agent-router.otool-load.txt": "78e08312969b060ae00e839cc4e67e4800f1ee432a385230c49218303f3022cc",
+    "pair-1/run-2-capture.json": "a2043923e5569ef948ce4230cc0a514b6985b200d901d4d0872e310dcb9a5913",
+    "pair-1/run-2-invocation.json": "b27f9ea9ec3cdb3e0c7f788c910dbca2c9db8ad31beee8e2b6e50ac15a752a5e",
+    "pair-1/run-2-router-sandbox-helper.bytes": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+    "pair-1/run-2-router-sandbox-helper.codesign-verify.txt": "124a974f3c934257da373316452405e04610f100819b9dfee5a73de52fa4f527",
+    "pair-1/run-2-router-sandbox-helper.codesign.txt": "6c0b0ee6eb26858e7b819918b66cad0f45955317282671690b21350a29d479cb",
+    "pair-1/run-2-router-sandbox-helper.map.json": "8674cc71abc4c58a165b9641733a27c10d086d156cce52d14fac21dfc3f8e0c0",
+    "pair-1/run-2-router-sandbox-helper.otool-headers.txt": "4b1dc2e7f79747f214f0805bf340ab4352ddce141fec369bba58541e292dd665",
+    "pair-1/run-2-router-sandbox-helper.otool-libraries.txt": "83d06a10ae2b175d553abefce7dd25b90469fff61749dcc8570810c2ef6d16eb",
+    "pair-1/run-2-router-sandbox-helper.otool-load.txt": "0f3eeeee684ab69e74ce2af23d8280fed72eb8ebbf615fa900a177405264c12c",
+    "pair-2/diagnostics/run-1.json": "55a9a71b5edae39c0727757508d4e4056aa31fcf56a3d1ce6ef5f0cfc8988925",
+    "pair-2/diagnostics/run-1.log": "b0ac2ea241a882f4c83e7ef865f66e1933b8ae72e9b9d583ad89fb492a987457",
+    "pair-2/diagnostics/run-2.json": "8c4f2b7a58002f613b04c9d3919d68e2b0be2380af7e3a9dd58ff23f722779e0",
+    "pair-2/diagnostics/run-2.log": "a928d921874cf97321dcab2448bd955ef25c0531f220af5127cf8c8cd198eadb",
+    "pair-2/run-1-agent-router.bytes": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+    "pair-2/run-1-agent-router.codesign-verify.txt": "00c72764db0526478fd604c10b3dd27b5a19c03e185b4bf5899707edaf58e413",
+    "pair-2/run-1-agent-router.codesign.txt": "b5f6efa15b0f16c738bdba3f32653674187bcf04835edd2149b8fec09af9adfc",
+    "pair-2/run-1-agent-router.map.json": "3c261693b0051bd4a33466d959301d3a23ef3588f2ed5255824afab830172d1b",
+    "pair-2/run-1-agent-router.otool-headers.txt": "236c89cbcb1eabcbcfa7a4cc9c4698e50a68d165bc91b6e6ff72ff58e3bdd937",
+    "pair-2/run-1-agent-router.otool-libraries.txt": "9e1d0ccfad913b633a451b263949b02371d8e27d00b128dc17c7589371d8698c",
+    "pair-2/run-1-agent-router.otool-load.txt": "50052ef259e7d5344bc896007cb2369aa0161c4ae75ab3a9010886633e689ac7",
+    "pair-2/run-1-capture.json": "05e63ee54d008fe2e73de7af4cfa53e402493b0a41a4054d51e606ef76cd2fa2",
+    "pair-2/run-1-invocation.json": "8f3e70e50d2305eb1c53f14ac0243e9e9a0d2d20ea4a92b8eeac0536b67ca17a",
+    "pair-2/run-1-router-sandbox-helper.bytes": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+    "pair-2/run-1-router-sandbox-helper.codesign-verify.txt": "24da8ff8c5032b02d5604b3c07fedf0a3fa8f7248f808b0b3f07d2009e6951a0",
+    "pair-2/run-1-router-sandbox-helper.codesign.txt": "baf2c6788046703d74da7f85be4e8f23179009555500f60a722e2406e612eb78",
+    "pair-2/run-1-router-sandbox-helper.map.json": "8674cc71abc4c58a165b9641733a27c10d086d156cce52d14fac21dfc3f8e0c0",
+    "pair-2/run-1-router-sandbox-helper.otool-headers.txt": "b930cf3df1c99dd4d59ffc6fb957948b3ed635bfd0bf8bbf799922c42c1e9262",
+    "pair-2/run-1-router-sandbox-helper.otool-libraries.txt": "ecbb1a37173c707d607cfceb83778b6a228425a1f2896e46ac03d7e7c26f960c",
+    "pair-2/run-1-router-sandbox-helper.otool-load.txt": "27cf2f6cbb155171cda38701be97929ce73dec71e1f31edb3958f0d65132f49a",
+    "pair-2/run-2-agent-router.bytes": "f181299dd2851201df0e1280e3b8d0504997201dbce5572e72d966486f84a455",
+    "pair-2/run-2-agent-router.codesign-verify.txt": "2cad5b90173b49fe9fb2933099fe4bf231c727ae8528dc22efdeb4734df4214f",
+    "pair-2/run-2-agent-router.codesign.txt": "c84b96b2b8f9ee41263cf5a22110e14b59ebab0ea9cad4ff70b46473b8d0f278",
+    "pair-2/run-2-agent-router.map.json": "3c261693b0051bd4a33466d959301d3a23ef3588f2ed5255824afab830172d1b",
+    "pair-2/run-2-agent-router.otool-headers.txt": "927dba1878ca1461da6ff8b319df686d265ad90dea37757ab62d1345b6c107ba",
+    "pair-2/run-2-agent-router.otool-libraries.txt": "f6e00e9836e85e5a8865f5b05c03488f83084b44afc18d06d0145b6122e8c83f",
+    "pair-2/run-2-agent-router.otool-load.txt": "8b9abdc12bac308685e0ed3af64fdc550dfb3f0a98688a15ac0e82f760a96d5f",
+    "pair-2/run-2-capture.json": "ae89e9fdf74cbfe6abbb466991cd0470911eec414e2507e309538621e66ec9aa",
+    "pair-2/run-2-invocation.json": "141f1eef7306662783f8fb936073488c5c753a0bdec407d24523a7b2804322dd",
+    "pair-2/run-2-router-sandbox-helper.bytes": "4532e3bb7e49b62fed08e1769799d049fedc344b209da2b42a52a7999f5145c6",
+    "pair-2/run-2-router-sandbox-helper.codesign-verify.txt": "a93e239047424f7b918a933f7f1c5459269fb1e82f4d7b2122f1657e93efe157",
+    "pair-2/run-2-router-sandbox-helper.codesign.txt": "88924e8c14612ec0c7f7fd5b4cffe7467915124a6e4c3834b80da08a653c0d49",
+    "pair-2/run-2-router-sandbox-helper.map.json": "8674cc71abc4c58a165b9641733a27c10d086d156cce52d14fac21dfc3f8e0c0",
+    "pair-2/run-2-router-sandbox-helper.otool-headers.txt": "39c4c3102d2b8196777935905704b999d4543a287a35edf2e1afaa1e790daed8",
+    "pair-2/run-2-router-sandbox-helper.otool-libraries.txt": "c2f9da6669e86ac45f753a2c13a1c7a7e5a6cb85dd9ac619f2956dbe2c00588e",
+    "pair-2/run-2-router-sandbox-helper.otool-load.txt": "b025e0d4c1b76fc0a79574db28f03af9ecac94f8193a4ffea8ac8cee1ba20ad4"
+  },
+  "retention": "Exact executable bytes, reports, logs, section/load-command maps and code-signature observations retained privately before comparison/cleanup; payloads and machine-local paths excluded from this public report",
+  "schema": "agent-router-reproducibility-investigation-v1",
+  "validated_prior_observation_comparison": {
+    "all_fields_equal": true,
+    "all_required_fields_present_and_nonnull": true,
+    "current_input_sha256": "eb207173a26b84bc148bc6d791f770b6a66b7b9c4774222caf35422918ea189f",
+    "field_count": 12,
+    "field_names": [
+      "source_manifest_sha256",
+      "lock_sha256",
+      "vendor_sha256",
+      "cargo_binary_sha256",
+      "rustc_binary_sha256",
+      "c_compiler",
+      "sdk",
+      "features",
+      "target",
+      "build_packages",
+      "events",
+      "dynamic_libraries_declared"
+    ],
+    "prior_complete_environment_identity": "UNKNOWN",
+    "prior_input_json_path": "builds[0]",
+    "prior_input_sha256": "229d005fa229e85ac35c892de1c9d38e02d44e676d26f9e4054cde1da09c247c"
+  }
+}

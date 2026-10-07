@@ -4,6 +4,17 @@ How to rerun a campaign of the [router value protocol](router-value-protocol.md)
 
 ## Current delivery status
 
+[Exact-revision accounting](../accepted-changes.md) now has an offline CLI, synthetic example and independent review. The [local verification record](verification-owned-entry-2026-10-07.json) binds the selected quality checks to source hashes. Supplied costs are not collected provider usage or observed savings.
+
+The [bounded build investigation](reproducibility-investigation-2026-10-07.md) records four matching native builds from the historical f378 export; it neither reproduces the original mismatch nor qualifies the current product.
+
+[Owned-entry decision, 2026-10-07](owned-entry-2026-10-07/README.md) records
+an early NO-GO for both unmodified app-server and ACP transports under the
+required physical-send admission contract. The next independent native
+investigation is a local broker/send diagnostic (#133/F03a); a positive result
+is needed to reconsider the entry before useful-patch qualification (#132).
+The behavioral comparison remains incomplete. No automatic route is activated.
+
 [Homebrew and Cargo qualification, 2026-10-07](distribution-qualification-2026-10-07.md)
 records both local installation lifecycles, 1,594 passing Rust test executions
 (42 ignored), 70 packaging/release Python tests and a matching diagnostic build

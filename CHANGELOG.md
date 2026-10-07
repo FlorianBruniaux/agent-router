@@ -16,6 +16,10 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-07: retain the [two-pair native build investigation](docs/bench/reproducibility-investigation-2026-10-07.md). Four historical-source builds match exactly; the original mismatch remains unexplained and no reproducibility fix is claimed.
+
+- 2026-10-07: record [ADR 0023](docs/adr/0023-owned-task-entry.md), the early NO-GO for unmodified direct app-server and ACP under the physical-send contract, pinned schema/source evidence and an independent broker diagnostic frontier. No native activation or complete behavioral parity is claimed.
+
 - 2026-10-07: document pinned Git Cargo installation and the complete two-binary Homebrew channel, standalone fixture smoke checks, scoped removal and [current distribution qualification](docs/bench/distribution-qualification-2026-10-07.md). The earlier core-only trial remains historical; no public tap, crates.io package or release asset is announced.
 
 - 2026-10-07: add the [experimental offline onboarding](docs/experimental-release.md), with a reproducible routing example, explicit synthetic-fixture provenance and separate host-integration limits. The source-available candidate retains FSL-1.1-ALv2; this documentation does not publish the repository or establish daily-use savings.
@@ -60,6 +64,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- `eval accepted-changes --input FILE --json` adds a standalone offline schema for exact revision acceptance, revocation and cost frontiers. All assignments and physical work remain visible, duplicate observations count once, and incomplete costs retain null totals. Existing feedback formats and stores are unchanged; supplied evidence is not authenticated and no native usage gain is claimed.
 
 - Explicit local `capability attest` and `capability revoke` commands authenticate operator declarations without executing a host. Snapshot schema 2 keeps these references separate from UNKNOWN capabilities; policy schema 3 requires explicit capability opt-in and consuming receipts use schema 6. Network attestation remains refused pending provider-egress admission. The capability store migrates atomically only on explicit issuance, and legacy wire formats remain compatible.
 

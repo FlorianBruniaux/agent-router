@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-07",
+  "ar_source_commit": "e822bc7b3984d3f9e25f5c02b570405f75ca41fc",
+  "decision": "NO_GO_UNMODIFIED_DIRECT_AND_ACP",
+  "scope": "owned native entry requiring admission before every physical provider send",
+  "reason": "Neither inspected client interface provides a pre-send admission callback; native transport owns internal retries. No admitted external broker is established.",
+  "source_files": [
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "package-lock.json",
+      "sha256": "d1b3c4a9526a98446d63352b2ae062716223f2ab00ca769d5027bf3d5a31a7e7",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/package-lock.json"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "package.json",
+      "sha256": "4c792564680304b0d4cd604baa41a67a0dd50768b6afe15ca982aefce647962f",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/package.json"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "src/AgentMode.ts",
+      "sha256": "16870850683665fca2b2df7dc1f4b426c7b9bb746ea0f8672cafa17aebcccf64",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/AgentMode.ts"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "src/CodexAcpClient.ts",
+      "sha256": "146ed5cc5af20142d16be612b68718a76765e1ba6642d1b61a79d064cb3ba5b5",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexAcpClient.ts"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "src/CodexAcpServer.ts",
+      "sha256": "01f2f5bcf2d87c86499aa32a950af6b885102282ceebea44d5a4b842d3d05f03",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexAcpServer.ts"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "src/CodexJsonRpcConnection.ts",
+      "sha256": "47a2aedbe704b49b850cc61ec29c3653b4d7282a703ca71905e085edb2048529",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexJsonRpcConnection.ts"
+    },
+    {
+      "repository": "agentclientprotocol/codex-acp",
+      "ref": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+      "path": "src/subagents/PendingNotificationBuffer.ts",
+      "sha256": "f9aedc0dc1b2b5cc298320ac641e4b4b177628933ea075278d62611b79597538",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/subagents/PendingNotificationBuffer.ts"
+    },
+    {
+      "repository": "openai/codex",
+      "ref": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+      "path": "codex-rs/codex-api/src/endpoint/responses.rs",
+      "sha256": "4f2fff3da4ca3ca9fcfa40ada8e98a0229af296094e03febb4d823f32ef932c8",
+      "url": "https://github.com/openai/codex/blob/ff6aec96948b70d94983af2641a6b67c94faeff5/codex-rs/codex-api/src/endpoint/responses.rs"
+    },
+    {
+      "repository": "openai/codex",
+      "ref": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+      "path": "codex-rs/codex-api/src/endpoint/session.rs",
+      "sha256": "355cc0f030ab32d21b3e6fcce569a15a59958fecdda85423bf05642497bdb1eb",
+      "url": "https://github.com/openai/codex/blob/ff6aec96948b70d94983af2641a6b67c94faeff5/codex-rs/codex-api/src/endpoint/session.rs"
+    },
+    {
+      "repository": "openai/codex",
+      "ref": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+      "path": "codex-rs/codex-client/src/retry.rs",
+      "sha256": "4e61c0e5e5037866706863c32780748ec82e114160ec759a582621de0aad4c06",
+      "url": "https://github.com/openai/codex/blob/ff6aec96948b70d94983af2641a6b67c94faeff5/codex-rs/codex-client/src/retry.rs"
+    },
+    {
+      "repository": "openai/codex",
+      "ref": "ff6aec96948b70d94983af2641a6b67c94faeff5",
+      "path": "codex-rs/core/src/client.rs",
+      "sha256": "605ced35cd853fcc4e23f6edd724c96f96f74c736a45e6ea95bf5300f3ab814c",
+      "url": "https://github.com/openai/codex/blob/ff6aec96948b70d94983af2641a6b67c94faeff5/codex-rs/core/src/client.rs"
+    }
+  ],
+  "native_schema": "native-schema.json",
+  "compatibility": {
+    "direct_native": "0.159.2 schema discovery only",
+    "acp_lock_native": "0.159.1",
+    "acp_with_native_0_159_2": "UNKNOWN"
+  },
+  "equivalent_fixture_parity": {
+    "permission_refusal": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "unsupported_model_effort": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "rerouting": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "rpc_id_correlation": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "malformed_messages": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "buffer_overflow": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "cancellation": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "late_result": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    },
+    "ambiguous_interruption": {
+      "direct": "NOT_RUN_EARLY_STOP",
+      "acp": "NOT_RUN_EARLY_STOP"
+    }
+  },
+  "provider_calls": 0,
+  "paid_calls": 0,
+  "global_configuration_changes": false,
+  "automatic_entry_installed": false,
+  "useful_patch_path": "NOT_IMPLEMENTED_BY_THIS_DECISION",
+  "physical_provider_send_control": "NOT_ESTABLISHED",
+  "issue_acceptance": "NO-GO investigation decision available; full equivalent behavioral comparison remains incomplete",
+  "native_source_tag": "rust-v0.159.2",
+  "native_source_commit": "ff6aec96948b70d94983af2641a6b67c94faeff5"
+}

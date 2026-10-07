@@ -595,3 +595,18 @@ Network attestations are explicitly refused by the issuer and shared verifier,
 and cannot pass policy or execution acceptance even with a valid MAC and
 approval. This batch provides no provider-egress broker or admission authority.
 No native capability or provider admission is established by these declarations.
+
+## Accepted changes input and report
+
+`eval accepted-changes --input FILE --json` has a separate input and output
+schema version 1, owned and validated by `router-feedback`. Existing feedback
+report/summary schemas and stores are unchanged. The standalone formats are
+not registered in `agent-router schema`. See [ADR 0024](../adr/0024-accepted-revision-accounting.md)
+for the strict fields, bounded parsing, content-hash domains, physical identity,
+revision bindings, frontiers and explicit completeness rules, and the
+[usage guide](../accepted-changes.md) for the synthetic example.
+
+`evidence_trust: supplied_unverified` is mandatory in the output. Validation
+checks the supplied calculation and joins; it is not independent verification
+of a provider, reviewer, invoice or patch. Cost categories and null totals
+remain distinct from approved allocations, elapsed time and measured benefit.
