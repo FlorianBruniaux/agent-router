@@ -1,0 +1,21 @@
+README.md
+  s_9e80b85afcc43a::t_0a48deb3c2f74d 451-453,458
+docs/comparison.md
+  s_9e80b85afcc43a::t_de3ce7677590b6 3-4,7-8,29-30,39-54,212,237-240,312-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "23801ac62bb9e6c5e6477d4eb1f86b43866d7776",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
