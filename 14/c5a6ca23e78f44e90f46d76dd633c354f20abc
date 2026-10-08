@@ -1,0 +1,90 @@
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_9e80b85afcc43a::t_b6da6e95d033b7 1-113
+crates/agent-router-cli/tests/schema.rs
+  s_9e80b85afcc43a::t_01ddf6f23b738f 188-357,366,371,373-409,413
+  s_9e80b85afcc43a::t_900eed4978ae75 358-365,367-370,372
+  s_9e80b85afcc43a::t_904cc99c7bea60 10,13,20,25,66-70
+  s_9e80b85afcc43a::t_0b562aed85ef50 71-73,410-412,414-462
+crates/agent-router-cli/src/contracts.rs
+  s_9e80b85afcc43a::t_2ea84606b50e0a 24,60-64
+  s_488c1f2a8a73a2::t_f90c8d0f0cb775 65
+crates/agent-router-cli/tests/support/json_schema.rs
+  s_9e80b85afcc43a::t_2ea84606b50e0a 9,20,22,25,78-82,167-171,173-180,231-237,265-271
+  s_9e80b85afcc43a::t_997c53875dd64e 272-275
+CHANGELOG.md
+  s_9e80b85afcc43a::t_6d5e1bcffc9a45 19-20,74-77
+README.fr.md
+  s_9e80b85afcc43a::t_8cbd79c97b3897 7,12
+README.md
+  s_9e80b85afcc43a::t_cbd65e75cb1784 7,12
+docs/README.fr.md
+  s_9e80b85afcc43a::t_04d2dac798e80b 85,87-88
+docs/README.md
+  s_9e80b85afcc43a::t_a07aff41a0f9c9 86,88-89
+docs/adr/0023-owned-task-entry.md
+  s_9e80b85afcc43a::t_ea4a674e9cc1bb 4,6,8,16-23
+docs/adr/0026-owned-client-simulated-entry.md
+  s_9e80b85afcc43a::t_f6907db9cb622b 1-87
+docs/adr/README.md
+  s_9e80b85afcc43a::t_f75515f564494d 34,38-39
+docs/bench/finalization-plan-2026-10-07.md
+  s_9e80b85afcc43a::t_579c7761b2a0ec 3,6,10-15,30,49,67-74,76,147
+docs/bench/owned-entry-qualification-2026-10-08/README.md
+  s_9e80b85afcc43a::t_386d10a7341413 1-113
+docs/bench/owned-entry-qualification-2026-10-08/acp-comparison.md
+  s_9e80b85afcc43a::t_c2d4f15f6d2618 1-77
+docs/bench/owned-entry-qualification-2026-10-08/acp-component-results.json
+  s_9e80b85afcc43a::t_44f56363316637 1-255
+docs/bench/owned-entry-qualification-2026-10-08/direct_client.py
+  s_9e80b85afcc43a::t_e61372a5f76a39 1-207
+docs/bench/owned-entry-qualification-2026-10-08/native-results.json
+  s_9e80b85afcc43a::t_844223d5cf9281 1-87
+docs/bench/owned-entry-qualification-2026-10-08/native_probe.py
+  s_9e80b85afcc43a::t_ef8b4535f3754b 1-464
+docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py
+  s_9e80b85afcc43a::t_30f077627791c5 1-323
+docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py
+  s_9e80b85afcc43a::t_44ae496f382af5 1-296
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_3ef550977a3e67 7-19
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_d3a910b92f7b79 8-23
+docs/bench/verification-owned-client-2026-10-08.json
+  s_9e80b85afcc43a::t_4f635d08b1de54 1-1377
+docs/cli-output.md
+  s_9e80b85afcc43a::t_f31cec19f42722 69,82
+docs/local-ci.md
+  s_9e80b85afcc43a::t_7f8168e71eab9e 70-75
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_9fb385923bdd30 40,45-46
+docs/run-observation.md
+  s_9e80b85afcc43a::t_88cf266dbf62e1 3,47
+scripts/check-local.py
+  s_9e80b85afcc43a::t_b04ad7263af6c0 56-59
+scripts/test-check-local.py
+  s_9e80b85afcc43a::t_2284d572ab9374 291-316
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "14c5a6ca23e78f44e90f46d76dd633c354f20abc",
+  "prompts": {},
+  "sessions": {
+    "s_488c1f2a8a73a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07172-9765-7811-8998-5776ebeb40d9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
