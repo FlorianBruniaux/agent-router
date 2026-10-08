@@ -1,0 +1,85 @@
+.gitleaks.toml
+  s_9e80b85afcc43a::t_cd9184001ee20b 13-16
+CHANGELOG.md
+  s_ec22837e58ecfe::t_a0eb161fbf009d 19-20,80-81
+README.fr.md
+  s_ec22837e58ecfe::t_cf8cd76d1c62df 12
+README.md
+  s_ec22837e58ecfe::t_56c758ab9b14eb 12
+crates/agent-router-cli/src/command.rs
+  s_ec22837e58ecfe::t_fdbdfa739cb371 226-228
+crates/agent-router-cli/src/contracts.rs
+  s_ec22837e58ecfe::t_c1293827b50c9e 63
+crates/agent-router-cli/src/main.rs
+  s_ec22837e58ecfe::t_899a19b6920f00 381,383
+crates/agent-router-cli/src/run_observation.rs
+  s_ec22837e58ecfe::t_245d4934db784a 8-23,85-107
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_ec22837e58ecfe::t_8f36fd6c8271e0 3,5-13,23-40,45-51,53-67,74-77,79-93,99-105,107-114,116-133,137-142,148-150,157-161,163-173,179-190,192-221,227-393,395-424,426-639
+crates/agent-router-cli/tests/execution.rs
+  s_ec22837e58ecfe::t_8270fb3f169c4d 1287-1313
+crates/agent-router-cli/tests/schema.rs
+  s_ec22837e58ecfe::t_09ecfb23bf508a 66,194-201,292-294,296-317,971-1117
+crates/agent-router-cli/tests/support/json_schema.rs
+  s_ec22837e58ecfe::t_e49d36e3789d0e 79-87,179-196
+crates/router-runtime/src/escalation.rs
+  s_ec22837e58ecfe::t_ca588d5492cc54 340,385-398
+crates/router-runtime/src/lib.rs
+  s_ec22837e58ecfe::t_53b058dc859bea 23-28,57-58
+crates/router-runtime/src/observation.rs
+  s_ec22837e58ecfe::t_2bdb620ad43681 88-159
+crates/router-runtime/src/store.rs
+  s_ec22837e58ecfe::t_2088357b5b0077 21
+crates/router-runtime/src/store/observation.rs
+  s_ec22837e58ecfe::t_d84c3612781a11 227-391
+crates/router-runtime/tests/observation.rs
+  s_ec22837e58ecfe::t_4a8157beba68af 503-542
+crates/router-runtime/tests/observation_v2_adversarial.rs
+  s_ec22837e58ecfe::t_c4cf4636c98700 1-633
+docs/README.fr.md
+  s_9e80b85afcc43a::t_0d5d1d461b5f7a 86,88
+docs/README.md
+  s_9e80b85afcc43a::t_df89d178a95d42 87,89
+docs/adr/0025-run-observation.md
+  s_ec22837e58ecfe::t_94ac96c18f2de8 6-7,47,65-66,127-142
+docs/adr/README.md
+  s_9e80b85afcc43a::t_20a018234fe4b2 36
+docs/bench/finalization-plan-2026-10-07.md
+  s_ec22837e58ecfe::t_70e1f29199edd9 3,6,24-29,84
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_44011648e30d8c 22-27
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_ec22837e58ecfe::t_9d3d166b445e3f 8-15
+docs/bench/verification-observation-v2-2026-10-08.json
+  s_9e80b85afcc43a::t_58ed6438addbb7 1-690
+docs/cli-output.md
+  s_ec22837e58ecfe::t_e9fe1ae73418f6 69
+docs/reference/json-contracts.md
+  s_ec22837e58ecfe::t_b16ca3da5fd899 41
+docs/run-observation.md
+  s_9e80b85afcc43a::t_3e0b2e324f35d4 3,12-14,17-18,25,33,38-55,64-67,72-74,76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d77b546a240940d7f363e99cf4ecb207ee8b1a43",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ec22837e58ecfe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f6a4-88a1-77b3-9270-14c46f3f921c",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
