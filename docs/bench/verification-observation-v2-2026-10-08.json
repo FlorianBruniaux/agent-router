@@ -1,0 +1,690 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "opt_in_run_observation_v2_local_delivery",
+  "base_head": "1351f08c80e77b9e6e1b4e6d10c36ea244173668",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "source_sha256": "f3cef0129c17482f501680b4893d3af0fa7a0e8e5ad1bb90b1630d8a09f6fecf",
+  "source_inventory_sha256": "7b3d6c84cf21ac5cb60be14f8ede4910c943f002f56599e152078814d8675ae3",
+  "all_checked_bytes_modes_rechecked_before_report": true,
+  "report_added_after_frozen_gate": true,
+  "post_gate_documentation_only": "After the frozen gate, the ADR index date is repaired and its 30 tests rerun successfully. An exact synthetic fixture hash is allowlisted for the secret scanner and both scans rerun successfully. This report, links in the observation guide and both documentation indexes, and a historical-baseline sentence placement correction in the playbook are then added; final diff, documentation links and secrets checks cover them. No Rust source changes.",
+  "quality": {
+    "initial_checks_passed": 22,
+    "selected_checks_passed_after_documentation_repair": 24,
+    "initial_checks": [
+      {
+        "id": "format",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1.363702,
+        "log": "format.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "clippy-all",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 60.119163,
+        "log": "clippy-all.log",
+        "log_sha256": "dea875bc232afc47dbf19d3676bc0dc92c5fe62323f7a9b1a1219e0a475f1e4b"
+      },
+      {
+        "id": "clippy-core",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 20.607672,
+        "log": "clippy-core.log",
+        "log_sha256": "f9742a526acf3079868ef51a14be69f0914fd3a725eaef93ace40bca24ca86f3"
+      },
+      {
+        "id": "workspace-tests",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 857.203979,
+        "log": "workspace-tests.log",
+        "log_sha256": "cdda622c6afe9aa91477f67e830c1dd8fc930402814bd1f6d2e4be3bc3be9679",
+        "tests_passed_or_run": 1685,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "local-api-absent",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 40.519754,
+        "log": "local-api-absent.log",
+        "log_sha256": "43707629f0a6a90eeeabc95a12ebc61cbcaecdb7d3e197a36a9f0282cbc9184b",
+        "tests_passed_or_run": 1,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "harness",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 4.041386,
+        "log": "harness.log",
+        "log_sha256": "3fe3f232c258678cad2cb6dafb298e3f1968a23340be57a64cea48356b18dc6a"
+      },
+      {
+        "id": "host-syntax",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.0771,
+        "log": "host-syntax.log",
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.186105,
+        "log": "script-test-benchmark-startup.log",
+        "log_sha256": "5279d1fc9a1ced44f9c96da1414ef59e4676f963fbad52e7a1a2903538819b0d",
+        "tests_passed_or_run": 3,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-check-adrs",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "exit_code": 1,
+        "status": "failed",
+        "duration_seconds": 0.186222,
+        "log": "script-test-check-adrs.log",
+        "log_sha256": "16cbbf78fd25d6041815000e570900a26fe8946551c80c6c7ba237110fd75f37"
+      },
+      {
+        "id": "script-test-check-local",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 6.829863,
+        "log": "script-test-check-local.log",
+        "log_sha256": "4d85f642275185900a597135383ee3702881fc737ebd399ab5f4ea804d478158",
+        "tests_passed_or_run": 30,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-package-binary",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.341446,
+        "log": "script-test-package-binary.log",
+        "log_sha256": "c7538c4dcfbc13a0507fbb64dcc488f39ed164b710a1589e87a382f0c751a007",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-package-core",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.182697,
+        "log": "script-test-package-core.log",
+        "log_sha256": "7371da7174c52eb112f670d4700f0afa1832cdfa7d09ae6c675837a84fd32ae0",
+        "tests_passed_or_run": 26,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-release-local",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 13.04888,
+        "log": "script-test-release-local.log",
+        "log_sha256": "8ecb37aa690213934b61423880f83ffa4903a8e4464fdd63700159961c623f05",
+        "tests_passed_or_run": 27,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "egress-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 13.377202,
+        "log": "egress-tests.log",
+        "log_sha256": "b169e533e9c33458068d2e8dd8d9fc30c63c9347477ea1d7196f0a98e38b6c6b",
+        "tests_passed_or_run": 58,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-probe-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 8.787624,
+        "log": "native-probe-tests.log",
+        "log_sha256": "2d613afd6cab14ba39af90aae3c55a3e95c14eeb8069d9f2742fd3aa430f523b",
+        "tests_passed_or_run": 33,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-decision-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 4.258563,
+        "log": "native-decision-tests.log",
+        "log_sha256": "ca993401a679208077cb72c7e9189fff6c6b0ceb7313de438c3ca981aeda599a",
+        "tests_passed_or_run": 13,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 5.754461,
+        "log": "native-hook-failure-tests.log",
+        "log_sha256": "beb0dc55d2611008c20a29382eece4f54eaba7c8db066487ab18743cf3aedd71",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "campaign-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 2.297207,
+        "log": "campaign-tests.log",
+        "log_sha256": "602bf50a6ad99a61eb3eaeba5f707a1de351da23780a1335da6836f7d4a883a9",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "calibration-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 9.017549,
+        "log": "calibration-tests.log",
+        "log_sha256": "1b2d17f259e6c7e978499275eae27d984fbb33d4aebf25a41eec98dec19534f2",
+        "tests_passed_or_run": 30,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "physical-send-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1.395492,
+        "log": "physical-send-tests.log",
+        "log_sha256": "df983b280bde895b2d9635c9a6a43071639bad9f439e93214685f43e35079e62",
+        "tests_passed_or_run": 12,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "startup-outage-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.292693,
+        "log": "startup-outage-tests.log",
+        "log_sha256": "ca3fb43957a45c0f763110630bf2dae8d7976c5abaebd1c2b777462d1a5903be",
+        "tests_passed_or_run": 8,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "owned-entry-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1.695552,
+        "log": "owned-entry-tests.log",
+        "log_sha256": "e2faef85f5d303ae77b1bace69636f0a6500054f9f340dc683ab83ca1a6fb147",
+        "tests_passed_or_run": 44,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "secrets-dir",
+        "group": "quality",
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 1,
+        "status": "failed",
+        "duration_seconds": 3.897431,
+        "log": "secrets-dir.log",
+        "log_sha256": "d002656a05a6d618814f42342d1198a041eaf00cd292aa182f56db56832558a3"
+      },
+      {
+        "id": "secrets-git",
+        "group": "quality",
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 5.447062,
+        "log": "secrets-git.log",
+        "log_sha256": "685d382216ab2b86f6dc01f92247518be196e6535a075af515a37dffdb448a19"
+      }
+    ],
+    "documentation_repair": {
+      "path": "docs/adr/README.md",
+      "before_sha256": "0f0e7e939bcedf3d45ab601aeb2f0d1358101d4c3402e491e7c44c006e2a5e7e",
+      "after_sha256": "33e7834fac5ba8d0bbf0c2120a64bee7326f262ffec042b67713dd944c938279",
+      "change": "ADR 0025 last_modified index cell corrected from 2026-10-07 to 2026-10-08; created date preserved.",
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "tests_passed": 30,
+      "log_sha256": "7c8e54e3357ea0a347e130fccedffdfe359a453c85602feb4d944967a5396a0c",
+      "rust_sources_changed": false
+    },
+    "synthetic_hash_secret_scan_repair": {
+      "path": ".gitleaks.toml",
+      "before_sha256": "d2d0caad8c2179baefe8288feec4c0f4e4464704c244e1f3f2e5efbd4f970de0",
+      "after_sha256": "8af37328a1be71e859a9ed577832550b5991bc19ee4d40a4060099a2d943c424",
+      "change": "Allow only the exact synthetic SHA-256 run identity flagged in the frozen v1 fixture; no test bytes or directory-wide exclusions change.",
+      "original_redacted_findings_sha256": "0d9eba2e3a34b8a177a966c88e23e6a9cc05152e6dd696583d6d8da16c70b34d",
+      "reruns": [
+        {
+          "argv": [
+            "gitleaks",
+            "dir",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ],
+          "exit_code": 0,
+          "log_sha256": "769d2678e99a6b14838a15bd3989a026f9ef8423d3667a8bbafadb118de461ad"
+        },
+        {
+          "argv": [
+            "gitleaks",
+            "git",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ],
+          "exit_code": 0,
+          "log_sha256": "84dc149b88de019c26528dc857aa27f102075e7c53f28ce1b179929a3dc0c47a"
+        }
+      ]
+    },
+    "summary_sha256": "866ce8273b3cbdccb3fc02776d199bb267616261fa71ed1f8fdb1e64709a4d69",
+    "workspace_counts": {
+      "passed_result_lines_sum": 1685,
+      "failed": 0,
+      "ignored": 42
+    },
+    "python_tests_passed_final_suites": 365,
+    "count_semantics": "Rust counts sum test-result lines including subprocess invocations, not unique definitions. Focused tests are included in workspace counts. Ignored native tests are not successes. Python totals use the final successful result for each selected suite; failed and repeated runs are preserved separately."
+  },
+  "targeted_red_green": {
+    "baseline_v1_literal_passed_before_implementation": true,
+    "red": {
+      "cli_flag_failures": 1,
+      "schema_branch_failures": 1,
+      "independent_semantic_failures": 7,
+      "independent_passed": 14
+    },
+    "green": {
+      "passed": 80,
+      "failed": 0,
+      "ignored_native": 4,
+      "adversarial_tests_included": 21
+    },
+    "validation_sha256": "0f6a7512ef6211cac7379c1918df2d7073100f0a44633828f86d2df62e8b4aa6",
+    "log_manifest_sha256": "a0d86450f8fe18f02142683d42162a7f6f9aa36b73804614fb57678a241c7253",
+    "retained_diagnostics": "The initial independent run also had two fixture trigger errors; the test owner fixed setup without weakening assertions before the clean 14/7 RED. A compilation diagnostic is preserved separately. Earlier missing temporary artifacts are not counted as proof."
+  },
+  "independent_review": {
+    "remaining_confirmed_blockers": 0,
+    "scope": "Read-only review of 15 code/schema/test files and 4 documentation files, then eight delivery-documentation files; no Cargo or native execution by reviewer.",
+    "all_19_reviewed_hashes_matched": true,
+    "manifest_sha256": "de1d11654ef3dab83fb4be47fe82e78f116f95b527020781a0435bc239c6048e",
+    "diff_sha256": "0dfa777499a830d147f11550842dda8279cd6f687b3856962ca50d5705ac728e",
+    "review_record_sha256": "c2638e07ae62afa8c54e2cf2457af141bf32bb7726605ca7817ccbe1edc9c5f8",
+    "corrections": [
+      "Scope the ADR redaction guarantee to v1; v2 exposes filtered model metadata without secret detection.",
+      "Do not claim measurement_inventory uses the shared validator; it retains its own checks.",
+      "Move the historical baseline sentence below the new v2 playbook section.",
+      "Independent follow-up confirmed the ADR index mismatch and recalculated the flagged SHA-256 from the fixture constants; the exact-hash exception preserves the frozen test and all Rust bytes."
+    ]
+  },
+  "measurement_compatibility": {
+    "existing_tests_passed": 5,
+    "result_lines": [
+      "test store::measurement_tests::measurement_can_create_private_wal_coordination_files_without_mutating_domain_state ... ok",
+      "test store::measurement_tests::measurement_refuses_attempt_rows_without_a_registered_run ... ok",
+      "test store::measurement_tests::measurement_refuses_orphan_escalation_without_creating_a_run ... ok",
+      "test store::measurement_tests::measurement_refuses_tampered_attempts_or_journal ... ok",
+      "test store::measurement_tests::measurement_snapshot_keeps_cancelled_attempts_and_escalation_occurrences ... ok"
+    ],
+    "scope": "Existing measurement reader regression tests passed in the workspace run. This reader retains its own checks; no new shared-validator protection is claimed."
+  },
+  "reviewed_source_files": [
+    {
+      "path": "crates/router-runtime/src/observation.rs",
+      "base_sha256": "f886e5151f0a4462e290f0f36622b5baddf9c5ed9f54ebbe9fc0bdde3aa51ffc",
+      "candidate_sha256": "924c167bd546615f2cf19f37d06fcba5f7cd224d1abc77eb1729929d0047483c"
+    },
+    {
+      "path": "crates/router-runtime/src/store/observation.rs",
+      "base_sha256": "0eab15451180c279b59d4891e88a727b1d8aec3dc95b3798153aa0257313e34b",
+      "candidate_sha256": "4f4fc0b0eff51a2f89098429a0e5a5527b4984ef60eeb42c381b5f278c95c54d"
+    },
+    {
+      "path": "crates/router-runtime/src/escalation.rs",
+      "base_sha256": "51a29c200fcfb2c070eb006705bbc1af9d40eb5e0295c90eae3f062cc4884e68",
+      "candidate_sha256": "8ba1b5ccd47e06b362e38890643e2af6578545a45bacafac9d6117a108d4b2ef"
+    },
+    {
+      "path": "crates/router-runtime/src/store.rs",
+      "base_sha256": "ef6b7b0968012d8bf4d6ad06c80535a4c82a340d94e39fc69d7fca28114e511b",
+      "candidate_sha256": "68b782c05ef76e717026f8b0d0cffebe80b58f2e9efb2c8add3b6552c86552b1"
+    },
+    {
+      "path": "crates/router-runtime/src/lib.rs",
+      "base_sha256": "710705887990db8056470a5108597678f4b36375b2f05b0c4618fb3e903e7f49",
+      "candidate_sha256": "92806f4df0f1a6a7610b060901ff40d880f1816d61b6b748f1e8922b37e862a9"
+    },
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "base_sha256": "5792f104bd2c30b763cb1fe7431a3b197a01e3fafd7dcef0c3b6b7ef42dd7ad2",
+      "candidate_sha256": "fb0a80c3d98e243fb00f07202b1323b8aa0e1c7833a0dcd397b700dcf422c90e"
+    },
+    {
+      "path": "crates/agent-router-cli/src/main.rs",
+      "base_sha256": "9efcc8cb4b7d4c03551e43debed7ddad8f39d8164bc086a88ebd449ee5c098ed",
+      "candidate_sha256": "36d4ac14411bc2eca9ec42fa1e389460af8318fb4b3e8de782024247a5ccd4e6"
+    },
+    {
+      "path": "crates/agent-router-cli/src/run_observation.rs",
+      "base_sha256": "1818594c43fa86fd2661f1297f1d0752d8ddfe84656d200f768b28f28cd02ddd",
+      "candidate_sha256": "4613803a7be0bdb6cf98b40be4d498e7c7bd11bfaa8be97964f441652543aeb4"
+    },
+    {
+      "path": "crates/agent-router-cli/src/contracts.rs",
+      "base_sha256": "ea2d82c65bdd17c333fb83a101743960fb42a55cdea274660ef00de9c5df63ec",
+      "candidate_sha256": "0a9df8c4f6a5196e22b9a72369909badc4d644e2416e3878bd3d70e8af3a115f"
+    },
+    {
+      "path": "crates/agent-router-cli/src/schemas/run-observation.schema.json",
+      "base_sha256": "571df67100361d653ba603075809e706ace00bfb05066ead04f980b3705b1fd1",
+      "candidate_sha256": "7570ba28a507448c6b01718efc5edba5d0f239ff43173a69c3a935f0f59d98e8"
+    },
+    {
+      "path": "crates/router-runtime/tests/observation.rs",
+      "base_sha256": "5a28e9dcd35a21cb97d1a75ded75d359c2e6d29a934ff796d6a1e1f5b21d5d86",
+      "candidate_sha256": "3f11d9a801d1b99951198877b0ab7085c9ebbaf4ab360abc95fce434366618d0"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/execution.rs",
+      "base_sha256": "c0cad109ed30004da3754b8220539d67b163dc70e6421423403eff313734e236",
+      "candidate_sha256": "050a931972a34775cab49df5546547ab7d4f6115cc4b5ac4f1c3cf5f2321df30"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/schema.rs",
+      "base_sha256": "6cf8023a9868fbe584876b9b8fe02ab874189bccd19dd26b992e7c47ce7a82fe",
+      "candidate_sha256": "015fb507124c789a8f478272bbdc7e9a9e86f90775f7eadd4ea2cdeafb6d7aba"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/support/json_schema.rs",
+      "base_sha256": "d83183fc68450d248a7d0a66e1f1abeb85198ccb7596347f53d72285e1b9f109",
+      "candidate_sha256": "6cd76bed82cfbc2a21feb03d74be4b0e06aa8f4487296d645eb510d7a0e15c13"
+    },
+    {
+      "path": "crates/router-runtime/tests/observation_v2_adversarial.rs",
+      "base_sha256": null,
+      "candidate_sha256": "7875fa4e38fae474050774849066b9f3c13e74b9290013ca50f59eb82cc5eaf7"
+    },
+    {
+      "path": "docs/run-observation.md",
+      "base_sha256": "550525c86eae11bc4f1743c368843106287504f7cb48d73117994a3b5d2e5629",
+      "candidate_sha256": "5cb2e30a62f3be99366be1713fcb169c448e5ef647d2567b041b9f171a5f1585"
+    },
+    {
+      "path": "docs/adr/0025-run-observation.md",
+      "base_sha256": "17d1db67a3e2e45e47ea83481e54369ecb9530d2f34f48ea3a456ea1ef4b2ef1",
+      "candidate_sha256": "4ebd20723fabd287eb0f651db2a40b20bd1dc5e418727da2f676ac4d7bc549df"
+    },
+    {
+      "path": "docs/reference/json-contracts.md",
+      "base_sha256": "f6ba9c27f7536fc34acea860c05f33a86b03a810ac6af636c891b8b69df5ad6e",
+      "candidate_sha256": "8fbd5711999d420e5ca0c12c5970ff83c87836d9b86bb132d69b0f8f8223a72c"
+    },
+    {
+      "path": "docs/cli-output.md",
+      "base_sha256": "fa619b4e714009d972f373797b7df9084f475a45f5836bf10cddece8198c46c9",
+      "candidate_sha256": "04679f43b1bafbfb5d9ad394da81953961e9d75160502b11492f68e3675e2507"
+    }
+  ],
+  "full_ci_equivalent": false,
+  "limits": [
+    "One macOS host only; remote CI results are separate.",
+    "No paid provider call, new native host run, automatic daily routing or measured saving.",
+    "Native model/effort, thread/turn, usage, notification delivery/loss, duration, validation and objective remain explicitly unknown.",
+    "No store migration, new collector or private artifact reading. Lexical model filtering is not secret detection or permission to export.",
+    "F04b/F05a remain incomplete; issues 116 and 118 remain open."
+  ]
+}

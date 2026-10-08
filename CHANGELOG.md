@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-08: document opt-in observation v2 in both README entry points, the guide, ADR 0025, JSON contracts and the current test plan. Keep historical v1 verification separate from the new per-attempt projection and retain the native admission and measurement limits.
+
 - 2026-10-08: refresh the [current status](docs/bench/status-and-action-plan-2026-10-05.md) and [execution order](docs/bench/finalization-plan-2026-10-07.md#ordre-dexécution-à-partir-du-8-octobre) after PR #139 merged. Separate delivered observation and local diagnostics from the next dedicated Codex client qualification, parallel measurement work, useful-patch trial and later comparison. Link the prepared personal task; preserve local test scope, blocked remote CI and the remaining real-provider admission requirements.
 
 - 2026-10-07: add the [passive observation guide](docs/run-observation.md) and [ADR 0025](docs/adr/0025-run-observation.md): F04a reads one bounded, redacted snapshot of an existing runtime store; native fields remain unknown, and F04b and the full timeline stay open. Index the [F03a diagnostic](docs/bench/physical-send-feasibility-2026-10-07/README.md), retaining its overall NO-GO and timeout limitation; reconcile the six issue updates without closing them.
@@ -74,6 +76,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- `observe --schema-version 2` adds bounded per-attempt identities, requested model/effort, supervisor termination/exit code and source hashes from the existing passive snapshot. Missing outcomes stay visible; incomplete capture preserves both output-limit and reader-deadline causes. Default and explicit v1 output remain byte-compatible. Native execution, usage, duration and objective remain unknown; the published schema supports both versions.
 
 - Add an explicit native supervision diagnostic that records broker-only refusal, finite-input behavior and OS/resource limits without a model turn. Reconcile its cleanup tests with the stronger publication-hardening stop contract; F12a remains NO_GO. See the [diagnostic and limits](docs/bench/owned-supervision-feasibility-2026-10-08/README.md).
 

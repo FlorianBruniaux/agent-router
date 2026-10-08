@@ -5,7 +5,22 @@ use std::{path::Path, process::ExitCode};
 
 const HUMAN_EVENT_LIMIT: usize = 20;
 
-pub(crate) fn run(store: &Path, id: &str, json: bool) -> Result<Outcome, CliError> {
+pub(crate) fn run(
+    store: &Path,
+    id: &str,
+    schema_version: u32,
+    json: bool,
+) -> Result<Outcome, CliError> {
+    if schema_version == 2 {
+        let report = router_runtime::observe_run_v2(store, id).map_err(execution::error)?;
+        if json {
+            return json_output(&report, ExitCode::SUCCESS);
+        }
+        return Ok(Outcome {
+            output: render_v2(&report)?,
+            exit_code: ExitCode::SUCCESS,
+        });
+    }
     let report = router_runtime::observe_run(store, id).map_err(execution::error)?;
     if json {
         return json_output(&report, ExitCode::SUCCESS);
@@ -64,6 +79,29 @@ fn render(report: &RunObservation) -> Result<String, CliError> {
             "{} earlier event references omitted from this view; use --json for the full bounded snapshot.\n",
             omitted,
         ));
+    }
+    Ok(output)
+}
+
+fn render_v2(report: &router_runtime::RunObservationV2) -> Result<String, CliError> {
+    let mut output = render(&report.summary)?;
+    output.push_str("Aggregate fields remain unknown; per-attempt durable evidence follows.\n");
+    for attempt in &report.attempts {
+        let (model, effort) = match &attempt.requested {
+            Some(requested) => (label(&requested.model)?, label(&requested.effort)?),
+            None => ("unknown".into(), "unknown".into()),
+        };
+        let (termination, exit_code) = match &attempt.transport {
+            Some(transport) => (
+                label(&transport.termination)?,
+                transport
+                    .exit_code
+                    .map(|code| code.to_string())
+                    .unwrap_or_else(|| "unknown".into()),
+            ),
+            None => ("unknown".into(), "unknown".into()),
+        };
+        output.push_str(&format!("Attempt {}\nRequested model: {} | Requested effort: {}\nSupervisor termination: {} | Exit code: {}\nEvidence: {} | Capture: {} | Protocol: {}\n", attempt.ordinal, model, effort, termination, exit_code, label(&attempt.evidence)?, label(&attempt.capture)?, label(&attempt.protocol)?));
     }
     Ok(output)
 }

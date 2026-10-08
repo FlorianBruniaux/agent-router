@@ -19,6 +19,12 @@ and the [CLI example](../cli-execution.md) define this separate local proof. The
 competing PR #145 is not the retained API; its applicable protections are carried
 onto the merged implementation. Native composition and measured savings remain open.
 
+## Inspect durable attempts with observation v2
+
+Use `agent-router observe --store ROOT --run-id ID --schema-version 2 [--json]` with an existing authorised store/run, replacing the format placeholders. Default v1 is unchanged. The [observation guide](../run-observation.md#read-v2-attempts) maps each attempt field to its evidence: requested selection, supervisor termination/exit code and source hashes. Starts without an outcome remain visible; incomplete capture is explicit. Legacy protocol markers and native usage/timing/objective stay unknown.
+
+The reconstructed candidate passed 80 targeted tests, including 21 independent hostile scenarios, with 4 native opt-in tests ignored. Its independent review corrected two overbroad ADR claims. These counts do not establish full CI or real-provider execution. The remaining measurement work is qualified native provenance, trusted timing (#117), external correlation (#120) and complete collection for #5. This slice does not close #116 or #118.
+
 The following paragraphs retain the 7 October baseline and its original limits.
 
 ## Delivery baseline, 7 October 2026

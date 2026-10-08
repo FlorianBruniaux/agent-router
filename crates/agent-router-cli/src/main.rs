@@ -378,8 +378,9 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
         Commands::Observe {
             store,
             run_id,
+            schema_version,
             json,
-        } => run_observation::run(&store, &run_id, json),
+        } => run_observation::run(&store, &run_id, schema_version, json),
         Commands::Cancel {
             store,
             run_id,

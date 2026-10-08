@@ -84,8 +84,9 @@ written in French.
 | --- | --- |
 | [Doctor](doctor.md) | Read-only diagnostics and redacted audit |
 | [Native supervision diagnostic](bench/owned-supervision-feasibility-2026-10-08/README.md) | 2026-10-08: explicit no-provider diagnostic; current composition remains NO_GO, with broker identity, memory and cleanup limits |
-| [Passive run observation](run-observation.md) | 2026-10-07: implemented, tested and reviewed F04a; 20 human state references and full bounded JSON; F04b and complete F05a remain open |
+| [Passive run observation](run-observation.md) | 2026-10-08: opt-in v2 durable attempt identities, requested selections and supervisor outcomes; v1 default preserved; native facts, timing and full F04b/F05a remain open |
 | [Observation verification](bench/verification-observation-2026-10-07.json) | 21 selected checks passed: 1,633 workspace Rust results + 1 core, 290 Python; result-line counts, 42 native opt-in tests ignored; not full CI equivalence |
+| [Observation v2 verification](bench/verification-observation-v2-2026-10-08.json) | 24 local checks across the full run and ADR-index/fixture-hash repairs, independent review and measurement compatibility; native facts remain unknown |
 | [Startup-outage cancellation](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent before launch, correlated interrupt/terminal and physical cleanup, zero provider; startup-outage evidence; see the later dedicated-client qualification; global admission remains open |
 | [Physical-send feasibility](bench/physical-send-feasibility-2026-10-07/README.md) | 2026-10-07: six native cases pass, broker absence times out; overall NO-GO, no real provider admission |
 | [Dedicated Codex client qualification](bench/owned-entry-qualification-2026-10-08/README.md) | 2026-10-08: bounded direct-client choice for simulated patch work; three local native scenarios, no real-provider admission |

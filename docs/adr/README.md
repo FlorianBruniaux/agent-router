@@ -33,7 +33,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0023](0023-owned-task-entry.md) | Owned task entry stops before native activation | amended | 2026-10-07 | 2026-10-08 | [0026](0026-owned-client-simulated-entry.md) |
 | [0024](0024-accepted-revision-accounting.md) | Accepted revision accounting | implemented | 2026-10-07 | 2026-10-07 | - |
-| [0025](0025-run-observation.md) | Bounded passive run observation | implemented | 2026-10-07 | 2026-10-07 | - |
+| [0025](0025-run-observation.md) | Bounded passive run observation | implemented | 2026-10-07 | 2026-10-08 | - |
 
 | [0026](0026-owned-client-simulated-entry.md) | Dedicated Codex client for simulated patch work | accepted | 2026-10-08 | 2026-10-08 | - |
 | [0027](0027-verified-patch-publication.md) | Publish verified patches through a dedicated Git revision | implemented | 2026-10-08 | 2026-10-08 | - |

@@ -20,9 +20,12 @@ mod network_authority;
 mod observation;
 mod outputs;
 pub use observation::{
-    ObservationDetailCoverage, ObservationJournalCoverage, ObservationUnknown, RunEventReference,
-    RunObservation, RunObservationCompleteness, RunObservationHorizon, RunObservationIdentity,
-    RunObservationKnown, RunObservationUnknowns,
+    AttemptObservationCapture, AttemptObservationEvidence, AttemptObservationNative,
+    AttemptObservationRequested, AttemptObservationSources, AttemptObservationTransport,
+    ObservationDetailCoverage, ObservationJournalCoverage, ObservationUnknown,
+    RunAttemptObservation, RunEventReference, RunObservation, RunObservationCompleteness,
+    RunObservationHorizon, RunObservationIdentity, RunObservationKnown, RunObservationUnknowns,
+    RunObservationV2,
 };
 mod integration;
 mod private_program;
@@ -51,7 +54,8 @@ pub use process::Cancellation;
 pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
 pub use store::{
-    measurement_inventory, observe, observe_cleanup, observe_events, observe_run, request_cancel,
+    measurement_inventory, observe, observe_cleanup, observe_events, observe_run, observe_run_v2,
+    request_cancel,
 };
 pub use workspace::source_state;
 

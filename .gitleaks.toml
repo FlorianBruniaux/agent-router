@@ -10,3 +10,7 @@ paths = ['''(^|/)target/''', '''(^|/)\.harness-state/''']
 [[allowlists]]
 description = "Exact synthetic JWT and key used by the redaction test of docs/bench/runs/2026-09-30-egress-spike/harness/v2 and v3 selftest.py"
 regexes = ['''^eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiJzcGlrZSJ9\.c2lnbmF0dXJlLXZhbHVl$''', '''^sk-proj-AbCdEf0123456789XyZ$''']
+
+[[allowlists]]
+description = "Exact synthetic SHA-256 run identity in the frozen observation-v1 fixture"
+regexes = ['''^cc8893e352b531eebc40cac5fce167ee908ce4f7df8d31094969e9d341ae1b6a$''']
