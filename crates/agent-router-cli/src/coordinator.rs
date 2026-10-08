@@ -905,15 +905,24 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let retained = router_runtime::observe(&store.join("runtime"), &bundle.run_id)
                 .map_err(execution::error)?
                 .output_retention;
-            let source = execution::load_definition(&bundle.source_definition)?;
-            let verifier = if matches!(
-                &command,
-                crate::command::ArtifactCommand::Apply { .. }
-                    | crate::command::ArtifactCommand::Publish { .. }
-            ) {
-                execution::integration_verifier(&store.join("runtime"), &source, config.as_deref())?
-            } else {
-                None
+            let mut source = execution::load_definition(&bundle.source_definition)?;
+            let verifier = match &command {
+                crate::command::ArtifactCommand::Publish { .. } => {
+                    // Match the reviewed coordinator step, not its original
+                    // request before prompt/scope preparation.
+                    source.request = bundle.final_request.clone();
+                    execution::publication_verifier(
+                        &store.join("runtime"),
+                        &source,
+                        config.as_deref(),
+                    )?
+                }
+                crate::command::ArtifactCommand::Apply { .. } => execution::integration_verifier(
+                    &store.join("runtime"),
+                    &source,
+                    config.as_deref(),
+                )?,
+                _ => None,
             };
             let runtime = runtime_with_verifier(
                 &store,

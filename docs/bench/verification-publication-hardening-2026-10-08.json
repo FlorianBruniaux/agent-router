@@ -1,0 +1,613 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "scope": "Complementary hardening of merged PR144 publication API and bounded app-server descendant cleanup",
+  "baseline_commit": "5ba1a694daae90ddb03552f445f31465a64e8ed6",
+  "superseded_alternative": {
+    "pr": 145,
+    "head": "d6830301367b747c6f7ae3c6eb5abd35d2d033f7",
+    "merged": false,
+    "old_local_gate_not_current_evidence": true
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "quality": {
+    "verdict": "selected_checks_passed",
+    "checks_passed": 24,
+    "source_unchanged": true,
+    "source_sha256": "fe257d4472cf753aade59a9c2726cdacd741369706dbfd9dd230b0af7916834c",
+    "summary_sha256": "90d654e554fdb2a09e5fd3caed62921c6b856eaea22801a99269411402e88261",
+    "runner_sha256": "cfad6a90f13cd927b9d8f827fdd6852f0965b37440f1f991ededc4723af20606",
+    "full_ci_equivalent": false,
+    "checks": [
+      {
+        "id": "format",
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "clippy-all",
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e947e704a2e27222ceeda78eb822a7660c531520d254c8e676edca08fc42d494",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "clippy-core",
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "7a566bd50984912b18b30ca6e915317ce7892f62a4a0fa30a56dde9f6c0798db",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "workspace-tests",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "a3563c511703b8105a12b647bd1b3d6739f56716523849dd7e0ed54edaacbded",
+        "rust_successful_results": 1659,
+        "rust_ignored_results": 42,
+        "python_tests": 0
+      },
+      {
+        "id": "local-api-absent",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e7af1bf830d7b13e3fe92c044bd69d61193a8e74980b8958b71b438a3d73e93c",
+        "rust_successful_results": 1,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "harness",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "4f83b294b1762f80f2506c8ff8b64bb3387d951968302f5f1694576c3391ab61",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "host-syntax",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "239573c1665ba0d20880d981ec7058ee3d44a42932e841724fdcee3ca672055d",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 3
+      },
+      {
+        "id": "script-test-check-adrs",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "dd4843e99e42ec3c35c1017a41e19a722ee9e4d9807f7ad39c00ab33b9b0ba01",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 30
+      },
+      {
+        "id": "script-test-check-local",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "60f0210812f15c15d38042badced7e15946e44ca2adb06138edadccfd583ca23",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 30
+      },
+      {
+        "id": "script-test-package-binary",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "552c5ae4f88e00cdf002cb77306edc9e7056baa400e347d9932b4a684ff5f131",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 17
+      },
+      {
+        "id": "script-test-package-core",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "0a6401cba1d9e042575d6a1c8dff8cf4b8334ef53e7d00ebb43a45e9f423cf0e",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 26
+      },
+      {
+        "id": "script-test-release-local",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "52396178209c36d724be5b15338dc910b8b8641eead95014da24fce9b6342298",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 27
+      },
+      {
+        "id": "egress-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "8469778a41bb63efad9c1e2ec078c93c2994ed16542ae7243b57ffeaa8c51a33",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 55
+      },
+      {
+        "id": "native-probe-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "4cdd5181d1e4224866b882441d27e7786359fd58e8dd7ba8a4b67fa27b14cd7b",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 33
+      },
+      {
+        "id": "native-decision-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "65a995e3417e58bdc040c76cbc865b87cbe3000deaa828dbfeaabf79fb600149",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 13
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "b78cb049c9620c9d8e2626e7977a591d722538cedd67be62a68fb725d52f6260",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 17
+      },
+      {
+        "id": "campaign-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "bdaccf081bad009568addeb3db57ee57186c13fb874c09deab91930d384c838e",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 17
+      },
+      {
+        "id": "calibration-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "c2989c9b9e7479bcf11f27f1b036f0a349fd61a9760d5b1c670966979ce400c0",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 30
+      },
+      {
+        "id": "physical-send-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "6834018636723a02cd4ee09c8919cdad0ec7bbada13536e7fe33c23ca625f552",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 12
+      },
+      {
+        "id": "startup-outage-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "ca3fb43957a45c0f763110630bf2dae8d7976c5abaebd1c2b777462d1a5903be",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 8
+      },
+      {
+        "id": "owned-entry-tests",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "35be1b4d88e1669e5d8cf52ecded2127e17585aee3ea7292fcc61dbb8ebaed6a",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 44
+      },
+      {
+        "id": "secrets-dir",
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "56b5857d2ab06f6de7f6b5b755a67d7378c1ee52d24284096d5ce1649473f25d",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      },
+      {
+        "id": "secrets-git",
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "939f29c317fa3d32d9c9f6932b865e7c290cfca871af8f42e1a41435b7633ed7",
+        "rust_successful_results": 0,
+        "rust_ignored_results": 0,
+        "python_tests": 0
+      }
+    ]
+  },
+  "checked_changed_files": [
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "77faff7cb54eeeba8a24a050bdbf1e2d4536a1b01151623142a4f9c42df79698"
+    },
+    {
+      "path": "README.fr.md",
+      "sha256": "fe46e94c12d87fb79dc4ad6e8da148ed372473b98c96c9853cd7fc2f86ec7105"
+    },
+    {
+      "path": "README.md",
+      "sha256": "be732d4dbee615a6dd9d666107478ef56006a99f394b3b79e7ede4fa5c01a5d2"
+    },
+    {
+      "path": "crates/agent-router-cli/src/coordinator.rs",
+      "sha256": "388c4c1bdf01c28bd6613b631702123efb62f7fae6fd2f5adb4f5bdb321b4127"
+    },
+    {
+      "path": "crates/agent-router-cli/src/execution.rs",
+      "sha256": "1e7211beed31893c62fc6e3e4371a5ebdfaeb54c56afb31a739add54660b1351"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/publication.rs",
+      "sha256": "80ff88ec8882bf1f7f57482e8a51f9416e640519eda7a9222307319507623109"
+    },
+    {
+      "path": "crates/router-runtime/src/integration.rs",
+      "sha256": "8331deb53206646591b0031e98a6ea8eaf8ab5683175dfe111b1b42254fcc7d5"
+    },
+    {
+      "path": "crates/router-runtime/src/workspace.rs",
+      "sha256": "2f5956690b4443baf14c684790dea5f95a8cc60ce8de1ad44f2f2f9623a9d3f4"
+    },
+    {
+      "path": "crates/router-runtime/tests/runtime.rs",
+      "sha256": "d89b0f90cf113213f79020ea6a0f6495e331913b5aeed136df6f892ad7073365"
+    },
+    {
+      "path": "docs/adr/0027-verified-patch-publication.md",
+      "sha256": "cbd0371c269c68a7feba17da313fbb08d45a81768d598e5c8c49af0fb9d8fe07"
+    },
+    {
+      "path": "docs/bench/egress-admission/codex_appserver_local.py",
+      "sha256": "95a2a0229888981856e9166a37966331b089bec535ab1211b93c23c83b21f118"
+    },
+    {
+      "path": "docs/bench/egress-admission/test_codex_appserver_local.py",
+      "sha256": "a6959fd3ca36a083246fc5eb7d6f5a65087d358e9447e1fddd99b7bc8a67e6df"
+    },
+    {
+      "path": "docs/bench/finalization-plan-2026-10-07.md",
+      "sha256": "a373a81743fba6b80487f9056078e5f8cfc86cc045b96cd3b8922afedf4b6482"
+    },
+    {
+      "path": "docs/bench/playbook.md",
+      "sha256": "9a0ae8cceeff0b6c163c7244362120fcef6473d1c2582c11ec324bc6e7f3e037"
+    },
+    {
+      "path": "docs/bench/status-and-action-plan-2026-10-05.md",
+      "sha256": "5cbf777b3cbfc1ef90f0d9c1ecdc999e96d3ccd49c32df90a1a00bf6db8c52f6"
+    },
+    {
+      "path": "docs/cli-execution.md",
+      "sha256": "2827aef29f8b67775e1c18df244d85dfeab1c7a5e6eaa7f0a95cf9a989bba3d2"
+    }
+  ],
+  "report_added_after_gate_and_excluded_from_checked_inventory": true,
+  "counts_note": "Rust numbers sum successful result lines including subprocesses, not unique test definitions. Targeted suites are included in the workspace total. Ignored native cases are not successes.",
+  "independent_review": {
+    "recorded_by": "root from independent patch_security final report",
+    "role": "rust-security-reviewer",
+    "model": "gpt-6-astra",
+    "thinking": "high",
+    "scope": "Frozen complementary publication and diagnostic delta against main 5ba1a69",
+    "verdict": "no confirmed blocking finding in the reviewed delta",
+    "reviewer_executed_tests": false,
+    "reviewed_source_hashes": {
+      "crates/router-runtime/src/integration.rs": "8331deb53206646591b0031e98a6ea8eaf8ab5683175dfe111b1b42254fcc7d5",
+      "crates/router-runtime/src/workspace.rs": "2f5956690b4443baf14c684790dea5f95a8cc60ce8de1ad44f2f2f9623a9d3f4",
+      "crates/agent-router-cli/src/execution.rs": "1e7211beed31893c62fc6e3e4371a5ebdfaeb54c56afb31a739add54660b1351",
+      "crates/agent-router-cli/src/coordinator.rs": "388c4c1bdf01c28bd6613b631702123efb62f7fae6fd2f5adb4f5bdb321b4127",
+      "crates/agent-router-cli/tests/publication.rs": "80ff88ec8882bf1f7f57482e8a51f9416e640519eda7a9222307319507623109"
+    },
+    "inspected_test_results": {
+      "git_negative_regressions": 4,
+      "publication_unit": 5,
+      "fresh_verifier_unit": 1,
+      "publication_cli": 2,
+      "appserver_fixture": 36,
+      "native_probe_fixture": 13
+    },
+    "supersedes_initial_pr145_review": true,
+    "not_verified": [
+      "complete local gates at review time",
+      "remote Linux execution of this delta",
+      "provider calls",
+      "native F12a/F02b composition",
+      "atomic exclusion of unrelated concurrent external writers"
+    ]
+  },
+  "retained_red_logs": [
+    {
+      "name": "reconciled-tests/git-guards-red.log",
+      "sha256": "37fb0607de0e6b5f27a50f27fa59c24a529e9752b794baf603ca41109b2f9398"
+    },
+    {
+      "name": "reconciled-implementation/verifier-red-3.log",
+      "sha256": "8da5727717efef9a8365e6c3b19966607853dca2f041e3ff3dc4b8aee8f9ba85"
+    },
+    {
+      "name": "reconciled-implementation/clock-red.log",
+      "sha256": "a2cfedb7f4866e70c70f90e1858a3c07ef173588bb7432a59b649f39f07ed95b"
+    },
+    {
+      "name": "reconciled-implementation/aggregate-clock-red.log",
+      "sha256": "e76b10478fc471343f37bbbb3b5554866f46b16115c2acf9d0f86e8d4931ebbc"
+    }
+  ],
+  "initial_test_setup_failures": "The first two verifier attempts were fixture errors, not valid behavioral RED evidence; verifier-red-3 is the retained behavioral failure.",
+  "linux_failure_origin": {
+    "pr": 145,
+    "run": "https://github.com/FlorianBruniaux/agent-router/actions/runs/37756913429",
+    "observed_state": "R after output readers exited",
+    "local_follow_up": "Actual local processes with delayed signal delivery; success before correction, bounded FixtureError after correction. Not a native Linux reproduction."
+  },
+  "not_verified": [
+    "remote checks for the eventual corrective commit at report creation",
+    "real provider invocation or savings",
+    "selected native F12a/F02b composition",
+    "atomic exclusion of unrelated concurrent Git or configuration writers",
+    "hidden or other-user Linux process group members",
+    "complete direct working-copy multi-file application safety"
+  ],
+  "post_gate_documentation_changes": [
+    {
+      "path": "docs/README.md",
+      "before_sha256": "8ddfb94abeb553fedb07cb1fb3a472bc70afbfaeaa4a262ce707b6906f840c5a",
+      "after_sha256": "c52aa5f983d4e50f44f5fb84917f05f130fc5f68216d5722b9ecb12127ef516e",
+      "kind": "documentation-only proof link"
+    },
+    {
+      "path": "docs/README.fr.md",
+      "before_sha256": "122cc2306410aa3cbf97784517efaa11653f87b10067db7d825d287432443ac6",
+      "after_sha256": "dd02a1d96a75267a8f89c719907ea37e18e414adaa4fd4db5b5a00d81c949ca6",
+      "kind": "documentation-only proof link"
+    },
+    {
+      "path": "docs/bench/finalization-plan-2026-10-07.md",
+      "before_sha256": "a373a81743fba6b80487f9056078e5f8cfc86cc045b96cd3b8922afedf4b6482",
+      "after_sha256": "3a5b151e7165849685e7f8425bfe58a2bc5648e8c160383ee6c6bde934e3ff9b",
+      "kind": "documentation-only delivery order update"
+    }
+  ],
+  "post_gate_policy": "Only these documentation changes and this report were added after the complete gate; production and test source hashes were compared again. Documentation receives separate static checks."
+}

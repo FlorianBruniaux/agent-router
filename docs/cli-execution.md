@@ -331,6 +331,22 @@ These commands also exist under `coordinate artifacts`.
 When capability claims exist, both `publish` and legacy `apply` require the
 existing `--config` sandbox configuration to reconstruct current executable,
 adapter and scope pins. Historical reopen alone cannot authorize mutation.
+Publication rebuilds these bindings during verification and immediately before
+its Git effect; this does not exclude unrelated writers changing files after the
+last check. Promisor/partial clones, filters, binary patches, rename/copy headers
+and pre-existing symbolic result refs are refused. Source and result blob budgets
+are checked separately, as specified in ADR 0027.
+
+From the repository root, this self-contained simulated task checks the faulty
+source, the candidate and the code extracted from the published revision:
+
+```sh
+cargo test -p router-runtime --locked --test runtime \
+  simulated_useful_fix_passes_independent_checks_on_the_published_revision -- --exact
+```
+
+It requires no provider account and does not establish native-host execution or
+model savings.
 
 Legacy `preview` followed by `apply --approve DIGEST` still modifies the source
 working copy. Application authority is now one-shot even if a user restores the

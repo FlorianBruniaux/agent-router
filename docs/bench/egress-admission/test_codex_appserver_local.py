@@ -245,6 +245,78 @@ class DescendantStateTests(unittest.TestCase):
         read_stat.assert_not_called()
 
 
+class GroupCleanupTests(unittest.TestCase):
+    def observe(self, states, *, platform="linux", read_error=None):
+        clock = [0.0]
+        child = Path("/proc/101")
+        reads = iter(states)
+
+        def read_stat(*args, **kwargs):
+            if read_error is not None:
+                raise read_error
+            state = next(reads, states[-1] if states else "R")
+            return f"101 (fixture ) child) {state} 1 100 100 0"
+
+        with mock.patch.object(sys, "platform", platform), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(os, "scandir") as entries, \
+                mock.patch.object(Path, "read_text", side_effect=read_stat) as read, \
+                mock.patch.object(time, "monotonic", side_effect=lambda: clock[0]), \
+                mock.patch.object(time, "sleep", side_effect=lambda n: clock.__setitem__(0, clock[0] + n)):
+            # Each observation obtains a new bounded process-directory iterator.
+            entries.return_value.__enter__.side_effect = lambda: iter([child])
+            fixture._wait_group_stopped(100, 0.05)
+        return read.call_count, clock[0]
+
+    def test_waits_for_linux_descendant_to_finish_after_signal(self):
+        reads, elapsed = self.observe(["R", "Z"])
+        self.assertEqual(reads, 2)
+        self.assertGreater(elapsed, 0)
+
+    def test_persistent_live_or_stopped_descendant_times_out(self):
+        for state in ("R", "S", "D", "T"):
+            with self.subTest(state=state), self.assertRaises(fixture.FixtureError):
+                self.observe([state])
+
+    def test_unreadable_proc_does_not_prove_cleanup(self):
+        with self.assertRaises(fixture.FixtureError):
+            self.observe([], read_error=PermissionError())
+
+    def test_nonlinux_requires_group_absence(self):
+        with self.assertRaises(fixture.FixtureError):
+            self.observe(["Z"], platform="darwin")
+
+    def test_absent_group_needs_no_proc_read(self):
+        with mock.patch.object(os, "killpg", side_effect=ProcessLookupError), \
+                mock.patch.object(os, "scandir") as entries:
+            fixture._wait_group_stopped(100, time.monotonic() + 0.05)
+        entries.assert_not_called()
+
+    def test_unknown_or_malformed_group_members_do_not_prove_cleanup(self):
+        for stat in ("101 (child) Z 1 999 100", "broken"):
+            with self.subTest(stat=stat), \
+                    mock.patch.object(sys, "platform", "linux"), \
+                    mock.patch.object(os, "killpg"), \
+                    mock.patch.object(os, "scandir") as entries, \
+                    mock.patch.object(Path, "read_text", return_value=stat):
+                entries.return_value.__enter__.return_value = iter([Path("/proc/101")])
+                self.assertFalse(fixture._group_stopped(100, time.monotonic() + 1))
+
+    def test_stop_cannot_succeed_when_group_cleanup_is_unproven(self):
+        client = object.__new__(fixture.AppServer)
+        client.process = mock.Mock(pid=100, returncode=0)
+        client.process.poll.return_value = 0
+        client.stdout_thread = mock.Mock()
+        client.stderr_thread = mock.Mock()
+        for reader in (client.stdout_thread, client.stderr_thread):
+            reader.is_alive.return_value = False
+        with mock.patch.object(fixture, "_kill_group"), \
+                mock.patch.object(fixture, "_wait_group_stopped", side_effect=fixture.FixtureError("unproven")) as wait, \
+                self.assertRaisesRegex(fixture.FixtureError, "unproven"):
+            client.stop()
+        self.assertEqual(wait.call_args.args[0], 100)
+
+
 class LifecycleTests(unittest.TestCase):
     def test_stop_kills_descendant_after_normal_leader_exit_and_joins_readers(self):
         parent = (
@@ -262,9 +334,9 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(client.stop(), 0)
             self.assertFalse(client.stdout_thread.is_alive(), "descendant still holds stdout")
             self.assertFalse(client.stderr_thread.is_alive(), "descendant still holds stderr")
-            assert_descendant_stopped(
-                self, process.pid, child_pid, timeout=fixture.CLEANUP_TIMEOUT_SECONDS,
-            )
+            # stop() already promises observed group termination before return.
+            # A grace period here would hide an early successful return.
+            assert_descendant_stopped(self, process.pid, child_pid)
         finally:
             try:
                 os.killpg(process.pid, signal.SIGKILL)

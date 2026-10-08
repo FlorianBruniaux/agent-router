@@ -4316,3 +4316,193 @@ async fn expired_capability_evidence_cannot_authorize_publication() {
         PatchPublicationState::NotAttempted
     );
 }
+
+// A read-only review must not implicitly start Git's promisor transport.
+#[tokio::test]
+async fn publication_hardening_promisor_missing_tree_cannot_launch_transport() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let tree = git_output(&fixture.root, &["rev-parse", "HEAD^{tree}"]);
+    let tree = tree.trim();
+    let marker = fixture.temp.path().join("transport-was-invoked");
+    let upload_pack = fixture.temp.path().join("local-upload-pack");
+    fs::write(
+        &upload_pack,
+        format!("#!/bin/sh\n: > '{}'\nexit 1\n", marker.display()),
+    )
+    .unwrap();
+    fs::set_permissions(&upload_pack, fs::Permissions::from_mode(0o755)).unwrap();
+    for (key, value) in [
+        ("core.repositoryformatversion", "1"),
+        ("extensions.partialClone", "origin"),
+        ("remote.origin.promisor", "true"),
+        ("remote.origin.partialclonefilter", "blob:none"),
+        ("remote.origin.url", fixture.root.to_str().unwrap()),
+        ("remote.origin.uploadpack", upload_pack.to_str().unwrap()),
+    ] {
+        git_output(&fixture.root, &["config", key, value]);
+    }
+    fs::remove_file(
+        fixture
+            .root
+            .join(".git/objects")
+            .join(&tree[..2])
+            .join(&tree[2..]),
+    )
+    .unwrap();
+    let result = runtime.review_publication(&pending).await;
+    assert!(
+        !marker.exists(),
+        "review launched the local upload-pack transport"
+    );
+    assert!(
+        matches!(
+            result,
+            Err(RuntimeError::Invalid(
+                "repository lazy fetch is not permitted"
+            ))
+        ),
+        "{result:?}"
+    );
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "integration.intent")
+    );
+}
+
+// Git no-deref create does not itself protect an existing dangling symbolic ref.
+#[tokio::test]
+async fn publication_hardening_dangling_symbolic_destination_is_preserved() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    let target = format!("refs/agent-router/integrations/{}", review.approval_digest);
+    git_output(
+        &fixture.root,
+        &["symbolic-ref", &target, "refs/heads/absent"],
+    );
+    let result = runtime
+        .publish_patch(&pending, &review.approval_digest)
+        .await;
+    assert!(
+        matches!(
+            result,
+            Err(RuntimeError::Integrity(
+                "publication destination is symbolic"
+            ))
+        ),
+        "{result:?}"
+    );
+    assert_eq!(
+        git_output(&fixture.root, &["symbolic-ref", &target]),
+        "refs/heads/absent\n"
+    );
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "integration.published")
+    );
+}
+
+// The bounded text-only review must reject binary reconstruction before object writes.
+#[tokio::test]
+async fn publication_hardening_binary_patch_is_refused_before_object_writes() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(
+        &fixture,
+        &runtime,
+        "printf 'changed\\n' > src/base.txt; printf '\\000\\001' > src/binary.bin",
+    )
+    .await;
+    let worktree = runtime.summary("run-1").unwrap().worktree.unwrap();
+    assert_eq!(
+        fs::read(Path::new(&worktree).join("src/binary.bin")).unwrap(),
+        [0, 1]
+    );
+    let before = git_output(&fixture.root, &["count-objects", "-v"]);
+    let result = runtime.review_publication(&pending).await;
+    assert!(
+        matches!(
+            result,
+            Err(RuntimeError::Invalid(
+                "binary publication patches are not supported"
+            ))
+        ),
+        "{result:?}"
+    );
+    assert_eq!(
+        git_output(&fixture.root, &["count-objects", "-v"]),
+        before,
+        "binary rejection happened after Git object writes"
+    );
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "integration.intent")
+    );
+    assert!(!fixture.root.join("src/binary.bin").exists());
+}
+
+// A tiny diff must not materialize an oversized source blob before bounds checking.
+#[tokio::test]
+async fn publication_hardening_large_source_is_refused_before_object_writes() {
+    let mut fixture = Fixture::new(true).await;
+    let mut large = b"old\ncontext\ncontext\ncontext\ncontext\ncontext\n".to_vec();
+    large.extend(std::iter::repeat_n(b'a', 16 * 1024 * 1024));
+    large.push(b'\n');
+    fs::write(fixture.root.join("src/large.txt"), &large).unwrap();
+    git_output(&fixture.root, &["add", "src/large.txt"]);
+    git_output(
+        &fixture.root,
+        &[
+            "-c",
+            "user.name=Runtime Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-q",
+            "--no-gpg-sign",
+            "-m",
+            "oversized synthetic blob",
+        ],
+    );
+    fixture.request.source_state = source_state(&fixture.root).await.unwrap();
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt; printf new | dd of=src/large.txt bs=1 count=3 conv=notrunc 2>/dev/null").await;
+    let worktree = runtime.summary("run-1").unwrap().worktree.unwrap();
+    let changed = fs::read(Path::new(&worktree).join("src/large.txt")).unwrap();
+    assert_eq!(&changed[..3], b"new");
+    assert_eq!(&changed[3..], &large[3..]);
+    assert!(
+        fs::metadata(runtime.storage_root().join("artifacts/run-1.patch"))
+            .unwrap()
+            .len()
+            < 1024
+    );
+    let before = git_output(&fixture.root, &["count-objects", "-v"]);
+    let result = runtime.review_publication(&pending).await;
+    assert_eq!(
+        git_output(&fixture.root, &["count-objects", "-v"]),
+        before,
+        "limit was checked after materializing oversized Git objects"
+    );
+    assert!(matches!(result, Err(RuntimeError::Limit)), "{result:?}");
+    assert!(
+        !runtime
+            .events()
+            .unwrap()
+            .iter()
+            .any(|e| e.kind == "integration.intent")
+    );
+}

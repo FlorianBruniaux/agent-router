@@ -42,6 +42,10 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- Verified patch publication refuses repositories that could fetch missing Git objects implicitly, pre-existing symbolic result refs and unsupported or oversized patch inputs before applying them. Publication rechecks current capability and configuration bindings at its effect boundary; the result remains a dedicated Git revision, not a user-file rewrite or human acceptance.
+
+- The local app-server diagnostic verifies descendant termination after signalling its process group. Closed output pipes and an exited leader no longer suffice; Linux live or unreadable descendants retain a bounded cleanup failure.
+
 - The local API's test-only server helper now shuts down and joins its accept loop when the client panics, then propagates the original panic. A bounded regression test covers the previously stranded test loop; production request handling is unchanged.
 
 - Binary packaging persists a private JSON report for each completed build before comparing hashes. The qualification retains an initial refused mismatch and a later matching pair; the initial cause remains `UNKNOWN`, with no general reproducibility fix claimed.
@@ -70,6 +74,11 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- Add an explicit native supervision diagnostic that records broker-only refusal, finite-input behavior and OS/resource limits without a model turn. Reconcile its cleanup tests with the stronger publication-hardening stop contract; F12a remains NO_GO. See the [diagnostic and limits](docs/bench/owned-supervision-feasibility-2026-10-08/README.md).
+
+
+- `artifacts review-publication`, `check-publication-review`, `publish` and `publication-status` expose approval-bound verified patch revisions through the existing runtime. The simulated useful correction and one-shot publication are described in [ADR 0027](docs/adr/0027-verified-patch-publication.md). Native composition, direct multi-file working-copy safety and real-provider admission remain separate qualifications.
 
 - Dedicated Codex client diagnostic with task/thread/turn/model/effort binding, strict bounded JSON, refusal of permission callbacks and reroutes, broker request validation and controlled cancellation. Three local native scenarios qualify the simulated entry under [ADR 0026](docs/adr/0026-owned-client-simulated-entry.md); full ACP comparison, real-provider and OS admission remain open. The local runner now includes the client, physical-send and startup-outage unit suites without implicitly launching native Codex.
 
