@@ -70,6 +70,29 @@ removal, and correlate the external capture through F06a. The first successful
 composition must retain the F02a publication digest and independent artifact
 checks. F03b and the real-trial gates remain separate.
 
+## Follow-up after publication hardening
+
+PR #147, merged at `88c8d5f007877402f8eaf98722e2dd90fc35b16e`, strengthens the
+local diagnostic client's `stop()` contract: success requires observed group
+termination. The reconciled lifecycle test checks this immediately after return;
+it does not add a grace period that could hide an early return. The historical
+race/deadline reports describe their original sources, not this combined tree.
+
+A read-only architecture review selects the finite-client shape for the next
+bounded implementation: the client can own incremental child RPC behind the
+existing finite helper input. This is a design choice, not an executed worker.
+The native child must inherit the supervised group; the standalone diagnostic's
+`start_new_session=True` cannot be reused inside that worker. Client and native
+executable identities need an explicit binding because current host-state grants
+are keyed to the prepared program.
+
+Broker confinement still requires more than an allowed TCP port. Its identity
+must survive listener loss/rebinding for the entire live attempt, either through
+a retained listener owner or a transport the native client authenticates. Neither
+mechanism is qualified here. The observed macOS address-space limitation, broad
+Mach-service boundary and absence of exhaustive descendant containment remain
+open. A finite input fix alone cannot make F12a positive.
+
 ## Reproduce
 
 Build the existing helper, then run only the explicitly opted-in diagnostic.
@@ -93,3 +116,5 @@ successful diagnostic invocation establishes its observations. Exit 0 here means
 the current blockers were reproduced, not that F12a passed.
 
 [Native results](native-results.json) preserve the observed report and source hashes.
+
+The [reconciliation record](verification-reconciled.json) binds a fresh complete local gate and the independent review to the combined source. Earlier temporary logs were lost and are not reused as evidence. This record preserves the immediate post-stop assertion and does not change the historical native NO_GO.

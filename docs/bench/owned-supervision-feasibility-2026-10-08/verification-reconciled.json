@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "local_reconciliation_of_pr146_with_merged_pr147",
+  "parents": {
+    "pr146": "0cd9efc973bbbedf7dbba8c60bd26c1cb029ff77",
+    "merged_pr147": "88c8d5f007877402f8eaf98722e2dd90fc35b16e"
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "source_sha256": "de99c452e1e300bdf60383afa43d94c5255fefdc2768f3084901671102157635",
+  "source_inventory_sha256": "ec3db1d4f945e24b5c73eb5fc63c8513fd9c1da76becf23ea4dc58296ca76d7b",
+  "all_checked_bytes_modes_rechecked_before_report": true,
+  "report_added_after_frozen_gate": true,
+  "post_gate_documentation_only": "This report and its adjacent README link are added after the frozen gate; final diff and secrets checks cover them.",
+  "quality": {
+    "selected_checks_passed": 24,
+    "checks": [
+      {
+        "id": "format",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.94381,
+        "log": "format.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "clippy-all",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 27.358347,
+        "log": "clippy-all.log",
+        "log_sha256": "8ab0f567668d32ee77b835a2b79e2ca4036bc3f652e477a65ffb16853c965235"
+      },
+      {
+        "id": "clippy-core",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 9.197034,
+        "log": "clippy-core.log",
+        "log_sha256": "ce74b08a38f44ae7b253f9b56afe0d72260374bf8ef445b8703d2ef528e9169c"
+      },
+      {
+        "id": "workspace-tests",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1285.699507,
+        "log": "workspace-tests.log",
+        "log_sha256": "3da2a585dd4bbfe651a7e059176e7cb78f8990a8c73f33e9098965dcc724920f",
+        "tests_passed_or_run": 1659,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "local-api-absent",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 100.399065,
+        "log": "local-api-absent.log",
+        "log_sha256": "76defbedc10e5cb927eb2e9c2f4908cf220c1b2cf6dcbd942288e92341beed18",
+        "tests_passed_or_run": 1,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "harness",
+        "group": "quality",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 9.091223,
+        "log": "harness.log",
+        "log_sha256": "00bfe7937b7352d555c69c57fa0416df678622358f8b5253277c9686ae36621d"
+      },
+      {
+        "id": "host-syntax",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.081593,
+        "log": "host-syntax.log",
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.44939,
+        "log": "script-test-benchmark-startup.log",
+        "log_sha256": "27c4a39d34ece4cbc66cc59cb0870c7abe4cc0a5f009205bdd0ea06a93f8b3ac",
+        "tests_passed_or_run": 3,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-check-adrs",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.749187,
+        "log": "script-test-check-adrs.log",
+        "log_sha256": "acf01e76d53297f1690a0b1a54af9af7c0783f25c3e7f278381f12f5e8a0136d",
+        "tests_passed_or_run": 30,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-check-local",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 32.558817,
+        "log": "script-test-check-local.log",
+        "log_sha256": "24deb7579b7ad2f79e48faa75212788a6054752be8e0bed42b7f0ea583368947",
+        "tests_passed_or_run": 30,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-package-binary",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 2.491262,
+        "log": "script-test-package-binary.log",
+        "log_sha256": "84eb43c8f19ebb72c5c171c202bdee5f66ca76f59f937c7c4045220a6a31868b",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-package-core",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 2.729809,
+        "log": "script-test-package-core.log",
+        "log_sha256": "207c0f685a3383439a0e1499a2bd95e0902adbfc291593b1e6d0c05c328a63a2",
+        "tests_passed_or_run": 26,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "script-test-release-local",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 37.52397,
+        "log": "script-test-release-local.log",
+        "log_sha256": "0429fa94b41e465bde7ce42c8a6573a45ecfcbd83e65f72b05c1cc0c4e3790b6",
+        "tests_passed_or_run": 27,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "egress-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 15.178869,
+        "log": "egress-tests.log",
+        "log_sha256": "7bf258f951f8330be988484a641009b6e6fe5e71107a190e970ea0f031a65b8d",
+        "tests_passed_or_run": 58,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-probe-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 8.675097,
+        "log": "native-probe-tests.log",
+        "log_sha256": "58e97528f9fa67456f9022794e55bd29605b100014b3f637dd4f5d83685041ac",
+        "tests_passed_or_run": 33,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-decision-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 5.302195,
+        "log": "native-decision-tests.log",
+        "log_sha256": "84d8f9fd300acdcf424ebf3220b4b716567364a8bfc12a6d8523854321420773",
+        "tests_passed_or_run": 13,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 6.312052,
+        "log": "native-hook-failure-tests.log",
+        "log_sha256": "296f54d72f9d28e0f91ba79a18f24397e132079cd910a0714b67183cdb98d6e2",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "campaign-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1.80425,
+        "log": "campaign-tests.log",
+        "log_sha256": "1d14323d880af1e9440b2558ed2b1a171c6cda2c4791281ed588b978704b8b61",
+        "tests_passed_or_run": 17,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "calibration-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 7.581348,
+        "log": "calibration-tests.log",
+        "log_sha256": "9fdc200113da167192e8ffecb34a9ef3b341b9a303d7422be5a21472c60c7168",
+        "tests_passed_or_run": 30,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "physical-send-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.817079,
+        "log": "physical-send-tests.log",
+        "log_sha256": "2a7c3fca147a5d7baacf502c11bd904c15415f7607f4d3bb874f700ceb9c9fb5",
+        "tests_passed_or_run": 12,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "startup-outage-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.189133,
+        "log": "startup-outage-tests.log",
+        "log_sha256": "ca3fb43957a45c0f763110630bf2dae8d7976c5abaebd1c2b777462d1a5903be",
+        "tests_passed_or_run": 8,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "owned-entry-tests",
+        "group": "quality",
+        "argv": [
+          "python3",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 0.546419,
+        "log": "owned-entry-tests.log",
+        "log_sha256": "1054045d36c35779fdfccb1946df05be4c08cc4d4c12b8332b3164908f9d21e0",
+        "tests_passed_or_run": 44,
+        "python_tests_skipped": 0
+      },
+      {
+        "id": "secrets-dir",
+        "group": "quality",
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 1.574169,
+        "log": "secrets-dir.log",
+        "log_sha256": "b2263783a86d00beab7a490d03d5bd5b06cdf3c001e3d68653bfcd3b387fc476"
+      },
+      {
+        "id": "secrets-git",
+        "group": "quality",
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "duration_seconds": 2.43088,
+        "log": "secrets-git.log",
+        "log_sha256": "3a8b6e81a5f04189a7327abd7156b78ed1d9c4c53ad576c3c989981dd152b772"
+      }
+    ],
+    "summary_sha256": "3c8540ad951989f12bb929a5653fdd77e7e8a8b12bfcc7d27e1710934bf85aaa",
+    "count_semantics": "Rust counts sum test-result lines including subprocess invocations, not unique definitions. Ignored native tests are not successes.",
+    "prior_ephemeral_results": "Earlier temporary logs disappeared on resume, including a failed doctest compilation and unfinished retry. None is counted as evidence for this result; this complete fresh gate has its own durable logs."
+  },
+  "independent_review": {
+    "remaining_confirmed_blockers": 0,
+    "scope": "Static independent review of all 11 changed files against main; no product or native execution by reviewer.",
+    "finding_fixed": "Lifecycle assertion checks descendant stopped immediately after stop returns; no post-return grace period can mask a weak stop contract. Separate bounded observer tests remain.",
+    "review_state_sha256": "2cd222b65043886101b8295949d0c67f41a4759b4e5c7480c94f669c9deba205",
+    "review_diff_sha256": "10aad9d2e7f9af18f40fc2f01292731f3d3a15803bf21541c5c1afa9037efe83",
+    "all_11_reviewed_hashes_matched": true
+  },
+  "native_capture": {
+    "new_native_run": false,
+    "historical_report": "native-results.json",
+    "all_10_source_hashes_still_match": true,
+    "F12a": "NO_GO",
+    "F02b": "NOT_ATTEMPTED",
+    "finite_supervised_client": "Design follow-up only. No new client/host-state/broker authority is implemented."
+  },
+  "full_ci_equivalent": false,
+  "limits": [
+    "One macOS host only.",
+    "No paid provider or model turn.",
+    "No new native admission, exhaustive descendant containment or memory-bound proof.",
+    "Remote checks are separate; this record does not override failed or unavailable CI."
+  ]
+}
