@@ -50,6 +50,7 @@ sauf celles marquées (FR).
 | --- | --- |
 | [Préparation](preparation.md) | Préparer un nœud de workflow |
 | [Exécution par la CLI](cli-execution.md) | Approuver, lancer, vérifier, conserver et purger les sorties |
+| [Patchs vérifiés isolés](staged-patch.md) | 2026-10-08 : correction simulée vérifiée et résultat Git immuable isolé ; application au worktree utilisateur et composition native ouvertes |
 | [Runtime](runtime.md) | Exécution en sandbox, reprise après crash, limites par plateforme |
 | [Coordinateur](coordinator.md) | Vagues de workflow durables et transmission d'artefacts |
 | [Escalade](escalation.md) | Escalade à partir de tentatives durables |

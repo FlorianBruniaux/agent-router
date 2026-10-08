@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-08: document [staged verified patches](docs/staged-patch.md) and [ADR 0027](docs/adr/0027-staged-patch-integration.md), a partial delivery of #132. A simulated two-file correction is verified and published as an immutable Git tree, with source files preserved. Record local gates, independent review and limitations in the [verification report](docs/bench/verification-staged-patch-2026-10-08.json); live-worktree overwrite and native useful-task composition remain open.
+
 - 2026-10-08: refresh the [current status](docs/bench/status-and-action-plan-2026-10-05.md) and [execution order](docs/bench/finalization-plan-2026-10-07.md#ordre-dexécution-à-partir-du-8-octobre) after PR #139 merged. Separate delivered observation and local diagnostics from the next dedicated Codex client qualification, parallel measurement work, useful-patch trial and later comparison. Link the prepared personal task; preserve local test scope, blocked remote CI and the remaining real-provider admission requirements.
 
 - 2026-10-07: add the [passive observation guide](docs/run-observation.md) and [ADR 0025](docs/adr/0025-run-observation.md): F04a reads one bounded, redacted snapshot of an existing runtime store; native fields remain unknown, and F04b and the full timeline stay open. Index the [F03a diagnostic](docs/bench/physical-send-feasibility-2026-10-07/README.md), retaining its overall NO-GO and timeout limitation; reconcile the six issue updates without closing them.
@@ -70,6 +72,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- Version-1 staged patch preview/result and explicit `artifacts staged-preview` / `stage --approve`, also available through the coordinator. Bind the exact stored diff, verification, definition, destination, source/result trees and file content/modes. A durable journal claim prevents repeated publication after concurrency, interruption or reopen; no applied-integration feedback is emitted. Refuse implicit Git fetch, preexisting symbolic destinations, binary patches and oversized source inputs.
 
 - Dedicated Codex client diagnostic with task/thread/turn/model/effort binding, strict bounded JSON, refusal of permission callbacks and reroutes, broker request validation and controlled cancellation. Three local native scenarios qualify the simulated entry under [ADR 0026](docs/adr/0026-owned-client-simulated-entry.md); full ACP comparison, real-provider and OS admission remain open. The local runner now includes the client, physical-send and startup-outage unit suites without implicitly launching native Codex.
 

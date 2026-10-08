@@ -196,6 +196,49 @@ pub struct IntegrationPreview {
     pub approval_digest: String,
     pub changed_paths: Vec<String>,
 }
+/// Immutable Git blob identity. Only ordinary files are supported.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StagedBlob {
+    pub oid: String,
+    pub sha256: String,
+    pub mode: String,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StagedFileChange {
+    pub path: String,
+    pub before: Option<StagedBlob>,
+    pub after: Option<StagedBlob>,
+}
+/// Review bytes and immutable result are covered by one approval digest.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StagedIntegrationPreview {
+    pub schema_version: u32,
+    pub definition_hash: String,
+    pub destination_git_dir: String,
+    pub run_id: String,
+    pub source_commit: String,
+    pub source_tree: String,
+    pub allowed_scope: Vec<String>,
+    pub artifact_sha256: String,
+    pub verification: VerificationRecord,
+    pub files: Vec<StagedFileChange>,
+    pub result_tree: String,
+    pub approval_digest: String,
+    pub diff: String,
+}
+/// A private ref to a tree, not a commit or a modification of a live worktree.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct StagedIntegrationResult {
+    pub schema_version: u32,
+    pub run_id: String,
+    pub approval_digest: String,
+    pub staged_ref: String,
+    pub result_tree: String,
+}
 /// Evidence scope matters: a process group excludes descendants that detached.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]

@@ -24,6 +24,7 @@ pub use observation::{
     RunObservation, RunObservationCompleteness, RunObservationHorizon, RunObservationIdentity,
     RunObservationKnown, RunObservationUnknowns,
 };
+mod integration;
 mod private_program;
 mod process;
 mod resources;

@@ -336,6 +336,21 @@ fn native_coordinator_cli_run_verify_service_apply_and_purge() {
         checked(f.action("service").arg("--bundle").arg(&f.bundle), 0)["applied_controls"],
         0
     );
+    let staged_preview = checked(&mut f.artifact("staged-preview"), 0);
+    let staged = checked(
+        f.artifact("stage").args([
+            "--approve",
+            staged_preview["preview"]["approval_digest"]
+                .as_str()
+                .unwrap(),
+        ]),
+        0,
+    );
+    assert_eq!(
+        staged["staged"]["result_tree"],
+        staged_preview["preview"]["result_tree"]
+    );
+    assert!(staged.get("feedback").is_none());
     let preview = checked(&mut f.artifact("preview"), 0);
     let applied = checked(
         f.artifact_recording("apply").args([

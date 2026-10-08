@@ -590,6 +590,25 @@ impl Coordinator {
     pub async fn integration_preview(&self, pending: &PendingStep) -> Result<IntegrationPreview> {
         Ok(self.runtime.integration_preview(&pending.pending).await?)
     }
+    pub async fn staged_integration_preview(
+        &self,
+        pending: &PendingStep,
+    ) -> Result<router_types::StagedIntegrationPreview> {
+        Ok(self
+            .runtime
+            .staged_integration_preview(&pending.pending)
+            .await?)
+    }
+    pub async fn stage_integration(
+        &self,
+        pending: &PendingStep,
+        approval: &str,
+    ) -> Result<router_types::StagedIntegrationResult> {
+        Ok(self
+            .runtime
+            .stage_integration(&pending.pending, approval)
+            .await?)
+    }
     pub async fn apply(&self, pending: &PendingStep, approval: &str) -> Result<IntegrationPreview> {
         Ok(self.runtime.apply(&pending.pending, approval).await?)
     }

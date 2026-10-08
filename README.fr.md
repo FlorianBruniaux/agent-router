@@ -9,7 +9,7 @@ acceptée sont disponibles. L’usage automatique quotidien et les économies r�
 restent à prouver. Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md)
 sépare le premier essai utile, les mesures et la publication.
 
-L’[observation passive](docs/run-observation.md) (EN) dispose maintenant d’un schéma JSON publié. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. La suite est un patch utile simulé. L’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
+L’[observation passive](docs/run-observation.md) (EN) dispose maintenant d’un schéma JSON publié. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. Le [parcours de patch isolé](docs/staged-patch.md) (EN) vérifie maintenant une correction simulée sur deux fichiers et publie son résultat Git sans écraser les fichiers source. L’application directe avec modifications concurrentes reste non qualifiée. L’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
 
 Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
 conversion future vers Apache 2.0. Le [guide d'essai expérimental](docs/experimental-release.md)

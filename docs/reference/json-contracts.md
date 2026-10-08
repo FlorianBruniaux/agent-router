@@ -32,6 +32,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Workflow | v1 normalized task and hashed acyclic plan, scope and downstream independent verification checks |
 | Preparation | v1 manifest and redacted preview; optional private request bundle, no automatic approval |
 | Execution | v1 request, private persisted definition and approval; observed transport stays separate from objective verification |
+| Staged patch integration | v1 preview/result, exact captured patch, immutable source/result trees, verification, definition and destination binding; durable claim before publishing a separate Git tree reference. No source-file integration or human acceptance implied; see [staged patches](../staged-patch.md) and [ADR 0027](../adr/0027-staged-patch-integration.md) |
 | Evaluation | replay inputs, independently audited traces and explicit human-label status; no gain inferred from proposed labels |
 | Feedback | v1 private consent/events (optional `run_key_sha256`, `started_at_unix_seconds`, `measurements.usage` and `measurements.usage_scope`), schema 2 store with late facts, a read-only `report`, signed policy changes with externally trusted keys; no online exploration |
 | Feedback summary | v2 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |

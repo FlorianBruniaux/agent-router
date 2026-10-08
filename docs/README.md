@@ -51,6 +51,7 @@ written in French.
 | --- | --- |
 | [Preparation](preparation.md) | Preparing a workflow node |
 | [CLI execution](cli-execution.md) | Approve, run, verify, retain and purge outputs |
+| [Staged verified patches](staged-patch.md) | 2026-10-08: verified simulated correction and isolated immutable result; live worktree application and native composition remain open |
 | [Runtime](runtime.md) | Sandboxed execution, crash recovery, platform limits |
 | [Coordinator](coordinator.md) | Durable workflow waves and artifact handoff |
 | [Escalation](escalation.md) | Escalating from durable attempts |

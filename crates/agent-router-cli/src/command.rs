@@ -753,6 +753,14 @@ pub enum CoordinateCommand {
 
 #[derive(Subcommand)]
 pub enum ArtifactCommand {
+    /// Prepare an immutable Git tree and exact review diff; may write unreachable objects and a private index, never source files or refs.
+    StagedPreview,
+    /// Publish the approved tree under a dedicated ref; never modify source files or the source index.
+    Stage {
+        /// Exact approval digest printed by `staged-preview`.
+        #[arg(long)]
+        approve: String,
+    },
     /// Show the integration preview and its approval digest.
     Preview,
     /// List retained output metadata.
@@ -1134,5 +1142,22 @@ impl Commands {
         let human = !*json;
         *json = true;
         human.then_some(title)
+    }
+}
+
+#[cfg(test)]
+mod staged_command_tests {
+    use super::*;
+    use clap::Parser;
+    #[derive(Parser)]
+    struct ArtifactCli {
+        #[command(subcommand)]
+        command: ArtifactCommand,
+    }
+    #[test]
+    fn staged_artifact_commands_require_explicit_publication_approval() {
+        assert!(ArtifactCli::try_parse_from(["artifacts", "staged-preview"]).is_ok());
+        assert!(ArtifactCli::try_parse_from(["artifacts", "stage"]).is_err());
+        assert!(ArtifactCli::try_parse_from(["artifacts", "stage", "--approve", "digest"]).is_ok());
     }
 }

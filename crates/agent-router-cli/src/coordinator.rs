@@ -924,6 +924,12 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 )
             };
             let value = match command {
+                ArtifactCommand::StagedPreview => {
+                    serde_json::json!({"schema_version":1,"preview":coordinator.staged_integration_preview(&pending).await.map_err(error)?})
+                }
+                ArtifactCommand::Stage { approve } => {
+                    serde_json::json!({"schema_version":1,"staged":coordinator.stage_integration(&pending, &approve).await.map_err(error)?})
+                }
                 ArtifactCommand::Preview => {
                     serde_json::json!({"schema_version":1,"preview":coordinator.integration_preview(&pending).await.map_err(error)?})
                 }

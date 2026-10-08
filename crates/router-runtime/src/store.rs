@@ -17,6 +17,7 @@ use std::{
 
 mod admission;
 mod escalation;
+mod integration;
 mod observation;
 pub use observation::observe_run;
 mod preparation;

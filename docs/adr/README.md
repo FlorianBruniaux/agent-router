@@ -37,6 +37,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0026](0026-owned-client-simulated-entry.md) | Dedicated Codex client for simulated patch work | accepted | 2026-10-08 | 2026-10-08 | - |
 
+| [0027](0027-staged-patch-integration.md) | Stage verified patches as immutable Git results | accepted | 2026-10-08 | 2026-10-08 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.

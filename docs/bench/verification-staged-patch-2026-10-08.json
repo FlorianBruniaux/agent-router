@@ -1,0 +1,474 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "scope": "Partial F02a: verified canonical patch staged as immutable Git tree; no live-worktree overwrite or dedicated native Codex composition",
+  "base_head_sha": "6521a7ebafe0140a8b224d87b7f23410f729cb35",
+  "production_source": [
+    {
+      "path": "crates/router-types/src/runtime.rs",
+      "before_sha256": "0ab81788dc1eec1c1892e76cb400696aa7ac52780f81d69cc2e72157314bec07",
+      "after_sha256": "96b7a57b38fbe236c986c11a1b85e7a81d8e6825545113e6476aaa80b0e60536"
+    },
+    {
+      "path": "crates/router-runtime/src/lib.rs",
+      "before_sha256": "4ff661ba8b4b4c7ad336ff091144be29ae71f1b8b8e218feedfde215cbe862f1",
+      "after_sha256": "0d36dba95cd2d19a1436b18456037cf7571b104de975025d77facfc14a6efbd2"
+    },
+    {
+      "path": "crates/router-runtime/src/store.rs",
+      "before_sha256": "f3c483ce1a05170259260b2b712ff7d6b0096c1a0783315f1b90613a9dbfb314",
+      "after_sha256": "3a0212c7490aa73929fa514f15a051e7c83c10c931b90c202d4067080f7f2953"
+    },
+    {
+      "path": "crates/router-runtime/src/integration.rs",
+      "before_sha256": null,
+      "after_sha256": "ef90d0ce6df59558576e412753c3b242ef610b7c6b5f7bf13bfa4ce25cc413b5"
+    },
+    {
+      "path": "crates/router-runtime/src/store/integration.rs",
+      "before_sha256": null,
+      "after_sha256": "432e194c2c21487cbda2b966d4595a6e9bb85be20738788b8809e1980ba88d06"
+    },
+    {
+      "path": "crates/router-runtime/tests/staged_integration.rs",
+      "before_sha256": null,
+      "after_sha256": "72ec09909d0020a99fbf7ea5063a4ce629cc5de736cf9ffebb339b5d063c3e71"
+    },
+    {
+      "path": "crates/router-coordinator/src/lib.rs",
+      "before_sha256": "eec7dec7add9641db4d4799deafaad693b70b402dcbdb15e54ddf6c81284dfa9",
+      "after_sha256": "d59a03e908acb76b70810e8e87ad791b68b5fedaa16e30f35816d221de849c83"
+    },
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "before_sha256": "06b54e0aebe9ba27bbd3740daa36b021e18b71459960485d02b2ce938e6da4d1",
+      "after_sha256": "28a0442dcdd2d7dc46869802d9bb261965d43741927588d286a2a77c603945cf"
+    },
+    {
+      "path": "crates/agent-router-cli/src/execution.rs",
+      "before_sha256": "a3337c635ba3f7ea7e015d92f5cf4217ce690c777542c8b96a7b2ff466a81dba",
+      "after_sha256": "599a92c0d39ac05f8829a523c66dc2cb95117d47a9471180b300563f43aed910"
+    },
+    {
+      "path": "crates/agent-router-cli/src/coordinator.rs",
+      "before_sha256": "faf4bf94506fe2283907384a9ecf25011b70f0bd2f0d6ef3070a7a905b71374f",
+      "after_sha256": "33b23e387a7a5a4872759e4b69438d0c91172d5a239ce35f96885ae295af57d0"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/coordinator.rs",
+      "before_sha256": "31fd03cb59ce27ad52434c44ea22c763fe77d72b4b3c3627dd4266b2e6d2c9cc",
+      "after_sha256": "a35115dea84bb50ca718287dbba5079b04317d5a387f4ca97f97327229650fde"
+    }
+  ],
+  "selected_quality": {
+    "verdict": "selected_checks_passed",
+    "checks": [
+      {
+        "id": "format",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "clippy-all",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "397169944b423af6493606bcdca2cbae6b3e634c0256968cd83fbae9a98c6d7b"
+      },
+      {
+        "id": "clippy-core",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "bfe8b4c19656056701e10741b675ec9c353c53dff54325553303218455847669"
+      },
+      {
+        "id": "workspace-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "e117405c100ab926f63ca95f240cd1e415dee021f9b345edba7825480aa83e6a",
+        "tests_passed_or_run": 1651
+      },
+      {
+        "id": "local-api-absent",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "730a23eec101f22e322813cee51c81f94357fb7cb851d73560cf900236ce56fa",
+        "tests_passed_or_run": 1
+      },
+      {
+        "id": "harness",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "c74e6be14091060857e022e660efcf09595716a0de3ae556769dfd73cba37d53"
+      },
+      {
+        "id": "host-syntax",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "372ee57a30b8a8b17bb056a0814266786a922da7dcf4139f4f9a2457745d6424",
+        "tests_passed_or_run": 3
+      },
+      {
+        "id": "script-test-check-adrs",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "7b04a58ac7745e3eb967218883536dc30781cf135b989e6fd067c3830bb5bb72",
+        "tests_passed_or_run": 30
+      },
+      {
+        "id": "script-test-check-local",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "1e89b01f615b827abb6ff91a478bf482d3157b8df646faccc7b5d9c2bd16cbb8",
+        "tests_passed_or_run": 30
+      },
+      {
+        "id": "script-test-package-binary",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "c34e374743ac0a930733e22c1a8db65835ec6f2f5d1f0ddae08243ed0d28ca79",
+        "tests_passed_or_run": 17
+      },
+      {
+        "id": "script-test-package-core",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "c0e24680e1831f149d50f97a211e53c8801fe1d213f5ce3c91c801357c5bca0c",
+        "tests_passed_or_run": 26
+      },
+      {
+        "id": "script-test-release-local",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "4ca4f8d8d1b2fc7f60cf4257444e5d0ce6b4684d86fe564842a37ee5931b310c",
+        "tests_passed_or_run": 27
+      },
+      {
+        "id": "egress-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "0b40a3d61880246bf2edfb52b79011a16eb48ef73a52a2a4dfefa0c06b41f27c",
+        "tests_passed_or_run": 48
+      },
+      {
+        "id": "native-probe-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "a044a8b495973d425dcc195f9f9f3a1609c65c9f17ba495355e3f7f762170c42",
+        "tests_passed_or_run": 33
+      },
+      {
+        "id": "native-decision-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "a51e1a96532a2e7672b9f6ecbabdaefd62520330ca28dd0c4392f31d4371e440",
+        "tests_passed_or_run": 13
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "0ca93b3176669868452b3b1f83a2d69667d49ad61af19024688168078c30357e",
+        "tests_passed_or_run": 17
+      },
+      {
+        "id": "campaign-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "41f00666a264389d501fb36599c6e0b030b8ee9fd870ba9f36ec9edd1ee352a7",
+        "tests_passed_or_run": 17
+      },
+      {
+        "id": "calibration-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "c28b8871629a244cfcd0433fb2eabd053f72541a625eb25a0edf1d707fd16676",
+        "tests_passed_or_run": 30
+      },
+      {
+        "id": "physical-send-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "03098d0bc7d28a165e65780b96d7ff38cd1dee2b13b899844a62f259aca63808",
+        "tests_passed_or_run": 12
+      },
+      {
+        "id": "startup-outage-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4",
+        "tests_passed_or_run": 8
+      },
+      {
+        "id": "owned-entry-tests",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "f6b4a11d6069b7b33592f959c910951d6a2f406d034e341af7494d97cd3fee4a",
+        "tests_passed_or_run": 44
+      },
+      {
+        "id": "secrets-dir",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "407328ab3dfc2790dea20c7d3409803f4ce2fe426247fb37b7e55001d2a336b0"
+      },
+      {
+        "id": "secrets-git",
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "09a4774645ee272d2e11fdd615b246fbf27474d34be15f07a74a063c18d4ab28"
+      }
+    ],
+    "summary_sha256": "9fc2aafb27bc7df2ccc2adf3896efe0512d8b5adfe01dc38ac5521e724aa9bee",
+    "source_unchanged_during_run": true,
+    "source_sha256": "03dd6010e4807722adead346106057129f449cb3c0e2ac25a136783cbd8a6a84",
+    "workspace_result_count": 1651,
+    "core_only_passed": 1,
+    "python_tests": 355,
+    "workspace_ignored": 42,
+    "count_note": "Rust counts sum result lines, including subprocesses; targeted reruns are not added again. Ignored cases are not passes. Documentation-only changes followed this run and received separate checks.",
+    "full_ci_equivalent": false
+  },
+  "native_cli": {
+    "checks": [
+      {
+        "id": "native-cli-build",
+        "argv": [
+          "cargo",
+          "build",
+          "-p",
+          "agent-router-cli",
+          "-p",
+          "router-sandbox-helper",
+          "--all-features",
+          "--locked"
+        ],
+        "exit_code": 0,
+        "log_sha256": "2b77653c83b9d46b9e8c77d22924f895aaf6adaa2c4a20b7620a5b951bd0e4bf"
+      },
+      {
+        "id": "native-cli-staged",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--all-features",
+          "--locked",
+          "--test",
+          "coordinator",
+          "native_coordinator_cli_run_verify_service_apply_and_purge",
+          "--",
+          "--ignored",
+          "--exact",
+          "--nocapture"
+        ],
+        "exit_code": 0,
+        "log_sha256": "68ce2a667e9abc87d391fcf4f18643aef4aed1b4f9c79f219c462606ff3e701b"
+      }
+    ],
+    "scope": "One actual macOS sandbox CLI lifecycle using synthetic authority and executable; no real host/provider identity or dedicated Codex composition",
+    "passed": 1
+  },
+  "independent_review": {
+    "reviewer": "rust-security-reviewer",
+    "model": "gpt-6-astra",
+    "thinking": "high",
+    "verdict": "no_remaining_blocking_defect_in_stated_scope",
+    "source_sha256": {
+      "crates/router-runtime/src/integration.rs": "ef90d0ce6df59558576e412753c3b242ef610b7c6b5f7bf13bfa4ce25cc413b5",
+      "crates/router-runtime/src/store/integration.rs": "432e194c2c21487cbda2b966d4595a6e9bb85be20738788b8809e1980ba88d06",
+      "crates/router-types/src/runtime.rs": "96b7a57b38fbe236c986c11a1b85e7a81d8e6825545113e6476aaa80b0e60536"
+    },
+    "execution_by_reviewer": false,
+    "read_targeted_logs": {
+      "integration_passed": 11,
+      "unit_passed": 3,
+      "cli_parser_passed": 1
+    },
+    "confirmed_fixed": [
+      "implicit Git fetch",
+      "preexisting dangling symbolic reference replacement"
+    ],
+    "resource_fix": "text-only patch and bounded inventory/source-blob preflight, not OS memory limit",
+    "limits": [
+      "managed staged publishers only",
+      "no physical process-crash test; cfg(test) interruptions",
+      "no live-worktree overwrite qualification",
+      "no real provider or native Codex composition",
+      "canonical runtime capture --no-renames required"
+    ],
+    "recorded_by": "root from independent review final message"
+  },
+  "retained_runs": [
+    {
+      "file": "independent-tests-green.log",
+      "sha256": "c08d89c7b769c7985d04284dfb4af5a0db54a5cdc81d2702c492847851393138",
+      "result_lines": [
+        "test result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.14s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "independent-tests-red.log",
+      "sha256": "310836a43499cb309506e71df3dd365ae56fb23e4c03d0d122e9b18d534d6e1f",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.93s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "native-cli-build.log",
+      "sha256": "2b77653c83b9d46b9e8c77d22924f895aaf6adaa2c4a20b7620a5b951bd0e4bf",
+      "result_lines": []
+    },
+    {
+      "file": "native-cli-staged.log",
+      "sha256": "68ce2a667e9abc87d391fcf4f18643aef4aed1b4f9c79f219c462606ff3e701b",
+      "result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 4.56s"
+      ]
+    },
+    {
+      "file": "implementation/binary-red.log",
+      "sha256": "8c127406b0663a6245ffe04de7d7d8522c2d24aed67c303db676b8d5285c25b8",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.99s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "implementation/cli-parser-green.log",
+      "sha256": "c42551bcff2aca34c4212e42102653f633dbd668d016f76a730616124adfe5ba",
+      "result_lines": [
+        "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 51 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "file": "implementation/cli-parser-red.log",
+      "sha256": "51f38e8f79e71c2c77d4b0216a0b2aca3ef6388de083758797f165577f99a3f9",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 51 filtered out; finished in 0.00s",
+        "error: test failed, to rerun pass `-p agent-router-cli --bin agent-router`"
+      ]
+    },
+    {
+      "file": "implementation/cli-red.log",
+      "sha256": "6c6558afea16f71ac86009f81de9b8c8c597627605faa6a1bba0666ab86574d5",
+      "result_lines": [
+        "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 5 filtered out; finished in 0.00s"
+      ]
+    },
+    {
+      "file": "implementation/promisor-red.log",
+      "sha256": "ec8dbf35933be55c60d536fc56e693b44d3b02fff12558e99f4fa48df4c5ed60",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 1.51s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "implementation/staged-green-bounded.log",
+      "sha256": "ac16533cb67b60d5f16bc9562d2c8f5ca7b53bca9f726fd30fb2b9bd541e240e",
+      "result_lines": [
+        "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.64s"
+      ]
+    },
+    {
+      "file": "implementation/staged-green-final.log",
+      "sha256": "32cdae0e2f6e1db021b08820446b38e45ed53b81c040152240d9064b2ffad22b",
+      "result_lines": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.03s"
+      ]
+    },
+    {
+      "file": "implementation/staged-green-initial.log",
+      "sha256": "efb9b742d9803c94629f0464c9656c33f03e2e117465a3e364d5dadc19202930",
+      "result_lines": [
+        "test result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.54s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "implementation/staged-green.log",
+      "sha256": "6ce82847140a48992f6a7bb804619cfc626f263453671d4c062c141d915a3095",
+      "result_lines": [
+        "test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.47s"
+      ]
+    },
+    {
+      "file": "implementation/symref-red.log",
+      "sha256": "74109b3097923671251479b3e17332a491f33f1af66962af80c2966767ec8e3a",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 7 filtered out; finished in 1.58s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "implementation/unit-green-final.log",
+      "sha256": "682790820e8deb5263f44e1d549910cd7ec9d447922197fe93742c59b9b25a27",
+      "result_lines": [
+        "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 0.21s"
+      ]
+    },
+    {
+      "file": "implementation/unit-green.log",
+      "sha256": "ef417302e3ec36d7130f794f04159a7d16d771600d3f3fbed0c21decd19132a2",
+      "result_lines": [
+        "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 152 filtered out; finished in 0.28s"
+      ]
+    },
+    {
+      "file": "implementation/unit-red.log",
+      "sha256": "6d8dad7bfd6db33f1b40abc6e27bdb1969b5b955d27db702526921e0ea36ddda",
+      "result_lines": [
+        "test result: FAILED. 1 passed; 1 failed; 0 ignored; 0 measured; 152 filtered out; finished in 0.35s",
+        "error: test failed, to rerun pass `-p router-runtime --lib`"
+      ]
+    },
+    {
+      "file": "independent-tests/first-green-attempt.log",
+      "sha256": "c08d89c7b769c7985d04284dfb4af5a0db54a5cdc81d2702c492847851393138",
+      "result_lines": [
+        "test result: FAILED. 4 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.14s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    },
+    {
+      "file": "independent-tests/green-final.log",
+      "sha256": "32cdae0e2f6e1db021b08820446b38e45ed53b81c040152240d9064b2ffad22b",
+      "result_lines": [
+        "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.03s"
+      ]
+    },
+    {
+      "file": "independent-tests/red.log",
+      "sha256": "310836a43499cb309506e71df3dd365ae56fb23e4c03d0d122e9b18d534d6e1f",
+      "result_lines": [
+        "test result: FAILED. 0 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.93s",
+        "error: test failed, to rerun pass `-p router-runtime --test staged_integration`"
+      ]
+    }
+  ],
+  "git_characterizations": {
+    "version": "git version 2.50.1 (Apple Git-155)",
+    "implicit_fetch": "Confirmed using only a local filesystem origin, corrected by configuration refusal and no-lazy-fetch",
+    "dangling_symref": "Confirmed create overwrites unresolved symbolic ref, corrected by preflight refusal within managed publisher boundary"
+  },
+  "limits": [
+    "Immutable Git tree, not a new source commit or human acceptance",
+    "Full F02a live-worktree concurrent/interrupted-write acceptance remains open",
+    "External same-user writers changing dedicated refs during publication excluded",
+    "Interruption probes use private cfg(test) injection, not process-kill/power-loss",
+    "Text-only canonical --no-renames capture; no arbitrary patch import",
+    "256 changed files, 100000 source entries, 16 MiB patch and bounded blob budgets; no hard OS memory/disk limit claimed",
+    "Real provider admission, full Codex/Claude/OS composition and actual savings remain unverified"
+  ],
+  "tdd_note": "Feature, command, control-character, promisor, symref and binary RED evidence retained. Oversized base regression followed its guard; no initial RED is claimed for it."
+}

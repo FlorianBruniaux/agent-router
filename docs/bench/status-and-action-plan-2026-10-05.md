@@ -5,6 +5,12 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+## Patch simulé isolé du 8 octobre 2026
+
+Le [parcours de patch isolé](../staged-patch.md) vérifie une correction simulée sur deux fichiers, puis publie son arbre Git sans changer le HEAD, l’index ou les fichiers source. L’approbation lie le patch exact, sa vérification et sa destination. Le journal conserve la réservation après interruption et interdit la répétition automatique.
+
+Le [rapport de vérification](verification-staged-patch-2026-10-08.json) distingue tests, revue et limites. Il s’agit d’une livraison partielle de #132 : application sûre au worktree vivant et composition Codex dédiée restent ouvertes. La collecte des mesures et l’essai personnel avec fournisseur réel restent à réaliser ; aucun gain mesuré n’est annoncé.
+
 ## Qualification locale du 8 octobre 2026
 
 Le [client Codex dédié](owned-entry-qualification-2026-10-08/README.md) passe trois scénarios natifs avec fournisseur simulé : un envoi autorisé, zéro envoi après refus, annulation et nettoyage du relais absent. Le [rapport lié aux sources](verification-owned-client-2026-10-08.json) conserve les contrôles, revues et échecs initiaux, dont un arrêt de groupe non confirmé au premier contrôle immédiat. Aucun appel payant n’a été effectué. Les 24 contrôles locaux sélectionnés passent : 1 636 résultats Rust workspace plus un contrôle du cœur et 355 tests Python. Les nombres Rust additionnent les résultats, sous-processus compris ; les 42 tests natifs Rust ignorés ne sont pas des succès. Les sources restent identiques pendant la passe complète.

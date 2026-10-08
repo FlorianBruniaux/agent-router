@@ -1413,6 +1413,12 @@ pub(crate) fn artifacts(
             ArtifactCommand::PurgeOutputs { attempt } => {
                 serde_json::json!({"schema_version":1,"purged":runtime.purge_output_artifacts(&definition.run_id,attempt).map_err(error)?})
             }
+            ArtifactCommand::StagedPreview => {
+                serde_json::json!({"schema_version":1,"preview":runtime.staged_integration_preview(&pending).await.map_err(error)?})
+            }
+            ArtifactCommand::Stage { approve } => {
+                serde_json::json!({"schema_version":1,"staged":runtime.stage_integration(&pending, &approve).await.map_err(error)?})
+            }
             ArtifactCommand::Preview => {
                 serde_json::json!({"schema_version":1,"preview":runtime.integration_preview(&pending).await.map_err(error)?})
             }

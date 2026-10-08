@@ -9,7 +9,7 @@ are available. Automatic daily use and real savings remain unproven. The
 [finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) tracks the first useful trial,
 measurement and publication separately.
 
-[Passive observation](docs/run-observation.md) now has a published JSON Schema. The [dedicated Codex client diagnostic](docs/bench/owned-entry-qualification-2026-10-08/README.md) verifies an allowed local send, refusal and controlled cancellation against a simulated provider. The next step is a useful simulated patch. Daily-use integration, real-provider admission and measured savings remain open.
+[Passive observation](docs/run-observation.md) now has a published JSON Schema. The [dedicated Codex client diagnostic](docs/bench/owned-entry-qualification-2026-10-08/README.md) verifies an allowed local send, refusal and controlled cancellation against a simulated provider. The [staged patch path](docs/staged-patch.md) now verifies a simulated two-file correction and publishes an isolated Git result while preserving source files. Direct application with concurrent user edits remains unqualified. Daily-use integration, real-provider admission and measured savings remain open.
 
 This source-available candidate uses [FSL-1.1-ALv2](LICENSE.md), with future
 Apache 2.0 conversion. Start with the [experimental onboarding](docs/experimental-release.md)

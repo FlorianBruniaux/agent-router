@@ -160,6 +160,10 @@ metadata, and `purge-declared --id ARTIFACT_ID` explicitly removes an owned
 result. Diagnostic `outputs` and `purge-outputs --attempt N` remain separate.
 Original source files change only through explicitly approved integration.
 
+The separate [staged integration](staged-patch.md) path prepares and publishes
+a verified immutable Git tree while preserving source files. Its staged result
+does not emit the existing applied-integration feedback fact.
+
 `workflow --plan plan.json --execution-contract contract.json --seal-contract
 --json` validates and hashes a proposed contract; it grants no approval. Omit
 `--seal-contract` to verify an existing hash. Nodes must match the complete plan.

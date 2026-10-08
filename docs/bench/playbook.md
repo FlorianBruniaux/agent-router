@@ -12,7 +12,14 @@ binding and cleanup, and retained initial failures. [ADR 0026](../adr/0026-owned
 selects this entry only for F02a simulated patch work. ACP component comparison is
 partial; real-provider and complete OS admission remain unqualified. The passive
 observation now has a JSON Schema. The [verification report](verification-owned-client-2026-10-08.json)
-records local gates and independent reviews. No useful patch or savings yet.
+records local gates and independent reviews. That diagnostic alone establishes
+no useful patch or savings.
+
+The subsequent [staged patch delivery](../staged-patch.md) verifies a simulated
+two-file correction and publishes an immutable Git tree with source files
+preserved. Its [verification record](verification-staged-patch-2026-10-08.json)
+retains tests, independent review and failed attempts. This is partial F02a: live
+worktree overwrite, dedicated Codex composition and measured savings stay open.
 
 The following paragraphs retain the 7 October baseline and its original limits.
 
