@@ -1,0 +1,67 @@
+CHANGELOG.md
+  s_9e80b85afcc43a::t_9d68c39491c218 45-48,78-82
+README.fr.md
+  s_9e80b85afcc43a::t_4a5475533df604 12
+README.md
+  s_9e80b85afcc43a::t_c6a9276dcf0213 12
+crates/agent-router-cli/src/coordinator.rs
+  s_9e80b85afcc43a::t_3802803f481919 908-925
+crates/agent-router-cli/src/execution.rs
+  s_9e80b85afcc43a::t_aca92109e098b7 1405-1524,1536-1543,1643-1786
+crates/agent-router-cli/tests/publication.rs
+  s_9e80b85afcc43a::t_0bea6899332fb7 191-202
+crates/router-runtime/src/integration.rs
+  s_9e80b85afcc43a::t_86596e2120729f 6-8,26-50,64-75,90,253-257,262,281-326,334-341,568-601,647-662
+crates/router-runtime/src/workspace.rs
+  s_9e80b85afcc43a::t_a3de4de537b68c 27,40-47,75-107,114-117,124,134
+crates/router-runtime/tests/runtime.rs
+  s_9e80b85afcc43a::t_24da6ed9c495eb 4319-4508
+docs/README.fr.md
+  s_9e80b85afcc43a::t_f3d33a9decea44 13-14,85
+docs/README.md
+  s_9e80b85afcc43a::t_d4d1d2ba4ed3de 13-14,86
+docs/adr/0027-verified-patch-publication.md
+  s_9e80b85afcc43a::t_3d16f82806ce6c 38-40,44-47,86-92
+docs/bench/egress-admission/codex_appserver_local.py
+  s_9e80b85afcc43a::t_0562f4984c866b 528-531,537-587
+docs/bench/egress-admission/test_codex_appserver_local.py
+  s_9e80b85afcc43a::t_cf233ac9100222 248-319,337-339
+docs/bench/finalization-plan-2026-10-07.md
+  s_9e80b85afcc43a::t_e63e091ad0ba8b 3,6,55,77,155
+docs/bench/owned-supervision-feasibility-2026-10-08/README.md
+  s_4ae71773098547::t_be3a90a555926e 73-95,119-120
+docs/bench/owned-supervision-feasibility-2026-10-08/verification-reconciled.json
+  s_4ae71773098547::t_0434858d8d79ab 1-514
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_c6482ab0101a29 15-20
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_d5b58fe29a310d 8-15
+docs/bench/verification-publication-hardening-2026-10-08.json
+  s_9e80b85afcc43a::t_ae4add33880a59 1-613
+docs/cli-execution.md
+  s_9e80b85afcc43a::t_f816af1098039f 334-349
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1351f08c80e77b9e6e1b4e6d10c36ea244173668",
+  "prompts": {},
+  "sessions": {
+    "s_4ae71773098547": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "849f2e16-04ad-49cc-abd9-7d0fb3de1c6a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
