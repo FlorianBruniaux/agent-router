@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "post_merge_source_composition_and_documentation_correction",
+  "source": {
+    "merged_commit": "109c5ff63a5fdf03a9cce83b03f1348ac978a24c",
+    "merged_tree": "100297474f3ae43843acd0090a2856036ec135b5",
+    "observation_head": "d77b546a240940d7f363e99cf4ecb207ee8b1a43",
+    "parallel_native_head": "c23b18d6b66098dda58959c0734c7b667c8942ee",
+    "parallel_merge_commit": "d90bd5a0ce6c87e3b2ab0a7b389f2c1e8b79d232",
+    "delta_paths": [
+      "crates/router-runtime/examples/finite_client_supervision.rs",
+      "docs/bench/finalization-plan-2026-10-07.md",
+      "docs/bench/finite-client-supervision-2026-10-08/README.md",
+      "docs/bench/finite-client-supervision-2026-10-08/native-results-reconciled.json",
+      "docs/bench/finite-client-supervision-2026-10-08/native-results.json",
+      "docs/bench/finite-client-supervision-2026-10-08/verification-reconciled.json",
+      "docs/bench/finite-client-supervision-2026-10-08/verification.json"
+    ],
+    "six_added_files_match_parallel_head": true,
+    "production_rust_sources_unchanged_from_observation_head": true,
+    "plan_combines_both_contributions": true,
+    "initial_exact_tree_comparison": "mismatch identified as concurrent PR148 merge, not ignored",
+    "correction_path": "docs/bench/finite-client-supervision-2026-10-08/README.md",
+    "correction_before_sha256": "2e456e2511c7a758e8361738bc84dff454835eabcae44eb24f08677d93a300e4",
+    "correction_after_sha256": "c4b41d28cb594e9ad6f2937b81f7a7b316bd12a2b3981a5bee38cf881f2afdfb"
+  },
+  "source_checks": "PR149 source-head checks passed before normal merge. Its merged tree additionally contains the concurrently merged PR148. These trees are not represented as identical.",
+  "checks": [
+    {
+      "id": "format",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "duration_seconds": 3.359639166
+    },
+    {
+      "id": "clippy",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log_sha256": "14d2af712184cca88ec3120d313264c37ef27e74b9b65824d60836910205063c",
+      "duration_seconds": 3.0809979999999997
+    },
+    {
+      "id": "runtime-observation-and-finite-client",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--test",
+        "observation",
+        "--test",
+        "observation_v2_adversarial",
+        "--test",
+        "escalation",
+        "--example",
+        "finite_client_supervision"
+      ],
+      "exit_code": 0,
+      "log_sha256": "c5cb1b1e835aa1aa3326685404bdf3a8d59860dcdb77271d8f6f6e6c54420546",
+      "duration_seconds": 45.300589833
+    },
+    {
+      "id": "cli-observation",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--locked",
+        "--test",
+        "execution",
+        "--test",
+        "schema"
+      ],
+      "exit_code": 0,
+      "log_sha256": "f1db7f80ee6576104110087fd960385655926f8f13a038ffa8afe73835710f53",
+      "duration_seconds": 29.054391666999997
+    },
+    {
+      "id": "measurement-compatibility",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--lib",
+        "store::measurement_tests"
+      ],
+      "exit_code": 0,
+      "log_sha256": "ae55e0ae95e74fad3ca16345df42b1fdf536ca5356ff7559ab8a6c70664cfd50",
+      "duration_seconds": 11.374178290999993
+    },
+    {
+      "id": "harness",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "4df25eb928c4d7294bd664e5b3f5bbe029cfd8a2af0d5a1d82606efe06a70637",
+      "duration_seconds": 1.0898087919999995
+    },
+    {
+      "id": "adr",
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "4b20cd8a2483e6c45ae672216a34743bd4c23f58c566eba4e2d547dca39b0cb0",
+      "duration_seconds": 0.3213945420000073
+    },
+    {
+      "id": "secrets",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "log_sha256": "34db1c3e6341222cd16d93fbe0124389e04579487ca39031171e519952dd0f63",
+      "duration_seconds": 2.0496968750000093
+    }
+  ],
+  "targeted_rust_counts": {
+    "runtime-observation-and-finite-client": {
+      "passed": 48,
+      "ignored": 4
+    },
+    "cli-observation": {
+      "passed": 41,
+      "ignored": 0
+    },
+    "measurement-compatibility": {
+      "passed": 5,
+      "ignored": 0
+    }
+  },
+  "adr_python_tests": 30,
+  "independent_review": {
+    "remaining_confirmed_blockers": 0,
+    "correction": "Enumerate selected TCP, com.openai.codex preference reads and apple.cfprefs. shared-memory reads. Both affected README sentences corrected.",
+    "corrected_readme_sha256_before_report_link": "c4b41d28cb594e9ad6f2937b81f7a7b316bd12a2b3981a5bee38cf881f2afdfb",
+    "reviewed_example_sha256": "a750a54979e2d3eb8b245abf4e3b28fdaa7e0d0556fdb7ac23a83e58c35e2e10",
+    "scope": "Read-only static review; historical report integrity checked against source hashes, private execution logs not available to reviewer."
+  },
+  "post_gate_additions": "This report and its README link are documentation added after the eight integration checks; final diff and secret scans cover them.",
+  "full_workspace_rerun": false,
+  "new_native_or_provider_run": false,
+  "F12a": "NO_GO",
+  "F02b": "NOT_ATTEMPTED",
+  "limits": [
+    "94 focused Rust results plus 30 ADR tests verify the selected composition only; this is not a replacement claim for the entire merged-tree CI matrix.",
+    "The finite client diagnostic has no model turn, product broker authority, real usage or measured savings.",
+    "Existing native captures and earlier failed checks remain historical evidence under their recorded source identities."
+  ]
+}

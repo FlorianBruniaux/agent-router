@@ -12,7 +12,7 @@ The source-owned paths are this evidence directory, `crates/router-runtime/examp
 
 - Codex 0.159.2 native digest `16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704` was checked before/after. A fresh private executable copy was read-only. Client/helper hashes and selected configuration bytes were checked.
 - The returned thread metadata matched requested gpt-6.1-sol/low, local_fixture, exact private workspace, ephemeral thread, on-request/user and readOnly with networkAccess false. No turn/start was sent. Returned effort is not proof of inference effort.
-- A trusted diagnostic variation adds only TCP localhost at the selected listener port to the real Seatbelt deny profile. Both listeners were reachable in outside controls. The supervised client reached the selected one; the other connection failed with EPERM and its accepted count remained at the control count. The listener is a banner canary, not a provider HTTP broker.
+- A trusted diagnostic variation adds three permissions to the real Seatbelt deny profile: TCP localhost at the selected listener port, `user-preference-read` for `com.openai.codex`, and `ipc-posix-shm-read*` for the `apple.cfprefs.` prefix. Both listeners were reachable in outside controls. The supervised client reached the selected one; the other connection failed with EPERM and its accepted count remained at the control count. The listener is a banner canary, not a provider HTTP broker.
 - Read/write allow and refusal canaries passed. Native and helper exit 0 and the lease are distinct from the RPC responses. Group-clean does not prove exhaustive containment.
 - The fixture binding includes PreparedRun fields and a separate stdin digest because PreparedRun serialization omits stdin. The worker refuses changed bytes, unknown/duplicate fields, expired or implausibly future input, wrong pin/ports and oversized input before its side effects. Native thread identity and contradictory metadata have explicit refusal tests.
 
@@ -22,7 +22,7 @@ Before the resumed capture, a 256-process diagnostic reached native spawn and re
 
 The resumed capture uses a 45-second total diagnostic bound, a six-second RPC bound and explicit NPROC 2,048. Pre-RPC validation took about 6.5 seconds in its private trace. NPROC is a user-wide ceiling, not a task process count. Address-space enforcement is explicitly not requested. Product ResourceLimits defaults are unchanged. The broader Mach lookup granted by the existing Seatbelt profile leaves the Mach/DNS boundary unqualified.
 
-**F12a remains NO_GO; F02b is NOT_ATTEMPTED.** The runtime's ControllerBrokerOnly implementation remains unsupported. The trusted candidate wrapper validates its exact diagnostic request, invokes the real Seatbelt command with Deny, then adds the selected TCP canary rule. This is an explicit diagnostic variation; synthetic request fields, freshness checks and a digest do not replace product approval or authenticated capability evidence.
+**F12a remains NO_GO; F02b is NOT_ATTEMPTED.** The runtime's ControllerBrokerOnly implementation remains unsupported. The trusted candidate wrapper validates its exact diagnostic request, invokes the real Seatbelt command with Deny, then adds the selected TCP canary rule and the two named preference/shared-memory read permissions described above. This is an explicit diagnostic variation; synthetic request fields, freshness checks and a digest do not replace product approval or authenticated capability evidence.
 
 ## Next product contract
 
@@ -42,3 +42,5 @@ AR_CODEX_NATIVE=/absolute/pinned/codex AR_SANDBOX_HELPER=/absolute/pinned/helper
 Private diagnostic files are created in a fresh directory. Do not overwrite a previous capture. The public [native report](native-results.json) contains projected fields and hashes, never native IDs, temporary paths or raw protocol text. [Verification](verification.json) records the current checks separately from prior delivery proofs.
 
 The TCP SBPL form was checked against Apple's [CUPS sandbox generator](https://github.com/apple/cups/blob/master/scheduler/process.c), then compiled and exercised by this actual native capture. Only this tested listener/canary scope is claimed.
+
+The [post-merge integration record](verification-integration.json) records the concurrent observation-v2 merge, 94 focused Rust results and 30 ADR tests. It also records the independently reviewed permission-description correction above. No new native capture or product admission follows from this documentation update.
