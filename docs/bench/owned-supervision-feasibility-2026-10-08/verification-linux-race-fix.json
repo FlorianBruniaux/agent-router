@@ -1,0 +1,70 @@
+{
+  "baseline_commit": "3c6017c82abdc01fbb320d471a16e2645b873c72",
+  "changed_source": {
+    "mode": 420,
+    "path": "docs/bench/egress-admission/test_codex_appserver_local.py",
+    "sha256": "94c5905903e5b5c8febde47398de5cf031e0949b09a26ebb6755b3bb43e86041"
+  },
+  "evidence_kind": "source_bound_fixture_observer_regression",
+  "green": {
+    "argv": [
+      "python3",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "docs/bench/egress-admission",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "linux_proc_race": "mocked kernel read boundary",
+    "log_sha256": "6d57e962615145ae4a4f67c8096321c6f56c0a1556eeea62fde9aebaf0b78b6d",
+    "platform": "macOS",
+    "tests_run": 48
+  },
+  "limits": [
+    "Only the test observer and its regression changed; product runtime code unchanged.",
+    "The local Linux disappearance boundary is mocked; actual Linux CI for the new commit is pending at report creation.",
+    "Group cleanup does not establish exhaustive containment.",
+    "This report was written after the scoped test run; it is excluded from that tested source inventory.",
+    "Independent review not established."
+  ],
+  "primary_checkout_preimages": "all six preserved",
+  "prior_quality": {
+    "commit": "3c6017c82abdc01fbb320d471a16e2645b873c72",
+    "effective_checks_passed": 24,
+    "full_workspace_retry": "passed; original timeout retained in verification.json",
+    "scope": "Historical full gate remains bound to prior source inventory; no new complete inventory gate claimed. Rust sources and native capture dependencies unchanged."
+  },
+  "red": {
+    "exit_code": 1,
+    "failure": "ProcessLookupError in deterministic mocked regression",
+    "log_sha256": "e5f09ea9e7fb709c14038149c48834f48adfb6d8f4e48685eb287c01499d56ba",
+    "suite": "test_codex_appserver_local",
+    "tests_run": 29
+  },
+  "refusals_retained": [
+    "live descendant",
+    "stopped descendant",
+    "wrong process group",
+    "unexpected permission error"
+  ],
+  "schema_version": 1,
+  "trigger": {
+    "ci_job": 113267217177,
+    "ci_run": 37764054120,
+    "error": "ProcessLookupError from Linux proc stat read during descendant reap",
+    "log_sha256": "fcd2cc5b5d47de3d937e4614a3e6a76515a8e70db9338368c8ad92a0c26d6d72",
+    "url": "https://github.com/FlorianBruniaux/agent-router/actions/runs/37764054120/job/113267217177"
+  },
+  "unchanged_native_capture": {
+    "F02b": "NOT_ATTEMPTED",
+    "F12a": "NO_GO",
+    "helper_sha256": "073a11f73cbdc2d3b0b5d25a6f3b4bce262de7865a3c41b6a7e436aa49de22f4",
+    "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "source_hashes_rechecked": true
+  }
+}

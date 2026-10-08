@@ -144,8 +144,8 @@ def assert_descendant_stopped(test, group_pid, child_pid):
     # until PID 1 reaps it, even after SIGKILL and both pipe readers have exited.
     try:
         stat = Path(f"/proc/{child_pid}/stat").read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return  # Reaped after the group-existence probe.
+    except (FileNotFoundError, ProcessLookupError):
+        return  # Reaped before open (ENOENT) or during read (ESRCH).
     fields = stat.rsplit(")", 1)[1].split()
     test.assertEqual(int(fields[2]), group_pid, "unexpected descendant process group")
     test.assertEqual(fields[0], "Z", "descendant is still live")
@@ -175,10 +175,13 @@ class DescendantStateTests(unittest.TestCase):
             self.check_linux_stat("Z", group=999)
 
     def test_linux_reaped_between_group_probe_and_stat_is_stopped(self):
-        with mock.patch.object(sys, "platform", "linux"), \
-                mock.patch.object(os, "killpg"), \
-                mock.patch.object(Path, "read_text", side_effect=FileNotFoundError):
-            assert_descendant_stopped(self, 100, 101)
+        # /proc may disappear before open (ENOENT) or during read (ESRCH).
+        for error in (FileNotFoundError, ProcessLookupError):
+            with self.subTest(error=error.__name__), \
+                    mock.patch.object(sys, "platform", "linux"), \
+                    mock.patch.object(os, "killpg"), \
+                    mock.patch.object(Path, "read_text", side_effect=error):
+                assert_descendant_stopped(self, 100, 101)
 
     def test_absent_group_needs_no_proc_observation(self):
         with mock.patch.object(os, "killpg", side_effect=ProcessLookupError), \
