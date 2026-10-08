@@ -1,0 +1,51 @@
+crates/router-runtime/examples/owned_supervision.rs
+  s_4639210bbde494::t_4e8ddb4c1525c4 1-241
+docs/bench/finalization-plan-2026-10-07.md
+  s_4ae71773098547::t_8c80e4b472a226 3,6,10-17,77,155
+docs/bench/owned-supervision-feasibility-2026-10-08/README.md
+  s_ae085abdb4f4d0::t_092beefa37f96f 1-95
+docs/bench/owned-supervision-feasibility-2026-10-08/native-results.json
+  s_ec22837e58ecfe::t_68bed3f6aade3b 1-60
+docs/bench/owned-supervision-feasibility-2026-10-08/verification.json
+  s_4ae71773098547::t_4466f170821db9 1-541
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c6017c82abdc01fbb320d471a16e2645b873c72",
+  "prompts": {},
+  "sessions": {
+    "s_4639210bbde494": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116d2-ed8c-7970-b224-d51d3af94f7f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_4ae71773098547": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "849f2e16-04ad-49cc-abd9-7d0fb3de1c6a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ec22837e58ecfe": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f6a4-88a1-77b3-9270-14c46f3f921c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
