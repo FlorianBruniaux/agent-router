@@ -1,0 +1,60 @@
+{
+  "F02b": "NOT_ATTEMPTED",
+  "F12a": "NO_GO",
+  "appserver_eof_with_controller_life_pipe_open": true,
+  "appserver_initialize_reply": "observed",
+  "baseline_commit": "5ba1a694daae90ddb03552f445f31465a64e8ed6",
+  "blockers": [
+    "broker_endpoint_not_supported_by_product_sandbox",
+    "framed_v1_is_finite_input_not_duplex"
+  ],
+  "broker_only_command": "refused_before_spawn",
+  "capture_exit_code": 0,
+  "diagnostic_memory_enforcement": "not_requested",
+  "evidence_kind": "local_native_supervisor_composition_diagnostic",
+  "evidence_limits": [
+    "No model turn, broker/provider server, account import or paid request.",
+    "A diagnostic fixture invokes public supervisors; it is not a runtime approval or execution receipt.",
+    "Memory enforcement was explicitly not requested for the second diagnostic, not admitted for product use.",
+    "Group termination does not establish exhaustive containment or the absence of detached descendants.",
+    "Socket denial does not qualify all Mach-service or DNS channels.",
+    "A finite supervised client owning native RPC is an unevaluated alternative; the diagnostic does not require a duplex helper redesign.",
+    "No Linux/Claude equivalence, F02b useful task, physical-send admission or saving.",
+    "Independent code review not established."
+  ],
+  "full_address_space_request": "unsupported",
+  "helper_exit_code": 0,
+  "helper_sha256": "073a11f73cbdc2d3b0b5d25a6f3b4bce262de7865a3c41b6a7e436aa49de22f4",
+  "lease": "group_clean_not_exhaustive_containment",
+  "native_output_bytes": 247,
+  "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "native_stderr_bytes": 0,
+  "native_version": "0.159.2",
+  "observed_system": {
+    "machine": "arm64",
+    "release": "25.5.0",
+    "system": "Darwin"
+  },
+  "paid_provider_calls": 0,
+  "platform": "macos",
+  "private_capture_sha256": "1dd5cae0b2e4543a07c2773b0f5fc80c544f800727d8e87dea5204a40e3984e3",
+  "provider_servers": 0,
+  "runtime_version_probe": "passed",
+  "schema_version": 1,
+  "seatbelt_canaries": "passed",
+  "source_sha256": {
+    "crates/router-runtime/examples/owned_supervision.rs": "0140446125d51f45bbda338b235f17f8b44012a18a86b8dadc87b50d5978f2ff",
+    "crates/router-runtime/src/host_state.rs": "9038ad6ac266030491ee6f1cc94a223a6a017a8234b982e741c0e032d3fb2724",
+    "crates/router-runtime/src/native_version.rs": "6301423dcca14c0c477560727c8ed59c5408a78e7aa38105e1ec8ca9ab186378",
+    "crates/router-runtime/src/network_authority.rs": "dd1f15d6dce4bc6c1cbac1987762a8e4f272d32bddc7b78131facea95104f75c",
+    "crates/router-runtime/src/private_program.rs": "99e3571e2e3500a510501eb174a9543615e22b9e2e4ec0cb6a6443c19cc190cb",
+    "crates/router-runtime/src/process.rs": "7e117f6dce07299cff04c40871539e78c7a27d0781839c4921e902026e61667d",
+    "crates/router-runtime/src/resources.rs": "173ee73b85871ea1e7932e87bdd4ab1e762a9efd47b9d8820bc89f3f8342110d",
+    "crates/router-runtime/src/sandbox.rs": "fdf353ea515792174c6df25251dce1b309f40c466b9df8df4754fb7059cc84ff",
+    "crates/router-sandbox-helper/src/main.rs": "a47c1fe93db576b85833cfac0b1d99224c46a35bb1e37c3951b4ed063f1ec768",
+    "crates/router-sandbox-helper/src/watchdog.rs": "5674862f711dda9dbcb820f9ff35d986f5dc4aee4c46b32c616ef9fed0a2bad4"
+  },
+  "tested_wiring": "framed_v1_direct_native_appserver",
+  "turn_submissions": 0,
+  "version_cleanup": "group_terminated"
+}
