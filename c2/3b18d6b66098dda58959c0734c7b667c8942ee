@@ -1,0 +1,23 @@
+docs/bench/finite-client-supervision-2026-10-08/README.md
+  s_ae085abdb4f4d0::t_cc5ad6414f0444 5-8
+docs/bench/finite-client-supervision-2026-10-08/native-results-reconciled.json
+  s_ae085abdb4f4d0::t_1a25188260f685 1-67
+docs/bench/finite-client-supervision-2026-10-08/verification-reconciled.json
+  s_ae085abdb4f4d0::t_3b1e75d34a4c73 1-558
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c23b18d6b66098dda58959c0734c7b667c8942ee",
+  "prompts": {},
+  "sessions": {
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
