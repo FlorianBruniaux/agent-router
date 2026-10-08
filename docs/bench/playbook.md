@@ -12,7 +12,12 @@ binding and cleanup, and retained initial failures. [ADR 0026](../adr/0026-owned
 selects this entry only for F02a simulated patch work. ACP component comparison is
 partial; real-provider and complete OS admission remain unqualified. The passive
 observation now has a JSON Schema. The [verification report](verification-owned-client-2026-10-08.json)
-records local gates and independent reviews. No useful patch or savings yet.
+records local gates and independent reviews. [PR #144](https://github.com/FlorianBruniaux/agent-router/pull/144)
+subsequently added a useful simulated correction, verified on its published Git
+revision with user files preserved. [ADR 0027](../adr/0027-verified-patch-publication.md)
+and the [CLI example](../cli-execution.md) define this separate local proof. The
+competing PR #145 is not the retained API; its applicable protections are carried
+onto the merged implementation. Native composition and measured savings remain open.
 
 The following paragraphs retain the 7 October baseline and its original limits.
 

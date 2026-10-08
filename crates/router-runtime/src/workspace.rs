@@ -24,14 +24,7 @@ pub(crate) async fn git_observed(
 ) -> Result<Vec<u8>> {
     let names = git_raw(
         root,
-        &[
-            "config",
-            "--local",
-            "--includes",
-            "--name-only",
-            "--null",
-            "--list",
-        ],
+        &["config", "--includes", "--name-only", "--null", "--list"],
         vec![],
         observer,
     )
@@ -42,6 +35,14 @@ pub(crate) async fn git_observed(
     {
         return Err(RuntimeError::Invalid(
             "repository filters are not permitted",
+        ));
+    }
+    if names.split(|b| *b == 0).any(|name| {
+        let name = name.to_ascii_lowercase();
+        name == b"extensions.partialclone" || name.ends_with(b".promisor")
+    }) {
+        return Err(RuntimeError::Invalid(
+            "repository lazy fetch is not permitted",
         ));
     }
     git_raw(root, args, input, observer).await
@@ -71,18 +72,56 @@ async fn git_raw_index(
     observer: Option<&dyn CaptureObserver>,
     index: Option<&Path>,
 ) -> Result<Vec<u8>> {
+    let output = git_capture(root, args, input, observer, index).await?;
+    if output.outcome.exit_code != Some(0) || output.output_limited {
+        return Err(RuntimeError::Process);
+    }
+    Ok(output.stdout)
+}
+/// Distinguish an absent symbolic ref (exit 1) from failed inspection.
+pub(crate) async fn symbolic_ref(root: &Path, reference: &str) -> Result<bool> {
+    git_observed(root, &["rev-parse", "--git-dir"], vec![], None).await?;
+    let output = git_capture(
+        root,
+        &["symbolic-ref", "--quiet", reference],
+        vec![],
+        None,
+        None,
+    )
+    .await?;
+    if output.output_limited {
+        return Err(RuntimeError::Process);
+    }
+    match output.outcome.exit_code {
+        Some(0) => Ok(true),
+        Some(1) => Ok(false),
+        _ => Err(RuntimeError::Process),
+    }
+}
+async fn git_capture(
+    root: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+    observer: Option<&dyn CaptureObserver>,
+    index: Option<&Path>,
+) -> Result<crate::process::Capture> {
     let mut command = Command::new("/usr/bin/git");
     command
         .arg("-c")
         .arg("core.hooksPath=/dev/null")
         .arg("-c")
         .arg("core.fsmonitor=false")
+        .arg("-c")
+        .arg("gc.auto=0")
+        .arg("-c")
+        .arg("maintenance.auto=false")
         .arg("-C")
         .arg(root)
         .args(args)
         .env_clear()
         .env("PATH", "/usr/bin:/bin")
         .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_NO_LAZY_FETCH", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_TERMINAL_PROMPT", "0");
     command.env("GIT_NO_REPLACE_OBJECTS", "1");
@@ -92,11 +131,7 @@ async fn git_raw_index(
             .env("GIT_AUTHOR_DATE", "2000-01-01T00:00:00Z")
             .env("GIT_COMMITTER_DATE", "2000-01-01T00:00:00Z");
     }
-    let output = capture_observed(command, input, observer).await?;
-    if output.outcome.exit_code != Some(0) || output.output_limited {
-        return Err(RuntimeError::Process);
-    }
-    Ok(output.stdout)
+    capture_observed(command, input, observer).await
 }
 async fn capture_observed(
     command: Command,

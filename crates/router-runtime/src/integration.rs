@@ -3,6 +3,9 @@ use crate::{PendingRun, Result, Runtime, RuntimeError, digest, source_state, wor
 use router_types::*;
 use std::{collections::BTreeMap, path::Path};
 
+const MAX_BLOB_BYTES: usize = 16 * 1024 * 1024;
+const MAX_TREE_ENTRIES: usize = 100_000;
+
 impl Runtime {
     /// Reads the captured artifact and reconstructs its exact result on a private
     /// index. Objects may be written; no ref or user working file is changed.
@@ -20,6 +23,31 @@ impl Runtime {
         }
         let bytes =
             workspace::read_artifact(&self.store.root, &preview.run_id, &preview.artifact_sha256)?;
+        if bytes.contains(&0)
+            || bytes
+                .split(|b| *b == b'\n')
+                .any(|line| line == b"GIT binary patch")
+        {
+            return Err(RuntimeError::Invalid(
+                "binary publication patches are not supported",
+            ));
+        }
+        // Canonical runtime capture uses --no-renames. Refuse these extended
+        // forms explicitly so destination-only metadata cannot hide a source.
+        if bytes.split(|b| *b == b'\n').any(|line| {
+            [
+                b"rename from ".as_slice(),
+                b"rename to ",
+                b"copy from ",
+                b"copy to ",
+            ]
+            .iter()
+            .any(|prefix| line.starts_with(prefix))
+        }) {
+            return Err(RuntimeError::Invalid(
+                "rename or copy publication patches are not supported",
+            ));
+        }
         let diff = String::from_utf8(bytes.clone())
             .map_err(|_| RuntimeError::Invalid("non-UTF8 review diff"))?;
         let verification = self
@@ -33,6 +61,18 @@ impl Runtime {
             return Err(RuntimeError::Verification);
         }
         workspace::safe_scope(root, &preview.changed_paths)?;
+        if preview
+            .changed_paths
+            .iter()
+            .any(|p| p.chars().any(char::is_control))
+        {
+            return Err(RuntimeError::Scope);
+        }
+        // Bound full index inventory before read-tree and changed source bytes
+        // before cached apply. Text additions cannot exceed patch length.
+        bound_tree(root, &preview.source_state).await?;
+        let before = blobs(root, &preview.source_state, &preview.changed_paths).await?;
+        bound_blobs(root, &before, bytes.len()).await?;
         let private = tempfile::Builder::new()
             .prefix("integration-index-")
             .tempdir_in(&self.store.root)?;
@@ -46,8 +86,8 @@ impl Runtime {
         )
         .await?;
         let result_tree = oid(workspace::git_index(root, &["write-tree"], vec![], &index).await?)?;
-        let before = blobs(root, &preview.source_state, &preview.changed_paths).await?;
         let after = blobs(root, &result_tree, &preview.changed_paths).await?;
+        bound_blobs(root, &after, 0).await?;
         let mut files = Vec::new();
         for path in &preview.changed_paths {
             let before = before.get(path).cloned();
@@ -210,11 +250,16 @@ impl Runtime {
             return Err(RuntimeError::Integrity("repository identity changed"));
         }
         self.require_integration_authority(pending)?;
+        let authority = PublicationAuthority {
+            runtime: self,
+            pending,
+            observer,
+        };
         complete_publication(
             self,
             Path::new(&pending.request.workspace),
             &receipt,
-            observer,
+            Some(&authority),
         )
         .await?;
         if self.publication_status(pending).await?.state != PatchPublicationState::Published {
@@ -233,6 +278,52 @@ impl Runtime {
         .await
     }
 }
+// The Git wrapper calls this after its async preparation and again immediately
+// before spawning update-ref. It rechecks proofs, not a retained routing claim.
+struct PublicationAuthority<'a> {
+    runtime: &'a Runtime,
+    pending: &'a PendingRun,
+    observer: Option<&'a dyn workspace::CaptureObserver>,
+}
+impl workspace::CaptureObserver for PublicationAuthority<'_> {
+    fn before_capture(&self) -> Result<()> {
+        if let Some(observer) = self.observer {
+            observer.before_capture()?;
+        }
+        // Permissions were checked on this immutable PendingRun before the
+        // publication attempt. Retain fresh proof results to check their joint
+        // validity after all executable hashes and log reads have completed.
+        let snapshot = self.runtime.snapshot(&self.pending.context)?;
+        publication_clock_valid(
+            crate::now()?,
+            snapshot.observation().observed_at_unix_seconds,
+            self.runtime.limits.snapshot_max_age_seconds,
+            snapshot
+                .capability_proofs()
+                .iter()
+                .map(|proof| proof.expires_at_unix_seconds),
+        )
+    }
+    fn after_capture(&self) -> Result<()> {
+        if let Some(observer) = self.observer {
+            observer.after_capture()?;
+        }
+        Ok(())
+    }
+}
+fn publication_clock_valid(
+    now: u64,
+    observed: u64,
+    max_age: u64,
+    mut expiries: impl Iterator<Item = u64>,
+) -> Result<()> {
+    if now.checked_sub(observed).is_none_or(|age| age > max_age)
+        || expiries.any(|expiry| now > expiry)
+    {
+        return Err(RuntimeError::Route);
+    }
+    Ok(())
+}
 async fn complete_publication(
     runtime: &Runtime,
     root: &Path,
@@ -240,6 +331,14 @@ async fn complete_publication(
     observer: Option<&dyn workspace::CaptureObserver>,
 ) -> Result<()> {
     repository_identity(root, Some(&receipt.target_ref)).await?;
+    // A null-OID create can overwrite a dangling symbolic ref in Git. Refuse
+    // existing symbolic refs separately; unrelated same-user writers racing in
+    // this dedicated namespace are outside the managed-publisher guarantee.
+    if workspace::symbolic_ref(root, &receipt.target_ref).await? {
+        return Err(RuntimeError::Integrity(
+            "publication destination is symbolic",
+        ));
+    }
     let command = format!(
         "create {} {}\n",
         receipt.target_ref, receipt.result_revision
@@ -466,6 +565,40 @@ fn oid(bytes: Vec<u8>) -> Result<String> {
     }
     Ok(value.into())
 }
+async fn bound_tree(root: &Path, tree: &str) -> Result<()> {
+    let inventory = workspace::git(root, &["ls-tree", "-r", "-z", tree], vec![]).await?;
+    if inventory
+        .split(|b| *b == 0)
+        .filter(|row| !row.is_empty())
+        .count()
+        > MAX_TREE_ENTRIES
+    {
+        return Err(RuntimeError::Limit);
+    }
+    Ok(())
+}
+async fn bound_blobs(
+    root: &Path,
+    blobs: &BTreeMap<String, IntegrationBlob>,
+    initial: usize,
+) -> Result<()> {
+    let mut total = initial;
+    for blob in blobs.values() {
+        if !matches!(blob.mode.as_str(), "100644" | "100755") {
+            return Err(RuntimeError::Scope);
+        }
+        let size = workspace::git(root, &["cat-file", "-s", &blob.oid], vec![]).await?;
+        let size: usize = std::str::from_utf8(&size)
+            .ok()
+            .and_then(|value| value.trim().parse().ok())
+            .ok_or(RuntimeError::Integrity("Git blob size"))?;
+        total = total.checked_add(size).ok_or(RuntimeError::Limit)?;
+        if total > MAX_BLOB_BYTES {
+            return Err(RuntimeError::Limit);
+        }
+    }
+    Ok(())
+}
 async fn blobs(
     root: &Path,
     tree: &str,
@@ -511,6 +644,22 @@ mod tests {
         process::Command,
         sync::atomic::{AtomicUsize, Ordering},
     };
+    #[test]
+    fn publication_clock_rejects_first_proof_expiring_during_later_checks() {
+        assert!(publication_clock_valid(120, 100, 30, [120, 200].into_iter()).is_ok());
+        assert!(matches!(
+            publication_clock_valid(121, 100, 30, [120, 200].into_iter()),
+            Err(RuntimeError::Route)
+        ));
+        assert!(matches!(
+            publication_clock_valid(131, 100, 30, [200].into_iter()),
+            Err(RuntimeError::Route)
+        ));
+        assert!(matches!(
+            publication_clock_valid(99, 100, 30, [200].into_iter()),
+            Err(RuntimeError::Route)
+        ));
+    }
     struct Cut {
         after_effect: bool,
         calls: AtomicUsize,
