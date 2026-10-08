@@ -1,0 +1,515 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "finite_client_preparation_contract_local_delivery",
+  "base_head": "109c5ff63a5fdf03a9cce83b03f1348ac978a24c",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "full_ci_equivalent": false,
+  "source_sha256": "ba8c0fc542cd009707a5cc1e644a73c74145091f00a27bb9d28125d1217eb686",
+  "source_inventory_sha256": "0e73f254c31be8805949da39283764f5527163f3f814e87cacdf463a2f6c8552",
+  "frozen_source_recheck_unchanged": true,
+  "checked_source_files": [
+    {
+      "path": "crates/router-types/src/finite_client.rs",
+      "sha256": "b96630af1bb4b8f9965d7ca09b2c209f1c32da658e7d07ac2e448c9d3c0a47fa",
+      "mode": 420
+    },
+    {
+      "path": "crates/router-types/src/lib.rs",
+      "sha256": "b157decb423b78fadce48b1be27ff4a30799b104c36cf73e235db55f5a9f078b",
+      "mode": 420
+    },
+    {
+      "path": "crates/router-runtime/src/finite_client.rs",
+      "sha256": "b02c32d8c3339399c438b46184bae0da21fbf099864f447064d0c239bfd5e081",
+      "mode": 420
+    },
+    {
+      "path": "crates/router-runtime/src/capability_proofs.rs",
+      "sha256": "94924eb350b6ded662c969a8ff213f6a8653ab0a397eaed8c41840ca2e966af5",
+      "mode": 420
+    },
+    {
+      "path": "crates/router-runtime/src/lib.rs",
+      "sha256": "04a6995e19893ae392b642131c1039e075268dd81c46c1b66a4f8fbac9d60864",
+      "mode": 420
+    },
+    {
+      "path": "crates/router-runtime/tests/finite_client.rs",
+      "sha256": "226adcae5c1e293a45ea505c064c2fadb924049f44c66370807ca5b71430af70",
+      "mode": 420
+    },
+    {
+      "path": "docs/adr/0028-finite-client-preparation.md",
+      "sha256": "c518a76ca76add6c8787b96c4938fb18f31a206495a9a087e93bcad2eb19625a",
+      "mode": 420
+    },
+    {
+      "path": "docs/adr/README.md",
+      "sha256": "bfe5cf46927fd16d31503f0b7afe35dbca7e442fb8dddbe39d469975286669f5",
+      "mode": 420
+    },
+    {
+      "path": "docs/reference/json-contracts.md",
+      "sha256": "cf649e9460823902ad52d6c7aac2d34c3b07ac564493e5c295355748bbef0777",
+      "mode": 420
+    }
+  ],
+  "report_added_after_frozen_gate": true,
+  "post_gate_documentation_only": [
+    {
+      "path": "docs/adr/0028-finite-client-preparation.md",
+      "change": "Link this evidence-only report; no decision or Rust change.",
+      "before_sha256": "c518a76ca76add6c8787b96c4938fb18f31a206495a9a087e93bcad2eb19625a",
+      "after_sha256": "2486a64888f2d17c0714e91b67abe808bc6882e380671637a0a66641dc63314f"
+    }
+  ],
+  "quality": {
+    "selected_checks_passed": 24,
+    "checks": [
+      {
+        "id": "format",
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "clippy-all",
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "18b6a4f59716f78fc16dc94efdbe645024613af5c008eccb4f693bd59b340c2e"
+      },
+      {
+        "id": "clippy-core",
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "a03c5ca9c905230cb855e0221866ae93fbfe24ea188dc91870fe29a04f5b672b"
+      },
+      {
+        "id": "workspace-tests",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "8df6e1125ffffd15ba214953fdda4c647f46a4084cf07e0ee535a408c866ae7e"
+      },
+      {
+        "id": "local-api-absent",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "c751ebf412de6f0cd844809b5e41e8ef28e0046af7a565d76351c3b48c23216f"
+      },
+      {
+        "id": "harness",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "a3016a99b32fbb110049b43ec00f131fd07be62912746d6c54ceeaef5bd0b435"
+      },
+      {
+        "id": "host-syntax",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "372ee57a30b8a8b17bb056a0814266786a922da7dcf4139f4f9a2457745d6424"
+      },
+      {
+        "id": "script-test-check-adrs",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "ec62624aa24bc691e23653deaaeb9b16eb9966bb9e03376524b61cf61c499482"
+      },
+      {
+        "id": "script-test-check-local",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "ec7dfed08559d00c61e2447ce5f95a6506bb99ad0485c8673b5489c513f21d81"
+      },
+      {
+        "id": "script-test-package-binary",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "053f438787587ad9b7b6c58d4a9d3738f1649207fa3625873518a52ae00493b5"
+      },
+      {
+        "id": "script-test-package-core",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "01c3fb2f6d6724c2b28b9e9fa10e748c6c04ac24c47938923699b195fb05aa32"
+      },
+      {
+        "id": "script-test-release-local",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "f0eb94e075c81ea217120ad3d666087b8f3bcf37c22e6f6dff5e533dfd8ab413"
+      },
+      {
+        "id": "egress-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "2f404d387a0e29cee1a8b3780b6115db4095e7df1878f78923131a330cc8df25"
+      },
+      {
+        "id": "native-probe-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "aef73693a7e2d27b18e36bda4c3375a1b492ef2b11e71dd11ca2ba2b71ed2820"
+      },
+      {
+        "id": "native-decision-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "d9271c7898c475681cba6238d5e423cbf45cb836a09e5ea531ec2f08afb82314"
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "9d2b884130caf4f04385400b6713164f49ab93c69445af748f21ad12c971f784"
+      },
+      {
+        "id": "campaign-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "49d0cb029f0bfd00cd887bd6d02463b13a21cbdcbc0ee5ad8391aa6dee82e24c"
+      },
+      {
+        "id": "calibration-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "5b09006419691d3f4bbf8c7c21e6a664821192e8d218d9234ad75342bdd53409"
+      },
+      {
+        "id": "physical-send-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "03098d0bc7d28a165e65780b96d7ff38cd1dee2b13b899844a62f259aca63808"
+      },
+      {
+        "id": "startup-outage-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4"
+      },
+      {
+        "id": "owned-entry-tests",
+        "argv": [
+          "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "e3ecacd910170b7aca13d3e5ef06f057436e253373b7f5dfc0349d7694c2e6d5"
+      },
+      {
+        "id": "secrets-dir",
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "a369529463ea67767a93bf63e87cd772c4628f0a0c4f733a6b0bec0faa0ff49d"
+      },
+      {
+        "id": "secrets-git",
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "status": "passed",
+        "exit_code": 0,
+        "log_sha256": "8d4be580bd5d12ff89ac46140edf4d08d5cadebae863c6503334515fac11fcba"
+      }
+    ],
+    "workspace_counts": {
+      "passed_result_lines_sum": 1705,
+      "failed": 0,
+      "ignored": 42
+    },
+    "core_only_passed": 1,
+    "python_tests_passed": 365,
+    "summary_sha256": "f1125bab3fa756d8098a669e870ee2f74ba637c6cab5006c8164903ca46cb2db",
+    "count_semantics": "Rust totals sum successful result lines including subprocess invocations, not unique definitions. Targeted tests are included in workspace totals. Ignored native tests are not successes."
+  },
+  "targeted": {
+    "passed": 20,
+    "failed": 0,
+    "initial_missing_contract_red": true,
+    "authenticated_host_substitution_red": true,
+    "log_sha256": "853412e097e97496636ec1fada9d786b548695197fa47c588da9409f8008657d"
+  },
+  "mutation_checks": [
+    {
+      "mutation": "approval",
+      "test": "wrong_review_digest_cannot_approve",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "b1800393f3ac5a304fcb229d408c64f93fdd2fa671e5cda2473718f739096cb9"
+    },
+    {
+      "mutation": "stdin",
+      "test": "changed_stdin_is_refused_even_when_serialized_prepared_preview_is_equal",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "feacd159095e8d92bd297dc8b142c430929a8115711dc34de35d3cd0cd73bdc6"
+    },
+    {
+      "mutation": "listener-instance",
+      "test": "loopback_address_alone_cannot_replace_listener_instance",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "c243d7a82a9da2babfb891086dbcf06c37e003d38d9084064bf766957b20231f"
+    },
+    {
+      "mutation": "file-hash",
+      "test": "changed_assets_and_file_permissions_refuse_old_approval",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "83a6ec46f9ee5f6bcd04d979eeda63c580f7ef14e6d8acd9243ed3bbee6e9c69"
+    },
+    {
+      "mutation": "live-store",
+      "test": "stale_future_or_historical_proof_cannot_validate_preparation",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "ab77edef19fa307a4bb7e52e46ddf7427770c4d30833875186c24aae3a77d9eb"
+    },
+    {
+      "mutation": "exact-proof-binding",
+      "test": "authenticated_proof_for_another_preparation_is_not_reusable",
+      "exit_code": 101,
+      "caught_by_assertion": true,
+      "log_sha256": "0738077877d70292d8c35501dea832f96394ffab107723e9956e7d777fa4d247"
+    }
+  ],
+  "prior_gate": {
+    "verdict": "incomplete_or_failed",
+    "reason": "Deliberately interrupted before descriptor-retention refinement; not delivery validation."
+  },
+  "independent_review": "NOT_ESTABLISHED; same-agent source inspection and local mutation checks only.",
+  "qualification": {
+    "F12a": "NO_GO",
+    "F02b": "NOT_ATTEMPTED",
+    "new_native_capture": "NOT_ATTEMPTED",
+    "production_proof_issuance": "NOT_ATTEMPTED",
+    "paid_provider_calls": 0
+  },
+  "limits": [
+    "Private library preparation only; existing runtime approval remains required.",
+    "ControllerBrokerOnly remains unsupported.",
+    "LoopbackFetch proof does not establish OS or physical-send authority.",
+    "Actual command/resource arguments, isolated native state/configuration and immutable execution view remain unbound producers.",
+    "No Mach/DNS, task-containment or memory qualification added.",
+    "Path checks do not exclude concurrent writers before a future exec.",
+    "GitHub CI is separate evidence; no current remote pass is claimed."
+  ]
+}

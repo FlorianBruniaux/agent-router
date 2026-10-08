@@ -70,6 +70,12 @@ impl StoredCapabilityProofVerifier {
             historical_sequence: None,
         })
     }
+    pub(crate) fn require_live(&self) -> Result<(), CapabilityStoreError> {
+        if self.historical_sequence.is_some() {
+            return Err(CapabilityStoreError::Integrity);
+        }
+        Ok(())
+    }
     pub fn through_sequence(mut self, sequence: u64) -> Self {
         self.historical_sequence = Some(sequence);
         self
