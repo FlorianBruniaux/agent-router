@@ -1,0 +1,63 @@
+CHANGELOG.md
+  s_9e80b85afcc43a::t_64ddedfd7aea9a 45-48,78-79
+README.fr.md
+  s_9e80b85afcc43a::t_930b65077db509 12
+README.md
+  s_9e80b85afcc43a::t_1ed4220d6995ea 12
+crates/agent-router-cli/src/coordinator.rs
+  s_9e80b85afcc43a::t_b981b013c172a2 908-925
+crates/agent-router-cli/src/execution.rs
+  s_9e80b85afcc43a::t_5619605c0745b5 1405-1524,1536-1543,1643-1786
+crates/agent-router-cli/tests/publication.rs
+  s_9e80b85afcc43a::t_84e3ad988c6232 191-202
+crates/router-runtime/src/integration.rs
+  s_9e80b85afcc43a::t_4c924a761d50db 6-8,26-50,64-75,90,253-257,262,281-326,334-341,568-601,647-662
+crates/router-runtime/src/workspace.rs
+  s_9e80b85afcc43a::t_aee522f9ca4c80 27,40-47,75-107,114-117,124,134
+crates/router-runtime/tests/runtime.rs
+  s_9e80b85afcc43a::t_cee926b20a7f15 4319-4508
+docs/README.fr.md
+  s_4639210bbde494::t_c425c2e8b14099 13-14
+docs/README.md
+  s_4639210bbde494::t_d63b78d3f49f2c 13-14
+docs/adr/0027-verified-patch-publication.md
+  s_9e80b85afcc43a::t_f781696f5f3bb7 38-40,44-47,86-92
+docs/bench/egress-admission/codex_appserver_local.py
+  s_9e80b85afcc43a::t_1f4df24c502ecf 528-531,537-587
+docs/bench/egress-admission/test_codex_appserver_local.py
+  s_9e80b85afcc43a::t_dc4338de5bbc87 205-276
+docs/bench/finalization-plan-2026-10-07.md
+  s_4639210bbde494::t_49b9c4e4c1e7bd 3,6,47,69,147
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_722bb515d72465 15-20
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_35b7ca13e2a7ee 8-15
+docs/bench/verification-publication-hardening-2026-10-08.json
+  s_4639210bbde494::t_acc43405d09429 1-613
+docs/cli-execution.md
+  s_9e80b85afcc43a::t_5ad79a1f1892e8 334-349
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e9e260029dd85ba5873ca633c90f7a4e045fb388",
+  "prompts": {},
+  "sessions": {
+    "s_4639210bbde494": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a116d2-ed8c-7970-b224-d51d3af94f7f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
