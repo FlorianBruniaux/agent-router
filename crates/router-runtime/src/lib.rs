@@ -24,6 +24,7 @@ pub use observation::{
     RunObservation, RunObservationCompleteness, RunObservationHorizon, RunObservationIdentity,
     RunObservationKnown, RunObservationUnknowns,
 };
+mod integration;
 mod private_program;
 mod process;
 mod resources;
@@ -1917,11 +1918,8 @@ impl Runtime {
             changed_paths: paths,
         })
     }
-    pub async fn apply(
-        &self,
-        pending: &PendingRun,
-        approved_digest: &str,
-    ) -> Result<IntegrationPreview> {
+    fn require_integration_authority(&self, pending: &PendingRun) -> Result<()> {
+        self.snapshot(&pending.context)?;
         if pending
             .context
             .request()
@@ -1943,6 +1941,14 @@ impl Runtime {
         {
             return Err(RuntimeError::Approval);
         }
+        Ok(())
+    }
+    pub async fn apply(
+        &self,
+        pending: &PendingRun,
+        approved_digest: &str,
+    ) -> Result<IntegrationPreview> {
+        self.require_integration_authority(pending)?;
         let preview = self.integration_preview(pending).await?;
         if preview.approval_digest != approved_digest {
             return Err(RuntimeError::Approval);
@@ -1971,6 +1977,8 @@ impl Runtime {
             bytes.clone(),
         )
         .await?;
+        self.store
+            .claim_integration(&run.run_id, &preview.approval_digest)?;
         workspace::git(
             Path::new(&pending.request.workspace),
             &["apply", "--binary", "-"],

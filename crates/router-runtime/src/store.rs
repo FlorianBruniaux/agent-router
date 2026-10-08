@@ -748,6 +748,32 @@ impl Store {
         tx.commit()?;
         Ok(())
     }
+    /// Consumes application authority before any externally visible effect.
+    /// An incomplete intent is deliberately never cleared or replayed.
+    pub(crate) fn claim_integration(&self, id: &str, detail: &str) -> Result<()> {
+        let mut db = self.lock()?;
+        let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Immediate)?;
+        let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        if run.state != RunState::Verified {
+            return Err(RuntimeError::Verification);
+        }
+        if tx.prepare("SELECT 1 FROM events WHERE run_id=?1 AND kind IN ('integration.intent','integration.applied','integration.published')")?.exists([id])? {
+            return Err(RuntimeError::Integrity("integration already attempted"));
+        }
+        append(&tx, &run, "integration.intent", detail)?;
+        tx.commit()?;
+        Ok(())
+    }
+    pub(crate) fn integration_events(&self, id: &str) -> Result<Vec<(String, String)>> {
+        let mut db = self.lock()?;
+        let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Deferred)?;
+        load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
+        let values = tx.prepare("SELECT kind,detail FROM events WHERE run_id=?1 AND kind IN ('integration.intent','integration.published') ORDER BY sequence LIMIT 3")?
+            .query_map([id], |row| Ok((row.get(0)?, row.get(1)?)))?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+        tx.commit()?;
+        Ok(values)
+    }
     pub fn require_cleanup_complete(&self) -> Result<()> {
         if cleanup_blocked(&*self.lock()?, None)? {
             return Err(RuntimeError::CleanupUnknown);

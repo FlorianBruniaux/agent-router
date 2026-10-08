@@ -52,6 +52,25 @@ async fn git_raw(
     input: Vec<u8>,
     observer: Option<&dyn CaptureObserver>,
 ) -> Result<Vec<u8>> {
+    git_raw_index(root, args, input, observer, None).await
+}
+pub(crate) async fn git_index(
+    root: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+    index: &Path,
+) -> Result<Vec<u8>> {
+    // Keep the same repository-filter refusal as every runtime Git operation.
+    git_observed(root, &["rev-parse", "--git-dir"], vec![], None).await?;
+    git_raw_index(root, args, input, None, Some(index)).await
+}
+async fn git_raw_index(
+    root: &Path,
+    args: &[&str],
+    input: Vec<u8>,
+    observer: Option<&dyn CaptureObserver>,
+    index: Option<&Path>,
+) -> Result<Vec<u8>> {
     let mut command = Command::new("/usr/bin/git");
     command
         .arg("-c")
@@ -66,6 +85,13 @@ async fn git_raw(
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_TERMINAL_PROMPT", "0");
+    command.env("GIT_NO_REPLACE_OBJECTS", "1");
+    if let Some(index) = index {
+        command
+            .env("GIT_INDEX_FILE", index)
+            .env("GIT_AUTHOR_DATE", "2000-01-01T00:00:00Z")
+            .env("GIT_COMMITTER_DATE", "2000-01-01T00:00:00Z");
+    }
     let output = capture_observed(command, input, observer).await?;
     if output.outcome.exit_code != Some(0) || output.output_limited {
         return Err(RuntimeError::Process);

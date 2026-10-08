@@ -301,7 +301,7 @@ pub enum Commands {
         /// Private runtime store directory.
         #[arg(long)]
         store: PathBuf,
-        /// Sandbox configuration JSON; only its `feedback_store` is used, to record the integration fact.
+        /// Sandbox configuration JSON; required for current proof pins on apply/publish, also used for optional feedback.
         #[arg(long)]
         config: Option<PathBuf>,
         /// Print the complete versioned JSON result instead of the human view.
@@ -743,7 +743,7 @@ pub enum CoordinateCommand {
         bundle: PathBuf,
         #[arg(long)]
         store: PathBuf,
-        /// Sandbox configuration JSON; only its `feedback_store` is used, to record the integration fact.
+        /// Sandbox configuration JSON; required for current proof pins on apply/publish, also used for optional feedback.
         #[arg(long)]
         config: Option<PathBuf>,
         #[command(subcommand)]
@@ -755,6 +755,20 @@ pub enum CoordinateCommand {
 pub enum ArtifactCommand {
     /// Show the integration preview and its approval digest.
     Preview,
+    /// Review the exact verified diff and dedicated resulting Git revision.
+    ReviewPublication,
+    /// Validate the exact saved review document before displaying it.
+    CheckPublicationReview {
+        #[arg(long)]
+        review: PathBuf,
+    },
+    /// Publish the reviewed revision to its dedicated ref without writing user files.
+    Publish {
+        #[arg(long)]
+        approve: String,
+    },
+    /// Observe publication evidence without replay or recovery writes.
+    PublicationStatus,
     /// List retained output metadata.
     Outputs,
     /// List declared result metadata.

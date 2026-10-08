@@ -9,7 +9,7 @@ use router_types::*;
 use router_workflow::{PlanLimits, build_plan};
 use serde_json::{Value, json};
 #[path = "../../../../tests/support/capability_store.rs"]
-mod capability_store;
+pub(crate) mod capability_store;
 #[path = "unknown_observation.rs"]
 pub(crate) mod unknown_observation;
 use std::{

@@ -1,0 +1,597 @@
+{
+  "schema_version": 1,
+  "scope": "F02a simulated runtime publication to a dedicated Git ref; native composition remains unqualified",
+  "baseline_commit": "6521a7ebafe0140a8b224d87b7f23410f729cb35",
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "selected_local_gate": {
+    "verdict": "selected_checks_passed",
+    "checks_passed": 24,
+    "source_sha256_before": "30e9dc06e22911d56ee9f9ba40ca1cf6c283dd31289aea4d138f65a3e216396b",
+    "source_sha256_after": "30e9dc06e22911d56ee9f9ba40ca1cf6c283dd31289aea4d138f65a3e216396b",
+    "runner_sha256": "cfad6a90f13cd927b9d8f827fdd6852f0965b37440f1f991ededc4723af20606",
+    "summary_sha256": "ddcc44ce13b6cc4b5b32b34c560322a2aaa1a5a9f2397e8ad03e58bdcaf0e280",
+    "full_ci_equivalent": false,
+    "checks": [
+      {
+        "id": "format",
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "clippy-all",
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "2bcb53b00d63045690769d7dede7945570d3455c9e88575ed6df168d66cbb936",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "clippy-core",
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "5bd59f90159b105546e8a0aaf9ee4d0ca77f95db605b6bbba42f291415e1bda6",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "workspace-tests",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "ccdc81b20e403eff171f0abaa0f6d586c75263a9687a65b981b942fdcbb7c28d",
+        "rust_successful_result_total": 1653,
+        "rust_ignored_result_total": 42,
+        "python_tests_run": 0
+      },
+      {
+        "id": "local-api-absent",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "4cc9401efbd9cefeb368f047dbe2f3ea80e4caae1ad4c191a5d6c71f25f7ffd7",
+        "rust_successful_result_total": 1,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "harness",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "8fd68cefdac85e95273154424ab96d3236c6241bba18bb862d3219afce1c1c97",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "host-syntax",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "script-test-benchmark-startup",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "27c4a39d34ece4cbc66cc59cb0870c7abe4cc0a5f009205bdd0ea06a93f8b3ac",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 3
+      },
+      {
+        "id": "script-test-check-adrs",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e672f5c5b5876eb16f7c01ff1671ebdeecd7dc401ae147fe56a2d6de7244ce8c",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 30
+      },
+      {
+        "id": "script-test-check-local",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "8f937445adf909dccbc3f5cd24f1355de777fdba9cec215546c15915b155e4a5",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 30
+      },
+      {
+        "id": "script-test-package-binary",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "ef9f164ed4b12ba15069d1a97c7377737635a9f4d9b894ac104fab95f0c6e890",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 17
+      },
+      {
+        "id": "script-test-package-core",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "11a0f46a5b88871bf14cbfbfcd7a28dbd2dbe88906a214e5d2b4dba8ec91f66e",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 26
+      },
+      {
+        "id": "script-test-release-local",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "6b435d8bf61d2acc6be9376eb34e991cc95ed56c355e63e673324740674c884c",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 27
+      },
+      {
+        "id": "egress-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "453658eecb69fef624e46e3213ea872b119336fbaf479d9cc62d729f495a4c84",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 48
+      },
+      {
+        "id": "native-probe-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "80d948dd7ab8c3d00b9213dd8d26de20d18662e252e3d645b8fb959932151125",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 33
+      },
+      {
+        "id": "native-decision-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "2f2231f6fc29e627b692f3ff624ab9ad6bcfe2db280658c9ed3e682af3defe9d",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 13
+      },
+      {
+        "id": "native-hook-failure-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "3a8d9af59bbddbb7375b21a53f1ce30effaf98ff4659205889ed4d2c39c028ad",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 17
+      },
+      {
+        "id": "campaign-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "f4a2fedbccdd218a20ddaa962902b79726a881954f65b8a301820077923a14a2",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 17
+      },
+      {
+        "id": "calibration-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "84cfcc1606dc6716f003011d7025719b36714aca528ed58a2b95e4e38fef2b92",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 30
+      },
+      {
+        "id": "physical-send-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "2374deb0005c3a76e607d6e0160135270cfce391eaa2042c3c57e234e247398e",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 12
+      },
+      {
+        "id": "startup-outage-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "ca3fb43957a45c0f763110630bf2dae8d7976c5abaebd1c2b777462d1a5903be",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 8
+      },
+      {
+        "id": "owned-entry-tests",
+        "argv": [
+          "/Users/florianbruniaux/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "e3fbb38d5bc4c6f8d5e684ee1fbf331dc7a245e30469ac8839a24a99459c4a5d",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 44
+      },
+      {
+        "id": "secrets-dir",
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "325239eb80274f3b2826093c61abf02c8cccdbea4f525462718e119bfdc1bbdc",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      },
+      {
+        "id": "secrets-git",
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "exit_code": 0,
+        "status": "passed",
+        "log_sha256": "fcdfa7ecd449174f8af0b76006ac9fa12b548045c8daf51cd1928ea21b6fdeb5",
+        "rust_successful_result_total": 0,
+        "rust_ignored_result_total": 0,
+        "python_tests_run": 0
+      }
+    ]
+  },
+  "counts": {
+    "rust_successful_result_total": 1654,
+    "rust_ignored_result_total": 42,
+    "python_tests_run": 355,
+    "counting_note": "Rust counts sum result lines, including nested test subprocesses; they are not unique test definitions. Ignored cases are not successful checks."
+  },
+  "checked_changed_files": [
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "5792f104bd2c30b763cb1fe7431a3b197a01e3fafd7dcef0c3b6b7ef42dd7ad2"
+    },
+    {
+      "path": "crates/agent-router-cli/src/coordinator.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "7fe79191e8418c4019693ac03a516c6152dadae3d52f9ea14b5ec9edf1827dff"
+    },
+    {
+      "path": "crates/agent-router-cli/src/execution.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b3e8cd6bb8266dce4afe8f55e4dbde93567bd8dd1b0f6046bc3925f6d6e02814"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/publication.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "cd84c00bc533f528138b21db27b7a2344382517664677085129f0fbe86d57528"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/support/native_fixture.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "225cc44f7e65d6b246b4073a2e63718570dbe74a2cdc781d846921ba660079cc"
+    },
+    {
+      "path": "crates/router-coordinator/src/lib.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "a6da2bc5ffbb3fc06d6f174bbbf11f9d28782f5c9c4549cf7b21676fc639124f"
+    },
+    {
+      "path": "crates/router-runtime/src/integration.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "6e14ed09305ce336f0c7ab79835325a811af9a75973fc0e72f3749b798d67d9d"
+    },
+    {
+      "path": "crates/router-runtime/src/lib.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "710705887990db8056470a5108597678f4b36375b2f05b0c4618fb3e903e7f49"
+    },
+    {
+      "path": "crates/router-runtime/src/store.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ef6b7b0968012d8bf4d6ad06c80535a4c82a340d94e39fc69d7fca28114e511b"
+    },
+    {
+      "path": "crates/router-runtime/src/workspace.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "6372a293583e78338c7d8946a72203b4b7bf23fffe3b95463261d1a962c64a44"
+    },
+    {
+      "path": "crates/router-runtime/tests/runtime.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "985893d290f8157796b3ac48230cbb09cbcf62658ffc091cafb70b2b735111a4"
+    },
+    {
+      "path": "crates/router-types/src/runtime.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "d62fc52ee4acd88793d80655e3dcd1db2d3a82ba9fbcaa21ac63d74c73ad9598"
+    },
+    {
+      "path": "docs/adr/0027-verified-patch-publication.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "915bec88a2645b7a3fa274ad737645c2972ab1f317f92bc6381e591d1319d7da"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "0f0e7e939bcedf3d45ab601aeb2f0d1358101d4c3402e491e7c44c006e2a5e7e"
+    },
+    {
+      "path": "docs/cli-execution.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "38f793f3e86dba5d5d1032245ce2991c328c42eee5cce23ab1fd55228e05e0be"
+    },
+    {
+      "path": "docs/reference/json-contracts.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f6ba9c27f7536fc34acea860c05f33a86b03a810ac6af636c891b8b69df5ad6e"
+    }
+  ],
+  "evidence_file_excluded_from_checked_inventory": "docs/bench/verification-simulated-patch-2026-10-08.json",
+  "post_gate_change": "Only this evidence JSON was added after the frozen gate. All inventoried source bytes and modes were rechecked before writing it.",
+  "simulated_acceptance": [
+    "source clamp acceptance fails before the fix; independent assertions pass on candidate and published revision",
+    "review binds exact diff, artifact, Git blob preimages/postimages, Git modes, source, definition, repository identity, verification and resulting revision",
+    "current capability pins and Integrate permission/mutation plus exact digest are required",
+    "one durable intent; duplicate and concurrent application/publication cannot borrow it",
+    "ref publication has one visibility point; interruption before/after it remains UNKNOWN without terminal evidence and never replays or rolls back user edits",
+    "source/candidate/diff/mode and pre-existing symlink substitutions are refused; unknown JSON keys and unsupported versions are refused",
+    "real CLI validates the saved review, publishes once, preserves source files and returns exit 3 on missing ref"
+  ],
+  "initial_red_results": [
+    {
+      "case": "restored source allows replaying legacy apply",
+      "exit_code": 101
+    },
+    {
+      "case": "default ref update follows a symbolic ref to an unrelated branch",
+      "exit_code": 101
+    },
+    {
+      "case": "substituted ref directory permits publication outside Git metadata",
+      "exit_code": 101
+    },
+    {
+      "case": "CLI mutation lacks current proof verifier after historical reopen",
+      "exit_code": 101
+    }
+  ],
+  "primary_source_preservation": {
+    "preexisting_dirty_file_count": 6,
+    "sha256_unchanged": true
+  },
+  "independent_code_review": "not established; assertions use independent checks of actual candidate/result bytes, not an independent code reviewer",
+  "remaining_qualification": [
+    "selected native entry/OS supervision and F02b composition",
+    "adversarial replacement of Git metadata during a Git subprocess",
+    "power-loss durability across the host/filesystem matrix",
+    "legacy sequential working-copy apply does not have publication visibility semantics",
+    "real-provider financial admission, human acceptance and measured savings"
+  ]
+}
