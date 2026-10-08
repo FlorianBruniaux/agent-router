@@ -21,7 +21,7 @@ pub(crate) struct Contract {
     pub schema: &'static str,
 }
 
-pub(crate) const CONTRACTS: [Contract; 5] = [
+pub(crate) const CONTRACTS: [Contract; 6] = [
     Contract {
         name: "error",
         command: "any command with --json, on failure (stderr)",
@@ -56,6 +56,12 @@ pub(crate) const CONTRACTS: [Contract; 5] = [
         command: "route --json",
         versions: &[SchemaVersion::Text("1")],
         schema: include_str!("schemas/route-decision.schema.json"),
+    },
+    Contract {
+        name: "run-observation",
+        command: "observe --json",
+        versions: &[SchemaVersion::Number(1)],
+        schema: include_str!("schemas/run-observation.schema.json"),
     },
     Contract {
         name: "version",

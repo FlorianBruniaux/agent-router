@@ -1,0 +1,87 @@
+{
+  "budget_unit": "one reserved local upstream HTTP request",
+  "cases": [
+    {
+      "broker_http_requests": 1,
+      "case": "allow",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "evidence_kind": "local_native_owned_client_broker_diagnostic",
+      "evidence_lost": false,
+      "late_result": false,
+      "native_launch_count": 1,
+      "observed_provider": {
+        "effort": "low",
+        "model": "gpt-6.1-sol",
+        "task_digest_matches": true
+      },
+      "os_admission": "UNKNOWN",
+      "paid_provider_calls": 0,
+      "product_integration": "UNKNOWN",
+      "provider_http_requests": 1,
+      "real_provider_inference": "UNKNOWN",
+      "requested": {
+        "effort": "low",
+        "model": "gpt-6.1-sol"
+      },
+      "reserved_local_request_units": 1,
+      "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+      "terminal": "completed"
+    },
+    {
+      "broker_http_requests": 1,
+      "case": "deny_first",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "evidence_kind": "local_native_owned_client_broker_diagnostic",
+      "evidence_lost": false,
+      "late_result": false,
+      "native_launch_count": 1,
+      "observed_provider": "UNKNOWN",
+      "os_admission": "UNKNOWN",
+      "paid_provider_calls": 0,
+      "product_integration": "UNKNOWN",
+      "provider_http_requests": 0,
+      "real_provider_inference": "UNKNOWN",
+      "requested": {
+        "effort": "low",
+        "model": "gpt-6.1-sol"
+      },
+      "reserved_local_request_units": 0,
+      "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+      "terminal": "failed"
+    },
+    {
+      "broker_http_requests": 0,
+      "case": "broker_absent_cancel",
+      "checks_pass": true,
+      "cleanup_complete": true,
+      "evidence_kind": "local_native_owned_client_broker_diagnostic",
+      "evidence_lost": false,
+      "late_result": false,
+      "native_launch_count": 1,
+      "observed_provider": "UNKNOWN",
+      "os_admission": "UNKNOWN",
+      "paid_provider_calls": 0,
+      "product_integration": "UNKNOWN",
+      "provider_http_requests": 0,
+      "real_provider_inference": "UNKNOWN",
+      "requested": {
+        "effort": "low",
+        "model": "gpt-6.1-sol"
+      },
+      "reserved_local_request_units": 0,
+      "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+      "terminal": "interrupted"
+    }
+  ],
+  "evidence_kind": "local_native_owned_client_broker_diagnostic",
+  "global_admission": "NO_GO",
+  "local_qualification": "GO",
+  "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "native_version_for_pin": "0.159.2",
+  "os_admission": "UNKNOWN",
+  "paid_provider_calls": 0,
+  "product_integration": "UNKNOWN",
+  "schema_version": 1
+}

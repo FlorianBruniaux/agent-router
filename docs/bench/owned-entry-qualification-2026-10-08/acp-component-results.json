@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "evidence_kind": "pinned_acp_component_characterization",
+  "source_repository": "agentclientprotocol/codex-acp",
+  "source_commit": "ca1d97173ad37b471d5a4e5847725a4657d34e29",
+  "ar_reference_commit": "a0b7417f42423391eee634929ae759bd7475b0a9",
+  "scope": "actual pinned ACP app-server components against deterministic JSON-RPC peer; no native",
+  "assertion_pass_meaning": "Expected observation reproduced, including violations; not AR admission or nine passing AR invariants.",
+  "native_compatibility": "UNKNOWN",
+  "full_acp_session_comparison": "INCOMPLETE",
+  "direct_native_qualification": "NOT_ASSESSED_BY_THIS_REPORT",
+  "proposed_selection": "DIRECT_FOR_SIMULATED_F02A_CONTINGENT_ON_DIRECT_TESTS_THREE_NATIVE_CASES_AND_REVIEW",
+  "native_admission": "NO_GO",
+  "runtime": {
+    "node": "24.16.0",
+    "native_launches": 0,
+    "socket_listeners": 0,
+    "provider_requests": 0,
+    "harness_exit_code": 0,
+    "characterization_assertions_passed": 9,
+    "outer_deadline_seconds": 15,
+    "pending_observation_window_ms": 15,
+    "v8_old_space_limit_mib": 128,
+    "stdout_stderr_each_below_bytes": 1048576,
+    "typescript_transform": "node:module stripTypeScriptTypes(mode=transform) and extension resolution",
+    "source_behavior_replaced": false,
+    "warning": "Experimental TypeScript-transform warning",
+    "network_sandbox_proof": "NOT_ESTABLISHED; harness uses in-memory streams and performs no networking"
+  },
+  "lock": {
+    "path": "package-lock.json",
+    "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/package-lock.json",
+    "sha256": "d1b3c4a9526a98446d63352b2ae062716223f2ab00ca769d5027bf3d5a31a7e7",
+    "bundled_native_version": "0.159.1",
+    "bundled_native_installed_or_run": false
+  },
+  "dependencies": [
+    {
+      "name": "vscode-jsonrpc",
+      "version": "9.0.2",
+      "url": "https://registry.npmjs.org/vscode-jsonrpc/-/vscode-jsonrpc-9.0.2.tgz",
+      "integrity": "sha512-SbQSV9yRemARxeXw6LU5sS6Zq0e9/DgCCX5yelH263ZQWukbTk8EF8fjTrr1dziasf4GwlJbvTwFnTrnQFWZXQ==",
+      "bytes": 37461,
+      "file_count": 45,
+      "lifecycle_executed": false,
+      "declared_lifecycle": {},
+      "dependencies": {},
+      "peerDependencies": {}
+    },
+    {
+      "name": "@agentclientprotocol/sdk",
+      "version": "1.5.0",
+      "url": "https://registry.npmjs.org/@agentclientprotocol/sdk/-/sdk-1.5.0.tgz",
+      "integrity": "sha512-524jwbB2iYWA+kWWyv9fhKbhU89dH/lu9u5EXwVNmfYzopV8BujCDxByBDZhxRUkB7RWIJzISCnwivdDk+bdVg==",
+      "bytes": 555689,
+      "file_count": 170,
+      "lifecycle_executed": false,
+      "declared_lifecycle": {},
+      "dependencies": {},
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0"
+      }
+    },
+    {
+      "name": "zod",
+      "version": "4.6.5",
+      "url": "https://registry.npmjs.org/zod/-/zod-4.6.5.tgz",
+      "integrity": "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==",
+      "bytes": 1052733,
+      "file_count": 840,
+      "lifecycle_executed": false,
+      "declared_lifecycle": {},
+      "dependencies": {},
+      "peerDependencies": {}
+    }
+  ],
+  "executed_sources": [
+    {
+      "path": "src/CodexAppServerClient.ts",
+      "sha256": "538107f45e0d74027cee1bcb70cf8ccb470db022e90ddb9721195c2d71240775",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexAppServerClient.ts"
+    },
+    {
+      "path": "src/StdUtils.ts",
+      "sha256": "8911d11b9908cd68f6706fee0093aa94725b83df90f30017186ba1d676af5d9c",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/StdUtils.ts"
+    },
+    {
+      "path": "src/Logger.ts",
+      "sha256": "73e8a5441a721082417053639490f7301d1fa4a2a7374854f61a32623d4028be",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/Logger.ts"
+    },
+    {
+      "path": "src/mcp/McpOauthCompletions.ts",
+      "sha256": "e0b1303c5c92d1988e494530ea8f3e196861492552b3f30ac1b16a439e6dd905",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/mcp/McpOauthCompletions.ts"
+    },
+    {
+      "path": "src/mcp/McpStartupTracker.ts",
+      "sha256": "4b5615a9b59a22e7fb147748a75387bf178c1bb7bee9e354051d3fbc99520029",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/mcp/McpStartupTracker.ts"
+    },
+    {
+      "path": "src/subagents/PendingNotificationBuffer.ts",
+      "sha256": "f9aedc0dc1b2b5cc298320ac641e4b4b177628933ea075278d62611b79597538",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/subagents/PendingNotificationBuffer.ts"
+    }
+  ],
+  "inspected_not_executed_sources": [
+    {
+      "path": "src/CodexJsonRpcConnection.ts",
+      "sha256": "47a2aedbe704b49b850cc61ec29c3653b4d7282a703ca71905e085edb2048529",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexJsonRpcConnection.ts",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "src/CodexAcpServer.ts",
+      "sha256": "01f2f5bcf2d87c86499aa32a950af6b885102282ceebea44d5a4b842d3d05f03",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexAcpServer.ts",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "src/CodexAcpClient.ts",
+      "sha256": "146ed5cc5af20142d16be612b68718a76765e1ba6642d1b61a79d064cb3ba5b5",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexAcpClient.ts",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "src/permissions/CodexApprovalHandler.ts",
+      "sha256": "dd9273edab156721199a481123a01e90302124b19b155ee545d4e57bac30154a",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/permissions/CodexApprovalHandler.ts",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "src/CodexEventHandler.ts",
+      "sha256": "542d166dd1f44863334fe99aa86cc6d573bd36e3ac72e35c2dce56512ba1d655",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/CodexEventHandler.ts",
+      "execution": "NOT_EXECUTED"
+    },
+    {
+      "path": "src/AgentMode.ts",
+      "sha256": "16870850683665fca2b2df7dc1f4b426c7b9bb746ea0f8672cafa17aebcccf64",
+      "url": "https://github.com/agentclientprotocol/codex-acp/blob/ca1d97173ad37b471d5a4e5847725a4657d34e29/src/AgentMode.ts",
+      "execution": "NOT_EXECUTED"
+    }
+  ],
+  "private_harness_sha256": {
+    "component-comparison.mjs": "2776f727ff22c3249471e906f28bf06484572dbc9802a3030e8e0956a465a881",
+    "ts-loader.mjs": "d82f20dc77bee7ad12ac6602035e33f87f3f9de38ed072275c1e4e9533f221a8",
+    "component-results.json": "a126ca26dc1f966be99eda9ed38c1e7097f80dbe064d7d44afe87fdb5eefca7b"
+  },
+  "results": [
+    {
+      "scenario": "permission_refusal",
+      "checks": "PASS",
+      "observation": "absent registered handler denies command and permissions",
+      "scope": "native-facing callbacks only; ACP UI permission path not executed",
+      "ar_invariant_disposition": "SATISFIED_IN_SCOPE",
+      "interpretation_limit": "Absent-handler fallback only; ACP permission UI callback not executed."
+    },
+    {
+      "scenario": "unsupported_model_effort",
+      "checks": "PASS",
+      "observation": "component forwards unadmitted values; no local validation here",
+      "scope": "higher ACP model/config layer not executed",
+      "ar_invariant_disposition": "NO_GATE_AT_COMPONENT",
+      "interpretation_limit": "Higher server model/effort setters inspected, not executed; not a whole-adapter failure."
+    },
+    {
+      "scenario": "rerouting",
+      "checks": "PASS",
+      "observation": "notification is forwarded without rejection at this layer",
+      "scope": "CodexEventHandler/session update behavior not executed",
+      "ar_invariant_disposition": "PRESERVED_AT_COMPONENT",
+      "interpretation_limit": "Higher event handler inspected, not executed; no full reroute decision demonstrated."
+    },
+    {
+      "scenario": "rpc_id_correlation",
+      "checks": "PASS",
+      "observation": "wrong/duplicate response IDs do not resolve another call; intervening notification preserved",
+      "scope": "real vscode-jsonrpc and ACP reader",
+      "ar_invariant_disposition": "SATISFIED_IN_SCOPE",
+      "interpretation_limit": "Tested wrong/duplicate response IDs and intervening notification only."
+    },
+    {
+      "scenario": "malformed_messages",
+      "checks": "PASS",
+      "observation": "invalid JSON line is dropped; pending call remains and later success is accepted",
+      "scope": "no durable loss/error state returned by reader",
+      "ar_invariant_disposition": "VIOLATED",
+      "interpretation_limit": "Malformed native input can be lost without a durable loss state, followed by accepted success."
+    },
+    {
+      "scenario": "buffer_overflow",
+      "checks": "PASS",
+      "observation": "oversize notification dropped; take() exposes no loss record",
+      "scope": "actual subagent PendingNotificationBuffer, not global receive buffer",
+      "ar_invariant_disposition": "VIOLATED_IN_SCOPE",
+      "interpretation_limit": "Subagent PendingNotificationBuffer only; not a claim about every main-session receive path."
+    },
+    {
+      "scenario": "cancellation",
+      "checks": "PASS",
+      "observation": "interrupt acknowledgement alone does not finish low-level runTurn; terminal notification does",
+      "scope": "process cleanup not represented and full ACP cancel method not executed",
+      "ar_invariant_disposition": "SATISFIED_IN_SCOPE",
+      "interpretation_limit": "Acknowledgement and terminal separated at low-level API; no process cleanup proof."
+    },
+    {
+      "scenario": "late_result",
+      "checks": "PASS",
+      "observation": "late completion for marked stale turn does not rewrite resolved interrupted result",
+      "scope": "patch application/session replacement not exercised",
+      "ar_invariant_disposition": "SATISFIED_IN_SCOPE",
+      "interpretation_limit": "Marked-stale turn only; no session replacement or patch application."
+    },
+    {
+      "scenario": "ambiguous_interruption",
+      "checks": "PASS",
+      "observation": "failed interrupt leaves completion pending; explicit resolveTurnInterrupted manufactures local interrupted result without native terminal",
+      "scope": "these are actual called primitives; CodexAcpServer finally-path remains source-only",
+      "ar_invariant_disposition": "NATIVE_OUTCOME_UNKNOWN",
+      "interpretation_limit": "Explicit local resolver is not native terminal evidence; higher cancel finally path inspected only."
+    }
+  ],
+  "malformed_counterexample": {
+    "fixture": "Normalized synthetic RPC ID, no user task or native identity",
+    "pending_request": {
+      "id": 1,
+      "method": "initialize",
+      "params": {
+        "clientInfo": {
+          "name": "fixture",
+          "version": "1"
+        }
+      }
+    },
+    "incoming_lines": [
+      "{not-json}",
+      "{\"id\":1,\"result\":{\"correct\":true}}"
+    ],
+    "after_invalid_line": "pending after 15 ms",
+    "after_valid_reply": {
+      "correct": true
+    },
+    "reader_loss_state": "No typed/durable loss exposed; logger-only handling observed in source"
+  },
+  "limitations": [
+    "Full ACP server/session methods not executed.",
+    "No ACP/native 0.159.2 compatibility result.",
+    "No physical provider send, process cleanup, financial unit or OS admission established by these component checks.",
+    "Private harness retained; public report supplies source pins, input sequences and method, not a self-contained rerun package."
+  ]
+}

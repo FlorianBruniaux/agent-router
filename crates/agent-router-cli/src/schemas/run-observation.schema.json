@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agent-router:schema:run-observation:1",
+  "title": "run-observation",
+  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "snapshot_sha256", "identity", "horizon", "known", "unknown", "completeness"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "snapshot_sha256": {"$ref": "#/$defs/digest"},
+    "identity": {"$ref": "#/$defs/identity"},
+    "horizon": {"$ref": "#/$defs/horizon"},
+    "known": {"$ref": "#/$defs/known"},
+    "unknown": {"$ref": "#/$defs/unknowns"},
+    "completeness": {"$ref": "#/$defs/completeness"}
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "state": {
+      "type": "string",
+      "enum": ["planned", "awaiting_approval", "queued", "preparing", "running", "succeeded_transport", "verifying", "verified", "failed", "verification_failed", "timed_out", "cancelled", "blocked"]
+    },
+    "unknown": {"const": "unknown"},
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_key_sha256", "definition_sha256", "receipt_id_sha256", "plan_id_sha256", "node_id_sha256"],
+      "properties": {
+        "run_key_sha256": {"$ref": "#/$defs/digest"},
+        "definition_sha256": {"$ref": "#/$defs/digest"},
+        "receipt_id_sha256": {"$ref": "#/$defs/digest"},
+        "plan_id_sha256": {"$ref": "#/$defs/digest"},
+        "node_id_sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "horizon": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Horizon of the complete verified global journal, including other runs. The reader admits at most 100000 contiguous journal rows. The optional hash remains nullable as in the serialized contract.",
+      "required": ["sequence", "event_sha256"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 0, "maximum": 100000},
+        "event_sha256": {"anyOf": [{"$ref": "#/$defs/digest"}, {"type": "null"}]}
+      }
+    },
+    "known": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "attempts", "failure", "cleanup", "events"],
+      "properties": {
+        "state": {"$ref": "#/$defs/state"},
+        "attempts": {"type": "integer", "minimum": 0, "maximum": 5},
+        "failure": {
+          "type": ["string", "null"],
+          "enum": [null, "authentication", "rate_limit", "timeout", "crash", "network", "policy", "verification", "interrupted", "output_limit", "spawn", "unclassified"]
+        },
+        "cleanup": {
+          "type": "string",
+          "enum": ["unknown", "not_started", "group_terminated", "namespace_terminated"]
+        },
+        "events": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "items": {"$ref": "#/$defs/event"}
+        }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence", "state", "event_sha256"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 100000},
+        "state": {"$ref": "#/$defs/state"},
+        "event_sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "unknowns": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested_model", "requested_effort", "observed_model", "observed_effort", "transport", "validation", "objective", "duration", "journal_authenticity", "process_liveness"],
+      "properties": {
+        "requested_model": {"$ref": "#/$defs/unknown"},
+        "requested_effort": {"$ref": "#/$defs/unknown"},
+        "observed_model": {"$ref": "#/$defs/unknown"},
+        "observed_effort": {"$ref": "#/$defs/unknown"},
+        "transport": {"$ref": "#/$defs/unknown"},
+        "validation": {"$ref": "#/$defs/unknown"},
+        "objective": {"$ref": "#/$defs/unknown"},
+        "duration": {"$ref": "#/$defs/unknown"},
+        "journal_authenticity": {"$ref": "#/$defs/unknown"},
+        "process_liveness": {"$ref": "#/$defs/unknown"}
+      }
+    },
+    "completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["journal", "external_observations", "detail"],
+      "properties": {
+        "journal": {"const": "complete"},
+        "external_observations": {"$ref": "#/$defs/unknown"},
+        "detail": {"const": "redacted"}
+      }
+    }
+  }
+}

@@ -5,6 +5,22 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+## Qualification locale du 8 octobre 2026
+
+Le [client Codex dédié](owned-entry-qualification-2026-10-08/README.md) passe trois scénarios natifs avec fournisseur simulé : un envoi autorisé, zéro envoi après refus, annulation et nettoyage du relais absent. Le [rapport lié aux sources](verification-owned-client-2026-10-08.json) conserve les contrôles, revues et échecs initiaux, dont un arrêt de groupe non confirmé au premier contrôle immédiat. Aucun appel payant n’a été effectué. Les 24 contrôles locaux sélectionnés passent : 1 636 résultats Rust workspace plus un contrôle du cœur et 355 tests Python. Les nombres Rust additionnent les résultats, sous-processus compris ; les 42 tests natifs Rust ignorés ne sont pas des succès. Les sources restent identiques pendant la passe complète.
+
+[ADR 0026](../adr/0026-owned-client-simulated-entry.md) retient direct + broker pour le patch simulé F02a. Neuf observations sur composants ACP réels apportent un contre-exemple de perte de message ; la comparaison complète et la clôture de #131 restent ouvertes. `schema run-observation` publie la forme JSON v1 déjà utilisée. F04b conserve provenance native, pertes de notifications et faits qualifiés à raccorder.
+
+Suite : F02a pour l’artefact et son application vérifiée, F12a pour la supervision OS, puis F02b/F03b pour leur composition. F05/F06/F07b raccordent durées, corrélation et coûts avant le premier essai réel. Le candidat personnel reste réservé à cet essai ; pas d’automatisation quotidienne ni de gain mesuré à ce stade.
+
+## Début de passe du 8 octobre 2026
+
+La [PR #139](https://github.com/FlorianBruniaux/agent-router/pull/139) est fusionnée sur `main` à `a0b7417f42423391eee634929ae759bd7475b0a9`. Son arbre correspond à la source revue `c07f0a687fc59cc63cf7b0bcb38cada6655e003f` : F04a est livré, avec les diagnostics d’envoi natif et d’annulation au démarrage. Les résultats locaux détaillés ci-dessous restent ceux du 7 octobre, pas de nouveaux tests exécutés le 8. La CI distante n’a pas démarré pour les jobs en échec, en raison du budget/paiement ; les deux jobs macOS ont été annulés par la matrice. Elle reste non validée.
+
+Les mises à jour de livraison des issues #116, #118, #133, #131 et #11 ont été publiées et relues, en conservant leurs historiques. La lecture GitHub du 8 octobre confirme 17 issues ouvertes et aucune PR ouverte. Les limites des preuves restent inchangées : pas d’admission globale, d’essai fournisseur réel ni d’économie mesurée.
+
+L’[ordre de travail courant](finalization-plan-2026-10-07.md#ordre-dexécution-à-partir-du-8-octobre) est : qualifier le client Codex dédié ; compléter les mesures en parallèle ; obtenir un patch utile avec fournisseur simulé ; préparer l’essai réel sous plafond ; comparer plusieurs tâches selon un protocole fixé avant résultats. Le [candidat personnel](calibration-v2/personal-trial.md#candidat-concret-du-7-octobre-2026) reste préparé et non implémenté. La documentation et le changelog sont actualisés avant le prochain lot de code.
+
 ## Mise à jour du 7 octobre 2026
 
 F04a est implémenté, testé et revu dans le candidat local : [observation passive](../run-observation.md), une seule transaction cohérente, identités hashées, détail privé omis et champs natifs UNKNOWN. Les 12 tests runtime et 3 tests CLI ciblés passent ; 19 probes indépendantes ne signalent pas de blocage confirmé. Le [rapport lié aux sources](verification-observation-2026-10-07.json) enregistre les 21 contrôles sélectionnés réussis : 1 633 résultats Rust workspace plus un contrôle du cœur minimal et 290 tests Python. Les nombres Rust additionnent les lignes de résultats, sous-processus compris, pas des définitions uniques ; les tests ciblés sont inclus. Les 42 tests natifs opt-in ignorés ne sont pas des succès ; cette sélection ne vaut pas équivalence avec toute la CI. F04b reste ouvert et F05a n’a qu’une amorce de vue, limitée à 20 références d’état/séquence en texte.

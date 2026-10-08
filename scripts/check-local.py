@@ -53,7 +53,10 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
                                   ("native-decision-tests", "docs/bench/native-integration-u06", "test_*.py"),
                                   ("native-hook-failure-tests", "docs/bench/native-integration-u07", "test_*.py"),
                                   ("campaign-tests", "docs/bench/campaign-next/tests", "test_*.py"),
-                                  ("calibration-tests", "docs/bench/calibration-v2/tests", "test_*.py")]:
+                                  ("calibration-tests", "docs/bench/calibration-v2/tests", "test_*.py"),
+                                  ("physical-send-tests", "docs/bench/physical-send-feasibility-2026-10-07", "test_*.py"),
+                                  ("startup-outage-tests", "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation", "test_*.py"),
+                                  ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_*.py")]:
         repo_env = {"native-decision-tests": "AR_U06_REPO_ROOT", "native-hook-failure-tests": "U07_REPO_ROOT"}
         options = {"env": {repo_env[name]: str(root)}} if name in repo_env else {}
         add("quality", name, [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"], require_tests=True, **options)
