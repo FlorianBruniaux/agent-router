@@ -1,0 +1,1377 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-08",
+  "scope": "Dedicated Codex entry qualification for simulated F02a, passive observation JSON Schema and local diagnostic test registration",
+  "base_head_sha": "a0b7417f42423391eee634929ae759bd7475b0a9",
+  "quality_summary_sha256": "fe265eb7b451408f46e571b644bd309c3cec5d15276cc3d1b3106d5b7ac4f2b2",
+  "quality_source_sha256": "74232d46533efc6c124cf29f7f2ed8c09a7baeb40315cd2e2c6cacda8307b475",
+  "source_unchanged_during_quality": true,
+  "full_ci_equivalent": false,
+  "selected_source_inventory": [
+    {
+      "path": "CHANGELOG.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "4870ae4f24303a3db8cc50ac220c095945895778e94a10994032dc4738c71ff8"
+    },
+    {
+      "path": "README.fr.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "9ad52fd7dc11e3aec6db102b76c335b1fb178254a7080e823a9fd18f005f5cdd"
+    },
+    {
+      "path": "README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "2841bc697684b3e9f43886d4b230b34b6e7159946a9d36378bd323b29fec9a4a"
+    },
+    {
+      "path": "crates/agent-router-cli/src/contracts.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ea2d82c65bdd17c333fb83a101743960fb42a55cdea274660ef00de9c5df63ec"
+    },
+    {
+      "path": "crates/agent-router-cli/src/schemas/run-observation.schema.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "571df67100361d653ba603075809e706ace00bfb05066ead04f980b3705b1fd1"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/schema.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "6cf8023a9868fbe584876b9b8fe02ab874189bccd19dd26b992e7c47ce7a82fe"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/support/json_schema.rs",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "d83183fc68450d248a7d0a66e1f1abeb85198ccb7596347f53d72285e1b9f109"
+    },
+    {
+      "path": "docs/README.fr.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "757191debe4c6cf018b24a5e94da1967066ef8c3aec50078ba345e8b2ab1e057"
+    },
+    {
+      "path": "docs/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "f666b637d2f42a51391bec0637d740c27641f8fe4cdd665ba47f50b1ce5337b2"
+    },
+    {
+      "path": "docs/adr/0023-owned-task-entry.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b8c7d6e08059e7918ec0f49edc8572caf83fd619b3d59a05f41806f9a09694ad"
+    },
+    {
+      "path": "docs/adr/0026-owned-client-simulated-entry.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "454185c1115d53e1ee61ea8693c36a2c1c87568781f0baa320f5cc81ce328d73"
+    },
+    {
+      "path": "docs/adr/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "63ad0a780010afd5b7d2d71c35eab01de34ee0111aecc83894d9f9cd14c3170c"
+    },
+    {
+      "path": "docs/bench/finalization-plan-2026-10-07.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "06c75c95e9bb93c004fb44c950e2d759cc21a3238541e18da8032243aafa9cb9"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/README.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "db6c840124771ce5d603a56ff5b64689e7a5e142fb80bf0be2206a0b7bd47434"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/acp-comparison.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "d1b275eea19e969c5288d4e8340dc70bead144d80546ae250174f0c6c2eb2960"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/acp-component-results.json",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "2296c6bbe0ad72175802587bc1e4e0b8784211d64f68025c5437c349310da915"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "e71a7c300f3508a8858e6a9d4f10ac8b471852d8782ecff1c0f8bc35a02ee5ef"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6"
+    },
+    {
+      "path": "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "a3586b3a632808793d63a79dcc76ebc72c0f1d0b3fc633cd56f8749f723f9d09"
+    },
+    {
+      "path": "docs/bench/playbook.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "16d6358f636d5eb257c288d15c7a14913ea89663c3459fbb7e7cfbcaca8d064a"
+    },
+    {
+      "path": "docs/bench/status-and-action-plan-2026-10-05.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "261f5629e81ffc080f8ef637a3d10b341273a3d8e787565975f1b8046d84a3b3"
+    },
+    {
+      "path": "docs/cli-output.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "fa619b4e714009d972f373797b7df9084f475a45f5836bf10cddece8198c46c9"
+    },
+    {
+      "path": "docs/local-ci.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "39b364b340fbd6ff164c7174428d68d50d0fb9f6e802f04a2982b4a2aa216146"
+    },
+    {
+      "path": "docs/reference/json-contracts.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "c543137900b743bc3434e20ebff288139b25c5ea1e029710d4f064bab8c2cb74"
+    },
+    {
+      "path": "docs/run-observation.md",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "550525c86eae11bc4f1743c368843106287504f7cb48d73117994a3b5d2e5629"
+    },
+    {
+      "path": "scripts/check-local.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "cfad6a90f13cd927b9d8f827fdd6852f0965b37440f1f991ededc4723af20606"
+    },
+    {
+      "path": "scripts/test-check-local.py",
+      "mode": 420,
+      "kind": "file",
+      "sha256": "9adf2919874b38c0432dd88c6f8b46ada7efd2919d891d2ced687e1acd21fd83"
+    }
+  ],
+  "checks": [
+    {
+      "id": "format",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.951134,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.458883,
+      "log_sha256": "b2c020f27a01faabb96e5d55c11fd219cf7c484c9cf34b3342bfc8444d934c89"
+    },
+    {
+      "id": "clippy-core",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.180392,
+      "log_sha256": "a5f4c585ee974ca44916ac30a98bbc189e067a7e0a6bc6d2e8d6bc525be724af"
+    },
+    {
+      "id": "workspace-tests",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 317.980878,
+      "log_sha256": "2606027cf9ff3f54b2192e68ee76acdee47f317972c4051e9c256f742683c749",
+      "rust_results": {
+        "passed": 1636,
+        "failed": 0,
+        "ignored": 42,
+        "measured": 0,
+        "filtered_out": 302,
+        "result_lines": 186
+      }
+    },
+    {
+      "id": "local-api-absent",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 3.167994,
+      "log_sha256": "de41bce79c58dbb69ce10eaea01fde0a702a541445c27457468cab1f85f79fe6",
+      "rust_results": {
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "measured": 0,
+        "filtered_out": 0,
+        "result_lines": 1
+      }
+    },
+    {
+      "id": "harness",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.448956,
+      "log_sha256": "71adbfcce39269de1e0d7d0aedd9b11091b97aa68a5384b0b10341d6eadecfc6"
+    },
+    {
+      "id": "host-syntax",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.131592,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.186132,
+      "log_sha256": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033",
+      "python_results": {
+        "run": 3,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-adrs",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.076778,
+      "log_sha256": "44f206e5deee04aaab83c26d0959361e3c140d53b4e07af47250bcb717a6fc43",
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-check-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 4.406899,
+      "log_sha256": "2ccb48ce22a097b0860c2ad9878fac462b2f349374114b44bc244ebd3c1454fb",
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-binary",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.406032,
+      "log_sha256": "2f3559c2fda7a3ee660547ced87f8f3eb37bf97b8a3af61e37a5759284555509",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-package-core",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.234911,
+      "log_sha256": "3bab5c9915d9bec04dff73f17a9bcf8dbc47e8f1a5026361f579948fdbe76d44",
+      "python_results": {
+        "run": 26,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "script-test-release-local",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 10.066572,
+      "log_sha256": "272020c6b2a79c7b8567ae9f77dd2c6a26311ae1c5bfd74c9c57aa9faa8425dc",
+      "python_results": {
+        "run": 27,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "egress-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 13.962429,
+      "log_sha256": "3239397ab6b3967b1aa97b73c797b4dd95161dc8f163f85742e0f828aa8be001",
+      "python_results": {
+        "run": 48,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-probe-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 8.098848,
+      "log_sha256": "7c6d6ee90d7c36829327710efdcf494c50afbd8ae757fa784d9828ac8660d51b",
+      "python_results": {
+        "run": 33,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-decision-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 5.894142,
+      "log_sha256": "b64e4e8f50a692217766c1f0aedf9e9f8356de9b57fcb7073e29b337606e408d",
+      "python_results": {
+        "run": 13,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 4.33394,
+      "log_sha256": "62f05789a146e498c6c5a05fcd691cc504dc190181a2aac9d4c406a96575601d",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "campaign-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.611433,
+      "log_sha256": "4967a849297014351b8e56338ada6e0ded11accabd63b6a2fa445b5ddfc71f33",
+      "python_results": {
+        "run": 17,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "calibration-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 2.893294,
+      "log_sha256": "24f64879e9a4c75d2d388b2af3018bf515b108a6e134569e7f8be422be4d6017",
+      "python_results": {
+        "run": 30,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "physical-send-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.605,
+      "log_sha256": "018b749fb93613abec76e4134f6e3839abffcd218eb2a99a3423a1cef4a5a364",
+      "python_results": {
+        "run": 12,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "startup-outage-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.076103,
+      "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4",
+      "python_results": {
+        "run": 8,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "owned-entry-tests",
+      "group": "quality",
+      "argv": [
+        "python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/owned-entry-qualification-2026-10-08",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.405762,
+      "log_sha256": "0e0f017a351813c2e5b540fd573274641f281dc884bc3e1d7de384bce011d01f",
+      "python_results": {
+        "run": 44,
+        "skipped": 0
+      }
+    },
+    {
+      "id": "secrets-dir",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.607534,
+      "log_sha256": "4f7b56dcc1c9e01a14fd3526bfba02b98376c79e01c1258c02f185a9a493c715"
+    },
+    {
+      "id": "secrets-git",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 2.06736,
+      "log_sha256": "2d67ce7bd7df3337f0547af4fee2e5f462122b727aaaa95ec6d3a558822532f1"
+    }
+  ],
+  "counts_note": "Rust counts sum result lines including subprocess invocations, not unique test definitions. Focused unit suites and reviewer reruns are not added again to quality totals. Ignored tests are not successes.",
+  "independent_review": {
+    "schema_and_runner": {
+      "verdict": "PASS within reviewed coverage",
+      "findings": [],
+      "schema_manifest_hashes_match": true,
+      "existing_schema_binary_tests": {
+        "passed": 17,
+        "failed": 0
+      },
+      "independent_observe_probes": 28,
+      "runner_failure_probes": 3,
+      "runner_zero_test_probes": 3,
+      "changed_during_review": {},
+      "limits": [
+        "No Cargo or workspace gate run by reviewer.",
+        "No full standard JSON Schema validator used.",
+        "Schema fixture tests run from pre-existing compiled binary.",
+        "Independent observation probes use synthetic v2 durable runtime stores; no native/provider execution.",
+        "Runner propagation probes inject a stable snapshot to isolate command handling without Git commits.",
+        "Real diagnostic suites reviewed statically for native-launch/paid-call entry paths; no loopback tests executed by reviewer.",
+        "Native client implementation not reviewed; dedicated reviewer owns it."
+      ]
+    },
+    "native_client_before_cleanup_amendment": {
+      "verdict": "PASS within frozen local diagnostic contract",
+      "open_confirmed_findings": [],
+      "resolved_findings": [
+        "Exponent-overflow JSON became infinity and qualified",
+        "Nested thread model/effort/provider and workspace/ephemeral contradictions accepted",
+        "Request/reply and cancellation acknowledgement/terminal chronology contradictions accepted"
+      ],
+      "source_sha256": {
+        "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6",
+        "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py": "7681811b66c85e681f976546cb7230bc533ba2f1017d28c2f3adb6361e7e04ec",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py": "bf971265dcf579771d1d7586df7dadd32b668655cdf69bfb30fba56f510f17a2"
+      },
+      "unit_tests": {
+        "passed": 40,
+        "exit": 0
+      },
+      "independent_repair_checks": 20,
+      "independent_loopback_cases": 5,
+      "ACP_characterization_checks": 9,
+      "ACP_unchanged_reader_evidence_loss": "CONFIRMED: malformed JSON dropped before later success",
+      "bounded_selection": "Direct selection for simulated F02a supported after final native captures; full ACP session comparison INCOMPLETE; native admission NO_GO",
+      "limits": [
+        "Reviewer did not launch native process, provider, Cargo or change repository.",
+        "Loopback endpoints only; no external network/provider calls.",
+        "Final native rerun remains root-owned; older raw captures reclassified separately."
+      ]
+    },
+    "native_cleanup_amendment": {
+      "independent_classifier_negative_mutations": {
+        "cases": [
+          "group_gone=False",
+          "deadline_reached=True",
+          "process_group_id=True",
+          "process_group_id=0",
+          "timeout_seconds=3.0",
+          "timeout_seconds=4",
+          "wait_seconds=nan",
+          "wait_seconds=inf",
+          "wait_seconds=-1",
+          "wait_seconds=3.001",
+          "wait_seconds=True",
+          "observations=[]",
+          "observations=[None]",
+          "observations=absent",
+          "terminal_state_present",
+          "terminal_state_permission_denied",
+          "terminal_state_os_error",
+          "terminal_state_None",
+          "elapsed_nan",
+          "elapsed_inf",
+          "elapsed_-1",
+          "elapsed_3.001",
+          "elapsed_True",
+          "missing_group_record",
+          "group_record_wrong_type",
+          "reversed_chronology",
+          "nonfinal_absence",
+          "observations_above_iteration_cap"
+        ],
+        "passed": 28
+      },
+      "independent_observation_probes": [
+        {
+          "name": "immediate_absence",
+          "passed": true
+        },
+        {
+          "name": "delayed_absence",
+          "passed": true
+        },
+        {
+          "name": "persistent_presence",
+          "passed": true
+        },
+        {
+          "name": "permission_denied",
+          "passed": true
+        },
+        {
+          "name": "os_error",
+          "passed": true
+        },
+        {
+          "name": "late_absence_after_deadline",
+          "passed": true
+        },
+        {
+          "name": "frozen_clock_iteration_cap",
+          "passed": true
+        },
+        {
+          "name": "seven_invalid_group_inputs_refused_before_signal0",
+          "passed": true
+        }
+      ],
+      "limits": [
+        "No repository edits, Cargo execution, native Codex launches or paid provider calls by reviewer.",
+        "Signal 0 observes group presence; it sends no terminating signal. Scheduler delay may extend wall-clock return; observations after the deadline cannot qualify.",
+        "Mocked observation probes establish classifier and observer behavior, not production OS admission.",
+        "Earlier deny_first cleanup failure remains NO_GO and its cause remains UNKNOWN.",
+        "OS admission, real provider inference and product integration remain UNKNOWN; global admission remains NO_GO."
+      ],
+      "open_confirmed_findings": [],
+      "prior_review_sha256": "13a64c4cf7c4157fb03172bf18773670af86de79ac67b3ac790187f222d87a8c",
+      "schema_version": 1,
+      "scope": "Independent review of bounded cleanup observation and current local diagnostic classifier; extends prior final-review.json only within this scope.",
+      "source_binding": {
+        "current_test_sha256": "a3586b3a632808793d63a79dcc76ebc72c0f1d0b3fc633cd56f8749f723f9d09",
+        "native_rerun_required_for_test_only_change": false,
+        "pre_and_post_capture_match": true,
+        "prior_test_sha256": "1d48fa65689395dc6587a366770308361ae4da8dec9f143a8277ab2afc4caf7f",
+        "runtime_and_helpers_match_capture": true,
+        "test_only_change": "One floating-sum assertion tolerance and explanatory comment; prior test file hash reconstructed exactly."
+      },
+      "source_frozen_manifest_matches": true,
+      "source_sha256": {
+        "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+        "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+        "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456",
+        "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py": "e71a7c300f3508a8858e6a9d4f10ac8b471852d8782ecff1c0f8bc35a02ee5ef",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py": "a3586b3a632808793d63a79dcc76ebc72c0f1d0b3fc633cd56f8749f723f9d09",
+        "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770"
+      },
+      "unit_tests": {
+        "exit_code": 0,
+        "failed": 0,
+        "initial_sandbox_attempt": {
+          "loopback_bind_permission_errors": 2,
+          "passed": 42
+        },
+        "interpreter_version": "3.14.8",
+        "passed": 44,
+        "rerun": "PASS with loopback access; no native process or external provider launched"
+      },
+      "verdict": "PASS"
+    },
+    "native_capture_reconciliation": {
+      "capture_hashes": {
+        "evidence": {
+          "allow": "b35e81c402e9b1bf6127c5669039b8fa1cee8c105dedaeb1d14560fc1d3374a6",
+          "broker_absent_cancel": "4dc382e1810fc7f0bf330407c34e111c7a3364f8596980f8aeb1850ff7574446",
+          "deny_first": "8ed298d3e3d6c6334ca0c0a33a9f884f52225e1dd04cecc7fe40da21c52d8468"
+        },
+        "report": "6bd887e378631d5d28dc32fd334331bb28d5cf63838d63dd8426113dcaa2378b",
+        "source_binding": "5a4591439b681297617ac7ecf2962cb36b5d4f4f791b6a052dbe7becef87faec"
+      },
+      "global_admission": "NO_GO",
+      "limits": [
+        "Reviewer reclassified saved captures without launching native Codex.",
+        "Successful final bounded observation does not establish the cause of the earlier failed immediate observation.",
+        "PASS applies to the diagnostic evidence contract and does not grant native or product execution authority."
+      ],
+      "local_qualification": "GO",
+      "os_admission": "UNKNOWN",
+      "paid_provider_calls": 0,
+      "prior_capture": {
+        "case": "deny_first",
+        "cause": "UNKNOWN",
+        "cleanup_complete": false,
+        "evidence_sha256": "373e337d6101dd8748249e731366da786e8e39246a6c2f0e0d6808ed3153fd8b",
+        "preserved": true,
+        "verdict": "NO_GO"
+      },
+      "product_integration": "UNKNOWN",
+      "real_provider_inference": "UNKNOWN",
+      "results": [
+        {
+          "broker_http_requests": 1,
+          "case": "allow",
+          "cleanup_complete": true,
+          "evidence_sha256": "b35e81c402e9b1bf6127c5669039b8fa1cee8c105dedaeb1d14560fc1d3374a6",
+          "group_observation_states": [
+            "absent"
+          ],
+          "group_wait_seconds": 1.1625001206994057e-05,
+          "independent_provider_body_files_match": true,
+          "provider_http_requests": 1,
+          "report_projection_matches": true,
+          "reserved_local_request_units": 1,
+          "terminal": "completed",
+          "verdict": "PASS"
+        },
+        {
+          "broker_http_requests": 1,
+          "case": "deny_first",
+          "cleanup_complete": true,
+          "evidence_sha256": "8ed298d3e3d6c6334ca0c0a33a9f884f52225e1dd04cecc7fe40da21c52d8468",
+          "group_observation_states": [
+            "present",
+            "absent"
+          ],
+          "group_wait_seconds": 0.058732582998345606,
+          "independent_provider_body_files_match": true,
+          "provider_http_requests": 0,
+          "report_projection_matches": true,
+          "reserved_local_request_units": 0,
+          "terminal": "failed",
+          "verdict": "PASS"
+        },
+        {
+          "broker_http_requests": 0,
+          "case": "broker_absent_cancel",
+          "cleanup_complete": true,
+          "evidence_sha256": "4dc382e1810fc7f0bf330407c34e111c7a3364f8596980f8aeb1850ff7574446",
+          "group_observation_states": [
+            "absent"
+          ],
+          "group_wait_seconds": 4.054199962411076e-05,
+          "independent_provider_body_files_match": true,
+          "provider_http_requests": 0,
+          "report_projection_matches": true,
+          "reserved_local_request_units": 0,
+          "terminal": "interrupted",
+          "verdict": "PASS"
+        }
+      ],
+      "schema_version": 1,
+      "scope": "Three pinned local native owned-client captures reconciled with current frozen classifier and independent provider body files; local diagnostic qualification only.",
+      "source_binding_verified": true,
+      "source_sha256": {
+        "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+        "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+        "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456",
+        "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py": "e71a7c300f3508a8858e6a9d4f10ac8b471852d8782ecff1c0f8bc35a02ee5ef",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6",
+        "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py": "a3586b3a632808793d63a79dcc76ebc72c0f1d0b3fc633cd56f8749f723f9d09",
+        "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770"
+      },
+      "test_only_post_capture_change_verified": true,
+      "verdict": "PASS"
+    }
+  },
+  "native_source_binding": {
+    "source_before": {
+      "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+      "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+      "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456",
+      "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py": "e71a7c300f3508a8858e6a9d4f10ac8b471852d8782ecff1c0f8bc35a02ee5ef",
+      "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6",
+      "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py": "1d48fa65689395dc6587a366770308361ae4da8dec9f143a8277ab2afc4caf7f",
+      "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770"
+    },
+    "source_after": {
+      "docs/bench/egress-admission/codex_appserver_local.py": "4c6ff4a43e1e2be6d325cee6611b8c8fb38c7ac0b6ee370f3fa1975b40f74ae8",
+      "docs/bench/native-integration-u06/probe.py": "fabdeedd10136f82089cd89e7eb2f87dec8ae06952c35931e5672f70739a6c47",
+      "docs/bench/owned-entry-qualification-2026-10-08/direct_client.py": "ecf3f59d996328ec161b9b8588c8ba2677089dce05deb476a1bf9948fe117456",
+      "docs/bench/owned-entry-qualification-2026-10-08/native_probe.py": "e71a7c300f3508a8858e6a9d4f10ac8b471852d8782ecff1c0f8bc35a02ee5ef",
+      "docs/bench/owned-entry-qualification-2026-10-08/test_direct_client.py": "b09cd9fbc93dd57aa5943511a9e7d0d83ddbd4898b129cb4a6efe15abcf35df6",
+      "docs/bench/owned-entry-qualification-2026-10-08/test_native_probe.py": "1d48fa65689395dc6587a366770308361ae4da8dec9f143a8277ab2afc4caf7f",
+      "docs/bench/physical-send-feasibility-2026-10-07/probe.py": "eaa0703aa5d713587adba6c2de97f865e67d92da03733cfc1767a06ddfd03770"
+    },
+    "source_unchanged": true,
+    "exit_code": 0
+  },
+  "native": {
+    "budget_unit": "one reserved local upstream HTTP request",
+    "cases": [
+      {
+        "broker_http_requests": 1,
+        "case": "allow",
+        "checks_pass": true,
+        "cleanup_complete": true,
+        "evidence_kind": "local_native_owned_client_broker_diagnostic",
+        "evidence_lost": false,
+        "late_result": false,
+        "native_launch_count": 1,
+        "observed_provider": {
+          "effort": "low",
+          "model": "gpt-6.1-sol",
+          "task_digest_matches": true
+        },
+        "os_admission": "UNKNOWN",
+        "paid_provider_calls": 0,
+        "product_integration": "UNKNOWN",
+        "provider_http_requests": 1,
+        "real_provider_inference": "UNKNOWN",
+        "requested": {
+          "effort": "low",
+          "model": "gpt-6.1-sol"
+        },
+        "reserved_local_request_units": 1,
+        "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+        "terminal": "completed"
+      },
+      {
+        "broker_http_requests": 1,
+        "case": "deny_first",
+        "checks_pass": true,
+        "cleanup_complete": true,
+        "evidence_kind": "local_native_owned_client_broker_diagnostic",
+        "evidence_lost": false,
+        "late_result": false,
+        "native_launch_count": 1,
+        "observed_provider": "UNKNOWN",
+        "os_admission": "UNKNOWN",
+        "paid_provider_calls": 0,
+        "product_integration": "UNKNOWN",
+        "provider_http_requests": 0,
+        "real_provider_inference": "UNKNOWN",
+        "requested": {
+          "effort": "low",
+          "model": "gpt-6.1-sol"
+        },
+        "reserved_local_request_units": 0,
+        "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+        "terminal": "failed"
+      },
+      {
+        "broker_http_requests": 0,
+        "case": "broker_absent_cancel",
+        "checks_pass": true,
+        "cleanup_complete": true,
+        "evidence_kind": "local_native_owned_client_broker_diagnostic",
+        "evidence_lost": false,
+        "late_result": false,
+        "native_launch_count": 1,
+        "observed_provider": "UNKNOWN",
+        "os_admission": "UNKNOWN",
+        "paid_provider_calls": 0,
+        "product_integration": "UNKNOWN",
+        "provider_http_requests": 0,
+        "real_provider_inference": "UNKNOWN",
+        "requested": {
+          "effort": "low",
+          "model": "gpt-6.1-sol"
+        },
+        "reserved_local_request_units": 0,
+        "task_sha256": "62ab59d33af738f2fc1811430820ee167814c91d7c4e79c097c8650ef936226c",
+        "terminal": "interrupted"
+      }
+    ],
+    "evidence_kind": "local_native_owned_client_broker_diagnostic",
+    "global_admission": "NO_GO",
+    "local_qualification": "GO",
+    "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "native_version_for_pin": "0.159.2",
+    "os_admission": "UNKNOWN",
+    "paid_provider_calls": 0,
+    "product_integration": "UNKNOWN",
+    "schema_version": 1
+  },
+  "acp_component_result_sha256": "2296c6bbe0ad72175802587bc1e4e0b8784211d64f68025c5437c349310da915",
+  "retained_native_attempts": [
+    {
+      "record": "native-allow-1",
+      "sha256": "68372f6758f4f7e1ddd836246584537e7f76d3cdc4696f6f217fde1abd8ae2ff",
+      "local_qualification": "NO_GO",
+      "cases": [
+        {
+          "case": "allow",
+          "checks_pass": false,
+          "cleanup_complete": true,
+          "broker_http_requests": 0,
+          "provider_http_requests": 0,
+          "terminal": "UNKNOWN"
+        }
+      ],
+      "superseded_source": true
+    },
+    {
+      "record": "native-allow-2",
+      "sha256": "0946b23934f0b526791f26ed046710a88c63a8c515265722787ad2ec4459143b",
+      "local_qualification": "GO",
+      "cases": [
+        {
+          "case": "allow",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 1,
+          "provider_http_requests": 1,
+          "terminal": "completed"
+        }
+      ],
+      "superseded_source": true
+    },
+    {
+      "record": "native-final",
+      "sha256": "6bd887e378631d5d28dc32fd334331bb28d5cf63838d63dd8426113dcaa2378b",
+      "local_qualification": "GO",
+      "cases": [
+        {
+          "case": "allow",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 1,
+          "provider_http_requests": 1,
+          "terminal": "completed"
+        },
+        {
+          "case": "deny_first",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 1,
+          "provider_http_requests": 0,
+          "terminal": "failed"
+        },
+        {
+          "case": "broker_absent_cancel",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 0,
+          "provider_http_requests": 0,
+          "terminal": "interrupted"
+        }
+      ],
+      "superseded_source": true
+    },
+    {
+      "record": "native-reviewed-final",
+      "sha256": "f7f50c317d611dba2caca7d878c21d471a5ca1e0766bb8f6d20a4d68c61435fc",
+      "local_qualification": "NO_GO",
+      "cases": [
+        {
+          "case": "allow",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 1,
+          "provider_http_requests": 1,
+          "terminal": "completed"
+        },
+        {
+          "case": "deny_first",
+          "checks_pass": false,
+          "cleanup_complete": false,
+          "broker_http_requests": 1,
+          "provider_http_requests": 0,
+          "terminal": "failed"
+        },
+        {
+          "case": "broker_absent_cancel",
+          "checks_pass": true,
+          "cleanup_complete": true,
+          "broker_http_requests": 0,
+          "provider_http_requests": 0,
+          "terminal": "interrupted"
+        }
+      ],
+      "superseded_source": true
+    }
+  ],
+  "private_evidence": [
+    {
+      "record": "implementation/binding-chronology-green.log",
+      "sha256": "f30b21880ef80ba755b07cf27e9472023388f8df57c3e2d8f0f7569083f6a007"
+    },
+    {
+      "record": "implementation/direct-green.log",
+      "sha256": "757407eed9146e12d3fe46e78de6cd045a496130db7fee673b0bbde2d2c86bf6"
+    },
+    {
+      "record": "implementation/direct-red.log",
+      "sha256": "dc85bce1b28add63c8ded71b6fe57e2ea7c7acab3a6ed5a5068ccabe92c7c61b"
+    },
+    {
+      "record": "implementation/errno-portability-green.log",
+      "sha256": "c0dcc7fd0bb994cdea2dd56bda64b9070bedaf2920c53b52fcaab01d23c87cdc"
+    },
+    {
+      "record": "implementation/errno-portability-red.log",
+      "sha256": "5ec87538bb8e783d2c68a16eda4d4fd282aae587cef20ff57bd7e58af775ffd4"
+    },
+    {
+      "record": "implementation/final-green-portable.log",
+      "sha256": "9db52648f19d6ede25138e9b0cbf83898d737e1a0ec0a7c42632807a536c0681"
+    },
+    {
+      "record": "implementation/final-green.log",
+      "sha256": "bd1344979c73fa1e89b6688ad905b689be0ff32f7795b48211cf2048a7a59d58"
+    },
+    {
+      "record": "implementation/float-sum-green.log",
+      "sha256": "2906ff86310486b45cd561b9cba0cfa8612d6dccf0162a7c2577b30c1fb911ce"
+    },
+    {
+      "record": "implementation/float-sum-red.log",
+      "sha256": "0c665cce1fc85beac444cfa44610080b8b089bfd9dbd60464ef760453881c1cd"
+    },
+    {
+      "record": "implementation/frozen.sha256",
+      "sha256": "8afcb687c440c341dda69db740140fd77a40ec5abc52eee5aeae2978f8a183b6"
+    },
+    {
+      "record": "implementation/green.log",
+      "sha256": "405425b55abbd73cc57f198214d9eae2820b121ab0436270aeeeebc37608febc"
+    },
+    {
+      "record": "implementation/group-cleanup-green.log",
+      "sha256": "1fdee42529200b0ed9702708fd91dcdc1b5d955b875c5b8338390fcbbbbfa19f"
+    },
+    {
+      "record": "implementation/group-cleanup-red.log",
+      "sha256": "e7c8e4c69baaec4dc8edfa96a160edf164d17d3710503ff112d36e23c45ef269"
+    },
+    {
+      "record": "implementation/hardening-red.log",
+      "sha256": "3c5653fc134511260b56d06fd46cf60265ccc0b657460c612befd78f1866930c"
+    },
+    {
+      "record": "implementation/native-policy-green.log",
+      "sha256": "013ef432f984553177dea6e0f52e16256e26f72d506fb9fed606f2759448a360"
+    },
+    {
+      "record": "implementation/native-policy-red.log",
+      "sha256": "06759759d63ee90a2ef1a823fe9fe61554ed96c37623a424f9867393efc23b50"
+    },
+    {
+      "record": "implementation/native-policy-targeted-red.log",
+      "sha256": "20dd0d64c9b709b1486bd1f0a76d20dbe28e94e15e69009bb24b3713d1c1bd86"
+    },
+    {
+      "record": "implementation/native-qualifier-policy-red.log",
+      "sha256": "9ca9436abd6872c3225348480551488646a4f838f269e21fba8d2d0924b94c7d"
+    },
+    {
+      "record": "implementation/native-red-loopback.log",
+      "sha256": "7aebc3401c8f17f34c3f7c3147f5fa805a8a88d0cf883c9fbff7053d5087e574"
+    },
+    {
+      "record": "implementation/native-red.log",
+      "sha256": "416db12259e093235333b2f41eaa0d85b8bb2e7ba1c6fe777e3ca4929733972c"
+    },
+    {
+      "record": "implementation/nested-chronology-red.log",
+      "sha256": "70bc69d789072a214145eb1c4d44359d8972d17272fd583d101874e3a507a80f"
+    },
+    {
+      "record": "implementation/nonfinite-green.log",
+      "sha256": "2aaab2c98147c0ae973ee3029b174a13c852ac7ba670534067f48a9c562d6a64"
+    },
+    {
+      "record": "implementation/nonfinite-red.log",
+      "sha256": "1946a4a792b9c92353fc12b219729bdb0fd08e06fd86eb70761969a136c1e478"
+    },
+    {
+      "record": "implementation/policy-reroute-green.log",
+      "sha256": "b077ba2bfadd20152581b7babb686193e4419aecbc2769de4a38bb5494122be0"
+    },
+    {
+      "record": "implementation/reroute-notification-red.log",
+      "sha256": "1277958b4f94308bd8deba17ecee935def7061c641cf8f6549b9961041c34d7f"
+    },
+    {
+      "record": "implementation/workspace-chronology-red.log",
+      "sha256": "44ef865180a261ec0579a76705d30d771955eebd91250d583240771fce52a0d2"
+    },
+    {
+      "record": "schema/green.log",
+      "sha256": "a37dfac63a7bd6c42ac177807f4e45a50f2db77cfc571c8caa4d87b8d1ca5dfd"
+    },
+    {
+      "record": "schema/manifest.json",
+      "sha256": "abe1d6d7394b60f1eed6e84dd19237ce3186ffce9489eab59f0a6ce9f735c68e"
+    },
+    {
+      "record": "schema/red.log",
+      "sha256": "a7c7faaf8e6e7d57d5862767f4037762786d5416bb5bb1f3733620ad87c5fbc9"
+    },
+    {
+      "record": "review-schema/binary-hashes.json",
+      "sha256": "2bffcfcdc4e4b55e088ee802ee65478450ec5e93182d593ad17ddff4bce83415"
+    },
+    {
+      "record": "review-schema/observe-probes.json",
+      "sha256": "b557934b8adef420a8e3ff2883646461e9aa31ef47e86961442dae200accc340"
+    },
+    {
+      "record": "review-schema/review.json",
+      "sha256": "558b696f63734b7b9208e58ecc657a13f2a06e790e5293a73aabd3ebc1881e02"
+    },
+    {
+      "record": "review-schema/reviewed-hashes.json",
+      "sha256": "0a15c95248e80fc9138644e793fe2a045499ddce0d9441d1f9059806b5a480d2"
+    },
+    {
+      "record": "review-schema/runner-probes.json",
+      "sha256": "db296a71441d97b7fac63c3a695ed511452404cb117fc44e21de9c150c320916"
+    },
+    {
+      "record": "review-schema/schema-tests.log",
+      "sha256": "96dc72fa357b5de9240cb25ce71625b97d0ac32153951a983cc62a64c7269858"
+    },
+    {
+      "record": "review-native/acp-components.json",
+      "sha256": "a126ca26dc1f966be99eda9ed38c1e7097f80dbe064d7d44afe87fdb5eefca7b"
+    },
+    {
+      "record": "review-native/classifier-mutations.json",
+      "sha256": "e5eded421a38cf3dbc5f5a125c06b36c72a6f2a5619e19983f529d8e5a9fc806"
+    },
+    {
+      "record": "review-native/cleanup-final-review.json",
+      "sha256": "f23362965e33dbd6ee3d088ace4376147fb8c82edc3074da2b421071a5629aca"
+    },
+    {
+      "record": "review-native/final-review.json",
+      "sha256": "13a64c4cf7c4157fb03172bf18773670af86de79ac67b3ac790187f222d87a8c"
+    },
+    {
+      "record": "review-native/final-unit.log",
+      "sha256": "4638a852a8f9c98c18e578067f222939f3442401d750eac8c33f13b89fa23f1d"
+    },
+    {
+      "record": "review-native/initial-probes.json",
+      "sha256": "c00276109ed8dd7e91264b8c30e965897de8c3c59f9bf0d2adf6535c8a037e9f"
+    },
+    {
+      "record": "review-native/loopback-results.json",
+      "sha256": "5a6d52059343b431ed0844cd3720aacb386bf9c2699631b7f8d334584d2b9ab3"
+    },
+    {
+      "record": "review-native/native-evidence-reconciliation.json",
+      "sha256": "2e5bb23d1259cfe04c9781447a4e0ee0d81458adaf43ea413101fdd88250be94"
+    },
+    {
+      "record": "review-native/native-final-reconciliation.json",
+      "sha256": "8736da181d110a6302586236bb07c8f145294d115d58487728daf025509a67a7"
+    },
+    {
+      "record": "review-native/repaired-probe-results.json",
+      "sha256": "694a3290a55ae840ca4f3d501fa6366343f759fd95e01de1eab5f95828ec79de"
+    },
+    {
+      "record": "review-native/unit.log",
+      "sha256": "3d0e1b1bdcb2afa212e67119a47d96ea16daf0a661a5b6bee8b96da84d255d36"
+    },
+    {
+      "record": "runner-red.log",
+      "sha256": "88ae29006eb18b20d71688ab419e7c91e412e8d453b1f0834d686c0367f5721d"
+    },
+    {
+      "record": "runner-green.log",
+      "sha256": "05e0c1b2f55017c76a2554f035186cd82be286905041e6693937dd92897d01f5"
+    }
+  ],
+  "interrupted_quality_run": {
+    "status": "UNKNOWN_after_user_interruption",
+    "summary_available": false,
+    "logs": [
+      {
+        "name": "clippy-all.log",
+        "sha256": "3e558eb87e8790fbbd6c97a3a7c128fca60b50c8cea7b5f5d04ac6256af86a1c"
+      },
+      {
+        "name": "clippy-core.log",
+        "sha256": "7cff90c8837c7a977d29f601b5dc59d33c21d430416989a7e27a85aee1b37b7f"
+      },
+      {
+        "name": "format.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "workspace-tests.log",
+        "sha256": "a36911d4d9ed7533fadd1b0fd11003866c5aa8a74974e714797bed1a01f5e3a6"
+      }
+    ],
+    "note": "No final exit/snapshot report survived. No matching test process remained before the fresh complete run. Logs are preserved without converting them into a gate success."
+  },
+  "initial_failures_retained": [
+    "Observation schema absent: six focused RED failures. RTK cargo wrapper masked nonzero Cargo status, so proxy output and exit were used for GREEN.",
+    "Three diagnostic registrations absent: runner RED failed before registrations were added.",
+    "First native allow refused actual read-only response including networkAccess:false, before provider send. Fixture corrected and strict negative cases added.",
+    "Independent review required finite exponent parsing, nested/workspace/ephemeral consistency and bidirectional RPC chronology.",
+    "One native denied case observed process group still present immediately after teardown; classification remained NO_GO. Original cause unproven. Final source records bounded group absence separately."
+  ],
+  "not_verified": [
+    "Full ACP session/native parity and ACP 0.159.1 to 0.159.2 compatibility",
+    "42 opt-in ignored native Rust tests",
+    "Linux and Claude execution",
+    "Fresh advisory audit, fuzz campaigns and candidate release packaging",
+    "OS/financial production admission, real provider inference, accepted useful patch and savings"
+  ],
+  "limits": [
+    "The dedicated client is diagnostic evidence tooling, not an installed production entry.",
+    "Final documentation and this public report follow the quality freeze; relevant code hashes are rechecked before delivery.",
+    "Native cleanup observes the owned process group and readers; it does not establish containment of escaped descendants.",
+    "Schemas validate shape, not evidence authenticity or native execution."
+  ],
+  "coverage_gaps": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner."
+  ]
+}

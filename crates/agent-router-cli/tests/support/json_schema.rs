@@ -6,7 +6,7 @@
 use serde_json::Value;
 
 const ANNOTATIONS: [&str; 5] = ["$schema", "$id", "title", "description", "$comment"];
-const KEYWORDS: [&str; 15] = [
+const KEYWORDS: [&str; 18] = [
     "$defs",
     "$ref",
     "type",
@@ -17,9 +17,12 @@ const KEYWORDS: [&str; 15] = [
     "additionalProperties",
     "items",
     "minItems",
+    "maxItems",
     "minimum",
+    "maximum",
     "minLength",
     "maxLength",
+    "pattern",
     "oneOf",
     "anyOf",
 ];
@@ -71,6 +74,11 @@ fn walk(root: &Value, schema: &Value, at: &str) {
             resolve(root, reference).is_some(),
             "{at}: dangling {reference}"
         );
+    }
+    if let Some(pattern) = map.get("pattern") {
+        // Only the digest pattern used by these schemas is implemented. Fail
+        // closed if a future schema needs a different regular expression.
+        assert_eq!(pattern, "^[0-9a-f]{64}$", "{at}: unsupported pattern");
     }
     if let Some(required) = map.get("required") {
         let properties = map.get("properties").and_then(Value::as_object);
@@ -156,7 +164,20 @@ fn validate(root: &Value, schema: &Value, value: &Value, at: &str, found: &mut V
             found.push(format!("{at}: {number} is below {minimum}"));
         }
     }
+    if let Some(maximum) = map.get("maximum") {
+        if value.is_number() && above_maximum(value, maximum) {
+            found.push(format!("{at}: {value} is above {maximum}"));
+        }
+    }
     if let Some(text) = value.as_str() {
+        if map.contains_key("pattern")
+            && (text.len() != 64
+                || !text
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
+        {
+            found.push(format!("{at}: string does not match digest pattern"));
+        }
         let length = text.chars().count() as u64;
         if map
             .get("minLength")
@@ -207,6 +228,13 @@ fn validate(root: &Value, schema: &Value, value: &Value, at: &str, found: &mut V
         {
             found.push(format!("{at}: fewer than minItems"));
         }
+        if map
+            .get("maxItems")
+            .and_then(Value::as_u64)
+            .is_some_and(|m| (items.len() as u64) > m)
+        {
+            found.push(format!("{at}: more than maxItems"));
+        }
         if let Some(sub) = map.get("items") {
             for (index, item) in items.iter().enumerate() {
                 validate(root, sub, item, &format!("{at}[{index}]"), found);
@@ -231,6 +259,17 @@ fn validate(root: &Value, schema: &Value, value: &Value, at: &str, found: &mut V
         {
             found.push(format!("{at}: matches no anyOf branch"));
         }
+    }
+}
+
+fn above_maximum(value: &Value, maximum: &Value) -> bool {
+    // Compare integral JSON numbers without rounding adjacent large u64 values.
+    if let (Some(value), Some(maximum)) = (value.as_u64(), maximum.as_u64()) {
+        value > maximum
+    } else if let (Some(value), Some(maximum)) = (value.as_i64(), maximum.as_i64()) {
+        value > maximum
+    } else {
+        value.as_f64().unwrap() > maximum.as_f64().unwrap()
     }
 }
 

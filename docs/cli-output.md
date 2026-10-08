@@ -66,7 +66,7 @@ unchanged `baseline_receipt_id`; changing the output format adds no authority.
 
 ## Commands for programmatic callers
 
-`observe --store ROOT --run-id ID` uses a dedicated compact renderer for the [passive run snapshot](run-observation.md). It shows the snapshot identity, recorded state/cleanup, explicit unknown native fields and the last 20 selected-run state/sequence references; any omitted references are counted. `--json` returns all references in the same bounded projection. These are recorded references, not a timestamped native timeline. F04b’s published JSON Schema is still open, so this command is not added to `schema --list`.
+`observe --store ROOT --run-id ID` uses a dedicated compact renderer for the [passive run snapshot](run-observation.md). It shows the snapshot identity, recorded state/cleanup, explicit unknown native fields and the last 20 selected-run state/sequence references; any omitted references are counted. `--json` returns all references in the same bounded projection. These are recorded references, not a timestamped native timeline. `schema run-observation` publishes its v1 output shape; historical coherence, hashes and provenance still require the runtime checks.
 
 Three commands help a script or an agent use the CLI without reading the source:
 `schema`, `version --json` and `completions`. None of them reads a store, a
@@ -79,7 +79,7 @@ and `schema --list` prints `{"schema_version":1,"schemas":[...]}` with each
 contract's name, the command that prints it and the `schema_version` values
 supported for it. The contracts are `route-decision` (`route --json`),
 `feedback-report`, `feedback-summary`, `error` (the `--json` error line on
-stderr) and `version`. The output is the embedded document, byte-identical for a
+stderr), `run-observation` (`observe --json`) and `version`. The output is the embedded document, byte-identical for a
 given binary. An unknown name fails with `schema.unknown` (exit `2`).
 
 The schemas are written by hand and embedded in the binary; no schema library is

@@ -31,9 +31,11 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0021](0021-host-capability-evidence.md) | Host capability evidence from supervised canaries | amended | 2026-09-30 | 2026-10-01 | [0022](0022-provider-egress.md) |
 | [0022](0022-provider-egress.md) | Provider egress requires an external tool boundary | accepted | 2026-10-01 | 2026-10-01 | - |
 
-| [0023](0023-owned-task-entry.md) | Owned task entry stops before native activation | accepted | 2026-10-07 | 2026-10-07 | - |
+| [0023](0023-owned-task-entry.md) | Owned task entry stops before native activation | amended | 2026-10-07 | 2026-10-08 | [0026](0026-owned-client-simulated-entry.md) |
 | [0024](0024-accepted-revision-accounting.md) | Accepted revision accounting | implemented | 2026-10-07 | 2026-10-07 | - |
 | [0025](0025-run-observation.md) | Bounded passive run observation | implemented | 2026-10-07 | 2026-10-07 | - |
+
+| [0026](0026-owned-client-simulated-entry.md) | Dedicated Codex client for simulated patch work | accepted | 2026-10-08 | 2026-10-08 | - |
 
 ## Frontmatter fields
 

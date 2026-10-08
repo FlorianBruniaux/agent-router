@@ -7,19 +7,22 @@ mod json_schema;
 use assert_cmd::Command;
 use router_eval::{PricingTable, TokenPrice};
 use router_feedback::{FeedbackStore, redacted_digest};
+use router_runtime::{Runtime, RuntimeLimits};
 use router_types::*;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
 
-const NAMES: [&str; 5] = [
+const NAMES: [&str; 6] = [
     "error",
     "feedback-report",
     "feedback-summary",
     "route-decision",
+    "run-observation",
     "version",
 ];
 
@@ -60,6 +63,14 @@ fn list_names_every_contract_with_its_supported_versions() {
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
     assert_eq!(versions("feedback-report"), json!([1, 2, 3, 4, 5]));
+    assert_eq!(versions("run-observation"), json!([1]));
+    assert_eq!(
+        entries
+            .iter()
+            .find(|e| e["name"] == "run-observation")
+            .unwrap()["command"],
+        "observe --json"
+    );
     let mut again = command();
     again.args(["schema", "--list"]);
     assert_eq!(out, stdout(again));
@@ -172,6 +183,281 @@ fn version_output_conforms_to_the_version_schema() {
     let mut cmd = command();
     cmd.args(["version", "--json"]);
     assert_conforms("version", &serde_json::from_slice(&stdout(cmd)).unwrap());
+}
+
+/// Synthetic durable history, following the runtime observation fixtures. No
+/// provider is started. The JSON being validated comes from the real CLI reader.
+fn observation_json(
+    state: RunState,
+    failure: Option<RunFailure>,
+    cleanup: Option<ProcessCleanupEvidence>,
+) -> Value {
+    const PRIVATE: &str = "SCHEMA_PRIVATE_PROMPT_PATH_PROVIDER_CANARY";
+    let temp = tempfile::tempdir().unwrap();
+    let store = temp.path().canonicalize().unwrap().join("runtime");
+    drop(Runtime::open(&store, RuntimeLimits::default()).unwrap());
+    let attempts = u32::from(state != RunState::AwaitingApproval);
+    let summary = RunSummary {
+        run_id: PRIVATE.into(),
+        definition_hash: "a".repeat(64),
+        approval_digest: "b".repeat(64),
+        receipt_id: PRIVATE.into(),
+        plan_id: PRIVATE.into(),
+        node_id: PRIVATE.into(),
+        state,
+        attempts,
+        failure,
+        worktree: Some(PRIVATE.into()),
+        artifact_sha256: None,
+        output_retention: OutputRetentionPolicy::Disabled,
+        workflow: None,
+        artifact_contract_sha256: None,
+    };
+    let mut db = rusqlite::Connection::open(store.join("runtime.sqlite3")).unwrap();
+    let tx = db.transaction().unwrap();
+    tx.execute(
+        "INSERT INTO runs VALUES(?1,?2,?3,?4)",
+        rusqlite::params![
+            PRIVATE,
+            PRIVATE,
+            PRIVATE,
+            serde_json::to_string(&summary).unwrap()
+        ],
+    )
+    .unwrap();
+    if attempts != 0 {
+        tx.execute(
+            "INSERT INTO run_attempts VALUES(?1,1,'finished')",
+            [PRIVATE],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO attempt_leases VALUES(?1,1,?2,?3,?4)",
+            rusqlite::params![
+                PRIVATE,
+                PRIVATE,
+                u32::from(cleanup.is_some()),
+                cleanup.map(|e| serde_json::to_string(&e).unwrap())
+            ],
+        )
+        .unwrap();
+    }
+    let mut previous = String::new();
+    let events = if attempts == 0 {
+        vec![(RunState::Planned, "registered"), (state, "transition")]
+    } else {
+        vec![
+            (RunState::Running, "attempt.started"),
+            (state, "transition"),
+        ]
+    };
+    for (index, (event_state, kind)) in events.into_iter().enumerate() {
+        let sequence = index as u64 + 1;
+        let mut hash = Sha256::new();
+        hash.update(b"runtime-event-v1\0");
+        hash.update(
+            serde_json::to_vec(&(sequence, PRIVATE, kind, event_state, PRIVATE, &previous))
+                .unwrap(),
+        );
+        let digest = hex::encode(hash.finalize());
+        tx.execute(
+            "INSERT INTO events VALUES(?1,?2,?3,?4,?5,?6,?7)",
+            rusqlite::params![
+                sequence,
+                PRIVATE,
+                kind,
+                serde_json::to_string(&event_state).unwrap(),
+                PRIVATE,
+                previous,
+                digest
+            ],
+        )
+        .unwrap();
+        previous = digest;
+    }
+    tx.commit().unwrap();
+    drop(db);
+    let mut cmd = command();
+    cmd.args(["observe", "--store"])
+        .arg(&store)
+        .args(["--run-id", PRIVATE, "--json"]);
+    let bytes = stdout(cmd);
+    assert!(!String::from_utf8_lossy(&bytes).contains(PRIVATE));
+    serde_json::from_slice(&bytes).unwrap()
+}
+
+#[test]
+fn run_observation_schema_accepts_emitted_failures_and_persisted_cleanup() {
+    for (state, failure, cleanup, expected) in [
+        (RunState::AwaitingApproval, None, None, "unknown"),
+        (RunState::Failed, Some(RunFailure::Crash), None, "unknown"),
+        (
+            RunState::Failed,
+            Some(RunFailure::Spawn),
+            Some(ProcessCleanupEvidence::NotStarted),
+            "not_started",
+        ),
+        (
+            RunState::Cancelled,
+            None,
+            Some(ProcessCleanupEvidence::GroupTerminated),
+            "group_terminated",
+        ),
+        (
+            RunState::Cancelled,
+            None,
+            Some(ProcessCleanupEvidence::NamespaceTerminated),
+            "namespace_terminated",
+        ),
+    ] {
+        let output = observation_json(state, failure, cleanup);
+        assert_eq!(
+            output["known"]["state"],
+            serde_json::to_value(state).unwrap()
+        );
+        assert_eq!(
+            output["known"]["failure"],
+            serde_json::to_value(failure).unwrap()
+        );
+        assert_eq!(output["known"]["cleanup"], expected);
+        assert_eq!(output["unknown"]["objective"], "unknown");
+        assert_conforms("run-observation", &output);
+    }
+}
+
+#[test]
+fn run_observation_schema_rejects_private_fields_and_invalid_contract_values() {
+    let document = schema("run-observation");
+    let output = observation_json(RunState::Failed, Some(RunFailure::Crash), None);
+    assert!(json_schema::violations(&document, &output).is_empty());
+    let rejects = |pointer: &str, value: Value| {
+        let mut invalid = output.clone();
+        *invalid.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted invalid {pointer}: {invalid}"
+        );
+    };
+    for pointer in [
+        "/snapshot_sha256",
+        "/identity/run_key_sha256",
+        "/identity/definition_sha256",
+        "/identity/receipt_id_sha256",
+        "/identity/plan_id_sha256",
+        "/identity/node_id_sha256",
+        "/horizon/event_sha256",
+        "/known/events/0/event_sha256",
+    ] {
+        for digest in [
+            "G".repeat(64),
+            "A".repeat(64),
+            "a".repeat(63),
+            "a".repeat(65),
+        ] {
+            rejects(pointer, json!(digest));
+        }
+    }
+    for (pointer, invalid) in [
+        ("/schema_version", json!(2)),
+        ("/known/state", json!("successful")),
+        ("/known/failure", json!("provider_failed")),
+        ("/known/cleanup", json!("process_stopped")),
+        ("/known/events/0/state", json!("successful")),
+        ("/known/attempts", json!(-1)),
+        ("/known/attempts", json!(6)),
+        ("/known/attempts", json!(1.5)),
+        ("/horizon/sequence", json!(-1)),
+        ("/horizon/sequence", json!(100_001)),
+        ("/known/events/0/sequence", json!(0)),
+        ("/known/events/0/sequence", json!(100_001)),
+        ("/unknown/observed_model", json!("host-reported-model")),
+        ("/unknown/duration", json!(12)),
+        ("/completeness/journal", json!("truncated")),
+        ("/completeness/external_observations", json!("complete")),
+        ("/completeness/detail", json!("private")),
+    ] {
+        rejects(pointer, invalid);
+    }
+    for pointer in [
+        "",
+        "/identity",
+        "/horizon",
+        "/known",
+        "/known/events/0",
+        "/unknown",
+        "/completeness",
+    ] {
+        let mut invalid = output.clone();
+        invalid
+            .pointer_mut(pointer)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .insert(
+                "private_detail".into(),
+                json!("prompt/path/provider-response"),
+            );
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "{pointer}"
+        );
+        for name in output.pointer(pointer).unwrap().as_object().unwrap().keys() {
+            let mut missing = output.clone();
+            missing
+                .pointer_mut(pointer)
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .remove(name);
+            assert!(
+                !json_schema::violations(&document, &missing).is_empty(),
+                "accepted missing {pointer}/{name}"
+            );
+        }
+    }
+    for name in output["unknown"].as_object().unwrap().keys() {
+        rejects(&format!("/unknown/{name}"), json!("known"));
+        rejects(&format!("/unknown/{name}"), Value::Null);
+    }
+    let event = output["known"]["events"][0].clone();
+    rejects("/known/events", json!([]));
+    rejects("/known/events", json!(vec![event.clone(); 4097]));
+    let mut at_limit = output.clone();
+    at_limit["known"]["events"] = json!(vec![event; 4096]);
+    assert!(json_schema::violations(&document, &at_limit).is_empty());
+    at_limit["horizon"]["event_sha256"] = Value::Null;
+    assert!(json_schema::violations(&document, &at_limit).is_empty());
+}
+
+#[test]
+fn bounded_schema_checker_checks_digest_patterns_and_exact_integer_maxima() {
+    let document = json!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:test:bounded-checker",
+        "type": "object",
+        "properties": {
+            "digest": {"type":"string", "pattern":"^[0-9a-f]{64}$"},
+            "events": {"type":"array", "maxItems":1},
+            "ordinal": {"type":"integer", "maximum":u64::MAX - 1}
+        }
+    });
+    json_schema::check_schema(&document);
+    let valid = json!({"digest":"a".repeat(64), "events":[0], "ordinal":u64::MAX - 1});
+    assert!(json_schema::violations(&document, &valid).is_empty());
+    for (key, value) in [
+        ("digest", json!("G".repeat(64))),
+        ("digest", json!("é".repeat(64))),
+        ("digest", json!("a".repeat(64) + "\n")),
+        ("events", json!([0, 1])),
+        ("ordinal", json!(u64::MAX)),
+    ] {
+        let mut invalid = valid.clone();
+        invalid[key] = value;
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "{key}"
+        );
+    }
 }
 
 fn key(c: char) -> String {

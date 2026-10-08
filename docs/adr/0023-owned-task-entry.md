@@ -1,17 +1,25 @@
 ---
 adr: "0023"
 title: Owned task entry stops before native activation
-status: accepted
+status: amended
 created: 2026-10-07
-last_modified: 2026-10-07
+last_modified: 2026-10-08
 scope: "NO-GO for unmodified direct Codex app-server and codex-acp under the required physical-send admission contract. Source and local schema evidence only; equivalent behavioral fixture comparison remains incomplete."
-amended_by: []
+amended_by: ["0026"]
 supersedes: []
 superseded_by: []
 related: ["0022"]
 ---
 
 # ADR 0023: Owned task entry stops before native activation
+
+## Amendment, 8 October 2026
+
+[ADR 0026](0026-owned-client-simulated-entry.md) selects the dedicated direct
+client plus local broker for F02a simulated artifact work. It preserves the
+NO-GO below for unmodified interfaces and real-provider admission. The comparison
+now includes pinned ACP component executions; complete equivalent sessions remain
+unqualified. The following decision and evidence are the historical 7 October record.
 
 ## Decision
 

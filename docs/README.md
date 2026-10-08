@@ -83,8 +83,10 @@ written in French.
 | [Doctor](doctor.md) | Read-only diagnostics and redacted audit |
 | [Passive run observation](run-observation.md) | 2026-10-07: implemented, tested and reviewed F04a; 20 human state references and full bounded JSON; F04b and complete F05a remain open |
 | [Observation verification](bench/verification-observation-2026-10-07.json) | 21 selected checks passed: 1,633 workspace Rust results + 1 core, 290 Python; result-line counts, 42 native opt-in tests ignored; not full CI equivalence |
-| [Startup-outage cancellation](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent before launch, correlated interrupt/terminal and physical cleanup, zero provider; F01r may start, positive qualification and global admission remain open |
+| [Startup-outage cancellation](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent before launch, correlated interrupt/terminal and physical cleanup, zero provider; startup-outage evidence; see the later dedicated-client qualification; global admission remains open |
 | [Physical-send feasibility](bench/physical-send-feasibility-2026-10-07/README.md) | 2026-10-07: six native cases pass, broker absence times out; overall NO-GO, no real provider admission |
+| [Dedicated Codex client qualification](bench/owned-entry-qualification-2026-10-08/README.md) | 2026-10-08: bounded direct-client choice for simulated patch work; three local native scenarios, no real-provider admission |
+| [Owned-client verification](bench/verification-owned-client-2026-10-08.json) | Source-bound local gates, independent reviews and native diagnostic limits |
 | [Distribution](distribution.md) | Source distributions and license evidence |
 | [Binary distribution](binary-distribution.md) | Local native binary export |
 | [Local release](release-local.md) | Verifiable local release recipe |

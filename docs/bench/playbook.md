@@ -4,7 +4,19 @@ The [current finalization plan](finalization-plan-2026-10-07.md) (FR), 2026-10-0
 
 How to rerun a campaign of the [router value protocol](router-value-protocol.md), check a recorded one, and log its figures. Each campaign lives in `docs/bench/runs/<date>-<name>/` with its sealed inputs, its harness, its results exported as metrics only, and a `SHA256SUMS` file.
 
-## Current delivery status
+## Current delivery status, 8 October 2026
+
+The [dedicated-client qualification](owned-entry-qualification-2026-10-08/README.md)
+records three final-source native scenarios against a simulated provider, strict
+binding and cleanup, and retained initial failures. [ADR 0026](../adr/0026-owned-client-simulated-entry.md)
+selects this entry only for F02a simulated patch work. ACP component comparison is
+partial; real-provider and complete OS admission remain unqualified. The passive
+observation now has a JSON Schema. The [verification report](verification-owned-client-2026-10-08.json)
+records local gates and independent reviews. No useful patch or savings yet.
+
+The following paragraphs retain the 7 October baseline and its original limits.
+
+## Delivery baseline, 7 October 2026
 
 The [broker-outage cancellation follow-up](physical-send-feasibility-2026-10-07/outage-cancellation/README.md) closes the broker listener before native launch. A correlated retry notification triggers one interrupt; its acknowledgement and terminal `interrupted` match the thread/turn. Physical process, output, handler and socket cleanup are checked separately, with zero provider requests or connections. The initial v2 and global `NO_GO` remain unchanged. Broker loss during an active session is untested; no production or financial admission follows.
 
