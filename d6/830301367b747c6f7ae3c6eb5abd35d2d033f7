@@ -1,0 +1,83 @@
+CHANGELOG.md
+  s_9e80b85afcc43a::t_c180d566132703 19-20,76-77
+README.fr.md
+  s_9e80b85afcc43a::t_ce57ed7282c735 12
+README.md
+  s_9e80b85afcc43a::t_05083cbee5a0ff 12
+crates/agent-router-cli/src/command.rs
+  s_9e80b85afcc43a::t_169191a8515c40 756-763,1147-1163
+crates/agent-router-cli/src/coordinator.rs
+  s_9e80b85afcc43a::t_59438aad6c74e9 927-932
+crates/agent-router-cli/src/execution.rs
+  s_9e80b85afcc43a::t_414276e05170f8 1416-1421
+crates/agent-router-cli/tests/coordinator.rs
+  s_9e80b85afcc43a::t_66df1641bcec63 339-353
+crates/router-coordinator/src/lib.rs
+  s_9e80b85afcc43a::t_c3c5e6c2034e8e 593-611
+crates/router-runtime/src/integration.rs
+  s_9e80b85afcc43a::t_7c559d816d3f84 1-612
+crates/router-runtime/src/lib.rs
+  s_9e80b85afcc43a::t_b3c5ae793b6e21 27
+crates/router-runtime/src/store.rs
+  s_9e80b85afcc43a::t_ed73bbd2600944 20
+crates/router-runtime/src/store/integration.rs
+  s_9e80b85afcc43a::t_5e7868a9cbc4d4 1-109
+crates/router-runtime/tests/staged_integration.rs
+  s_9e80b85afcc43a::t_d62a213ede8710 1-961
+crates/router-types/src/runtime.rs
+  s_9e80b85afcc43a::t_d00bf49e02c7ea 199-241
+docs/README.fr.md
+  s_9e80b85afcc43a::t_1a91ef7e15040e 53
+docs/README.md
+  s_9e80b85afcc43a::t_1625442a937f2c 54
+docs/adr/0027-staged-patch-integration.md
+  s_9e80b85afcc43a::t_b57b13ffc63dfe 1-106
+docs/adr/README.md
+  s_160b3107588443::t_4b2ae79471f188 40-41
+docs/bench/finalization-plan-2026-10-07.md
+  s_9e80b85afcc43a::t_9fc64808392053 69-70
+docs/bench/playbook.md
+  s_9e80b85afcc43a::t_f95e648214651b 15-22
+docs/bench/status-and-action-plan-2026-10-05.md
+  s_9e80b85afcc43a::t_f640702029b426 8-13
+docs/bench/verification-staged-patch-2026-10-08.json
+  s_ded836f56a6d83::t_ba197eb2118f55 1-474
+docs/cli-execution.md
+  s_9e80b85afcc43a::t_e8a641af18c2b5 163-166
+docs/reference/json-contracts.md
+  s_9e80b85afcc43a::t_bef02eadc573af 35
+docs/staged-patch.md
+  s_9e80b85afcc43a::t_bc1894431401a5 1-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d6830301367b747c6f7ae3c6eb5abd35d2d033f7",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ded836f56a6d83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2411f16c-88e6-4622-9ccc-03c30968a7a1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
