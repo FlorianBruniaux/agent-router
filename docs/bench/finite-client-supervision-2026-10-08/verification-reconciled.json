@@ -1,0 +1,558 @@
+{
+  "baseline_commit": "a0f60e99efcb81c158e8a49a12224f753265d0c1",
+  "checks": [
+    {
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "duration_seconds": 2.087005,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "format",
+      "log": "format.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "duration_seconds": 9.183284,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "clippy-all",
+      "log": "clippy-all.log",
+      "log_sha256": "7195de74a8da43672ba4afead3a759363a5379b38a2aafc5397b308fac0ed4ef",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "duration_seconds": 4.693959,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "clippy-core",
+      "log": "clippy-core.log",
+      "log_sha256": "4d48f74acb467afbab4b8fab03d53f52348b9119138ade14dc6bead0568db857",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "duration_seconds": 642.408831,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "workspace-tests",
+      "log": "workspace-tests.log",
+      "log_sha256": "a04d87e45171fdd079ced13e7e7107b52487f93c4c33e62f5ba06b979663f7b9",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 1659
+    },
+    {
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "duration_seconds": 19.800679,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "local-api-absent",
+      "log": "local-api-absent.log",
+      "log_sha256": "41dca2b23b02f68e82fb96cc3ca3f8ea01b386d1448d3c1259e1e87ac28622ea",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 1
+    },
+    {
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "duration_seconds": 0.816443,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "harness",
+      "log": "harness.log",
+      "log_sha256": "1da97f074616522f6edb49279cef5c2988632e780d8909e949cb7427bdb5e509",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "duration_seconds": 0.131825,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "host-syntax",
+      "log": "host-syntax.log",
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "duration_seconds": 0.355118,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-benchmark-startup",
+      "log": "script-test-benchmark-startup.log",
+      "log_sha256": "372ee57a30b8a8b17bb056a0814266786a922da7dcf4139f4f9a2457745d6424",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 3
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "duration_seconds": 0.244308,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-check-adrs",
+      "log": "script-test-check-adrs.log",
+      "log_sha256": "cb78312f41cc447128043287b4bac87394926078c9c70f2bc190c88597069ea2",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 30
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "duration_seconds": 12.39483,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-check-local",
+      "log": "script-test-check-local.log",
+      "log_sha256": "04b2c0cc701db41d5496d4a7763577a18f71d1da98adc99ab79b3e6a2de18fd4",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 30
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "duration_seconds": 0.617693,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-package-binary",
+      "log": "script-test-package-binary.log",
+      "log_sha256": "3b80a60e0550c39f27a89f0f444ce433d80b68f0e6f8c0351425d69f5cd8eba9",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 17
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "duration_seconds": 0.568302,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-package-core",
+      "log": "script-test-package-core.log",
+      "log_sha256": "ba70cf16b063f01f2fc16bb5cd0bed9ddd3979af221546d60ad69beb18a46b7b",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 26
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "duration_seconds": 17.501912,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "script-test-release-local",
+      "log": "script-test-release-local.log",
+      "log_sha256": "2a7e7fb4a8a63111cdbbfc4f0ce6b4f820447a90207c42ea8613fe2ce17ff1c0",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 27
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 14.82709,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "egress-tests",
+      "log": "egress-tests.log",
+      "log_sha256": "32ff7c1cd13484af24e22e1476671084a9f7d9bfaea89572fb3c76ad1f59a911",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 58
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 8.27594,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "native-probe-tests",
+      "log": "native-probe-tests.log",
+      "log_sha256": "c8636b40f57fe1a9e517db5282b21d363f41eb0585dd6ba2368b7712fef4774f",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 33
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 4.287851,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "native-decision-tests",
+      "log": "native-decision-tests.log",
+      "log_sha256": "179bd08a9390ee8a6474f2499b9ae6e3fda79b86feb1d6dffaef0c2347578b9a",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 13
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 5.77577,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "native-hook-failure-tests",
+      "log": "native-hook-failure-tests.log",
+      "log_sha256": "8f23f4176014c88763f5f2a8c30c720d8aa1526cb8e898863f007040a8047e58",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 17
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 2.242163,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "campaign-tests",
+      "log": "campaign-tests.log",
+      "log_sha256": "a41279ee5d22566e4244ffba6e265907c2f583764d9f5b8b5e8bfcdfe3bd68fe",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 17
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 5.139994,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "calibration-tests",
+      "log": "calibration-tests.log",
+      "log_sha256": "7ab592e012cbcf81a9a0b2e3355e26c35d81d16abd2c4a16bafbf875cc430e51",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 30
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 0.613325,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "physical-send-tests",
+      "log": "physical-send-tests.log",
+      "log_sha256": "3ae0d3da0144ef4240ae73e4b17a6387e3e7ab3f27d2a0d9d42de0111c0fc522",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 12
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 0.130742,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "startup-outage-tests",
+      "log": "startup-outage-tests.log",
+      "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 8
+    },
+    {
+      "argv": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/owned-entry-qualification-2026-10-08",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "duration_seconds": 0.400064,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "owned-entry-tests",
+      "log": "owned-entry-tests.log",
+      "log_sha256": "77523b950bf1260dd5d1325032e6b6f2be4712c27a4fcc3a7473ee17d4cd9e0d",
+      "python_tests_skipped": 0,
+      "status": "passed",
+      "tests_passed_or_run": 44
+    },
+    {
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "duration_seconds": 0.945673,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "secrets-dir",
+      "log": "secrets-dir.log",
+      "log_sha256": "ee4a1f4f91419d34d6216da7da78d971b2e428edc295c956b2ddbfb73458367f",
+      "status": "passed"
+    },
+    {
+      "argv": [
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "duration_seconds": 1.499241,
+      "exit_code": 0,
+      "group": "quality",
+      "id": "secrets-git",
+      "log": "secrets-git.log",
+      "log_sha256": "49de65e7b859f543c02b46958c603ec545e0cd803cd205bb555b79b8afd13331",
+      "status": "passed"
+    }
+  ],
+  "count_scope": "Sums of result lines including subprocess invocations, not unique test definitions. Ignored tests are not successes.",
+  "evidence_kind": "source_bound_finite_client_candidate_verification",
+  "evidence_limits": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner.",
+    "Opt-in diagnostic profile variation around actual public supervisors; product ControllerBrokerOnly is still refused.",
+    "Synthetic PreparedRun identities and an in-memory fixture binding are not product approval, authenticated capability evidence or a runtime receipt.",
+    "The listener is a TCP canary, not an HTTP broker/provider or physical-send admission proof.",
+    "Initialize and thread/start only; no turn/start, useful native patch, model inference, paid call or measured saving.",
+    "Native model/effort and permissions are returned metadata, not a proof of applied inference effort.",
+    "Address-space enforcement was explicitly not requested. No product memory admission.",
+    "Diagnostic NPROC 2048 is per user, not per-task containment; default 256 failure was observed before resume.",
+    "The actual Mach/DNS boundary is unqualified; group-clean is not exhaustive containment.",
+    "Earlier temporary logs were unavailable after resume. Their detailed integrity is UNKNOWN; only the resumed native capture is newly source-bound.",
+    "Independent review and current Linux equivalent are not established.",
+    "This generated report is excluded from the frozen source inventory. A final secret scan and diff check cover the added artifact; source checks are not rerun solely for this JSON report."
+  ],
+  "finite_client_tests": {
+    "argv": [
+      "cargo",
+      "test",
+      "-p",
+      "router-runtime",
+      "--example",
+      "finite_client_supervision",
+      "--locked"
+    ],
+    "green": {
+      "failed": 0,
+      "log_sha256": "db6187eede3a0d1fec27a3e6087f734b2aa7acd0a94e78d7f37c4fcfbf0cdbce",
+      "passed": 9
+    },
+    "included_in_workspace_count": false,
+    "red": {
+      "failed": 2,
+      "log_sha256": "84d41e657c1b4e616a1a29c3e87d2924039874ef5bf2b2b1cd973252a79849e2",
+      "passed": 7
+    }
+  },
+  "full_ci_equivalent": false,
+  "independent_review": "NOT_ESTABLISHED",
+  "native_capture": {
+    "F02b": "NOT_ATTEMPTED",
+    "F12a": "NO_GO",
+    "exit_code": 0,
+    "model_turns": 0,
+    "pins_verified_again_before_report": true,
+    "public_report_sha256": "330cefe4a1bfec865f94153bed675f424df635b12c1c6d652d9480c93bce9849",
+    "report_sha256": "197f07208302f9e3f96ac0b6ae47ffbc6e686bd9d613913957b636dfe992b25f",
+    "source_sha256": {
+      "crates/router-runtime/examples/finite_client_supervision.rs": "a750a54979e2d3eb8b245abf4e3b28fdaa7e0d0556fdb7ac23a83e58c35e2e10",
+      "crates/router-runtime/src/integration.rs": "8331deb53206646591b0031e98a6ea8eaf8ab5683175dfe111b1b42254fcc7d5",
+      "crates/router-runtime/src/workspace.rs": "2f5956690b4443baf14c684790dea5f95a8cc60ce8de1ad44f2f2f9623a9d3f4"
+    }
+  },
+  "primary_checkout_preimages_preserved": true,
+  "primary_preimage_count": 6,
+  "prior_verification": {
+    "commit": "4f78faf1bcf503eaf957fbd54fe8f1784f014600",
+    "report_sha256": "ff77bb8eaee10aaafc46662c7510a05e46c93a8e9afbffbf571f3dc1976bafaf",
+    "scope": "Historical checks before integration; superseded for current source by this fresh gate."
+  },
+  "private_runner_summary_sha256": "b70d36f15f8c232efdba96a70dced3c9fd8de6e104de9a65544696bd36475869",
+  "python_executed_test_count": 365,
+  "remote_ci": "Reported separately on the published commit; not inferred from local checks.",
+  "runner_sha256": "cfad6a90f13cd927b9d8f827fdd6852f0965b37440f1f991ededc4723af20606",
+  "schema_version": 1,
+  "selected_check_count": 24,
+  "source_snapshot": {
+    "after_source_sha256": "c9aed4e08ac9e9cf47616b7215de77c2cf29d3efea2f525d83c8f98cb5447eca",
+    "before_source_sha256": "c9aed4e08ac9e9cf47616b7215de77c2cf29d3efea2f525d83c8f98cb5447eca",
+    "excluded_generated_report": "docs/bench/finite-client-supervision-2026-10-08/verification-reconciled.json",
+    "inventory_sha256": "ddcb34ee2e719e30f2b63bb28e665b828c49f94f67f7447d6f9693cd04493b85",
+    "owned_source_sha256": {
+      "crates/router-runtime/examples/finite_client_supervision.rs": "a750a54979e2d3eb8b245abf4e3b28fdaa7e0d0556fdb7ac23a83e58c35e2e10",
+      "docs/bench/finalization-plan-2026-10-07.md": "6869278aa0a3015beeb0c511887f7765f8d17f5024bddae71248c05284408473",
+      "docs/bench/finite-client-supervision-2026-10-08/README.md": "2e456e2511c7a758e8361738bc84dff454835eabcae44eb24f08677d93a300e4",
+      "docs/bench/finite-client-supervision-2026-10-08/native-results-reconciled.json": "330cefe4a1bfec865f94153bed675f424df635b12c1c6d652d9480c93bce9849"
+    },
+    "unchanged": true
+  },
+  "verdict": "selected_checks_passed",
+  "workspace_ignored_result_count": 42,
+  "workspace_successful_result_count": 1659
+}

@@ -1,0 +1,67 @@
+{
+  "F02b": "NOT_ATTEMPTED",
+  "F12a": "NO_GO",
+  "baseline_commit": "a0f60e99efcb81c158e8a49a12224f753265d0c1",
+  "candidate": {
+    "broker_tcp_canary": "observed",
+    "effort": "low",
+    "filesystem_canaries": "passed",
+    "inherited_nproc_current": 2048,
+    "initialize": "observed",
+    "model": "gpt-6.1-sol",
+    "native_exit_code": 0,
+    "native_network_access": false,
+    "native_stderr_bytes": 0,
+    "other_listener_denied_errno": 1,
+    "rpc_request_ids": [
+      1,
+      2
+    ],
+    "stdin_eof_before_native_spawn": true,
+    "subsequent_thread_start": "observed_bound",
+    "turn_submissions": 0
+  },
+  "candidate_broker_connections": 1,
+  "candidate_other_connections": 0,
+  "capture_exit_code": 0,
+  "client_sha256": "219e07edc7f7b7e171165ffedbb209e06a5bc1599c3f69763e2fec18d0cd23ce",
+  "diagnostic_max_processes": 2048,
+  "evidence_kind": "native_finite_client_supervisor_candidate",
+  "evidence_limits": [
+    "Opt-in diagnostic profile variation around actual public supervisors; product ControllerBrokerOnly is still refused.",
+    "Synthetic PreparedRun identities and an in-memory fixture binding are not product approval, authenticated capability evidence or a runtime receipt.",
+    "The listener is a TCP canary, not an HTTP broker/provider or physical-send admission proof.",
+    "Initialize and thread/start only; no turn/start, useful native patch, model inference, paid call or measured saving.",
+    "Native model/effort and permissions are returned metadata, not a proof of applied inference effort.",
+    "Address-space enforcement was explicitly not requested. No product memory admission.",
+    "Diagnostic NPROC 2048 is per user, not per-task containment; default 256 failure was observed before resume.",
+    "The actual Mach/DNS boundary is unqualified; group-clean is not exhaustive containment.",
+    "Earlier temporary logs were unavailable after resume. Their detailed integrity is UNKNOWN; only the resumed native capture is newly source-bound.",
+    "Independent review and current Linux equivalent are not established."
+  ],
+  "finite_supervision": "framed-v1 unchanged",
+  "helper_exit_code": 0,
+  "helper_sha256": "073a11f73cbdc2d3b0b5d25a6f3b4bce262de7865a3c41b6a7e436aa49de22f4",
+  "lease": "group_clean_not_exhaustive_containment",
+  "listener_control_connections": [
+    1,
+    1
+  ],
+  "mach_dns_boundary": "UNQUALIFIED",
+  "memory_enforcement": "explicitly_not_requested",
+  "native_sha256": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+  "paid_provider_calls": 0,
+  "private_capture_sha256": "197f07208302f9e3f96ac0b6ae47ffbc6e686bd9d613913957b636dfe992b25f",
+  "process_limit_scope": "per user, not per task",
+  "product_broker_authority": "UNSUPPORTED",
+  "profile_scope": "trusted diagnostic TCP variation; not product admission",
+  "reconciliation": "Fresh capture after preserving concurrent publication hardening and native diagnostic reconciliation. Earlier reports remain historical.",
+  "schema_version": 1,
+  "source_sha256": {
+    "crates/router-runtime/examples/finite_client_supervision.rs": "a750a54979e2d3eb8b245abf4e3b28fdaa7e0d0556fdb7ac23a83e58c35e2e10",
+    "crates/router-runtime/src/integration.rs": "8331deb53206646591b0031e98a6ea8eaf8ab5683175dfe111b1b42254fcc7d5",
+    "crates/router-runtime/src/workspace.rs": "2f5956690b4443baf14c684790dea5f95a8cc60ce8de1ad44f2f2f9623a9d3f4"
+  },
+  "task_payload_sha256": "5d7aafbc74d75f73b799dbb775a00c660e548d2379e1f1cf5a39abe272cea99a",
+  "turn_submissions": 0
+}

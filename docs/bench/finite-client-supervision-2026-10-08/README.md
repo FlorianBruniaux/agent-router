@@ -2,6 +2,10 @@
 
 The resumed pinned macOS diagnostic completed successfully. The finite worker received its complete input and EOF before native spawn, then owned two incremental Codex RPC requests: initialize followed by thread/start. The actual ResourceSupervisor and unchanged framed-v1 helper observed exit 0 and a group-clean lease. This establishes the feasibility of that bounded client arrangement; it does not admit a product run or every future task.
 
+## Requalification after concurrent integration
+
+The remote branch advanced during verification with merged publication hardening (#147) and native diagnostic reconciliation at `1351f08`. Both are preserved in merge `a0f60e99efcb81c158e8a49a12224f753265d0c1`. A newly rebuilt finite client completed the same native/canary observations in a fresh private directory on this integrated source; the nine targeted tests passed again. [Reconciled native report](native-results-reconciled.json) and [fresh source verification](verification-reconciled.json) are the current evidence. The first [verification](verification.json) and [native report](native-results.json) retain their earlier source scope. F12a remains NO_GO and no model turn was submitted.
+
 The source-owned paths are this evidence directory, `crates/router-runtime/examples/finite_client_supervision.rs` and the continuation paragraph in the finalization plan. Product libraries, adapters, CLI, harness and global settings are unchanged.
 
 ## What was observed
