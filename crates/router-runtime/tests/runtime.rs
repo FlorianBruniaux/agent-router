@@ -31,10 +31,28 @@ impl Fixture {
         Self::new_at(write, tempfile::tempdir().unwrap()).await
     }
     async fn new_at(write: bool, temp: tempfile::TempDir) -> Self {
+        Self::new_at_with_task(write, temp, false).await
+    }
+    async fn new_at_with_task(write: bool, temp: tempfile::TempDir, useful: bool) -> Self {
+        Self::new_at_with_permissions(write, temp, useful, true).await
+    }
+    async fn new_at_with_permissions(
+        write: bool,
+        temp: tempfile::TempDir,
+        useful: bool,
+        integrate: bool,
+    ) -> Self {
         let root = fs::canonicalize(temp.path()).unwrap().join("repo");
         fs::create_dir(&root).unwrap();
         fs::create_dir(root.join("src")).unwrap();
         fs::write(root.join("src/base.txt"), "base\n").unwrap();
+        if useful {
+            fs::write(
+                root.join("src/clamp.py"),
+                "def clamp(value):\n    return min(value, 0)\n",
+            )
+            .unwrap();
+        }
         for args in [
             vec!["init", "-q"],
             vec!["add", "src"],
@@ -64,6 +82,26 @@ impl Fixture {
             "../../../fixtures/examples/phase-request.json"
         ))
         .unwrap();
+        if useful {
+            request.task.objective = "Fix the nonnegative clamp function".into();
+            request.task.kind = TaskKind::Implement;
+            request.task.scope = vec!["src/clamp.py".into()];
+            request.task.deliverables = vec!["corrected clamp function".into()];
+            request.task.acceptance = vec!["clamp(-5)=0, clamp(0)=0, clamp(5)=5".into()];
+        }
+        if !integrate {
+            request.task.allowed_mutations.remove(&Mutation::Integrate);
+            request
+                .restrictions
+                .allowed_mutations
+                .as_mut()
+                .unwrap()
+                .remove(&Mutation::Integrate);
+            request.restrictions.policy_hash.clear();
+            request.restrictions.policy_hash = router_adapter_api::content_digest(
+                &serde_json::to_vec(&request.restrictions).unwrap(),
+            );
+        }
         request.phase = StageKind::Execute;
         request.task.budget.max_elapsed_ms = 10_000;
         if !write {
@@ -126,7 +164,11 @@ impl Fixture {
             effort: selected.effort,
             workspace: root.to_str().unwrap().into(),
             source_state: source_state(&root).await.unwrap(),
-            scope: vec!["src".into()],
+            scope: if useful {
+                vec!["src/clamp.py".into()]
+            } else {
+                vec!["src".into()]
+            },
             sandbox: if write {
                 ExecutionSandbox::WorkspaceWrite
             } else {
@@ -138,7 +180,11 @@ impl Fixture {
             tools: ToolSelection::Disabled,
             agent: None,
             skills: vec![],
-            prompt: "private fixture prompt never stored".into(),
+            prompt: if useful {
+                "Fix src/clamp.py: clamp(-5)=0, clamp(0)=0, clamp(5)=5".into()
+            } else {
+                "private fixture prompt never stored".into()
+            },
             mode: ExecutionMode::Execute,
             target: ExecutionTarget::ExternalWorker,
             allow_degradation: false,
@@ -570,6 +616,57 @@ async fn explicit_apply_integrates_only_verified_patch() {
         .discard(&reopened, reopened.approval_digest())
         .await
         .unwrap();
+}
+#[tokio::test]
+async fn restoring_source_does_not_authorize_replaying_an_applied_patch() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let out = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf 'changed\\n' > src/base.txt"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    runtime
+        .record_verification(
+            &pending,
+            VerificationRecord {
+                verifier: "test".into(),
+                evidence_sha256: "b".repeat(64),
+                artifact_sha256: out.run.artifact_sha256,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            },
+        )
+        .unwrap();
+    let preview = runtime.integration_preview(&pending).await.unwrap();
+    runtime
+        .apply(&pending, &preview.approval_digest)
+        .await
+        .unwrap();
+    fs::write(fixture.root.join("src/base.txt"), "base\n").unwrap();
+    assert_eq!(
+        source_state(&fixture.root).await.unwrap(),
+        fixture.request.source_state
+    );
+    assert!(
+        runtime
+            .apply(&pending, &preview.approval_digest)
+            .await
+            .is_err(),
+        "restoring the source must not reset consumed application authority"
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.root.join("src/base.txt")).unwrap(),
+        "base\n"
+    );
 }
 #[tokio::test]
 async fn out_of_scope_write_is_not_an_approved_artifact() {
@@ -3794,4 +3891,428 @@ async fn attested_revocation_during_native_probe_prevents_main_spawn() {
 #[tokio::test]
 async fn attested_expiry_during_native_probe_prevents_main_spawn() {
     attestation_changed_during_native_version_probe(AttestationChange::Expire).await;
+}
+
+async fn verified_patch(fixture: &Fixture, runtime: &Runtime, script: &'static str) -> PendingRun {
+    let pending = fixture.review(runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let out = runtime
+        .execute(
+            approved,
+            &FakeAdapter(script),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    let patch = fs::read(fixture.temp.path().join("runtime/artifacts/run-1.patch")).unwrap();
+    assert_eq!(
+        router_adapter_api::content_digest(&patch),
+        out.run.artifact_sha256.clone().unwrap()
+    );
+    assert!(patch.windows(b"changed".len()).any(|w| w == b"changed"));
+    runtime
+        .record_verification(
+            &pending,
+            VerificationRecord {
+                verifier: "independent-fixture-check".into(),
+                evidence_sha256: router_adapter_api::content_digest(&patch),
+                artifact_sha256: out.run.artifact_sha256,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            },
+        )
+        .unwrap();
+    pending
+}
+fn git_output(root: &Path, args: &[&str]) -> String {
+    let out = Command::new("/usr/bin/git")
+        .arg("-C")
+        .arg(root)
+        .args(args)
+        .output()
+        .unwrap();
+    assert!(out.status.success(), "git failed: {:?}", args);
+    String::from_utf8(out.stdout).unwrap()
+}
+#[tokio::test]
+async fn publication_binds_actual_diff_modes_preimages_and_result_revision() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt; printf 'changed second\\n' > src/second.txt; chmod +x src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    assert_eq!(
+        review.diff.as_bytes(),
+        fs::read(fixture.temp.path().join("runtime/artifacts/run-1.patch")).unwrap()
+    );
+    assert_eq!(review.files.len(), 2);
+    assert_eq!(review.files[0].before.as_ref().unwrap().mode, "100644");
+    assert_eq!(review.files[0].after.as_ref().unwrap().mode, "100755");
+    assert_eq!(review.files[1].before, None);
+    assert_eq!(
+        git_output(
+            &fixture.root,
+            &["show", &format!("{}:src/base.txt", review.result_revision)]
+        ),
+        "changed\n"
+    );
+    assert_eq!(
+        git_output(
+            &fixture.root,
+            &[
+                "show",
+                &format!("{}:src/second.txt", review.result_revision)
+            ]
+        ),
+        "changed second\n"
+    );
+    let mut unknown_key = serde_json::to_value(&review).unwrap();
+    unknown_key["files"][0]["unexpected"] = serde_json::json!(true);
+    assert!(serde_json::from_value::<PatchPublicationReview>(unknown_key).is_err());
+    let mut invalid_version = review.clone();
+    invalid_version.schema_version = 2;
+    assert!(
+        runtime
+            .validate_publication_review(&pending, &invalid_version)
+            .await
+            .is_err()
+    );
+    let mut replaced = review.clone();
+    replaced.diff = "a different displayed diff".into();
+    assert!(
+        runtime
+            .validate_publication_review(&pending, &replaced)
+            .await
+            .is_err()
+    );
+    assert!(runtime.publish_patch(&pending, "bad").await.is_err());
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+    let receipt = runtime
+        .publish_patch(&pending, &review.approval_digest)
+        .await
+        .unwrap();
+    assert_eq!(receipt.result_revision, review.result_revision);
+    assert_eq!(
+        git_output(&fixture.root, &["rev-parse", &receipt.target_ref]).trim(),
+        review.result_revision
+    );
+    assert_eq!(
+        source_state(&fixture.root).await.unwrap(),
+        fixture.request.source_state
+    );
+    assert!(!fixture.root.join("src/second.txt").exists());
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::Published
+    );
+    assert!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await
+            .is_err()
+    );
+}
+#[tokio::test]
+async fn stale_source_and_candidate_mode_changes_cannot_publish() {
+    use std::os::unix::fs::PermissionsExt;
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    fs::write(fixture.root.join("src/base.txt"), "user change\n").unwrap();
+    assert!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.root.join("src/base.txt")).unwrap(),
+        "user change\n"
+    );
+    fs::write(fixture.root.join("src/base.txt"), "base\n").unwrap();
+    let worktree = runtime.summary("run-1").unwrap().worktree.unwrap();
+    fs::set_permissions(
+        Path::new(&worktree).join("src/base.txt"),
+        fs::Permissions::from_mode(0o755),
+    )
+    .unwrap();
+    assert!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+}
+#[tokio::test]
+async fn substituted_source_symlink_cannot_publish_or_change_its_target() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    let target = fixture.temp.path().join("external");
+    fs::write(&target, "private user content").unwrap();
+    fs::remove_file(fixture.root.join("src/base.txt")).unwrap();
+    symlink(&target, fixture.root.join("src/base.txt")).unwrap();
+    assert!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await
+            .is_err()
+    );
+    assert_eq!(fs::read_to_string(&target).unwrap(), "private user content");
+}
+#[tokio::test]
+async fn concurrent_publications_have_one_consumed_authority_and_one_visible_revision() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    let (a, b) = tokio::join!(
+        runtime.publish_patch(&pending, &review.approval_digest),
+        runtime.publish_patch(&pending, &review.approval_digest)
+    );
+    assert_eq!(usize::from(a.is_ok()) + usize::from(b.is_ok()), 1);
+    assert_eq!(
+        runtime
+            .events()
+            .unwrap()
+            .iter()
+            .filter(|e| e.kind == "integration.intent")
+            .count(),
+        1
+    );
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::Published
+    );
+}
+
+fn clamp_acceptance(source: &str) -> bool {
+    let program = format!(
+        "{}\nassert clamp(-5) == 0\nassert clamp(0) == 0\nassert clamp(5) == 5\n",
+        source
+    );
+    Command::new("/usr/bin/python3")
+        .args(["-I", "-c", &program])
+        .env_clear()
+        .output()
+        .unwrap()
+        .status
+        .success()
+}
+#[tokio::test]
+async fn simulated_useful_fix_passes_independent_checks_on_the_published_revision() {
+    let fixture = Fixture::new_at_with_task(true, tempfile::tempdir().unwrap(), true).await;
+    assert!(!clamp_acceptance(
+        &fs::read_to_string(fixture.root.join("src/clamp.py")).unwrap()
+    ));
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let out = runtime
+        .execute(
+            approved,
+            &FakeAdapter("printf 'def clamp(value):\\n    return max(value, 0)\\n' > src/clamp.py"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    assert!(
+        runtime.review_publication(&pending).await.is_err(),
+        "process completion is not verification"
+    );
+    let candidate = Path::new(out.run.worktree.as_ref().unwrap()).join("src/clamp.py");
+    assert!(clamp_acceptance(&fs::read_to_string(candidate).unwrap()));
+    runtime
+        .record_verification(
+            &pending,
+            VerificationRecord {
+                verifier: "independent-clamp-check".into(),
+                evidence_sha256: router_adapter_api::content_digest(
+                    b"clamp(-5)=0;clamp(0)=0;clamp(5)=5",
+                ),
+                artifact_sha256: out.run.artifact_sha256,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            },
+        )
+        .unwrap();
+    let review = runtime.review_publication(&pending).await.unwrap();
+    assert_eq!(
+        review
+            .files
+            .iter()
+            .map(|f| f.path.as_str())
+            .collect::<Vec<_>>(),
+        vec!["src/clamp.py"]
+    );
+    let receipt = runtime
+        .publish_patch(&pending, &review.approval_digest)
+        .await
+        .unwrap();
+    let actual_source = git_output(
+        &fixture.root,
+        &["show", &format!("{}:src/clamp.py", receipt.result_revision)],
+    );
+    assert!(clamp_acceptance(&actual_source));
+    assert_eq!(
+        git_output(
+            &fixture.root,
+            &["rev-parse", &format!("{}^", receipt.result_revision)]
+        )
+        .trim(),
+        fixture.request.source_state
+    );
+    assert_eq!(
+        source_state(&fixture.root).await.unwrap(),
+        fixture.request.source_state
+    );
+}
+#[tokio::test]
+async fn a_successful_no_op_cannot_be_published_as_a_useful_patch() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let out = runtime
+        .execute(
+            approved,
+            &FakeAdapter("exit 0"),
+            &FakeSupervisor,
+            Cancellation::default(),
+        )
+        .await
+        .unwrap();
+    runtime
+        .record_verification(
+            &pending,
+            VerificationRecord {
+                verifier: "test".into(),
+                evidence_sha256: "b".repeat(64),
+                artifact_sha256: out.run.artifact_sha256,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            },
+        )
+        .unwrap();
+    assert!(matches!(
+        runtime.review_publication(&pending).await,
+        Err(RuntimeError::Verification)
+    ));
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+}
+#[tokio::test]
+async fn timeout_after_one_candidate_write_exposes_no_partial_publication() {
+    let mut fixture = Fixture::new(true).await;
+    fixture.request.timeout_ms = 500;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let out = runtime.execute(approved, &FakeAdapter("printf 'changed\\n' > src/base.txt; /bin/sleep 4; printf 'changed second\\n' > src/second.txt"), &FakeSupervisor, Cancellation::default()).await.unwrap();
+    assert_eq!(out.run.state, RunState::TimedOut);
+    assert_eq!(
+        fs::read_to_string(Path::new(out.run.worktree.as_ref().unwrap()).join("src/base.txt"))
+            .unwrap(),
+        "changed\n"
+    );
+    assert!(runtime.review_publication(&pending).await.is_err());
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+    assert_eq!(
+        fs::read_to_string(fixture.root.join("src/base.txt")).unwrap(),
+        "base\n"
+    );
+    assert!(!fixture.root.join("src/second.txt").exists());
+}
+
+#[tokio::test]
+async fn publication_requires_explicit_integration_permission_after_verification() {
+    let fixture =
+        Fixture::new_at_with_permissions(true, tempfile::tempdir().unwrap(), false, false).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    assert!(matches!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await,
+        Err(RuntimeError::Approval)
+    ));
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+}
+#[tokio::test]
+async fn replaced_git_directory_is_refused_before_publication() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    let saved = fixture.temp.path().join("saved-git");
+    fs::rename(fixture.root.join(".git"), &saved).unwrap();
+    symlink(&saved, fixture.root.join(".git")).unwrap();
+    assert!(matches!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await,
+        Err(RuntimeError::Scope)
+    ));
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
+}
+
+#[tokio::test]
+async fn expired_capability_evidence_cannot_authorize_publication() {
+    let fixture = Fixture::new(true).await;
+    let runtime = fixture.runtime();
+    let pending = verified_patch(&fixture, &runtime, "printf 'changed\\n' > src/base.txt").await;
+    let review = runtime.review_publication(&pending).await.unwrap();
+    drop(runtime);
+    tokio::time::sleep(Duration::from_secs(2)).await;
+    let runtime = Runtime::open(
+        &fixture.temp.path().join("runtime"),
+        RuntimeLimits {
+            snapshot_max_age_seconds: 1,
+            ..RuntimeLimits::default()
+        },
+    )
+    .unwrap()
+    .with_capability_proof_verifier(std::sync::Arc::new(fixture_proofs::FixtureVerifier));
+    assert!(matches!(
+        runtime
+            .publish_patch(&pending, &review.approval_digest)
+            .await,
+        Err(RuntimeError::Route)
+    ));
+    assert_eq!(
+        runtime.publication_status(&pending).await.unwrap().state,
+        PatchPublicationState::NotAttempted
+    );
 }

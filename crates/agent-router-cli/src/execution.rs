@@ -1373,6 +1373,35 @@ pub(crate) fn verify(
         ExitCode::SUCCESS,
     )
 }
+/// Reopen is historical; mutation needs current executable/configuration pins.
+/// This does not invoke a host or grant a native permission.
+pub(crate) fn integration_verifier(
+    store: &Path,
+    definition: &Definition,
+    config: Option<&Path>,
+) -> Result<Option<std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>>, CliError> {
+    let observation: HostObservation =
+        phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
+    if !crate::capability_proofs::has_claims(&observation) {
+        return Ok(None);
+    }
+    let config = sandbox(config.ok_or(CliError::Product("capability.config.required"))?)?;
+    let request: ExecutionRequest = phases::read_json(
+        &definition.request,
+        router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+    )?;
+    Ok(Some(crate::capability_proofs::fresh(
+        store,
+        &config,
+        &observation,
+        Some((
+            &request.scope,
+            request
+                .required_capabilities
+                .contains(&router_types::Capability::Network),
+        )),
+    )?))
+}
 pub(crate) fn artifacts(
     definition: &Path,
     store: &Path,
@@ -1384,6 +1413,17 @@ pub(crate) fn artifacts(
     let definition = load_definition(definition)?;
     let feedback_path = late_feedback_store(config)?;
     let (runtime, pending) = open_existing(store, &definition)?;
+    let runtime = if matches!(
+        &command,
+        ArtifactCommand::Apply { .. } | ArtifactCommand::Publish { .. }
+    ) {
+        match integration_verifier(store, &definition, config)? {
+            Some(verifier) => runtime.with_capability_proof_verifier(verifier),
+            None => runtime,
+        }
+    } else {
+        runtime
+    };
     let integration = |outcome| {
         crate::execution_feedback::record_fact(
             feedback_path.as_deref(),
@@ -1412,6 +1452,32 @@ pub(crate) fn artifacts(
             }
             ArtifactCommand::PurgeOutputs { attempt } => {
                 serde_json::json!({"schema_version":1,"purged":runtime.purge_output_artifacts(&definition.run_id,attempt).map_err(error)?})
+            }
+            ArtifactCommand::ReviewPublication => {
+                serde_json::json!({"schema_version":1,"review":runtime.review_publication(&pending).await.map_err(error)?})
+            }
+            ArtifactCommand::CheckPublicationReview { review } => {
+                let review = phases::read_json(&review, 128 * 1024 * 1024)?;
+                runtime
+                    .validate_publication_review(&pending, &review)
+                    .await
+                    .map_err(error)?;
+                serde_json::json!({"schema_version":1,"review":review})
+            }
+            ArtifactCommand::Publish { approve } => {
+                serde_json::json!({"schema_version":1,"publication":runtime.publish_patch(&pending, &approve).await.map_err(error)?})
+            }
+            ArtifactCommand::PublicationStatus => {
+                let status = runtime.publication_status(&pending).await.map_err(error)?;
+                let exit = if status.state == router_types::PatchPublicationState::Unknown {
+                    ExitCode::from(3)
+                } else {
+                    ExitCode::SUCCESS
+                };
+                return json_output(
+                    &serde_json::json!({"schema_version":1,"publication":status}),
+                    exit,
+                );
             }
             ArtifactCommand::Preview => {
                 serde_json::json!({"schema_version":1,"preview":runtime.integration_preview(&pending).await.map_err(error)?})

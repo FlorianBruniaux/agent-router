@@ -905,13 +905,22 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
             let retained = router_runtime::observe(&store.join("runtime"), &bundle.run_id)
                 .map_err(execution::error)?
                 .output_retention;
-            let runtime = runtime(
+            let source = execution::load_definition(&bundle.source_definition)?;
+            let verifier = if matches!(
+                &command,
+                crate::command::ArtifactCommand::Apply { .. }
+                    | crate::command::ArtifactCommand::Publish { .. }
+            ) {
+                execution::integration_verifier(&store.join("runtime"), &source, config.as_deref())?
+            } else {
+                None
+            };
+            let runtime = runtime_with_verifier(
                 &store,
                 retained,
                 bundle.proposal.as_ref().map_or(2, |p| p.max_attempts()),
-                execution::load_definition(&bundle.source_definition)?
-                    .admission
-                    .as_ref(),
+                source.admission.as_ref(),
+                verifier,
             )?;
             let coordinator = owner(&store, Arc::clone(&runtime))?;
             let (pending, ..) = reopen(&coordinator, &workflow, &bundle, true)?;
@@ -924,6 +933,35 @@ pub(crate) fn run(command: CoordinateCommand, json: bool) -> Result<Outcome, Cli
                 )
             };
             let value = match command {
+                ArtifactCommand::ReviewPublication => {
+                    serde_json::json!({"schema_version":1,"review":coordinator.review_publication(&pending).await.map_err(error)?})
+                }
+                ArtifactCommand::CheckPublicationReview { review } => {
+                    let review = phases::read_json(&review, 128 * 1024 * 1024)?;
+                    coordinator
+                        .validate_publication_review(&pending, &review)
+                        .await
+                        .map_err(error)?;
+                    serde_json::json!({"schema_version":1,"review":review})
+                }
+                ArtifactCommand::Publish { approve } => {
+                    serde_json::json!({"schema_version":1,"publication":coordinator.publish_patch(&pending, &approve).await.map_err(error)?})
+                }
+                ArtifactCommand::PublicationStatus => {
+                    let status = coordinator
+                        .publication_status(&pending)
+                        .await
+                        .map_err(error)?;
+                    let exit = if status.state == router_types::PatchPublicationState::Unknown {
+                        ExitCode::from(3)
+                    } else {
+                        ExitCode::SUCCESS
+                    };
+                    return json_output(
+                        &serde_json::json!({"schema_version":1,"publication":status}),
+                        exit,
+                    );
+                }
                 ArtifactCommand::Preview => {
                     serde_json::json!({"schema_version":1,"preview":coordinator.integration_preview(&pending).await.map_err(error)?})
                 }

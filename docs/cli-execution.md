@@ -305,10 +305,41 @@ an explicit verifier attestation. The record contains verifier identity, evidenc
 digest, artifact digest, validation and objective outcomes. A digest is an
 integrity reference, not authentication of an external verifier.
 
-After verification, use `artifacts --definition ... --store ... preview --json`,
-then `apply --approve DIGEST --json` to integrate the reviewed patch. `keep`
-preserves the worktree; `discard --approve RUN_APPROVAL_DIGEST` removes only that
-owned worktree after a terminal state.
+After verification, `artifacts --definition ... --store ... review-publication
+--json` returns the exact diff, regular-file blob preimages/postimages and Git modes,
+source, resulting tree/commit, verifier record and a separate approval digest.
+Review builds unreferenced Git objects on a private index; it changes no ref or
+user working file. Save the inner `review` object to use `check-publication-review
+--review FILE --json`: it validates the entire saved payload against the current
+candidate before returning the diff. Replaced diff bytes, unknown keys, unsupported
+versions and oversized input are refused. A digest beside a display file is not a
+substitute for this validation.
+
+`artifacts ... --config SANDBOX.json publish --approve DIGEST --json` requires current capability
+evidence and explicit Integrate authority, then publishes that exact result under
+the returned `target_ref`. It changes no working files, index, HEAD or current
+branch. Use `git show REF` on that returned ref to inspect the complete revision.
+Its creation is not a human acceptance verdict or a feedback applied fact.
+
+`artifacts ... publication-status --json` observes the journal and current ref.
+`published` requires matching terminal evidence and a direct ref to the expected
+revision. `unknown` returns exit 3, retains the consumed intent and never retries or
+rolls back user changes. A crash after ref creation cannot be repaired by treating
+the ref alone as proof of complete publication. `not_attempted` returns exit 0.
+These commands also exist under `coordinate artifacts`.
+
+When capability claims exist, both `publish` and legacy `apply` require the
+existing `--config` sandbox configuration to reconstruct current executable,
+adapter and scope pins. Historical reopen alone cannot authorize mutation.
+
+Legacy `preview` followed by `apply --approve DIGEST` still modifies the source
+working copy. Application authority is now one-shot even if a user restores the
+original source. Its multi-file working-copy writes do not share publication's
+single visibility point. See [ADR 0027](adr/0027-verified-patch-publication.md) for
+evidence limits, including Git-metadata races and native qualification.
+
+`keep` preserves the worktree; `discard --approve RUN_APPROVAL_DIGEST` removes only
+that owned worktree after a terminal state.
 
 `artifacts ... outputs --json` lists retained output metadata. `purge-outputs
 --attempt 1 --json` deletes only the registered private files for that attempt.

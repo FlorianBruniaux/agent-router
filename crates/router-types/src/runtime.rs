@@ -205,3 +205,62 @@ pub enum ProcessCleanupEvidence {
     GroupTerminated,
     NamespaceTerminated,
 }
+
+/// A regular Git blob and its executable-bit mode. No symlink/submodule entry.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IntegrationBlob {
+    pub oid: String,
+    pub mode: String,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct IntegrationFile {
+    pub path: String,
+    pub before: Option<IntegrationBlob>,
+    pub after: Option<IntegrationBlob>,
+}
+/// Publication is to a dedicated Git ref, never to the user's working files.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PatchPublicationReview {
+    pub schema_version: u32,
+    pub run_id: String,
+    pub definition_sha256: String,
+    pub repository_sha256: String,
+    pub source_revision: String,
+    pub artifact_sha256: String,
+    pub files: Vec<IntegrationFile>,
+    pub result_tree: String,
+    pub result_revision: String,
+    pub verification: VerificationRecord,
+    pub diff: String,
+    pub approval_digest: String,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PatchPublicationReceipt {
+    pub schema_version: u32,
+    pub run_id: String,
+    pub approval_digest: String,
+    pub source_revision: String,
+    pub result_revision: String,
+    pub result_tree: String,
+    pub target_ref: String,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PatchPublicationState {
+    NotAttempted,
+    Published,
+    Unknown,
+}
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct PatchPublicationStatus {
+    pub schema_version: u32,
+    pub state: PatchPublicationState,
+    pub receipt: Option<PatchPublicationReceipt>,
+    /// A read-time ref observation does not repair missing terminal evidence.
+    pub observed_revision: Option<String>,
+}

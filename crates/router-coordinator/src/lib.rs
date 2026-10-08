@@ -587,6 +587,38 @@ impl Coordinator {
             .runtime
             .has_event(run_id, "transition", "explicit_approval")?)
     }
+    pub async fn review_publication(
+        &self,
+        pending: &PendingStep,
+    ) -> Result<PatchPublicationReview> {
+        Ok(self.runtime.review_publication(&pending.pending).await?)
+    }
+    pub async fn validate_publication_review(
+        &self,
+        pending: &PendingStep,
+        review: &PatchPublicationReview,
+    ) -> Result<()> {
+        Ok(self
+            .runtime
+            .validate_publication_review(&pending.pending, review)
+            .await?)
+    }
+    pub async fn publish_patch(
+        &self,
+        pending: &PendingStep,
+        approval: &str,
+    ) -> Result<PatchPublicationReceipt> {
+        Ok(self
+            .runtime
+            .publish_patch(&pending.pending, approval)
+            .await?)
+    }
+    pub async fn publication_status(
+        &self,
+        pending: &PendingStep,
+    ) -> Result<PatchPublicationStatus> {
+        Ok(self.runtime.publication_status(&pending.pending).await?)
+    }
     pub async fn integration_preview(&self, pending: &PendingStep) -> Result<IntegrationPreview> {
         Ok(self.runtime.integration_preview(&pending.pending).await?)
     }
