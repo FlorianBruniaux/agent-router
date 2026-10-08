@@ -500,3 +500,43 @@ fn global_horizon_includes_other_runs_without_exporting_their_private_data() {
             .contains("other_private_run")
     );
 }
+
+#[test]
+fn observation_v1_frozen_bytes() {
+    let f = Fixture::new();
+    f.seed();
+    let bytes = serde_json::to_string(&observe_run(&f.root, CANARY).unwrap()).unwrap();
+    assert_eq!(
+        bytes,
+        r#"{"schema_version":1,"snapshot_sha256":"590133fc71a3f8d0d563474dcc8fc7246baeacf8c99818fbfe36d9460d679e9a","identity":{"run_key_sha256":"cc8893e352b531eebc40cac5fce167ee908ce4f7df8d31094969e9d341ae1b6a","definition_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","receipt_id_sha256":"399cb747d340fe78c71a9a256a6809c5a9592873b4a16fcb544a3a643de3856d","plan_id_sha256":"c39522a4db9adee6662b8d07134a5f398950b027222570c356dde15f5e9124bf","node_id_sha256":"1d15112e2e95127ac856db0d436503f86400b2762f248edb09202c50966a46bc"},"horizon":{"sequence":3,"event_sha256":"a0406e5498a084281f154bd2b5405eb86c0a50ea68acf4c5dc8af5ca96083514"},"known":{"state":"cancelled","attempts":1,"failure":null,"cleanup":"unknown","events":[{"sequence":1,"state":"running","event_sha256":"7f0831375ab6f20980551c5d53bc485280562bcf7af24d396b72065fff5afd68"},{"sequence":2,"state":"running","event_sha256":"78ea9603ba3e48e6ef72f9c6211c14eedf24acb9f7804b37827f2b7acf62bec8"},{"sequence":3,"state":"cancelled","event_sha256":"a0406e5498a084281f154bd2b5405eb86c0a50ea68acf4c5dc8af5ca96083514"}]},"unknown":{"requested_model":"unknown","requested_effort":"unknown","observed_model":"unknown","observed_effort":"unknown","transport":"unknown","validation":"unknown","objective":"unknown","duration":"unknown","journal_authenticity":"unknown","process_liveness":"unknown"},"completeness":{"journal":"complete","external_observations":"unknown","detail":"redacted"}}"#
+    );
+}
+
+#[test]
+fn observation_v2_digest_covers_attempts_and_uses_a_separate_domain() {
+    let f = Fixture::new();
+    f.seed();
+    let mut v2 = router_runtime::observe_run_v2(&f.root, CANARY).unwrap();
+    let v1 = observe_run(&f.root, CANARY).unwrap();
+    assert_eq!(v2.summary.identity, v1.identity);
+    assert_eq!(v2.summary.known, v1.known);
+    assert_eq!(v2.attempts.len(), 1);
+    assert_eq!(
+        v2.attempts[0].attempt_key_sha256,
+        hash(
+            "run-observation-attempt-v2",
+            &(
+                CANARY,
+                "a".repeat(64),
+                1u32,
+                &v1.known.events[0].event_sha256
+            )
+        )
+    );
+    let digest = v2.summary.snapshot_sha256.clone();
+    assert_ne!(digest, v1.snapshot_sha256);
+    v2.summary.snapshot_sha256.clear();
+    assert_eq!(digest, hash("run-observation-v2", &v2));
+    v2.attempts.clear();
+    assert_ne!(digest, hash("run-observation-v2", &v2));
+}

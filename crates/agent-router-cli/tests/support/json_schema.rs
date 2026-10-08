@@ -76,9 +76,15 @@ fn walk(root: &Value, schema: &Value, at: &str) {
         );
     }
     if let Some(pattern) = map.get("pattern") {
-        // Only the digest pattern used by these schemas is implemented. Fail
-        // closed if a future schema needs a different regular expression.
-        assert_eq!(pattern, "^[0-9a-f]{64}$", "{at}: unsupported pattern");
+        // Support only the two exact patterns used by the published schemas.
+        // Fail closed if a future schema needs another regular expression.
+        assert!(
+            matches!(
+                pattern.as_str(),
+                Some("^[0-9a-f]{64}$" | r"^[A-Za-z0-9_.:/-]+$(?![\s\S])")
+            ),
+            "{at}: unsupported pattern"
+        );
     }
     if let Some(required) = map.get("required") {
         let properties = map.get("properties").and_then(Value::as_object);
@@ -170,13 +176,24 @@ fn validate(root: &Value, schema: &Value, value: &Value, at: &str, found: &mut V
         }
     }
     if let Some(text) = value.as_str() {
-        if map.contains_key("pattern")
-            && (text.len() != 64
-                || !text
-                    .bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
-        {
-            found.push(format!("{at}: string does not match digest pattern"));
+        let matches_pattern = match map.get("pattern").and_then(Value::as_str) {
+            Some("^[0-9a-f]{64}$") => {
+                text.len() == 64
+                    && text
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            }
+            Some(r"^[A-Za-z0-9_.:/-]+$(?![\s\S])") => {
+                !text.is_empty()
+                    && text
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"-_.:/".contains(&b))
+            }
+            Some(_) => false,
+            None => true,
+        };
+        if !matches_pattern {
+            found.push(format!("{at}: string does not match pattern"));
         }
         let length = text.chars().count() as u64;
         if map

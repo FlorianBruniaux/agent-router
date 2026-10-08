@@ -1284,3 +1284,30 @@ fn observation_refuses_corrupt_journal_without_leaking_private_detail() {
         assert!(!stderr.contains("observation-secret-canary"));
     }
 }
+
+#[test]
+fn observation_schema_version_is_explicit_and_default_stays_v1() {
+    let f = Fixture::new();
+    f.run().assert().success();
+    let read = |version: Option<&str>| {
+        let mut cmd = command();
+        cmd.args(["observe", "--store"])
+            .arg(&f.store)
+            .args(["--run-id", "cli-run", "--json"]);
+        if let Some(version) = version {
+            cmd.args(["--schema-version", version]);
+        }
+        cmd.assert().success().get_output().stdout.clone()
+    };
+    assert_eq!(read(None), read(Some("1")));
+    let v2: Value = serde_json::from_slice(&read(Some("2"))).unwrap();
+    assert_eq!(v2["schema_version"], 2);
+    assert_eq!(v2["attempts"], serde_json::json!([]));
+    assert_eq!(v2["unknown"]["transport"], "unknown");
+    command()
+        .args(["observe", "--store"])
+        .arg(&f.store)
+        .args(["--run-id", "cli-run", "--schema-version", "3", "--json"])
+        .assert()
+        .code(2);
+}

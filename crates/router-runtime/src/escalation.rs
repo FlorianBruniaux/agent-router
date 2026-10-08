@@ -337,7 +337,7 @@ fn retryable(failure: Option<RunFailure>) -> bool {
         Some(RunFailure::RateLimit | RunFailure::Network | RunFailure::Timeout | RunFailure::Crash)
     )
 }
-fn evidence(history: &EscalationHistory) -> Result<Vec<(String, AttemptEvidence)>> {
+pub(crate) fn evidence(history: &EscalationHistory) -> Result<Vec<(String, AttemptEvidence)>> {
     let mut values = Vec::new();
     for event in history
         .events
@@ -382,6 +382,20 @@ fn evidence(history: &EscalationHistory) -> Result<Vec<(String, AttemptEvidence)
             || event.run_id != run.run_id
             || event.state != value.state
             || transition.state != value.state
+            // These events are written by attempt() and observed_attempt().
+            // Hash integrity alone does not establish their producer semantics.
+            || started.state != RunState::Preparing
+            || !started.detail.is_empty()
+            || finished.state != RunState::Running
+            || finished.detail != "observed"
+            || transition.detail != "transport_observed"
+            || !RunState::Running.permits(transition.state)
+            || history.events.iter().any(|next| {
+                next.run_id == run.run_id
+                    && next.kind == "attempt.started"
+                    && next.sequence > started.sequence
+                    && next.sequence < event.sequence
+            })
             || !(started.sequence < finished.sequence
                 && finished.sequence < transition.sequence
                 && transition.sequence < event.sequence)

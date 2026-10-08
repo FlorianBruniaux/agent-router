@@ -5,6 +5,14 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+## Observation par tentative et état courant du 8 octobre 2026
+
+L’[observation v2](../run-observation.md) détaille les demandes de modèle/effort, résultats du superviseur et sources durables par tentative. Elle est explicite ; la v1 reste le format par défaut. Le candidat reconstruit passe 80 tests ciblés, dont 21 scénarios indépendants, et sa revue ne relève plus de blocage. Les 4 tests natifs ignorés ne prouvent rien sur l’exécution native.
+
+La [PR #147](https://github.com/FlorianBruniaux/agent-router/pull/147) a livré les protections de publication complémentaires ; #145 est fermée comme doublon. Le [diagnostic F12a](owned-supervision-feasibility-2026-10-08/README.md) est réconcilié avec ce contrat d’arrêt et conserve son NO_GO : l’exécution native complète et le premier essai utile restent à qualifier. La demande, l’exécution native et l’acceptation humaine sont des faits distincts.
+
+La suite consiste à qualifier le client natif supervisé, raccorder provenance, durées et consommation, puis faire l’essai personnel et la comparaison. La lecture GitHub du 8 octobre recense 20 issues ouvertes. Les sections suivantes conservent leurs états et résultats historiques ; aucun gain financier ni usage quotidien automatique n’est établi.
+
 ## Publication simulée du 8 octobre 2026
 
 La [PR #144](https://github.com/FlorianBruniaux/agent-router/pull/144) est fusionnée à `5ba1a694daae90ddb03552f445f31465a64e8ed6`. Ses 11 contrôles GitHub ont réussi. Une correction simulée est vérifiée sur le candidat puis sur sa révision Git publiée, sans modifier les fichiers de travail. Cette publication ne constitue ni une acceptation humaine ni une preuve du parcours Codex complet.

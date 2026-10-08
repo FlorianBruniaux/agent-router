@@ -224,3 +224,168 @@ fn admit(
     }
     Ok(())
 }
+
+/// Version 2 adds only validated durable attempt facts. It never reads private
+/// artifacts or recovers an owner, and grants no execution or export authority.
+pub fn observe_run_v2(root: &Path, id: &str) -> Result<RunObservationV2> {
+    if id.is_empty() || id.len() > 1024 {
+        return Err(RuntimeError::Invalid("observation run id"));
+    }
+    let mut db = control_connection(root, false)?;
+    let tx = db.transaction()?;
+    let report = project_v2(&tx, id).map_err(|error| match error {
+        RuntimeError::Json(_) => RuntimeError::Integrity("observation malformed data"),
+        other => other,
+    })?;
+    tx.commit()?;
+    Ok(report)
+}
+
+fn project_v2(db: &Connection, id: &str) -> Result<RunObservationV2> {
+    // project preserves the v1 reader and admits/verifies its entire bounded
+    // journal before any attempt evidence is decoded. Admit the extra status
+    // column before decoding it as well, within this same transaction.
+    let mut summary = project(db, id)?;
+    admit(
+        db,
+        "SELECT length(CAST(status AS BLOB)) AS bytes FROM run_attempts WHERE run_id=?1",
+        &[&id],
+        5,
+    )?;
+    let run = load_opt(db, id)?.ok_or(RuntimeError::NotFound)?;
+    let mut query = db.prepare(&format!(
+        "{EVENT_COLUMNS} WHERE run_id=?1 ORDER BY sequence"
+    ))?;
+    let mut rows = query.query([id])?;
+    let mut events = Vec::new();
+    while let Some(row) = rows.next()? {
+        events.push(event_from_row(row)?);
+    }
+    let mut query =
+        db.prepare("SELECT attempt,status FROM run_attempts WHERE run_id=?1 ORDER BY attempt")?;
+    let attempts = query
+        .query_map([id], |row| {
+            Ok((
+                id.to_owned(),
+                row.get::<_, u32>(0)?,
+                row.get::<_, String>(1)?,
+            ))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+    let history = EscalationHistory {
+        runs: vec![run.clone()],
+        attempts,
+        events,
+        ledger_hash: String::new(),
+    };
+    let evidence = crate::escalation::evidence(&history)
+        .map_err(|_| RuntimeError::Integrity("observation attempt evidence"))?;
+    let mut attempts = Vec::new();
+    for (index, started) in history
+        .events
+        .iter()
+        .filter(|e| e.kind == "attempt.started")
+        .enumerate()
+    {
+        let ordinal = index as u32 + 1;
+        let unknown = ObservationUnknown::Unknown;
+        let mut attempt = RunAttemptObservation {
+            ordinal,
+            attempt_key_sha256: digest(
+                "run-observation-attempt-v2",
+                &(
+                    &run.run_id,
+                    &run.definition_hash,
+                    ordinal,
+                    &started.event_hash,
+                ),
+            )?,
+            evidence: AttemptObservationEvidence::Unknown,
+            requested: None,
+            transport: None,
+            sources: AttemptObservationSources {
+                started_event_sha256: started.event_hash.clone(),
+                attempt_evidence_sha256: None,
+                finished_event_sha256: None,
+                transition_event_sha256: None,
+                output_incomplete_event_sha256: None,
+                protocol_event_sha256: None,
+            },
+            capture: AttemptObservationCapture::Unknown,
+            protocol: unknown,
+            native: AttemptObservationNative {
+                observed_model: unknown,
+                observed_effort: unknown,
+                thread_id: unknown,
+                turn_id: unknown,
+                usage: unknown,
+                notification_delivery: unknown,
+                lost_notifications: unknown,
+                duration: unknown,
+                validation: unknown,
+                objective: unknown,
+            },
+        };
+        if let Some((event_hash, value)) = evidence
+            .iter()
+            .find(|(_, value)| value.identity.attempt == ordinal)
+        {
+            // A bounded printable identifier grammar, not a secrets detector.
+            let model = value.model.as_str();
+            if model.len() > 256
+                || !model
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-_.:/".contains(&b))
+            {
+                return Err(RuntimeError::Integrity("observation model token"));
+            }
+            let finished = history
+                .events
+                .iter()
+                .find(|e| e.event_hash == value.finished_event_hash)
+                .ok_or(RuntimeError::Integrity("observation attempt interval"))?;
+            let mut incomplete = None;
+            for event in history.events.iter().filter(|e| {
+                e.kind == "output.incomplete"
+                    && e.sequence > started.sequence
+                    && e.sequence < finished.sequence
+            }) {
+                if event.detail != "stream_reader_deadline"
+                    || event.state != RunState::Running
+                    || incomplete.is_some()
+                {
+                    return Err(RuntimeError::Integrity("observation capture source"));
+                }
+                incomplete = Some(event.event_hash.clone());
+            }
+            attempt.capture = match (
+                value.failure == Some(router_types::RunFailure::OutputLimit),
+                incomplete.is_some(),
+            ) {
+                (false, false) => AttemptObservationCapture::Unknown,
+                (false, true) => AttemptObservationCapture::Incomplete,
+                (true, false) => AttemptObservationCapture::OutputLimit,
+                (true, true) => AttemptObservationCapture::OutputLimitIncomplete,
+            };
+            attempt.evidence = AttemptObservationEvidence::DurableAttempt;
+            attempt.requested = Some(AttemptObservationRequested {
+                model: value.model.clone(),
+                effort: value.effort,
+            });
+            attempt.transport = Some(AttemptObservationTransport {
+                termination: value.transport.termination,
+                exit_code: value.transport.exit_code,
+            });
+            attempt.sources.attempt_evidence_sha256 = Some(event_hash.clone());
+            attempt.sources.finished_event_sha256 = Some(value.finished_event_hash.clone());
+            attempt.sources.transition_event_sha256 = Some(value.transition_event_hash.clone());
+            attempt.sources.output_incomplete_event_sha256 = incomplete;
+        }
+        attempts.push(attempt);
+    }
+    summary.schema_version = 2;
+    summary.snapshot_sha256.clear();
+    let mut report = RunObservationV2 { summary, attempts };
+    report.summary.snapshot_sha256 = digest("run-observation-v2", &report)?;
+    Ok(report)
+}

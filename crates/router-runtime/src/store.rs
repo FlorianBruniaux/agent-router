@@ -18,7 +18,7 @@ use std::{
 mod admission;
 mod escalation;
 mod observation;
-pub use observation::observe_run;
+pub use observation::{observe_run, observe_run_v2};
 mod preparation;
 pub(crate) use escalation::EscalationHistory;
 pub(crate) use preparation::Preparation;

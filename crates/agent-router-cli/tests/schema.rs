@@ -63,7 +63,7 @@ fn list_names_every_contract_with_its_supported_versions() {
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
     assert_eq!(versions("feedback-report"), json!([1, 2, 3, 4, 5]));
-    assert_eq!(versions("run-observation"), json!([1]));
+    assert_eq!(versions("run-observation"), json!([1, 2]));
     assert_eq!(
         entries
             .iter()
@@ -192,6 +192,14 @@ fn observation_json(
     failure: Option<RunFailure>,
     cleanup: Option<ProcessCleanupEvidence>,
 ) -> Value {
+    observation_json_version(state, failure, cleanup, None)
+}
+fn observation_json_version(
+    state: RunState,
+    failure: Option<RunFailure>,
+    cleanup: Option<ProcessCleanupEvidence>,
+    version: Option<&str>,
+) -> Value {
     const PRIVATE: &str = "SCHEMA_PRIVATE_PROMPT_PATH_PROVIDER_CANARY";
     let temp = tempfile::tempdir().unwrap();
     let store = temp.path().canonicalize().unwrap().join("runtime");
@@ -281,7 +289,32 @@ fn observation_json(
     cmd.args(["observe", "--store"])
         .arg(&store)
         .args(["--run-id", PRIVATE, "--json"]);
+    if let Some(version) = version {
+        cmd.args(["--schema-version", version]);
+    }
     let bytes = stdout(cmd);
+    if version == Some("2") && attempts > 0 {
+        let mut human = command();
+        human.args(["observe", "--store"]).arg(&store).args([
+            "--run-id",
+            PRIVATE,
+            "--schema-version",
+            "2",
+        ]);
+        let human = String::from_utf8(stdout(human)).unwrap();
+        for expected in [
+            "Aggregate fields remain unknown",
+            "Attempt 1",
+            "Requested model: unknown",
+            "Supervisor termination: unknown",
+            "Exit code: unknown",
+            "Evidence: unknown",
+            "Capture: unknown",
+            "Protocol: unknown",
+        ] {
+            assert!(human.contains(expected), "missing {expected}: {human}");
+        }
+    }
     assert!(!String::from_utf8_lossy(&bytes).contains(PRIVATE));
     serde_json::from_slice(&bytes).unwrap()
 }
@@ -934,4 +967,151 @@ fn qualified_pricing_reports_publish_a_distinct_schema_with_explicit_contract_ve
         legacy["schema_version"] = json!(version - 1);
         assert!(!json_schema::violations(&schema(name), &legacy).is_empty());
     }
+}
+
+#[test]
+fn run_observation_v2_schema_requires_complete_strict_attempt_branches() {
+    let document = schema("run-observation");
+    let mut v2 = observation_json(RunState::Failed, Some(RunFailure::Crash), None);
+    v2["schema_version"] = json!(2);
+    let digest = "a".repeat(64);
+    let mut attempt = json!({
+        "ordinal": 1, "attempt_key_sha256": digest,
+        "evidence": "unknown", "requested": null, "transport": null,
+        "sources": {"started_event_sha256": digest, "attempt_evidence_sha256": null,
+            "finished_event_sha256": null, "transition_event_sha256": null,
+            "output_incomplete_event_sha256": null, "protocol_event_sha256": null},
+        "capture": "unknown", "protocol": "unknown",
+        "native": {"observed_model": "unknown", "observed_effort": "unknown",
+        "thread_id": "unknown", "turn_id": "unknown", "usage": "unknown",
+        "notification_delivery": "unknown", "lost_notifications": "unknown",
+        "duration": "unknown", "validation": "unknown", "objective": "unknown"}
+    });
+    v2["attempts"] = json!([attempt]);
+    assert!(
+        json_schema::violations(&document, &v2).is_empty(),
+        "missing evidence is visible"
+    );
+    attempt["evidence"] = json!("durable_attempt");
+    attempt["requested"] = json!({"model": "provider/model-v1", "effort": "high"});
+    attempt["transport"] = json!({"termination": "exited", "exit_code": 0});
+    for name in [
+        "attempt_evidence_sha256",
+        "finished_event_sha256",
+        "transition_event_sha256",
+    ] {
+        attempt["sources"][name] = json!(digest);
+    }
+    v2["attempts"] = json!([attempt]);
+    assert!(json_schema::violations(&document, &v2).is_empty());
+    for termination in ["exited", "timed_out", "cancelled", "killed", "spawn_failed"] {
+        v2["attempts"][0]["transport"]["termination"] = json!(termination);
+        for exit in [json!(null), json!(0), json!(-1)] {
+            v2["attempts"][0]["transport"]["exit_code"] = exit;
+            assert!(json_schema::violations(&document, &v2).is_empty());
+        }
+    }
+    for capture in [
+        "unknown",
+        "incomplete",
+        "output_limit",
+        "output_limit_incomplete",
+    ] {
+        v2["attempts"][0]["capture"] = json!(capture);
+        v2["attempts"][0]["sources"]["output_incomplete_event_sha256"] =
+            if capture.contains("incomplete") {
+                json!(digest)
+            } else {
+                Value::Null
+            };
+        assert!(json_schema::violations(&document, &v2).is_empty());
+    }
+    let rejects = |pointer: &str, replacement: Value| {
+        let mut bad = v2.clone();
+        *bad.pointer_mut(pointer).unwrap() = replacement;
+        assert!(
+            !json_schema::violations(&document, &bad).is_empty(),
+            "accepted {pointer}: {bad}"
+        );
+    };
+    for (pointer, value) in [
+        ("/schema_version", json!(3)),
+        ("/attempts", json!(null)),
+        ("/attempts/0/ordinal", json!(0)),
+        ("/attempts/0/ordinal", json!(6)),
+        ("/attempts/0/attempt_key_sha256", json!("private")),
+        ("/attempts/0/evidence", json!("native")),
+        ("/attempts/0/requested", json!(null)),
+        ("/attempts/0/requested/model", json!("unsafe model")),
+        ("/attempts/0/requested/model", json!("model\n")),
+        ("/attempts/0/requested/model", json!("a".repeat(257))),
+        ("/attempts/0/requested/model", json!("")),
+        ("/attempts/0/requested/effort", json!("superhigh")),
+        ("/attempts/0/transport", json!(null)),
+        ("/attempts/0/transport/termination", json!("success")),
+        ("/attempts/0/transport/exit_code", json!(2147483648u64)),
+        ("/attempts/0/sources/attempt_evidence_sha256", json!(null)),
+        ("/attempts/0/sources/protocol_event_sha256", json!(digest)),
+        (
+            "/attempts/0/sources/output_incomplete_event_sha256",
+            json!(null),
+        ),
+        ("/attempts/0/capture", json!("complete")),
+        ("/attempts/0/protocol", json!("observed")),
+        ("/attempts/0/native/usage", json!(0)),
+        ("/attempts/0/native/duration", json!(1)),
+        ("/attempts/0/native/validation", json!("passed")),
+        ("/attempts/0/native/objective", json!("passed")),
+    ] {
+        rejects(pointer, value);
+    }
+    for pointer in [
+        "",
+        "/attempts/0",
+        "/attempts/0/requested",
+        "/attempts/0/transport",
+        "/attempts/0/sources",
+        "/attempts/0/native",
+    ] {
+        let mut bad = v2.clone();
+        bad.pointer_mut(pointer)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .insert("private".into(), json!("leak"));
+        assert!(!json_schema::violations(&document, &bad).is_empty());
+    }
+    for pointer in [
+        "",
+        "/attempts/0",
+        "/attempts/0/requested",
+        "/attempts/0/transport",
+        "/attempts/0/sources",
+        "/attempts/0/native",
+    ] {
+        for name in v2.pointer(pointer).unwrap().as_object().unwrap().keys() {
+            let mut bad = v2.clone();
+            bad.pointer_mut(pointer)
+                .unwrap()
+                .as_object_mut()
+                .unwrap()
+                .remove(name);
+            assert!(
+                !json_schema::violations(&document, &bad).is_empty(),
+                "accepted missing {pointer}/{name}"
+            );
+        }
+    }
+}
+
+#[test]
+fn run_observation_v2_emits_missing_evidence_without_inferred_native_facts() {
+    let output =
+        observation_json_version(RunState::Failed, Some(RunFailure::Crash), None, Some("2"));
+    assert_eq!(output["schema_version"], 2);
+    assert_eq!(output["attempts"][0]["evidence"], "unknown");
+    assert_eq!(output["attempts"][0]["requested"], Value::Null);
+    assert_eq!(output["attempts"][0]["transport"], Value::Null);
+    assert_eq!(output["attempts"][0]["native"]["usage"], "unknown");
+    assert_conforms("run-observation", &output);
 }

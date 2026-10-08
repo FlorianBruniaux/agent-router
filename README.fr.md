@@ -9,7 +9,7 @@ acceptée sont disponibles. L’usage automatique quotidien et les économies r�
 restent à prouver. Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md)
 sépare le premier essai utile, les mesures et la publication.
 
-L’[observation passive](docs/run-observation.md) (EN) dispose maintenant d’un schéma JSON publié. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. La [publication d’un patch vérifié](docs/cli-execution.md) (EN) construit maintenant une révision Git approuvée à partir d’une correction simulée utile, en préservant les fichiers de travail. La composition native, l’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
+L’[observation passive](docs/run-observation.md) (EN) propose une v2 explicite qui détaille le modèle demandé et le résultat du superviseur pour chaque tentative, avec un schéma JSON publié ; la v1 reste le format par défaut. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. La [publication d’un patch vérifié](docs/cli-execution.md) (EN) construit maintenant une révision Git approuvée à partir d’une correction simulée utile, en préservant les fichiers de travail. La composition native, l’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
 
 Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
 conversion future vers Apache 2.0. Le [guide d'essai expérimental](docs/experimental-release.md)
