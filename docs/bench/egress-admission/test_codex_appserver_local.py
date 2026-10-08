@@ -134,21 +134,30 @@ class EvidenceTests(unittest.TestCase):
             self.assertLess(__import__("time").monotonic() - started, 3)
 
 
-def assert_descendant_stopped(test, group_pid, child_pid):
-    try:
-        os.killpg(group_pid, 0)
-    except ProcessLookupError:
-        return
-    test.assertEqual(sys.platform, "linux", "descendant process group still exists")
-    # This fixture creates exactly one descendant. Linux may retain its zombie
-    # until PID 1 reaps it, even after SIGKILL and both pipe readers have exited.
-    try:
-        stat = Path(f"/proc/{child_pid}/stat").read_text(encoding="utf-8")
-    except FileNotFoundError:
-        return  # Reaped after the group-existence probe.
-    fields = stat.rsplit(")", 1)[1].split()
-    test.assertEqual(int(fields[2]), group_pid, "unexpected descendant process group")
-    test.assertEqual(fields[0], "Z", "descendant is still live")
+def assert_descendant_stopped(test, group_pid, child_pid, *, timeout=0):
+    # The kernel may close inherited pipes before publishing a zombie state.
+    # Keep cleanup observation separate from stop() and refuse a live process
+    # unless a subsequent observation establishes termination before the bound.
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            os.killpg(group_pid, 0)
+        except ProcessLookupError:
+            return
+        test.assertEqual(sys.platform, "linux", "descendant process group still exists")
+        # Containers may retain the known orphan as a zombie until PID 1 reaps it.
+        try:
+            stat = Path(f"/proc/{child_pid}/stat").read_text(encoding="utf-8")
+        except (FileNotFoundError, ProcessLookupError):
+            return  # Reaped before open (ENOENT) or during read (ESRCH).
+        fields = stat.rsplit(")", 1)[1].split()
+        test.assertEqual(int(fields[2]), group_pid, "unexpected descendant process group")
+        if fields[0] == "Z":
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            test.assertEqual(fields[0], "Z", "descendant is still live")
+        time.sleep(min(0.01, remaining))
 
 
 class DescendantStateTests(unittest.TestCase):
@@ -175,10 +184,44 @@ class DescendantStateTests(unittest.TestCase):
             self.check_linux_stat("Z", group=999)
 
     def test_linux_reaped_between_group_probe_and_stat_is_stopped(self):
+        # /proc may disappear before open (ENOENT) or during read (ESRCH).
+        for error in (FileNotFoundError, ProcessLookupError):
+            with self.subTest(error=error.__name__), \
+                    mock.patch.object(sys, "platform", "linux"), \
+                    mock.patch.object(os, "killpg"), \
+                    mock.patch.object(Path, "read_text", side_effect=error):
+                assert_descendant_stopped(self, 100, 101)
+
+    def test_linux_live_descendant_must_be_observed_stopped_before_deadline(self):
+        states = ["101 (child) R 1 100 100 0", "101 (child) Z 1 100 100 0"]
         with mock.patch.object(sys, "platform", "linux"), \
                 mock.patch.object(os, "killpg"), \
-                mock.patch.object(Path, "read_text", side_effect=FileNotFoundError):
-            assert_descendant_stopped(self, 100, 101)
+                mock.patch.object(Path, "read_text", side_effect=states) as read_stat, \
+                mock.patch.object(time, "monotonic", side_effect=[0, 0.01]), \
+                mock.patch.object(time, "sleep") as sleep:
+            assert_descendant_stopped(self, 100, 101, timeout=0.1)
+        self.assertEqual(read_stat.call_count, 2)
+        sleep.assert_called_once_with(0.01)
+
+    def test_linux_live_descendant_is_refused_when_deadline_expires(self):
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(Path, "read_text", return_value="101 (child) R 1 100 100 0"), \
+                mock.patch.object(time, "monotonic", side_effect=[0, 0.01, 0.11]), \
+                mock.patch.object(time, "sleep") as sleep, \
+                self.assertRaisesRegex(AssertionError, "descendant is still live"):
+            assert_descendant_stopped(self, 100, 101, timeout=0.1)
+        sleep.assert_called_once_with(0.01)
+
+    def test_linux_wrong_group_is_refused_without_waiting(self):
+        with mock.patch.object(sys, "platform", "linux"), \
+                mock.patch.object(os, "killpg"), \
+                mock.patch.object(Path, "read_text", return_value="101 (child) Z 1 999 100 0"), \
+                mock.patch.object(time, "monotonic", return_value=0), \
+                mock.patch.object(time, "sleep") as sleep, \
+                self.assertRaisesRegex(AssertionError, "unexpected descendant process group"):
+            assert_descendant_stopped(self, 100, 101, timeout=0.1)
+        sleep.assert_not_called()
 
     def test_absent_group_needs_no_proc_observation(self):
         with mock.patch.object(os, "killpg", side_effect=ProcessLookupError), \
@@ -291,6 +334,8 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(client.stop(), 0)
             self.assertFalse(client.stdout_thread.is_alive(), "descendant still holds stdout")
             self.assertFalse(client.stderr_thread.is_alive(), "descendant still holds stderr")
+            # stop() already promises observed group termination before return.
+            # A grace period here would hide an early successful return.
             assert_descendant_stopped(self, process.pid, child_pid)
         finally:
             try:

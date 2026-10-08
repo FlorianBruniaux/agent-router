@@ -82,6 +82,7 @@ sauf celles marquées (FR).
 | Page | Contenu |
 | --- | --- |
 | [Doctor](doctor.md) | Diagnostic en lecture seule et audit expurgé |
+| [Diagnostic de supervision native](bench/owned-supervision-feasibility-2026-10-08/README.md) | 2026-10-08 : diagnostic explicite sans fournisseur ; composition NO_GO, limites du broker, de mémoire et de nettoyage conservées |
 | [Observation passive d’une exécution](run-observation.md) | 2026-10-07 : F04a implémenté, testé et revu ; 20 références d’état en texte et JSON borné complet ; F04b et F05a complet restent ouverts |
 | [Validation de l’observation](bench/verification-observation-2026-10-07.json) | 21 contrôles sélectionnés réussis : 1 633 résultats Rust workspace + 1 cœur, 290 Python ; sommes des lignes de résultats, 42 tests natifs opt-in ignorés ; sans équivalence avec toute la CI |
 | [Annulation du broker absent au lancement](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent avant lancement, interruption/terminal corrélés et nettoyage physique, zéro provider ; preuve de panne au démarrage ; voir la qualification ultérieure du client dédié ; admission globale encore ouverte |

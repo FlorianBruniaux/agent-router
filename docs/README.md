@@ -83,6 +83,7 @@ written in French.
 | Page | What it covers |
 | --- | --- |
 | [Doctor](doctor.md) | Read-only diagnostics and redacted audit |
+| [Native supervision diagnostic](bench/owned-supervision-feasibility-2026-10-08/README.md) | 2026-10-08: explicit no-provider diagnostic; current composition remains NO_GO, with broker identity, memory and cleanup limits |
 | [Passive run observation](run-observation.md) | 2026-10-07: implemented, tested and reviewed F04a; 20 human state references and full bounded JSON; F04b and complete F05a remain open |
 | [Observation verification](bench/verification-observation-2026-10-07.json) | 21 selected checks passed: 1,633 workspace Rust results + 1 core, 290 Python; result-line counts, 42 native opt-in tests ignored; not full CI equivalence |
 | [Startup-outage cancellation](bench/physical-send-feasibility-2026-10-07/outage-cancellation/README.md) | Broker absent before launch, correlated interrupt/terminal and physical cleanup, zero provider; startup-outage evidence; see the later dedicated-client qualification; global admission remains open |

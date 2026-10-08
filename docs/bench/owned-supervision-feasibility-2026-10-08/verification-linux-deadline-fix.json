@@ -1,0 +1,61 @@
+{
+  "baseline_commit": "d559e6b493be1e293f8ca2d1a4c2e24eacb909e3",
+  "bounded_observation": {
+    "clock": "monotonic; deterministic unit tests use mock clock and sleep",
+    "default_wait_seconds": 0,
+    "maximum_wait_seconds": 3,
+    "poll_interval_seconds": 0.01
+  },
+  "changed_source": {
+    "mode": 420,
+    "path": "docs/bench/egress-admission/test_codex_appserver_local.py",
+    "sha256": "032a2be6afbd1641d362cb150ffc66c6b8738332cbba920288f20ecbcfe5e691"
+  },
+  "evidence_kind": "source_bound_bounded_cleanup_observer_regression",
+  "green": {
+    "exit_code": 0,
+    "log_sha256": "179f78f571dd78da333c859655a74e5f5231aac400f2e8542c28510e377b7908",
+    "platform": "macOS",
+    "suite": "python3 -B -m unittest discover -s docs/bench/egress-admission -p test_*.py -v",
+    "tests_run": 51
+  },
+  "limits": [
+    "Actual new-head Linux CI is pending at report creation.",
+    "Local Linux transition and timeout cases are mocked.",
+    "Observed known descendant does not establish exhaustive containment.",
+    "Prior 48-test proof remains historical; second CI failure retained here.",
+    "Report written after tests and excluded from tested source inventory.",
+    "F12a remains NO_GO; F02b NOT_ATTEMPTED; no model turn or paid call."
+  ],
+  "native_source_hashes_rechecked": true,
+  "new_regressions": [
+    "live state then observed Z before deadline",
+    "persistent live state refused at deadline",
+    "wrong group refused without waiting"
+  ],
+  "prior_gate": {
+    "commit": "3c6017c82abdc01fbb320d471a16e2645b873c72",
+    "effective_checks_passed": 24,
+    "scope": "Historical full gate; Rust/native sources unchanged. Current fixture-only delta has scoped 51-test validation, not a new full inventory gate."
+  },
+  "red": {
+    "exit_code": 1,
+    "log_sha256": "3f6c29999d83b06caa3243ba8001a5a4a35e429ea09cd1f6cf8fc66447a853e1",
+    "reason": "Three deterministic deadline regressions reject missing bounded-observation interface",
+    "tests_run": 32
+  },
+  "retained_refusals": [
+    "live or stopped descendant at deadline",
+    "wrong group immediately",
+    "permission error immediately"
+  ],
+  "root_cause_scope": "stop() waits for leader and pipe readers; the test assumed this instantly establishes the known descendant zombie state. Cleanup observation now independently waits for absent group, reaped known PID or Z in expected group. No product or probe stop implementation changed.",
+  "schema_version": 1,
+  "trigger": {
+    "failure": "Observed Linux state R immediately after successful leader exit and reader joins",
+    "job": 113271179895,
+    "log_sha256": "278ccd2d7ceae3680e1a62399beebe335811b01ef48b41f17adab3a7dcfbb44c",
+    "run": 37765243489,
+    "url": "https://github.com/FlorianBruniaux/agent-router/actions/runs/37765243489/job/113271179895"
+  }
+}

@@ -1,0 +1,541 @@
+{
+  "all_checked_bytes_modes_rechecked_before_report": true,
+  "baseline_commit": "5ba1a694daae90ddb03552f445f31465a64e8ed6",
+  "changed_source_fingerprints": {
+    "crates/router-runtime/examples/owned_supervision.rs": {
+      "mode": 420,
+      "sha256": "0140446125d51f45bbda338b235f17f8b44012a18a86b8dadc87b50d5978f2ff"
+    },
+    "docs/bench/finalization-plan-2026-10-07.md": {
+      "mode": 420,
+      "sha256": "15bd059f50d51f49436532cb80ebbf8879b1ca6b36d140fd6585b9c19f73b6fc"
+    },
+    "docs/bench/owned-supervision-feasibility-2026-10-08/README.md": {
+      "mode": 420,
+      "sha256": "57d8b2452889add707d1474c8c924c192c02081e1dd00b2f0719d779f9b543a8"
+    },
+    "docs/bench/owned-supervision-feasibility-2026-10-08/native-results.json": {
+      "mode": 420,
+      "sha256": "71f0d673cc941f9c1082622939d0a72f02b6afd93f09b27222783960fe0bb5ab"
+    }
+  },
+  "evidence_kind": "source_bound_local_verification",
+  "full_ci_equivalent": false,
+  "independent_code_review": "NOT_ESTABLISHED",
+  "merged_previous_delivery": {
+    "merge_commit": "5ba1a694daae90ddb03552f445f31465a64e8ed6",
+    "merged_head_checks_passed": 6,
+    "pr": 144,
+    "proposed_commit": "1387c3162d0f790ddc6a0d1c62c8587fed62b18d",
+    "proposed_head_checks_passed": 11,
+    "trees_identical": true
+  },
+  "native_capture": {
+    "admission": "NO_GO",
+    "exit_code": 0,
+    "invocation": [
+      "cargo",
+      "run",
+      "-p",
+      "router-runtime",
+      "--example",
+      "owned_supervision",
+      "--locked"
+    ],
+    "report_sha256": "71f0d673cc941f9c1082622939d0a72f02b6afd93f09b27222783960fe0bb5ab",
+    "required_private_env": [
+      "AR_CODEX_NATIVE",
+      "AR_SANDBOX_HELPER",
+      "AR_F12_PRIVATE"
+    ],
+    "tested_wiring": "framed_v1_direct_native_appserver"
+  },
+  "platform": "macOS-26.5.1-arm64-arm-64bit",
+  "quality": {
+    "count_scope": "Rust result totals include subprocess results, not unique definitions. Ignored Rust results are not successes. Partial timeout results are not added to completed retry totals.",
+    "earlier_layout_change_run": {
+      "reason": "diagnostic moved from native test batch to explicit example; no complete verdict claimed",
+      "status": "interrupted"
+    },
+    "effective_checks": [
+      {
+        "argv": [
+          "cargo",
+          "fmt",
+          "--all",
+          "--",
+          "--check"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 1.973625,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "format",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "clippy",
+          "--workspace",
+          "--all-targets",
+          "--all-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 37.525083,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "clippy-all",
+        "log_sha256": "a4afbb0469843789c27deee89754203ed8e564e20d73cc433c0f1f73cdf7c802",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "clippy",
+          "-p",
+          "agent-router-cli",
+          "--all-targets",
+          "--no-default-features",
+          "--locked",
+          "--",
+          "-D",
+          "warnings"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 13.962676,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "clippy-core",
+        "log_sha256": "90dd9b7807805b352358be5283c323e30d129b16eb666bda3a4fa9ba12fc033e",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 827.822274,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "workspace-tests",
+        "log_sha256": "9d6d3d4033282426b6d53f849b337dadb1ab3d3e6c1878922d66d12122331734",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "agent-router-cli",
+          "--no-default-features",
+          "--locked",
+          "--test",
+          "local_api_absent"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 51.266433,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "local-api-absent",
+        "log_sha256": "2b82e48ce9514a5eb82023babbbb632dd3dddf6d4e0cd6828d91975cf36ba17d",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 18.214976,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "harness",
+        "log_sha256": "0494978d8852b6bb04104cd1067a3476334a1a8b285597b4289a27a7f17bc686",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/check-host-syntax.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.347426,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "host-syntax",
+        "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-benchmark-startup.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.807284,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-benchmark-startup",
+        "log_sha256": "869ea8047d0ae89dddb808470175fa3bdce5d6007a92e195f2d7e7e762e1f49f",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-check-adrs.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.380068,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-check-adrs",
+        "log_sha256": "b375deefbac0c3d11d264e6d9409a52dbf9cc27ee2d0a48c70d894c00b67b4ec",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-check-local.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 18.457677,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-check-local",
+        "log_sha256": "31f27ffcfba31cee157ae2aacdd96ea68654eb8536c0a69cab251936174bdddb",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-package-binary.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.914003,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-package-binary",
+        "log_sha256": "dcbc434c6aa99fde7bcec1c41bf92bc921dc3bc22a171814dd04962ed718c9a8",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-package-core.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.61401,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-package-core",
+        "log_sha256": "c5cf3bc21803042dd07ee9124a22b14822d3d04de748a11d8cdcd33a5891ce33",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "scripts/test-release-local.py"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 34.953787,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "script-test-release-local",
+        "log_sha256": "14b491d960a0c6fcbc3729abe334f50f79302e14840059dcc8cd17b6e911fc8b",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/egress-admission",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 15.104103,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "egress-tests",
+        "log_sha256": "5c0e09de5dacb2266a084c67320fc7e12f02e9a44b662298d90f72539d1205f1",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u02",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 9.063174,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "native-probe-tests",
+        "log_sha256": "d7cbee89fdb6c16f633bf00563ea953d05e94a3df7b9207b9b8a5c862b21f4fb",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u06",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 4.567453,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "native-decision-tests",
+        "log_sha256": "0c84c37099ee8290ec4579fa1f29600587285529b0ab12aa4ad6a12e8741f86f",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/native-integration-u07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 6.28217,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "native-hook-failure-tests",
+        "log_sha256": "57efb6f5ed4a29acefbdd0bbf026d997a91406ca7572d3a472ea7723487cea81",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/campaign-next/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 1.992876,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "campaign-tests",
+        "log_sha256": "f74a2079229229874940cd68d000dc942996683c61a7283887c0b05e715f2674",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/calibration-v2/tests",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 6.153969,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "calibration-tests",
+        "log_sha256": "48294c0f75458e473480782a74df1e6e372e0d3f478934ec91877cefd252a868",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.712198,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "physical-send-tests",
+        "log_sha256": "08301abe5f3c49d7d47f7f9e7c135fbbd4d0931de3706540606fcb114c558585",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.182519,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "startup-outage-tests",
+        "log_sha256": "ca3fb43957a45c0f763110630bf2dae8d7976c5abaebd1c2b777462d1a5903be",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "python3.12",
+          "-B",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "docs/bench/owned-entry-qualification-2026-10-08",
+          "-p",
+          "test_*.py",
+          "-v"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 0.561682,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "owned-entry-tests",
+        "log_sha256": "d1478a79ec9503dbdae0372242242819a6b7f4907afd15e0e03305af645ed992",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "gitleaks",
+          "dir",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 2.012266,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "secrets-dir",
+        "log_sha256": "2012798d85268e0dda69ce13bbdf87b7116aa9b62344cc5d1b80a3a4dd7c21cf",
+        "status": "passed"
+      },
+      {
+        "argv": [
+          "gitleaks",
+          "git",
+          ".",
+          "--config",
+          ".gitleaks.toml",
+          "--redact",
+          "--no-banner"
+        ],
+        "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+        "duration_seconds": 5.853108,
+        "exit_code": 0,
+        "group": "quality",
+        "id": "secrets-git",
+        "log_sha256": "ed9301d891ae6d8600e54997b808fef91936962eba9cbea30f60ddc6752dea38",
+        "status": "passed"
+      }
+    ],
+    "effective_verdict": "24_selected_checks_passed_after_one_workspace_retry",
+    "initial_summary_sha256": "8eb86ff618ef8543fd46b580756d34001412d13ea7a54fffaf7f8fd5edc9ffc4",
+    "initial_verdict": "incomplete_or_failed",
+    "initial_workspace_result": {
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "argv_public_redaction": "absolute executable paths replaced by basename; raw invocation retained privately",
+      "duration_seconds": 900.019132,
+      "exit_code": -15,
+      "group": "quality",
+      "id": "workspace-tests",
+      "log_sha256": "ffd691fc95f66ae64e1bcc16d91008a20f2757e1dedf2cac09ea594d3787e4e2",
+      "status": "timed_out"
+    },
+    "python_tests_run": 355,
+    "retry_reason": "900-second deadline reached at Rust documentation tests; one complete cached workspace retry, 1800-second deadline",
+    "retry_summary_sha256": "a2b5e6741ce01a9861f6a5491c9bf7720741af2d328372e0263e717b9f1b9aac",
+    "rust_workspace_ignored_result_totals": 42,
+    "rust_workspace_successful_result_totals": 1653
+  },
+  "remaining": [
+    "No model turn, broker/provider server, account import or paid request.",
+    "A diagnostic fixture invokes public supervisors; it is not a runtime approval or execution receipt.",
+    "Memory enforcement was explicitly not requested for the second diagnostic, not admitted for product use.",
+    "Group termination does not establish exhaustive containment or the absence of detached descendants.",
+    "Socket denial does not qualify all Mach-service or DNS channels.",
+    "A finite supervised client owning native RPC is an unevaluated alternative; the diagnostic does not require a duplex helper redesign.",
+    "No Linux/Claude equivalence, F02b useful task, physical-send admission or saving.",
+    "Independent code review not established."
+  ],
+  "report_added_after_frozen_gate": {
+    "excluded_from_checked_inventory": true,
+    "path": "docs/bench/owned-supervision-feasibility-2026-10-08/verification.json"
+  },
+  "schema_version": 1,
+  "source_inventory_sha256": "f6e1bca4ab6a5d9c8aaf47a0679e3b9ae25882187f94e125191c8b7842918491",
+  "source_sha256": "25672af096c771d11cb123c26ce6d37917953667630aeff3683aab011f5fbac8"
+}

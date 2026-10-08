@@ -75,6 +75,9 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- Add an explicit native supervision diagnostic that records broker-only refusal, finite-input behavior and OS/resource limits without a model turn. Reconcile its cleanup tests with the stronger publication-hardening stop contract; F12a remains NO_GO. See the [diagnostic and limits](docs/bench/owned-supervision-feasibility-2026-10-08/README.md).
+
+
 - `artifacts review-publication`, `check-publication-review`, `publish` and `publication-status` expose approval-bound verified patch revisions through the existing runtime. The simulated useful correction and one-shot publication are described in [ADR 0027](docs/adr/0027-verified-patch-publication.md). Native composition, direct multi-file working-copy safety and real-provider admission remain separate qualifications.
 
 - Dedicated Codex client diagnostic with task/thread/turn/model/effort binding, strict bounded JSON, refusal of permission callbacks and reroutes, broker request validation and controlled cancellation. Three local native scenarios qualify the simulated entry under [ADR 0026](docs/adr/0026-owned-client-simulated-entry.md); full ACP comparison, real-provider and OS admission remain open. The local runner now includes the client, physical-send and startup-outage unit suites without implicitly launching native Codex.
