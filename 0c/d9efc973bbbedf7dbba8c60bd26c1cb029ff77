@@ -1,0 +1,29 @@
+docs/bench/egress-admission/test_codex_appserver_local.py
+  s_c532ad900c1d7d::t_7aed9efd26baed 137-160,195-225,265-267
+docs/bench/owned-supervision-feasibility-2026-10-08/verification-linux-deadline-fix.json
+  s_160b3107588443::t_42e0037149cee9 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0cd9efc973bbbedf7dbba8c60bd26c1cb029ff77",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_c532ad900c1d7d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11705-e292-7623-b08c-b59dba9af829",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
