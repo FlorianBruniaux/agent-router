@@ -1402,6 +1402,126 @@ pub(crate) fn integration_verifier(
         )),
     )?))
 }
+/// Publication pins the semantic configuration and original requested scope.
+/// Every proof check reloads configuration and executable identities; formatting
+/// changes alone are harmless. No host is invoked and no authority is issued.
+struct PublicationVerifier {
+    store: PathBuf,
+    config: PathBuf,
+    config_sha256: String,
+    observation: HostObservation,
+    scope: Vec<String>,
+    network: bool,
+}
+impl PublicationVerifier {
+    fn new(
+        store: &Path,
+        config: &Path,
+        observation: HostObservation,
+        scope: Vec<String>,
+        network: bool,
+    ) -> Result<Self, CliError> {
+        let parsed = sandbox(config)?;
+        let verifier = Self {
+            store: store.to_owned(),
+            config: config.to_owned(),
+            config_sha256: router_adapter_api::content_digest(
+                &serde_json::to_vec(&parsed).map_err(|_| CliError::Internal)?,
+            ),
+            observation,
+            scope,
+            network,
+        };
+        verifier.current()?;
+        Ok(verifier)
+    }
+    fn current(
+        &self,
+    ) -> Result<std::sync::Arc<router_runtime::StoredCapabilityProofVerifier>, CliError> {
+        let parsed = sandbox(&self.config)?;
+        let hash = router_adapter_api::content_digest(
+            &serde_json::to_vec(&parsed).map_err(|_| CliError::Internal)?,
+        );
+        if hash != self.config_sha256 {
+            return Err(CliError::Product("capability.config.changed"));
+        }
+        crate::capability_proofs::fresh(
+            &self.store,
+            &parsed,
+            &self.observation,
+            Some((&self.scope, self.network)),
+        )
+    }
+}
+impl router_adapter_api::CapabilityProofVerifier for PublicationVerifier {
+    fn verify(
+        &self,
+        source: &router_adapter_api::EvidenceSource,
+        capability: router_types::Capability,
+        host: &router_types::HostSnapshot,
+        now: u64,
+    ) -> Result<router_adapter_api::VerifiedCapabilityProof, router_adapter_api::CapabilityProofError>
+    {
+        let verifier = self
+            .current()
+            .map_err(|_| router_adapter_api::CapabilityProofError::Unauthenticated)?;
+        let now = publication_clock(now)?;
+        current_publication_proof(verifier.verify(source, capability, host, now)?, now)
+    }
+    fn verify_attestation(
+        &self,
+        reference: &router_adapter_api::CapabilityAttestationReference,
+        host: &router_types::HostSnapshot,
+        now: u64,
+    ) -> Result<router_adapter_api::VerifiedCapabilityProof, router_adapter_api::CapabilityProofError>
+    {
+        let verifier = self
+            .current()
+            .map_err(|_| router_adapter_api::CapabilityProofError::Unauthenticated)?;
+        let now = publication_clock(now)?;
+        current_publication_proof(verifier.verify_attestation(reference, host, now)?, now)
+    }
+}
+fn publication_clock(now: u64) -> Result<u64, router_adapter_api::CapabilityProofError> {
+    crate::inspect::current_time(None)
+        .map(|clock| clock.max(now))
+        .map_err(|_| router_adapter_api::CapabilityProofError::Unauthenticated)
+}
+fn current_publication_proof(
+    proof: router_adapter_api::VerifiedCapabilityProof,
+    now: u64,
+) -> Result<router_adapter_api::VerifiedCapabilityProof, router_adapter_api::CapabilityProofError> {
+    // Hashing executables and authenticating the log can cross an expiry.
+    if publication_clock(now)? > proof.expires_at_unix_seconds {
+        return Err(router_adapter_api::CapabilityProofError::Expired);
+    }
+    Ok(proof)
+}
+pub(crate) fn publication_verifier(
+    store: &Path,
+    definition: &Definition,
+    config: Option<&Path>,
+) -> Result<Option<std::sync::Arc<dyn router_adapter_api::CapabilityProofVerifier>>, CliError> {
+    let observation: HostObservation =
+        phases::read_json(&definition.host_snapshot, DOCUMENT_LIMIT)?;
+    if !crate::capability_proofs::has_claims(&observation) {
+        return Ok(None);
+    }
+    let config = config.ok_or(CliError::Product("capability.config.required"))?;
+    let request: ExecutionRequest = phases::read_json(
+        &definition.request,
+        router_adapter_api::MAX_EXECUTION_INPUT_BYTES,
+    )?;
+    Ok(Some(std::sync::Arc::new(PublicationVerifier::new(
+        store,
+        config,
+        observation,
+        request.scope,
+        request
+            .required_capabilities
+            .contains(&router_types::Capability::Network),
+    )?)))
+}
 pub(crate) fn artifacts(
     definition: &Path,
     store: &Path,
@@ -1413,16 +1533,14 @@ pub(crate) fn artifacts(
     let definition = load_definition(definition)?;
     let feedback_path = late_feedback_store(config)?;
     let (runtime, pending) = open_existing(store, &definition)?;
-    let runtime = if matches!(
-        &command,
-        ArtifactCommand::Apply { .. } | ArtifactCommand::Publish { .. }
-    ) {
-        match integration_verifier(store, &definition, config)? {
-            Some(verifier) => runtime.with_capability_proof_verifier(verifier),
-            None => runtime,
-        }
-    } else {
-        runtime
+    let verifier = match &command {
+        ArtifactCommand::Publish { .. } => publication_verifier(store, &definition, config)?,
+        ArtifactCommand::Apply { .. } => integration_verifier(store, &definition, config)?,
+        _ => None,
+    };
+    let runtime = match verifier {
+        Some(verifier) => runtime.with_capability_proof_verifier(verifier),
+        None => runtime,
     };
     let integration = |outcome| {
         crate::execution_feedback::record_fact(
@@ -1521,6 +1639,150 @@ mod adapter_configuration_tests {
             "node_id":"execute","request":"request.json"}),
         )
         .unwrap()
+    }
+    #[cfg(feature = "codex")]
+    #[test]
+    fn publication_verifier_refreshes_config_and_executable_between_checks() {
+        use router_adapter_api::{
+            CapabilityAttemptOutcome, CapabilityProofKey, CapabilityProofRecord,
+            CapabilityProofTier, CapabilityProofVerifier, EvidenceKind, EvidenceSource,
+        };
+        use std::os::unix::fs::PermissionsExt;
+        for expired in [false, true] {
+            let clock =
+                crate::inspect::current_time(None).unwrap_or_else(|e| panic!("{}", e.code()));
+            let temp = tempfile::tempdir().unwrap();
+            let store = temp.path().join("store");
+            std::fs::create_dir(&store).unwrap();
+            std::fs::set_permissions(&store, std::fs::Permissions::from_mode(0o700)).unwrap();
+            let secret = [42u8; 32];
+            std::fs::write(store.join("approval.key"), secret).unwrap();
+            std::fs::set_permissions(
+                store.join("approval.key"),
+                std::fs::Permissions::from_mode(0o600),
+            )
+            .unwrap();
+            let binary = temp.path().join("fixture-binary");
+            std::fs::write(&binary, b"original fake executable").unwrap();
+            let config_path = temp.path().join("config.json");
+            let mut config = config_value();
+            config["output_retention"] =
+                serde_json::to_value(router_types::OutputRetentionPolicy::default()).unwrap();
+            config["programs"]["codex"] = json!(binary);
+            config["helper"] = json!(binary);
+            config["bubblewrap"] = json!(binary);
+            std::fs::write(&config_path, serde_json::to_vec(&config).unwrap()).unwrap();
+            let mut observation: HostObservation = serde_json::from_str(include_str!(
+                "../../../fixtures/examples/phase-snapshot.json"
+            ))
+            .unwrap();
+            observation.evidence.clear();
+            let binding = capability_binding(
+                &sandbox(&config_path).unwrap_or_else(|e| panic!("{}", e.code())),
+                &observation.host,
+                "fixture-v1",
+                std::collections::BTreeSet::from(["src".into()]),
+                false,
+            )
+            .unwrap_or_else(|e| panic!("{}", e.code()));
+            let mut proofs = router_runtime::CapabilityProofStore::create(&store).unwrap();
+            let proof = CapabilityProofKey::derive(&secret, proofs.store_id())
+                .unwrap()
+                .authenticate(CapabilityProofRecord {
+                    schema_version: 1,
+                    proof_id: "refresh-fixture".into(),
+                    sequence: 1,
+                    store_id: proofs.store_id().into(),
+                    capability: router_types::Capability::WorkspaceWrite,
+                    tier: CapabilityProofTier::Proven,
+                    network_scope: None,
+                    binding,
+                    model_id: "fixture-model".into(),
+                    nonce_sha256: "7".repeat(64),
+                    expected_effect_sha256: "8".repeat(64),
+                    started_at_unix_seconds: clock - 20,
+                    ended_at_unix_seconds: clock - 10,
+                    max_age_seconds: if expired { 5 } else { 1000 },
+                    outcome: CapabilityAttemptOutcome::Succeeded,
+                })
+                .unwrap();
+            proofs.append(&proof, &secret).unwrap();
+            let source = EvidenceSource {
+                id: proof.record.proof_id.clone(),
+                kind: EvidenceKind::HostRuntime,
+                observed_version: Some("fixture-v1".into()),
+                observed_at_unix_seconds: clock - 10,
+                content_sha256: proof.digest().unwrap(),
+            };
+            let verifier = PublicationVerifier::new(
+                &store,
+                &config_path,
+                observation.clone(),
+                vec!["src".into()],
+                false,
+            )
+            .unwrap_or_else(|e| panic!("{}", e.code()));
+            if expired {
+                assert!(
+                    verifier
+                        .verify(
+                            &source,
+                            router_types::Capability::WorkspaceWrite,
+                            &observation.host,
+                            clock - 9
+                        )
+                        .is_err(),
+                    "publication reused caller clock after refreshing pins"
+                );
+                continue;
+            }
+            assert!(
+                verifier
+                    .verify(
+                        &source,
+                        router_types::Capability::WorkspaceWrite,
+                        &observation.host,
+                        clock - 9
+                    )
+                    .is_ok()
+            );
+            std::fs::write(&binary, b"replacement executable").unwrap();
+            assert!(
+                verifier
+                    .verify(
+                        &source,
+                        router_types::Capability::WorkspaceWrite,
+                        &observation.host,
+                        clock - 9
+                    )
+                    .is_err(),
+                "publication reused old executable pins"
+            );
+            std::fs::write(&binary, b"original fake executable").unwrap();
+            assert!(
+                verifier
+                    .verify(
+                        &source,
+                        router_types::Capability::WorkspaceWrite,
+                        &observation.host,
+                        clock - 9
+                    )
+                    .is_ok()
+            );
+            config["limits"]["max_file_bytes"] = json!(2048);
+            std::fs::write(&config_path, serde_json::to_vec(&config).unwrap()).unwrap();
+            assert!(
+                verifier
+                    .verify(
+                        &source,
+                        router_types::Capability::WorkspaceWrite,
+                        &observation.host,
+                        clock - 9
+                    )
+                    .is_err(),
+                "publication reused old configuration pins"
+            );
+        }
     }
     #[test]
     fn absent_optional_host_config_keeps_legacy_approval_serialization() {

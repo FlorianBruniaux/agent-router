@@ -5,6 +5,14 @@
 conserve les constats, leurs sources et le hash de la version auditée.
 Il s'agit d'un plan de livraison, pas d'une déclaration de fonctionnalités actives.
 
+## Publication simulée du 8 octobre 2026
+
+La [PR #144](https://github.com/FlorianBruniaux/agent-router/pull/144) est fusionnée à `5ba1a694daae90ddb03552f445f31465a64e8ed6`. Ses 11 contrôles GitHub ont réussi. Une correction simulée est vérifiée sur le candidat puis sur sa révision Git publiée, sans modifier les fichiers de travail. Cette publication ne constitue ni une acceptation humaine ni une preuve du parcours Codex complet.
+
+La PR #145 concurrente reste hors de `main`. La comparaison indépendante a reproduit quatre refus manquants dans #144 : transport Git implicite, référence symbolique pendante remplacée, binaire accepté et gros blob traité avant limite. Le correctif complémentaire conserve l’API existante et ajoute les protections ainsi que la revalidation des bindings au dernier contrôle. Le diagnostic d’arrêt vérifie aussi les descendants, au-delà du leader et des sorties fermées.
+
+Suite : qualifier la composition native F12a/F02b, raccorder les mesures puis obtenir l’admission F03b et le manifeste du premier essai réel. L’application multi-fichier directe conserve ses limites ; #132 reste ouvert. Les sections suivantes gardent leurs preuves historiques.
+
 ## Qualification locale du 8 octobre 2026
 
 Le [client Codex dédié](owned-entry-qualification-2026-10-08/README.md) passe trois scénarios natifs avec fournisseur simulé : un envoi autorisé, zéro envoi après refus, annulation et nettoyage du relais absent. Le [rapport lié aux sources](verification-owned-client-2026-10-08.json) conserve les contrôles, revues et échecs initiaux, dont un arrêt de groupe non confirmé au premier contrôle immédiat. Aucun appel payant n’a été effectué. Les 24 contrôles locaux sélectionnés passent : 1 636 résultats Rust workspace plus un contrôle du cœur et 355 tests Python. Les nombres Rust additionnent les résultats, sous-processus compris ; les 42 tests natifs Rust ignorés ne sont pas des succès. Les sources restent identiques pendant la passe complète.

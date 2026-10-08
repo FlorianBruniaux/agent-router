@@ -188,6 +188,18 @@ async fn cli_checks_the_saved_diff_publishes_once_and_reports_changed_ref_as_unk
             "--approve",
             review["approval_digest"].as_str().unwrap(),
         ]);
+    let configuration_path = f.root.join("sandbox.json");
+    let configuration_bytes = fs::read(&configuration_path).unwrap();
+    let mut changed: Value = serde_json::from_slice(&configuration_bytes).unwrap();
+    changed["limits"]["max_file_bytes"] = json!(2048);
+    write(&configuration_path, &changed);
+    let changed_configuration = publish.output().unwrap();
+    assert!(!changed_configuration.status.success());
+    assert_eq!(
+        checked(&mut artifact(&f, "publication-status"), 0)["publication"]["state"],
+        "not_attempted"
+    );
+    fs::write(&configuration_path, configuration_bytes).unwrap();
     let receipt = checked(&mut publish, 0)["publication"].clone();
     assert_eq!(fs::read(f.repo.join("src/base.txt")).unwrap(), b"base\n");
     assert_eq!(

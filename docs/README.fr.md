@@ -10,6 +10,8 @@ sauf celles marquées (FR).
 
 [Plan de finalisation actuel](bench/finalization-plan-2026-10-07.md) (FR), 2026-10-07 : ordre des livraisons, critères de réussite, essai réel et publication. Travail planifié, sans preuve d’activation.
 
+[Vérification de la publication](bench/verification-publication-hardening-2026-10-08.json), 2026-10-08 : 24 contrôles locaux, régressions négatives conservées et revue indépendante. La composition native et l’admission d’un fournisseur réel restent ouvertes.
+
 | Page | Contenu |
 | --- | --- |
 | [Essai expérimental](experimental-release.md) (EN) | 2026-10-07 : candidat source, exemple hors ligne et limites des preuves par host ; sans annonce de publication |

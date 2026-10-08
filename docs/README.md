@@ -10,6 +10,8 @@ written in French.
 
 [Current finalization plan](bench/finalization-plan-2026-10-07.md) (FR), 2026-10-07: delivery order, pass conditions, real-trial and publication boundaries. Planned work, not activation evidence.
 
+[Verified publication checks](bench/verification-publication-hardening-2026-10-08.json), 2026-10-08: 24 local checks, retained negative regressions and independent review. Native composition and real-provider admission remain open.
+
 | Page | What it covers |
 | --- | --- |
 | [Experimental onboarding](experimental-release.md) | 2026-10-07: source candidate, offline example and host evidence limits; publication not implied |

@@ -35,11 +35,16 @@ artifact, files, modes, tree, commit, verifier record and exact displayed diff.
 Publication requires the separate digest, Integrate permission, allowed Integrate
 mutation, and current capability evidence. CLI mutation reconstructs live proof pins from
 its explicit `--config` sandbox configuration; historical reopen alone cannot
-satisfy this gate. Existing object/ref/log directory symlinks are refused before
+satisfy this gate. Publication rebuilds executable and configuration bindings at
+each verification, including the final pre-effect check. These reads do not lock
+those files against an unrelated concurrent writer after the check. Existing object/ref/log directory symlinks are refused before
 Git mutation. Consume one durable `integration.intent`
 in the existing hash journal before publication. Use Git's create-only ref
 transaction with `--no-deref` for `refs/agent-router/integrations/<approval>`.
-A pre-existing ref or symbolic indirection cannot redirect the write to a branch.
+A pre-existing symbolic destination, including a dangling one, is explicitly
+refused before that transaction. `--no-deref` alone does not preserve a dangling
+symbolic ref on Git 2.50.1. Competing managed direct-ref publications use the Git
+transaction; unrelated writers racing to change this namespace are excluded.
 Git serializes competing creation even when requests use separate runtime stores.
 No new store, schema migration, provider, global hook or dependency is introduced.
 
@@ -78,7 +83,13 @@ Support is bounded to a 16 MiB captured patch, UTF-8 review diff, 1,024 changed
 regular files and 64 KiB of total path text. Git preserves only its executable-bit
 modes, not arbitrary POSIX permission bits. The review-file CLI reader is bounded
 to 128 MiB to permit JSON escaping of the patch. Every Git capture retains the
-existing elapsed/output ceilings and repository-filter refusal.
+existing elapsed/output ceilings and repository-filter refusal. Publication also
+refuses promisor/partial-clone configuration and disables implicit Git fetching,
+hooks, fsmonitor and maintenance. Binary patches and rename/copy extended headers
+are unsupported. Before cached application, the source-tree inventory is limited
+to 100,000 entries and the sum of changed source blob sizes plus patch bytes to
+16 MiB. Changed result blobs have a separate aggregate 16 MiB ceiling before
+commit creation. These checks do not impose an OS memory or disk quota.
 
 Local repository identities detect substitutions before publication. These checks
 do not certify adversarial replacement of Git metadata during a Git subprocess,

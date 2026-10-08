@@ -525,11 +525,66 @@ class AppServer:
             reader.is_alive() for reader in (self.stdout_thread, self.stderr_thread)
         ):
             raise FixtureError("app-server processes or output readers did not stop")
+        # EOF and a reaped leader do not prove that descendants have finished
+        # processing SIGKILL. Preserve the same cleanup deadline while observing
+        # the whole original group, including descendants which closed pipes.
+        _wait_group_stopped(self.process.pid, deadline)
         for stream in (self.process.stdout, self.process.stderr):
             if stream is not None:
                 stream.close()
 
         return self.process.returncode
+
+
+def _group_stopped(group_pid: int, deadline: float) -> bool:
+    try:
+        os.killpg(group_pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    if sys.platform != "linux":
+        return False
+    # Linux can retain killed orphan zombies until PID 1 reaps them. This
+    # fixture requires a fully observable same-user group (no hidden /proc
+    # members). Live, stopped or unreadable members never count as cleanup.
+    found = False
+    try:
+        with os.scandir("/proc") as entries:
+            for count, entry in enumerate(entries):
+                if count >= 65536 or time.monotonic() >= deadline:
+                    return False
+                if not entry.name.isdecimal():
+                    continue
+                try:
+                    fields = (Path(entry) / "stat").read_text(encoding="utf-8").rsplit(")", 1)[1].split()
+                except FileNotFoundError:
+                    continue
+                if int(fields[2]) == group_pid:
+                    found = True
+                    if fields[0] != "Z":
+                        return False
+    except (OSError, ValueError, IndexError, UnicodeError):
+        return False
+    if found:
+        return True
+    # All members might have been reaped during the scan. An existing group
+    # with no visible member remains unproven (for example, restricted /proc).
+    try:
+        os.killpg(group_pid, 0)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        pass
+    return False
+
+
+def _wait_group_stopped(group_pid: int, deadline: float) -> None:
+    while not _group_stopped(group_pid, deadline):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise FixtureError("app-server descendant cleanup could not be verified")
+        time.sleep(min(0.01, remaining))
 
 
 def _kill_group(process: subprocess.Popen[bytes]) -> None:
