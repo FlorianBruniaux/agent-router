@@ -29,7 +29,7 @@ impl Default for ResourceLimits {
     }
 }
 impl ResourceLimits {
-    fn args(&self) -> Result<Vec<String>> {
+    pub(crate) fn args(&self) -> Result<Vec<String>> {
         if !(1..=86_400).contains(&self.cpu_seconds)
             || self.address_space_bytes.is_some_and(|value| {
                 !(64 * 1024 * 1024..=1024 * 1024 * 1024 * 1024).contains(&value)

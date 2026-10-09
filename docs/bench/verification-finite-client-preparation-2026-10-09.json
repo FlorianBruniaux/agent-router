@@ -1,0 +1,941 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-09",
+  "scope": "Finite-client state, concrete resource binding and private launch preview; no native execution",
+  "tested_parent_head": "4b2e3a76e61b93694b077795c7107deae7be7b58",
+  "platform": "macOS-26.5.1-arm64-arm-64bit-Mach-O",
+  "full_ci_equivalent": false,
+  "coverage_gaps": [
+    "This run covers one host only; the other CI operating system is not evidenced.",
+    "Container/release workflows and real provider integrations are outside this runner."
+  ],
+  "frozen_source_sha256": "7fbccf6eeabd321954d0f2c946bf396022a332b6836045436a7f10a4b93cd453",
+  "source_inventory_sha256": "06fd12a67148e5dbb191777f1d1cd4291ea7ecbed06bbe87ddcd17e7d54ba857",
+  "source_unchanged_during_gate": true,
+  "checked_source_files": {
+    "crates/router-runtime/src/finite_client.rs": {
+      "sha256": "2cc0f4b667cf5cd03649815b067a5df141d9cbaf2952fb7d1e9c83edb055ed0e",
+      "mode": "0o644"
+    },
+    "crates/router-runtime/src/host_state.rs": {
+      "sha256": "ddbb72d80896c2989bbeb6baff2fa05cd3e4d902eb50370ec66a34e3ab7497d5",
+      "mode": "0o644"
+    },
+    "crates/router-runtime/src/lib.rs": {
+      "sha256": "e57e8cfba923deed07c12f9238b6fa94fe329f70f201e4757253ba16b5d93430",
+      "mode": "0o644"
+    },
+    "crates/router-runtime/src/resources.rs": {
+      "sha256": "c734901d76889c964d2ac34e9a5541fa4bf01b9cb6d307d87dfbcf99310f5738",
+      "mode": "0o644"
+    },
+    "crates/router-runtime/tests/finite_client.rs": {
+      "sha256": "930fd8f6af9cee7221582c4080ac84dec05d042dbcb16717e19d6a6aca2f2dee",
+      "mode": "0o644"
+    },
+    "docs/adr/0028-finite-client-preparation.md": {
+      "sha256": "5549043d93fb3fa8bba73f0e51f1aac970b9bd4ef904a709bee686cb6c4dae40",
+      "mode": "0o644"
+    },
+    "docs/reference/json-contracts.md": {
+      "sha256": "d989523c98d74cbec6ba1ab61cf557cffc17da9e63a5f2436bcda92aad446b55",
+      "mode": "0o644"
+    }
+  },
+  "evidence_added_after_gate": true,
+  "post_gate_evidence_only_changes": [
+    {
+      "path": "docs/adr/0028-finite-client-preparation.md",
+      "before_sha256": "5549043d93fb3fa8bba73f0e51f1aac970b9bd4ef904a709bee686cb6c4dae40",
+      "after_sha256": "11897cd2bc6095043d8895ed25dee60846f02204722b443ccd7e3086f73d6240",
+      "change": "Link to second verification report"
+    },
+    {
+      "path": "docs/bench/verification-finite-client-preparation-2026-10-09.json",
+      "change": "New metadata report only"
+    }
+  ],
+  "runner_sha256": "cfad6a90f13cd927b9d8f827fdd6852f0965b37440f1f991ededc4723af20606",
+  "checks": [
+    {
+      "id": "format",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 2.222845,
+      "log": "format.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 9.317391,
+      "log": "clippy-all.log",
+      "log_sha256": "36898e0fe1951cc92895006da3837a05ba1ca936c21c7f2ade0b03ff98ec706b"
+    },
+    {
+      "id": "clippy-core",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--no-default-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 11.619494,
+      "log": "clippy-core.log",
+      "log_sha256": "5bebe788d9a444a7be135629b46b22c6ab62fa5c84b4443331332bf40e69edd7"
+    },
+    {
+      "id": "workspace-tests",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 468.586505,
+      "log": "workspace-tests.log",
+      "log_sha256": "93ededb085e8d24f41ba7524fc2ff4df4259eea29d308bf95e9663636a740613",
+      "tests_passed_or_run": 1714,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "local-api-absent",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--no-default-features",
+        "--locked",
+        "--test",
+        "local_api_absent"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 14.073764,
+      "log": "local-api-absent.log",
+      "log_sha256": "af0ccc8c5e605b5e9ea6bf7676a8e6be53c6801c63a89c60aa4b820e64d22e53",
+      "tests_passed_or_run": 1,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "harness",
+      "group": "quality",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.882628,
+      "log": "harness.log",
+      "log_sha256": "80b134bd7e07dd1b6f9e5fdd928f67570dfbad7c2891ce071d2909e41f274c9d"
+    },
+    {
+      "id": "host-syntax",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.074613,
+      "log": "host-syntax.log",
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-benchmark-startup.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.18311,
+      "log": "script-test-benchmark-startup.log",
+      "log_sha256": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678",
+      "tests_passed_or_run": 3,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-check-adrs",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-check-adrs.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.13269,
+      "log": "script-test-check-adrs.log",
+      "log_sha256": "57c642ced145c8c53cdd3d407dc1299ade504e87445af67c5d217c3445703d29",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-check-local",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 7.993924,
+      "log": "script-test-check-local.log",
+      "log_sha256": "bf8fc5d18ec02cf1dca8fd14b5324ad9c7985e5a9e57ee6707a37076d4ab8faa",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-package-binary",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-package-binary.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.390445,
+      "log": "script-test-package-binary.log",
+      "log_sha256": "7975fe786ecff8dfbefb7a3e105037467441a465a6796678b041e1570877e083",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-package-core",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-package-core.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.238299,
+      "log": "script-test-package-core.log",
+      "log_sha256": "1442363021eba5bfad10df6371a459d2a263e7bc86ebd39c136382710da251b3",
+      "tests_passed_or_run": 26,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "script-test-release-local",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "scripts/test-release-local.py"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 14.632856,
+      "log": "script-test-release-local.log",
+      "log_sha256": "760db4ccb0e70fe06c6c6551233cf6997de1e97f7ddd511454fee1a328d50267",
+      "tests_passed_or_run": 27,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "egress-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/egress-admission",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 14.868907,
+      "log": "egress-tests.log",
+      "log_sha256": "6f7c104b6f8023bae856b6c6783b7c05c42ccd74a017dc9d6a02136457b7a6ad",
+      "tests_passed_or_run": 58,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-probe-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u02",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 8.506524,
+      "log": "native-probe-tests.log",
+      "log_sha256": "8409072399e490976dac5801880ea6962e64347cfd49a4f82ccb423f26e4c62d",
+      "tests_passed_or_run": 33,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-decision-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u06",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 4.390263,
+      "log": "native-decision-tests.log",
+      "log_sha256": "5ea75e3c2b5d35e4066aaf9f37976491f051d85a563c0fa22f3ed2585f891170",
+      "tests_passed_or_run": 13,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/native-integration-u07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 6.378619,
+      "log": "native-hook-failure-tests.log",
+      "log_sha256": "d6c7a30890d01e53abfc634073738c11d818f2876707dc4f4dd8a16fcf1110cf",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "campaign-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/campaign-next/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 1.155709,
+      "log": "campaign-tests.log",
+      "log_sha256": "be6927f8422b024a5da6afaddf8f0a34e5a6a4e04a68092072f76b35b43ec31f",
+      "tests_passed_or_run": 17,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "calibration-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/calibration-v2/tests",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 5.539474,
+      "log": "calibration-tests.log",
+      "log_sha256": "35b0bbff80de4bdb82b4642dc65afd8ac5acf1fc2b65934cdc0ac549b47d88f5",
+      "tests_passed_or_run": 30,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "physical-send-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.619635,
+      "log": "physical-send-tests.log",
+      "log_sha256": "2c8e95fcfa69caebbb5194b292c6a8d07732ce6f17ddd0f3724baf7cf279af16",
+      "tests_passed_or_run": 12,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "startup-outage-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.078261,
+      "log": "startup-outage-tests.log",
+      "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4",
+      "tests_passed_or_run": 8,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "owned-entry-tests",
+      "group": "quality",
+      "argv": [
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/owned-entry-qualification-2026-10-08",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "/opt/homebrew/Cellar/python@3.14/3.14.8/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/owned-entry-qualification-2026-10-08",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.350262,
+      "log": "owned-entry-tests.log",
+      "log_sha256": "cba1f12c503daa4533004f3255b070e804cad2798cb120c7ff84b12d6a48379d",
+      "tests_passed_or_run": 44,
+      "python_tests_skipped": 0
+    },
+    {
+      "id": "secrets-dir",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.673265,
+      "log": "secrets-dir.log",
+      "log_sha256": "adc4a5be89a970ffc79f36e974700efde02050ad271653166e20fa1e9ac03b12"
+    },
+    {
+      "id": "secrets-git",
+      "group": "quality",
+      "argv": [
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "executed_argv": [
+        "/opt/homebrew/bin/rtk",
+        "proxy",
+        "gitleaks",
+        "git",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 4.297664,
+      "log": "secrets-git.log",
+      "log_sha256": "2d722acd944617acaf5d5ae3fad96cd4cc3a94623ffb4e8900ba09e9225b5d3d"
+    }
+  ],
+  "counts": {
+    "selected_local_checks": 24,
+    "focused_contract_tests": 28,
+    "resource_approval_regressions": 1,
+    "rust_successful_result_line_sum": 1714,
+    "rust_ignored_result_line_sum": 42,
+    "rust_count_is_not_unique_test_definitions": true,
+    "python_tests": 365
+  },
+  "targeted_logs": [
+    {
+      "log": "ar-finite-next-red.log",
+      "sha256": "b1736d081b720546b6f215ce7a1d884bfe26c7c3389148b15b8bdb81b6139950",
+      "delivery_evidence": false
+    },
+    {
+      "log": "ar-finite-next-green.log",
+      "sha256": "537e30e9924d4a519d028953f79d97d8d00a01902a8c9c52d6aad7facf62d8cb",
+      "delivery_evidence": false
+    },
+    {
+      "log": "ar-finite-next-green2.log",
+      "sha256": "01b08be1e51db5418fe68f2723f9da79e475fd5164ef2f46006ffcfa6b3c8d30",
+      "delivery_evidence": false
+    },
+    {
+      "log": "ar-finite-next-red-preview.log",
+      "sha256": "976537b3e2d0c1b50349ade2e0804e21fcaff0aa70b595e725bc2fbe82ebe674",
+      "delivery_evidence": false
+    },
+    {
+      "log": "ar-finite-next-final-targeted.log",
+      "sha256": "4842246af9c3f2e7510287da5f40bb09ab868735ada02c8351c2bf8e2ebbbb38",
+      "delivery_evidence": false
+    },
+    {
+      "log": "ar-finite-next-final-targeted2.log",
+      "sha256": "b76c89eb4fd19da7a6e36b9fb818702af11a0ba5bd574364622d4b862334e88d",
+      "delivery_evidence": true
+    }
+  ],
+  "new_mutations": [
+    {
+      "name": "resource-approval",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--lib",
+        "same_listener_and_assets_require_new_digest_for_each_resource_change"
+      ],
+      "exit_code": 101,
+      "caught": true,
+      "log": "ar-finite-next-mutation-resource-approval.log",
+      "log_sha256": "e65bb446f1873e70bc27dabcb6c5efcaf36e9548984bab197f0972dde03f99d7"
+    },
+    {
+      "name": "resource-current",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--test",
+        "finite_client",
+        "each_changed_resource_limit_is_refused_by_fresh_preparation"
+      ],
+      "exit_code": 101,
+      "caught": true,
+      "log": "ar-finite-next-mutation-resource-current.log",
+      "log_sha256": "cf4a8d6208b9970683154134106b605e4384575e0d9855152e01368b9185e9d3"
+    },
+    {
+      "name": "configuration-binding",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--test",
+        "finite_client",
+        "configuration_generated_for_another_model_or_listener_cannot_be_reviewed"
+      ],
+      "exit_code": 101,
+      "caught": true,
+      "log": "ar-finite-next-mutation-configuration-binding.log",
+      "log_sha256": "2898f205e962ae52a842c7ecee0baa911dbf5c1becea4355858804946fda43b2"
+    },
+    {
+      "name": "preview-refresh",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--test",
+        "finite_client",
+        "launch_preview_refuses_workspace_change_after_guard_validation"
+      ],
+      "exit_code": 101,
+      "caught": true,
+      "log": "ar-finite-next-mutation-preview-refresh.log",
+      "log_sha256": "5af8fcbe2fd6973de9d16651fd5a8ba2e4deef7c61ab5083e37e6add11c06b61"
+    }
+  ],
+  "mutated_source_restored_before_gate": true,
+  "red_evidence": {
+    "first": "Three real assertion/feature-refusal failures: invalid resource limits, changed limits and absent owned-state producer",
+    "preview": "A changed workspace after validation still produced a preview before the freshness fix",
+    "fixture_correction": "The initial state fixture used a store ancestor of the workspace; corrected to a disjoint private store without changing assertions",
+    "non_delivery_run": "final-targeted.log stopped on a refactor typo; final-targeted2.log and the frozen full gate passed"
+  },
+  "authority": {
+    "independent_review": "NOT_ESTABLISHED",
+    "native_configuration_consumption": "NOT_OBSERVED",
+    "native_process_launch": "NOT_ATTEMPTED",
+    "os_and_resource_enforcement": "NOT_QUALIFIED",
+    "controller_broker_only": "UNSUPPORTED",
+    "F12a": "NO_GO",
+    "F02b": "NOT_ATTEMPTED",
+    "provider_send": "NOT_ATTEMPTED",
+    "measured_saving": "UNKNOWN"
+  },
+  "limits": [
+    "The preview cannot deserialize or convert to a process command.",
+    "The helper/Seatbelt wrapper preview is available only on macOS.",
+    "Default resource limits retain requested memory; flags do not prove enforcement.",
+    "Executable immutable views, verified supervision and worker-protocol/runtime wiring remain open.",
+    "A caller must obtain fresh validation after a relevant context change or delay.",
+    "Filesystem validation and any future path-based exec remain separate operations."
+  ]
+}

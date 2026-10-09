@@ -5,7 +5,7 @@ use router_adapter_api::{
     CapabilityProofTier, EvidenceKind, EvidenceSource, content_digest,
 };
 use router_runtime::{
-    ApprovedFiniteClient, CapabilityProofStore, FiniteClientReview, OwnedBroker,
+    ApprovedFiniteClient, CapabilityProofStore, FiniteClientReview, OwnedBroker, ResourceLimits,
     StoredCapabilityProofVerifier,
 };
 use router_types::*;
@@ -120,6 +120,25 @@ impl Fixture {
     }
     fn approve(&mut self) -> ApprovedFiniteClient {
         let review = self.review();
+        let digest = review.approval_digest().to_owned();
+        review.approve(&digest).unwrap()
+    }
+    fn approve_codex(&mut self, limits: ResourceLimits) -> ApprovedFiniteClient {
+        let broker = self.broker.take().unwrap();
+        let store = self.root.join("preparation");
+        fs::create_dir(&store).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let state = broker.prepare_codex_state(&store, &self.run).unwrap();
+        self.manifest.configuration = state.configuration().clone();
+        self.manifest.private_state = state.path().to_str().unwrap().into();
+        let review = FiniteClientReview::with_codex_state(
+            self.manifest.clone(),
+            &self.run,
+            broker,
+            limits,
+            state,
+        )
+        .unwrap();
         let digest = review.approval_digest().to_owned();
         review.approve(&digest).unwrap()
     }
@@ -478,4 +497,250 @@ fn authenticated_proof_for_another_host_does_not_change_reviewed_host_identity()
     )
     .unwrap();
     assert!(a.validate(&f.run, &other, &s, &v, 101).is_err());
+}
+
+#[test]
+fn concrete_resource_limits_are_checked_before_review() {
+    let mut f = Fixture::new();
+    let limits = ResourceLimits {
+        cpu_seconds: 0,
+        ..ResourceLimits::default()
+    };
+    assert!(
+        FiniteClientReview::with_resources(
+            f.manifest.clone(),
+            &f.run,
+            f.broker.take().unwrap(),
+            limits
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn each_changed_resource_limit_is_refused_by_fresh_preparation() {
+    let mut f = Fixture::new();
+    let a = f.approve();
+    let (s, v, _) = f.proof(&a);
+    let limits = ResourceLimits::default();
+    assert!(
+        a.validate_with_resources(&f.run, &f.host, &s, &v, 101, &limits)
+            .is_ok()
+    );
+    for changed in [
+        ResourceLimits {
+            cpu_seconds: 301,
+            ..limits.clone()
+        },
+        ResourceLimits {
+            address_space_bytes: None,
+            ..limits.clone()
+        },
+        ResourceLimits {
+            max_open_files: 257,
+            ..limits.clone()
+        },
+        ResourceLimits {
+            max_processes: 257,
+            ..limits.clone()
+        },
+        ResourceLimits {
+            max_file_bytes: 1024,
+            ..limits.clone()
+        },
+    ] {
+        assert!(
+            a.validate_with_resources(&f.run, &f.host, &s, &v, 101, &changed)
+                .is_err()
+        );
+    }
+}
+
+#[test]
+fn owned_codex_state_produces_private_config_and_survives_until_approval_drop() {
+    let mut f = Fixture::new();
+    let broker = f.broker.take().unwrap();
+    let store = f.root.join("preparation");
+    fs::DirBuilder::new()
+        .recursive(false)
+        .create(&store)
+        .unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let state = broker.prepare_codex_state(&store, &f.run).unwrap();
+    let home = state.path().to_owned();
+    let config = state.configuration().clone();
+    assert_eq!(
+        fs::metadata(&home).unwrap().permissions().mode() & 0o777,
+        0o700
+    );
+    assert_eq!(
+        fs::metadata(&config.path).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    let text = fs::read_to_string(&config.path).unwrap();
+    assert!(text.contains("model = \"fixture-model\""));
+    assert!(text.contains("model_reasoning_effort = \"low\""));
+    assert!(text.contains(&format!(
+        "base_url = \"http://{}/v1\"",
+        broker.endpoint().strip_prefix("tcp://").unwrap()
+    )));
+    assert!(text.contains("request_max_retries = 0"));
+    assert!(text.contains("shell_tool = false"));
+    assert!(!home.join("auth.json").exists());
+    f.manifest.configuration = config;
+    f.manifest.private_state = home.to_str().unwrap().into();
+    let review = FiniteClientReview::with_codex_state(
+        f.manifest.clone(),
+        &f.run,
+        broker,
+        ResourceLimits::default(),
+        state,
+    )
+    .unwrap();
+    let digest = review.approval_digest().to_owned();
+    let a = review.approve(&digest).unwrap();
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    if cfg!(target_os = "macos") {
+        let plan = guard.launch_plan().unwrap();
+        let value = serde_json::to_value(&plan).unwrap();
+        assert_eq!(value["supervised"]["program"], f.manifest.helper.path);
+        assert_eq!(
+            value["supervised"]["argv"],
+            serde_json::json!([
+                "--cpu-seconds",
+                "300",
+                "--address-space-bytes",
+                "8589934592",
+                "--max-open-files",
+                "256",
+                "--max-processes",
+                "256",
+                "--max-file-bytes",
+                "16777216",
+                "--supervise-v1",
+                f.manifest.wrapper.path,
+                "-f",
+                f.manifest.profile.path,
+                f.manifest.client.path,
+                "--worker"
+            ])
+        );
+        assert_eq!(value["native"]["program"], f.manifest.native.path);
+        assert_eq!(
+            value["native"]["argv"],
+            serde_json::json!(["app-server", "--listen", "stdio://"])
+        );
+        assert_eq!(
+            value["native"]["environment"]["CODEX_HOME"],
+            f.manifest.private_state
+        );
+        assert_eq!(value["native"]["environment"].as_object().unwrap().len(), 4);
+        assert_eq!(
+            value["stdin_sha256"],
+            content_digest(f.run.stdin.as_bytes())
+        );
+        assert!(
+            !serde_json::to_string(&plan)
+                .unwrap()
+                .contains("PRIVATE_TASK_CANARY")
+        );
+    } else {
+        assert!(guard.launch_plan().is_err());
+    }
+    assert!(home.exists());
+    drop(a);
+    assert!(!home.exists());
+}
+
+#[test]
+fn state_production_refuses_task_workspace_before_creating_files() {
+    let f = Fixture::new();
+    let broker = f.broker.as_ref().unwrap();
+    fs::set_permissions(&f.run.cwd, fs::Permissions::from_mode(0o700)).unwrap();
+    let before = fs::read_dir(&f.run.cwd).unwrap().count();
+    assert!(
+        broker
+            .prepare_codex_state(PathBuf::from(&f.run.cwd).as_path(), &f.run)
+            .is_err()
+    );
+    assert_eq!(fs::read_dir(&f.run.cwd).unwrap().count(), before);
+}
+
+#[test]
+fn manifest_only_review_cannot_present_a_native_launch_plan() {
+    let mut f = Fixture::new();
+    let a = f.approve();
+    let (s, v, _) = f.proof(&a);
+    assert!(
+        a.validate(&f.run, &f.host, &s, &v, 101)
+            .unwrap()
+            .launch_plan()
+            .is_err()
+    );
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn launch_preview_refuses_workspace_change_after_guard_validation() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    assert!(guard.launch_plan().is_ok());
+    fs::set_permissions(&f.run.cwd, fs::Permissions::from_mode(0o700)).unwrap();
+    assert!(guard.launch_plan().is_err());
+}
+
+#[test]
+fn generated_tmp_directory_substitution_and_shared_modes_refuse() {
+    for mode_change in [false, true] {
+        let mut f = Fixture::new();
+        let a = f.approve_codex(ResourceLimits::default());
+        let (s, v, _) = f.proof(&a);
+        assert!(a.validate(&f.run, &f.host, &s, &v, 101).is_ok());
+        let tmp = PathBuf::from(&f.manifest.private_state).join("tmp");
+        if mode_change {
+            fs::set_permissions(&tmp, fs::Permissions::from_mode(0o755)).unwrap();
+        } else {
+            fs::rename(&tmp, tmp.with_file_name("previous-tmp")).unwrap();
+            fs::create_dir(&tmp).unwrap();
+            fs::set_permissions(&tmp, fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        assert!(a.validate(&f.run, &f.host, &s, &v, 101).is_err());
+    }
+}
+
+#[test]
+fn configuration_generated_for_another_model_or_listener_cannot_be_reviewed() {
+    for changed_listener in [false, true] {
+        let mut f = Fixture::new();
+        let broker = f.broker.take().unwrap();
+        let store = f.root.join("preparation");
+        fs::create_dir(&store).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let state = broker.prepare_codex_state(&store, &f.run).unwrap();
+        f.manifest.configuration = state.configuration().clone();
+        f.manifest.private_state = state.path().to_str().unwrap().into();
+        let broker = if changed_listener {
+            let b =
+                OwnedBroker::from_listener(TcpListener::bind(("127.0.0.1", 0)).unwrap()).unwrap();
+            f.manifest.broker_endpoint = b.endpoint().into();
+            f.manifest.broker_instance_sha256 = b.instance_sha256().into();
+            b
+        } else {
+            f.run.requested_model = ModelId::parse("other-model").unwrap();
+            broker
+        };
+        assert!(
+            FiniteClientReview::with_codex_state(
+                f.manifest,
+                &f.run,
+                broker,
+                ResourceLimits::default(),
+                state
+            )
+            .is_err()
+        );
+    }
 }

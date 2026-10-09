@@ -1,5 +1,5 @@
 //! Review-bound finite-client preparation. Never OS or provider admission.
-use crate::{Result, RuntimeError, StoredCapabilityProofVerifier};
+use crate::{HostState, ResourceLimits, Result, RuntimeError, StoredCapabilityProofVerifier};
 use router_adapter_api::{
     CapabilityProofBinding, CapabilityProofTier, CapabilityProofVerifier, EvidenceSource,
     content_digest, is_digest,
@@ -9,11 +9,11 @@ use router_types::{
     HostSnapshot, PreparedRun,
 };
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File, OpenOptions},
-    io::Read,
+    io::{Read, Write},
     net::{IpAddr, Ipv4Addr, TcpListener},
-    os::unix::fs::{MetadataExt, OpenOptionsExt},
+    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     path::Path,
 };
 
@@ -226,6 +226,8 @@ pub struct FiniteClientReview {
     identities: Vec<PinnedIdentity>,
     state_identity: PinnedIdentity,
     workspace_identity: PinnedIdentity,
+    resource_arguments: Vec<String>,
+    owned_state: Option<FiniteCodexState>,
 }
 impl FiniteClientReview {
     pub fn new(
@@ -233,6 +235,16 @@ impl FiniteClientReview {
         run: &PreparedRun,
         broker: OwnedBroker,
     ) -> Result<Self> {
+        Self::with_resources(manifest, run, broker, ResourceLimits::default())
+    }
+    /// Concrete helper arguments are validated and bound into the approval.
+    pub fn with_resources(
+        manifest: FiniteClientManifest,
+        run: &PreparedRun,
+        broker: OwnedBroker,
+        limits: ResourceLimits,
+    ) -> Result<Self> {
+        let resource_arguments = limits.args()?;
         if manifest.schema_version != 1
             || !token(&manifest.task_id, 128)
             || !token(&manifest.host_snapshot_id, 128)
@@ -258,7 +270,12 @@ impl FiniteClientReview {
             ));
         }
         let run_digest = prepared_digest(run)?;
-        let bytes = serde_json::to_vec(&("finite-client-review-v1", &manifest, &run_digest))?;
+        let bytes = serde_json::to_vec(&(
+            "finite-client-review-v2",
+            &manifest,
+            &run_digest,
+            &resource_arguments,
+        ))?;
         if bytes.len() > MAX_CONTRACT {
             return Err(RuntimeError::Limit);
         }
@@ -288,7 +305,8 @@ impl FiniteClientReview {
             .map(|(pin, executable)| file_identity(pin, *executable))
             .collect::<Result<_>>()?;
         let bytes = serde_json::to_vec(&(
-            "finite-client-review-v1",
+            "finite-client-review-v2",
+            &resource_arguments,
             &manifest,
             &run_digest,
             &state_identity.identity,
@@ -310,7 +328,26 @@ impl FiniteClientReview {
             identities,
             state_identity,
             workspace_identity,
+            resource_arguments,
+            owned_state: None,
         })
+    }
+    fn check_files(&self) -> Result<()> {
+        self.broker.check(&self.manifest)?;
+        if let Some(state) = &self.owned_state {
+            state.check(&self.run, &self.broker)?;
+        }
+        if directory(&self.manifest.private_state, true)?.identity != self.state_identity.identity
+            || directory(&self.run.cwd, false)?.identity != self.workspace_identity.identity
+        {
+            return Err(RuntimeError::Integrity("finite client directory changed"));
+        }
+        for ((pin, executable), expected) in pins(&self.manifest).iter().zip(&self.identities) {
+            if file_identity(pin, *executable)?.identity != expected.identity {
+                return Err(RuntimeError::Integrity("finite client file identity"));
+            }
+        }
+        Ok(())
     }
     pub fn approval_digest(&self) -> &str {
         &self.approval
@@ -342,7 +379,7 @@ impl ApprovedFiniteClient {
             host_snapshot_id: host_snapshot_id.into(),
             binary_sha256: m.client.sha256.clone(),
             observed_version: m.native_version.clone(),
-            adapter_id: "finite-client-contract-v1".into(),
+            adapter_id: "finite-client-contract-v2".into(),
             argument_template_sha256: r.approval.clone(),
             sandbox_helper_sha256: m.helper.sha256.clone(),
             sandbox_wrapper_sha256: m.wrapper.sha256.clone(),
@@ -358,7 +395,7 @@ impl ApprovedFiniteClient {
     }
     /// Reopens the live authenticated store and rechecks every input. Callers
     /// must retain the returned borrow through their preparation boundary.
-    /// It does not construct a command, claim an OS canary or authorize a send.
+    /// It does not construct a process, claim an OS canary or authorize a send.
     pub fn validate<'a>(
         &'a self,
         run: &PreparedRun,
@@ -380,17 +417,7 @@ impl ApprovedFiniteClient {
         {
             return Err(RuntimeError::Integrity("finite client current task"));
         }
-        r.broker.check(&r.manifest)?;
-        if directory(&r.manifest.private_state, true)?.identity != r.state_identity.identity
-            || directory(&run.cwd, false)?.identity != r.workspace_identity.identity
-        {
-            return Err(RuntimeError::Integrity("finite client directory changed"));
-        }
-        for ((pin, executable), expected) in pins(&r.manifest).iter().zip(&r.identities) {
-            if file_identity(pin, *executable)?.identity != expected.identity {
-                return Err(RuntimeError::Integrity("finite client file identity"));
-            }
-        }
+        r.check_files()?;
         verifier
             .require_live()
             .map_err(|_| RuntimeError::Integrity("finite client historical proof"))?;
@@ -422,5 +449,319 @@ impl FiniteClientValidation<'_> {
     /// Trusted controller access only. No listener is transferred to the worker.
     pub fn broker_listener(&self) -> &TcpListener {
         &self.approved.reviewed.broker.listener
+    }
+}
+
+/// Runtime-created, credential-free Codex home. Uses the existing HostState
+/// lifecycle, and must be consumed by a review to remain alive with approval.
+pub struct FiniteCodexState {
+    state: HostState,
+    configuration: FiniteClientFile,
+    tmp_identity: PinnedIdentity,
+}
+impl FiniteCodexState {
+    pub fn path(&self) -> &Path {
+        self.state.path()
+    }
+    pub fn configuration(&self) -> &FiniteClientFile {
+        &self.configuration
+    }
+    fn check(&self, run: &PreparedRun, broker: &OwnedBroker) -> Result<()> {
+        let tmp = self.path().join("tmp");
+        let tmp = tmp
+            .to_str()
+            .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
+        if directory(tmp, true)?.identity != self.tmp_identity.identity
+            || self.configuration.sha256 != content_digest(&codex_configuration(run, broker)?)
+        {
+            return Err(RuntimeError::Integrity("finite client owned configuration"));
+        }
+        Ok(())
+    }
+}
+fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8>> {
+    // JSON string escaping is also valid for these bounded ASCII TOML strings.
+    // Reject non-token model names rather than permit configuration injection.
+    if !token(run.requested_model.as_str(), 128) {
+        return Err(RuntimeError::Invalid("finite client configuration model"));
+    }
+    let model = serde_json::to_string(run.requested_model.as_str())?;
+    let effort = serde_json::to_string(&run.requested_effort)?;
+    let address = broker.listener.local_addr()?;
+    let config = format!(
+        "model = {model}\nmodel_provider = \"local_fixture\"\nmodel_reasoning_effort = {effort}\napproval_policy = \"on-request\"\napprovals_reviewer = \"user\"\nsandbox_mode = \"read-only\"\nweb_search = \"disabled\"\n[features]\nshell_tool = false\nunified_exec = false\napps = false\n[model_providers.local_fixture]\nname = \"Finite client preparation, local fixture only\"\nbase_url = \"http://{address}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n"
+    );
+    Ok(config.into_bytes())
+}
+impl OwnedBroker {
+    /// Creates only private local files. No native invocation or provider call.
+    pub fn prepare_codex_state(&self, store: &Path, run: &PreparedRun) -> Result<FiniteCodexState> {
+        prepared_digest(run)?;
+        let store_text = store
+            .to_str()
+            .ok_or(RuntimeError::Invalid("finite client store path"))?;
+        directory(store_text, true)?;
+        // Even a read-only store ancestor would let generated files alias task input.
+        if store.starts_with(&run.cwd) || Path::new(&run.cwd).starts_with(store) {
+            return Err(RuntimeError::Scope);
+        }
+        let bytes = codex_configuration(run, self)?;
+        let state =
+            HostState::create(store, "codex", &BTreeMap::new())?.ok_or(RuntimeError::Sandbox)?;
+        let tmp = state.path().join("tmp");
+        fs::DirBuilder::new().mode(0o700).create(&tmp)?;
+        let path = state.path().join("config.toml");
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o400)
+            .custom_flags(nix::libc::O_NOFOLLOW)
+            .open(&path)?;
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+        let configuration = FiniteClientFile {
+            path: path
+                .to_str()
+                .ok_or(RuntimeError::Invalid("finite client config path"))?
+                .into(),
+            sha256: content_digest(&bytes),
+        };
+        file_identity(&configuration, false)?;
+        let tmp_identity = directory(
+            tmp.to_str()
+                .ok_or(RuntimeError::Invalid("finite client tmp path"))?,
+            true,
+        )?;
+        Ok(FiniteCodexState {
+            state,
+            configuration,
+            tmp_identity,
+        })
+    }
+}
+impl FiniteClientReview {
+    /// Consumes the producer's state. An arbitrary manifest path cannot opt in
+    /// to launch preparation or reconstruct this nonserializable owner.
+    pub fn with_codex_state(
+        manifest: FiniteClientManifest,
+        run: &PreparedRun,
+        broker: OwnedBroker,
+        limits: ResourceLimits,
+        state: FiniteCodexState,
+    ) -> Result<Self> {
+        if Path::new(&manifest.private_state) != state.path()
+            || manifest.configuration != state.configuration
+        {
+            return Err(RuntimeError::Integrity("finite client state binding"));
+        }
+        state.check(run, &broker)?;
+        let mut review = Self::with_resources(manifest, run, broker, limits)?;
+        review.owned_state = Some(state);
+        Ok(review)
+    }
+}
+impl ApprovedFiniteClient {
+    /// Checks the helper's concrete current limits as well as the live contract.
+    #[allow(clippy::too_many_arguments)]
+    pub fn validate_with_resources<'a>(
+        &'a self,
+        run: &PreparedRun,
+        host: &HostSnapshot,
+        source: &EvidenceSource,
+        verifier: &StoredCapabilityProofVerifier,
+        now: u64,
+        limits: &ResourceLimits,
+    ) -> Result<FiniteClientValidation<'a>> {
+        if limits.args()? != self.reviewed.resource_arguments {
+            return Err(RuntimeError::Integrity("finite client resource limits"));
+        }
+        self.validate(run, host, source, verifier, now)
+    }
+}
+
+/// Private review data only. No conversion to Command, execution receipt or grant.
+#[derive(serde::Serialize)]
+pub struct FiniteClientInvocation {
+    program: String,
+    argv: Vec<String>,
+    environment: BTreeMap<String, String>,
+    clear_environment: bool,
+    cwd: String,
+}
+#[derive(serde::Serialize)]
+pub struct FiniteClientLaunchPlan {
+    supervised: FiniteClientInvocation,
+    native: FiniteClientInvocation,
+    stdin_sha256: String,
+    timeout_ms: u64,
+    max_output_bytes: usize,
+}
+impl FiniteClientValidation<'_> {
+    /// Derives the known Seatbelt/helper composition as a private preview.
+    /// This remains unavailable on other OSes and never constructs a process.
+    pub fn launch_plan(&self) -> Result<FiniteClientLaunchPlan> {
+        let r = &self.approved.reviewed;
+        r.owned_state.as_ref().ok_or(RuntimeError::Sandbox)?;
+        if !cfg!(target_os = "macos") {
+            return Err(RuntimeError::Sandbox);
+        }
+        r.check_files()?;
+        let home = r.manifest.private_state.clone();
+        let environment = BTreeMap::from([
+            ("PATH".into(), "/usr/bin:/bin".into()),
+            ("HOME".into(), home.clone()),
+            ("CODEX_HOME".into(), home.clone()),
+            ("TMPDIR".into(), format!("{home}/tmp")),
+        ]);
+        let native = FiniteClientInvocation {
+            program: r.manifest.native.path.clone(),
+            argv: vec!["app-server".into(), "--listen".into(), "stdio://".into()],
+            environment: environment.clone(),
+            clear_environment: true,
+            cwd: r.run.cwd.clone(),
+        };
+        let mut argv = r.resource_arguments.clone();
+        argv.extend([
+            "--supervise-v1".into(),
+            r.manifest.wrapper.path.clone(),
+            "-f".into(),
+            r.manifest.profile.path.clone(),
+            r.manifest.client.path.clone(),
+        ]);
+        argv.extend(r.run.argv.clone());
+        let mut worker_environment = environment;
+        worker_environment.insert("ROUTER_RUNTIME_SUPERVISION".into(), "framed-v1".into());
+        worker_environment.insert(
+            "ROUTER_RUNTIME_CONTAINMENT".into(),
+            "process-group-v1".into(),
+        );
+        Ok(FiniteClientLaunchPlan {
+            supervised: FiniteClientInvocation {
+                program: r.manifest.helper.path.clone(),
+                argv,
+                environment: worker_environment,
+                clear_environment: true,
+                cwd: r.run.cwd.clone(),
+            },
+            native,
+            stdin_sha256: content_digest(r.run.stdin.as_bytes()),
+            timeout_ms: r.run.timeout_ms,
+            max_output_bytes: r.run.max_output_bytes,
+        })
+    }
+}
+
+#[cfg(test)]
+mod resource_binding_tests {
+    use super::*;
+    use router_types::*;
+    use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn same_listener_and_assets_require_new_digest_for_each_resource_change() {
+        let temp = tempfile::Builder::new()
+            .permissions(fs::Permissions::from_mode(0o700))
+            .tempdir()
+            .unwrap();
+        let root = temp.path().canonicalize().unwrap();
+        let workspace = root.join("workspace");
+        let state = root.join("state");
+        for path in [&workspace, &state] {
+            fs::DirBuilder::new().mode(0o700).create(path).unwrap();
+        }
+        let pin = |name: &str, executable: bool| {
+            let path = root.join(name);
+            fs::write(&path, name).unwrap();
+            fs::set_permissions(
+                &path,
+                fs::Permissions::from_mode(if executable { 0o500 } else { 0o400 }),
+            )
+            .unwrap();
+            FiniteClientFile {
+                path: path.to_str().unwrap().into(),
+                sha256: content_digest(name.as_bytes()),
+            }
+        };
+        let broker =
+            OwnedBroker::from_listener(TcpListener::bind(("127.0.0.1", 0)).unwrap()).unwrap();
+        let manifest = FiniteClientManifest {
+            schema_version: 1,
+            task_id: "resource-task".into(),
+            host_snapshot_id: "fixture-host".into(),
+            client: pin("client", true),
+            native: pin("native", true),
+            helper: pin("helper", true),
+            wrapper: pin("wrapper", true),
+            profile: pin("profile", false),
+            configuration: pin("config", false),
+            private_state: state.to_str().unwrap().into(),
+            native_version: "fixture-1".into(),
+            broker_endpoint: broker.endpoint().into(),
+            broker_instance_sha256: broker.instance_sha256().into(),
+        };
+        let run = PreparedRun {
+            schema_version: 1,
+            receipt_id: "a".repeat(64),
+            source_state: "b".repeat(40),
+            scope: vec!["patch.txt".into()],
+            authorization_digest: "c".repeat(64),
+            snapshot_hash: "d".repeat(64),
+            host: HarnessId::parse("codex").unwrap(),
+            requested_model: ModelId::parse("fixture-model").unwrap(),
+            requested_effort: EffortLevel::Low,
+            program: "finite-client".into(),
+            argv: vec!["--worker".into()],
+            cwd: workspace.to_str().unwrap().into(),
+            stdin: PreparedInput::new(b"task".to_vec()),
+            mode: ExecutionMode::Execute,
+            target: ExecutionTarget::ExternalWorker,
+            sandbox: ExecutionSandbox::WorkspaceWrite,
+            timeout_ms: 3000,
+            max_output_bytes: 4096,
+            degradations: vec![],
+            missing_runtime_evidence: vec![],
+            parent_model_changed: false,
+        };
+        let limits = ResourceLimits::default();
+        let mut review =
+            FiniteClientReview::with_resources(manifest.clone(), &run, broker, limits.clone())
+                .unwrap();
+        let approval = review.approval_digest().to_owned();
+        for changed in [
+            ResourceLimits {
+                cpu_seconds: 301,
+                ..limits.clone()
+            },
+            ResourceLimits {
+                address_space_bytes: None,
+                ..limits.clone()
+            },
+            ResourceLimits {
+                max_open_files: 257,
+                ..limits.clone()
+            },
+            ResourceLimits {
+                max_processes: 257,
+                ..limits.clone()
+            },
+            ResourceLimits {
+                max_file_bytes: 1024,
+                ..limits.clone()
+            },
+        ] {
+            // Move the exact listener instance, retaining the same files and modes.
+            let changed_review =
+                FiniteClientReview::with_resources(manifest.clone(), &run, review.broker, changed)
+                    .unwrap();
+            assert_ne!(approval, changed_review.approval_digest());
+            review = FiniteClientReview::with_resources(
+                manifest.clone(),
+                &run,
+                changed_review.broker,
+                limits.clone(),
+            )
+            .unwrap();
+            assert_eq!(approval, review.approval_digest());
+        }
     }
 }

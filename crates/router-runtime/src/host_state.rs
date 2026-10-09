@@ -21,6 +21,10 @@ pub struct HostState {
     private_program: Option<PrivateProgram>,
 }
 impl HostState {
+    pub(crate) fn path(&self) -> &Path {
+        &self.path
+    }
+
     pub(crate) fn create_with_program(
         store: &Path,
         program: &str,

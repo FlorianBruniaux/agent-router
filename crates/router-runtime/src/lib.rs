@@ -15,7 +15,8 @@ mod escalation;
 mod finite_client;
 mod generated;
 pub use finite_client::{
-    ApprovedFiniteClient, FiniteClientReview, FiniteClientValidation, OwnedBroker,
+    ApprovedFiniteClient, FiniteClientInvocation, FiniteClientLaunchPlan, FiniteClientReview,
+    FiniteClientValidation, FiniteCodexState, OwnedBroker,
 };
 mod host_state;
 mod leases;
