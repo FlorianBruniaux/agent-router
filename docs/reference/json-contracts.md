@@ -612,3 +612,20 @@ revision bindings, frontiers and explicit completeness rules, and the
 checks the supplied calculation and joins; it is not independent verification
 of a provider, reviewer, invoice or patch. Cost categories and null totals
 remain distinct from approved allocations, elapsed time and measured benefit.
+
+## Private finite-client preparation
+
+`FiniteClientManifest` is a library-only private schema-1 contract with strict
+unknown-field rejection. It binds six file paths and SHA-256 values, task and host-snapshot IDs,
+native version, private state and a retained broker endpoint/instance. It is not
+a public observation, execution receipt, permission grant or CLI manifest.
+`FiniteClientReview` separately binds the complete prepared request and its
+omitted stdin bytes and validated concrete resource-helper arguments under
+`finite-client-review-v2`. Generated credential-free Codex state is consumed by
+the review owner. A private, serialization-only macOS launch preview refreshes
+the pins and derives helper/wrapper/client and native arguments; it has no
+process conversion or public CLI loader. Existing resource defaults remain
+unchanged. The approved handle and validation guard are neither
+serializable nor reconstructable from this JSON. Existing run approval and OS
+sandbox checks remain required. See [ADR 0028](../adr/0028-finite-client-preparation.md)
+for bounded inputs, authenticated proof binding and outstanding native limits.

@@ -12,7 +12,12 @@ pub use capability_proofs::{
 mod diagnostics;
 mod error;
 mod escalation;
+mod finite_client;
 mod generated;
+pub use finite_client::{
+    ApprovedFiniteClient, FiniteClientInvocation, FiniteClientLaunchPlan, FiniteClientReview,
+    FiniteClientValidation, FiniteCodexState, OwnedBroker,
+};
 mod host_state;
 mod leases;
 mod native_version;

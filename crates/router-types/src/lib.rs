@@ -58,3 +58,6 @@ pub use sidecar::*;
 
 mod session_budget;
 pub use session_budget::*;
+
+mod finite_client;
+pub use finite_client::*;
