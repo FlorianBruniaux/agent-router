@@ -15,7 +15,12 @@ use std::time::{Duration, Instant};
 
 const SECRET: &str = "sk-te\"st\\vAlue-9x";
 
-fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedExecutionRequest {
+fn validated_with(
+    host: &str,
+    timeout_ms: u64,
+    max_output_bytes: usize,
+    tweak: impl FnOnce(&mut ExecutionRequest),
+) -> ValidatedExecutionRequest {
     let model = ModelId::parse("exact-test-model").unwrap();
     let observation = HostObservation {
         attestations: None,
@@ -26,7 +31,12 @@ fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedE
             supported_models: BTreeSet::from([model.clone()]),
             supported_efforts: BTreeMap::from([(
                 model.clone(),
-                BTreeSet::from([EffortLevel::High]),
+                BTreeSet::from([
+                    EffortLevel::Minimal,
+                    EffortLevel::High,
+                    EffortLevel::Xhigh,
+                    EffortLevel::Max,
+                ]),
             )]),
             capabilities: BTreeSet::from([Capability::Tools]),
         },
@@ -57,7 +67,7 @@ fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedE
         },
     )
     .unwrap();
-    let request = ExecutionRequest {
+    let mut request = ExecutionRequest {
         schema_version: 1,
         receipt_id: "b".repeat(64),
         candidate_id: "candidate".into(),
@@ -80,6 +90,7 @@ fn validated(host: &str, timeout_ms: u64, max_output_bytes: usize) -> ValidatedE
         timeout_ms,
         max_output_bytes,
     };
+    tweak(&mut request);
     let restrictions = EffectiveRestrictions {
         schema_version: 1,
         sources: vec![],
@@ -111,6 +122,15 @@ fn setup(host: &'static str) -> Setup {
 }
 
 fn setup_with(host: &'static str, timeout_ms: u64, max_output_bytes: usize) -> Setup {
+    setup_tweaked(host, timeout_ms, max_output_bytes, |_| {})
+}
+
+fn setup_tweaked(
+    host: &'static str,
+    timeout_ms: u64,
+    max_output_bytes: usize,
+    tweak: impl FnOnce(&mut ExecutionRequest),
+) -> Setup {
     let authority = EnvelopeAuthority::from_seed(&[7; 32]);
     let (adapter, kind): (&'static dyn ProviderAdapter, _) = if host == "openai-api" {
         (
@@ -123,9 +143,9 @@ fn setup_with(host: &'static str, timeout_ms: u64, max_output_bytes: usize) -> S
             SupplementalBridgeKind::AnthropicCompatibleApi,
         )
     };
-    let validated = validated(host, timeout_ms, max_output_bytes);
+    let validated = validated_with(host, timeout_ms, max_output_bytes, tweak);
     let prepared = adapter
-        .prepare(&validated, &authority, "run-1", 512)
+        .prepare(&validated, &authority, "run-1", TOKEN_CEILING)
         .unwrap();
     Setup {
         host,
@@ -337,6 +357,302 @@ fn nominal_stream_is_decoded_and_the_verified_body_is_sent() {
         assert!(text.contains("Connection: close\r\n"));
         assert!(request.ends_with(s.prepared.body.as_bytes()));
         assert!(!s.host.is_empty());
+    }
+}
+
+/// Explicit output-token ceiling passed to `prepare`. It is not `max_output_bytes`.
+const TOKEN_CEILING: u32 = 512;
+
+const RICH_TASK: &str =
+    "PRIVATE_RICH Résumé \"cité\" et C:\\temp\\x\n  ligne indentée\n日本語 🦀 fin";
+const RICH_SKILL_BODY: &str = "Règle \"A\" \\ antislash\n  ligne indentée, 中文 ✓ 🦀";
+// sha256 of RICH_SKILL_BODY, computed outside the code under test.
+const RICH_SKILL_SHA: &str = "91dcae351559f5c6c51bc0543cf933ea52f510fa81af94b68a8b16b8e5d02bc0";
+/// Hand-built oracle: task, then the selected instruction. Not derived from
+/// `prepare` or `prepared_run`.
+const RICH_PROMPT: &str = concat!(
+    "PRIVATE_RICH Résumé \"cité\" et C:\\temp\\x\n  ligne indentée\n日本語 🦀 fin",
+    "\n\nSelected instruction rich-instruction (sha256=",
+    "91dcae351559f5c6c51bc0543cf933ea52f510fa81af94b68a8b16b8e5d02bc0",
+    "):\n",
+    "Règle \"A\" \\ antislash\n  ligne indentée, 中文 ✓ 🦀",
+    "\n"
+);
+
+/// `max_output_bytes` for the semantic tests: unrelated to the token ceiling by
+/// any simple ratio.
+const RICH_MAX_OUTPUT_BYTES: usize = 6000;
+
+/// (host, effort, literal wire value). Efforts shared by both protocols and
+/// one specific to each, so a `prepare` that froze one value is detected.
+fn effort_cases() -> Vec<(&'static str, EffortLevel, &'static str)> {
+    vec![
+        ("openai-api", EffortLevel::High, "high"),
+        ("openai-api", EffortLevel::Xhigh, "xhigh"),
+        ("openai-api", EffortLevel::Minimal, "minimal"),
+        ("anthropic-api", EffortLevel::High, "high"),
+        ("anthropic-api", EffortLevel::Xhigh, "xhigh"),
+        ("anthropic-api", EffortLevel::Max, "max"),
+    ]
+}
+
+fn rich_with(effort: EffortLevel) -> impl FnOnce(&mut ExecutionRequest) {
+    move |request| {
+        rich(request);
+        request.effort = effort;
+    }
+}
+
+fn rich(request: &mut ExecutionRequest) {
+    request.prompt = RICH_TASK.into();
+    request.skills = vec![ExecutionSkill {
+        id: SkillId::parse("rich-instruction").unwrap(),
+        content_sha256: RICH_SKILL_SHA.into(),
+        kind: ExecutionSkillKind::Instruction,
+        trust: SkillTrust::TrustedLocal,
+        body: RICH_SKILL_BODY.into(),
+    }];
+}
+
+struct Expected {
+    model: String,
+    effort: serde_json::Value,
+    tokens: u32,
+    prompt: &'static str,
+}
+
+fn expected(s: &Setup) -> Expected {
+    let request = s.validated.request();
+    Expected {
+        model: request.model.as_str().into(),
+        effort: serde_json::to_value(request.effort).unwrap(),
+        tokens: TOKEN_CEILING,
+        prompt: RICH_PROMPT,
+    }
+}
+
+fn pointers(host: &str) -> [(&'static str, &'static str); 6] {
+    // (field name, JSON pointer). `store` exists only for OpenAI and `role`
+    // only for Anthropic.
+    if host == "openai-api" {
+        [
+            ("model", "/model"),
+            ("effort", "/reasoning/effort"),
+            ("limit", "/max_output_tokens"),
+            ("stream", "/stream"),
+            ("store", "/store"),
+            ("content", "/input"),
+        ]
+    } else {
+        [
+            ("model", "/model"),
+            ("effort", "/output_config/effort"),
+            ("limit", "/max_tokens"),
+            ("stream", "/stream"),
+            ("role", "/messages/0/role"),
+            ("content", "/messages/0/content"),
+        ]
+    }
+}
+
+/// Checks the semantics of a received request and names the first faulty
+/// field. `Ok` means every covered field matches.
+fn check_received(host: &str, raw: &[u8], want: &Expected) -> Result<(), &'static str> {
+    let split = raw
+        .windows(4)
+        .position(|w| w == b"\r\n\r\n")
+        .ok_or("framing")?;
+    let value: serde_json::Value = serde_json::from_slice(&raw[split + 4..]).map_err(|_| "json")?;
+    let object = value.as_object().ok_or("json")?;
+    let openai = host == "openai-api";
+    let keys: BTreeSet<&str> = object.keys().map(String::as_str).collect();
+    let allowed: BTreeSet<&str> = if openai {
+        BTreeSet::from([
+            "model",
+            "input",
+            "reasoning",
+            "max_output_tokens",
+            "stream",
+            "store",
+        ])
+    } else {
+        BTreeSet::from(["model", "messages", "output_config", "max_tokens", "stream"])
+    };
+    if keys != allowed {
+        return Err("keys");
+    }
+    let field = |name: &str| -> &serde_json::Value {
+        let pointer = pointers(host).iter().find(|(n, _)| *n == name).unwrap().1;
+        value.pointer(pointer).unwrap_or(&serde_json::Value::Null)
+    };
+    if field("model") != &serde_json::json!(want.model) {
+        return Err("model");
+    }
+    if field("effort") != &want.effort {
+        return Err("effort");
+    }
+    // The container of the effort must hold nothing else.
+    let container = if openai { "reasoning" } else { "output_config" };
+    if value[container].as_object().map(|o| o.len()) != Some(1) {
+        return Err("effort");
+    }
+    if field("limit") != &serde_json::json!(want.tokens) {
+        return Err("limit");
+    }
+    if field("stream") != &serde_json::json!(true) {
+        return Err("stream");
+    }
+    if openai {
+        if field("store") != &serde_json::json!(false) {
+            return Err("store");
+        }
+    } else {
+        let messages = value["messages"].as_array().ok_or("role")?;
+        if messages.len() != 1 || messages[0].as_object().map(|o| o.len()) != Some(2) {
+            return Err("role");
+        }
+        if field("role") != &serde_json::json!("user") {
+            return Err("role");
+        }
+    }
+    if field("content") != &serde_json::json!(want.prompt) {
+        return Err("content");
+    }
+    Ok(())
+}
+
+fn receive(s: &Setup, host: &str) -> Vec<u8> {
+    let (addr, server) = serve(respond(sse_response(
+        stream_with_text(host, "ok").as_bytes(),
+    )));
+    s.run(addr, &CancelToken::new()).unwrap();
+    server.join().unwrap()
+}
+
+#[test]
+fn the_received_request_carries_the_authorized_semantics() {
+    for (host, effort, literal) in effort_cases() {
+        let s = setup_tweaked(host, 5_000, RICH_MAX_OUTPUT_BYTES, rich_with(effort));
+        let raw = receive(&s, host);
+        assert!(raw.ends_with(s.prepared.body.as_bytes()));
+        assert_eq!(
+            check_received(host, &raw, &expected(&s)),
+            Ok(()),
+            "{host} {literal}"
+        );
+        // Independent literals for the fixture values, not read back from it.
+        let want = expected(&s);
+        assert_eq!(want.model, "exact-test-model");
+        assert_eq!(want.effort, serde_json::json!(literal));
+        assert_eq!(want.tokens, 512);
+        assert_eq!(
+            s.validated.request().max_output_bytes,
+            RICH_MAX_OUTPUT_BYTES
+        );
+    }
+}
+
+#[test]
+fn the_received_request_verifier_names_each_corrupted_field() {
+    for (host, effort, literal) in effort_cases() {
+        let s = setup_tweaked(host, 5_000, RICH_MAX_OUTPUT_BYTES, rich_with(effort));
+        let raw = receive(&s, host);
+        let want = expected(&s);
+        assert_eq!(check_received(host, &raw, &want), Ok(()));
+        let split = raw.windows(4).position(|w| w == b"\r\n\r\n").unwrap() + 4;
+        let valid: serde_json::Value = serde_json::from_slice(&raw[split..]).unwrap();
+        let swapped = format!(
+            "{}{}",
+            &RICH_PROMPT[RICH_PROMPT.find("\n\nSelected").unwrap()..].trim_start(),
+            &RICH_PROMPT[..RICH_PROMPT.find("\n\nSelected").unwrap()]
+        );
+        let ptr = |name: &str| pointers(host).iter().find(|(n, _)| *n == name).unwrap().1;
+        let mut cases: Vec<(&str, &str, serde_json::Value)> = vec![
+            ("model", "model", serde_json::json!("other-model")),
+            ("effort", "effort", serde_json::json!("low")),
+            ("limit", "limit", serde_json::json!(513)),
+            ("stream", "stream", serde_json::json!(false)),
+            (
+                "truncated content",
+                "content",
+                serde_json::json!(&RICH_PROMPT[..RICH_PROMPT.len() - 1]),
+            ),
+            (
+                "duplicated content",
+                "content",
+                serde_json::json!(format!("{RICH_PROMPT}{RICH_PROMPT}")),
+            ),
+            ("inverted content", "content", serde_json::json!(swapped)),
+            ("instruction lost", "content", serde_json::json!(RICH_TASK)),
+        ];
+        if host == "openai-api" {
+            cases.push(("store", "store", serde_json::json!(true)));
+        } else {
+            cases.push(("role", "role", serde_json::json!("assistant")));
+        }
+        for (label, field, replacement) in cases {
+            let mut mutated = valid.clone();
+            *mutated.pointer_mut(ptr(field)).unwrap() = replacement;
+            let mut bytes = raw[..split].to_vec();
+            bytes.extend(serde_json::to_vec(&mutated).unwrap());
+            assert_eq!(
+                check_received(host, &bytes, &want),
+                Err(field),
+                "{host} {literal}: {label}"
+            );
+        }
+        // An unexpected extra key, and a dropped one.
+        let mut extra = valid.clone();
+        extra["temperature"] = serde_json::json!(0);
+        let mut bytes = raw[..split].to_vec();
+        bytes.extend(serde_json::to_vec(&extra).unwrap());
+        assert_eq!(check_received(host, &bytes, &want), Err("keys"), "{host}");
+        let mut dropped = valid.clone();
+        dropped.as_object_mut().unwrap().remove("stream");
+        let mut bytes = raw[..split].to_vec();
+        bytes.extend(serde_json::to_vec(&dropped).unwrap());
+        assert_eq!(check_received(host, &bytes, &want), Err("keys"), "{host}");
+        // An extra key inside the effort container.
+        let mut nested = valid.clone();
+        let container = if host == "openai-api" {
+            "reasoning"
+        } else {
+            "output_config"
+        };
+        nested[container]["summary"] = serde_json::json!("auto");
+        let mut bytes = raw[..split].to_vec();
+        bytes.extend(serde_json::to_vec(&nested).unwrap());
+        assert_eq!(check_received(host, &bytes, &want), Err("effort"), "{host}");
+    }
+}
+
+#[test]
+fn unsupported_request_surfaces_are_refused_before_a_body_exists() {
+    let authority = EnvelopeAuthority::from_seed(&[7; 32]);
+    type Tweak = fn(&mut ExecutionRequest);
+    let cases: [(&str, Tweak); 3] = [
+        ("tools host policy", |r| r.tools = ToolSelection::HostPolicy),
+        ("tools allow list", |r| {
+            r.tools = ToolSelection::AllowList(vec!["read".into()])
+        }),
+        ("named agent", |r| r.agent = Some("reviewer".into())),
+    ];
+    for host in HOSTS {
+        let adapter: &dyn ProviderAdapter = if host == "openai-api" {
+            &OpenAiResponsesAdapter
+        } else {
+            &AnthropicMessagesAdapter
+        };
+        for (label, tweak) in cases {
+            let validated = validated_with(host, 5_000, 8192, tweak);
+            assert!(
+                matches!(
+                    adapter.prepare(&validated, &authority, "run-1", TOKEN_CEILING),
+                    Err(BridgeError::Unsupported)
+                ),
+                "{host}: {label}"
+            );
+        }
     }
 }
 
