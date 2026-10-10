@@ -1,6 +1,6 @@
 # Bench playbook
 
-The [M4 assisted diagnostic proposal](measurement-m4/README.md) follows the merge of #158: one real report-cost defect, three configurations, explicit acceptance and a monitored 600,000-token envelope. User approval and live collection preflight are pending; no real trial was launched.
+The [M4 stop report](measurement-m4-result-2026-10-10/README.md) records 279,563 host tokens consumed by coordination, with none of the three worker assignments started. The [M4 v2 proposal](measurement-m4-v2/README.md) replaces the extra model coordinator with an offline admission ledger and three single-response patch attempts, then local tests and human review. Its proposed 300,000-token envelope awaits a new approval. No v2 participant has been launched. The [v1 seal](measurement-m4/APPROVAL.md) remains historical evidence.
 
 The [M1–M3 measurement preparation](measurement-m123/README.md) records the 10 October continuation after #157: a campaign catalog, offline trace accounting and a simulated comparison rehearsal. Paid trials and measured savings remain separate acceptance gates.
 

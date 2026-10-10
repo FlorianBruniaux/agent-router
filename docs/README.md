@@ -75,7 +75,9 @@ written in French.
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
-| [First assisted diagnostic M4](bench/measurement-m4/README.md) (FR) | Sealed task, three configurations and a 600,000-token proposal awaiting approval; no trial launched |
+| [M4 stop report](bench/measurement-m4-result-2026-10-10/README.md) (FR) | 279,563 host tokens, 0 worker assignments, coherent counters and late interruption |
+| [M4 v2 proposal](bench/measurement-m4-v2/README.md) (FR) | Three single-response patches, local tests and a 300,000-token proposal; awaiting approval |
+| [Original M4 protocol](bench/measurement-m4/README.md) (FR) | Historical sealed v1, preserved unchanged after the approved attempt stopped |
 | [Measurement preparation M1–M3](bench/measurement-m123/README.md) (FR) | Campaign catalog, trace accounting and offline comparison rehearsal; no savings claim |
 | [Calibration v2 candidate](bench/calibration-v2/README.md) (FR) | 2026-10-05: collection protocol and incomplete preparation template; no run authorization |
 | [Owned-entry decision](bench/owned-entry-2026-10-07/README.md) | 2026-10-07: direct app-server and ACP stopped before activation; per-send control and behavioral parity remain unqualified |

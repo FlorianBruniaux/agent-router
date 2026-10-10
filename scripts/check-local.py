@@ -57,6 +57,7 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
                                   ("measurement-m1-tests", "docs/bench/measurement-m123/m1", "test_*.py"),
                                   ("measurement-m2-tests", "docs/bench/measurement-m123/m2", "test_*.py"),
                                   ("measurement-m3-tests", "docs/bench/measurement-m123/m3/tests", "test_*.py"),
+                                  ("measurement-m4-v2-tests", "docs/bench/measurement-m4-v2/tests", "test_*.py"),
                                   ("physical-send-tests", "docs/bench/physical-send-feasibility-2026-10-07", "test_*.py"),
                                   ("startup-outage-tests", "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation", "test_*.py"),
                                   ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_*.py")]:
