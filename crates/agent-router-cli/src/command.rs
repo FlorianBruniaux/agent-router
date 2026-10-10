@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Args, Subcommand, ValueEnum};
+use clap::{ArgGroup, Args, Subcommand, ValueEnum};
 
 const ROUTE_AFTER_HELP: &str = "\
 Example:
@@ -951,6 +951,37 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    /// Correlate supplied runtime attempts with supplied physical observations.
+    #[command(group(
+        ArgGroup::new("attempt_correlation_source")
+            .required(true)
+            .multiple(false)
+            .args(["input", "observation"])
+    ))]
+    AttemptCorrelation {
+        /// Existing projected B1 input document.
+        #[arg(
+            long,
+            conflicts_with_all = ["observation", "physical", "runtime_authority_sha256"]
+        )]
+        input: Option<PathBuf>,
+        /// Complete observe schema-version 2 JSON document.
+        #[arg(
+            long,
+            requires_all = ["physical", "runtime_authority_sha256"],
+            conflicts_with = "input"
+        )]
+        observation: Option<PathBuf>,
+        /// Strict schema-1 envelope of supplied physical observations.
+        #[arg(long, requires = "observation", conflicts_with = "input")]
+        physical: Option<PathBuf>,
+        /// Caller-supplied runtime authority digest; this command does not authenticate it.
+        #[arg(long, requires = "observation", conflicts_with = "input")]
+        runtime_authority_sha256: Option<String>,
+        /// Print the complete versioned JSON report.
+        #[arg(long)]
+        json: bool,
+    },
     /// Account supplied offline evidence for exact accepted revisions.
     AcceptedChanges {
         #[arg(long)]
@@ -1129,7 +1160,8 @@ impl Commands {
                 }
             },
             Self::Eval { command } => match command {
-                EvalCommand::AcceptedChanges { json, .. }
+                EvalCommand::AttemptCorrelation { json, .. }
+                | EvalCommand::AcceptedChanges { json, .. }
                 | EvalCommand::Tradeoffs { json, .. }
                 | EvalCommand::Metrics { json, .. }
                 | EvalCommand::Seal { json, .. }

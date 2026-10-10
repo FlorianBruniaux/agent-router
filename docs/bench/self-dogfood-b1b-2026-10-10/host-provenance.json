@@ -1,0 +1,8 @@
+{
+  "source": "active Codex collaboration.spawn_agent tool metadata; generic Codex tool execution observed in this session",
+  "models": "intersection with the five explicitly exposed subagent model identifiers",
+  "capabilities": "tools available to Codex subagents; not a claim about native CLI sandbox/provider permissions",
+  "native_runtime_authority": "none",
+  "catalog": "unchanged bundled codex-core-v1 builtin-policy-prior; weights are not measured prices",
+  "experiment": "single applied implementation selection; planning and review stay with coordinator; not full plan-execute-verify execution"
+}

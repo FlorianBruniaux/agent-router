@@ -1,0 +1,320 @@
+{
+  "schema_version": "1",
+  "decision_id": "4795798da942fdf9752bf34f9fb076f9d4452827c607233b6d7d955a49a6b0e3",
+  "catalog_version": "codex-core-v1",
+  "policy_version": "stable-v1",
+  "decision": {
+    "selected": {
+      "plan": {
+        "preset": "plan-execute-verify",
+        "stages": [
+          {
+            "kind": "plan",
+            "model": "gpt-5.6-sol",
+            "effort": "high",
+            "skills": [
+              "tdd"
+            ]
+          },
+          {
+            "kind": "execute",
+            "model": "gpt-5.6-sol",
+            "effort": "high",
+            "skills": [
+              "tdd"
+            ]
+          },
+          {
+            "kind": "verify",
+            "model": "gpt-5.6-sol",
+            "effort": "high",
+            "skills": [
+              "tdd"
+            ]
+          }
+        ],
+        "utility_micros": 55000
+      },
+      "alternatives": [],
+      "exclusions": [
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-luna",
+          "code": "model.stage.unsupported",
+          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'plan'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "plan",
+          "model": "gpt-5.6-terra",
+          "code": "model.stage.unsupported",
+          "evidence": "model 'gpt-5.6-terra' cannot serve stage 'plan'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-luna",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-sol",
+          "code": "model.effort.unsupported",
+          "evidence": "model 'gpt-5.6-sol' does not support effort 'medium'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "execute",
+          "model": "gpt-5.6-terra",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-luna'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-luna",
+          "code": "model.stage.unsupported",
+          "evidence": "model 'gpt-5.6-luna' cannot serve stage 'verify'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'high' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'low' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'max' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'medium' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'ultra' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.effort.unsupported",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support effort 'xhigh' for model 'gpt-5.6-terra'"
+        },
+        {
+          "stage": "verify",
+          "model": "gpt-5.6-terra",
+          "code": "host.model.unavailable",
+          "evidence": "host 'codex-desktop-subagent-platform' does not support model 'gpt-5.6-terra'"
+        }
+      ],
+      "missing_evidence": []
+    }
+  }
+}
