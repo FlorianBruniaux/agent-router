@@ -70,9 +70,11 @@ written in French.
 | [Backend activation store](backend-store.md) | Durable activation, rollback and revocation |
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
 | [Accepted revision costs](accepted-changes.md) | 2026-10-07: offline exact-revision accounting, revocation and missing-cost coverage; supplied evidence only |
+| [Attempt correlation](attempt-correlation.md) | 2026-10-10: offline B1 CLI and complete observe-v2 projection; supplied evidence, no native usage collection |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
+| [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
 | [Calibration v2 candidate](bench/calibration-v2/README.md) (FR) | 2026-10-05: collection protocol and incomplete preparation template; no run authorization |
 | [Owned-entry decision](bench/owned-entry-2026-10-07/README.md) | 2026-10-07: direct app-server and ACP stopped before activation; per-send control and behavioral parity remain unqualified |
 | [Native Codex integration diagnostic](bench/native-integration-u02/README.md) | 2026-10-05: local app-server parameter and output evidence; automatic CLI integration not admitted |

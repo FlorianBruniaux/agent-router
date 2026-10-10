@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "kind": "advisory_self_dogfood_measurement_not_runtime_evidence",
+  "recorded_at": "2026-10-10T15:19:01.805799+00:00",
+  "source": {
+    "base_commit": "4b053da3c08424921019ee8dafb2906ff57c7151",
+    "modified_source_sha256": {
+      "crates/agent-router-cli/src/command.rs": "48db8ebd0004d9f0f95a4dc39294c5c2ec3fce5a7b12036eb89bc74446dcc447",
+      "crates/agent-router-cli/src/evaluation.rs": "128b171ec39497fef2a99e4ebb0eb6496c0b99967720c4e6723575be2a198ffb",
+      "crates/agent-router-cli/tests/attempt_correlation.rs": "2173ebd23d69168c216b4ce7d245503dc0261100a84a2c5b1db8292a83b5e4c9"
+    },
+    "unchanged_during_gates": true
+  },
+  "routing": {
+    "decision_id": "4795798da942fdf9752bf34f9fb076f9d4452827c607233b6d7d955a49a6b0e3",
+    "model": "gpt-5.6-sol",
+    "effort": "high",
+    "eligible_models": 1,
+    "applied_to": "one implementation subagent only",
+    "native_execution": false
+  },
+  "events": [
+    {
+      "event": "baseline_build",
+      "started_at": "2026-10-10T14:43:03.771995+00:00",
+      "duration_seconds": 61.900712417,
+      "exit_code": 0
+    },
+    {
+      "event": "route",
+      "duration_seconds": 1.4473438750000014,
+      "exit_code": 0,
+      "binary_sha256": "599d2cf8f9d3887960221541763fdb0cc3df3f95dd6e696cdb9b117bce71028f"
+    },
+    {
+      "event": "implementation_agent_dispatched",
+      "timestamp": "2026-10-10T14:49:24.511285+00:00",
+      "agent": "/root/b1b_routed_impl",
+      "requested_model": "gpt-5.6-sol",
+      "requested_effort": "high",
+      "source": "collaboration.spawn_agent acknowledged"
+    },
+    {
+      "event": "coordinator_review_feedback",
+      "timestamp": "2026-10-10T15:00:53.473274+00:00",
+      "iteration": 1,
+      "phase": "implementation_in_progress",
+      "findings": [
+        "Duplicate-key regression also malformed, not a discriminating duplicate test",
+        "Required nullable omission and non-unknown native substitutions lack direct regression coverage"
+      ],
+      "requested_clarification": "Exercise observe CLI producer or state library-only scope accurately"
+    },
+    {
+      "event": "coordinator_review_confirmed_defect",
+      "timestamp": "2026-10-10T15:03:17.899156+00:00",
+      "iteration": 2,
+      "finding": "Required nullable fields accepted when absent",
+      "independent_cases": 13,
+      "unexpected_acceptances": 6,
+      "evidence": "independent-probes/results-1.json"
+    },
+    {
+      "event": "coordinator_review_confirmed_defect",
+      "timestamp": "2026-10-10T15:04:05.045740+00:00",
+      "iteration": 3,
+      "finding": "Serde enums accept object representations outside published string-only schema",
+      "independent_cases": 17,
+      "new_unexpected_acceptances": 4,
+      "evidence": "independent-probes/results-2.json"
+    }
+  ],
+  "worker": {
+    "implementation_start": "2026-10-10T14:49:01Z",
+    "implementation_finish": "2026-10-10T15:08:13Z",
+    "elapsed_seconds": 1152,
+    "timing_source": "worker UTC markers; includes review feedback, not inference-only time",
+    "focused_tests": {
+      "passed": 5,
+      "failed": 0,
+      "test_seconds": 1.72,
+      "command_wall_seconds": 9.72
+    }
+  },
+  "gates": [
+    {
+      "id": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "started_at": "2026-10-10T15:07:34.424736+00:00",
+      "duration_seconds": 1.658,
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "started_at": "2026-10-10T15:07:36.083413+00:00",
+      "duration_seconds": 31.239,
+      "exit_code": 0,
+      "log_sha256": "d62aa48bcdd4f4c7d52a8ab26eb92b9323592b61bdec8e26ff3fd5be763ebb68"
+    },
+    {
+      "id": "workspace",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "started_at": "2026-10-10T15:08:07.323473+00:00",
+      "duration_seconds": 587.358,
+      "exit_code": 0,
+      "log_sha256": "cfb83b4d0c1c34fa2fd3d463f9e11daa2833b8500b4f69b2dae586a58348a39f",
+      "test_counts": {
+        "passed": 1735,
+        "failed": 0,
+        "ignored": 42
+      },
+      "count_scope": "Result lines with zero filtered tests; subprocess helper summaries excluded, not unique test-definition count"
+    },
+    {
+      "id": "harness",
+      "command": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "started_at": "2026-10-10T15:17:54.694727+00:00",
+      "duration_seconds": 1.965,
+      "exit_code": 0,
+      "log_sha256": "b027a47dac29fe66dd300311889233b8113aea280478957f606da0beb7c682fe"
+    },
+    {
+      "id": "secrets",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact=100",
+        "--no-banner"
+      ],
+      "started_at": "2026-10-10T15:17:56.660320+00:00",
+      "duration_seconds": 0.647,
+      "exit_code": 0,
+      "log_sha256": "b0bb6204c419ae67134275efd0fc86c8c531365711bfdb5d7b35fb768c63daaa"
+    }
+  ],
+  "review": {
+    "reviewed_at": "2026-10-10T15:08:39.092836+00:00",
+    "reviewer": "coordinator, separate from implementation subagent",
+    "base": "4b053da3c08424921019ee8dafb2906ff57c7151",
+    "files_sha256": {
+      "crates/agent-router-cli/src/command.rs": "48db8ebd0004d9f0f95a4dc39294c5c2ec3fce5a7b12036eb89bc74446dcc447",
+      "crates/agent-router-cli/src/evaluation.rs": "128b171ec39497fef2a99e4ebb0eb6496c0b99967720c4e6723575be2a198ffb",
+      "crates/agent-router-cli/tests/attempt_correlation.rs": "2173ebd23d69168c216b4ce7d245503dc0261100a84a2c5b1db8292a83b5e4c9"
+    },
+    "verdict": "no_remaining_blocker_found; selected full local gates passed",
+    "resolved_findings": [
+      "Otherwise valid duplicate-key regression replaces nondiscriminating malformed duplicate case",
+      "Required nullable keys must be present",
+      "Published string-only enum/const fields refuse serde object representation"
+    ],
+    "independent_probes": "17/17 passing after fixes; retained initial failures",
+    "limits": [
+      "No native execution or provider identity proof",
+      "No authenticated journal/physical-event collection",
+      "No comparative cost or quality conclusion"
+    ]
+  },
+  "independent_probe_history": [
+    {
+      "binary_sha256": "9d34c7d58de52922926dc87654234552d05c0b5d5f51db934b39cd9f19cdefbd",
+      "binary_unchanged": true,
+      "duration_seconds": 0.197,
+      "cases": [
+        {
+          "case": "valid",
+          "expected_success": true,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "case": "missing_horizon.event_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_known.failure",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.requested",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.transport",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.sources.attempt_evidence_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.sources.protocol_event_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "substitute_attempts.0.native.observed_model",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.events.0.event_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_horizon.sequence",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.attempts",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_extra",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "duplicate_root_schema",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "binary_sha256": "9d34c7d58de52922926dc87654234552d05c0b5d5f51db934b39cd9f19cdefbd",
+      "binary_unchanged": true,
+      "duration_seconds": 0.249,
+      "cases": [
+        {
+          "case": "valid",
+          "expected_success": true,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "case": "missing_horizon.event_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_known.failure",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.requested",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.transport",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.sources.attempt_evidence_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "missing_attempts.0.sources.protocol_event_sha256",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "substitute_attempts.0.native.observed_model",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.events.0.event_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_horizon.sequence",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.attempts",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_extra",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "object_enum_attempts.0.native.usage",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "object_enum_known.state",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "object_enum_known.cleanup",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "object_enum_completeness.journal",
+          "expected_success": false,
+          "exit_code": 0,
+          "passed": false
+        },
+        {
+          "case": "duplicate_root_schema",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "binary_sha256": "f6a6a9e645332512f639d9af23c151aa5dc2114bede75101ae21ec61aaba397b",
+      "binary_unchanged": true,
+      "duration_seconds": 0.2,
+      "cases": [
+        {
+          "case": "valid",
+          "expected_success": true,
+          "exit_code": 0,
+          "passed": true
+        },
+        {
+          "case": "missing_horizon.event_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "missing_known.failure",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "missing_attempts.0.requested",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "missing_attempts.0.transport",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "missing_attempts.0.sources.attempt_evidence_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "missing_attempts.0.sources.protocol_event_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_attempts.0.native.observed_model",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.events.0.event_sha256",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_horizon.sequence",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_known.attempts",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "substitute_extra",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "object_enum_attempts.0.native.usage",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "object_enum_known.state",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "object_enum_known.cleanup",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "object_enum_completeness.journal",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        },
+        {
+          "case": "duplicate_root_schema",
+          "expected_success": false,
+          "exit_code": 2,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "demos": [
+    {
+      "name": "route",
+      "exit_code": 0,
+      "duration_seconds": 0.0126,
+      "stdout_sha256": "7c2ac1d617d68ee030a9f1feed5b904a17c5d8c46b800b009f946e276d186fb5",
+      "matches_sealed_decision_bytes": true
+    },
+    {
+      "name": "direct",
+      "exit_code": 0,
+      "duration_seconds": 0.0116,
+      "stdout_sha256": "0f45558aa601821e9c5b216612a6f5208841c79bbbd36d07b053a3d5420c468e",
+      "evidence_trust": "supplied_unverified",
+      "attempts": 2,
+      "unknown_physical_sends": 1
+    },
+    {
+      "name": "projection",
+      "exit_code": 0,
+      "duration_seconds": 0.0095,
+      "stdout_sha256": "7bb5e09b2c0490b69eb11cff9ff11c29f18f546f4720b01e027c2838f5b3a2d9",
+      "evidence_trust": "supplied_unverified",
+      "attempts": 1,
+      "unknown_physical_sends": 1
+    },
+    {
+      "name": "human",
+      "exit_code": 0,
+      "duration_seconds": 0.0124,
+      "stdout_sha256": "cc435ec32fc920a57e3ca1d617fc1c4a2f6957f19f89e5f1853865467084af61"
+    }
+  ],
+  "usage": {
+    "source": "Codex session metadata, not invoices",
+    "parent": {
+      "source": "Codex parent session cumulative metadata delta",
+      "start_timestamp": "2026-10-10T14:38:40.269Z",
+      "end_timestamp": "2026-10-10T15:18:45.923Z",
+      "configured_model": "gpt-6-astra",
+      "configured_effort": "xhigh",
+      "delta": {
+        "input_tokens": 9674786,
+        "cached_input_tokens": 9500416,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 50252,
+        "reasoning_output_tokens": 25444,
+        "total_tokens": 9725038
+      },
+      "limits": [
+        "Host metadata, not provider invoice",
+        "Child inclusion unknown; do not sum without independent evidence",
+        "Cached input is a subset of input, reasoning output a subset of output",
+        "Final reporting after this cutoff excluded"
+      ]
+    },
+    "implementation_subagent": {
+      "configured_model": "gpt-5.6-sol",
+      "configured_effort": "high",
+      "cutoff": "2026-10-10T15:10:22.363Z",
+      "reported_totals": {
+        "input_tokens": 7270171,
+        "cached_input_tokens": 7100800,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 39000,
+        "reasoning_output_tokens": 11209,
+        "total_tokens": 7309171
+      }
+    },
+    "combined_total": "unknown; scope overlap not independently established",
+    "invoice_cost": "unknown",
+    "physical_provider_calls": "unknown",
+    "provider_inference_identity": "unknown",
+    "savings": "not_measured",
+    "limits": [
+      "Input tokens count repeated model requests; cached input is included in input",
+      "Reasoning output is included in output",
+      "Parent measurement ends at its stated cutoff; report publication and later interactions excluded",
+      "No comparison arm or repeated experiment"
+    ]
+  },
+  "acceptance": {
+    "local_checks": "passed",
+    "coordinator_review": "no_remaining_blocker_found",
+    "user_acceptance": "unknown",
+    "native_qualification": "not_established",
+    "remote_ci": "not_used_as_acceptance_evidence"
+  }
+}

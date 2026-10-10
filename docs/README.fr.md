@@ -69,9 +69,11 @@ sauf celles marquées (FR).
 | [Store d'activation des backends](backend-store.md) | Activation durable, rollback et révocation |
 | [Exécution d'un backend](backend-execution.md) | Exécuter une décision de backend signée |
 | [Coûts de la révision acceptée](accepted-changes.md) | 2026-10-07 : calcul hors ligne, révocation et coûts incomplets ; données fournies, sans collecte native |
+| [Corrélation des tentatives](attempt-correlation.md) (EN) | 2026-10-10 : CLI hors ligne et projection v2 complète ; données fournies, sans collecte native |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
+| [Agent Router utilisé sur son propre code](bench/self-dogfood-b1b-2026-10-10/README.md) (EN) | 2026-10-10 : essai B1b guidé par le routage ; statut dans le rapport, aucun gain comparatif établi |
 | [Candidat de calibration v2](bench/calibration-v2/README.md) (FR) | 2026-10-05 : protocole de collecte et modèle de préparation incomplet, sans autorisation d'exécution |
 | [Décision sur l'entrée automatique](bench/owned-entry-2026-10-07/README.md) | 2026-10-07 : app-server direct et ACP non admis ; contrôle par envoi et comparaison comportementale encore incomplets |
 | [Diagnostic d'intégration native Codex](bench/native-integration-u02/README.md) | 2026-10-05 : paramètres et sortie vérifiés sur app-server local, intégration automatique CLI non admise |

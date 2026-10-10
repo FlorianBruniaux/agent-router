@@ -66,7 +66,7 @@ independence, establish that no assignment was omitted, or verify a patch on
 disk. The current calculator sums supplied amounts. It does not reprice tokens,
 collect native usage, reconcile invoices, or derive elapsed time.
 
-Connecting qualified observations is the next measurement slice of
+The [attempt-correlation CLI](attempt-correlation.md) now links supplied attempt and physical-call identities. It does not collect usage or feed amounts into this calculator. Connecting qualified cost observations remains the next measurement slice of
 [issue #5](https://github.com/FlorianBruniaux/agent-router/issues/5). A claim that
 routing saves time or money also needs the separate
 [comparison protocol](bench/router-value-protocol.md) and its approved inputs.

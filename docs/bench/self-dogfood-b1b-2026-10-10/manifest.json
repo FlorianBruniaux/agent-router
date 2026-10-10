@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "experiment_id": "self-dogfood-b1b-20261010",
+  "sealed_at": "2026-10-10T14:45:46.564384+00:00",
+  "source_commit": "4b053da3c08424921019ee8dafb2906ff57c7151",
+  "task": "B1b offline CLI and observe-v2 projection, issue #120",
+  "execution_path": "Codex platform subagent following an advisory Agent Router decision; not AR native runtime",
+  "comparison": "none; usability run only",
+  "selected_implementation": {
+    "model": "gpt-5.6-sol",
+    "effort": "high",
+    "source": "execute stage of decision 4795798da942fdf9752bf34f9fb076f9d4452827c607233b6d7d955a49a6b0e3"
+  },
+  "catalog_limit": "Only gpt-5.6-sol is both in the unchanged bundled catalog and exposed by current subagent tooling; no economic calibration or multi-model comparison",
+  "planned_deviation": "Only execute phase delegated; coordinator performs planning and review. Full 3-process plan is not executed.",
+  "maximum_initial_implementation_agents": 1,
+  "usage_source": "Codex session metadata if attributable, otherwise unknown",
+  "provider_inference_identity": "unknown",
+  "invoice_cost": "unknown",
+  "savings": "not_measured",
+  "acceptance": "public behavior tests, full local gates, coordinator review, then user acceptance separately",
+  "inputs_sha256": {
+    "request.json": "e2532edb034864a17b86530f9e598c48e9ad24885d5e5c0da6920224ce968287",
+    "catalog.json": "4e49598643c47fe86d3f8db1956c8b74a498b7a373e26682c1c1986cb7740052",
+    "decision.json": "7c2ac1d617d68ee030a9f1feed5b904a17c5d8c46b800b009f946e276d186fb5",
+    "host-provenance.json": "cfc049b89eaefbac132e6147354c0bd8e57f95a295d7d728bf1256529d4bb36b",
+    "task.md": "57813e17187d455fbc89d1294620927559cd0701f728fa9099b56c122dd26d24"
+  }
+}

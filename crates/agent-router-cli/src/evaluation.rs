@@ -7,7 +7,411 @@ use router_eval::{
     CandidateCorpus, EvalError, PairedTrace, ReplayRecord, compare_shadow,
     replay_deterministic_with_verifier,
 };
+use router_feedback::{
+    AttemptCorrelationInput, SuppliedAttempt, SuppliedAttemptEvidence, SuppliedPhysical,
+    SuppliedRequested, SuppliedRuntime,
+};
+use serde::{Deserialize, Deserializer, de::DeserializeOwned};
 use std::{path::Path, process::ExitCode};
+
+const ATTEMPT_CORRELATION_INVALID: CliError = CliError::Product("eval.attempt_correlation.invalid");
+
+fn required_nullable<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer)
+}
+
+macro_rules! strict_string_enum {
+    ($name:ident { $($variant:ident => $value:literal),+ $(,)? }) => {
+        #[derive(Clone, Copy, Eq, PartialEq)]
+        enum $name {
+            $($variant),+
+        }
+
+        impl<'de> Deserialize<'de> for $name {
+            fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                match String::deserialize(deserializer)?.as_str() {
+                    $($value => Ok(Self::$variant),)+
+                    _ => Err(serde::de::Error::custom("invalid enum value")),
+                }
+            }
+        }
+    };
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationV2 {
+    schema_version: u32,
+    snapshot_sha256: String,
+    identity: ObservationIdentity,
+    horizon: ObservationHorizon,
+    known: ObservationKnown,
+    unknown: ObservationUnknowns,
+    completeness: ObservationCompleteness,
+    attempts: Vec<ObservationAttempt>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationIdentity {
+    run_key_sha256: String,
+    definition_sha256: String,
+    receipt_id_sha256: String,
+    plan_id_sha256: String,
+    node_id_sha256: String,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationHorizon {
+    sequence: u64,
+    #[serde(deserialize_with = "required_nullable")]
+    event_sha256: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationKnown {
+    state: ObservationState,
+    attempts: u32,
+    #[serde(deserialize_with = "required_nullable")]
+    failure: Option<ObservationFailure>,
+    cleanup: ObservationCleanup,
+    events: Vec<ObservationEvent>,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationEvent {
+    sequence: u64,
+    state: ObservationState,
+    event_sha256: String,
+}
+
+strict_string_enum!(ObservationState {
+    Planned => "planned",
+    AwaitingApproval => "awaiting_approval",
+    Queued => "queued",
+    Preparing => "preparing",
+    Running => "running",
+    SucceededTransport => "succeeded_transport",
+    Verifying => "verifying",
+    Verified => "verified",
+    Failed => "failed",
+    VerificationFailed => "verification_failed",
+    TimedOut => "timed_out",
+    Cancelled => "cancelled",
+    Blocked => "blocked",
+});
+
+strict_string_enum!(ObservationFailure {
+    Authentication => "authentication",
+    RateLimit => "rate_limit",
+    Timeout => "timeout",
+    Crash => "crash",
+    Network => "network",
+    Policy => "policy",
+    Verification => "verification",
+    Interrupted => "interrupted",
+    OutputLimit => "output_limit",
+    Spawn => "spawn",
+    Unclassified => "unclassified",
+});
+
+strict_string_enum!(ObservationCleanup {
+    Unknown => "unknown",
+    NotStarted => "not_started",
+    GroupTerminated => "group_terminated",
+    NamespaceTerminated => "namespace_terminated",
+});
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationUnknowns {
+    requested_model: Unknown,
+    requested_effort: Unknown,
+    observed_model: Unknown,
+    observed_effort: Unknown,
+    transport: Unknown,
+    validation: Unknown,
+    objective: Unknown,
+    duration: Unknown,
+    journal_authenticity: Unknown,
+    process_liveness: Unknown,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationCompleteness {
+    journal: Complete,
+    external_observations: Unknown,
+    detail: Redacted,
+}
+
+strict_string_enum!(Unknown { Unknown => "unknown" });
+strict_string_enum!(Complete { Complete => "complete" });
+strict_string_enum!(Redacted { Redacted => "redacted" });
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationAttempt {
+    ordinal: u32,
+    attempt_key_sha256: String,
+    evidence: ObservationEvidence,
+    #[serde(deserialize_with = "required_nullable")]
+    requested: Option<ObservationRequested>,
+    #[serde(deserialize_with = "required_nullable")]
+    transport: Option<ObservationTransport>,
+    sources: ObservationSources,
+    capture: ObservationCapture,
+    protocol: Unknown,
+    native: ObservationNative,
+}
+
+strict_string_enum!(ObservationEvidence {
+    Unknown => "unknown",
+    DurableAttempt => "durable_attempt",
+});
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationRequested {
+    model: String,
+    effort: ObservationEffort,
+}
+
+strict_string_enum!(ObservationEffort {
+    None => "none",
+    Minimal => "minimal",
+    Low => "low",
+    Medium => "medium",
+    High => "high",
+    Xhigh => "xhigh",
+    Max => "max",
+    Ultra => "ultra",
+});
+
+impl From<ObservationEffort> for router_types::EffortLevel {
+    fn from(value: ObservationEffort) -> Self {
+        match value {
+            ObservationEffort::None => Self::None,
+            ObservationEffort::Minimal => Self::Minimal,
+            ObservationEffort::Low => Self::Low,
+            ObservationEffort::Medium => Self::Medium,
+            ObservationEffort::High => Self::High,
+            ObservationEffort::Xhigh => Self::Xhigh,
+            ObservationEffort::Max => Self::Max,
+            ObservationEffort::Ultra => Self::Ultra,
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationTransport {
+    termination: ObservationTermination,
+    #[serde(deserialize_with = "required_nullable")]
+    exit_code: Option<i32>,
+}
+
+strict_string_enum!(ObservationTermination {
+    Exited => "exited",
+    TimedOut => "timed_out",
+    Cancelled => "cancelled",
+    Killed => "killed",
+    SpawnFailed => "spawn_failed",
+});
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationSources {
+    started_event_sha256: String,
+    #[serde(deserialize_with = "required_nullable")]
+    attempt_evidence_sha256: Option<String>,
+    #[serde(deserialize_with = "required_nullable")]
+    finished_event_sha256: Option<String>,
+    #[serde(deserialize_with = "required_nullable")]
+    transition_event_sha256: Option<String>,
+    #[serde(deserialize_with = "required_nullable")]
+    output_incomplete_event_sha256: Option<String>,
+    #[serde(deserialize_with = "required_nullable")]
+    protocol_event_sha256: Option<String>,
+}
+
+strict_string_enum!(ObservationCapture {
+    Unknown => "unknown",
+    Incomplete => "incomplete",
+    OutputLimit => "output_limit",
+    OutputLimitIncomplete => "output_limit_incomplete",
+});
+
+#[allow(dead_code)]
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ObservationNative {
+    observed_model: Unknown,
+    observed_effort: Unknown,
+    thread_id: Unknown,
+    turn_id: Unknown,
+    usage: Unknown,
+    notification_delivery: Unknown,
+    lost_notifications: Unknown,
+    duration: Unknown,
+    validation: Unknown,
+    objective: Unknown,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PhysicalEnvelope {
+    schema_version: u32,
+    physical: Vec<SuppliedPhysical>,
+}
+
+fn attempt_bytes(path: &Path) -> Result<Vec<u8>, CliError> {
+    read_bounded(
+        path,
+        router_feedback::MAX_ATTEMPT_CORRELATION_BYTES,
+        ATTEMPT_CORRELATION_INVALID,
+        ATTEMPT_CORRELATION_INVALID,
+    )
+}
+
+fn strict_document<T: DeserializeOwned>(bytes: &[u8]) -> Result<T, CliError> {
+    let value = router_adapter_api::strict_json_limited(
+        bytes,
+        router_feedback::MAX_ATTEMPT_CORRELATION_BYTES,
+    )
+    .map_err(|_| ATTEMPT_CORRELATION_INVALID)?;
+    serde_json::from_value(value).map_err(|_| ATTEMPT_CORRELATION_INVALID)
+}
+
+fn digest(value: &str) -> Result<(), CliError> {
+    router_adapter_api::is_digest(value)
+        .then_some(())
+        .ok_or(ATTEMPT_CORRELATION_INVALID)
+}
+
+fn project_observation(
+    observation: ObservationV2,
+    authority_sha256: String,
+    physical: PhysicalEnvelope,
+) -> Result<AttemptCorrelationInput, CliError> {
+    if observation.schema_version != 2
+        || physical.schema_version != 1
+        || observation.horizon.sequence > 100_000
+        || observation.known.attempts as usize != observation.attempts.len()
+        || observation.attempts.len() > 5
+        || observation.known.events.is_empty()
+        || observation.known.events.len() > 4096
+    {
+        return Err(ATTEMPT_CORRELATION_INVALID);
+    }
+    digest(&observation.snapshot_sha256)?;
+    for value in [
+        &observation.identity.run_key_sha256,
+        &observation.identity.definition_sha256,
+        &observation.identity.receipt_id_sha256,
+        &observation.identity.plan_id_sha256,
+        &observation.identity.node_id_sha256,
+    ] {
+        digest(value)?;
+    }
+    if let Some(value) = &observation.horizon.event_sha256 {
+        digest(value)?;
+    }
+    for event in &observation.known.events {
+        if event.sequence == 0 || event.sequence > 100_000 {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        digest(&event.event_sha256)?;
+    }
+
+    let mut attempts = Vec::with_capacity(observation.attempts.len());
+    for attempt in observation.attempts {
+        if !(1..=5).contains(&attempt.ordinal) {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        digest(&attempt.attempt_key_sha256)?;
+        digest(&attempt.sources.started_event_sha256)?;
+        if attempt.sources.protocol_event_sha256.is_some() {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        let optional_sources = [
+            &attempt.sources.attempt_evidence_sha256,
+            &attempt.sources.finished_event_sha256,
+            &attempt.sources.transition_event_sha256,
+            &attempt.sources.output_incomplete_event_sha256,
+        ];
+        for value in optional_sources.into_iter().flatten() {
+            digest(value)?;
+        }
+        let complete_sources = attempt.sources.attempt_evidence_sha256.is_some()
+            && attempt.sources.finished_event_sha256.is_some()
+            && attempt.sources.transition_event_sha256.is_some();
+        let incomplete_capture = matches!(
+            attempt.capture,
+            ObservationCapture::Incomplete | ObservationCapture::OutputLimitIncomplete
+        );
+        if incomplete_capture != attempt.sources.output_incomplete_event_sha256.is_some() {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        match attempt.evidence {
+            ObservationEvidence::Unknown
+                if attempt.requested.is_none()
+                    && attempt.transport.is_none()
+                    && !complete_sources
+                    && attempt.sources.attempt_evidence_sha256.is_none()
+                    && attempt.sources.finished_event_sha256.is_none()
+                    && attempt.sources.transition_event_sha256.is_none()
+                    && attempt.sources.output_incomplete_event_sha256.is_none()
+                    && attempt.capture == ObservationCapture::Unknown => {}
+            ObservationEvidence::DurableAttempt
+                if attempt.requested.is_some()
+                    && attempt.transport.is_some()
+                    && complete_sources => {}
+            _ => return Err(ATTEMPT_CORRELATION_INVALID),
+        }
+        attempts.push(SuppliedAttempt {
+            ordinal: attempt.ordinal,
+            attempt_key_sha256: attempt.attempt_key_sha256,
+            evidence: match attempt.evidence {
+                ObservationEvidence::Unknown => SuppliedAttemptEvidence::Unknown,
+                ObservationEvidence::DurableAttempt => SuppliedAttemptEvidence::DurableAttempt,
+            },
+            requested: attempt.requested.map(|requested| SuppliedRequested {
+                model: requested.model,
+                effort: requested.effort.into(),
+            }),
+        });
+    }
+    Ok(AttemptCorrelationInput {
+        schema_version: 1,
+        runtime: SuppliedRuntime {
+            authority_sha256,
+            snapshot_sha256: observation.snapshot_sha256,
+            run_key_sha256: observation.identity.run_key_sha256,
+            definition_sha256: observation.identity.definition_sha256,
+            attempts,
+        },
+        physical: physical.physical,
+    })
+}
 
 fn error(error: EvalError) -> CliError {
     CliError::Product(match error {
@@ -63,6 +467,32 @@ pub(crate) fn replay(
 }
 pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
     match command {
+        EvalCommand::AttemptCorrelation {
+            input,
+            observation,
+            physical,
+            runtime_authority_sha256,
+            json,
+        } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let report = match (input, observation, physical, runtime_authority_sha256) {
+                (Some(input), None, None, None) => {
+                    router_feedback::attempt_correlation_report(&attempt_bytes(&input)?)
+                        .map_err(|_| ATTEMPT_CORRELATION_INVALID)?
+                }
+                (None, Some(observation), Some(physical), Some(authority)) => {
+                    let observation = strict_document(&attempt_bytes(&observation)?)?;
+                    let physical = strict_document(&attempt_bytes(&physical)?)?;
+                    let input = project_observation(observation, authority, physical)?;
+                    router_feedback::calculate_attempt_correlation(&input)
+                        .map_err(|_| ATTEMPT_CORRELATION_INVALID)?
+                }
+                _ => return Err(ATTEMPT_CORRELATION_INVALID),
+            };
+            json_output(&report, ExitCode::SUCCESS)
+        }
         EvalCommand::AcceptedChanges { input, json } => {
             if !json {
                 return Err(CliError::JsonOutputRequired);
