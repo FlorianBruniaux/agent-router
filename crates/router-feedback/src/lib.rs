@@ -2,6 +2,8 @@
 
 mod accepted_changes;
 pub use accepted_changes::*;
+mod attempt_correlation;
+pub use attempt_correlation::*;
 
 mod beta;
 mod facts;
