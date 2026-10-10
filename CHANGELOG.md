@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-10: seal the [M4 assisted diagnostic proposal](docs/bench/measurement-m4/README.md) after #158 merged: one reproducible report-cost defect, three fixed configurations and a 600,000 host-token admission envelope. Record that Router selects the lightweight baseline, that the threshold is not an enforced in-flight cap, and that approval and live trace binding remain pending. No trial or task solution is launched.
+
 - 2026-10-10: record the [M1–M3 measurement preparation](docs/bench/measurement-m123/README.md) after #157 merged. Preserve the distinction between assisted Codex comparison, native qualification and measured savings; real trials still require a sealed manifest and budget approval.
 
 - 2026-10-10: retain the [B1b self-dogfood trial](docs/bench/self-dogfood-b1b-2026-10-10/README.md), including the sealed advisory routing inputs, requested Codex worker configuration, review corrections and local measurement limits. The unchanged catalog exposes only one eligible delegation model; no comparative savings or native execution qualification is claimed.

@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "observed_at_unix_seconds": 1791664234,
+  "observed_at_utc": "2026-10-10T20:30:34Z",
+  "source": "active session collaboration.spawn_agent tool definition, Available model overrides and Reasoning efforts",
+  "source_kind": "platform_metadata",
+  "host_sha256": "0232a340bd4cc2c7cdb73e4246ac7891c5947ba35c9d990e35ebf5c5b6ccd2ec",
+  "evidence_scope": "Active collaboration tool metadata rechecked during M4 preparation. Explicit model/effort declarations only; no provider identity or permission proof. Refresh before launch on a changed host or after 24 hours.",
+  "provider_identity": "UNKNOWN",
+  "provider_inference": "UNKNOWN",
+  "capability_authentication": "UNKNOWN",
+  "native_runtime_qualification": "UNKNOWN"
+}

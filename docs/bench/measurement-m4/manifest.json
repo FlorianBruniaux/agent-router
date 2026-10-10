@@ -1,0 +1,307 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v1",
+  "kind": "assisted_codex_diagnostic_candidate",
+  "status": "awaiting_user_approval_and_preflight",
+  "execution_authorized": false,
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "task_id": "t1",
+  "task_statement": "task.md",
+  "task_repetitions": 1,
+  "assignments": [
+    {
+      "assignment_id": "m4-t1-router-r1",
+      "arm_id": "router",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    },
+    {
+      "assignment_id": "m4-t1-strongfixed-r1",
+      "arm_id": "strongfixed",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    },
+    {
+      "assignment_id": "m4-t1-cheapfixed-r1",
+      "arm_id": "cheapfixed",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    }
+  ],
+  "randomization": {
+    "method": "Python random.Random(seed).shuffle over [strongfixed, cheapfixed, router]",
+    "seed": 20261010,
+    "order": [
+      "router",
+      "strongfixed",
+      "cheapfixed"
+    ],
+    "reason": "Order frozen before any model result; one block is not a statistical comparison."
+  },
+  "configurations": [
+    {
+      "arm_id": "strongfixed",
+      "phases": [
+        {
+          "kind": "plan",
+          "model": "gpt-6.1-sol",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        },
+        {
+          "kind": "execute",
+          "model": "gpt-6.1-sol",
+          "effort": "medium",
+          "skills": [],
+          "budget_host_tokens": 100000
+        },
+        {
+          "kind": "verify",
+          "model": "gpt-6.1-sol",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        }
+      ],
+      "budget_host_tokens": 160000,
+      "independent_review": {
+        "model": "gpt-6.1-sol",
+        "effort": "high",
+        "budget_host_tokens": 20000
+      }
+    },
+    {
+      "arm_id": "cheapfixed",
+      "phases": [
+        {
+          "kind": "plan",
+          "model": "gpt-6-luna",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        },
+        {
+          "kind": "execute",
+          "model": "gpt-6-luna",
+          "effort": "medium",
+          "skills": [],
+          "budget_host_tokens": 100000
+        },
+        {
+          "kind": "verify",
+          "model": "gpt-6-luna",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        }
+      ],
+      "budget_host_tokens": 160000,
+      "independent_review": {
+        "model": "gpt-6.1-sol",
+        "effort": "high",
+        "budget_host_tokens": 20000
+      }
+    },
+    {
+      "arm_id": "router",
+      "phases": [
+        {
+          "kind": "plan",
+          "model": "gpt-6-luna",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        },
+        {
+          "kind": "execute",
+          "model": "gpt-6-luna",
+          "effort": "medium",
+          "skills": [],
+          "budget_host_tokens": 100000
+        },
+        {
+          "kind": "verify",
+          "model": "gpt-6-luna",
+          "effort": "high",
+          "skills": [],
+          "budget_host_tokens": 30000
+        }
+      ],
+      "budget_host_tokens": 160000,
+      "independent_review": {
+        "model": "gpt-6.1-sol",
+        "effort": "high",
+        "budget_host_tokens": 20000
+      }
+    }
+  ],
+  "routing": {
+    "decision_file": "router-decision.json",
+    "decision_id": "2d52e59ce0d0ae85be04bab353942a0d21c0e2ac4f2d30e2861e9944d9d316ee",
+    "policy_version": "stable-v1",
+    "capability_checks_in_route": false,
+    "actual_task_requires": [
+      "local_file_read",
+      "local_file_write_within_scope",
+      "local_test_execution"
+    ],
+    "host_permission_gate": "Check authoritative host tools and sandbox separately before launch; do not derive authority from the empty capability projection.",
+    "router_equals_cheapfixed": true,
+    "catalog_priors": "Uncalibrated scores, not measured prices or quality."
+  },
+  "transport": {
+    "surface": "collaboration.spawn_agent",
+    "role": "default",
+    "fork_turns": "none",
+    "stage_sessions": "Fresh session per phase; plan text passed only to execute; resulting patch and common statement to verify.",
+    "fresh_coordinator": {
+      "role": "default",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "fork_turns": "none"
+    },
+    "worker_subagents_allowed": false,
+    "network_tools_allowed": false,
+    "native_agent_router_runtime": false,
+    "cli_observed_version": "codex-cli 0.159.2",
+    "collaboration_runtime_build": "UNKNOWN: CLI version is not proof of desktop/collaboration build",
+    "cli_binary_sha256": "f6a6a9e645332512f639d9af23c151aa5dc2114bede75101ae21ec61aaba397b",
+    "agent_router_version": "agent-router 0.0.1"
+  },
+  "budget": {
+    "unit": "host_reported_input_plus_output_tokens",
+    "cached_input": "subset of input, not added twice",
+    "reasoning_output": "subset of output, not added twice",
+    "phase_allocation_total": 480000,
+    "independent_review_allocation_total": 60000,
+    "fresh_coordinator_allocation": 60000,
+    "total_admission_envelope": 600000,
+    "known_charged_to_this_new_trial": 0,
+    "already_started_trial_assignments": 0,
+    "preparation_and_previous_trial_usage": "Separate sunk work; incomplete/UNKNOWN, not zero and not deducted from a future savings claim.",
+    "root_chat_and_final_publication_usage": "Separate administrative overhead, measured if attributable, otherwise UNKNOWN; outside this participant envelope.",
+    "money_limit_usd": null,
+    "money_reason": "No verified tariff/invoice for these collaboration aliases. Token envelope is not a monetary or subscription-quota cap.",
+    "api_credit_purchase_authorized": false,
+    "additional_paid_api_transport_authorized": false,
+    "enforcement": "Coordinated admission and observed stop threshold, not a hard provider-side token ceiling.",
+    "hard_inflight_cap_verified": false,
+    "maximum_overshoot_tokens": null,
+    "unused_allocations_transferable": false,
+    "max_worker_stage_starts": 9,
+    "max_independent_review_starts": 3,
+    "max_coordinator_starts": 1,
+    "max_retries": 0,
+    "max_escalations": 0,
+    "stop_rule": "Before each phase/review admit only its reserved allocation; if any usage is missing/ambiguous, if the previous allocation is exceeded, or if 600000 conservatively accounted tokens are reached, interrupt active work where possible and start nothing else. Retain all costs including overrun.",
+    "conservative_admission_accounting": "When overlap is unknown, parent plus child deltas may be summed only as a conservative operational charge, explicitly not a measured consumption total. Missing counters block the next phase.",
+    "reporting_accounting": "Sum only proven disjoint complete scopes. Otherwise report per-session known values and UNKNOWN combined usage/cost."
+  },
+  "workspace": {
+    "one_checkout_per_assignment": true,
+    "base_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+    "allowed_write_paths": [
+      "docs/bench/campaign-next/pilot/run_pilot.py",
+      "docs/bench/campaign-next/tests/test_report_costs.py"
+    ],
+    "stage_write_rules": {
+      "plan": false,
+      "execute": true,
+      "verify": false,
+      "independent_review": false
+    },
+    "history_fork": false,
+    "cross_arm_exchange_allowed": false,
+    "same_instruction_and_tool_bundle": true,
+    "verifier_policy": "All frozen acceptance inputs are public in this diagnostic. No hidden-test or OS-isolation claim. Hash-check trusted verifier before/after and run it from coordinator-owned evidence directory.",
+    "os_cross_session_isolation": "UNKNOWN; fresh contexts and separate workspaces are logical separation only.",
+    "prohibited": [
+      "global_config_changes",
+      "provider_or_pilot_dispatch",
+      "cross_arm_patch_read",
+      "commit",
+      "push",
+      "merge",
+      "automatic_retry"
+    ]
+  },
+  "acceptance": {
+    "public_baseline_cases": 1,
+    "additional_public_cases": 3,
+    "all_frozen_cases_must_pass": true,
+    "existing_suite": [
+      "python3",
+      "-B",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "docs/bench/campaign-next/tests",
+      "-p",
+      "test_*.py",
+      "-v"
+    ],
+    "criteria": "task.md",
+    "independent_review_required": true,
+    "exact_patch_digest_required": true,
+    "zero_accepted_denominator": null,
+    "revocation": "Retain earlier verdict and publish a later revocation bound to the selected patch digest.",
+    "no_repair_after_final_verdict": true
+  },
+  "capture": {
+    "raw_logs": "Explicit participant session IDs and their exact local trace paths only; no bulk session scan or provider bodies in public exports.",
+    "start": "Retain task/session/model/effort identity and initial usage snapshot or proven new-session cumulative origin.",
+    "during": "Observe cumulative counters after available provider turns; interruption is best effort, never an in-flight spend guarantee.",
+    "end": "After participant completion, retain terminal cumulative snapshot and event index/hash; never substitute last_token_usage for total task usage.",
+    "model_identity": "Requested tool arguments and observed host turn metadata are distinct; missing/mismatched model or effort stops the next phase. Provider identity stays UNKNOWN.",
+    "complete_scope": "Require session/task binding, monotonic counters, all phases and retries, missing-field handling and disjointness evidence before combining.",
+    "cache_write_input_tokens": "Absent value remains null, not zero; M2 combined usage may therefore stay unknown.",
+    "privacy": "Publish allowlisted counters, hashes and verdicts; retain prompts, raw traces and private paths locally.",
+    "m2_reuse": "Project each complete participant window through M2 report; use a patch digest for Python revision. Physical call IDs cannot be invented from session IDs.",
+    "native_accounting_projection": "Unavailable until physical-work identity evidence exists; no synthetic stand-in for real calls."
+  },
+  "launch_preflight": {
+    "user_approval_for_seal": "pending",
+    "host_model_effort_metadata": "declared, recheck live at launch; preparation max age 86400 seconds",
+    "participant_trace_binding": "pending, no new participant created during preparation",
+    "host_tools_and_permissions": "pending",
+    "task_base_and_verifier_hashes": "checked offline, recheck at launch",
+    "fresh_sessions_and_workspaces": "pending",
+    "live_collector_ready": "pending: M2 imports retained exports and is not a live collector",
+    "budget_stop_observability": "pending: exact participant traces must be observable before proceeding beyond the first phase"
+  },
+  "analysis": {
+    "primary": "Per-arm accepted/rejected/UNKNOWN patch and full observed host tokens per accepted patch when complete.",
+    "secondary": [
+      "wall_duration",
+      "local_test_duration",
+      "human_active_time",
+      "scope_violations",
+      "requested_vs_observed_identity",
+      "cache_coverage",
+      "failed_or_interrupted_attempts"
+    ],
+    "human_hourly_rate": null,
+    "money_and_invoice_totals": null,
+    "router_equals_cheap_interpretation": "This block measures execution variation and routing overhead; it cannot attribute a capability or economic benefit to a different model-selection policy.",
+    "generalization": "One task and one repetition only. Diagnostic, not held-out F08/F09, native qualification or evidence for general savings.",
+    "next_campaign": "No automatic expansion to 18 assignments. New decision after this block and its full retained failures."
+  },
+  "source_files_sha256": {
+    "docs/bench/campaign-next/pilot/run_pilot.py": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+    "docs/bench/measurement-m123/m1/catalog.json": "23cced0f8e4b36f99d984ab4b8f9773c0045c8d79c522d637f05b605a7c68b8c",
+    "docs/bench/measurement-m123/m1/campaign.py": "6654622b661005abe48e0b55333a2e2a1e6f29c4f5814bd6475b2dd9fe4acefa",
+    "docs/bench/measurement-m123/m2/trace_to_task.py": "ee0858552ec799e7f990d2e82d99d819eb7443b24363d059c77c4af152b566a5",
+    "docs/bench/measurement-m123/m3/acceptance.py": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+    "docs/bench/measurement-m123/m3/verifier/hidden_cases.json": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392",
+    "AGENTS.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564"
+  },
+  "approval_receipt": null
+}

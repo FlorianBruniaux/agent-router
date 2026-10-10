@@ -74,6 +74,7 @@ sauf celles marquées (FR).
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Agent Router utilisé sur son propre code](bench/self-dogfood-b1b-2026-10-10/README.md) (EN) | 2026-10-10 : essai B1b guidé par le routage ; statut dans le rapport, aucun gain comparatif établi |
+| [Premier diagnostic assisté M4](bench/measurement-m4/README.md) | Tâche et configurations scellées, proposition de 600 000 tokens à approuver ; aucun essai lancé |
 | [Préparation des mesures M1–M3](bench/measurement-m123/README.md) | Catalogue de campagne, bilan des traces et répétition hors ligne ; aucun gain établi |
 | [Candidat de calibration v2](bench/calibration-v2/README.md) (FR) | 2026-10-05 : protocole de collecte et modèle de préparation incomplet, sans autorisation d'exécution |
 | [Décision sur l'entrée automatique](bench/owned-entry-2026-10-07/README.md) | 2026-10-07 : app-server direct et ACP non admis ; contrôle par envoi et comparaison comportementale encore incomplets |

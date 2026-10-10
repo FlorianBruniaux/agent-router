@@ -1,0 +1,36 @@
+{
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "task_id": "t1",
+  "observed_list_cost_usd": 1.0,
+  "expected_list_cost_usd": 3,
+  "observed_cost_per_accepted_list_usd": 1.0,
+  "expected_cost_per_accepted_list_usd": 3,
+  "acceptance": [
+    {
+      "exit_code": 1,
+      "expected_baseline_failure": true,
+      "result": {
+        "cases": 1,
+        "passed": false,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence",
+        "task_id": "t1"
+      },
+      "stdout_sha256": "e34a1959c3fc5c87e21c8723a705b0b6a4bc23464b18ab351574e948b5c405d8"
+    },
+    {
+      "exit_code": 1,
+      "expected_baseline_failure": true,
+      "result": {
+        "cases": 3,
+        "passed": false,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence",
+        "task_id": "t1"
+      },
+      "stdout_sha256": "616546a8b4aead1b2dfa8e1771ab7b34d9c7776126c639ae4906fe859aa792f0"
+    }
+  ],
+  "task_solution_implemented": false,
+  "provider_calls": 0
+}

@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "scope": "Offline protocol preparation only",
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "pr158_reviewed_head": "1ef5a7ab1c142ac28e2f1cbb2644004b71ea1ec1",
+  "pr158_merge_tree_matches_reviewed_tree": true,
+  "checks": {
+    "task_reproduction": "expected failure: 1 public and 3 additional public cases; observed 1 USD, expected 3 USD",
+    "existing_campaign_tests": {
+      "command": "python3 -B -m unittest discover -s docs/bench/campaign-next/tests -p 'test_*.py' -v",
+      "passed": 17,
+      "failed": 0
+    },
+    "route_replays": {
+      "count": 2,
+      "byte_identical": true,
+      "decision_id": "2d52e59ce0d0ae85be04bab353942a0d21c0e2ac4f2d30e2861e9944d9d316ee"
+    },
+    "protocol_consistency": "passed: model/effort declarations, 3 assignments, phase allocations, 600000 total, unchanged target source, no execution authority",
+    "model_preparation": "READY_FOR_PREPARATION"
+  },
+  "new_rust_code": false,
+  "full_rust_or_python_workspace_rerun": false,
+  "real_trial_started": false,
+  "trial_participants_started": 0,
+  "solution_implemented": false,
+  "provider_identity": "UNKNOWN",
+  "runtime_isolation": "UNKNOWN",
+  "live_trace_binding": "pending",
+  "hard_inflight_budget_cap": "not verified",
+  "economic_benefit": "UNKNOWN",
+  "review_type": "coordinator self-check; not a new independent review",
+  "limits": [
+    "17 existing offline tests passing do not fix the reproduced task bug.",
+    "Reference acceptance cases are public, not hidden.",
+    "Metadata availability and successful routing do not prove a provider call.",
+    "The monitored envelope has unbounded possible in-flight overshoot.",
+    "M2 reads retained exports, not a qualified live participant collector."
+  ]
+}
