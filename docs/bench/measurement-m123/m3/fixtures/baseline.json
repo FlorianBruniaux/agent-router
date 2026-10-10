@@ -1,0 +1,54 @@
+{
+  "source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+  "results": [
+    {
+      "public": {
+        "task_id": "t1",
+        "passed": false,
+        "cases": 1,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      },
+      "private": {
+        "task_id": "t1",
+        "passed": false,
+        "cases": 3,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      }
+    },
+    {
+      "public": {
+        "task_id": "t2",
+        "passed": false,
+        "cases": 1,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      },
+      "private": {
+        "task_id": "t2",
+        "passed": false,
+        "cases": 2,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      }
+    },
+    {
+      "public": {
+        "task_id": "t3",
+        "passed": false,
+        "cases": 1,
+        "passed_cases": 0,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      },
+      "private": {
+        "task_id": "t3",
+        "passed": false,
+        "cases": 7,
+        "passed_cases": 2,
+        "scope": "local acceptance only; not provider/runtime evidence"
+      }
+    }
+  ],
+  "solutions_implemented": false
+}

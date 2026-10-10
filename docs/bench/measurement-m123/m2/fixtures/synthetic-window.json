@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "task": {
+    "task_id": "fix",
+    "source_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "revision": {
+      "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "verdict": "unknown",
+    "tests": [
+      {
+        "test_id": "unit",
+        "status": "passed",
+        "evidence_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "attempts": [
+    {
+      "attempt_id": "try-1",
+      "session_id": "session-1",
+      "revision": {
+        "digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "test_ids": [
+        "unit"
+      ],
+      "verdict": "unknown",
+      "evidence_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "snapshots": [
+    {
+      "snapshot_id": "one",
+      "attempt_id": "try-1",
+      "scope_id": "scope-1",
+      "start": "2026-10-10T10:00:00Z",
+      "end": "2026-10-10T10:01:00Z",
+      "usage": {
+        "input_tokens": 100,
+        "cached_input_tokens": 80,
+        "output_tokens": 20,
+        "reasoning_output_tokens": 10,
+        "cache_write_input_tokens": 0,
+        "total_tokens": 120
+      },
+      "evidence_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "disjoint_scopes_evidence_sha256": null
+}

@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "version": "measurement-m123-collaboration-priors-v1",
+  "models": [
+    {
+      "id": "gpt-6.1-sol",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "capabilities": [],
+      "quality_micros": 900000,
+      "cost_micros": 700000,
+      "latency_micros": 700000,
+      "source": "2026-10-10 active collaboration.spawn_agent metadata; quality/cost/latency are arbitrary uncalibrated policy priors, not price, tokens, timing or measured quality"
+    },
+    {
+      "id": "gpt-6-astra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "capabilities": [],
+      "quality_micros": 950000,
+      "cost_micros": 900000,
+      "latency_micros": 900000,
+      "source": "2026-10-10 active collaboration.spawn_agent metadata; quality/cost/latency are arbitrary uncalibrated policy priors, not price, tokens, timing or measured quality"
+    },
+    {
+      "id": "gpt-6-sol",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "capabilities": [],
+      "quality_micros": 850000,
+      "cost_micros": 650000,
+      "latency_micros": 650000,
+      "source": "2026-10-10 active collaboration.spawn_agent metadata; quality/cost/latency are arbitrary uncalibrated policy priors, not price, tokens, timing or measured quality"
+    },
+    {
+      "id": "gpt-6-luna",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [],
+      "quality_micros": 700000,
+      "cost_micros": 300000,
+      "latency_micros": 300000,
+      "source": "2026-10-10 active collaboration.spawn_agent metadata; quality/cost/latency are arbitrary uncalibrated policy priors, not price, tokens, timing or measured quality"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "capabilities": [],
+      "quality_micros": 800000,
+      "cost_micros": 500000,
+      "latency_micros": 500000,
+      "source": "2026-10-10 active collaboration.spawn_agent metadata; quality/cost/latency are arbitrary uncalibrated policy priors, not price, tokens, timing or measured quality"
+    }
+  ],
+  "skills": []
+}

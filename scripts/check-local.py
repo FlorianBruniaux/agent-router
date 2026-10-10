@@ -54,6 +54,9 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
                                   ("native-hook-failure-tests", "docs/bench/native-integration-u07", "test_*.py"),
                                   ("campaign-tests", "docs/bench/campaign-next/tests", "test_*.py"),
                                   ("calibration-tests", "docs/bench/calibration-v2/tests", "test_*.py"),
+                                  ("measurement-m1-tests", "docs/bench/measurement-m123/m1", "test_*.py"),
+                                  ("measurement-m2-tests", "docs/bench/measurement-m123/m2", "test_*.py"),
+                                  ("measurement-m3-tests", "docs/bench/measurement-m123/m3/tests", "test_*.py"),
                                   ("physical-send-tests", "docs/bench/physical-send-feasibility-2026-10-07", "test_*.py"),
                                   ("startup-outage-tests", "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation", "test_*.py"),
                                   ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_*.py")]:

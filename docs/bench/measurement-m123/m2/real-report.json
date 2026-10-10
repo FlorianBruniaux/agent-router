@@ -1,0 +1,205 @@
+{
+  "accepted_changes": {
+    "reason": "host_session_counters_are_not_physical_work_identities",
+    "status": "unavailable"
+  },
+  "attempts": [
+    {
+      "attempt_id": "coordinator",
+      "evidence_sha256": "64dedee39ea0173e20d964b6496d7633b38d35f6af8bdbd614dad9541492730b",
+      "observed_native_session_id": null,
+      "revision": {
+        "source_files_sha256": {
+          "crates/agent-router-cli/src/command.rs": "48db8ebd0004d9f0f95a4dc39294c5c2ec3fce5a7b12036eb89bc74446dcc447",
+          "crates/agent-router-cli/src/evaluation.rs": "128b171ec39497fef2a99e4ebb0eb6496c0b99967720c4e6723575be2a198ffb",
+          "crates/agent-router-cli/tests/attempt_correlation.rs": "2173ebd23d69168c216b4ce7d245503dc0261100a84a2c5b1db8292a83b5e4c9"
+        }
+      },
+      "session_id": "coordinator-retained-session",
+      "session_identity_kind": "report_local_alias",
+      "test_ids": [
+        "fmt",
+        "clippy",
+        "workspace",
+        "harness",
+        "secrets"
+      ],
+      "verdict": "unknown"
+    },
+    {
+      "attempt_id": "implementation",
+      "evidence_sha256": "64dedee39ea0173e20d964b6496d7633b38d35f6af8bdbd614dad9541492730b",
+      "observed_native_session_id": null,
+      "revision": {
+        "source_files_sha256": {
+          "crates/agent-router-cli/src/command.rs": "48db8ebd0004d9f0f95a4dc39294c5c2ec3fce5a7b12036eb89bc74446dcc447",
+          "crates/agent-router-cli/src/evaluation.rs": "128b171ec39497fef2a99e4ebb0eb6496c0b99967720c4e6723575be2a198ffb",
+          "crates/agent-router-cli/tests/attempt_correlation.rs": "2173ebd23d69168c216b4ce7d245503dc0261100a84a2c5b1db8292a83b5e4c9"
+        }
+      },
+      "session_id": "implementation-retained-session",
+      "session_identity_kind": "report_local_alias",
+      "test_ids": [
+        "fmt",
+        "clippy",
+        "workspace",
+        "harness",
+        "secrets"
+      ],
+      "verdict": "unknown"
+    }
+  ],
+  "configured_parent": {
+    "effort": "xhigh",
+    "model": "gpt-6-astra"
+  },
+  "cost_per_accepted_task_microusd": null,
+  "cost_unknown_reasons": [
+    "no_supplied_money_observations",
+    "pricing_incomplete",
+    "invoice_absent"
+  ],
+  "costs": {
+    "estimated_microusd": null,
+    "host_reported_microusd": null,
+    "invoiced_microusd": null
+  },
+  "coverage": {
+    "attempt_granularity": "coordinator_and_implementation_work_not_physical_requests",
+    "child_counter_origin": "unknown",
+    "cutoff_excludes_later_work": true,
+    "human_active_time_seconds": null,
+    "local_checks": "supplied_gate_results_linked_to_task_revision",
+    "parent_baseline_present": true,
+    "parent_delta_recomputed": false,
+    "raw_session_read": false,
+    "revision_kind": "supplied_source_file_digest_set_not_git_commit_acceptance",
+    "session_aliases": "producer_assigned_labels_not_native_ids",
+    "source_kind": "retained_allowlisted_host_exports",
+    "user_acceptance": "unknown"
+  },
+  "evidence_trust": "supplied_unverified",
+  "implementation_elapsed_seconds": 1152,
+  "kind": "offline_host_trace_to_task",
+  "local_check_seconds": {
+    "clippy": 31.239,
+    "fmt": 1.658,
+    "harness": 1.965,
+    "secrets": 0.647,
+    "workspace": 587.358
+  },
+  "native_runtime_evidence": false,
+  "physical_provider_calls": null,
+  "provider_inference_identity": null,
+  "ratio_unknown_reason": "no_explicitly_accepted_task",
+  "schema_version": 1,
+  "sources_sha256": {
+    "child_retained_cutoff": "2b08f5fb533809d81578371c375025cf9f6fdde5ac77714d3ecd5408587fe302",
+    "parent_baseline": "76caf7d0ad319ab9c7fcceb20aee8f1e4f465192c6bb9567f0aed2b38acb74a1",
+    "parent_capture_code": "2f9fab02b3b1ca23caca40b92e4eeab5eb57220eb64414c694bd825e5498056b",
+    "parent_cutoff": "4eafa28941dcad6d2b0c7dbc3b9f90157d9d373ccf5cb48de89f61c6d2ea1d4e",
+    "public_measurements": "64dedee39ea0173e20d964b6496d7633b38d35f6af8bdbd614dad9541492730b"
+  },
+  "task": {
+    "revision": {
+      "source_files_sha256": {
+        "crates/agent-router-cli/src/command.rs": "48db8ebd0004d9f0f95a4dc39294c5c2ec3fce5a7b12036eb89bc74446dcc447",
+        "crates/agent-router-cli/src/evaluation.rs": "128b171ec39497fef2a99e4ebb0eb6496c0b99967720c4e6723575be2a198ffb",
+        "crates/agent-router-cli/tests/attempt_correlation.rs": "2173ebd23d69168c216b4ce7d245503dc0261100a84a2c5b1db8292a83b5e4c9"
+      }
+    },
+    "source_revision": "4b053da3c08424921019ee8dafb2906ff57c7151",
+    "task_id": "b1b-attempt-correlation-cli",
+    "tests": [
+      {
+        "evidence_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "status": "passed",
+        "test_id": "fmt"
+      },
+      {
+        "evidence_sha256": "d62aa48bcdd4f4c7d52a8ab26eb92b9323592b61bdec8e26ff3fd5be763ebb68",
+        "status": "passed",
+        "test_id": "clippy"
+      },
+      {
+        "evidence_sha256": "cfb83b4d0c1c34fa2fd3d463f9e11daa2833b8500b4f69b2dae586a58348a39f",
+        "status": "passed",
+        "test_id": "workspace"
+      },
+      {
+        "evidence_sha256": "b027a47dac29fe66dd300311889233b8113aea280478957f606da0beb7c682fe",
+        "status": "passed",
+        "test_id": "harness"
+      },
+      {
+        "evidence_sha256": "b0bb6204c419ae67134275efd0fc86c8c531365711bfdb5d7b35fb768c63daaa",
+        "status": "passed",
+        "test_id": "secrets"
+      }
+    ],
+    "verdict": "unknown"
+  },
+  "usage": {
+    "basis": "host_reported",
+    "combined": null,
+    "combined_unknown_reasons": [
+      "multiple_windows_same_scope_not_additive",
+      "scope_overlap_unknown"
+    ],
+    "disjoint_scopes_evidence_sha256": null,
+    "duplicate_snapshots": 0,
+    "windows": [
+      {
+        "attempt_id": "coordinator",
+        "end": "2026-10-10T15:18:45.923Z",
+        "evidence_sha256": "4eafa28941dcad6d2b0c7dbc3b9f90157d9d373ccf5cb48de89f61c6d2ea1d4e",
+        "scope_id": "parent_scope",
+        "snapshot_id": "parent_delta",
+        "start": "2026-10-10T14:38:40.269Z",
+        "uncached_input_tokens": 174370,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 9500416,
+          "input_tokens": 9674786,
+          "output_tokens": 50252,
+          "reasoning_output_tokens": 25444,
+          "total_tokens": 9725038
+        }
+      },
+      {
+        "attempt_id": "implementation",
+        "end": "2026-10-10T15:09:31.458Z",
+        "evidence_sha256": "2b08f5fb533809d81578371c375025cf9f6fdde5ac77714d3ecd5408587fe302",
+        "scope_id": "child_scope",
+        "snapshot_id": "child_retained_cumulative",
+        "start": null,
+        "uncached_input_tokens": 167239,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 6617728,
+          "input_tokens": 6784967,
+          "output_tokens": 37515,
+          "reasoning_output_tokens": 10481,
+          "total_tokens": 6822482
+        }
+      },
+      {
+        "attempt_id": "implementation",
+        "end": "2026-10-10T15:10:22.363Z",
+        "evidence_sha256": "64dedee39ea0173e20d964b6496d7633b38d35f6af8bdbd614dad9541492730b",
+        "scope_id": "child_scope",
+        "snapshot_id": "child_public_cumulative",
+        "start": null,
+        "uncached_input_tokens": 169371,
+        "usage": {
+          "cache_write_input_tokens": 0,
+          "cached_input_tokens": 7100800,
+          "input_tokens": 7270171,
+          "output_tokens": 39000,
+          "reasoning_output_tokens": 11209,
+          "total_tokens": 7309171
+        }
+      }
+    ]
+  }
+}

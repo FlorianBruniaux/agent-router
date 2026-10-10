@@ -1,0 +1,103 @@
+{
+  "source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+  "random_seed": 20261010,
+  "tasks": [
+    {
+      "task_id": "t1",
+      "source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+      "allowed_write_scope": [
+        "docs/bench/campaign-next/pilot/run_pilot.py",
+        "docs/bench/campaign-next/tests/test_report_costs.py"
+      ],
+      "hidden_tests_separated": true,
+      "human_review_rule": "Blind diff and frozen criteria review; reject scope escape and authority changes.",
+      "statement_path": "tasks/t1.md",
+      "statement_sha256": "fc3dc8f518569b9f99bcf99181e1332eb8fafea68c3861bd198cdf1642bb61f3",
+      "acceptance_script_path": "acceptance.py",
+      "acceptance_script_sha256": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+      "hidden_tests_path": "verifier/hidden_cases.json",
+      "hidden_tests_sha256": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392"
+    },
+    {
+      "task_id": "t2",
+      "source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+      "allowed_write_scope": [
+        "docs/bench/calibration-v2/validate_manifest.py",
+        "docs/bench/calibration-v2/tests/test_manifest.py"
+      ],
+      "hidden_tests_separated": true,
+      "human_review_rule": "Blind diff and frozen criteria review; reject scope escape and authority changes.",
+      "statement_path": "tasks/t2.md",
+      "statement_sha256": "09917a0bc2bef25fc22fb76e0f2272751ffe9ae646a84c8b3be399526fef57bf",
+      "acceptance_script_path": "acceptance.py",
+      "acceptance_script_sha256": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+      "hidden_tests_path": "verifier/hidden_cases.json",
+      "hidden_tests_sha256": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392"
+    },
+    {
+      "task_id": "t3",
+      "source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+      "allowed_write_scope": [
+        "docs/bench/calibration-v2/validate_manifest.py",
+        "docs/bench/calibration-v2/tests/test_manifest.py"
+      ],
+      "hidden_tests_separated": true,
+      "human_review_rule": "Blind diff and frozen criteria review; reject scope escape and authority changes.",
+      "statement_path": "tasks/t3.md",
+      "statement_sha256": "209d33aeef44fa865fe02c31be941d740dcc84a5b5e275b8cce4a145611201cc",
+      "acceptance_script_path": "acceptance.py",
+      "acceptance_script_sha256": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+      "hidden_tests_path": "verifier/hidden_cases.json",
+      "hidden_tests_sha256": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392"
+    }
+  ],
+  "repetitions": 2,
+  "arm_aliases": {
+    "strongfixed": "E",
+    "cheapfixed": "S",
+    "router": "A-v2"
+  },
+  "repository_inputs": {
+    "docs/bench/calibration-v2/validate_manifest.py": "ed240d05ba27419037ac2e692cafd19927e274b7d37e4108226ad85ffe0f8943",
+    "docs/bench/calibration-v2/manifest.template.json": "82506c15449cb00c918bef535377518dc8598e8d1f8554621ef20d5c602eed17",
+    "docs/bench/calibration-v2/fixtures/synthetic/manifest.json": "26008b2fd9b0bf4d295ffcafa3b91aba66b62ff3988ef7224a10cd63a1f5218d",
+    "docs/bench/campaign-next/pilot/run_pilot.py": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+    "tests/fixtures/evaluation/accepted-changes-v1.json": "1e4e993a1105c95e7381edc5f372835b08c37d3eea4eae1a5f0b556f3ce2769f"
+  },
+  "sealed_files": {
+    "rehearse.py": "4be91fb3cfd34d973079566e9e272db7998073bade2668d38a0f22327aa7eaea",
+    "acceptance.py": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+    "tasks/t1.md": "fc3dc8f518569b9f99bcf99181e1332eb8fafea68c3861bd198cdf1642bb61f3",
+    "tasks/t2.md": "09917a0bc2bef25fc22fb76e0f2272751ffe9ae646a84c8b3be399526fef57bf",
+    "tasks/t3.md": "209d33aeef44fa865fe02c31be941d740dcc84a5b5e275b8cce4a145611201cc",
+    "verifier/hidden_cases.json": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392",
+    "project_accounting.py": "b9b6d399b4c6d5508ab74aee540fe0f6ea89a2f7a8a454fd2fc86635b5c123b5",
+    "fixtures/scenario.json": "781e4569bfe41fda2d20f423f7669a7168efc68f89ae6f06b32b91e6ef60ea9a",
+    "tests/test_candidates.py": "53709c853ec649d39ad6517b5d20597e1722193d44345658bf887564b3883411",
+    "tests/test_rehearsal.py": "ff9fc11194ca368752a1ee82b4f1e5e64027c37fdb12a0141cb2552b43a7dab3",
+    "tests/test_projection.py": "d3203ba5e244641e13b3170a2997abd22a24285f28d22164da48604b891aebc9"
+  },
+  "constraints": {
+    "host": "same Codex host, exact version frozen in M4",
+    "tools": "same local file, search, patch and test tools; no network/provider nested calls",
+    "steps": [
+      "plan",
+      "implement",
+      "verify"
+    ],
+    "max_attempts": 2,
+    "retry": "one known terminal infrastructure failure only; no automatic retry on ambiguity",
+    "starting_state": "independent clean checkout of source_commit per assignment; no prior solutions",
+    "execution": "sequential assignments within each block",
+    "human_time": "record separately from wall and local test time",
+    "cache": "record observed cache/unknown, never assume cold",
+    "output": "separate assignment workspace and fresh session; no shared result memory"
+  },
+  "live_dependencies": {
+    "catalog": "../m1/catalog.json",
+    "host": "../m1/host-snapshot.json",
+    "provenance": "../m1/provenance.json",
+    "accounting": "../m2/trace_to_task.py"
+  },
+  "live_status": "M4 exact configuration, version, budget, consent and transport authorization unresolved"
+}

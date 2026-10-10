@@ -1,0 +1,10 @@
+{
+  "provenance": "Locally authored synthetic acceptance inputs, no provider output or solution.",
+  "t1": [
+    {"accepted": 1, "valid_cost": 7, "invalid_cost": 11},
+    {"accepted": 1, "valid_cost": 7, "invalid_cost": null},
+    {"accepted": 0, "valid_cost": 7, "invalid_cost": 11}
+  ],
+  "t2": ["template", "invalid"],
+  "t3": [null, [], "malformed", 19, true, {}, {"corpus": "malformed"}]
+}
