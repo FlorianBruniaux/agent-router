@@ -1,0 +1,11 @@
+{
+  "accepted": 2,
+  "ambiguous": 0,
+  "assigned": 18,
+  "attempts": 4,
+  "authorization": "UNKNOWN",
+  "cost_calculator": "agent-router eval accepted-changes",
+  "executable_ready": false,
+  "mode": "fake_only",
+  "unrun": 15
+}

@@ -67,6 +67,10 @@ establish a signed release, installation, automatic routing or measured savings.
 The quality group discovers every `test_*.py` native-probe suite, including
 versioned probes and the separate-session decision fixture under
 `native-integration-u06`, and the offline manifest tests under `calibration-v2/tests`.
+It also includes the campaign catalog, trace accounting and offline rehearsal
+suites under [measurement-m123](bench/measurement-m123/README.md), with failures
+propagated through the same runner.
+
 It also includes the physical-send broker, startup-outage cancellation and
 [dedicated-client qualification](bench/owned-entry-qualification-2026-10-08/README.md)
 unit suites. Discovery runs their scripted/loopback fixtures only; native probes

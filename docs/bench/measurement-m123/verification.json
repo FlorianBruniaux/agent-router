@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-10-10",
+  "scope": "offline measurement preparation, not real trial or native qualification",
+  "base_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+  "source_unchanged_during_checks": true,
+  "tested_workspace_fingerprint": "b8e83b550f0ac9d474e1b14f8d0db49dc11fd709ad0375cc2a055f3478fc8212",
+  "implementation_and_fixture_sha256": {
+    "scripts/check-local.py": "33a388e3b071cda95e00fb6c9d66d4cf1a82ef6f592e166e3d9fe6f916aab19a",
+    "scripts/test-check-local.py": "d5f9a192121ec82f249f2cb4bbc160f924f60d2c17fa0b35cad986df4194510c",
+    "docs/bench/measurement-m123/m1/campaign.py": "6654622b661005abe48e0b55333a2e2a1e6f29c4f5814bd6475b2dd9fe4acefa",
+    "docs/bench/measurement-m123/m1/test_campaign.py": "a0fe0c63cd02ebbf70b04619f73f89f77126da610d037784b29719e83f986628",
+    "docs/bench/measurement-m123/m2/test_trace_to_task.py": "721a034821713c1f753e9e20038a32e8ae34fd41bcf754b56c6da306a51a0779",
+    "docs/bench/measurement-m123/m2/trace_to_task.py": "ee0858552ec799e7f990d2e82d99d819eb7443b24363d059c77c4af152b566a5",
+    "docs/bench/measurement-m123/m3/acceptance.py": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+    "docs/bench/measurement-m123/m3/project_accounting.py": "b9b6d399b4c6d5508ab74aee540fe0f6ea89a2f7a8a454fd2fc86635b5c123b5",
+    "docs/bench/measurement-m123/m3/rehearse.py": "4be91fb3cfd34d973079566e9e272db7998073bade2668d38a0f22327aa7eaea",
+    "docs/bench/measurement-m123/m3/tests/test_candidates.py": "53709c853ec649d39ad6517b5d20597e1722193d44345658bf887564b3883411",
+    "docs/bench/measurement-m123/m3/tests/test_projection.py": "d3203ba5e244641e13b3170a2997abd22a24285f28d22164da48604b891aebc9",
+    "docs/bench/measurement-m123/m3/tests/test_rehearsal.py": "ff9fc11194ca368752a1ee82b4f1e5e64027c37fdb12a0141cb2552b43a7dab3",
+    "docs/bench/measurement-m123/m1/catalog.json": "23cced0f8e4b36f99d984ab4b8f9773c0045c8d79c522d637f05b605a7c68b8c",
+    "docs/bench/measurement-m123/m1/host-snapshot.json": "eb3477ff4569794ffcb1eebeccb4d272c00fd9b2981dd39cbbc81dcaa7468bf0",
+    "docs/bench/measurement-m123/m1/identity-example.json": "9a4b77d7ff8a7db1cb40478426bcaf10007fa686ff90a4f47eb17f2693b13315",
+    "docs/bench/measurement-m123/m1/prepare-example.json": "69aa1136735c271f2cb65b9804b6843fed9f43f7b68c0308b62c15b67c05269a",
+    "docs/bench/measurement-m123/m1/provenance.json": "e992829b63039e18597c5dec3465e19db84d2387ff014b5c0b490e4ea9860a79",
+    "docs/bench/measurement-m123/m1/request-template.json": "282040ccab11aea672c04f9c99c56144219340cd3f7b0f907ca15a74c0f36dd3",
+    "docs/bench/measurement-m123/m1/route-example.json": "3107fa489f9c9c4212c5bf9357dc11ef70d815e4b3cb9b038f0d5af98dfe26ce",
+    "docs/bench/measurement-m123/m1/verification.json": "e2180cb57a587966055e0826427e77cb1e75145d8b87fb178367f7c7c51156c4",
+    "docs/bench/measurement-m123/m2/fixtures/synthetic-window.json": "8be063807c9eb3eb4ed5b30cf616f03071e80f4682a19f1314fc57968057fa86",
+    "docs/bench/measurement-m123/m2/real-report.json": "6dbd5e0d99e230bc45ef8aab888bd690e4a424722051a18e091186b34bf2827f",
+    "docs/bench/measurement-m123/m3/candidate.json": "ca8169603371016d50af8ed785fde754bd92e331c36f6d6fc7c74dc6ccb720c5",
+    "docs/bench/measurement-m123/m3/fixtures/accepted-changes.json": "3451cb72142f6139b76cb03be4acc7ca5e8128c5a6f9da306c249c789268fd5b",
+    "docs/bench/measurement-m123/m3/fixtures/baseline.json": "b5220128762ce99608c50a96d784c3e4cc5d51ddcbc5dd97620aeb16f08b25e0",
+    "docs/bench/measurement-m123/m3/fixtures/plan.json": "ee0c931c328fe6e854b49c248a636bbc2bba155576c207e5f461fe993797cbb9",
+    "docs/bench/measurement-m123/m3/fixtures/scenario.json": "781e4569bfe41fda2d20f423f7669a7168efc68f89ae6f06b32b91e6ef60ea9a",
+    "docs/bench/measurement-m123/m3/fixtures/state.json": "108c8414e88c5b74f98f2a9f5ab713413991bd3584338c5df7eadecc47daf0e9",
+    "docs/bench/measurement-m123/m3/fixtures/summary.json": "664e2cfc993c44740590d7743c4e990b3057d6fe8d3bd65a2989b3a11ac746ba",
+    "docs/bench/measurement-m123/m3/verifier/hidden_cases.json": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392"
+  },
+  "checks": [
+    {
+      "id": "host-syntax",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.040658,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.129046,
+      "log_sha256": "2c37d50a88147ca2ebd5197d74ee37d462dab650d793512e849814c28d5a38f0",
+      "tests_passed_or_run": 3
+    },
+    {
+      "id": "script-test-check-adrs",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.131651,
+      "log_sha256": "c65f3b02855d8d8ac57aee8bb1f04f8748a3444d195084252df5f5fde70bd06d",
+      "tests_passed_or_run": 30
+    },
+    {
+      "id": "script-test-check-local",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 5.931149,
+      "log_sha256": "7415c37fc0759cc8bd9519704e376f55e8a48db429b6e522f4ec4bd2865615b3",
+      "tests_passed_or_run": 30
+    },
+    {
+      "id": "script-test-package-binary",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.34544,
+      "log_sha256": "a4260590fd67b6338f768cc8660f515e2117d2e59e52704aa48e48c2c5f9bedf",
+      "tests_passed_or_run": 17
+    },
+    {
+      "id": "script-test-package-core",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.183428,
+      "log_sha256": "e7c7c10ea3dd028a69ae180fa7b4cb89186bb9a6a7aebe54b5e9ca4d0483f4ed",
+      "tests_passed_or_run": 26
+    },
+    {
+      "id": "script-test-release-local",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 9.614934,
+      "log_sha256": "846ca8f39359ca4d087da2a9c9d90bf0d2845c74fc3969f3c2839e380adc4844",
+      "tests_passed_or_run": 27
+    },
+    {
+      "id": "egress-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 13.895583,
+      "log_sha256": "32e81da14be5d93e2783b9017ec587b3120a2709dc2affef546398f299c71826",
+      "tests_passed_or_run": 58
+    },
+    {
+      "id": "native-probe-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 8.13213,
+      "log_sha256": "42ca03932de07e8387314c76376486690a17b8c7729246008889c6285cf8d240",
+      "tests_passed_or_run": 33
+    },
+    {
+      "id": "native-decision-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 3.616848,
+      "log_sha256": "bad91ab2ef0fb3ddaabd68e24eb9b7ad7f6964423cbb84d37fbe55432242bc0a",
+      "tests_passed_or_run": 13
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 4.937843,
+      "log_sha256": "bc38bb2bedd2d25f6af92fd523b5044aff3eb14cd34bdbeae1892391e34005da",
+      "tests_passed_or_run": 17
+    },
+    {
+      "id": "campaign-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.67312,
+      "log_sha256": "594507cb39a08b37669f50a2c8d2f710fe9db52a32886a443980fa2d316eab4a",
+      "tests_passed_or_run": 17
+    },
+    {
+      "id": "calibration-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 3.947313,
+      "log_sha256": "7822aacafaa4c5f24c4fd50ace6da7da8efc661105ed60b397c7e9bec55ac264",
+      "tests_passed_or_run": 30
+    },
+    {
+      "id": "measurement-m1-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.186704,
+      "log_sha256": "5c17de2bc41b27610af92e741c7d2688ef6888023019f6dec6249add20a5ccb6",
+      "tests_passed_or_run": 12
+    },
+    {
+      "id": "measurement-m2-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 1.532678,
+      "log_sha256": "80a365ffd2046c1acc1b80dc70fe055e429e92f1819d2ca1ffae8d8b938b3883",
+      "tests_passed_or_run": 20
+    },
+    {
+      "id": "measurement-m3-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 2.901588,
+      "log_sha256": "a0fd5e764d237e862717afdeeb2c3bd6324a48b1e550cb7867dee404ae854be6",
+      "tests_passed_or_run": 19
+    },
+    {
+      "id": "physical-send-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.665357,
+      "log_sha256": "1dbe8f8a0225345d7269a055d56968ac639e265ef35a92baba9ef279de1dd633",
+      "tests_passed_or_run": 12
+    },
+    {
+      "id": "startup-outage-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.127777,
+      "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4",
+      "tests_passed_or_run": 8
+    },
+    {
+      "id": "owned-entry-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 0.402503,
+      "log_sha256": "1054045d36c35779fdfccb1946df05be4c08cc4d4c12b8332b3164908f9d21e0",
+      "tests_passed_or_run": 44
+    },
+    {
+      "id": "secrets-dir",
+      "status": "passed",
+      "exit_code": 0,
+      "duration_seconds": 1.052513,
+      "log_sha256": "6e8111534df124bc9ca160f183bbe012c4bd98e4c3959dddfb7fcce5e7ef43a8"
+    }
+  ],
+  "python_tests_run": 416,
+  "new_measurement_tests": {
+    "m1": 12,
+    "m2": 20,
+    "m3": 19
+  },
+  "rust_gate_reuse": {
+    "matching_source_files": 414,
+    "source_mismatches": 0,
+    "prior_head": "663128c19d13cf300afb1778eace4614f316e4b4",
+    "prior_measurement": "../self-dogfood-b1b-2026-10-10/measurements.json",
+    "workspace_passed_result_lines": 1735,
+    "workspace_ignored": 42,
+    "full_rust_suite_repeated_for_m123": false
+  },
+  "reviews": [
+    {
+      "scope": "m1 and local runner integration",
+      "reviewer": "m1_independent_review",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "verdict": "APPROVE",
+      "tests": 12,
+      "fixed_findings": []
+    },
+    {
+      "scope": "m2",
+      "reviewer": "m2_independent_review",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "verdict": "APPROVE",
+      "helper_sha256": "ee0858552ec799e7f990d2e82d99d819eb7443b24363d059c77c4af152b566a5",
+      "tests": 20,
+      "fixed_findings": [
+        "Reject unvalidated nested metadata in exports",
+        "Refuse malformed usage/duration and boolean/float/null gate statuses with fixed errors"
+      ]
+    },
+    {
+      "scope": "m3",
+      "reviewer": "m2_independent_review",
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "verdict": "APPROVE",
+      "plan_sha256": "dad91e81a0946a3a26eeeb31e9d60a3329b77ab33128ae541f09b500aa9fe18c",
+      "fixed_findings": [
+        "Projection must verify plan checksum, all assignments and bounded strict input"
+      ]
+    }
+  ],
+  "synthetic_calculator": {
+    "assignments": 18,
+    "physical_observations": 4,
+    "selected_accepted_changes": 2,
+    "model_total_microusd": 4000,
+    "ratio_numerator_microusd": 4000,
+    "ratio_denominator": 2,
+    "evidence_trust": "supplied_unverified",
+    "costs_are_fabricated": true
+  },
+  "limits": [
+    "No real campaign or provider inference was executed by these preparation tools.",
+    "No measured economic benefit.",
+    "Real host combined usage and costs remain unknown.",
+    "Native execution and verifier isolation remain unqualified.",
+    "Local macOS selected checks are not cross-platform CI.",
+    "This record and final documentation were written after the checks; implementation and fixture hashes above identify tested bytes."
+  ]
+}

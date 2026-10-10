@@ -288,11 +288,14 @@ class LocalCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertIn("invalid manifest sentinel", (self.out / result["log"]).read_text())
 
-    def test_owned_entry_and_send_regressions_execute_and_retain_failure(self):
+    def test_registered_bench_regressions_execute_and_retain_failure(self):
         cases = [
             ("physical-send-tests", "docs/bench/physical-send-feasibility-2026-10-07", "test_probe.py"),
             ("startup-outage-tests", "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation", "test_outage.py"),
             ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_direct_client.py"),
+            ("measurement-m1-tests", "docs/bench/measurement-m123/m1", "test_measurement.py"),
+            ("measurement-m2-tests", "docs/bench/measurement-m123/m2", "test_measurement.py"),
+            ("measurement-m3-tests", "docs/bench/measurement-m123/m3/tests", "test_measurement.py"),
         ]
         for identifier, relative, filename in cases:
             with self.subTest(check=identifier):
@@ -303,16 +306,16 @@ class LocalCheckTests(unittest.TestCase):
                     "import unittest\nfrom pathlib import Path\nclass Suite(unittest.TestCase):\n"
                     "    def test_regression(self):\n"
                     f"        Path({str(marker)!r}).touch()\n"
-                    "        self.fail('send boundary regression sentinel')\n")
+                    "        self.fail('bench regression sentinel')\n")
                 checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"])
                           if c["id"] == identifier]
-                self.assertEqual(len(checks), 1, "send boundary suite must be registered")
+                self.assertEqual(len(checks), 1, "bench suite must be registered")
                 self.out = Path(self.temp.name) / (identifier + "-evidence")
                 self.assertEqual(self.execute(checks), 1)
                 self.assertTrue(marker.exists(), "registered regression must execute")
                 result = self.report()["checks"][0]
                 self.assertEqual(result["status"], "failed")
-                self.assertIn("send boundary regression sentinel", (self.out / result["log"]).read_text())
+                self.assertIn("bench regression sentinel", (self.out / result["log"]).read_text())
 
     def test_missing_script_suites_are_unavailable(self):
         checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"]) if c["id"].startswith("script-")]

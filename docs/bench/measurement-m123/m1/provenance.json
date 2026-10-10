@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "observed_at_unix_seconds": 1791662585,
+  "observed_at_utc": "2026-10-10T20:03:05Z",
+  "source": "active session collaboration.spawn_agent tool definition, Available model overrides and Reasoning efforts",
+  "source_kind": "platform_metadata",
+  "host_sha256": "5dc229a5bd0e5f3003726439b3b76b4dc44b9e5753faa6ebc26380465dbd7a6b",
+  "evidence_scope": "Declared availability of explicit model/effort overrides on the active collaboration surface. Captured metadata is not a native CLI probe, authenticated capability proof or observed inference. Refresh on a new host/session before M4.",
+  "provider_identity": "UNKNOWN",
+  "provider_inference": "UNKNOWN",
+  "capability_authentication": "UNKNOWN",
+  "native_runtime_qualification": "UNKNOWN"
+}

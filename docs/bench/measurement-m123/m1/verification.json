@@ -1,0 +1,27 @@
+{
+  "actual_cli_routes": 4,
+  "artifact_sha256": {
+    "catalog.json": "23cced0f8e4b36f99d984ab4b8f9773c0045c8d79c522d637f05b605a7c68b8c",
+    "host-snapshot.json": "eb3477ff4569794ffcb1eebeccb4d272c00fd9b2981dd39cbbc81dcaa7468bf0",
+    "identity-example.json": "9a4b77d7ff8a7db1cb40478426bcaf10007fa686ff90a4f47eb17f2693b13315",
+    "prepare-example.json": "69aa1136735c271f2cb65b9804b6843fed9f43f7b68c0308b62c15b67c05269a",
+    "provenance.json": "e992829b63039e18597c5dec3465e19db84d2387ff014b5c0b490e4ea9860a79",
+    "request-template.json": "282040ccab11aea672c04f9c99c56144219340cd3f7b0f907ca15a74c0f36dd3",
+    "route-example.json": "3107fa489f9c9c4212c5bf9357dc11ef70d815e4b3cb9b038f0d5af98dfe26ce"
+  },
+  "base_source_commit": "6a8de24589d0329c22d35ffc89bcb0bf641aaf94",
+  "binary_build_revision": "UNKNOWN: version output has no source revision; use parent M0 reviewed-build evidence",
+  "binary_sha256": "f6a6a9e645332512f639d9af23c151aa5dc2114bede75101ae21ec61aaba397b",
+  "environment": "AGENT_ROUTER_BIN supplied with existing reviewed binary; PYTHONDONTWRITEBYTECODE=1",
+  "evidence_limits": [
+    "Local stdlib preparation contracts and deterministic CLI routing only.",
+    "No provider invocation, native runtime qualification, authenticated capability evidence, measured quality, price or savings.",
+    "Supplied identity agreement remains separate from authenticated observed provider identity."
+  ],
+  "observed_route_decision_id": "a362940cc9cd52697431f0d6f25b49fe7cdb5a897150e4666653dd9e30687b35",
+  "provider_calls": 0,
+  "schema_version": 1,
+  "suite": "python3 -m unittest discover -s docs/bench/measurement-m123/m1 -p test_*.py -v",
+  "tests_passed": 12,
+  "tests_skipped": 0
+}

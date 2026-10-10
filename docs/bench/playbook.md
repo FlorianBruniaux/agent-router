@@ -1,5 +1,7 @@
 # Bench playbook
 
+The [M1–M3 measurement preparation](measurement-m123/README.md) records the 10 October continuation after #157: a campaign catalog, offline trace accounting and a simulated comparison rehearsal. Paid trials and measured savings remain separate acceptance gates.
+
 The [current finalization plan](finalization-plan-2026-10-07.md) (FR), 2026-10-07, orders the useful trial, measurement and release work. It separates completed local checks from the remaining trial and admission criteria.
 
 How to rerun a campaign of the [router value protocol](router-value-protocol.md), check a recorded one, and log its figures. Each campaign lives in `docs/bench/runs/<date>-<name>/` with its sealed inputs, its harness, its results exported as metrics only, and a `SHA256SUMS` file.

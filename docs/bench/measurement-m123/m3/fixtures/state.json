@@ -1,0 +1,187 @@
+{
+  "assignments": [
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-01",
+      "attempts": [
+        {
+          "attempt": 1,
+          "cost_microusd": 1000,
+          "session_id": "fake-m3-01-1",
+          "status": "retryable_failure"
+        },
+        {
+          "attempt": 2,
+          "cost_microusd": 1000,
+          "session_id": "fake-m3-01-2",
+          "status": "accepted"
+        }
+      ],
+      "repetition": 2,
+      "task_id": "t2",
+      "workspace_id": "fresh-01"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-02",
+      "attempts": [
+        {
+          "attempt": 1,
+          "cost_microusd": 1000,
+          "session_id": "fake-m3-02-1",
+          "status": "rejected"
+        }
+      ],
+      "repetition": 2,
+      "task_id": "t2",
+      "workspace_id": "fresh-02"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-03",
+      "attempts": [
+        {
+          "attempt": 1,
+          "cost_microusd": 1000,
+          "session_id": "fake-m3-03-1",
+          "status": "accepted"
+        }
+      ],
+      "repetition": 2,
+      "task_id": "t2",
+      "workspace_id": "fresh-03"
+    },
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-04",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t3",
+      "workspace_id": "fresh-04"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-05",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t3",
+      "workspace_id": "fresh-05"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-06",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t3",
+      "workspace_id": "fresh-06"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-07",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t3",
+      "workspace_id": "fresh-07"
+    },
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-08",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t3",
+      "workspace_id": "fresh-08"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-09",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t3",
+      "workspace_id": "fresh-09"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-10",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t1",
+      "workspace_id": "fresh-10"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-11",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t1",
+      "workspace_id": "fresh-11"
+    },
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-12",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t1",
+      "workspace_id": "fresh-12"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-13",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t1",
+      "workspace_id": "fresh-13"
+    },
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-14",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t1",
+      "workspace_id": "fresh-14"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-15",
+      "attempts": [],
+      "repetition": 2,
+      "task_id": "t1",
+      "workspace_id": "fresh-15"
+    },
+    {
+      "arm": "strongfixed",
+      "assignment_id": "m3-16",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t2",
+      "workspace_id": "fresh-16"
+    },
+    {
+      "arm": "cheapfixed",
+      "assignment_id": "m3-17",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t2",
+      "workspace_id": "fresh-17"
+    },
+    {
+      "arm": "router",
+      "assignment_id": "m3-18",
+      "attempts": [],
+      "repetition": 1,
+      "task_id": "t2",
+      "workspace_id": "fresh-18"
+    }
+  ],
+  "mode": "fake_only",
+  "plan_sha256": "dad91e81a0946a3a26eeeb31e9d60a3329b77ab33128ae541f09b500aa9fe18c",
+  "scenario": {
+    "0": [
+      "retryable_failure",
+      "accepted"
+    ],
+    "1": [
+      "rejected"
+    ]
+  },
+  "state_sha256": "b9ed9953e0a37c11cf42014b43b2a74544709100aabcad3bd74b3e371ce92258"
+}

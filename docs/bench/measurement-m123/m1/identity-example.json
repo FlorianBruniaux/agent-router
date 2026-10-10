@@ -1,0 +1,8 @@
+{
+  "declaration": null,
+  "observed": null,
+  "requested": {
+    "effort": "high",
+    "model": "gpt-6-luna"
+  }
+}

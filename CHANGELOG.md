@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-10: record the [M1–M3 measurement preparation](docs/bench/measurement-m123/README.md) after #157 merged. Preserve the distinction between assisted Codex comparison, native qualification and measured savings; real trials still require a sealed manifest and budget approval.
+
 - 2026-10-10: retain the [B1b self-dogfood trial](docs/bench/self-dogfood-b1b-2026-10-10/README.md), including the sealed advisory routing inputs, requested Codex worker configuration, review corrections and local measurement limits. The unchanged catalog exposes only one eligible delegation model; no comparative savings or native execution qualification is claimed.
 
 - 2026-10-08: document opt-in observation v2 in both README entry points, the guide, ADR 0025, JSON contracts and the current test plan. Keep historical v1 verification separate from the new per-attempt projection and retain the native admission and measurement limits.
@@ -78,6 +80,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- 2026-10-10: add [measurement preparation M1–M3](docs/bench/measurement-m123/README.md): a separate Codex campaign catalog, a bounded importer for retained host usage exports, and an 18-assignment fake-only comparison rehearsal using the existing accepted-change calculator. Register their Python suites in the local quality runner. Costs and overlapping usage remain unknown; no real campaign or native authority is enabled.
 
 - 2026-10-10: add `eval attempt-correlation` with direct B1 input and complete `observe --schema-version 2 --json` projection modes. Bounded strict inputs retain missing physical claims as unknown, refuse identity collisions and keep the report `supplied_unverified`. No provider, runtime-store access, usage collection or execution-authority change. See the [CLI guide](docs/attempt-correlation.md).
 
