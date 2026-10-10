@@ -71,6 +71,78 @@ would be required, and it is not implemented.
 
 Steps 1 to 3 run before any connection. A refusal opens no socket.
 
+## Received request semantics
+
+The loopback tests check what the fake provider received, not only that the
+bytes match the signed digest. `tests/loopback.rs` parses the HTTP body as JSON
+and compares it with an expected value written by hand in the test. The
+expected prompt is a literal: it is not recomputed with `prepare` or
+`prepared_run`. The fixture task and the selected instruction contain quotes,
+backslashes, accents, CJK, an emoji, a multi-line body and indentation, so a
+loss, a duplication or an inversion of the task and the instruction is visible.
+
+| Field | OpenAI Responses | Anthropic Messages | Compared with |
+| --- | --- | --- | --- |
+| model | `model` | `model` | `ExecutionRequest.model` |
+| effort | `reasoning.effort` | `output_config.effort` | `ExecutionRequest.effort` (the container holds no other key) |
+| output ceiling | `max_output_tokens` | `max_tokens` | the explicit token argument given to `prepare` (512), not `max_output_bytes` |
+| streaming | `stream: true` | `stream: true` | literal |
+| storage | `store: false` | no field | literal |
+| role | no field | one message, role `user`, two keys | literal |
+| content | `input` | `messages[0].content` | hand-written prompt literal |
+| root keys | exactly 6 | exactly 5 | fixed set per protocol |
+
+The test `the_received_request_verifier_names_each_corrupted_field` corrupts
+one field at a time in a request the fake server really received (model,
+effort, token ceiling, stream, store, role, truncated content, duplicated
+content, inverted content, lost instruction, an extra root key, a dropped key,
+an extra key in the effort container) and asserts that the verifier names that
+field. The verifier can therefore fail.
+
+Mutations of `provider.rs::prepare` were applied by hand, one at a time,
+during development on base cb3be612, then reverted. Each was detected by
+`the_received_request_carries_the_authorized_semantics`. They cannot be
+replayed from the repository. The permanent proof that the oracle can fail is
+`the_received_request_verifier_names_each_corrupted_field`.
+
+| Mutation | Detected |
+| --- | --- |
+| effort frozen to `low`, `high` (each protocol) | yes |
+| model frozen (each protocol) | yes |
+| token ceiling plus one (each protocol) | yes |
+| token ceiling computed as `max_output_bytes / 16` (each protocol) | yes |
+| `stream: false` (each protocol) | yes |
+| `store: true` | yes |
+| role `assistant` | yes |
+| extra root key (each protocol) | yes |
+| truncated prompt, duplicated prompt, lost instruction | yes |
+
+Combinations covered by the fixture:
+
+| Dimension | Values |
+| --- | --- |
+| host | `openai-api`, `anthropic-api` |
+| model | `exact-test-model` only (no second model) |
+| effort, OpenAI | `high`, `xhigh`, `minimal` |
+| effort, Anthropic | `high`, `xhigh`, `max` |
+| token ceiling passed to `prepare` | 512 |
+| `max_output_bytes` | 6000 (unrelated to 512 by a simple ratio) |
+| skills | one instruction skill, after the task |
+| tools, agent, sandbox, target | `Disabled`, none, read-only, external worker |
+
+Unsupported surfaces: `prepare` refuses host policy tools, an allow list of
+tools and a named agent with `BridgeError::Unsupported`
+(`unsupported_request_surfaces_are_refused_before_a_body_exists`). The
+refusals of a non read-only sandbox, a target other than external worker, an
+effort outside the protocol list, a token ceiling of 0 or above 32768 and a
+host mismatch are in `provider.rs` and are not tested in this file.
+`ExecutionRequest` has no field for images or conversation state: they are not
+representable and outside this contract.
+
+Not verified: the compatibility of the native Codex client, and the behavior
+of a real provider. A fake server proves what the transport sent, not how a
+provider reads it.
+
 ## Errors
 
 | Error | Cause |

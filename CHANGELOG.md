@@ -77,6 +77,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-10: the loopback provider tests check the meaning of the request the fake upstream received, for OpenAI Responses and Anthropic Messages (#152). Model, effort, token ceiling (distinct from `max_output_bytes`), streaming, storage, role, exact root keys and a hand-written multi-line Unicode prompt with one instruction are compared with the authorized request. A verifier test corrupts each covered field of a really received body and expects that field to be named. See [received request semantics](docs/provider-transport.md#received-request-semantics). Native Codex client compatibility and real provider behavior are not verified; images and conversation state are not representable in `ExecutionRequest`.
+
 - `observe --schema-version 2` adds bounded per-attempt identities, requested model/effort, supervisor termination/exit code and source hashes from the existing passive snapshot. Missing outcomes stay visible; incomplete capture preserves both output-limit and reader-deadline causes. Default and explicit v1 output remain byte-compatible. Native execution, usage, duration and objective remain unknown; the published schema supports both versions.
 
 - Add an explicit native supervision diagnostic that records broker-only refusal, finite-input behavior and OS/resource limits without a model turn. Reconcile its cleanup tests with the stronger publication-hardening stop contract; F12a remains NO_GO. See the [diagnostic and limits](docs/bench/owned-supervision-feasibility-2026-10-08/README.md).
