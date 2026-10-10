@@ -1,5 +1,7 @@
 # Bench playbook
 
+The [M4 assisted diagnostic proposal](measurement-m4/README.md) follows the merge of #158: one real report-cost defect, three configurations, explicit acceptance and a monitored 600,000-token envelope. User approval and live collection preflight are pending; no real trial was launched.
+
 The [M1–M3 measurement preparation](measurement-m123/README.md) records the 10 October continuation after #157: a campaign catalog, offline trace accounting and a simulated comparison rehearsal. Paid trials and measured savings remain separate acceptance gates.
 
 The [current finalization plan](finalization-plan-2026-10-07.md) (FR), 2026-10-07, orders the useful trial, measurement and release work. It separates completed local checks from the remaining trial and admission criteria.

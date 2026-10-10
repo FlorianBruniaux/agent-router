@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "status": "READY_FOR_PREPARATION",
+  "eligible": [
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "xhigh",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "max",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "effort": "ultra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "medium",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "high",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "xhigh",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "max",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "effort": "ultra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-luna",
+      "effort": "low",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-luna",
+      "effort": "high",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-luna",
+      "effort": "xhigh",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-luna",
+      "effort": "max",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "low",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "medium",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "high",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "xhigh",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "max",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6-sol",
+      "effort": "ultra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "low",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "high",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "xhigh",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "max",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    },
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "ultra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ]
+    }
+  ],
+  "excluded": [],
+  "catalog_sha256": "f45423171367ef3eb81609686a51cb4d2b9f1f2ea0eb63eea51b2dd40e14aa71",
+  "host_sha256": "0232a340bd4cc2c7cdb73e4246ac7891c5947ba35c9d990e35ebf5c5b6ccd2ec",
+  "provenance_sha256": "9765fabafc4a77b1360eefc19f486e3cd0168f31fcf4be7bc4b787acc276bb2c",
+  "hash_encoding": "sha256:utf8-json-sort-keys-compact-no-newline",
+  "observed_at_unix_seconds": 1791664234,
+  "policy_scores": "UNCALIBRATED_PRIORS_NOT_MONEY",
+  "provider_inference": "UNKNOWN",
+  "provider_identity": "UNKNOWN",
+  "execution_authorized": false
+}

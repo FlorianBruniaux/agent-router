@@ -2,6 +2,8 @@
 
 État du 10 octobre 2026 : préparation M1, M2 et M3 livrée et validée localement. Aucun comparatif réel lancé par ce lot, aucun gain économique établi.
 
+La [PR #158](https://github.com/FlorianBruniaux/agent-router/pull/158) a fusionné ces lots sur `main` au commit `e65a22ecb0a294b67a18e7e7ba867b506aba427f`. Le [protocole M4](../measurement-m4/README.md) fixe maintenant une tâche réelle, les 3 configurations et une proposition de budget ; accord et collecte en direct restent à vérifier avant lancement.
+
 ## Base relue et fusionnée
 
 La [PR #157](https://github.com/FlorianBruniaux/agent-router/pull/157) est fusionnée au commit `6a8de24589d0329c22d35ffc89bcb0bf641aaf94`. Son arbre est celui de la révision relue `663128c19d13cf300afb1778eace4614f316e4b4`. La commande de corrélation hors ligne et le [premier essai](../self-dogfood-b1b-2026-10-10/README.md) sont disponibles.

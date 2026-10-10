@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v1",
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "files_sha256": {
+    "README.md": "253db83fee58294aead1ab5653232490ca16b0d8edd6026f1cb98f533baa2bda",
+    "baseline.json": "a68c2a7e39c0f84d45c99a7d12e0d9c2a8b8175ca7a05a65ede5ff2f8e1794e9",
+    "host-provenance.json": "0ed4dec3ea3b786813e7ed4af2740bfee86e93ebee9aa8fcbf042225dd50b8bb",
+    "host-snapshot.json": "413705e233b91334fe406e41a502e1be6904922da228fb14a241d36db68f8903",
+    "manifest.json": "88455942b886de7b32c4d0107d527fc1fa0ccbb1e1d4db3713cfc40bc5f1f8a9",
+    "model-preparation.json": "a0fb26960b9510d89fd55800b39940c68a80567422bdcf53bc9233237e7366de",
+    "phase-prompts.md": "58da349c39ac7c0a9b7bb0c3531756bcdb853ab680dafa3765032598c850bfb3",
+    "result.template.json": "dd7f0e290e4a11b9c15a2acd1fb26a16f86aa5313ded1274e4d20df58021aa76",
+    "router-decision.json": "1d3039daae54378da2b4dcf2c5161c4ef20c87d6ba3ffb0be2155ae3451fd380",
+    "router-request.json": "780518d261e2c2ad1d7c56245299a8ce90b845b743eba508485ac73c37fe0ace",
+    "task.md": "cf3099745b808ef3f8356e86e4c041a88f39a0ace8f546e0bedb7deffdc08d0b",
+    "verification.json": "b694667266e5a484cf2ba49166471779d8669523b99341d3f332b0cd1e207043"
+  },
+  "execution_authorized": false,
+  "approval_scope": "Assisted diagnostic only, subject to live preflight and the explicitly monitored, non-hard budget. No native runtime grant."
+}
