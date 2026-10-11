@@ -1,0 +1,51 @@
+CHANGELOG.md
+  s_9e80b85afcc43a::t_4f85385cb24d1d 23-24,98-99
+README.fr.md
+  s_9e80b85afcc43a::t_ac60bec86bee47 7-12
+README.md
+  s_9e80b85afcc43a::t_f7c2178626e0b0 7-12
+crates/agent-router-cli/src/command.rs
+  s_9e80b85afcc43a::t_fee2ca80b8724f 968
+crates/agent-router-cli/src/evaluation.rs
+  s_9e80b85afcc43a::t_1757005675400a 62-190,444,615
+crates/agent-router-cli/tests/attempt_correlation.rs
+  s_9e80b85afcc43a::t_773aa4bcbea8d1 4,141-451
+docs/attempt-correlation.md
+  s_9e80b85afcc43a::t_83534d46c9a83d 20,48-62,69
+docs/bench/finalization-plan-2026-10-07.md
+  s_9e80b85afcc43a::t_db61dc4f4dfa1d 3,6-32
+docs/bench/macos-memory-followup-2026-10-11/README.md
+  s_9e80b85afcc43a::t_bc7a9a254d9b8f 1-142
+docs/bench/macos-memory-followup-2026-10-11/evidence.json
+  s_d4a4ccb57f7b3b::t_f25010839135cd 1-1832
+docs/bench/macos-memory-followup-2026-10-11/verification.json
+  s_9e80b85afcc43a::t_b6af4da12ce079 1-193
+docs/bench/macos-memory-followup-2026-10-11/vm-probe.c
+  s_d4a4ccb57f7b3b::t_e2d94e90eac275 1-104
+docs/run-observation.md
+  s_9e80b85afcc43a::t_62c377e09b6b85 98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "839b26009c84a020e6a447c54e8572a9b1de4d6b",
+  "prompts": {},
+  "sessions": {
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_d4a4ccb57f7b3b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12afe-eb55-77a1-aa3a-144191b9cb9c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
