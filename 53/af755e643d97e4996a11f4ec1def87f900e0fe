@@ -1,0 +1,51 @@
+CHANGELOG.md
+  s_ae085abdb4f4d0::t_fc714c7970db24 23-24
+docs/README.fr.md
+  s_ae085abdb4f4d0::t_30db3ebd8477b7 3-4
+docs/README.md
+  s_ae085abdb4f4d0::t_c4c5e39af2a015 3-4
+docs/bench/linux-helper-memory-2026-10-11/README.md
+  s_f14159e3bfdc3d::t_44228bb7c7062e 1-139
+docs/bench/linux-helper-memory-2026-10-11/evidence.json
+  s_f14159e3bfdc3d::t_50774c9298b19c 1-464
+docs/bench/linux-helper-memory-2026-10-11/inside.py
+  s_ae085abdb4f4d0::t_a513f4ef8af147 1-226
+docs/bench/linux-helper-memory-2026-10-11/run.py
+  s_ae085abdb4f4d0::t_634db2c9691af5 1-134
+docs/bench/linux-helper-memory-2026-10-11/verification.json
+  s_f14159e3bfdc3d::t_0f5bed9bd6822d 1-490
+scripts/test-linux-helper-evidence.py
+  s_0f4216fdd2c8ac::t_9072c8429d7dc4 1-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "53af755e643d97e4996a11f4ec1def87f900e0fe",
+  "prompts": {},
+  "sessions": {
+    "s_0f4216fdd2c8ac": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10107-9a2f-7962-b3b2-1e3bab1cdf97",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_f14159e3bfdc3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1261f-7516-70e1-b57c-5d4d56724919",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
