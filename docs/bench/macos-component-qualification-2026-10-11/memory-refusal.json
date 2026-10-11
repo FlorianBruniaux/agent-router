@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "instrumented_helper_diagnostic_not_product_qualification",
+  "binary_sha256": "920f648b22c001ae6925782f6c71ee8addecd89a97580be0e96b59527c1f16bc",
+  "source_sha256": "e20d14294883e15bec701bdcc287fa40ca6bd8b83ca52e014028536547a96bc9",
+  "arguments": [
+    "--cpu-seconds",
+    "300",
+    "--address-space-bytes",
+    "8589934592",
+    "--max-open-files",
+    "256",
+    "--max-processes",
+    "256",
+    "--max-file-bytes",
+    "16777216",
+    "--probe"
+  ],
+  "environment": {
+    "PATH": "/usr/bin:/bin"
+  },
+  "exit_code": 125,
+  "collection_stop": null,
+  "stdout_events": [
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "cpu",
+      "soft": null,
+      "hard": null
+    },
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "address_space",
+      "soft": null,
+      "hard": null
+    },
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "open_files",
+      "soft": 1048575,
+      "hard": null
+    },
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "processes",
+      "soft": 10666,
+      "hard": 16000
+    },
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "file_size",
+      "soft": null,
+      "hard": null
+    },
+    {
+      "diagnostic": true,
+      "event": "limit",
+      "phase": "inherited",
+      "pid": 9436,
+      "resource": "core",
+      "soft": 0,
+      "hard": null
+    },
+    {
+      "diagnostic": true,
+      "event": "setrlimit",
+      "pid": 9436,
+      "resource": "cpu",
+      "requested": 300,
+      "clamped": 300,
+      "before_soft": null,
+      "before_hard": null,
+      "effective_soft": 300,
+      "effective_hard": 300,
+      "errno": null,
+      "applied": true,
+      "qualification": false
+    },
+    {
+      "diagnostic": true,
+      "event": "own_vsz",
+      "phase": "before_address_space_setrlimit",
+      "pid": 9436,
+      "vsz_kib": 435300480,
+      "available": true
+    },
+    {
+      "diagnostic": true,
+      "event": "setrlimit",
+      "pid": 9436,
+      "resource": "address_space",
+      "requested": 8589934592,
+      "clamped": 8589934592,
+      "before_soft": null,
+      "before_hard": null,
+      "effective_soft": null,
+      "effective_hard": null,
+      "errno": 22,
+      "applied": false,
+      "qualification": false
+    },
+    {
+      "diagnostic": true,
+      "event": "own_vsz",
+      "phase": "after_address_space_setrlimit",
+      "pid": 9436,
+      "vsz_kib": 435300480,
+      "available": true
+    }
+  ],
+  "stderr": "sandbox-helper.setrlimit.address_space\n",
+  "stdout_sha256": "9332a762a4cac27f8496891e9c07fe4b9bee1e3da34980d22c02cc432b389577",
+  "kernel": {
+    "os": "Darwin",
+    "release": "25.5.0",
+    "version": "Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:12 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6050"
+  },
+  "os_version": "26.5.1",
+  "duration_seconds": 0.32,
+  "observer_effect": "instrumented source, formatting allocations and ps child; VSZ samples are not atomic with setrlimit",
+  "F12a": "NO_GO",
+  "native_or_provider_launched": false
+}

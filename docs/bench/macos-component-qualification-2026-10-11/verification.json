@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-11",
+  "source_commit": "727dcd21849e9f0513c69c740fd1aade1cd540bd",
+  "source_tree": "620269b63934fcafd3e4ebce7dc50be8c07d8d92",
+  "component_checks": [
+    {
+      "name": "finite-client-contracts",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--offline",
+        "--test",
+        "finite_client",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.58,
+      "log_sha256": "6a53b7b59576ad5dc2049e3d93e1700a3da89730532d9b9231c641e5428e0d8d",
+      "passed_tests": 34,
+      "log_published": false
+    },
+    {
+      "name": "network-authority",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--offline",
+        "--lib",
+        "network_authority::tests"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 5.06,
+      "log_sha256": "89cfeeddbf7fcf54175d4894e0996930c3789195c65083c9f269a1f96bc2930e",
+      "passed_tests": 4,
+      "log_published": false
+    },
+    {
+      "name": "memory-refusal",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-sandbox-helper",
+        "--locked",
+        "--offline",
+        "--test",
+        "limits",
+        "requested_memory_is_enforced_or_rejected_without_a_silent_downgrade",
+        "--",
+        "--exact"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.79,
+      "log_sha256": "85ba3ae632893822739187257a65f8598052a5aa76d0bb3ce3eca55cd8294db5",
+      "passed_tests": 1,
+      "log_published": false
+    },
+    {
+      "name": "helper-lifetime",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-sandbox-helper",
+        "--locked",
+        "--offline",
+        "--test",
+        "lifetime",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.38,
+      "log_sha256": "728044e6902cf666823838a042697d53169628ce42bac55ee7979087fdfa1386",
+      "passed_tests": 6,
+      "log_published": false
+    },
+    {
+      "name": "native-seatbelt",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--offline",
+        "--test",
+        "runtime",
+        "native_seatbelt_write_and_network_canary",
+        "--",
+        "--ignored",
+        "--exact"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.83,
+      "log_sha256": "9537cd4550f7adeafa14dde484ea7d512a988855936a3966ba64f2e4728ab789",
+      "passed_tests": 1,
+      "log_published": false
+    },
+    {
+      "name": "native-host-state",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "router-runtime",
+        "--locked",
+        "--offline",
+        "--test",
+        "host_state",
+        "read_only_host_state_allows_state_but_denies_workspace_and_store",
+        "--",
+        "--ignored",
+        "--exact"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2.51,
+      "log_sha256": "bb68936537a3eeebd18b2c859c494ae8f326f09799ded4c1a9aa99e9413445c3",
+      "passed_tests": 1,
+      "log_published": false
+    }
+  ],
+  "passed_component_tests": 47,
+  "command_prefix": [
+    "rtk",
+    "proxy"
+  ],
+  "environment": {
+    "CARGO_BUILD_JOBS": "2",
+    "GIT_TRACE2_EVENT": "0"
+  },
+  "target_directory": "isolated temporary Cargo target; local absolute path omitted",
+  "native_canaries_executed_outside_outer_development_sandbox": true,
+  "native_model_client_launched": false,
+  "provider_launched": false,
+  "global_configuration_changed": false,
+  "full_native_qualification": "NO_GO",
+  "memory_containment": "NOT_QUALIFIED",
+  "copied_native_composition": "NOT_ATTEMPTED",
+  "economy_claim": "NONE",
+  "logs": "Private raw logs retained locally; hashes recorded here."
+}

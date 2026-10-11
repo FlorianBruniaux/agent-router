@@ -80,3 +80,25 @@ approval, proof freshness and resource-limit checks remain in the same test targ
 See the source-bound report in
 `docs/bench/verification-finite-client-assets-2026-10-11.json` for observed checks
 and the explicit lot-3 stop condition.
+
+## Resource preflight continuation
+
+`ApprovedFiniteClient::probe_owned_resources` runs the retained helper copy with
+only the exact reviewed limit arguments and `--probe`. It rejects manifest-only
+preparation, changed limits and stale source/copy/state identities before the
+helper effect, then rechecks the complete composition after either success or
+refusal. The probe uses the existing three-second process timeout, bounded reap/drain
+waits and 8 KiB combined-output cap, with a `DenySandbox` inner supervisor. It returns no launch capability or persisted
+proof. The caller trusts the helper integration code, as for ResourceSupervisor.
+No native, wrapper, profile or provider is executed by this operation.
+
+The copy pathname check and exec remain separate operations. This diagnostic
+does not qualify a same-UID race, worker exclusion or a launch boundary. Applied
+rlimits alone do not prove enforcement or task-wide limits.
+
+The explicit `finite_client_qualification` example uses the existing owned state
+and copy producer, including the pinned native and system wrapper bytes. It
+projects a diagnostic verdict without private paths or capability-store writes.
+Its unused profile is deny-default, not a qualified native template. Even a
+successful resource probe leaves F12a NO_GO until the other OS requirements pass.
+See [the bounded F12a diagnostic](../bench/finite-client-qualification-2026-10-11/README.md).

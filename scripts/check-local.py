@@ -63,7 +63,9 @@ def build_checks(root: Path, output: Path, groups: list[str]) -> list[dict]:
                                   ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_*.py")]:
         repo_env = {"native-decision-tests": "AR_U06_REPO_ROOT", "native-hook-failure-tests": "U07_REPO_ROOT"}
         options = {"env": {repo_env[name]: str(root)}} if name in repo_env else {}
-        add("quality", name, [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"], require_tests=True, **options)
+        argv = ([PYTHON, "-B", "scripts/check-m3-baseline.py"] if name == "measurement-m3-tests" else
+                [PYTHON, "-B", "-m", "unittest", "discover", "-s", folder, "-p", pattern, "-v"])
+        add("quality", name, argv, require_tests=True, **options)
     for mode in ("dir", "git"):
         add("quality", f"secrets-{mode}", ["gitleaks", mode, ".", "--config", ".gitleaks.toml", "--redact", "--no-banner"])
     sandbox = "sandbox-exec" if sys.platform == "darwin" else "bwrap"

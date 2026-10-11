@@ -651,3 +651,10 @@ elapsed values do not qualify themselves. The contract, unknown reasons and
 boundaries are in [ADR 0030](../adr/0030-qualified-local-capture-timing.md) and the
 [observation guide](../run-observation.md#read-v3-local-capture-intervals).
 No database schema, legacy evidence format or execution authority changes.
+
+The nonserializable approved preparation additionally exposes a bounded
+`probe_owned_resources` operation for trusted helper integration. It executes
+only the retained helper's `--probe` with the reviewed resource arguments,
+checks ownership and pins before/after, and returns no launch handle or proof.
+This cannot be reconstructed from the launch-preview JSON. An applied-limit
+probe is separate from OS enforcement, native admission and task containment.

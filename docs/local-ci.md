@@ -64,6 +64,15 @@ them with `run_pilot.py calibrate/run` or a direct host probe: those have separa
 approval and budget requirements. Source archive verification also does not
 establish a signed release, installation, automatic routing or measured savings.
 
+M3 harness fixtures use `scripts/check-m3-baseline.py`, which exports only the
+required offline inputs from the Git base declared by the frozen candidate and
+checks their pinned hashes. It runs the current M3 tests using their existing
+`M3_REPO` override. Missing Git history or mismatched input fails the check.
+This preserves historical failure criteria after #164 solved T1; the campaign
+suite separately checks the corrected current report. Passing these historical
+fixtures does not make the old tasks eligible for a new trial. No sealed M3
+files or product permissions change.
+
 The quality group discovers every `test_*.py` native-probe suite, including
 versioned probes and the separate-session decision fixture under
 `native-integration-u06`, and the offline manifest tests under `calibration-v2/tests`.

@@ -1,6 +1,8 @@
 # Bench playbook
 
-The [M4 v2 measured result](measurement-m4-v2-result-2026-10-11/README.md) records all three approved configurations: 156,434 host tokens, coherent counters, two patches passing 21 local checks each and one exact artifact rejected before application. Human acceptance remains pending; no savings or native qualification is demonstrated. The [sealed v2 protocol](measurement-m4-v2/README.md) retains its historical proposal text. The [v1 stop report](measurement-m4-result-2026-10-10/README.md) and its 279,563-token expenditure remain separate evidence.
+The [F12a owned resource preflight](finite-client-qualification-2026-10-11/README.md), 2026-10-11, retains the 8 GiB copied-helper refusal and its local checks. The [independent macOS component campaign](macos-component-qualification-2026-10-11/README.md) adds 47 results and instrumented diagnostic evidence. Complete native qualification remains NO_GO; neither campaign launches a model turn or provider.
+
+The [M4 v2 measured result](measurement-m4-v2-result-2026-10-11/README.md) records all three approved configurations: 156,434 host tokens, coherent counters, two patches passing 21 local checks each and one exact artifact rejected before application. One report-cost change was subsequently accepted and integrated via [the #164 follow-up](m4-fix-integration-2026-10-11.md); no savings or native qualification is demonstrated. The [sealed v2 protocol](measurement-m4-v2/README.md) retains its historical proposal text. The [v1 stop report](measurement-m4-result-2026-10-10/README.md) and its 279,563-token expenditure remain separate evidence.
 
 The [M1–M3 measurement preparation](measurement-m123/README.md) records the 10 October continuation after #157: a campaign catalog, offline trace accounting and a simulated comparison rehearsal. Paid trials and measured savings remain separate acceptance gates.
 

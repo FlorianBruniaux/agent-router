@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "instrumented_diagnostic_not_product",
+  "source_commit": "f8d27d40811006da288cdb9d2489ba740f90df2c",
+  "same_tree_as_merged_main": "727dcd21849e9f0513c69c740fd1aade1cd540bd",
+  "source_path": "crates/router-sandbox-helper/src/main.rs",
+  "sha256": {
+    "original/main.rs": "a47c1fe93db576b85833cfac0b1d99224c46a35bb1e37c3951b4ed063f1ec768",
+    "original/watchdog.rs": "5674862f711dda9dbcb820f9ff35d986f5dc4aee4c46b32c616ef9fed0a2bad4",
+    "src/main.rs": "e20d14294883e15bec701bdcc287fa40ca6bd8b83ca52e014028536547a96bc9",
+    "Cargo.toml": "f9b45b6157aeba139750bfd6924e82e637c9401f4927bc22ec453f345103cfeb",
+    "Cargo.lock": "bc2b56c54fcff327d283e846f133ab8714b5f0ef1f6fb7a09e04f5b1bd9328f9",
+    "diagnostic.patch": "e27ec9cb9cbed1add16c0f8cda8f919bf91042491f93b8b8dd5cfaba00644b9a",
+    "target/debug/ar-resource-diagnostic": "920f648b22c001ae6925782f6c71ee8addecd89a97580be0e96b59527c1f16bc"
+  },
+  "compiler": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cargo_version": "UNKNOWN for original build; no contemporaneous version receipt",
+  "profile": "debug",
+  "preparation_checks": {
+    "source_copies_match_live_source": true,
+    "real_probe_executed": false,
+    "build": {
+      "command": "rtk proxy cargo build --offline --locked",
+      "exit_code": 0
+    },
+    "tests": {
+      "command": "rtk proxy cargo test --offline --locked",
+      "exit_code": 0,
+      "passed": 2,
+      "failed": 0,
+      "evidence": "pure synthetic refusal and exact-argument guard; no setrlimit executed"
+    },
+    "clippy": {
+      "command": "rtk proxy cargo clippy --offline --locked --all-targets -- -D warnings",
+      "exit_code": 0
+    },
+    "format": {
+      "command": "rtk proxy cargo fmt --all -- --check",
+      "exit_code": 0
+    }
+  },
+  "preparation_scope": "Agent built and pure-tested diagnostic; coordinator separately reviewed source and ran probe.",
+  "actual_probe_receipt": "memory-refusal.json",
+  "outer_collection": {
+    "deadline_seconds": 10,
+    "combined_output_limit_bytes": 8192,
+    "isolated_process_group": true
+  },
+  "not_published": [
+    "original source copies (available by commit)",
+    "built binary and Cargo target cache"
+  ],
+  "compiler_evidence": {
+    "source": "diagnostic target/.rustc_info.json",
+    "sha256": "f5b05bfda7517740f8e6de27b56d491ec361ddb0fdbac409acc6f4bf278756a9",
+    "host": "aarch64-apple-darwin",
+    "current_rustc_vv_matches": true
+  },
+  "cargo_version_observed_during_review": "cargo 1.96.0 (30a34c682 2026-05-25)",
+  "provenance_correction": "Preparing-agent prose confused declared minimum Rust version with observed toolchain; corrected from target compiler cache and current version checks."
+}

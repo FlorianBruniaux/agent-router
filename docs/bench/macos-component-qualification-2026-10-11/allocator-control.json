@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "helper_sha256": "2eecc2214482e8b7fdd897e7b00cdc3754347ee2650ceede3ae1de0d4e770fd6",
+  "arguments": [
+    "--cpu-seconds",
+    "300",
+    "--address-space-bytes",
+    "8589934592",
+    "--max-open-files",
+    "256",
+    "--max-processes",
+    "256",
+    "--max-file-bytes",
+    "16777216",
+    "--probe"
+  ],
+  "memory_bound_bytes": 8589934592,
+  "rows": [
+    {
+      "variant": "baseline",
+      "environment": {
+        "PATH": "/usr/bin:/bin"
+      },
+      "exit_code": 125,
+      "stdout": "",
+      "stderr": "sandbox-helper.setrlimit.address_space\n",
+      "seconds": 0.0154
+    },
+    {
+      "variant": "nano-disabled-diagnostic-only",
+      "environment": {
+        "PATH": "/usr/bin:/bin",
+        "MallocNanoZone": "0"
+      },
+      "exit_code": 125,
+      "stdout": "",
+      "stderr": "sandbox-helper.setrlimit.address_space\n",
+      "seconds": 0.0103
+    },
+    {
+      "variant": "baseline-repeated",
+      "environment": {
+        "PATH": "/usr/bin:/bin"
+      },
+      "exit_code": 125,
+      "stdout": "",
+      "stderr": "sandbox-helper.setrlimit.address_space\n",
+      "seconds": 0.0085
+    }
+  ],
+  "kernel_release": "25.5.0",
+  "os_version": "26.5.1",
+  "global_config_changed": false,
+  "native_or_provider_launched": false,
+  "qualification": "diagnostic only; environment variant is not the approved product composition"
+}

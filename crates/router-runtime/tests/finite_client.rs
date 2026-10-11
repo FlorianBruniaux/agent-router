@@ -918,3 +918,172 @@ fn authenticated_v2_binding_cannot_validate_owned_v3_copies() {
     drop(store);
     assert!(a.validate(&f.run, &f.host, &source, &v, 101).is_err());
 }
+
+// Synthetic trusted helper scripts verify preflight wiring, not OS enforcement.
+fn resource_helper(f: &mut Fixture, body: &str) {
+    let path = PathBuf::from(&f.manifest.helper.path);
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(&path, format!("#!/bin/sh\n{body}\n")).unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
+    f.manifest.helper.sha256 = content_digest(&fs::read(path).unwrap());
+}
+fn successful_probe() -> &'static str {
+    "printf 'router-sandbox-helper-v1:limits-applied:address-space=enforced\\n'"
+}
+#[tokio::test]
+async fn owned_resource_probe_runs_copied_helper_with_exact_limits_only() {
+    let mut f = Fixture::new();
+    let marker = f.root.join("helper-invocation");
+    resource_helper(
+        &mut f,
+        &format!(
+            "printf '%s\\n' \"$0\" \"$@\" > '{}'; {}",
+            marker.display(),
+            successful_probe()
+        ),
+    );
+    let a = f.approve_codex(ResourceLimits::default());
+    a.probe_owned_resources(&ResourceLimits::default())
+        .await
+        .unwrap();
+    let text = fs::read_to_string(&marker).unwrap();
+    let lines: Vec<_> = text.lines().collect();
+    assert_ne!(lines[0], f.manifest.helper.path);
+    assert_eq!(
+        content_digest(&fs::read(lines[0]).unwrap()),
+        f.manifest.helper.sha256
+    );
+    assert_eq!(
+        &lines[1..],
+        &[
+            "--cpu-seconds",
+            "300",
+            "--address-space-bytes",
+            "8589934592",
+            "--max-open-files",
+            "256",
+            "--max-processes",
+            "256",
+            "--max-file-bytes",
+            "16777216",
+            "--probe"
+        ]
+    );
+    assert_eq!(lines.len(), 12);
+}
+#[tokio::test]
+async fn owned_resource_probe_keeps_memory_refusal_and_rejects_bad_protocol() {
+    for body in [
+        "echo sandbox-helper.setrlimit.address_space >&2; exit 125",
+        "echo malformed",
+        "echo sandbox-helper.other >&2; exit 125",
+    ] {
+        let mut f = Fixture::new();
+        resource_helper(&mut f, body);
+        let a = f.approve_codex(ResourceLimits::default());
+        let result = a.probe_owned_resources(&ResourceLimits::default()).await;
+        if body.contains("address_space") {
+            assert!(matches!(
+                result,
+                Err(router_runtime::RuntimeError::ResourceUnsupported(
+                    "address_space"
+                ))
+            ));
+        } else {
+            assert!(matches!(result, Err(router_runtime::RuntimeError::Sandbox)));
+        }
+    }
+}
+#[tokio::test]
+async fn resource_probe_refuses_unowned_or_changed_limits_before_helper_effect() {
+    let mut f = Fixture::new();
+    let marker = f.root.join("must-not-exist");
+    resource_helper(
+        &mut f,
+        &format!("touch '{}'; {}", marker.display(), successful_probe()),
+    );
+    let a = f.approve();
+    assert!(
+        a.probe_owned_resources(&ResourceLimits::default())
+            .await
+            .is_err()
+    );
+    assert!(!marker.exists());
+    drop(a);
+    let mut f = Fixture::new();
+    let marker = f.root.join("must-not-exist");
+    resource_helper(
+        &mut f,
+        &format!("touch '{}'; {}", marker.display(), successful_probe()),
+    );
+    let a = f.approve_codex(ResourceLimits::default());
+    assert!(
+        a.probe_owned_resources(&ResourceLimits {
+            address_space_bytes: None,
+            ..ResourceLimits::default()
+        })
+        .await
+        .is_err()
+    );
+    assert!(!marker.exists());
+}
+#[tokio::test]
+async fn resource_probe_refuses_source_drift_before_effect_and_during_probe() {
+    for during in [false, true] {
+        let mut f = Fixture::new();
+        let source = PathBuf::from(&f.manifest.client.path);
+        let marker = f.root.join("helper-effect");
+        let body = if during {
+            format!(
+                "chmod 700 '{}'; printf changed > '{}'; touch '{}'; {}",
+                source.display(),
+                source.display(),
+                marker.display(),
+                successful_probe()
+            )
+        } else {
+            format!("touch '{}'; {}", marker.display(), successful_probe())
+        };
+        resource_helper(&mut f, &body);
+        let a = f.approve_codex(ResourceLimits::default());
+        if !during {
+            fs::set_permissions(&source, fs::Permissions::from_mode(0o700)).unwrap();
+            fs::write(&source, b"changed").unwrap();
+        }
+        assert!(
+            a.probe_owned_resources(&ResourceLimits::default())
+                .await
+                .is_err()
+        );
+        assert_eq!(marker.exists(), during);
+    }
+}
+
+#[tokio::test]
+async fn resource_probe_detects_copy_drift_before_a_second_helper_effect() {
+    let mut f = Fixture::new();
+    let marker = f.root.join("invocation");
+    resource_helper(
+        &mut f,
+        &format!(
+            "printf '%s' \"$0\" > '{}'; {}",
+            marker.display(),
+            successful_probe()
+        ),
+    );
+    let a = f.approve_codex(ResourceLimits::default());
+    a.probe_owned_resources(&ResourceLimits::default())
+        .await
+        .unwrap();
+    let copied = PathBuf::from(fs::read_to_string(&marker).unwrap());
+    fs::remove_file(&marker).unwrap();
+    fs::set_permissions(&copied, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(&copied, b"#!/bin/sh\nexit 0\n").unwrap();
+    fs::set_permissions(&copied, fs::Permissions::from_mode(0o500)).unwrap();
+    assert!(
+        a.probe_owned_resources(&ResourceLimits::default())
+            .await
+            .is_err()
+    );
+    assert!(!marker.exists());
+}
