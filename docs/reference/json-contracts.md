@@ -641,3 +641,13 @@ are requirements for a future sandbox, not evidence of write exclusion.
 The preview derives invocation paths from the retained copies and rechecks them
 before rendering. Native launch and OS admission remain unavailable; see
 [ADR 0029](../adr/0029-finite-client-owned-assets.md).
+
+## Qualified local capture observation
+
+`observe --schema-version 3` adds bounded local capture timing rows while v1 stays
+its default and v2 remains unchanged. Known intervals require a qualified
+`attempt.timing.v1` producer record joined to exact attempt evidence. Legacy
+elapsed values do not qualify themselves. The contract, unknown reasons and
+boundaries are in [ADR 0030](../adr/0030-qualified-local-capture-timing.md) and the
+[observation guide](../run-observation.md#read-v3-local-capture-intervals).
+No database schema, legacy evidence format or execution authority changes.

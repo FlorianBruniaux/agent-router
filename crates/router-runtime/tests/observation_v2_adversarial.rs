@@ -631,3 +631,171 @@ fn coherent_writer_commits_never_mix_attempts_with_summary_or_horizon() {
     writer.join().unwrap();
     assert_eq!(f.read()["attempts"].as_array().unwrap().len(), 5);
 }
+
+// Timing markers are synthetic, fully rehashed journal entries. Legacy evidence
+// deliberately contains a large elapsed value, which alone must never qualify.
+fn timing_marker(f: &Fixture) -> Value {
+    let hash: String = f
+        .db()
+        .query_row(
+            "SELECT event_hash FROM events WHERE kind='attempt.evidence.v1'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    json!({"schema_version":1,"ordinal":1,"attempt_evidence_sha256":hash,
+        "producer":"capture_guarded_v1","scope":"supervisor_capture",
+        "clock":"monotonic_same_invocation","start_boundary":"before_dispatch_validation",
+        "end_boundary":"after_reap_and_both_output_drains","precision":"milliseconds_truncated",
+        "measurement":{"status":"known","duration_ms":987654321}})
+}
+fn read_v3(f: &Fixture) -> Value {
+    serde_json::to_value(router_runtime::observe_run_v3(&f.root, PRIVATE).unwrap()).unwrap()
+}
+#[test]
+fn timing_legacy_elapsed_is_unknown_and_v3_reads_do_not_change_v1_v2() {
+    let f = Fixture::seed(Scenario::default());
+    let v1 = serde_json::to_vec(&observe_run(&f.root, PRIVATE).unwrap()).unwrap();
+    let v2 = serde_json::to_vec(&observe_run_v2(&f.root, PRIVATE).unwrap()).unwrap();
+    let v3 = read_v3(&f);
+    assert_eq!(
+        v3["timings"][0]["measurement"],
+        json!({"status":"unknown","reason":"missing_record"})
+    );
+    assert_eq!(v3, read_v3(&f));
+    assert_eq!(
+        v1,
+        serde_json::to_vec(&observe_run(&f.root, PRIVATE).unwrap()).unwrap()
+    );
+    assert_eq!(
+        v2,
+        serde_json::to_vec(&observe_run_v2(&f.root, PRIVATE).unwrap()).unwrap()
+    );
+}
+#[test]
+fn timing_qualified_interval_survives_reopen_without_becoming_native_duration() {
+    let f = Fixture::seed(Scenario::default());
+    let marker = timing_marker(&f);
+    let hash = append(
+        &f.db(),
+        RunState::SucceededTransport,
+        "attempt.timing.v1",
+        &marker.to_string(),
+    );
+    let first = read_v3(&f);
+    assert_eq!(
+        first["timings"][0]["measurement"],
+        json!({"status":"known","duration_ms":987654321})
+    );
+    assert_eq!(first["timings"][0]["timing_event_sha256"], hash);
+    assert_eq!(
+        first["timings"][0]["attempt_key_sha256"],
+        first["attempts"][0]["attempt_key_sha256"]
+    );
+    assert_eq!(first["unknown"]["duration"], "unknown");
+    assert_unknown_native(&first["attempts"][0]);
+    assert!(!first.to_string().contains(PRIVATE));
+    drop(Runtime::open(&f.root, RuntimeLimits::default()).unwrap());
+    assert_eq!(first["timings"], read_v3(&f)["timings"]);
+    assert_eq!(read_v3(&f), read_v3(&f));
+}
+#[test]
+fn timing_rejects_malformed_substituted_or_conflicting_markers() {
+    let changes: &[fn(&mut Value)] = &[
+        |v| v["ordinal"] = json!(0),
+        |v| v["ordinal"] = json!(2),
+        |v| v["attempt_evidence_sha256"] = json!("f".repeat(64)),
+        |v| v["schema_version"] = json!(2),
+        |v| v["producer"] = json!("legacy_elapsed"),
+        |v| v["clock"] = json!("wall_clock"),
+        |v| v["end_boundary"] = json!("native_exit"),
+        |v| v["measurement"]["duration_ms"] = json!(0),
+        |v| v["measurement"]["duration_ms"] = json!(-1),
+        |v| v["measurement"] = json!({"status":"unknown","reason":"missing_record"}),
+        |v| v[PRIVATE] = json!(PRIVATE),
+    ];
+    for change in changes {
+        let f = Fixture::seed(Scenario::default());
+        let mut marker = timing_marker(&f);
+        change(&mut marker);
+        append(
+            &f.db(),
+            RunState::SucceededTransport,
+            "attempt.timing.v1",
+            &marker.to_string(),
+        );
+        observe_run_v2(&f.root, PRIVATE).unwrap();
+        let error = router_runtime::observe_run_v3(&f.root, PRIVATE).unwrap_err();
+        assert!(matches!(error, RuntimeError::Integrity(_)), "{error:?}");
+        assert!(!format!("{error:?}").contains(PRIVATE));
+    }
+    for (kind, state, duplicate, intervening) in [
+        (
+            "attempt.timing.v2",
+            RunState::SucceededTransport,
+            false,
+            false,
+        ),
+        ("attempt.timing.v1", RunState::Failed, false, false),
+        (
+            "attempt.timing.v1",
+            RunState::SucceededTransport,
+            true,
+            false,
+        ),
+        (
+            "attempt.timing.v1",
+            RunState::SucceededTransport,
+            false,
+            true,
+        ),
+    ] {
+        let f = Fixture::seed(Scenario::default());
+        let marker = timing_marker(&f).to_string();
+        if intervening {
+            append(
+                &f.db(),
+                RunState::SucceededTransport,
+                "protocol.observed",
+                "decoded_not_verified",
+            );
+        }
+        append(&f.db(), state, kind, &marker);
+        if duplicate {
+            append(&f.db(), state, kind, &marker);
+        }
+        assert!(router_runtime::observe_run_v3(&f.root, PRIVATE).is_err());
+    }
+}
+#[test]
+fn timing_unknown_clock_and_missing_endpoints_are_not_zero() {
+    for reason in ["clock_regression", "duration_overflow"] {
+        let f = Fixture::seed(Scenario::default());
+        let mut marker = timing_marker(&f);
+        marker["measurement"] = json!({"status":"unknown","reason":reason});
+        append(
+            &f.db(),
+            RunState::SucceededTransport,
+            "attempt.timing.v1",
+            &marker.to_string(),
+        );
+        assert_eq!(
+            read_v3(&f)["timings"][0]["measurement"],
+            marker["measurement"]
+        );
+    }
+    let f = Fixture::seed(Scenario {
+        omit_evidence: true,
+        ..Scenario::default()
+    });
+    let report = read_v3(&f);
+    assert_eq!(
+        report["timings"][0]["measurement"]["reason"],
+        "missing_record"
+    );
+    assert!(
+        report["timings"][0]["measurement"]
+            .get("duration_ms")
+            .is_none()
+    );
+}

@@ -11,6 +11,29 @@ pub(crate) fn run(
     schema_version: u32,
     json: bool,
 ) -> Result<Outcome, CliError> {
+    if !(1..=3).contains(&schema_version) {
+        return Err(CliError::InvalidCommand);
+    }
+    if schema_version == 3 {
+        let report = router_runtime::observe_run_v3(store, id).map_err(execution::error)?;
+        if json {
+            return json_output(&report, ExitCode::SUCCESS);
+        }
+        let mut output = render_v2(&report.observation)?;
+        for timing in &report.timings {
+            let value = match timing.measurement {
+                router_runtime::CaptureTiming::Known { duration_ms } => format!("{duration_ms} ms"),
+                router_runtime::CaptureTiming::Unknown { reason } => {
+                    format!("unknown ({})", label(&reason)?)
+                }
+            };
+            output.push_str(&format!("Attempt {} local supervisor capture: {} (monotonic; includes dispatch checks, reap and both output drains)\n", timing.ordinal, value));
+        }
+        return Ok(Outcome {
+            output,
+            exit_code: ExitCode::SUCCESS,
+        });
+    }
     if schema_version == 2 {
         let report = router_runtime::observe_run_v2(store, id).map_err(execution::error)?;
         if json {

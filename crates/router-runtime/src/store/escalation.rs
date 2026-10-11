@@ -12,7 +12,11 @@ pub(crate) struct EscalationHistory {
 impl Store {
     /// One transaction records the terminal transport and its per-attempt facts.
     /// Old attempts are deliberately never reconstructed from a latest summary.
-    pub(crate) fn observed_attempt(&self, mut evidence: AttemptEvidence) -> Result<()> {
+    pub(crate) fn observed_attempt(
+        &self,
+        mut evidence: AttemptEvidence,
+        timing: crate::timing::CaptureTiming,
+    ) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, &evidence.identity.run_id)?.ok_or(RuntimeError::NotFound)?;
@@ -46,6 +50,16 @@ impl Store {
             &run,
             "attempt.evidence.v1",
             &serde_json::to_string(&evidence)?,
+        )?;
+        let timing = crate::timing::AttemptTimingRecord::new(run.attempts, last_hash(&tx)?, timing);
+        if !timing.valid(evidence.transport.elapsed_ms) {
+            return Err(RuntimeError::Integrity("attempt timing"));
+        }
+        append(
+            &tx,
+            &run,
+            "attempt.timing.v1",
+            &serde_json::to_string(&timing)?,
         )?;
         if run.state.terminal() && !cleanup_blocked(&tx, Some(&run.run_id))? {
             tx.execute("DELETE FROM writer_locks WHERE run_id=?1", [&run.run_id])?;

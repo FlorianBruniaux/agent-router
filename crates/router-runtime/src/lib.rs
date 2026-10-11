@@ -30,11 +30,13 @@ pub use observation::{
     ObservationDetailCoverage, ObservationJournalCoverage, ObservationUnknown,
     RunAttemptObservation, RunEventReference, RunObservation, RunObservationCompleteness,
     RunObservationHorizon, RunObservationIdentity, RunObservationKnown, RunObservationUnknowns,
-    RunObservationV2,
+    RunObservationV2, RunObservationV3,
 };
 mod integration;
 mod private_program;
 mod process;
+mod timing;
+pub use timing::{AttemptTimingObservation, CaptureTiming, TimingUnknownReason};
 mod resources;
 mod sandbox;
 mod stale;
@@ -60,7 +62,7 @@ pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
 pub use store::{
     measurement_inventory, observe, observe_cleanup, observe_events, observe_run, observe_run_v2,
-    request_cancel,
+    observe_run_v3, request_cancel,
 };
 pub use workspace::source_state;
 
@@ -1394,34 +1396,37 @@ impl Runtime {
             self.store
                 .event(id, "output.incomplete", "stream_reader_deadline")?;
         }
-        self.store.observed_attempt(AttemptEvidence {
-            schema_version: 1,
-            identity: AttemptIdentity {
-                run_id: id.into(),
-                attempt: self.store.get(id)?.attempts,
+        self.store.observed_attempt(
+            AttemptEvidence {
+                schema_version: 1,
+                identity: AttemptIdentity {
+                    run_id: id.into(),
+                    attempt: self.store.get(id)?.attempts,
+                },
+                definition_hash: pending.run.definition_hash.clone(),
+                authorization_id: pending.decision.authorization_id().into(),
+                decision_origin: pending.decision.origin(),
+                sandbox: pending.request.sandbox,
+                context_hash: pending.context.context_hash().into(),
+                pool_hash: pending.context.pool_hash().into(),
+                source_state: pending.request.source_state.clone(),
+                task_execution_sha256: escalation::task_execution_hash(&pending.request)?,
+                candidate_id: pending.request.candidate_id.clone(),
+                model: pending.request.model.clone(),
+                effort: pending.request.effort,
+                workflow: pending.run.workflow.clone(),
+                state,
+                failure,
+                transport: output.outcome.clone(),
+                cleanup: ProcessCleanupEvidence::Unknown,
+                observed_cost_microusd: None,
+                observed_tokens: None,
+                started_event_hash: String::new(),
+                finished_event_hash: String::new(),
+                transition_event_hash: String::new(),
             },
-            definition_hash: pending.run.definition_hash.clone(),
-            authorization_id: pending.decision.authorization_id().into(),
-            decision_origin: pending.decision.origin(),
-            sandbox: pending.request.sandbox,
-            context_hash: pending.context.context_hash().into(),
-            pool_hash: pending.context.pool_hash().into(),
-            source_state: pending.request.source_state.clone(),
-            task_execution_sha256: escalation::task_execution_hash(&pending.request)?,
-            candidate_id: pending.request.candidate_id.clone(),
-            model: pending.request.model.clone(),
-            effort: pending.request.effort,
-            workflow: pending.run.workflow.clone(),
-            state,
-            failure,
-            transport: output.outcome.clone(),
-            cleanup: ProcessCleanupEvidence::Unknown,
-            observed_cost_microusd: None,
-            observed_tokens: None,
-            started_event_hash: String::new(),
-            finished_event_hash: String::new(),
-            transition_event_hash: String::new(),
-        })?;
+            output.timing.clone(),
+        )?;
         let retained = (|| -> Result<Option<router_types::OutputArtifacts>> {
             Ok(
                 if let OutputRetentionPolicy::PrivateArtifacts { retention_seconds } =

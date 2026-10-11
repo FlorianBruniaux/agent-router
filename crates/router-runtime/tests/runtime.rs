@@ -305,6 +305,23 @@ async fn process_success_is_not_verification_and_verified_steps_never_replay() {
         .await
         .unwrap();
     assert_eq!(output.transport.exit_code, Some(0));
+    let events =
+        router_runtime::observe_events(&fixture.temp.path().join("runtime"), "run-1").unwrap();
+    let timing = events
+        .iter()
+        .find(|event| event.kind == "attempt.timing.v1")
+        .expect("completed capture must persist qualified local timing");
+    let timing: serde_json::Value = serde_json::from_str(&timing.detail).unwrap();
+    assert_eq!(timing["ordinal"], 1);
+    assert_eq!(
+        timing["measurement"]["duration_ms"],
+        output.transport.elapsed_ms
+    );
+    let evidence = events
+        .iter()
+        .find(|event| event.kind == "attempt.evidence.v1")
+        .unwrap();
+    assert_eq!(timing["attempt_evidence_sha256"], evidence.event_hash);
     assert_eq!(output.validation, VerificationOutcome::Unknown);
     assert_eq!(output.objective, VerificationOutcome::Unknown);
     assert_eq!(output.run.state, RunState::Verifying);
@@ -483,6 +500,23 @@ async fn timeout_cancel_and_bounded_retry_are_persisted() {
     let out = out.unwrap();
     assert_eq!(out.run.state, RunState::Cancelled);
     assert_eq!(out.run.attempts, 2);
+    let report = router_runtime::observe_run_v3(runtime.storage_root(), "run-1").unwrap();
+    assert_eq!(report.timings.len(), 2);
+    for (index, timing) in report.timings.iter().enumerate() {
+        assert_eq!(timing.ordinal, index as u32 + 1);
+        assert!(matches!(
+            timing.measurement,
+            router_runtime::CaptureTiming::Known { .. }
+        ));
+        assert_eq!(
+            timing.attempt_key_sha256,
+            report.observation.attempts[index].attempt_key_sha256
+        );
+    }
+    assert_ne!(
+        report.timings[0].timing_event_sha256,
+        report.timings[1].timing_event_sha256
+    );
     assert!(runtime.retry(pending).is_err());
     runtime.verify_integrity().unwrap();
 }
@@ -4505,4 +4539,90 @@ async fn publication_hardening_large_source_is_refused_before_object_writes() {
             .iter()
             .any(|e| e.kind == "integration.intent")
     );
+}
+
+#[tokio::test]
+async fn timing_write_failure_rolls_back_attempt_evidence_and_finish() {
+    let fixture = Fixture::new(false).await;
+    let runtime = fixture.runtime();
+    let pending = fixture.review(&runtime).await;
+    let approved = runtime
+        .approve(pending.clone(), pending.approval_digest())
+        .unwrap();
+    let db = rusqlite::Connection::open(runtime.storage_root().join("runtime.sqlite3")).unwrap();
+    db.execute_batch("CREATE TRIGGER reject_timing BEFORE INSERT ON events WHEN NEW.kind='attempt.timing.v1' BEGIN SELECT RAISE(ABORT,'synthetic failure'); END;").unwrap();
+    assert!(
+        runtime
+            .execute(
+                approved,
+                &FakeAdapter("exit 0"),
+                &FakeSupervisor,
+                Cancellation::default()
+            )
+            .await
+            .is_err()
+    );
+    let events = runtime.events().unwrap();
+    assert!(events.iter().any(|event| event.kind == "attempt.started"));
+    assert!(!events.iter().any(|event| matches!(
+        event.kind.as_str(),
+        "attempt.finished" | "attempt.evidence.v1" | "attempt.timing.v1"
+    )));
+    assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Running);
+    let report = router_runtime::observe_run_v3(runtime.storage_root(), "run-1").unwrap();
+    assert_eq!(
+        report.timings[0].measurement,
+        router_runtime::CaptureTiming::Unknown {
+            reason: router_runtime::TimingUnknownReason::MissingRecord
+        }
+    );
+}
+
+#[tokio::test]
+async fn failed_capture_has_qualified_timing_and_pre_cancel_has_no_interval() {
+    for (script, expect_record) in [("exit 3", true), ("exit 0", false)] {
+        let fixture = Fixture::new(false).await;
+        let runtime = fixture.runtime();
+        let pending = fixture.review(&runtime).await;
+        let approved = runtime
+            .approve(pending.clone(), pending.approval_digest())
+            .unwrap();
+        if expect_record {
+            runtime
+                .execute(
+                    approved,
+                    &FakeAdapter(script),
+                    &FakeSupervisor,
+                    Cancellation::default(),
+                )
+                .await
+                .unwrap();
+        } else {
+            let cancel = Cancellation::default();
+            cancel.cancel();
+            assert!(
+                runtime
+                    .execute(approved, &FakeAdapter(script), &FakeSupervisor, cancel)
+                    .await
+                    .is_err()
+            );
+        }
+        let report = router_runtime::observe_run_v3(runtime.storage_root(), "run-1").unwrap();
+        if expect_record {
+            assert!(matches!(
+                report.timings[0].measurement,
+                router_runtime::CaptureTiming::Known { .. }
+            ));
+            assert_eq!(
+                report.observation.attempts[0]
+                    .transport
+                    .as_ref()
+                    .unwrap()
+                    .exit_code,
+                Some(3)
+            );
+        } else {
+            assert!(report.timings.is_empty());
+        }
+    }
 }

@@ -93,6 +93,10 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-11: retain reviewed finite-client asset copies and identity-bound preparation previews (PR #163, ADR 0029). Independent post-fix review and local macOS/Linux checks support preparation-only integration; copied native launch composition remains F12a NO_GO. See the [review receipt](docs/bench/verification-finite-client-assets-review-2026-10-11.json).
+
+- 2026-10-11: add opt-in `observe --schema-version 3` with qualified local supervisor capture durations. Persist a bounded timing record atomically with its exact attempt evidence; missing legacy records remain unknown. Preserve v1/v2 formats and native/provider duration unknowns. See [ADR 0030](docs/adr/0030-qualified-local-capture-timing.md); broader phase, cleanup and end-to-end timing under #117 remains open.
+
 - 2026-10-10: add [measurement preparation M1–M3](docs/bench/measurement-m123/README.md): a separate Codex campaign catalog, a bounded importer for retained host usage exports, and an 18-assignment fake-only comparison rehearsal using the existing accepted-change calculator. Register their Python suites in the local quality runner. Costs and overlapping usage remain unknown; no real campaign or native authority is enabled.
 
 - 2026-10-10: add `eval attempt-correlation` with direct B1 input and complete `observe --schema-version 2 --json` projection modes. Bounded strict inputs retain missing physical claims as unknown, refuse identity collisions and keep the report `supplied_unverified`. No provider, runtime-store access, usage collection or execution-authority change. See the [CLI guide](docs/attempt-correlation.md).

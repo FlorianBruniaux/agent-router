@@ -157,3 +157,11 @@ pub struct AttemptObservationNative {
     pub validation: ObservationUnknown,
     pub objective: ObservationUnknown,
 }
+
+/// Explicit opt-in local capture intervals, read with the v2 facts in one snapshot.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct RunObservationV3 {
+    #[serde(flatten)]
+    pub observation: RunObservationV2,
+    pub timings: Vec<crate::AttemptTimingObservation>,
+}
