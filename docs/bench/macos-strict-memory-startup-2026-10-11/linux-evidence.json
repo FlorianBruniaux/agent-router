@@ -1,0 +1,81 @@
+{
+  "command": [
+    "/usr/local/bin/docker",
+    "run",
+    "--pull=never",
+    "--rm",
+    "--name",
+    "ar-f12a-strict-f2f135fa089e",
+    "--network=none",
+    "--read-only",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges",
+    "--user=65534:65534",
+    "--memory=8589934592",
+    "--memory-swap=8589934592",
+    "--pids-limit=16",
+    "--cpus=1",
+    "--ulimit=core=0:0",
+    "--entrypoint=/usr/local/bin/python3",
+    "-i",
+    "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+    "-I",
+    "-"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 2.613474791,
+  "timeout_seconds": 25,
+  "source_sha256": "0ae4e79833c1c5f7478c6923bfe4c3f6ffd4f69b402ad40025bc1ade965c99eb",
+  "stdout_sha256": "4a88cace8996f6f526700372063df8680e0727e06ee31398474871ba4d5d8e50",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "container_absent_after_run": true,
+  "network_disabled": true,
+  "host_mounts": [],
+  "image_pulled": false,
+  "native_model_or_provider_launched": false,
+  "address_space_installation": "fixture-entry before any allocation or child creation, after Python startup",
+  "result": {
+    "exact_address_space_bytes": 8589934592,
+    "installed_soft_hard": [
+      8589934592,
+      8589934592
+    ],
+    "small_virtual_mapping_allowed": true,
+    "oversize_mapping_refused_errno": 12,
+    "raising_and_removing_hard_bound_refused": true,
+    "fork_inherited_soft_hard": [
+      8589934592,
+      8589934592
+    ],
+    "exec_inherited_soft_hard": [
+      8589934592,
+      8589934592
+    ],
+    "memory.max": "8589934592",
+    "memory.swap.max": "0",
+    "pids.max": "16",
+    "uid": 65534,
+    "kernel": "6.12.76-linuxkit",
+    "architecture": "aarch64",
+    "diagnostic_only": true,
+    "native_qualification": false
+  },
+  "image": {
+    "id": "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+    "local_tag": "python:3.11-slim-bookworm",
+    "os": "linux",
+    "architecture": "arm64",
+    "registry_origin_verified": false
+  },
+  "claim_scope": "inert Python fixture only; not product helper, owned client or macOS F12a admission",
+  "address_space_requirement_changed": false,
+  "cgroup_physical_memory_cap_behavior_qualified": false,
+  "first_attempt": {
+    "status": "CLI_REFUSED",
+    "exit_code": 125,
+    "reason": "Docker CLI does not accept as as a --ulimit type",
+    "stderr": "invalid argument \"as=8589934592:8589934592\" for \"--ulimit\" flag: invalid ulimit type: as\n\nUsage:  docker run [OPTIONS] IMAGE [COMMAND] [ARG...]\n\nRun 'docker run --help' for more information\n",
+    "receipt_sha256": "6d892aa72222d5c005d01a10c84c2726203791741b7b83686a3caa63e708d614",
+    "no_success_claim": true
+  }
+}

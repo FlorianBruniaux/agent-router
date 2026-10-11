@@ -1,5 +1,7 @@
 # Documentation index
 
+[Strict 8 GiB startup follow-up](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11: four loader controls still refuse the unchanged limit; exact 384 GiB geometry matches pinned XNU GPU reservation constants. Source-to-host attribution remains UNKNOWN, F12a NO_GO.
+
 [F12a owned resource preflight](bench/finite-client-qualification-2026-10-11/README.md), 2026-10-11: exact copied-helper refusal at 8 GiB, source-bound local checks and remaining native gates. NO_GO. [Independent macOS components](bench/macos-component-qualification-2026-10-11/README.md): 47 results and instrumented refusal evidence, without complete native qualification.
 
 English | [Français](README.fr.md)

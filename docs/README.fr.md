@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Diagnostic du démarrage à 8 Gio](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11 : quatre contrôles du chargeur refusent la limite inchangée ; géométrie de 384 Gio conforme aux constantes GPU de XNU épinglé. Attribution au noyau installé UNKNOWN, F12a NO_GO.
+
 [Précontrôle des ressources F12a](bench/finite-client-qualification-2026-10-11/README.md), 2026-10-11 : refus du helper copié avec les 8 Gio demandés, contrôles locaux et gates natives restantes. NO_GO. [Composants macOS vérifiés séparément](bench/macos-component-qualification-2026-10-11/README.md) : 47 résultats et diagnostic instrumenté du refus, sans qualification native complète.
 
 [English](README.md) | Français
