@@ -633,9 +633,14 @@ for bounded inputs, authenticated proof binding and outstanding native limits.
 
 Producer-owned finite-client preparation additionally retains copies of client,
 native, helper, wrapper and profile. It binds their paths and inode identities
-under `finite-client-copy-review-v1` and uses proof adapter
-`finite-client-contract-v3`; manifest-only preparation stays v2. The private
-launch preview's `read_only_assets` array lists client, native, helper, wrapper,
+under `finite-client-copy-review-v2` and uses proof adapter
+`finite-client-contract-v4`; manifest-only preparation stays v2.
+The review also binds producer-owned startup state: a fresh installation slot
+under private tmp, its retained regular-file and symlink identities and the
+exact relative alias. The derived five-key environment includes
+`CODEX_SQLITE_HOME` under that tmp. Changed startup slots and prior v2/v3
+owned proofs refuse. See [ADR 0032](../adr/0032-finite-client-owned-startup.md).
+The private launch preview's `read_only_assets` array lists client, native, helper, wrapper,
 profile and the generated configuration, each as a path/hash pin. These entries
 are requirements for a future sandbox, not evidence of write exclusion.
 The preview derives invocation paths from the retained copies and rechecks them

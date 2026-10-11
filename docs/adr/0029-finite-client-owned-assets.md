@@ -1,14 +1,14 @@
 ---
 adr: "0029"
 title: "Retain reviewed finite-client asset copies"
-status: implemented
+status: amended
 created: 2026-10-11
 last_modified: 2026-10-11
 scope: "Owned preparation copies and refreshed preview only; no immutable OS view or native launch"
-amended_by: []
+amended_by: ["0032"]
 supersedes: []
 superseded_by: []
-related: ["0028"]
+related: ["0028", "0032"]
 ---
 
 # ADR 0029: Retain reviewed finite-client asset copies

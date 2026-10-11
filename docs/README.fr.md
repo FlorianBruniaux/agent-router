@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Démarrage Linux produit et détenu](bench/linux-owned-startup-2026-10-11/README.md), 2026-10-11 : lier les fichiers de démarrage avant validation, puis qualifier ce producteur avec les 8 Gio inchangés. Diagnostic uniquement, F12a NO_GO.
+
 [Client copié en isolation Linux](bench/linux-copied-client-2026-10-11/README.md), 2026-10-11 : client natif épinglé, contrôles du port broker et des copies protégées à 8 Gio inchangés ; activité détachée contrôlée avant/après destruction du conteneur. Diagnostic seulement, F12a NO_GO.
 
 [Vrai helper en isolation Linux](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11 : helper inchangé, borne de 8 Gio installée ; refus d’allocation avec fork/exec et quatre cas de nettoyage validés. Composant de diagnostic seulement, F12a NO_GO.

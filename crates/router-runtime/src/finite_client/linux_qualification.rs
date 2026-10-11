@@ -150,15 +150,10 @@ fn copied_client_os_qualification() {
     assert_eq!(limits.address_space_bytes, Some(8589934592));
     let state = broker.prepare_codex_state(&store, &run).unwrap();
     let home = state.path().to_str().unwrap().to_string();
-    // Codex 0.159.2 opens CODEX_HOME/installation_id read-write at startup.
-    // Keep the config parent immutable: this fixture-only alias resolves to
-    // mutable state in the existing private tmp grant, never to task input.
-    let installation = state.path().join("tmp/installation_id");
-    fs::write(&installation, b"00000000-0000-4000-8000-000000000012").unwrap();
-    fs::set_permissions(&installation, fs::Permissions::from_mode(0o644)).unwrap();
-    let installation_alias = state.path().join("installation_id");
-    std::os::unix::fs::symlink("tmp/installation_id", &installation_alias).unwrap();
-
+    let native_environment = state.native_environment();
+    let startup_binding = state.startup_binding().unwrap();
+    let native_environment_sha256 =
+        content_digest(&serde_json::to_vec(&native_environment).unwrap());
     let manifest = FiniteClientManifest {
         schema_version: 1,
         task_id: "linux-copied-client-diagnostic".into(),
@@ -188,7 +183,7 @@ fn copied_client_os_qualification() {
         .unwrap()
         .as_secs()
         + 60;
-    let payload=serde_json::to_vec(&json!({"native":pins[1].path,"native_sha256":NATIVE,"home":home,"workspace":workspace,"config_sha256":pins[5].sha256,"broker_port":broker_port,"denied_port":other_port,"expires_at":expires,"linux_canary":{"assets":pins,"heartbeat":"/evidence/heartbeat","allowed_file":allowed,"denied_read":denied_read,"hold":case!="normal"}})).unwrap();
+    let payload=serde_json::to_vec(&json!({"native":pins[1].path,"native_sha256":NATIVE,"home":home,"workspace":workspace,"config_sha256":pins[5].sha256,"broker_port":broker_port,"denied_port":other_port,"expires_at":expires,"linux_canary":{"assets":pins,"native_environment":native_environment,"heartbeat":"/evidence/heartbeat","allowed_file":allowed,"denied_read":denied_read,"hold":case!="normal"}})).unwrap();
     assert!(payload.len() <= 8192);
     let payload_digest = content_digest(&payload);
     let lease = root.join("lease");
@@ -285,14 +280,6 @@ fn copied_client_os_qualification() {
         }
     );
     r.check_files().unwrap();
-    assert_eq!(
-        fs::read_link(&installation_alias).unwrap(),
-        Path::new("tmp/installation_id")
-    );
-    assert_eq!(
-        fs::read(&installation).unwrap(),
-        b"00000000-0000-4000-8000-000000000012"
-    );
     assert_eq!(fs::read(&allowed).unwrap(), b"scope-ok");
     assert_eq!(
         fs::read(&denied_read).unwrap(),
@@ -305,7 +292,7 @@ fn copied_client_os_qualification() {
     denied_server.join().unwrap();
     println!(
         "AR_LINUX_REPORT:{}",
-        json!({"diagnostic_only":true,"f12a":"NO_GO","case":case,"address_space_bytes":8589934592u64,"preparation_digest":digest,"copy_hashes":pins.iter().map(|p|&p.sha256).collect::<Vec<_>>(),"canary":canary,"native_rpc":"initialize-and-thread-start-only","provider_turns":0,"other_listener_connections":other_count.load(Ordering::SeqCst),"broker_connections":broker_count.load(Ordering::SeqCst),"helper_exit_code":status.code(),"lease":state.trim(),"protected_identities_after":"unchanged","controller_still_owns_copies":true,"namespace_cleanup":"PENDING_EXTERNAL_OWNER"})
+        json!({"diagnostic_only":true,"f12a":"NO_GO","case":case,"address_space_bytes":8589934592u64,"preparation_digest":digest,"copy_hashes":pins.iter().map(|p|&p.sha256).collect::<Vec<_>>(),"canary":canary,"native_rpc":"initialize-and-thread-start-only","provider_turns":0,"other_listener_connections":other_count.load(Ordering::SeqCst),"broker_connections":broker_count.load(Ordering::SeqCst),"helper_exit_code":status.code(),"lease":state.trim(),"protected_identities_after":"unchanged","startup_contract":"producer-owned-v1","startup_binding_sha256":startup_binding,"native_environment_sha256":native_environment_sha256,"controller_still_owns_copies":true,"namespace_cleanup":"PENDING_EXTERNAL_OWNER"})
     );
     std::io::stdout().flush().unwrap();
     // Keep review/copies, state and listener alive until the external container owner

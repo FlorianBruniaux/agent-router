@@ -1,5 +1,7 @@
 # Documentation index
 
+[Producer-owned Linux startup](bench/linux-owned-startup-2026-10-11/README.md), 2026-10-11: bind installation/SQLite startup before review and qualify the same producer under unchanged 8 GiB. Diagnostic only, F12a NO_GO.
+
 [Copied client in Linux isolation](bench/linux-copied-client-2026-10-11/README.md), 2026-10-11: pinned native client, broker port and protected-copy canaries at unchanged 8 GiB; detached activity checked across external namespace teardown. Diagnostic only, F12a NO_GO.
 
 [Real helper in Linux isolation](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11: unchanged helper installs 8 GiB; direct/fork/exec allocation refusal and four cleanup cases pass. Diagnostic component only, F12a NO_GO.
