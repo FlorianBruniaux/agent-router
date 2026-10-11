@@ -28,7 +28,20 @@ use tokio::{
     process::Command,
 };
 
+#[cfg(not(target_os = "linux"))]
 const NATIVE_PIN: &str = "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704";
+#[cfg(target_os = "linux")]
+const NATIVE_PIN: &str = "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3";
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LinuxCanary {
+    assets: [FiniteClientFile; 6],
+    heartbeat: String,
+    allowed_file: String,
+    denied_read: String,
+    hold: bool,
+}
 const MAX_INPUT: usize = 8192;
 const MAX_OUTPUT: usize = 65536;
 const BANNER: &[u8] = b"F12-local-canary\n";
@@ -44,6 +57,8 @@ struct Task {
     broker_port: u16,
     denied_port: u16,
     expires_at: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    linux_canary: Option<LinuxCanary>,
 }
 fn now() -> Result<u64> {
     Ok(SystemTime::now()
@@ -275,6 +290,8 @@ async fn worker(digest: &str) -> Result<Value> {
             "diagnostic executable or configuration",
         ));
     }
+    #[cfg(target_os = "linux")]
+    validate_linux_assets(&task, &home)?;
     eprintln!(
         "diagnostic-stage: broker-canary elapsed-ms={}",
         started.elapsed().as_millis()
@@ -286,7 +303,13 @@ async fn worker(digest: &str) -> Result<Value> {
     )
     .err()
     .and_then(|e| e.raw_os_error());
-    if denied != Some(nix::libc::EPERM) {
+    if denied
+        != Some(if cfg!(target_os = "linux") {
+            nix::libc::EACCES
+        } else {
+            nix::libc::EPERM
+        })
+    {
         return Err(RuntimeError::Sandbox);
     }
     if fs::read(workspace.join("read-control"))? != b"F12-readable" {
@@ -316,12 +339,16 @@ async fn worker(digest: &str) -> Result<Value> {
         "diagnostic-stage: filesystem-canaries elapsed-ms={}",
         started.elapsed().as_millis()
     );
-    fs::write(home.join("write-control"), b"F12-writable")?;
+    fs::write(
+        diagnostic_private_file(&home, "write-control"),
+        b"F12-writable",
+    )?;
     eprintln!(
         "diagnostic-stage: native-spawn elapsed-ms={}",
         started.elapsed().as_millis()
     );
-    let mut native_process = Command::new(&native)
+    let mut native_command = Command::new(&native);
+    native_command
         .args(["app-server", "--listen", "stdio://"])
         .current_dir(&workspace)
         .env_clear()
@@ -332,10 +359,12 @@ async fn worker(digest: &str) -> Result<Value> {
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()?;
+        .kill_on_drop(true);
+    #[cfg(target_os = "linux")]
+    native_command.env("CODEX_SQLITE_HOME", home.join("tmp"));
+    let mut native_process = native_command.spawn()?;
     fs::write(
-        home.join("diagnostic-pids.json"),
+        diagnostic_private_file(&home, "diagnostic-pids.json"),
         serde_json::to_vec(&json!({"client":std::process::id(),"native":native_process.id()}))?,
     )?;
     let mut input = native_process.stdin.take().ok_or(RuntimeError::Process)?;
@@ -351,7 +380,7 @@ async fn worker(digest: &str) -> Result<Value> {
         .take()
         .ok_or(RuntimeError::Process)?
         .take(MAX_OUTPUT as u64 + 1);
-    let private_errors = home.join("native-errors.private");
+    let private_errors = diagnostic_private_file(&home, "native-errors.private");
     let errors = tokio::spawn(async move {
         let mut file = fs::OpenOptions::new()
             .write(true)
@@ -383,6 +412,22 @@ async fn worker(digest: &str) -> Result<Value> {
             "ephemeral":true,"approvalPolicy":"on-request","approvalsReviewer":"user","sandbox":"read-only"}})).await?;
         verify_thread(&reply, &task.workspace)
     }).await.map_err(|_| RuntimeError::Limit)?;
+    #[cfg(target_os = "linux")]
+    {
+        let pid = native_process.id().ok_or(RuntimeError::Process)?;
+        let mut observation = String::new();
+        fs::File::open(format!("/proc/{pid}/limits"))?
+            .take(8192)
+            .read_to_string(&mut observation)?;
+        let limit = observation
+            .lines()
+            .find(|line| line.starts_with("Max address space"))
+            .ok_or(RuntimeError::Sandbox)?;
+        let values: Vec<_> = limit.split_whitespace().collect();
+        if values.get(3..5) != Some(&["8589934592", "8589934592"][..]) {
+            return Err(RuntimeError::Sandbox);
+        }
+    }
     // A failed exchange still closes input. The real outer helper owns group teardown.
     drop(input);
     let native_status =
@@ -409,6 +454,8 @@ async fn worker(digest: &str) -> Result<Value> {
     {
         return Err(RuntimeError::Integrity("diagnostic pins changed"));
     }
+    #[cfg(target_os = "linux")]
+    linux_checks(&task, &home)?;
     Ok(
         json!({"initialize":"observed","subsequent_thread_start":"observed_bound",
         "model":"gpt-6.1-sol","effort":"low","native_network_access":false,
@@ -417,6 +464,63 @@ async fn worker(digest: &str) -> Result<Value> {
         "native_stderr_bytes":errors.len(),"native_exit_code":native_status.code(),"stdin_eof_before_native_spawn":true,
         "inherited_nproc_current":rustix::process::getrlimit(rustix::process::Resource::Nproc).current}),
     )
+}
+fn diagnostic_private_file(home: &Path, name: &str) -> PathBuf {
+    if cfg!(target_os = "linux") {
+        home.join("tmp").join(name)
+    } else {
+        home.join(name)
+    }
+}
+#[cfg(target_os = "linux")]
+fn validate_linux_assets(task: &Task, home: &Path) -> Result<()> {
+    let c = task.linux_canary.as_ref().ok_or(RuntimeError::Sandbox)?;
+    if c.assets[1].path != task.native
+        || c.assets[1].sha256 != NATIVE_PIN
+        || c.assets[5].path != home.join("config.toml").to_string_lossy()
+        || c.assets[5].sha256 != task.config_sha256
+    {
+        return Err(RuntimeError::Integrity("Linux copied composition"));
+    }
+    for p in &c.assets {
+        if hash(Path::new(&p.path))? != p.sha256 {
+            return Err(RuntimeError::Integrity("Linux asset pin"));
+        }
+    }
+    Ok(())
+}
+#[cfg(target_os = "linux")]
+fn linux_checks(task: &Task, home: &Path) -> Result<()> {
+    validate_linux_assets(task, home)?;
+    let c = task.linux_canary.as_ref().ok_or(RuntimeError::Sandbox)?;
+    let limits = rustix::process::getrlimit(rustix::process::Resource::As);
+    if limits.current != Some(8589934592) || limits.maximum != Some(8589934592) {
+        return Err(RuntimeError::Sandbox);
+    }
+    let output = std::process::Command::new(&c.assets[3].path)
+        .arg("--canary")
+        .args(c.assets.iter().map(|p| &p.path))
+        .args([
+            task.broker_port.to_string(),
+            task.denied_port.to_string(),
+            c.denied_read.clone(),
+            c.allowed_file.clone(),
+            c.heartbeat.clone(),
+        ])
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .output()?;
+    if !output.status.success() || output.stdout.len() > 4096 || !output.stderr.is_empty() {
+        return Err(RuntimeError::Sandbox);
+    }
+    let observed: Value = router_adapter_api::strict_json_limited(&output.stdout, 4096)
+        .map_err(|_| RuntimeError::Invalid("Linux canary output"))?;
+    println!("AR_LINUX_READY:{observed}");
+    std::io::stdout().flush()?;
+    if c.hold {
+        std::thread::sleep(Duration::from_secs(40));
+    }
+    Ok(())
 }
 fn server(
     listener: TcpListener,
@@ -488,7 +592,7 @@ async fn diagnostic() -> Result<Value> {
         fs::write(home.join("config.toml"),config.as_bytes())?;
         let task = Task { native:copy.to_str().unwrap().into(),native_sha256:NATIVE_PIN.into(),
             home:home.to_str().unwrap().into(),workspace:workspace.to_str().unwrap().into(),
-            config_sha256:hash(&home.join("config.toml"))?,broker_port,denied_port,expires_at:now()?+60 };
+            config_sha256:hash(&home.join("config.toml"))?,broker_port,denied_port,expires_at:now()?+60,linux_canary:None };
         let payload = serde_json::to_vec(&task)?;
         let digest = router_adapter_api::content_digest(&payload);
         let run = prepared(&workspace,&digest,payload);
@@ -592,6 +696,7 @@ mod tests {
             broker_port: 12345,
             denied_port: 12346,
             expires_at: 110,
+            linux_canary: None,
         }
     }
     fn parse(t: &Task, now: u64) -> Result<Task> {

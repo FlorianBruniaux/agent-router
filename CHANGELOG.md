@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: add [copied-client Linux qualification](docs/bench/linux-copied-client-2026-10-11/README.md) using the existing producer, pinned real Codex, Landlock/seccomp and an external namespace owner at unchanged 8 GiB. Preserve protected-copy, broker and detached-child observations, lifecycle receipts and negative evidence tests; production broker-only execution remains refused and F12a stays NO_GO.
+
 - 2026-10-11: test the [real resource helper in Linux isolation](docs/bench/linux-helper-memory-2026-10-11/README.md) with the unchanged 8 GiB bound. Retain an offline locked build, direct/fork/exec allocation refusal, four supervised cleanup cases and negative evidence tests. Product sources and native admission remain unchanged; F12a stays NO_GO.
 
 - 2026-10-11: retain the [strict 8 GiB startup follow-up](docs/bench/macos-strict-memory-startup-2026-10-11/README.md). Baseline/private/avoid/baseline loader controls all refuse the exact bound. The measured no-access region matches pinned XNU GPU-carveout geometry; installed-kernel attribution remains UNKNOWN. No bound, production environment or admission rule is changed.

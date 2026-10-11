@@ -1,5 +1,7 @@
 # Documentation index
 
+[Copied client in Linux isolation](bench/linux-copied-client-2026-10-11/README.md), 2026-10-11: pinned native client, broker port and protected-copy canaries at unchanged 8 GiB; detached activity checked across external namespace teardown. Diagnostic only, F12a NO_GO.
+
 [Real helper in Linux isolation](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11: unchanged helper installs 8 GiB; direct/fork/exec allocation refusal and four cleanup cases pass. Diagnostic component only, F12a NO_GO.
 
 [Strict 8 GiB startup follow-up](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11: four loader controls still refuse the unchanged limit; exact 384 GiB geometry matches pinned XNU GPU reservation constants. Source-to-host attribution remains UNKNOWN, F12a NO_GO.
