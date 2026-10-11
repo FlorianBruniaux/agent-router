@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Vrai helper en isolation Linux](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11 : helper inchangé, borne de 8 Gio installée ; refus d’allocation avec fork/exec et quatre cas de nettoyage validés. Composant de diagnostic seulement, F12a NO_GO.
+
 [Diagnostic du démarrage à 8 Gio](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11 : quatre contrôles du chargeur refusent la limite inchangée ; géométrie de 384 Gio conforme aux constantes GPU de XNU épinglé. Attribution au noyau installé UNKNOWN, F12a NO_GO.
 
 [Expérience de mémoire physique](bench/macos-memory-protection-2026-10-11/README.md), 2026-10-11 : cinq cas de mesure/arrêt sur enfant direct, un refus de plafond physique, dépassement mesuré et NO_GO conservé. [Contrat de surveillance proposé](adr/0031-macos-physical-memory-observation.md).

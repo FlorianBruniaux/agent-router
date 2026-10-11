@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: test the [real resource helper in Linux isolation](docs/bench/linux-helper-memory-2026-10-11/README.md) with the unchanged 8 GiB bound. Retain an offline locked build, direct/fork/exec allocation refusal, four supervised cleanup cases and negative evidence tests. Product sources and native admission remain unchanged; F12a stays NO_GO.
+
 - 2026-10-11: retain the [strict 8 GiB startup follow-up](docs/bench/macos-strict-memory-startup-2026-10-11/README.md). Baseline/private/avoid/baseline loader controls all refuse the exact bound. The measured no-access region matches pinned XNU GPU-carveout geometry; installed-kernel attribution remains UNKNOWN. No bound, production environment or admission rule is changed.
 
 - 2026-10-11: test a [macOS physical-footprint observer](docs/bench/macos-memory-protection-2026-10-11/README.md) on one inert child. Five observer cases meet their oracles; the self-only physical-limit API is refused. Preserve measured overshoot, the initial collector failure, unchanged production defaults and F12a NO_GO. Propose the distinct monitoring contract in [ADR 0031](docs/adr/0031-macos-physical-memory-observation.md).
