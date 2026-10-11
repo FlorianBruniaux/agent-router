@@ -1,4 +1,5 @@
 //! Review-bound finite-client preparation. Never OS or provider admission.
+use crate::private_program::PrivateProgram;
 use crate::{HostState, ResourceLimits, Result, RuntimeError, StoredCapabilityProofVerifier};
 use router_adapter_api::{
     CapabilityProofBinding, CapabilityProofTier, CapabilityProofVerifier, EvidenceSource,
@@ -215,6 +216,99 @@ fn pins(manifest: &FiniteClientManifest) -> [(&FiniteClientFile, bool); 6] {
     ]
 }
 
+// Owned copies are preparation assets, not an immutable view or OS authority.
+// Their directories must be excluded from worker writes by the qualified sandbox.
+struct FiniteClientAssets {
+    copies: [PrivateProgram; 5],
+    pins: [FiniteClientFile; 6],
+    identities: [PinnedIdentity; 6],
+    directories: [PinnedIdentity; 5],
+}
+impl FiniteClientAssets {
+    fn prepare(manifest: &FiniteClientManifest, run: &PreparedRun) -> Result<Self> {
+        let store = Path::new(&manifest.private_state);
+        let mut copies = Vec::new();
+        let mut asset_pins = Vec::new();
+        let mut directories = Vec::new();
+        for (pin, executable) in pins(manifest).into_iter().take(5) {
+            let copy = if executable {
+                PrivateProgram::copy(Path::new(&pin.path), &pin.sha256, store)?
+            } else {
+                PrivateProgram::copy_profile(Path::new(&pin.path), &pin.sha256, store)?
+            };
+            if copy.directory().starts_with(&run.cwd)
+                || Path::new(&run.cwd).starts_with(copy.directory())
+            {
+                return Err(RuntimeError::Scope);
+            }
+            let path = copy
+                .verify(&pin.sha256)?
+                .to_str()
+                .ok_or(RuntimeError::Invalid("finite client copy path"))?
+                .to_owned();
+            directories.push(directory(
+                copy.directory()
+                    .to_str()
+                    .ok_or(RuntimeError::Invalid("finite client copy directory"))?,
+                true,
+            )?);
+            asset_pins.push(FiniteClientFile {
+                path,
+                sha256: pin.sha256.clone(),
+            });
+            copies.push(copy);
+        }
+        // Codex consumes config.toml at the producer-owned home. Moving it to a
+        // second arbitrary path would not qualify native configuration consumption.
+        asset_pins.push(manifest.configuration.clone());
+        let identities: Vec<PinnedIdentity> = asset_pins
+            .iter()
+            .enumerate()
+            .map(|(index, pin)| file_identity(pin, index < 4))
+            .collect::<Result<_>>()?;
+        let assets = Self {
+            copies: copies
+                .try_into()
+                .map_err(|_| RuntimeError::Invalid("finite client copy count"))?,
+            pins: asset_pins
+                .try_into()
+                .map_err(|_| RuntimeError::Invalid("finite client asset count"))?,
+            identities: identities
+                .try_into()
+                .map_err(|_| RuntimeError::Invalid("finite client identity count"))?,
+            directories: directories
+                .try_into()
+                .map_err(|_| RuntimeError::Invalid("finite client directory count"))?,
+        };
+        assets.check()?;
+        Ok(assets)
+    }
+    fn check(&self) -> Result<()> {
+        for ((copy, pin), expected) in self.copies.iter().zip(&self.pins).zip(&self.directories) {
+            copy.verify(&pin.sha256)?;
+            if directory(
+                copy.directory()
+                    .to_str()
+                    .ok_or(RuntimeError::Invalid("finite client copy directory"))?,
+                true,
+            )?
+            .identity
+                != expected.identity
+            {
+                return Err(RuntimeError::Integrity(
+                    "finite client copy directory changed",
+                ));
+            }
+        }
+        for (index, (pin, expected)) in self.pins.iter().zip(&self.identities).enumerate() {
+            if file_identity(pin, index < 4)?.identity != expected.identity {
+                return Err(RuntimeError::Integrity("finite client copy changed"));
+            }
+        }
+        Ok(())
+    }
+}
+
 /// Private manifest and prepared bytes are frozen for a separate, exact review.
 /// This review does not change the durable runtime's approval state.
 pub struct FiniteClientReview {
@@ -228,6 +322,7 @@ pub struct FiniteClientReview {
     workspace_identity: PinnedIdentity,
     resource_arguments: Vec<String>,
     owned_state: Option<FiniteCodexState>,
+    owned_assets: Option<FiniteClientAssets>,
 }
 impl FiniteClientReview {
     pub fn new(
@@ -330,10 +425,14 @@ impl FiniteClientReview {
             workspace_identity,
             resource_arguments,
             owned_state: None,
+            owned_assets: None,
         })
     }
     fn check_files(&self) -> Result<()> {
         self.broker.check(&self.manifest)?;
+        if let Some(assets) = &self.owned_assets {
+            assets.check()?;
+        }
         if let Some(state) = &self.owned_state {
             state.check(&self.run, &self.broker)?;
         }
@@ -379,7 +478,12 @@ impl ApprovedFiniteClient {
             host_snapshot_id: host_snapshot_id.into(),
             binary_sha256: m.client.sha256.clone(),
             observed_version: m.native_version.clone(),
-            adapter_id: "finite-client-contract-v2".into(),
+            adapter_id: if r.owned_assets.is_some() {
+                "finite-client-contract-v3"
+            } else {
+                "finite-client-contract-v2"
+            }
+            .into(),
             argument_template_sha256: r.approval.clone(),
             sandbox_helper_sha256: m.helper.sha256.clone(),
             sandbox_wrapper_sha256: m.wrapper.sha256.clone(),
@@ -556,7 +660,29 @@ impl FiniteClientReview {
         }
         state.check(run, &broker)?;
         let mut review = Self::with_resources(manifest, run, broker, limits)?;
+        let assets = FiniteClientAssets::prepare(&review.manifest, run)?;
+        let bytes = serde_json::to_vec(&(
+            "finite-client-copy-review-v1",
+            &review.approval,
+            &assets.pins,
+            assets
+                .identities
+                .iter()
+                .map(|pin| &pin.identity)
+                .collect::<Vec<_>>(),
+            assets
+                .directories
+                .iter()
+                .map(|pin| &pin.identity)
+                .collect::<Vec<_>>(),
+        ))?;
+        if bytes.len() > MAX_CONTRACT {
+            return Err(RuntimeError::Limit);
+        }
+        review.approval = content_digest(&bytes);
+        review.owned_assets = Some(assets);
         review.owned_state = Some(state);
+        review.check_files()?;
         Ok(review)
     }
 }
@@ -595,6 +721,7 @@ pub struct FiniteClientLaunchPlan {
     stdin_sha256: String,
     timeout_ms: u64,
     max_output_bytes: usize,
+    read_only_assets: Vec<FiniteClientFile>,
 }
 impl FiniteClientValidation<'_> {
     /// Derives the known Seatbelt/helper composition as a private preview.
@@ -606,6 +733,7 @@ impl FiniteClientValidation<'_> {
             return Err(RuntimeError::Sandbox);
         }
         r.check_files()?;
+        let assets = r.owned_assets.as_ref().ok_or(RuntimeError::Sandbox)?;
         let home = r.manifest.private_state.clone();
         let environment = BTreeMap::from([
             ("PATH".into(), "/usr/bin:/bin".into()),
@@ -614,7 +742,7 @@ impl FiniteClientValidation<'_> {
             ("TMPDIR".into(), format!("{home}/tmp")),
         ]);
         let native = FiniteClientInvocation {
-            program: r.manifest.native.path.clone(),
+            program: assets.pins[1].path.clone(),
             argv: vec!["app-server".into(), "--listen".into(), "stdio://".into()],
             environment: environment.clone(),
             clear_environment: true,
@@ -623,10 +751,10 @@ impl FiniteClientValidation<'_> {
         let mut argv = r.resource_arguments.clone();
         argv.extend([
             "--supervise-v1".into(),
-            r.manifest.wrapper.path.clone(),
+            assets.pins[3].path.clone(),
             "-f".into(),
-            r.manifest.profile.path.clone(),
-            r.manifest.client.path.clone(),
+            assets.pins[4].path.clone(),
+            assets.pins[0].path.clone(),
         ]);
         argv.extend(r.run.argv.clone());
         let mut worker_environment = environment;
@@ -637,7 +765,7 @@ impl FiniteClientValidation<'_> {
         );
         Ok(FiniteClientLaunchPlan {
             supervised: FiniteClientInvocation {
-                program: r.manifest.helper.path.clone(),
+                program: assets.pins[2].path.clone(),
                 argv,
                 environment: worker_environment,
                 clear_environment: true,
@@ -647,6 +775,7 @@ impl FiniteClientValidation<'_> {
             stdin_sha256: content_digest(r.run.stdin.as_bytes()),
             timeout_ms: r.run.timeout_ms,
             max_output_bytes: r.run.max_output_bytes,
+            read_only_assets: assets.pins.to_vec(),
         })
     }
 }

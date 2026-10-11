@@ -604,7 +604,10 @@ fn owned_codex_state_produces_private_config_and_survives_until_approval_drop() 
     if cfg!(target_os = "macos") {
         let plan = guard.launch_plan().unwrap();
         let value = serde_json::to_value(&plan).unwrap();
-        assert_eq!(value["supervised"]["program"], f.manifest.helper.path);
+        assert_eq!(
+            value["supervised"]["program"],
+            value["read_only_assets"][2]["path"]
+        );
         assert_eq!(
             value["supervised"]["argv"],
             serde_json::json!([
@@ -619,14 +622,17 @@ fn owned_codex_state_produces_private_config_and_survives_until_approval_drop() 
                 "--max-file-bytes",
                 "16777216",
                 "--supervise-v1",
-                f.manifest.wrapper.path,
+                value["read_only_assets"][3]["path"],
                 "-f",
-                f.manifest.profile.path,
-                f.manifest.client.path,
+                value["read_only_assets"][4]["path"],
+                value["read_only_assets"][0]["path"],
                 "--worker"
             ])
         );
-        assert_eq!(value["native"]["program"], f.manifest.native.path);
+        assert_eq!(
+            value["native"]["program"],
+            value["read_only_assets"][1]["path"]
+        );
         assert_eq!(
             value["native"]["argv"],
             serde_json::json!(["app-server", "--listen", "stdio://"])
@@ -743,4 +749,172 @@ fn configuration_generated_for_another_model_or_listener_cannot_be_reviewed() {
             .is_err()
         );
     }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn launch_preview_uses_owned_asset_copies_and_releases_them_with_approval() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    let value = serde_json::to_value(guard.launch_plan().unwrap()).unwrap();
+    assert_ne!(value["native"]["program"], f.manifest.native.path);
+    assert_ne!(value["supervised"]["program"], f.manifest.helper.path);
+    let assets = value["read_only_assets"].as_array().unwrap();
+    assert_eq!(assets.len(), 6);
+    let expected = [
+        (&f.manifest.client, 0o500),
+        (&f.manifest.native, 0o500),
+        (&f.manifest.helper, 0o500),
+        (&f.manifest.wrapper, 0o500),
+        (&f.manifest.profile, 0o400),
+        (&f.manifest.configuration, 0o400),
+    ];
+    let mut copies = Vec::new();
+    for (asset, (original, mode)) in assets.iter().zip(expected) {
+        let path = PathBuf::from(asset["path"].as_str().unwrap());
+        assert_eq!(content_digest(&fs::read(&path).unwrap()), original.sha256);
+        assert_eq!(asset["sha256"], original.sha256);
+        assert_eq!(
+            fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            mode
+        );
+        assert!(!path.starts_with(&f.run.cwd));
+        if original != &f.manifest.configuration {
+            assert_ne!(path.to_str().unwrap(), original.path);
+            copies.push(path.clone());
+        }
+    }
+    let argv = value["supervised"]["argv"].as_array().unwrap();
+    let offset = argv.iter().position(|arg| arg == "--supervise-v1").unwrap();
+    assert_eq!(argv[offset + 1], assets[3]["path"]);
+    assert_eq!(argv[offset + 2], "-f");
+    assert_eq!(argv[offset + 3], assets[4]["path"]);
+    assert_eq!(argv[offset + 4], assets[0]["path"]);
+    assert_eq!(value["native"]["program"], assets[1]["path"]);
+    assert_eq!(value["supervised"]["program"], assets[2]["path"]);
+    drop(a);
+    for path in copies {
+        assert!(!path.exists());
+        assert!(!path.parent().unwrap().exists());
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn every_owned_asset_substitution_is_refused_when_presenting_the_plan() {
+    for index in 0..6 {
+        for symlink_change in [false, true] {
+            let mut f = Fixture::new();
+            let a = f.approve_codex(ResourceLimits::default());
+            let (s, v, _) = f.proof(&a);
+            let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+            let value = serde_json::to_value(guard.launch_plan().unwrap()).unwrap();
+            let assets = value["read_only_assets"].as_array().unwrap();
+            let path = PathBuf::from(assets[index]["path"].as_str().unwrap());
+            if symlink_change {
+                fs::remove_file(&path).unwrap();
+                symlink(&f.manifest.profile.path, &path).unwrap();
+            } else {
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+                fs::write(&path, b"SUBSTITUTED_ASSET").unwrap();
+                fs::set_permissions(
+                    &path,
+                    fs::Permissions::from_mode(if index < 4 { 0o500 } else { 0o400 }),
+                )
+                .unwrap();
+            }
+            assert!(
+                guard.launch_plan().is_err(),
+                "asset {index} symlink {symlink_change}"
+            );
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn identical_copy_replacement_cannot_reuse_the_reviewed_inode() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    let value = serde_json::to_value(guard.launch_plan().unwrap()).unwrap();
+    let path = PathBuf::from(value["native"]["program"].as_str().unwrap());
+    let original = fs::read(&path).unwrap();
+    fs::rename(&path, path.with_file_name("previous")).unwrap();
+    fs::write(&path, &original).unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o500)).unwrap();
+    assert!(guard.launch_plan().is_err());
+}
+
+#[test]
+fn owned_copy_preparation_is_separate_from_manifest_only_proofs() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    assert_eq!(
+        a.proof_binding(&f.host.id).unwrap().adapter_id,
+        "finite-client-contract-v3"
+    );
+    let (s, v, _) = f.proof(&a);
+    assert!(a.validate(&f.run, &f.host, &s, &v, 101).is_ok());
+    // Mutating an original after its owned copy was prepared is still refused.
+    // Copies do not widen freshness policy or let a stale original pass review.
+    fs::set_permissions(&f.manifest.native.path, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(&f.manifest.native.path, b"changed native").unwrap();
+    assert!(a.validate(&f.run, &f.host, &s, &v, 101).is_err());
+}
+
+#[cfg(target_os = "macos")]
+#[test]
+fn substituted_copy_directory_is_preserved_when_approval_is_dropped() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    let value = serde_json::to_value(guard.launch_plan().unwrap()).unwrap();
+    let path = PathBuf::from(value["native"]["program"].as_str().unwrap());
+    let directory = path.parent().unwrap().to_owned();
+    let moved = f.root.join("moved-owned-copy");
+    fs::rename(&directory, &moved).unwrap();
+    fs::create_dir(&directory).unwrap();
+    fs::set_permissions(&directory, fs::Permissions::from_mode(0o700)).unwrap();
+    let unrelated = directory.join("unrelated");
+    fs::write(&unrelated, b"CONCURRENT_USER_CANARY").unwrap();
+    assert!(guard.launch_plan().is_err());
+    drop(a);
+    let preserved = fs::read(&unrelated).ok();
+    // Reconcile only paths created by this test, after observing production Drop.
+    if directory.exists() {
+        fs::remove_dir_all(&directory).unwrap();
+    }
+    assert_eq!(
+        preserved.as_deref(),
+        Some(b"CONCURRENT_USER_CANARY".as_slice())
+    );
+    assert!(moved.join("program").exists());
+}
+
+#[test]
+fn authenticated_v2_binding_cannot_validate_owned_v3_copies() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (_s, v, mut record) = f.proof(&a);
+    record.proof_id = "old-v2".into();
+    record.sequence = 2;
+    record.binding.adapter_id = "finite-client-contract-v2".into();
+    let mut store = CapabilityProofStore::create(&f.root.join("proofs")).unwrap();
+    let key = CapabilityProofKey::derive(&[19; 32], store.store_id()).unwrap();
+    let proof = key.authenticate(record).unwrap();
+    let source = EvidenceSource {
+        id: "old-v2".into(),
+        kind: EvidenceKind::HostRuntime,
+        observed_version: Some("fixture-1".into()),
+        observed_at_unix_seconds: 100,
+        content_sha256: proof.digest().unwrap(),
+    };
+    store.append(&proof, &[19; 32]).unwrap();
+    drop(store);
+    assert!(a.validate(&f.run, &f.host, &source, &v, 101).is_err());
 }
