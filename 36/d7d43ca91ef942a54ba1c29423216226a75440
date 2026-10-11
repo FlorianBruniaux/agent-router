@@ -1,0 +1,51 @@
+CHANGELOG.md
+  s_ae085abdb4f4d0::t_dc756e381d61d0 23-24
+docs/README.fr.md
+  s_ae085abdb4f4d0::t_7014cecb65e06c 3-4
+docs/README.md
+  s_ae085abdb4f4d0::t_354fc162badc8e 3-4
+docs/bench/macos-strict-memory-startup-2026-10-11/README.md
+  s_160b3107588443::t_066a3a442fb019 1-149
+docs/bench/macos-strict-memory-startup-2026-10-11/evidence.json
+  s_ae085abdb4f4d0::t_7fcdda38c701b6 1-669
+docs/bench/macos-strict-memory-startup-2026-10-11/linux-evidence.json
+  s_160b3107588443::t_f6dc19aae124e7 1-81
+docs/bench/macos-strict-memory-startup-2026-10-11/linux-probe.py
+  s_160b3107588443::t_eab6282b6a8db3 1-44
+docs/bench/macos-strict-memory-startup-2026-10-11/verification.json
+  s_ae085abdb4f4d0::t_eb68bd9029c6ea 1-484
+docs/bench/macos-strict-memory-startup-2026-10-11/vm-probe.c
+  s_9e80b85afcc43a::t_e9234ee8659f8e 1-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36d7d43ca91ef942a54ba1c29423216226a75440",
+  "prompts": {},
+  "sessions": {
+    "s_160b3107588443": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a106f2-069b-7be2-aa09-88b1bbf2331e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9e80b85afcc43a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0f3be-9233-7710-ac57-7b3f9fa5c15c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
