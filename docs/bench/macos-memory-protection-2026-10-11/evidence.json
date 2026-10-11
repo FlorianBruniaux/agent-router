@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-11",
+  "base_commit": "f389059ab637a8338353ae85ed37e3b93a326101",
+  "scope": "inert direct-child fixture, outside development sandbox; no product integration",
+  "source_sha256": {
+    "run_campaign.py": "412642974264d8585267ec7fb9675efced988e36713b9ebef14bcd9608e59602",
+    "tests/check_receipt.py": "c3181cdd26747958ba8f29dd8b24b08ad09f27216b8e9beb4f141e0bc10496d2",
+    "tests/memory_observer_fixture.c": "bec1bd8685d4c5e4007c0edcae61c4dc567df49630e6935143bce6540f102221",
+    "tests/reap_guard_test.c": "7d6f50d46d00e123367d9fd6466a11972af92589f82f42fa525e34c4e9022058",
+    "tests/test_check_receipt.py": "3b41ef314c199210ea6f8aa393938fb66e40cecd6fc6e5ae89715fc1ebd63ab1"
+  },
+  "compilation": {
+    "compiler": "Apple clang",
+    "flags": [
+      "-std=c11",
+      "-O0",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror"
+    ],
+    "fixture_exit_code": 0,
+    "pure_guard_exit_code": 0,
+    "fixture_binary_sha256": "9707b519b80a8520e94d553e66e613150997cf0c31f167ece9fed1efa55a55f0"
+  },
+  "campaign": {
+    "base_commit": "f389059ab637a8338353ae85ed37e3b93a326101",
+    "source_sha256": "bec1bd8685d4c5e4007c0edcae61c4dc567df49630e6935143bce6540f102221",
+    "binary_sha256": "9707b519b80a8520e94d553e66e613150997cf0c31f167ece9fed1efa55a55f0",
+    "platform": [
+      "Darwin",
+      "25.5.0",
+      "Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:12 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T6050",
+      "arm64"
+    ],
+    "maximum_explicit_buffer_bytes": 62914560,
+    "production_modified": false,
+    "provider_called": false,
+    "native_qualification": "NO_GO",
+    "cases": [
+      {
+        "case": "normal",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.03092012499109842,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "16f8ef3ce89ca6ea30707136382a9ee9a2e9b26556f1e38348cc805e75359dd1",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 4194304,
+        "stdout": "{\"case\":\"normal\",\"fixture_pass\":true,\"qualification\":false,\"decision\":\"completed\",\"reason\":\"measured_under_threshold\",\"pid\":41675,\"start_abstime\":4258776539332,\"baseline_valid\":true,\"baseline_bytes\":917696,\"threshold_bytes\":9306304,\"peak_observed_bytes\":5128408,\"allocation_budget_bytes\":4194304,\"touch_ack\":true,\"injected\":false,\"query_errno\":0,\"monitor_signal_attempts\":0,\"owned_target_only\":true,\"lifecycle_signal_attempts\":0,\"blocked_after_reap\":0,\"reaped\":true,\"wait_status\":0,\"as_unchanged\":true,\"core_zero\":true,\"stop_ns\":0,\"duration_ns\":14676000,\"samples\":[{\"ns\":255266214279000,\"bytes\":917696},{\"ns\":255266214917000,\"bytes\":5128408}]}\n",
+        "stderr": ""
+      },
+      {
+        "case": "growth",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.05059133400209248,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "39c33f365265eb070063727d885fc80a07366ef7edb2550dcafd8e17460d9576",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 25165824,
+        "stdout": "{\"case\":\"growth\",\"fixture_pass\":true,\"qualification\":false,\"decision\":\"stop_request\",\"reason\":\"threshold_crossed\",\"pid\":41679,\"start_abstime\":4258777095284,\"baseline_valid\":true,\"baseline_bytes\":901312,\"threshold_bytes\":9289920,\"peak_observed_bytes\":26099952,\"allocation_budget_bytes\":25165824,\"touch_ack\":true,\"injected\":false,\"query_errno\":0,\"monitor_signal_attempts\":0,\"owned_target_only\":true,\"lifecycle_signal_attempts\":1,\"blocked_after_reap\":0,\"reaped\":true,\"wait_status\":9,\"as_unchanged\":true,\"core_zero\":true,\"stop_ns\":255266240006000,\"duration_ns\":42925000,\"samples\":[{\"ns\":255266236859000,\"bytes\":901312},{\"ns\":255266240006000,\"bytes\":26099952}]}\n",
+        "stderr": ""
+      },
+      {
+        "case": "failread",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.060557750024599954,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "c46be1ab93da891e5b1cbc508782fc578ce71638307c1865e6ffa892bed7864f",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 0,
+        "stdout": "{\"case\":\"failread\",\"fixture_pass\":true,\"qualification\":false,\"decision\":\"unknown\",\"reason\":\"injected_query_unknown\",\"pid\":41687,\"start_abstime\":4258778569213,\"baseline_valid\":true,\"baseline_bytes\":901312,\"threshold_bytes\":9289920,\"peak_observed_bytes\":901312,\"allocation_budget_bytes\":0,\"touch_ack\":true,\"injected\":true,\"query_errno\":5,\"monitor_signal_attempts\":0,\"owned_target_only\":true,\"lifecycle_signal_attempts\":1,\"blocked_after_reap\":0,\"reaped\":true,\"wait_status\":9,\"as_unchanged\":true,\"core_zero\":true,\"stop_ns\":0,\"duration_ns\":39593000,\"samples\":[{\"ns\":255266302238000,\"bytes\":901312}]}\n",
+        "stderr": ""
+      },
+      {
+        "case": "mismatch",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.03262900002300739,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "6eb8bc93020adcb59184527276200de54173d651f5161538812c5206fba121d9",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 0,
+        "stdout": "{\"case\":\"mismatch\",\"fixture_pass\":true,\"qualification\":false,\"decision\":\"unknown\",\"reason\":\"identity_unknown\",\"pid\":41694,\"start_abstime\":4258779966040,\"baseline_valid\":true,\"baseline_bytes\":917696,\"threshold_bytes\":9306304,\"peak_observed_bytes\":917696,\"allocation_budget_bytes\":0,\"touch_ack\":true,\"injected\":true,\"query_errno\":0,\"monitor_signal_attempts\":0,\"owned_target_only\":true,\"lifecycle_signal_attempts\":1,\"blocked_after_reap\":0,\"reaped\":true,\"wait_status\":9,\"as_unchanged\":true,\"core_zero\":true,\"stop_ns\":0,\"duration_ns\":17608000,\"samples\":[{\"ns\":255266356978000,\"bytes\":917696}]}\n",
+        "stderr": ""
+      },
+      {
+        "case": "deadline",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.20441045798361301,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "8907a82f1cf50947e1e9eceaf62a848a9053e498b33107523da395eb31b77541",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 0,
+        "stdout": "{\"case\":\"deadline\",\"fixture_pass\":true,\"qualification\":false,\"decision\":\"stop_request\",\"reason\":\"elapsed_deadline\",\"pid\":41700,\"start_abstime\":4258781783896,\"baseline_valid\":true,\"baseline_bytes\":901312,\"threshold_bytes\":9289920,\"peak_observed_bytes\":901312,\"allocation_budget_bytes\":0,\"touch_ack\":true,\"injected\":false,\"query_errno\":0,\"monitor_signal_attempts\":0,\"owned_target_only\":true,\"lifecycle_signal_attempts\":1,\"blocked_after_reap\":0,\"reaped\":true,\"wait_status\":9,\"as_unchanged\":true,\"core_zero\":true,\"stop_ns\":255266547699000,\"duration_ns\":127045000,\"samples\":[{\"ns\":255266436244000,\"bytes\":901312},{\"ns\":255266439666000,\"bytes\":901312},{\"ns\":255266463223000,\"bytes\":901312},{\"ns\":255266475358000,\"bytes\":901312},{\"ns\":255266498620000,\"bytes\":901312},{\"ns\":255266509824000,\"bytes\":901312},{\"ns\":255266522534000,\"bytes\":901312},{\"ns\":255266535185000,\"bytes\":901312}]}\n",
+        "stderr": ""
+      },
+      {
+        "case": "self",
+        "exit_code": 0,
+        "outer_cause": null,
+        "duration_seconds": 0.015400208008941263,
+        "outer_signals": [],
+        "deadline_seconds": 8,
+        "output_cap_bytes": 1048576,
+        "stdout_sha256": "8a010fa01434901776244f82b60f34ef980879e95209f49bea1778a5ecccf8db",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "leader_reaped": true,
+        "case_allocation_max_bytes": 33554432,
+        "stdout": "{\"case\":\"self\",\"event\":\"setter\",\"classification\":\"Refused\",\"mach_return\":8,\"requested_mib\":16,\"old_limit_valid\":false,\"old_limit_mib\":0,\"baseline_bytes\":1048864,\"allocation_budget_bytes\":0,\"qualification\":false}\n",
+        "stderr": ""
+      }
+    ]
+  },
+  "validation": [
+    {
+      "case": "normal",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"normal\", \"fixture_contract_pass\": true, \"qualification\": false}\n",
+      "stderr": ""
+    },
+    {
+      "case": "growth",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"growth\", \"fixture_contract_pass\": true, \"qualification\": false}\n",
+      "stderr": ""
+    },
+    {
+      "case": "failread",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"failread\", \"fixture_contract_pass\": true, \"qualification\": false}\n",
+      "stderr": ""
+    },
+    {
+      "case": "mismatch",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"mismatch\", \"fixture_contract_pass\": true, \"qualification\": false}\n",
+      "stderr": ""
+    },
+    {
+      "case": "deadline",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"deadline\", \"fixture_contract_pass\": true, \"qualification\": false}\n",
+      "stderr": ""
+    },
+    {
+      "case": "self",
+      "validator_exit": 0,
+      "stdout": "{\"case\": \"self\", \"classification\": \"Refused\", \"qualification\": false}\n",
+      "stderr": ""
+    }
+  ],
+  "pure_reap_guard": {
+    "exit_code": 0,
+    "stdout_bytes": 0,
+    "stderr_bytes": 0,
+    "source_sha256": "7d6f50d46d00e123367d9fd6466a11972af92589f82f42fa525e34c4e9022058"
+  },
+  "runner_compatibility": {
+    "executed_runner_sha256": "01f4d62d5fe65cd93aa168259bbef008767c1f594abc4afa4030d47d6d9c81fa",
+    "guarded_runner_sha256": "412642974264d8585267ec7fb9675efced988e36713b9ebef14bcd9608e59602",
+    "checks": [
+      {
+        "python": "system Python 3.9.6",
+        "exit_code": 1,
+        "stderr": "Refusing before spawn: this Python lacks waitid/NOWAIT support",
+        "expected_refusal": true
+      },
+      {
+        "python": "local Python 3.14.8",
+        "exit_code": 1,
+        "stderr": "Refusing replay: campaign directory already exists",
+        "expected_refusal": true
+      }
+    ]
+  },
+  "initial_incomplete_attempt": {
+    "result": "FAILED_BEFORE_COLLECTION",
+    "cause": "system Python lacks os.waitid; wrong interpreter in coordinator invocation",
+    "source_changed": false,
+    "case_started": "normal",
+    "maximum_possible_explicit_buffer_bytes": 4194304,
+    "actual_touched_bytes": "UNKNOWN",
+    "cleanup_reap_receipt": "UNKNOWN",
+    "later_exact_fixture_path_process_scan": "no matches",
+    "remaining_cases_not_started": true,
+    "retry_maximum_explicit_buffers_bytes": 62914560,
+    "combined_maximum_explicit_buffers_bytes": 67108864,
+    "exception": "AttributeError: module 'os' has no attribute 'waitid'"
+  },
+  "allocation_accounting": {
+    "corrected_campaign_touched_buffers_bytes": 29360128,
+    "initial_touched_buffers_bytes": "UNKNOWN",
+    "initial_maximum_bytes": 4194304,
+    "cumulative_actual_upper_bytes": 33554432,
+    "cumulative_planned_upper_bytes": 67108864,
+    "scope": "explicit touched fixture mappings only, not libc/compiler/system footprint"
+  },
+  "independent_review": {
+    "reviewer": "rust-security-reviewer, gpt-6-astra/high",
+    "source_review": "APPROVE after corrections",
+    "receipt_reconciliation": "APPROVE; hashes, outcomes, bounds and initial uncertainty checked",
+    "reviewer_ran_tests": false,
+    "publication_review": "APPROVE; public report, ADR, hashes and evidence boundaries reconciled",
+    "guarded_runner_review": "APPROVE; three-line pre-spawn capability guard reviewed"
+  },
+  "native_qualification": "NO_GO",
+  "hard_physical_limit": "Refused on this host (Mach 8)",
+  "provider_calls": 0,
+  "measured_savings": "UNKNOWN",
+  "local_quality_checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 9.068,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 2.375,
+      "log_sha256": "7c8951ade1d20e77b022536dca496fafa90cfa63393801db56afa6f352b62a6a"
+    },
+    {
+      "name": "xtask",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.167,
+      "log_sha256": "ca05552b3583164b7f35cafbafed43700e42743953f872bbcfc20d7ca33fd627"
+    }
+  ],
+  "additional_checks": {
+    "adr_index": "PASS",
+    "local_links": {
+      "checked": 443,
+      "missing": 0
+    },
+    "secret_scan": "PASS",
+    "diff_whitespace": "PASS",
+    "receipt_tests": {
+      "test_methods": 2,
+      "recorded_cases_replayed": 6,
+      "corrupt_claims_rejected": 9,
+      "native_execution": false
+    },
+    "rust_workspace_tests": {
+      "executed_this_change": false,
+      "reason": "Rust product, assets, harness and build sources unchanged from merged PR167",
+      "prior_receipt": "../macos-memory-followup-2026-10-11/verification.json"
+    }
+  }
+}

@@ -8,6 +8,9 @@ Current status, 2026-10-11: offline routing and accepted-revision cost calculati
 are available. The [assisted M4 trial produced an accepted correction](docs/bench/m4-fix-integration-2026-10-11.md); it does not establish savings.
 Automatic daily use still depends on native macOS qualification, currently blocked
 by the [8 GiB address-space limit](docs/bench/macos-memory-followup-2026-10-11/README.md).
+A [bounded physical-memory experiment](docs/bench/macos-memory-protection-2026-10-11/README.md)
+validates detection and termination for one inert child; it does not establish a
+hard cap or protect the native client’s whole process tree.
 The [finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) separates
 native qualification, measurement and publication.
 
