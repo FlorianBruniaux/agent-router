@@ -1,0 +1,669 @@
+{
+  "schema": "f12a-strict-memory-startup-diagnostic-v1",
+  "base": "f389059ab637a8338353ae85ed37e3b93a326101",
+  "verdict": "NO_GO",
+  "exact_requested_address_space_bytes": 8589934592,
+  "production_resource_contract_changed": false,
+  "native_client_launched": false,
+  "provider_call_performed": false,
+  "source_sha256": "26cfb036122cd525e502ce465bbaa94d307505b85829eeb820aea2e38a69ad8f",
+  "original_fixture_sha256": "4a02b16a4cb619133a78cfa137e58cfdfa173ec26fe47e32b59c162c40158bd5",
+  "build": {
+    "command": [
+      "/usr/bin/clang",
+      "-std=c11",
+      "-O0",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "vm-probe.c",
+      "-o",
+      "gpu-probe"
+    ],
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "binary_sha256": "58376f3901b3acb29cca6c52386d56ac35dc41b94d112951efa9c39808af5c0a",
+    "exit_code": 0
+  },
+  "host": {
+    "macos": "26.5.1",
+    "kernel_release": "25.5.0",
+    "architecture": "arm64"
+  },
+  "captures": [
+    {
+      "control": "baseline_before",
+      "receipt": {
+        "command": [
+          "/private/tmp/ar-f12a-loader-20261011/gpu-probe",
+          "--exact-8gib"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin"
+        },
+        "execution_context": "host, outside outer development sandbox",
+        "exit_code": 125,
+        "stop": null,
+        "elapsed_seconds": 0.341236,
+        "collection_deadline_seconds": 8,
+        "process_wait_deadline_seconds": 9,
+        "kill_reap_timeout_seconds": 1,
+        "output_cap_bytes": 2097152,
+        "inherited_core_limit": [
+          0,
+          9223372036854775807
+        ],
+        "binary_sha256": "58376f3901b3acb29cca6c52386d56ac35dc41b94d112951efa9c39808af5c0a",
+        "binary_unchanged": true,
+        "outputs_sha256": {
+          "baseline_before.stdout": "a14897941934e5cbfdbe716b1cf6d89e1da5430854d61140585fd24e1ac0634d",
+          "baseline_before.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostic_only": true,
+        "native_or_provider_launched": false
+      },
+      "task_info": [
+        {
+          "event": "task_info",
+          "phase": "entry",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746839552,
+          "resident_bytes": 1458176,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746839552,
+          "region_count": 55,
+          "phys_footprint_bytes": 1032480
+        },
+        {
+          "event": "task_info",
+          "phase": "before_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746839552,
+          "resident_bytes": 1507328,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746839552,
+          "region_count": 55,
+          "phys_footprint_bytes": 1065248
+        },
+        {
+          "event": "task_info",
+          "phase": "after_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746839552,
+          "resident_bytes": 1507328,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746839552,
+          "region_count": 55,
+          "phys_footprint_bytes": 1065248
+        }
+      ],
+      "limit": {
+        "event": "setrlimit",
+        "get_before_rc": 0,
+        "get_before_errno": 0,
+        "before_soft": 9223372036854775807,
+        "before_hard": 9223372036854775807,
+        "requested_soft": 8589934592,
+        "requested_hard": 8589934592,
+        "rc": -1,
+        "errno": 22,
+        "get_after_rc": 0,
+        "get_after_errno": 0,
+        "effective_soft": 9223372036854775807,
+        "effective_hard": 9223372036854775807
+      },
+      "region_summaries": [
+        {
+          "event": "region_summary",
+          "walk": "top",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 56,
+          "rows": 55,
+          "total_bytes": 445746839552,
+          "no_access_bytes": 439219109888
+        },
+        {
+          "event": "region_summary",
+          "walk": "leaf",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 89,
+          "rows": 80,
+          "total_bytes": 445746839552,
+          "no_access_bytes": 439872290816
+        }
+      ],
+      "geometry_matches": [
+        {
+          "event": "region",
+          "walk": "top",
+          "index": 54,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        },
+        {
+          "event": "region",
+          "walk": "leaf",
+          "index": 79,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        }
+      ]
+    },
+    {
+      "control": "private",
+      "receipt": {
+        "command": [
+          "/private/tmp/ar-f12a-loader-20261011/gpu-probe",
+          "--exact-8gib"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin",
+          "DYLD_SHARED_REGION": "private"
+        },
+        "execution_context": "host, outside outer development sandbox",
+        "exit_code": 125,
+        "stop": null,
+        "elapsed_seconds": 0.080896,
+        "collection_deadline_seconds": 8,
+        "process_wait_deadline_seconds": 9,
+        "kill_reap_timeout_seconds": 1,
+        "output_cap_bytes": 2097152,
+        "inherited_core_limit": [
+          0,
+          9223372036854775807
+        ],
+        "binary_sha256": "58376f3901b3acb29cca6c52386d56ac35dc41b94d112951efa9c39808af5c0a",
+        "binary_unchanged": true,
+        "outputs_sha256": {
+          "private.stdout": "b6523cf01bc85a3c28cc05805e675f74617a9d459ec883923e20c0d9e109e71b",
+          "private.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostic_only": true,
+        "native_or_provider_launched": false
+      },
+      "task_info": [
+        {
+          "event": "task_info",
+          "phase": "entry",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445748019200,
+          "resident_bytes": 8601600,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445748019200,
+          "region_count": 73,
+          "phys_footprint_bytes": 1639264
+        },
+        {
+          "event": "task_info",
+          "phase": "before_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445748019200,
+          "resident_bytes": 8650752,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445748019200,
+          "region_count": 73,
+          "phys_footprint_bytes": 1672032
+        },
+        {
+          "event": "task_info",
+          "phase": "after_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445748019200,
+          "resident_bytes": 8650752,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445748019200,
+          "region_count": 73,
+          "phys_footprint_bytes": 1672032
+        }
+      ],
+      "limit": {
+        "event": "setrlimit",
+        "get_before_rc": 0,
+        "get_before_errno": 0,
+        "before_soft": 9223372036854775807,
+        "before_hard": 9223372036854775807,
+        "requested_soft": 8589934592,
+        "requested_hard": 8589934592,
+        "rc": -1,
+        "errno": 22,
+        "get_after_rc": 0,
+        "get_after_errno": 0,
+        "effective_soft": 9223372036854775807,
+        "effective_hard": 9223372036854775807
+      },
+      "region_summaries": [
+        {
+          "event": "region_summary",
+          "walk": "top",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 74,
+          "rows": 73,
+          "total_bytes": 445748019200,
+          "no_access_bytes": 439872159744
+        },
+        {
+          "event": "region_summary",
+          "walk": "leaf",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 74,
+          "rows": 73,
+          "total_bytes": 445748019200,
+          "no_access_bytes": 439872159744
+        }
+      ],
+      "geometry_matches": [
+        {
+          "event": "region",
+          "walk": "top",
+          "index": 72,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        },
+        {
+          "event": "region",
+          "walk": "leaf",
+          "index": 72,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        }
+      ]
+    },
+    {
+      "control": "avoid",
+      "receipt": {
+        "command": [
+          "/private/tmp/ar-f12a-loader-20261011/gpu-probe",
+          "--exact-8gib"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin",
+          "DYLD_SHARED_REGION": "avoid"
+        },
+        "execution_context": "host, outside outer development sandbox",
+        "exit_code": 125,
+        "stop": null,
+        "elapsed_seconds": 0.047086,
+        "collection_deadline_seconds": 8,
+        "process_wait_deadline_seconds": 9,
+        "kill_reap_timeout_seconds": 1,
+        "output_cap_bytes": 2097152,
+        "inherited_core_limit": [
+          0,
+          9223372036854775807
+        ],
+        "binary_sha256": "58376f3901b3acb29cca6c52386d56ac35dc41b94d112951efa9c39808af5c0a",
+        "binary_unchanged": true,
+        "outputs_sha256": {
+          "avoid.stdout": "1545e0da26754ee696596fc80d4c8e5584571be36b91ca220b33d17ad2502d76",
+          "avoid.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostic_only": true,
+        "native_or_provider_launched": false
+      },
+      "task_info": [
+        {
+          "event": "task_info",
+          "phase": "entry",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445747904512,
+          "resident_bytes": 2244608,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445747904512,
+          "region_count": 61,
+          "phys_footprint_bytes": 1147168
+        },
+        {
+          "event": "task_info",
+          "phase": "before_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445747904512,
+          "resident_bytes": 2293760,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445747904512,
+          "region_count": 61,
+          "phys_footprint_bytes": 1179936
+        },
+        {
+          "event": "task_info",
+          "phase": "after_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445747904512,
+          "resident_bytes": 2293760,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445747904512,
+          "region_count": 61,
+          "phys_footprint_bytes": 1179936
+        }
+      ],
+      "limit": {
+        "event": "setrlimit",
+        "get_before_rc": 0,
+        "get_before_errno": 0,
+        "before_soft": 9223372036854775807,
+        "before_hard": 9223372036854775807,
+        "requested_soft": 8589934592,
+        "requested_hard": 8589934592,
+        "rc": -1,
+        "errno": 22,
+        "get_after_rc": 0,
+        "get_after_errno": 0,
+        "effective_soft": 9223372036854775807,
+        "effective_hard": 9223372036854775807
+      },
+      "region_summaries": [
+        {
+          "event": "region_summary",
+          "walk": "top",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 62,
+          "rows": 61,
+          "total_bytes": 445747904512,
+          "no_access_bytes": 439218864128
+        },
+        {
+          "event": "region_summary",
+          "walk": "leaf",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 95,
+          "rows": 86,
+          "total_bytes": 445747904512,
+          "no_access_bytes": 439872045056
+        }
+      ],
+      "geometry_matches": [
+        {
+          "event": "region",
+          "walk": "top",
+          "index": 60,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        },
+        {
+          "event": "region",
+          "walk": "leaf",
+          "index": 85,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        }
+      ]
+    },
+    {
+      "control": "baseline_after",
+      "receipt": {
+        "command": [
+          "/private/tmp/ar-f12a-loader-20261011/gpu-probe",
+          "--exact-8gib"
+        ],
+        "environment": {
+          "PATH": "/usr/bin:/bin"
+        },
+        "execution_context": "host, outside outer development sandbox",
+        "exit_code": 125,
+        "stop": null,
+        "elapsed_seconds": 0.045245,
+        "collection_deadline_seconds": 8,
+        "process_wait_deadline_seconds": 9,
+        "kill_reap_timeout_seconds": 1,
+        "output_cap_bytes": 2097152,
+        "inherited_core_limit": [
+          0,
+          9223372036854775807
+        ],
+        "binary_sha256": "58376f3901b3acb29cca6c52386d56ac35dc41b94d112951efa9c39808af5c0a",
+        "binary_unchanged": true,
+        "outputs_sha256": {
+          "baseline_after.stdout": "dfd08df074e2e339dd919b34952cb4480f8d8783ba0d5fe6314a39e604d840c4",
+          "baseline_after.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "diagnostic_only": true,
+        "native_or_provider_launched": false
+      },
+      "task_info": [
+        {
+          "event": "task_info",
+          "phase": "entry",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746577408,
+          "resident_bytes": 1458176,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746577408,
+          "region_count": 55,
+          "phys_footprint_bytes": 1032480
+        },
+        {
+          "event": "task_info",
+          "phase": "before_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746577408,
+          "resident_bytes": 1507328,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746577408,
+          "region_count": 55,
+          "phys_footprint_bytes": 1065248
+        },
+        {
+          "event": "task_info",
+          "phase": "after_setrlimit",
+          "basic_rc": 0,
+          "basic_virtual_bytes": 445746577408,
+          "resident_bytes": 1507328,
+          "vm_rc": 0,
+          "vm_count": 93,
+          "vm_virtual_bytes": 445746577408,
+          "region_count": 55,
+          "phys_footprint_bytes": 1065248
+        }
+      ],
+      "limit": {
+        "event": "setrlimit",
+        "get_before_rc": 0,
+        "get_before_errno": 0,
+        "before_soft": 9223372036854775807,
+        "before_hard": 9223372036854775807,
+        "requested_soft": 8589934592,
+        "requested_hard": 8589934592,
+        "rc": -1,
+        "errno": 22,
+        "get_after_rc": 0,
+        "get_after_errno": 0,
+        "effective_soft": 9223372036854775807,
+        "effective_hard": 9223372036854775807
+      },
+      "region_summaries": [
+        {
+          "event": "region_summary",
+          "walk": "top",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 56,
+          "rows": 55,
+          "total_bytes": 445746577408,
+          "no_access_bytes": 439218847744
+        },
+        {
+          "event": "region_summary",
+          "walk": "leaf",
+          "complete": true,
+          "stop": 0,
+          "last_rc": 1,
+          "calls": 89,
+          "rows": 80,
+          "total_bytes": 445746577408,
+          "no_access_bytes": 439872028672
+        }
+      ],
+      "geometry_matches": [
+        {
+          "event": "region",
+          "walk": "top",
+          "index": 54,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        },
+        {
+          "event": "region",
+          "walk": "leaf",
+          "index": 79,
+          "size_bytes": 412316860416,
+          "depth": 0,
+          "user_tag": 0,
+          "protection": 0,
+          "max_protection": 0,
+          "is_submap": false,
+          "share_mode": 3,
+          "matches_pinned_gpu_carveout": true
+        }
+      ]
+    }
+  ],
+  "negative_argument_cases": [
+    {
+      "arguments": [],
+      "exit_code": 64,
+      "no_output": true
+    },
+    {
+      "arguments": [
+        "--none"
+      ],
+      "exit_code": 64,
+      "no_output": true
+    },
+    {
+      "arguments": [
+        "--exact-16gib"
+      ],
+      "exit_code": 64,
+      "no_output": true
+    },
+    {
+      "arguments": [
+        "--exact-8gib",
+        "extra"
+      ],
+      "exit_code": 64,
+      "no_output": true
+    }
+  ],
+  "source_references": [
+    {
+      "repository": "apple-oss-distributions/xnu",
+      "revision": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea",
+      "path": "osfmk/arm64/machine_routines.c",
+      "lines": [
+        186,
+        209
+      ],
+      "sha256": "e2563cb3908b110497fb2002773c8ad222283fa7b63afdd9e094eae63e525b8b",
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/arm64/machine_routines.c#L186",
+      "match_to_installed_kernel": "UNKNOWN"
+    },
+    {
+      "repository": "apple-oss-distributions/xnu",
+      "revision": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea",
+      "path": "osfmk/mach/arm/vm_param.h",
+      "lines": [
+        159,
+        162
+      ],
+      "sha256": "db61d3528f9856e40174c1d02d7c5f8f2ae2056695ecd7051b017157340efbad",
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/mach/arm/vm_param.h#L159",
+      "match_to_installed_kernel": "UNKNOWN"
+    },
+    {
+      "repository": "apple-oss-distributions/xnu",
+      "revision": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea",
+      "path": "osfmk/vm/vm_map.c",
+      "lines": [
+        14151,
+        14187
+      ],
+      "sha256": "25e61323f40fa0d5dc3da5b01f8eb2e1dc78f5338b41a7a43e7d86ad04cae039",
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/vm/vm_map.c#L14151",
+      "match_to_installed_kernel": "UNKNOWN"
+    },
+    {
+      "revision": "fd8d0c4d52320ebf64db34f3cb280310d905c5ae",
+      "url": "https://raw.githubusercontent.com/apple-oss-distributions/dyld/fd8d0c4d52320ebf64db34f3cb280310d905c5ae/dyld/DyldProcessConfig.cpp",
+      "sha256": "904df8949879c2949598211cbff61d5a1e3dc8907acecc6f789e21d2cbade70e",
+      "path": "dyld/DyldProcessConfig.cpp",
+      "repository": "apple-oss-distributions/dyld",
+      "match_to_installed_loader": "UNKNOWN"
+    }
+  ],
+  "limits": {
+    "geometry_match_is_source_consistent_not_kernel_attribution": true,
+    "internal_kernel_map_size_not_read": true,
+    "no_region_deallocation_attempted": true,
+    "no_post_exec_or_descendant_enforcement_test": true,
+    "dyld_avoid_effect_not_established": true,
+    "top_and_leaf_are_overlapping_views": true
+  },
+  "private_capture_directory": "/private/tmp/ar-f12a-loader-20261011/bounded-host"
+}
