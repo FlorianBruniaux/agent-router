@@ -965,7 +965,7 @@ pub enum EvalCommand {
             conflicts_with_all = ["observation", "physical", "runtime_authority_sha256"]
         )]
         input: Option<PathBuf>,
-        /// Complete observe schema-version 2 JSON document.
+        /// Complete observe schema-version 2 or 3 JSON document.
         #[arg(
             long,
             requires_all = ["physical", "runtime_authority_sha256"],

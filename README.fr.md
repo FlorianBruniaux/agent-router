@@ -4,10 +4,12 @@
 
 Un routage expérimental, local et explicable pour Claude Code et Codex.
 
-État au 8 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
-acceptée sont disponibles. L’usage automatique quotidien et les économies réelles
-restent à prouver. Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md)
-sépare le premier essai utile, les mesures et la publication.
+État au 11 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
+acceptée sont disponibles. L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; il ne démontre pas d’économie.
+L’usage automatique quotidien attend la qualification native macOS, actuellement
+bloquée par la [limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
+Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md) sépare
+qualification native, mesures et publication.
 
 L’[observation passive](docs/run-observation.md) (EN) propose une v2 explicite qui détaille le modèle demandé et le résultat du superviseur pour chaque tentative. La v3 ajoute la durée locale qualifiée de capture du superviseur ; les anciens journaux restent inconnus pour cette mesure, et la v1 reste le format par défaut. Les trois formats ont un schéma JSON publié. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. La [publication d’un patch vérifié](docs/cli-execution.md) (EN) construit maintenant une révision Git approuvée à partir d’une correction simulée utile, en préservant les fichiers de travail. La composition native, l’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
 

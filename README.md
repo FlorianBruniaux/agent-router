@@ -4,10 +4,12 @@
 
 Experimental, local and explainable routing for Claude Code and Codex.
 
-Current status, 2026-10-08: offline routing and accepted-revision cost calculation
-are available. Automatic daily use and real savings remain unproven. The
-[finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) tracks the first useful trial,
-measurement and publication separately.
+Current status, 2026-10-11: offline routing and accepted-revision cost calculation
+are available. The [assisted M4 trial produced an accepted correction](docs/bench/m4-fix-integration-2026-10-11.md); it does not establish savings.
+Automatic daily use still depends on native macOS qualification, currently blocked
+by the [8 GiB address-space limit](docs/bench/macos-memory-followup-2026-10-11/README.md).
+The [finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) separates
+native qualification, measurement and publication.
 
 [Passive observation](docs/run-observation.md) offers opt-in v2 requested selections and supervisor outcomes for each durable attempt. Opt-in v3 adds qualified local supervisor capture duration; legacy records remain unknown, and v1 remains the default. All three formats have a published JSON Schema. The [dedicated Codex client diagnostic](docs/bench/owned-entry-qualification-2026-10-08/README.md) verifies an allowed local send, refusal and controlled cancellation against a simulated provider. [Verified patch publication](docs/cli-execution.md) now builds an approved Git revision from a useful simulated correction while preserving user working files. Native composition, daily-use integration, real-provider admission and measured savings remain open.
 

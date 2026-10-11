@@ -61,6 +61,135 @@ struct ObservationV2 {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+struct ObservationTiming {
+    ordinal: u32,
+    attempt_key_sha256: String,
+    #[serde(deserialize_with = "required_nullable")]
+    timing_event_sha256: Option<String>,
+    scope: String,
+    clock: String,
+    start_boundary: String,
+    end_boundary: String,
+    precision: String,
+    measurement: ObservationMeasurement,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "status", rename_all = "snake_case", deny_unknown_fields)]
+enum ObservationMeasurement {
+    Known {
+        #[serde(rename = "duration_ms")]
+        _duration_ms: u64,
+    },
+    Unknown {
+        reason: ObservationTimingUnknown,
+    },
+}
+
+strict_string_enum!(ObservationTimingUnknown {
+    MissingRecord => "missing_record",
+    ClockRegression => "clock_regression",
+    DurationOverflow => "duration_overflow",
+});
+
+fn observation_document(bytes: &[u8]) -> Result<ObservationV2, CliError> {
+    // Decode duplicate keys and the byte bound before removing the v3-only field.
+    let mut value: serde_json::Value = strict_document(bytes)?;
+    let timings: Option<Vec<ObservationTiming>> = match value["schema_version"].as_u64() {
+        Some(2) => None,
+        Some(3) => Some(
+            serde_json::from_value(
+                value
+                    .as_object_mut()
+                    .and_then(|object| object.remove("timings"))
+                    .ok_or(ATTEMPT_CORRELATION_INVALID)?,
+            )
+            .map_err(|_| ATTEMPT_CORRELATION_INVALID)?,
+        ),
+        _ => return Err(ATTEMPT_CORRELATION_INVALID),
+    };
+    let observation: ObservationV2 =
+        serde_json::from_value(value).map_err(|_| ATTEMPT_CORRELATION_INVALID)?;
+    if let Some(timings) = timings {
+        validate_observation_timings(&observation, &timings)?;
+    }
+    Ok(observation)
+}
+
+fn validate_observation_timings(
+    observation: &ObservationV2,
+    timings: &[ObservationTiming],
+) -> Result<(), CliError> {
+    if timings.len() != observation.attempts.len()
+        || timings.len() > 5
+        || observation.known.events.len() > 4096
+    {
+        return Err(ATTEMPT_CORRELATION_INVALID);
+    }
+    let mut ordinals = std::collections::BTreeSet::new();
+    let mut event_hashes = std::collections::BTreeSet::new();
+    for timing in timings {
+        let attempt = observation
+            .attempts
+            .iter()
+            .find(|attempt| attempt.ordinal == timing.ordinal)
+            .ok_or(ATTEMPT_CORRELATION_INVALID)?;
+        if !ordinals.insert(timing.ordinal)
+            || timing.attempt_key_sha256 != attempt.attempt_key_sha256
+            || timing.scope != "supervisor_capture"
+            || timing.clock != "monotonic_same_invocation"
+            || timing.start_boundary != "before_dispatch_validation"
+            || timing.end_boundary != "after_reap_and_both_output_drains"
+            || timing.precision != "milliseconds_truncated"
+        {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        let missing = matches!(
+            timing.measurement,
+            ObservationMeasurement::Unknown {
+                reason: ObservationTimingUnknown::MissingRecord
+            }
+        );
+        if missing != timing.timing_event_sha256.is_none() {
+            return Err(ATTEMPT_CORRELATION_INVALID);
+        }
+        if let Some(hash) = &timing.timing_event_sha256 {
+            digest(hash)?;
+            if attempt.evidence != ObservationEvidence::DurableAttempt || !event_hashes.insert(hash)
+            {
+                return Err(ATTEMPT_CORRELATION_INVALID);
+            }
+            let evidence_hash = attempt
+                .sources
+                .attempt_evidence_sha256
+                .as_ref()
+                .ok_or(ATTEMPT_CORRELATION_INVALID)?;
+            let mut timing_events = observation
+                .known
+                .events
+                .iter()
+                .filter(|e| &e.event_sha256 == hash);
+            let mut evidence_events = observation
+                .known
+                .events
+                .iter()
+                .filter(|e| &e.event_sha256 == evidence_hash);
+            let timing_event = timing_events.next().ok_or(ATTEMPT_CORRELATION_INVALID)?;
+            let evidence_event = evidence_events.next().ok_or(ATTEMPT_CORRELATION_INVALID)?;
+            if timing_events.next().is_some()
+                || evidence_events.next().is_some()
+                || evidence_event.sequence.checked_add(1) != Some(timing_event.sequence)
+                || evidence_event.state != timing_event.state
+            {
+                return Err(ATTEMPT_CORRELATION_INVALID);
+            }
+        }
+    }
+    Ok(())
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
 struct ObservationIdentity {
     run_key_sha256: String,
     definition_sha256: String,
@@ -312,7 +441,7 @@ fn project_observation(
     authority_sha256: String,
     physical: PhysicalEnvelope,
 ) -> Result<AttemptCorrelationInput, CliError> {
-    if observation.schema_version != 2
+    if !matches!(observation.schema_version, 2 | 3)
         || physical.schema_version != 1
         || observation.horizon.sequence > 100_000
         || observation.known.attempts as usize != observation.attempts.len()
@@ -483,7 +612,7 @@ pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
                         .map_err(|_| ATTEMPT_CORRELATION_INVALID)?
                 }
                 (None, Some(observation), Some(physical), Some(authority)) => {
-                    let observation = strict_document(&attempt_bytes(&observation)?)?;
+                    let observation = observation_document(&attempt_bytes(&observation)?)?;
                     let physical = strict_document(&attempt_bytes(&physical)?)?;
                     let input = project_observation(observation, authority, physical)?;
                     router_feedback::calculate_attempt_correlation(&input)

@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-11",
+  "base_commit": "603f3c520840c76fdb64b7aead6896e28f4d009a",
+  "source_sha256": {
+    "crates/agent-router-cli/src/evaluation.rs": "249208b8db72932d764fd92879785b5414daad7b90927cc0a6dc4a7698e90465",
+    "crates/agent-router-cli/src/command.rs": "384e3efbfa423c6ffa8a122b340f6c9fde0cb1c2d694383e230f469919dd8b3e",
+    "crates/agent-router-cli/tests/attempt_correlation.rs": "8d64e04e0e3d0a3240fc45d6283252d885f379270cd098b8b12a5d5fe56cd642",
+    "Cargo.lock": "c5ae233315eea44ee1f58585e75daab930fe992e4327c611fa6fff868036cf73"
+  },
+  "source_unchanged_during_checks": true,
+  "execution_context": "local host outside outer development sandbox",
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 9.584,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 84.365,
+      "log_sha256": "7941a0caf06a9790c6637b5d3707114f2dc896fc58d93ccb8e525ff6ecaf2e35"
+    },
+    {
+      "name": "xtask",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 3.799,
+      "log_sha256": "31579386110f76a13065c4422a236fc43e566e0ee3a067923880ff383270573e"
+    },
+    {
+      "name": "secrets",
+      "command": [
+        "rtk",
+        "proxy",
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "seconds": 1.69,
+      "log_sha256": "befe4d031d0fe9e32b3454c32c8c21e60921fb36d532dde15af1bbbad237cc1e"
+    },
+    {
+      "name": "database-locks-corrected",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "router-doctor",
+        "--test",
+        "database_locks",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 27.062,
+      "log_sha256": "4afaf9a22ebf06a7eebd9a1951327a182b5b2f6b5265597224b9d00786c7b1d3",
+      "result_line_totals": {
+        "passed": 5,
+        "failed": 0,
+        "ignored": 0
+      },
+      "counting_scope": "result lines including nested subprocesses, not unique test definitions"
+    },
+    {
+      "name": "workspace-corrected",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 505.637,
+      "log_sha256": "0ed8cf48796cb1024a20cc6330df0cd159b9319ae8f609ea8e3c7dc967768222",
+      "result_line_totals": {
+        "passed": 1762,
+        "failed": 0,
+        "ignored": 42
+      },
+      "counting_scope": "result lines including nested subprocesses, not unique test definitions"
+    }
+  ],
+  "counting_note": "Result-line totals include nested subprocess fixtures, not unique test definitions. The targeted 5 results overlap the complete workspace; do not add them. 42 opt-in native tests remain ignored, not passed.",
+  "initial_workspace_failure": {
+    "name": "workspace",
+    "command": [
+      "rtk",
+      "proxy",
+      "cargo",
+      "test",
+      "--workspace",
+      "--all-features",
+      "--locked",
+      "--offline"
+    ],
+    "exit_code": 101,
+    "seconds": 613.916,
+    "log_sha256": "e0024977773670a798fddfb4880a4596d36b14cf1424fc566b0328e61b18aff2",
+    "result_line_totals": {
+      "passed": 776,
+      "failed": 2,
+      "ignored": 26
+    },
+    "counting_scope": "result lines including nested subprocesses, not unique test definitions",
+    "known_cause": "Inherited RUST_TEST_THREADS=1 prefixes child marker with harness output; exact-line assertion fails. Control without inherited setting returns marker on its own line."
+  },
+  "corrected_test_invocation": "--test-threads=1 argument only; RUST_TEST_THREADS absent",
+  "failure_control_sha256": "06674a0cf5a5c581730f4ea6799cb98ff4f56f78eaec0a764a96085155ffe8d3",
+  "independent_review": {
+    "verdict": "APPROVE",
+    "scope": "v3 correlation change and memory diagnostic evidence, no native GO",
+    "reviewer": "rust-code-reviewer, gpt-6-astra/high",
+    "source_sha256": {
+      "crates/agent-router-cli/src/evaluation.rs": "249208b8db72932d764fd92879785b5414daad7b90927cc0a6dc4a7698e90465",
+      "crates/agent-router-cli/src/command.rs": "384e3efbfa423c6ffa8a122b340f6c9fde0cb1c2d694383e230f469919dd8b3e",
+      "crates/agent-router-cli/tests/attempt_correlation.rs": "8d64e04e0e3d0a3240fc45d6283252d885f379270cd098b8b12a5d5fe56cd642",
+      "docs/attempt-correlation.md": "38b9591d4caff29ae047cfdff433e16230240fed7a66990a66141196b411c6ab"
+    },
+    "open_findings": 0,
+    "runtime_tests_by_reviewer": false,
+    "gates_at_review": "pending root local gates",
+    "memory_readme_note": "reproduction snippet added after review; root checked syntax and preserved scope",
+    "gate_failure_review": {
+      "initial_workspace_exit_code": 101,
+      "initial_result_line_totals": {
+        "passed": 776,
+        "failed": 2,
+        "ignored": 26
+      },
+      "cause_confirmed": "RUST_TEST_THREADS=1 changes child test marker layout; exact-line assertion fails",
+      "test_source_changed": false,
+      "corrected_targeted_results": {
+        "passed": 5,
+        "failed": 0
+      },
+      "diagnostic_sha256": "06674a0cf5a5c581730f4ea6799cb98ff4f56f78eaec0a764a96085155ffe8d3"
+    },
+    "latest_documentation_review": "No new blocking finding on README reproduction, observation guide, changelog and finalization plan."
+  },
+  "native_macos_qualification": "NO_GO",
+  "provider_usage_or_savings": "UNKNOWN",
+  "cloud_ci": "not executed by this local verification"
+}

@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: publish a [minimal macOS memory diagnostic](docs/bench/macos-memory-followup-2026-10-11/README.md). Both a C fixture and the unchanged product helper refuse the exact 8 GiB address-space request outside the outer sandbox. Keep virtual reservations distinct from resident RAM; retain NO_GO and the unresolved memory-contract decision. Refresh both README status summaries and the execution plan.
+
 - 2026-10-11: publish the [approved M4 v2 result](docs/bench/measurement-m4-v2-result-2026-10-11/README.md): all three single-response configurations complete with coherent host counters, totaling 156,434 tokens of the 300,000-token envelope. Router and Luna fixed produce identical code and each pass four public cases plus 17 existing tests; Sol fixed is rejected because its exact patch is inapplicable. Preserve all attempts, exact patch bytes and usage evidence. Human acceptance is pending; no savings, native qualification or production fix is claimed. The earlier proposal entry below is historical.
 
 - 2026-10-11: publish the [M4 stop report](docs/bench/measurement-m4-result-2026-10-10/README.md): 279,563 host tokens spent on coordination, no worker assignment started, and no savings demonstrated. Prepare [M4 v2](docs/bench/measurement-m4-v2/README.md) as three single-response patch attempts with local verification, a proposed 300,000-token envelope and a tested offline admission ledger. Approval is pending; no v2 model call is launched.
@@ -92,6 +94,8 @@ reasons); every change was verified locally on macOS.
 - **BREAKING:** The Claude stream probe proves the model from root assistant `message.model` values only. The `init` model is a label: it is no longer required among observed models and never enters `supported_models`. A stream whose `init` announces an alias while the assistant message carries a dated id is now accepted and lists only the dated id; a stream with no root assistant model still fails with `model not observed`. No alias or date suffix is resolved, so a candidate must name the dated id. A consumer must not assume `init` and `supported_models` agree.
 
 ### Added
+
+- 2026-10-11: accept complete v3 observations in `eval attempt-correlation`, validating bounded timing rows and their attempt/event bindings before the unchanged B1 projection. Keep v2 support, explicit unknowns and the original v3 export; do not add a duration aggregate or infer provider usage. See the [correlation guide](docs/attempt-correlation.md).
 
 - 2026-10-11: add a reviewed-resource preflight for the owned finite-client helper copy, preserving exact limits and source/copy freshness checks. Publish [the F12a resource stop](docs/bench/finite-client-qualification-2026-10-11/README.md) and [independent macOS component evidence](docs/bench/macos-component-qualification-2026-10-11/README.md); the 8 GiB request remains refused and native admission stays NO_GO. Test historical M3 fixtures against their declared Git base while retaining current report regressions and the initial failed run.
 
