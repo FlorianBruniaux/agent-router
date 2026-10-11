@@ -95,4 +95,4 @@ The historical F04a v1 delivery, [PR #139](https://github.com/FlorianBruniaux/ag
 
 ## Correlate a supplied export
 
-The [attempt-correlation CLI](attempt-correlation.md) projects a complete v2 export into the offline B1 calculator and joins explicitly claimed physical observations. It validates the supplied shape without reopening the runtime store or authenticating the journal. Usage, timing and native identity stay unknown; v1 output is unchanged.
+The [attempt-correlation CLI](attempt-correlation.md) projects a complete v2 or v3 export into the unchanged offline B1 calculator and joins explicitly claimed physical observations. V3 timing rows and their evidence links are validated, but durations are not aggregated or added to the B1 report: keep the original v3 export for those measurements. The command does not reopen the runtime store or authenticate the journal. Usage and native identity stay unknown; v1 output is unchanged.

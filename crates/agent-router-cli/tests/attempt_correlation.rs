@@ -1,7 +1,7 @@
 use router_feedback::{
     AttemptCorrelationInput, attempt_correlation_report, calculate_attempt_correlation,
 };
-use router_runtime::{Runtime, RuntimeLimits, observe_run_v2};
+use router_runtime::{Runtime, RuntimeLimits, observe_run_v2, observe_run_v3};
 use router_types::{OutputRetentionPolicy, RunState, RunSummary, RuntimeEvent};
 use rusqlite::{Connection, params};
 use serde_json::{Value, json};
@@ -136,6 +136,317 @@ fn durable_observation() -> Value {
     attempt["sources"]["finished_event_sha256"] = json!(digest("finished"));
     attempt["sources"]["transition_event_sha256"] = json!(digest("transition"));
     observation
+}
+
+// A synthetic journal passed through the real v3 producer. No process is spawned.
+fn timed_observation(measurement: Value) -> Value {
+    let (_temp, root) = seeded_runtime_store();
+    let db = Connection::open(root.join("runtime.sqlite3")).unwrap();
+    let event_hash = |kind: &str| -> String {
+        db.query_row(
+            "SELECT event_hash FROM events WHERE kind=?1 ORDER BY sequence DESC LIMIT 1",
+            [kind],
+            |row| row.get(0),
+        )
+        .unwrap()
+    };
+    let evidence = json!({
+        "schema_version":1, "identity":{"run_id":PRIVATE,"attempt":1},
+        "definition_hash":"a".repeat(64), "authorization_id":PRIVATE,
+        "decision_origin":"deterministic", "sandbox":"read_only",
+        "context_hash":"c".repeat(64), "pool_hash":"d".repeat(64),
+        "source_state":PRIVATE, "task_execution_sha256":"e".repeat(64),
+        "candidate_id":PRIVATE, "model":"gpt-5.6-sol", "effort":"high", "workflow":null,
+        "state":"succeeded_transport", "failure":null,
+        "transport":{"termination":"exited","exit_code":0,"elapsed_ms":0},
+        "cleanup":"unknown", "observed_cost_microusd":null, "observed_tokens":null,
+        "started_event_hash":event_hash("attempt.started"),
+        "finished_event_hash":event_hash("attempt.finished"),
+        "transition_event_hash":event_hash("transition")
+    });
+    db.execute("UPDATE run_attempts SET status='observed'", [])
+        .unwrap();
+    append(
+        &db,
+        RunState::SucceededTransport,
+        "attempt.evidence.v1",
+        &evidence.to_string(),
+    );
+    let timing = json!({"schema_version":1,"ordinal":1,
+        "attempt_evidence_sha256":event_hash("attempt.evidence.v1"),
+        "producer":"capture_guarded_v1","scope":"supervisor_capture",
+        "clock":"monotonic_same_invocation","start_boundary":"before_dispatch_validation",
+        "end_boundary":"after_reap_and_both_output_drains","precision":"milliseconds_truncated",
+        "measurement":measurement});
+    append(
+        &db,
+        RunState::SucceededTransport,
+        "attempt.timing.v1",
+        &timing.to_string(),
+    );
+    drop(db);
+    serde_json::to_value(observe_run_v3(&root, PRIVATE).unwrap()).unwrap()
+}
+
+#[test]
+fn observe_v3_qualified_timings_keep_the_existing_b1_report_contract() {
+    let dir = tempfile::tempdir().unwrap();
+    let observation_path = dir.path().join("observation.json");
+    let physical_path = dir.path().join("physical.json");
+    let authority = digest("runtime-authority");
+    write_json(&physical_path, &json!({"schema_version":1,"physical":[]}));
+    for measurement in [
+        json!({"status":"known","duration_ms":0}),
+        json!({"status":"unknown","reason":"clock_regression"}),
+        json!({"status":"unknown","reason":"duration_overflow"}),
+    ] {
+        let observation = timed_observation(measurement.clone());
+        assert_eq!(observation["timings"][0]["measurement"], measurement);
+        write_json(&observation_path, &observation);
+        let original = fs::read(&observation_path).unwrap();
+        let expected: AttemptCorrelationInput = serde_json::from_value(json!({
+            "schema_version":1,"runtime":{
+                "authority_sha256":authority,"snapshot_sha256":observation["snapshot_sha256"],
+                "run_key_sha256":observation["identity"]["run_key_sha256"],
+                "definition_sha256":observation["identity"]["definition_sha256"],
+                "attempts":[{"ordinal":1,"attempt_key_sha256":observation["attempts"][0]["attempt_key_sha256"],
+                    "evidence":"durable_attempt","requested":{"model":"gpt-5.6-sol","effort":"high"}}]
+            },"physical":[]
+        })).unwrap();
+        let output = invoke(
+            dir.path(),
+            &projection_args(&observation_path, &physical_path, &authority),
+        );
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(
+            report,
+            serde_json::to_value(calculate_attempt_correlation(&expected).unwrap()).unwrap()
+        );
+        assert_eq!(report["attempts"][0]["physical_sends"], "unknown");
+        assert_eq!(fs::read(&observation_path).unwrap(), original);
+        assert!(!report.to_string().contains(PRIVATE));
+    }
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 2);
+}
+
+#[test]
+fn observe_v3_projection_preserves_unknowns_and_source_bytes() {
+    let dir = tempfile::tempdir().unwrap();
+    let observation_path = dir.path().join("observation.json");
+    let physical_path = dir.path().join("physical.json");
+    let (_store_temp, root) = seeded_runtime_store();
+    let observation = serde_json::to_value(observe_run_v3(&root, PRIVATE).unwrap()).unwrap();
+    assert_eq!(
+        observation["timings"][0]["measurement"],
+        json!({
+            "status": "unknown", "reason": "missing_record"
+        })
+    );
+    write_json(&observation_path, &observation);
+    let original = fs::read(&observation_path).unwrap();
+    write_json(
+        &physical_path,
+        &json!({"schema_version": 1, "physical": []}),
+    );
+    let output = invoke(
+        dir.path(),
+        &projection_args(
+            &observation_path,
+            &physical_path,
+            &digest("runtime-authority"),
+        ),
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(
+        report["runtime"]["snapshot_sha256"],
+        observation["snapshot_sha256"]
+    );
+    assert_eq!(report["evidence_trust"], "supplied_unverified");
+    assert_eq!(report["attempts"][0]["physical_sends"], "unknown");
+    assert_eq!(report["attempts"][0]["requested"], Value::Null);
+    assert_eq!(fs::read(&observation_path).unwrap(), original);
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 2);
+}
+
+#[test]
+fn observe_v3_rejects_malformed_timing_shapes_and_substituted_joins() {
+    let dir = tempfile::tempdir().unwrap();
+    let observation_path = dir.path().join("observation.json");
+    let physical_path = dir.path().join("physical.json");
+    let authority = digest("runtime-authority");
+    write_json(&physical_path, &json!({"schema_version":1,"physical":[]}));
+    let base = timed_observation(json!({"status":"known","duration_ms":0}));
+    let mut cases = Vec::new();
+    for (field, replacement) in [
+        ("schema_version", json!(4)),
+        ("schema_version", json!(2)),
+        ("timings", Value::Null),
+        ("timings", json!([])),
+        ("timings", json!([base["timings"][0], base["timings"][0]])),
+    ] {
+        let mut value = base.clone();
+        value[field] = replacement;
+        cases.push(value);
+    }
+    let mut value = base.clone();
+    value.as_object_mut().unwrap().remove("timings");
+    cases.push(value);
+    for field in base["timings"][0].as_object().unwrap().keys() {
+        let mut value = base.clone();
+        value["timings"][0].as_object_mut().unwrap().remove(field);
+        cases.push(value);
+    }
+    for (field, replacement) in [
+        ("ordinal", json!(0)),
+        ("ordinal", json!(2)),
+        ("attempt_key_sha256", json!(digest("another-attempt"))),
+        ("timing_event_sha256", json!("bad-digest")),
+        ("timing_event_sha256", json!(digest("absent-timing-event"))),
+        (
+            "timing_event_sha256",
+            base["attempts"][0]["sources"]["attempt_evidence_sha256"].clone(),
+        ),
+        ("timing_event_sha256", Value::Null),
+        ("scope", json!("provider")),
+        ("clock", json!("wall_clock")),
+        ("start_boundary", json!("before_spawn")),
+        ("end_boundary", json!("after_reap")),
+        ("precision", json!("seconds")),
+        (REJECTED_SECRET, json!(REJECTED_SECRET)),
+        ("measurement", json!({"status":"known","duration_ms":-1})),
+        ("measurement", json!({"status":"known","duration_ms":1.5})),
+        ("measurement", json!({"status":"known","duration_ms":null})),
+        ("measurement", json!({"status":"known"})),
+        (
+            "measurement",
+            json!({"status":"known","duration_ms":0,"reason":"clock_regression"}),
+        ),
+        (
+            "measurement",
+            json!({"status":"unknown","reason":"missing_record"}),
+        ),
+        (
+            "measurement",
+            json!({"status":"unknown","reason":"unsupported"}),
+        ),
+        (
+            "measurement",
+            json!({"status":"unknown","reason":{"clock_regression":null}}),
+        ),
+        (
+            "measurement",
+            json!({"status":"unknown","reason":"clock_regression","duration_ms":0}),
+        ),
+        (
+            "measurement",
+            json!({"status":"unknown","reason":"clock_regression",(REJECTED_SECRET):REJECTED_SECRET}),
+        ),
+    ] {
+        let mut value = base.clone();
+        value["timings"][0][field] = replacement;
+        cases.push(value);
+    }
+    // A qualified timing cannot be attached to an attempt with no durable evidence.
+    let mut value = emitted_observation();
+    value["schema_version"] = json!(3);
+    value["timings"] = base["timings"].clone();
+    cases.push(value);
+    // A timing event hash cannot qualify two different attempts.
+    let mut value = base.clone();
+    let mut second = base["attempts"][0].clone();
+    second["ordinal"] = json!(2);
+    second["attempt_key_sha256"] = json!(digest("second-attempt"));
+    value["attempts"].as_array_mut().unwrap().push(second);
+    value["known"]["attempts"] = json!(2);
+    let mut second = base["timings"][0].clone();
+    second["ordinal"] = json!(2);
+    second["attempt_key_sha256"] = json!(digest("second-attempt"));
+    value["timings"].as_array_mut().unwrap().push(second);
+    cases.push(value);
+    for field in ["sequence", "state", "event_sha256"] {
+        let mut value = base.clone();
+        let event = value["known"]["events"]
+            .as_array_mut()
+            .unwrap()
+            .last_mut()
+            .unwrap();
+        event[field] = match field {
+            "sequence" => json!(100),
+            "state" => json!("failed"),
+            _ => json!(digest("substituted-event")),
+        };
+        cases.push(value);
+    }
+    let mut value = base.clone();
+    let event = value["known"]["events"]
+        .as_array()
+        .unwrap()
+        .last()
+        .unwrap()
+        .clone();
+    value["known"]["events"].as_array_mut().unwrap().push(event);
+    cases.push(value);
+    for (index, value) in cases.into_iter().enumerate() {
+        write_json(&observation_path, &value);
+        let output = invoke(
+            dir.path(),
+            &projection_args(&observation_path, &physical_path, &authority),
+        );
+        assert!(
+            !output.status.success(),
+            "accepted mutation {index}: {value}"
+        );
+        assert_static_rejection(output);
+    }
+    let duplicate = serde_json::to_string(&base).unwrap().replacen(
+        "\"duration_ms\":0",
+        "\"duration_ms\":0,\"duration_ms\":0",
+        1,
+    );
+    fs::write(&observation_path, duplicate).unwrap();
+    assert_static_rejection(invoke(
+        dir.path(),
+        &projection_args(&observation_path, &physical_path, &authority),
+    ));
+}
+
+#[test]
+fn observe_v3_still_rejects_conflicting_physical_calls_and_absent_claims() {
+    let dir = tempfile::tempdir().unwrap();
+    let observation_path = dir.path().join("observation.json");
+    let physical_path = dir.path().join("physical.json");
+    let authority = digest("runtime-authority");
+    let observation = timed_observation(json!({"status":"known","duration_ms":0}));
+    write_json(&observation_path, &observation);
+    let call = json!({
+        "key":{"authority_sha256":digest("physical-authority"),"physical_sha256":digest("physical")},
+        "sequence":1,"evidence_sha256":digest("evidence"),"external_request_id":null,
+        "declared_model":null,"claimed_attempt_key_sha256":observation["attempts"][0]["attempt_key_sha256"]
+    });
+    let mut conflict = call.clone();
+    conflict["evidence_sha256"] = json!(digest("conflict"));
+    let mut absent = call.clone();
+    absent["claimed_attempt_key_sha256"] = json!(digest("absent-attempt"));
+    for physical in [json!([call, conflict]), json!([absent])] {
+        write_json(
+            &physical_path,
+            &json!({"schema_version":1,"physical":physical}),
+        );
+        assert_static_rejection(invoke(
+            dir.path(),
+            &projection_args(&observation_path, &physical_path, &authority),
+        ));
+    }
 }
 
 fn projection_args<'a>(

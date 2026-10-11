@@ -17,7 +17,7 @@ The input is synthetic. `evidence_trust: supplied_unverified` applies to the ent
 
 Repeated identical physical observations count once. Conflicting observations for the same `(authority_sha256, physical_sha256)` refuse the input. Sharing an external request ID does not merge distinct physical observations. A claim to an attempt absent from the supplied runtime block also refuses the input.
 
-## Read a complete observation v2 export
+## Read a complete observation v2 or v3 export
 
 First obtain a [passive observation](run-observation.md) for an existing run:
 
@@ -45,13 +45,28 @@ An empty list supplies no physical evidence. It does not establish that no call 
 
 The projection accepts the complete published v2 shape, including required nullable fields and the native fields whose only accepted value is `unknown`. It rejects v1, unsupported versions, extra or duplicate fields, invalid values, and disagreement between `known.attempts` and the attempt array. Validating this supplied shape does not recheck the private journal or recompute the snapshot hash.
 
+A complete v3 export can be supplied directly, without editing it or repeating a measurement:
+
+```sh
+agent-router observe --store "$AR_STORE" --run-id "$AR_RUN_ID" \
+  --schema-version 3 --json > observation-v3.json
+agent-router eval attempt-correlation \
+  --observation observation-v3.json \
+  --physical physical-observations.json \
+  --runtime-authority-sha256 "$AR_RUNTIME_AUTHORITY_SHA256" --json
+```
+
+V3 additionally requires exactly one timing row per attempt, joined by ordinal and attempt key. Scope, clock, boundaries, precision and measurement variants are validated strictly. `missing_record` requires a null timing-event hash; a known interval (including zero), `clock_regression` or `duration_overflow` requires durable attempt evidence and a distinct timing-event hash. That event and the referenced evidence must each occur once in the supplied event list, with consecutive sequences and the same state. Duplicate rows, substituted joins, malformed fields and unsupported values refuse the complete input.
+
+Keep the original v3 export alongside the correlation report: the command leaves its bytes untouched. Timing rows remain in that export and are not copied, summed or remeasured in B1. The report retains the supplied v3 snapshot hash and projects the common attempt fields. Neither this hash nor the checks on supplied event references authenticate the journal or requalify a local interval as provider or end-to-end time.
+
 `--input` and the observation mode are mutually exclusive. The observation mode requires all three arguments. Each input file is bounded at 4 MiB before decoding; the B1 calculator retains its own attempt and physical-observation ceilings.
 
 ## What this proves and what remains unknown
 
 Invalid input uses the fixed `eval.attempt_correlation.invalid` error (exit 2); malformed command arguments use the existing `cli.invalid` error. Evaluation refusals use a static error and do not echo file contents or paths.
 
-The two entry modes use the same B1 calculation and report contract. The report hashes bind the supplied projection and output; they do not prove that a provider made a call or that the supplied runtime block faithfully describes the run. The report's `input_is_a_projection_of_observe_v2_not_its_raw_output` limit describes the calculator input after CLI projection.
+The two entry modes use the same B1 calculation and report contract. The report hashes bind the supplied projection and output; they do not prove that a provider made a call or that the supplied runtime block faithfully describes the run. The report's historical `input_is_a_projection_of_observe_v2_not_its_raw_output` limit names the common v2 attempt projection, also used for v3. Its spelling and the B1 report contract remain unchanged for existing consumers.
 
 This command does not join thread IDs, turn IDs, usage, elapsed time or invoices. It never feeds external measurements into `observed_tokens` or `observed_cost_microusd`, which remain runtime escalation authority. A linked observation is not task success, user acceptance or evidence of savings.
 

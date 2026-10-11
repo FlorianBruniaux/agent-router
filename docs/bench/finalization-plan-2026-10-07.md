@@ -1,9 +1,35 @@
 # Finaliser Agent Router et mesurer son usage
 
-Plan ouvert le 7 octobre 2026, mis à jour le 8 octobre. Statut : F04a, observation v2 explicite par tentative et publication d’un patch simulé disponibles ; composition native F12a NO_GO dans le diagnostic courant ; admission réelle et mesures restantes ouvertes.
+Plan ouvert le 7 octobre 2026, mis à jour le 11 octobre. Le statut courant ci-dessous complète les sections datées conservées comme historique. La composition native macOS reste F12a NO_GO ; les résultats de l’essai assisté ne lèvent pas cette limite.
 Responsable de coordination : agent principal ; arbitrages de produit et acceptation finale : Florian.
 
-La référence de publication durcie est `88c8d5f007877402f8eaf98722e2dd90fc35b16e` sur `main`, issue de la [PR #147](https://github.com/FlorianBruniaux/agent-router/pull/147). Elle durcit la publication d’une correction simulée dans une révision Git dédiée, livrée par la PR #144. La PR #140 a livré le choix borné du client dédié ; la PR #139 a livré F04a et les diagnostics natifs. La [PR #138](https://github.com/FlorianBruniaux/agent-router/pull/138) a livré précédemment F07a. Le présent plan prolonge le [registre des preuves](status-and-action-plan-2026-10-05.md) et conserve les exigences de l'[acceptation complète](../remaining-acceptance.md). Il ordonne le travail sans annoncer son exécution ni accorder de nouvelles permissions.
+## État courant et prochaine décision, 11 octobre
+
+Les PR #163 à #166 sont fusionnées : copies privées des exécutables liées à la
+revue, correction M4 acceptée, durées locales v3 et préflight des ressources.
+L’[essai assisté M4](m4-fix-integration-2026-10-11.md) a produit une correction
+acceptée ; ni économies générales ni usage natif automatique ne sont établis.
+
+1. Le [nouveau diagnostic mémoire](macos-memory-followup-2026-10-11/README.md)
+   reproduit le refus exact de 8 Gio dans un programme C minimal hors sandbox,
+   en plus du helper produit. Ce n’est pas seulement un surcoût du helper Rust.
+   La prochaine étape est une revue du contrat mémoire macOS si l’on veut
+   poursuivre avec un autre mécanisme. Aucun relèvement ou retrait de limite
+   n’est adopté ; F12a reste NO_GO.
+2. Le lot de mesures de cette passe permet à la [corrélation](../attempt-correlation.md)
+   de lire un export complet v3 et de contrôler ses liaisons de durée. Le calcul
+   B1 reste inchangé, sans agrégation de durée. Restent les identités et usages
+   natifs qualifiés, puis leur liaison au coût de la révision acceptée.
+3. Après qualification mémoire, tester la composition copiée exacte, le réseau,
+   les écritures, l’arrêt et le nettoyage ; puis produire le patch utile via ce
+   parcours avec fournisseur simulé et vérifier chaque envoi physique/reprise.
+4. Un essai réel via ce parcours attend ces preuves et son propre protocole
+   approuvé. Le budget M4 v2 antérieur n’autorise pas de nouveaux essais. La
+   comparaison ultérieure doit conserver échecs, temps humain et coûts inconnus.
+
+## Historique de publication et qualification
+
+La référence historique de publication durcie est `88c8d5f007877402f8eaf98722e2dd90fc35b16e` sur `main`, issue de la [PR #147](https://github.com/FlorianBruniaux/agent-router/pull/147). Elle durcit la publication d’une correction simulée dans une révision Git dédiée, livrée par la PR #144. La PR #140 a livré le choix borné du client dédié ; la PR #139 a livré F04a et les diagnostics natifs. La [PR #138](https://github.com/FlorianBruniaux/agent-router/pull/138) a livré précédemment F07a. Le présent plan prolonge le [registre des preuves](status-and-action-plan-2026-10-05.md) et conserve les exigences de l'[acceptation complète](../remaining-acceptance.md). Il ordonne le travail sans annoncer son exécution ni accorder de nouvelles permissions.
 
 Le [suivi d’annulation du relais absent](physical-send-feasibility-2026-10-07/outage-cancellation/README.md) teste un contrat distinct : le broker est indisponible avant le lancement natif, puis le contrôleur interrompt au premier signal de reconnexion corrélé. L’acquittement et le terminal `interrupted` sont corrélés au même thread/tour ; l’arrêt physique, les sorties, les handlers et les sockets sont vérifiés séparément. Zéro requête et zéro connexion fournisseur sont observés. Le verdict initial v2 et l’admission globale restent `NO_GO`. La perte du broker pendant une session, le plafond financier et la composition de production restent non qualifiés.
 
