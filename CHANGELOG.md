@@ -20,6 +20,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: test a [macOS physical-footprint observer](docs/bench/macos-memory-protection-2026-10-11/README.md) on one inert child. Five observer cases meet their oracles; the self-only physical-limit API is refused. Preserve measured overshoot, the initial collector failure, unchanged production defaults and F12a NO_GO. Propose the distinct monitoring contract in [ADR 0031](docs/adr/0031-macos-physical-memory-observation.md).
+
 - 2026-10-11: publish a [minimal macOS memory diagnostic](docs/bench/macos-memory-followup-2026-10-11/README.md). Both a C fixture and the unchanged product helper refuse the exact 8 GiB address-space request outside the outer sandbox. Keep virtual reservations distinct from resident RAM; retain NO_GO and the unresolved memory-contract decision. Refresh both README status summaries and the execution plan.
 
 - 2026-10-11: publish the [approved M4 v2 result](docs/bench/measurement-m4-v2-result-2026-10-11/README.md): all three single-response configurations complete with coherent host counters, totaling 156,434 tokens of the 300,000-token envelope. Router and Luna fixed produce identical code and each pass four public cases plus 17 existing tests; Sol fixed is rejected because its exact patch is inapplicable. Preserve all attempts, exact patch bytes and usage evidence. Human acceptance is pending; no savings, native qualification or production fix is claimed. The earlier proposal entry below is historical.

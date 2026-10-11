@@ -8,6 +8,9 @@ Un routage expérimental, local et explicable pour Claude Code et Codex.
 acceptée sont disponibles. L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; il ne démontre pas d’économie.
 L’usage automatique quotidien attend la qualification native macOS, actuellement
 bloquée par la [limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
+Une [expérience bornée sur la mémoire physique](docs/bench/macos-memory-protection-2026-10-11/README.md)
+valide la détection et l’arrêt d’un enfant inerte ; elle ne constitue pas un
+plafond strict et ne protège pas tout l’arbre de processus du client natif.
 Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md) sépare
 qualification native, mesures et publication.
 
