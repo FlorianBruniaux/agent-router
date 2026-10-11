@@ -358,6 +358,33 @@ flowchart TD
 
 </details>
 
+### Comment les skills sont suggérés
+
+Un skill est un jeu d’instructions pour guider le travail, par exemple une
+méthode de test. Vous, ou une intégration de votre host, fournissez la tâche et
+les descriptions de skills à Agent Router. La recherche compare les mots de la
+tâche à ces descriptions ; le routeur vérifie ensuite quels candidats sont
+compatibles avec le catalogue, la tâche, le host et le modèle retenu.
+
+```mermaid
+flowchart TD
+    U["Vous ou une intégration du host"] --> T["Tâche transmise à la CLI"]
+    M["Descriptions de skills fournies"] --> R["Recherche locale BM25"]
+    T -->|"route avec --retrieval"| R
+    T -->|"ou candidats déjà fournis"| F["Vérifier confiance et compatibilité"]
+    R -->|"candidats, ou aucun si recherche incertaine"| F
+    C["Catalogue + capacités du host et du modèle"] --> F
+    F --> D["Décision : identifiants de skills par phase"]
+    D --> V["Vous ou le host examinez la proposition"]
+```
+
+Cette suggestion ne lit pas encore le contenu des fichiers de skills. Leur
+chargement vérifié appartient au parcours de préparation, qui exige ses propres
+entrées et contrôles. Agent Router n’installe aucun hook et ne recherche pas
+automatiquement dans vos dossiers Claude ou Codex. Sans `--retrieval`, `route`
+utilise les candidats fournis dans la requête. Le [guide du parcours des skills](docs/skill-selection.md)
+explique les cas d’usage, les refus et un essai hors ligne reproductible.
+
 ### Conditions à remplir avant tout lancement
 
 Le routage et la préparation n'exécutent jamais rien. Un lancement ne démarre que si chaque

@@ -1,5 +1,9 @@
 # Retrieval catalog binding
 
+For the user-facing path from a task to suggested skills, start with the
+[skill selection guide](skill-selection.md) (FR): actors, search, compatibility,
+body loading and an offline CLI example. This page specifies the data contracts.
+
 Metadata v2 binds an index to the full content digest of the catalog used by its
 caller. A catalog version string alone cannot detect a policy or asset change
 published under the same version.

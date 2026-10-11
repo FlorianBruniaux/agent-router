@@ -26,6 +26,7 @@ written in French.
 
 | Page | What it covers |
 | --- | --- |
+| [How skills are suggested](skill-selection.md) (FR) | Actors, metadata search, compatibility checks, body loading and offline example |
 | [Retrieval](retrieval.md) | Catalog search, contextual signals, rank fusion, local vectors |
 | [Risk classification](risk-classification.md) | Deterministic risk floor |
 | [Plan generation](plan-generation.md) | Bounded global plan assignments under budgets |
