@@ -1,6 +1,6 @@
 # Bench playbook
 
-The [M4 stop report](measurement-m4-result-2026-10-10/README.md) records 279,563 host tokens consumed by coordination, with none of the three worker assignments started. The [M4 v2 proposal](measurement-m4-v2/README.md) replaces the extra model coordinator with an offline admission ledger and three single-response patch attempts, then local tests and human review. Its proposed 300,000-token envelope awaits a new approval. No v2 participant has been launched. The [v1 seal](measurement-m4/APPROVAL.md) remains historical evidence.
+The [M4 v2 measured result](measurement-m4-v2-result-2026-10-11/README.md) records all three approved configurations: 156,434 host tokens, coherent counters, two patches passing 21 local checks each and one exact artifact rejected before application. Human acceptance remains pending; no savings or native qualification is demonstrated. The [sealed v2 protocol](measurement-m4-v2/README.md) retains its historical proposal text. The [v1 stop report](measurement-m4-result-2026-10-10/README.md) and its 279,563-token expenditure remain separate evidence.
 
 The [M1–M3 measurement preparation](measurement-m123/README.md) records the 10 October continuation after #157: a campaign catalog, offline trace accounting and a simulated comparison rehearsal. Paid trials and measured savings remain separate acceptance gates.
 

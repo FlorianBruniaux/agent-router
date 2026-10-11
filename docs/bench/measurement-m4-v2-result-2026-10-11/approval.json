@@ -1,0 +1,10 @@
+{
+  "approved_at_recorded_utc": "2026-10-11T06:57:46.522346+00:00",
+  "protocol_sha256": "c4507b04725739cf6e1e416b24acbdd4f71fb7927b5a4f82ffdd84e22ab5cdb6",
+  "protocol_commit": "a4963ddb5367b11f593b407a88a54938005f2ff7",
+  "merge_commit": "0c836b123e052b464db7a760f8eab7e72343ee51",
+  "message": "Ok, je valide M4 v2 et les 300 000 tokens surveillés, avec dépassement possible. Vérifie la collecte puis lance les trois configurations. Arrête si les compteurs ne sont pas fiables. Mets à jour la doc et les issues.",
+  "scope": "M4 v2 protocol approval including participant-only no-tools and no-skills exception",
+  "envelope_tokens": 300000,
+  "record_type": "Operator receipt of user approval; not a cryptographic user signature"
+}

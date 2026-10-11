@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: publish the [approved M4 v2 result](docs/bench/measurement-m4-v2-result-2026-10-11/README.md): all three single-response configurations complete with coherent host counters, totaling 156,434 tokens of the 300,000-token envelope. Router and Luna fixed produce identical code and each pass four public cases plus 17 existing tests; Sol fixed is rejected because its exact patch is inapplicable. Preserve all attempts, exact patch bytes and usage evidence. Human acceptance is pending; no savings, native qualification or production fix is claimed. The earlier proposal entry below is historical.
+
 - 2026-10-11: publish the [M4 stop report](docs/bench/measurement-m4-result-2026-10-10/README.md): 279,563 host tokens spent on coordination, no worker assignment started, and no savings demonstrated. Prepare [M4 v2](docs/bench/measurement-m4-v2/README.md) as three single-response patch attempts with local verification, a proposed 300,000-token envelope and a tested offline admission ledger. Approval is pending; no v2 model call is launched.
 
 - 2026-10-10: seal the [M4 assisted diagnostic proposal](docs/bench/measurement-m4/README.md) after #158 merged: one reproducible report-cost defect, three fixed configurations and a 600,000 host-token admission envelope. Record that Router selects the lightweight baseline, that the threshold is not an enforced in-flight cap, and that approval and live trace binding remain pending. No trial or task solution is launched.
