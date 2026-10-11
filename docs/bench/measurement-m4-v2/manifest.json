@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v2",
+  "status": "awaiting_user_approval",
+  "execution_authorized": false,
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "task_id": "t1",
+  "repetitions": 1,
+  "assignments": [
+    {
+      "assignment_id": "m4v2-t1-router-r1",
+      "arm_id": "router",
+      "agent_path": "/root/m4_v2_router",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "allocation_tokens": 100000
+    },
+    {
+      "assignment_id": "m4v2-t1-strongfixed-r1",
+      "arm_id": "strongfixed",
+      "agent_path": "/root/m4_v2_strongfixed",
+      "model": "gpt-6.1-sol",
+      "effort": "medium",
+      "allocation_tokens": 100000
+    },
+    {
+      "assignment_id": "m4v2-t1-cheapfixed-r1",
+      "arm_id": "cheapfixed",
+      "agent_path": "/root/m4_v2_cheapfixed",
+      "model": "gpt-6-luna",
+      "effort": "medium",
+      "allocation_tokens": 100000
+    }
+  ],
+  "order": [
+    "router",
+    "strongfixed",
+    "cheapfixed"
+  ],
+  "order_source": "v1 seeded order retained before any worker outcome",
+  "envelope_tokens": 300000,
+  "unit": "host_reported_input_plus_output_tokens",
+  "cached_input_included": true,
+  "reasoning_output_included": true,
+  "allocation_transfer": false,
+  "max_participant_starts": 3,
+  "max_responses_per_participant": 1,
+  "max_retries": 0,
+  "max_escalations": 0,
+  "additional_coordinator_sessions": 0,
+  "additional_model_reviews": 0,
+  "transport": {
+    "surface": "collaboration.spawn_agent",
+    "role": "default",
+    "fork_turns": "none",
+    "one_final_response": true,
+    "tool_use_allowed": false,
+    "native_runtime": false,
+    "network_calls_by_participant": false
+  },
+  "prompt_file": "prompt.md",
+  "prompt_bytes": 7648,
+  "prompt_sha256": "9c501878c201fd85853eae17d0fe68faeccc7de3e05ec728b392edf76b4ca65e",
+  "task_payload_max_bytes": 16384,
+  "patch_max_bytes": 16384,
+  "context_limit": "Task payload only; platform instructions and tool schemas remain injected and are not bounded or reduced by this byte limit.",
+  "routing": {
+    "decision_id": "2d52e59ce0d0ae85be04bab353942a0d21c0e2ac4f2d30e2861e9944d9d316ee",
+    "projection": "execute phase of the frozen decision only; plan and verify phases are not executed",
+    "router_equals_cheapfixed": true,
+    "catalog_priors": "uncalibrated; no measured tariff"
+  },
+  "accounting": {
+    "all_assigned_cases_retained": true,
+    "zero_accepted_ratio": null,
+    "money_usd": null,
+    "provider_invoice": null,
+    "parent_admin_preparation_and_human_review": "separate incomplete/UNKNOWN overhead, never free",
+    "physical_request_ids": null
+  },
+  "stop": {
+    "before_next_assignment": "Require terminal exact-bound counters, one response, no tool call, correct identity and allocation not exceeded. Any violation latches stopped. No restart.",
+    "during_response": "Operator may interrupt through host tools; no automatic integration or enforced in-flight ceiling is claimed.",
+    "pending_trace": "Poll files locally without messaging participant; wait at most 30 seconds after completion for final flush, then stop.",
+    "hard_cap": false,
+    "maximum_overshoot_tokens": null,
+    "whole_block_stop_on_usage_or_protocol_failure": true
+  },
+  "acceptance": {
+    "frozen_public_cases": 4,
+    "existing_tests": 17,
+    "patch_scope": "Pilot.report() only in docs/bench/campaign-next/pilot/run_pilot.py",
+    "patch_apply": "operator applies exact returned unified diff once, no repair",
+    "final_review": "Florian reviews same exact patch after local tests; pending until recorded",
+    "blind_review": false,
+    "not_native_or_end_to_end_agent_trial": true
+  },
+  "preflight": [
+    "explicit approval of this seal",
+    "exact base and clean isolated workspaces",
+    "trusted verifier hashes",
+    "available requested host models/efforts",
+    "participant tools exception in approved prompt",
+    "read-only exact trace binding and collector replay",
+    "new operator-owned durable state, no other active participant"
+  ],
+  "source_files_sha256": {
+    "docs/bench/campaign-next/pilot/run_pilot.py": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+    "docs/bench/measurement-m123/m1/catalog.json": "23cced0f8e4b36f99d984ab4b8f9773c0045c8d79c522d637f05b605a7c68b8c",
+    "docs/bench/measurement-m123/m1/campaign.py": "6654622b661005abe48e0b55333a2e2a1e6f29c4f5814bd6475b2dd9fe4acefa",
+    "docs/bench/measurement-m123/m2/trace_to_task.py": "ee0858552ec799e7f990d2e82d99d819eb7443b24363d059c77c4af152b566a5",
+    "docs/bench/measurement-m123/m3/acceptance.py": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+    "docs/bench/measurement-m123/m3/verifier/hidden_cases.json": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392",
+    "AGENTS.md": "25b4c8020eba74c7944ea0af977b857bd3b7df2c23ce2006ccefd7815c3bf564"
+  },
+  "comparison_limit": "Three single-response patch attempts on one public task. Router and cheapfixed are identical. No model-selection benefit, broad savings, native execution or blind-review claim.",
+  "prior_m4_tokens": 279563,
+  "prior_m4_tokens_are_separate_not_free": true,
+  "approval_receipt": null
+}

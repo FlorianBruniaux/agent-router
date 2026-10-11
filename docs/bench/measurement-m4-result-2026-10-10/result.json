@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v1",
+  "status": "stopped_before_assignments",
+  "approved_seal_sha256": "913df1ced16a26debc0767bc5f42ab40de80c8f568135788423e1da23d556c27",
+  "approval_source": "Explicit user approval in the owning chat, including observed overshoot",
+  "merged_pr": "https://github.com/FlorianBruniaux/agent-router/pull/159",
+  "merge_commit": "36af4bf0d84640b8e992905a8af46095f9d9cfa6",
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "assignments": [
+    {
+      "assignment_id": "m4-t1-router-r1",
+      "arm_id": "router",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    },
+    {
+      "assignment_id": "m4-t1-strongfixed-r1",
+      "arm_id": "strongfixed",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    },
+    {
+      "assignment_id": "m4-t1-cheapfixed-r1",
+      "arm_id": "cheapfixed",
+      "status": "not_started",
+      "patch_sha256": null,
+      "acceptance": null,
+      "usage": null
+    }
+  ],
+  "accepted_patches": 0,
+  "cost_per_accepted_patch": null,
+  "started_participants": 1,
+  "started_worker_assignments": 0,
+  "direct_children_observed": 0,
+  "stop_reason": "coordinator_allocation_exceeded",
+  "coordinator_allocation_tokens": 60000,
+  "participant_envelope_tokens": 600000,
+  "first_observed_stop_tokens": 107633,
+  "first_stop_source": "Retained monitor output at 2026-10-10T20:54:45.626912+00:00; STOP.json was later overwritten by the terminal refresh",
+  "terminal_tokens": 279563,
+  "observed_tokens_after_first_stop": 171930,
+  "overshoot_above_coordinator_allocation": 219563,
+  "original_collector_sha256": "c06061316e9be4b60b2fed71de8ffcb2061cf252fa8b36fc4b03c539816a720c",
+  "original_monitor_sha256": "b522abc10bf0d6f3ade7b19275fd137367db43e260340e194a8c506972141a93",
+  "capture_qualification": {
+    "historical_participants": 2,
+    "historical_first_response_tokens": [
+      44249,
+      45850
+    ],
+    "original_helper_tests_passed": 10,
+    "terminal_sum_matches_all_response_records": true
+  },
+  "task_workspaces": {
+    "count": 3,
+    "clean": true,
+    "head": "e65a22ecb0a294b67a18e7e7ba867b506aba427f"
+  },
+  "known_model_usage_usd": null,
+  "root_administration_and_preparation_tokens": null,
+  "human_active_time": null,
+  "unknowns": [
+    "provider invoice and tariff",
+    "physical provider request identifiers",
+    "whole-project token total",
+    "independent context-inheritance evidence"
+  ],
+  "conclusion": "Host counters reconciled. No worker task, accepted patch or measured savings. The file-based stop did not interrupt the active coordinator automatically.",
+  "first_stop_trace_snapshot": {
+    "snapshot_sha256": "44549c41129b06f4381e3ddbfebaea1a4ca8fadcb71bcfa9f126708e40b0b689",
+    "snapshot_bytes": 256406,
+    "response_record_count": 2,
+    "cumulative": {
+      "input_tokens": 107362,
+      "cached_input_tokens": 50432,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 271,
+      "reasoning_output_tokens": 0,
+      "total_tokens": 107633
+    },
+    "terminal": false,
+    "sum_matches_cumulative": true
+  }
+}

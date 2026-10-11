@@ -1,0 +1,142 @@
+{
+  "status": "reliable_host_counters",
+  "requested": {
+    "model": "gpt-6.1-sol",
+    "effort": "medium"
+  },
+  "observed": [
+    {
+      "model": "gpt-6.1-sol",
+      "effort": "medium"
+    }
+  ],
+  "scope": "exact host participant, not provider invoice",
+  "runtime_cli_version": "0.162.0-alpha.17.2",
+  "snapshot_sha256": "238ab73e3e814ed343b9944df8db5acf906e2fa151afbf9115e1af4148d357ed",
+  "snapshot_bytes": 276959,
+  "response_record_count": 5,
+  "response_records": [
+    {
+      "ordinal": 13,
+      "timestamp": "2026-10-10T20:54:41.270Z",
+      "response_identity_sha256": "be30c10f237be81fafe0a1a9b4161d7aa50c529a66ac35358f6987c76991c7ea",
+      "usage": {
+        "input_tokens": 50613,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 212,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 50825
+      },
+      "cumulative": {
+        "input_tokens": 50613,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 212,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 50825
+      }
+    },
+    {
+      "ordinal": 20,
+      "timestamp": "2026-10-10T20:54:45.143Z",
+      "response_identity_sha256": "c62f4d8cb2eef7d035a4f2f7d231d6a19e997a0867c591f89a325fef855e95a0",
+      "usage": {
+        "input_tokens": 56749,
+        "cached_input_tokens": 50432,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 59,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 56808
+      },
+      "cumulative": {
+        "input_tokens": 107362,
+        "cached_input_tokens": 50432,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 271,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 107633
+      }
+    },
+    {
+      "ordinal": 26,
+      "timestamp": "2026-10-10T20:54:47.345Z",
+      "response_identity_sha256": "92a4449645600e94cb1fcd65b697f6e1fee170278e4c3d92e9866d5cce36b117",
+      "usage": {
+        "input_tokens": 56820,
+        "cached_input_tokens": 56576,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 32,
+        "reasoning_output_tokens": 11,
+        "total_tokens": 56852
+      },
+      "cumulative": {
+        "input_tokens": 164182,
+        "cached_input_tokens": 107008,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 303,
+        "reasoning_output_tokens": 11,
+        "total_tokens": 164485
+      }
+    },
+    {
+      "ordinal": 31,
+      "timestamp": "2026-10-10T20:55:00.046Z",
+      "response_identity_sha256": "29ad3b43dbf8a8f6fc4cf5c51e430b637be416b405bdb0e9be5c90cca54614ec",
+      "usage": {
+        "input_tokens": 56875,
+        "cached_input_tokens": 56704,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 79,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 56954
+      },
+      "cumulative": {
+        "input_tokens": 221057,
+        "cached_input_tokens": 163712,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 382,
+        "reasoning_output_tokens": 11,
+        "total_tokens": 221439
+      }
+    },
+    {
+      "ordinal": 37,
+      "timestamp": "2026-10-10T20:55:05.010Z",
+      "response_identity_sha256": "da3ef696c92cfb6542615a7e9b773740e6a71b24fe5671620acab086b1154131",
+      "usage": {
+        "input_tokens": 58005,
+        "cached_input_tokens": 56704,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 119,
+        "reasoning_output_tokens": 0,
+        "total_tokens": 58124
+      },
+      "cumulative": {
+        "input_tokens": 279062,
+        "cached_input_tokens": 220416,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 501,
+        "reasoning_output_tokens": 11,
+        "total_tokens": 279563
+      }
+    }
+  ],
+  "cumulative": {
+    "input_tokens": 279062,
+    "cached_input_tokens": 220416,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 501,
+    "reasoning_output_tokens": 11,
+    "total_tokens": 279563
+  },
+  "sum_matches_cumulative": true,
+  "task_started_count": 1,
+  "task_complete_count": 1,
+  "tool_call_count": 4,
+  "history_origin": "not_declared",
+  "terminal": true,
+  "provider_identity_verified": false,
+  "thread_id_sha256": "41489a44b45d0e7e050369fbba1757ad5527ff98ad5c3cf9ac70ac0fc7bf105e",
+  "parent_thread_id_sha256": "f154ff355f49096bd1ef2bfa4a138b694d6b69f7757c8d9f2ecc36b23ea8d8a6"
+}

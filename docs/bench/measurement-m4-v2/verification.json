@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "prepared_on": "2026-10-11",
+  "m4_event_date": "2026-10-10",
+  "base_commit": "36af4bf0d84640b8e992905a8af46095f9d9cfa6",
+  "rust_gates": [
+    {
+      "check": "fmt",
+      "argv": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 2.766,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "clippy",
+      "argv": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 49.346,
+      "log_sha256": "e69b57e19787318f11052190aa82d31d4054033b93ca0d7ad39b82378b2237c4"
+    },
+    {
+      "check": "workspace-tests",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked"
+      ],
+      "exit_code": 101,
+      "duration_seconds": 492.337,
+      "log_sha256": "5978a9065e47a75938748aaa291e43a8a85c77d89f2764c255b2e31ac64c473a"
+    },
+    {
+      "check": "xtask",
+      "argv": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 11.436,
+      "log_sha256": "ee4ac29717454b5c934d42044124ad2ae43a177f7af5c47ea175003e2a5e2c72"
+    },
+    {
+      "check": "workspace-tests-serial",
+      "argv": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "duration_seconds": 1211.203,
+      "log_sha256": "b1ad99fa75aad7d0a30dc9410cb0f6a3e13576068be7d6874ffd4dc90b57ba30"
+    }
+  ],
+  "parallel_workspace_failure": {
+    "test": "timeout_cancel_and_bounded_retry_are_persisted",
+    "location": "crates/router-runtime/tests/runtime.rs:484",
+    "actual": "TimedOut",
+    "expected": "Cancelled",
+    "timeout_ms": 80,
+    "rust_source_changed": false,
+    "isolated_rerun": "passed",
+    "root_cause": "UNKNOWN; scheduling sensitivity is a hypothesis"
+  },
+  "rust_result_counts": {
+    "passed": 1737,
+    "failed": 0,
+    "ignored": 42
+  },
+  "python": {
+    "version": "Python 3.14.8",
+    "m4_v2_tests": {
+      "passed": 18,
+      "failed": 0
+    },
+    "local_runner_tests": {
+      "passed": 30,
+      "failed": 0
+    },
+    "existing_campaign_tests": {
+      "passed": 17,
+      "failed": 0
+    },
+    "original_private_helpers": {
+      "passed": 10,
+      "failed": 0
+    }
+  },
+  "baseline_t1": {
+    "public_cases": 1,
+    "additional_public_cases": 3,
+    "passed": 0,
+    "expected_failure": true,
+    "source_unchanged": true
+  },
+  "real_trace_replay": {
+    "response_records": 5,
+    "host_tokens": 279563,
+    "sum_matches_terminal": true,
+    "history_origin": "not_declared"
+  },
+  "source_checks": {
+    "git_diff_check": "passed",
+    "v1_seal": "unchanged",
+    "new_json": "parsed",
+    "new_prose_em_dash": "none",
+    "private_absolute_paths_in_new_files": "none",
+    "secret_scan_v2": "passed",
+    "secret_scan_result": "passed"
+  },
+  "initial_failures": {
+    "permissive_gate_stub": "missing admission refusal and accounting transitions reproduced before implementation",
+    "registration_test": "unregistered v2 suite detected before adding registration",
+    "python_3_9": "local runner correctly refused unsupported Python; rerun with Python 3.14 passed"
+  },
+  "scope": {
+    "new_model_calls": 0,
+    "native_execution_qualification": false,
+    "automated_model_interruption": false,
+    "provider_invoice_reconciliation": false,
+    "independent_model_review": false,
+    "remote_ci": "not claimed"
+  },
+  "remaining": [
+    "User approval of exact v2 seal",
+    "Future host metadata/trace/workspace preflight",
+    "Three single-response model results",
+    "Frozen local acceptance on candidate patches and human final review"
+  ]
+}

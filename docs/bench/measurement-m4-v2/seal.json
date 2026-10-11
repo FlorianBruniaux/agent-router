@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v2",
+  "files_sha256": {
+    "README.md": "488899da666b52461901d9943052f010b9974c690075af6898afe76c52472f32",
+    "acceptance.py": "f1f64c0b090dca4f9f4eef986feb6bdf211b00142db0092d0e5f568e1702315b",
+    "capture.py": "b507fc7398612b2e551b5331c72d5d70343d2dd067901692ee209fb2d9d3e2c9",
+    "gate.py": "7496d19576f2de9560095ddf05305c9de909d2e501fa0f46a8e5409e647c58e1",
+    "manifest.json": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+    "prompt.md": "9c501878c201fd85853eae17d0fe68faeccc7de3e05ec728b392edf76b4ca65e",
+    "public-cases.json": "93b8de65bd39e6e54025a8fbadc2ff2c3c78f3fd884d065c26cc5c588400e392",
+    "router-decision.json": "1d3039daae54378da2b4dcf2c5161c4ef20c87d6ba3ffb0be2155ae3451fd380",
+    "source-excerpt.txt": "57189fc759acf629131268143530ac0f220c6fb2abe62ee89c344116af26fa94",
+    "task.md": "fdbc6cbc7636447ec8218f469fe2f8f027ac9a3f2c32dc999537e2825f6f02f9",
+    "tests/test_capture.py": "8486c85f4d2696fb529df2e0b9e0f3aafeeae0796979423039696f117b310321",
+    "tests/test_gate.py": "abd06d12c8356ef0562a5bdb28f933e7e34bc7c67918b3a3bc89cdebb839d42a",
+    "tests/test_gate_cli.py": "a46b0dc4c25b04a1fefe6775d48dadd2bca10e13ff196c170b478c1b4b9fb123",
+    "verification.json": "84503c45cc97c32c18e7e9ca630df5ca7fd95ee2f099b73975ff2f8ebc505d4e"
+  }
+}

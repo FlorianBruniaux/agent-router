@@ -1,0 +1,86 @@
+{
+  "schema_version": "1",
+  "decision_id": "2d52e59ce0d0ae85be04bab353942a0d21c0e2ac4f2d30e2861e9944d9d316ee",
+  "catalog_version": "measurement-m123-collaboration-priors-v1",
+  "policy_version": "stable-v1",
+  "decision": {
+    "selected": {
+      "plan": {
+        "preset": "plan-execute-verify",
+        "stages": [
+          {
+            "kind": "plan",
+            "model": "gpt-6-luna",
+            "effort": "high",
+            "skills": []
+          },
+          {
+            "kind": "execute",
+            "model": "gpt-6-luna",
+            "effort": "medium",
+            "skills": []
+          },
+          {
+            "kind": "verify",
+            "model": "gpt-6-luna",
+            "effort": "high",
+            "skills": []
+          }
+        ],
+        "utility_micros": 385000
+      },
+      "alternatives": [
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "gpt-5.6-sol",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "gpt-6-luna",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "gpt-6-luna",
+              "effort": "high",
+              "skills": []
+            }
+          ],
+          "utility_micros": 315000
+        },
+        {
+          "preset": "plan-execute-verify",
+          "stages": [
+            {
+              "kind": "plan",
+              "model": "gpt-6-luna",
+              "effort": "high",
+              "skills": []
+            },
+            {
+              "kind": "execute",
+              "model": "gpt-5.6-sol",
+              "effort": "medium",
+              "skills": []
+            },
+            {
+              "kind": "verify",
+              "model": "gpt-6-luna",
+              "effort": "high",
+              "skills": []
+            }
+          ],
+          "utility_micros": 315000
+        }
+      ],
+      "exclusions": [],
+      "missing_evidence": []
+    }
+  }
+}
