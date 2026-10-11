@@ -1,0 +1,69 @@
+CHANGELOG.md
+  s_ae085abdb4f4d0::t_5c1b176a8784a1 96-97
+crates/router-runtime/examples/finite_client_qualification.rs
+  s_ae085abdb4f4d0::t_8ac45c6a6ba3c9 1-198
+crates/router-runtime/src/finite_client.rs
+  s_ae085abdb4f4d0::t_57560f42823f81 689-722
+crates/router-runtime/tests/finite_client.rs
+  s_ae085abdb4f4d0::t_8e0567e648b83c 921-1089
+docs/README.fr.md
+  s_ae085abdb4f4d0::t_183b66c3e28b3f 3-4,80-81
+docs/README.md
+  s_ae085abdb4f4d0::t_8fed74773846da 3-4,82
+docs/adr/0029-finite-client-owned-assets.md
+  s_ae085abdb4f4d0::t_e099dd3e1f08b0 83-104
+docs/bench/finite-client-qualification-2026-10-11/README.md
+  s_ae085abdb4f4d0::t_077063c1cc0fbe 1-90
+docs/bench/finite-client-qualification-2026-10-11/diagnostic.json
+  s_ae085abdb4f4d0::t_f31af895bce457 1-134
+docs/bench/finite-client-qualification-2026-10-11/verification.json
+  s_ae085abdb4f4d0::t_a70b6f603813f9 1-765
+docs/bench/macos-component-qualification-2026-10-11/README.md
+  s_ae085abdb4f4d0::t_f2d88779f4086a 1-124
+docs/bench/macos-component-qualification-2026-10-11/allocator-control.json
+  s_ae085abdb4f4d0::t_dd04f46f3adf03 1-56
+docs/bench/macos-component-qualification-2026-10-11/apple-source-reference.json
+  s_ae085abdb4f4d0::t_db330e05936e4d 1-17
+docs/bench/macos-component-qualification-2026-10-11/diagnostic-build.json
+  s_ae085abdb4f4d0::t_4f0480593d5cda 1-61
+docs/bench/macos-component-qualification-2026-10-11/diagnostic/Cargo.lock
+  s_ae085abdb4f4d0::t_c7df32db4bd259 1-66
+docs/bench/macos-component-qualification-2026-10-11/diagnostic/Cargo.toml
+  s_ae085abdb4f4d0::t_cfe259ad0618d4 1-10
+docs/bench/macos-component-qualification-2026-10-11/diagnostic/diagnostic.patch
+  s_ae085abdb4f4d0::t_e49414e837ddf6 1-286
+docs/bench/macos-component-qualification-2026-10-11/memory-refusal.json
+  s_ae085abdb4f4d0::t_bd95f58f0c81b2 1-138
+docs/bench/macos-component-qualification-2026-10-11/verification.json
+  s_ae085abdb4f4d0::t_f36f30209732ca 1-150
+docs/bench/playbook.md
+  s_ae085abdb4f4d0::t_3c263219ebc327 3-5
+docs/local-ci.md
+  s_ae085abdb4f4d0::t_32dd4d9cace45d 67-75
+docs/reference/json-contracts.md
+  s_ae085abdb4f4d0::t_4b0606db11d2c7 654-660
+scripts/check-local.py
+  s_ae085abdb4f4d0::t_125d2adec98d6b 66-68
+scripts/check-m3-baseline.py
+  s_ae085abdb4f4d0::t_e0c7805d2ce7bc 1-81
+scripts/test-check-local.py
+  s_ae085abdb4f4d0::t_14440df49237f9 311-331
+scripts/test-check-m3-baseline.py
+  s_ae085abdb4f4d0::t_11bb48b131a81d 1-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "99ec0e18eec96d0e7cbb06921f336fce8e643bd6",
+  "prompts": {},
+  "sessions": {
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
