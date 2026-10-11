@@ -1,0 +1,362 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-11",
+  "scope": "Owned finite-client preparation copies and lot3 stop evidence; no native launch",
+  "base_commit": "0c836b123e052b464db7a760f8eab7e72343ee51",
+  "source_files": {
+    "crates/router-runtime/src/finite_client.rs": "de6d1192b847a68320911ee33e7d03db99d69b82c364d56fc1e3672d1bce2aa8",
+    "crates/router-runtime/src/private_program.rs": "6c715bcfb0e98b369cd21313929af96fd227f25ddc1d05daa28c627a5de14b62",
+    "crates/router-runtime/tests/finite_client.rs": "922dbe28e4c4d6a82b7905a11788161f9f8e5f9dd685e60ef621bcc6571145ab",
+    "docs/adr/0029-finite-client-owned-assets.md": "f04605033304e07b7a4a9cea8dc008203872f46f642268c9d310c0bf2043ddc5",
+    "docs/adr/README.md": "4b0ec8160c78a63a36f703bc912aadb59609cba8688eeb2546b586714eb6ecd2",
+    "docs/reference/json-contracts.md": "7a5aa42c929040bac340cf4e9c3996424038e7966414b5616f7c4b41bc26c835"
+  },
+  "lot1": {
+    "pr": 155,
+    "merge_commit": "651a3f4d167831c02055429306b2012d3ce8100e",
+    "local_loopback_tests_passed": 38,
+    "duplicated_pr": false
+  },
+  "targeted": {
+    "finite_client_tests_passed": 34,
+    "failed": 0,
+    "ignored": 0,
+    "original_contract_tests_passed": 28
+  },
+  "red_green": [
+    {
+      "test": "launch_preview_uses_owned_asset_copies_and_releases_them_with_approval",
+      "red": "native program equals original path",
+      "green": "owned paths, bytes, modes, argument composition and cleanup pass"
+    },
+    {
+      "test": "substituted_copy_directory_is_preserved_when_approval_is_dropped",
+      "red": "replacement sentinel removed on Drop",
+      "green": "replacement sentinel preserved, renamed owned copy retained for reconciliation"
+    }
+  ],
+  "independent_review": {
+    "reviewed": "pre-fix working diff",
+    "blocking_findings": 1,
+    "finding": "P1: TempDir Drop deletes substituted directory",
+    "author_verified_correction": "directory owner descriptor and identity guard; RED/GREEN test passed",
+    "post_fix_independent_review": false,
+    "minor_deferred": []
+  },
+  "coverage_limits": [
+    "No deterministic during-copy source-mutation or partial-copy-error cleanup fixture in this delivery",
+    "Path check and recursive deletion are not atomic against a trusted concurrent writer",
+    "Copied platform-wrapper/native executable compatibility unqualified",
+    "No OS write exclusion, native lifecycle or physical-send qualification"
+  ],
+  "prior_global_run": {
+    "result": "FAIL",
+    "failed_test": "publication_hardening_large_source_is_refused_before_object_writes",
+    "evidence": "First run count unchanged but garbage 0->1; isolated reproduction count 13->17",
+    "baseline_reproduction": "PASS on exact base archive",
+    "final_all_features_isolated_reproduction": "PASS",
+    "cause": "UNKNOWN; final full gate serializes tests as repository quality runner does"
+  },
+  "checks": [
+    {
+      "name": "fmt",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.332,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 9.625,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 571.403,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.863,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "adrs",
+      "command": [
+        "rtk",
+        "proxy",
+        "/opt/homebrew/bin/python3",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.111,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "syntax",
+      "command": [
+        "rtk",
+        "proxy",
+        "/opt/homebrew/bin/python3",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.066,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "core-package-fixtures",
+      "command": [
+        "rtk",
+        "proxy",
+        "/opt/homebrew/bin/python3",
+        "scripts/test-package-core.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.403,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "secrets-dir",
+      "command": [
+        "rtk",
+        "proxy",
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.316,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    },
+    {
+      "name": "secrets-git",
+      "command": [
+        "rtk",
+        "proxy",
+        "gitleaks",
+        "git",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1.894,
+      "process_environment": {
+        "GIT_TRACE2_EVENT": "0"
+      },
+      "scope": "test-process override only; no global configuration change"
+    }
+  ],
+  "lot3": {
+    "verdict": "NO_GO",
+    "resource_probe": {
+      "schema_version": 1,
+      "platform": "Darwin",
+      "helper_sha256": "ee3de9626b766123624ce4e8484046549838cc8951b8c425a38894e9d3896970",
+      "copied_helper_sha256": "ee3de9626b766123624ce4e8484046549838cc8951b8c425a38894e9d3896970",
+      "arguments": [
+        "--cpu-seconds",
+        "300",
+        "--address-space-bytes",
+        "8589934592",
+        "--max-open-files",
+        "256",
+        "--max-processes",
+        "256",
+        "--max-file-bytes",
+        "16777216",
+        "--probe"
+      ],
+      "exit_code": 125,
+      "stdout": "",
+      "stderr": "sandbox-helper.setrlimit.address_space\n",
+      "native_model_turn": false,
+      "provider_send": false,
+      "go": false
+    },
+    "probe_scope": "Independent Python copy of actual built helper, default limits, --probe only; not native composition",
+    "network_authority": "ControllerBrokerOnly remains unsupported",
+    "defaults_changed": false,
+    "qualification_requirements": {
+      "requested_address_space": "NO_GO: copied helper refuses requested default before probe",
+      "broker_port_controls": "UNKNOWN: concrete composition not captured; ControllerBrokerOnly remains unsupported",
+      "worker_write_exclusion": "UNKNOWN: no OS attack fixture executed",
+      "copied_native_and_wrapper_compatibility": "UNKNOWN: no native invocation",
+      "other_resource_enforcement": "UNKNOWN: address-space refusal occurs before complete probe",
+      "task_containment_and_mach_dns": "UNKNOWN: no concrete composition qualification"
+    }
+  },
+  "dependent_work": {
+    "lot4_native_runtime": "NOT_ATTEMPTED pending positive F12a qualification",
+    "lot5_native_useful_patch": "NOT_ATTEMPTED pending native runtime and measurement contracts",
+    "existing_simulated_patch_publication": "ADR0027 reused, no reimplementation"
+  },
+  "execution": {
+    "native_model_turn": false,
+    "real_provider_call": false,
+    "paid_provider_call": false,
+    "savings_claimed": false,
+    "global_configuration_changed": false
+  },
+  "intermediate_serialization_run": {
+    "result": "FAIL",
+    "failed_tests": [
+      "deep_database_checks_preserve_same_process_sqlite_locks",
+      "passive_database_checks_preserve_same_process_sqlite_locks"
+    ],
+    "cause": "RUST_TEST_THREADS=1 inherited by lock-probe child changes test-harness stdout formatting; fixture expects an exact standalone line",
+    "corrected_reproduction": "5/5 database_locks pass with --test-threads=1 CLI option and no inherited variable"
+  },
+  "root_verdict": "PASS for the recorded process-scoped isolated gate; native qualification remains NO_GO",
+  "preceding_serialized_run": {
+    "result": "FAIL",
+    "failed_test": "publication_hardening_binary_patch_is_refused_before_object_writes",
+    "suite_result": {
+      "passed": 59,
+      "failed": 1,
+      "ignored": 6
+    },
+    "evidence": "Expected binary refusal returned, but loose-object count changed 5 -> 9 before the refusal returned",
+    "cause": "An instrumented exact-base product build reproduced the assertion failure: four new objects were a git-ai authorship note blob, two trees and a git-ai commit, written asynchronously by the inherited trace collector",
+    "attempted_fix": "Read-only preview candidate discarded because its proposed regression passed on the original code; no publication code changes retained"
+  },
+  "test_isolation": {
+    "override": {
+      "GIT_TRACE2_EVENT": "0"
+    },
+    "scope": "Verification subprocesses only; inherited trace2.eventTarget collector disabled for disposable test repositories; no global config change",
+    "baseline_product_sources_unchanged": true,
+    "diagnostic_test_instrumentation": "Read-only Git object inventory and display around the existing object-count assertion",
+    "original_assertions_weakened": false,
+    "publication_implementation_changed": false,
+    "evidence_sha256": "e57f5a6e25189ac3afc264ae315f0f667c580aac4c83e53b7d1d77e4113ac227"
+  },
+  "tools": {
+    "macos": "26.5.1",
+    "cargo": "1.85.1",
+    "rustc": "1.85.1",
+    "gitleaks": "8.30.1",
+    "git_ai": "1.7.5"
+  },
+  "log_digests": [
+    {
+      "check": "fmt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "clippy",
+      "sha256": "38dbab9b3625b1d97ac5ea1108a0376c4d801c1efea5b164bba940a16bf1a4a5"
+    },
+    {
+      "check": "workspace",
+      "sha256": "35d32b2988889d9f566dd1866f178bb87f1ed00306aef73369340f9c90199cb4"
+    },
+    {
+      "check": "harness",
+      "sha256": "db0c483c2e257a664dab2794db8eab25df849df1e1d5d9c542a592d878f783bf"
+    },
+    {
+      "check": "adrs",
+      "sha256": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d"
+    },
+    {
+      "check": "syntax",
+      "sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "check": "core-package-fixtures",
+      "sha256": "551cc2d68b1fb8395d15d412a65058e0b797d0214a4e03cfe2ab7f36af57559c"
+    },
+    {
+      "check": "secrets-dir",
+      "sha256": "c1900f8df3a6a20e095ad64df7e49a2f66afe3313078f924a388a7f04cdc89a5"
+    },
+    {
+      "check": "secrets-git",
+      "sha256": "b9439f380f1d7f4f3d1338e59fc22dead0b87cf22db0c93f7ec1e9fb389fa8c5"
+    }
+  ],
+  "final_report_scan_note": "The first scan after adding log digests flagged the digest labelled secrets-dir as a generic API key. It is a SHA256 of a redacted scanner log, not a credential. Represent log names and hashes as distinct fields; keep scanning enabled and add no allowlist.",
+  "post_report_scan": {
+    "exit_code": 0,
+    "leaks": 0
+  },
+  "upstream_before_delivery": {
+    "main_commit": "2e07af7281b029ee21a1d4dd0389c2ae9a927d82",
+    "delta": "Documentation and bench results only; no overlapping authored paths or Rust source changes",
+    "tested_base_unchanged": true
+  }
+}

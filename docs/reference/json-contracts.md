@@ -629,3 +629,15 @@ unchanged. The approved handle and validation guard are neither
 serializable nor reconstructable from this JSON. Existing run approval and OS
 sandbox checks remain required. See [ADR 0028](../adr/0028-finite-client-preparation.md)
 for bounded inputs, authenticated proof binding and outstanding native limits.
+
+
+Producer-owned finite-client preparation additionally retains copies of client,
+native, helper, wrapper and profile. It binds their paths and inode identities
+under `finite-client-copy-review-v1` and uses proof adapter
+`finite-client-contract-v3`; manifest-only preparation stays v2. The private
+launch preview's `read_only_assets` array lists client, native, helper, wrapper,
+profile and the generated configuration, each as a path/hash pin. These entries
+are requirements for a future sandbox, not evidence of write exclusion.
+The preview derives invocation paths from the retained copies and rechecks them
+before rendering. Native launch and OS admission remain unavailable; see
+[ADR 0029](../adr/0029-finite-client-owned-assets.md).

@@ -40,6 +40,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0028](0028-finite-client-preparation.md) | Bind finite-client preparation to an owned broker | implemented | 2026-10-09 | 2026-10-09 | - |
 
+| [0029](0029-finite-client-owned-assets.md) | Retain reviewed finite-client asset copies | implemented | 2026-10-11 | 2026-10-11 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.
