@@ -14,6 +14,10 @@ reasons); every change was verified locally on macOS.
 
 ## [Unreleased]
 
+### Fixed
+
+- 2026-10-11: integrate the accepted M4 report-cost correction. Invalid attempts retain their list/product costs in totals and cost-per-accepted-change ratios; unknown costs remain unknown. Add four regressions and record [the subsequent acceptance](docs/bench/m4-fix-integration-2026-10-11.md), preserving frozen trial evidence and its measurement limits.
+
 ### Documentation
 
 - 2026-10-11: publish the [approved M4 v2 result](docs/bench/measurement-m4-v2-result-2026-10-11/README.md): all three single-response configurations complete with coherent host counters, totaling 156,434 tokens of the 300,000-token envelope. Router and Luna fixed produce identical code and each pass four public cases plus 17 existing tests; Sol fixed is rejected because its exact patch is inapplicable. Preserve all attempts, exact patch bytes and usage evidence. Human acceptance is pending; no savings, native qualification or production fix is claimed. The earlier proposal entry below is historical.

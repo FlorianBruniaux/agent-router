@@ -4,6 +4,10 @@
 
 La tâche réelle consistait à corriger le rapport du banc : le coût des tentatives invalides doit rester dans les statistiques de coût. Le [protocole scellé](../measurement-m4-v2/README.md), fusionné dans [#160](https://github.com/FlorianBruniaux/agent-router/pull/160), a été approuvé avant les appels. Son texte conserve l’état historique « à approuver » ; le [reçu d’accord](approval.json) et ce bilan enregistrent la suite sans modifier le scellement.
 
+## Acceptation ultérieure et intégration
+
+Florian a autorisé l’intégration du candidat Router le 11 octobre 2026. Le [suivi d’intégration](../m4-fix-integration-2026-10-11.md) et son reçu enregistrent cette décision pour un changement unique. Toutes les sections suivantes conservent l’état historique de fin d’essai, avant cette acceptation, y compris les tableaux, les indications de non-intégration et les prochaines étapes. Le suivi lié ci-dessus donne la suite actuelle ; les artefacts et compteurs scellés ne sont pas modifiés.
+
 ## Résultats
 
 | Configuration | Modèle / effort | Tokens hôte | Patch exact | Contrôles locaux | Acceptation humaine |
