@@ -50,6 +50,7 @@ pub(crate) struct Capture {
     pub stderr: Vec<u8>,
     pub outcome: TransportOutcome,
     pub output_limited: bool,
+    pub timing: crate::timing::CaptureTiming,
     /// A stream reader had not finished when collection gave up, so the bytes
     /// above may be a prefix of what the process wrote.
     pub output_incomplete: bool,
@@ -227,13 +228,17 @@ pub(crate) async fn capture_guarded(
     // replace the observed termination or discard the bytes already captured.
     let (stdout, stdout_complete) = out_reader.finish(Duration::from_secs(2)).await;
     let (stderr, stderr_complete) = err_reader.finish(Duration::from_secs(2)).await;
+    let end = Instant::now();
+    let timing = crate::timing::CaptureTiming::between(start, end);
     Ok(Capture {
+        timing,
         stdout,
         stderr,
         outcome: TransportOutcome {
             termination,
             exit_code: status.code(),
-            elapsed_ms: u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX),
+            elapsed_ms: u64::try_from(end.saturating_duration_since(start).as_millis())
+                .unwrap_or(u64::MAX),
         },
         output_limited: overflow.is_cancelled(),
         output_incomplete: !(stdout_complete && stderr_complete),
@@ -295,6 +300,12 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(out.outcome.termination, TransportTermination::TimedOut);
+        assert_eq!(
+            out.timing,
+            crate::CaptureTiming::Known {
+                duration_ms: out.outcome.elapsed_ms
+            }
+        );
         assert_stopped(&heartbeat).await;
     }
     #[tokio::test]
@@ -369,6 +380,64 @@ mod tests {
             .unwrap();
         assert_eq!(out.stdout, b"done");
         assert!(!out.output_incomplete);
+    }
+    #[tokio::test]
+    async fn capture_timing_includes_validation_and_both_bounded_drains() {
+        let mut command = Command::new("/bin/sh");
+        command
+            .arg("-c")
+            .arg("/bin/sleep 5 & exit 0")
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1");
+        let validate = || {
+            std::thread::sleep(Duration::from_millis(40));
+            Ok(())
+        };
+        let out = capture_guarded(
+            command,
+            vec![],
+            30_000,
+            1024,
+            0,
+            &Cancellation::default(),
+            None,
+            None,
+            Some(&validate),
+        )
+        .await
+        .unwrap();
+        assert!(out.output_incomplete);
+        assert!(
+            out.outcome.elapsed_ms >= 4040,
+            "both sequential drain deadlines belong to this interval"
+        );
+        assert_eq!(
+            out.timing,
+            crate::CaptureTiming::Known {
+                duration_ms: out.outcome.elapsed_ms
+            }
+        );
+    }
+    #[tokio::test]
+    async fn cancelled_capture_retains_local_interval() {
+        let mut command = Command::new("/bin/sh");
+        command.arg("-c").arg("sleep 30");
+        let cancel = Cancellation::default();
+        let signal = cancel.clone();
+        let cancellation = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(30)).await;
+            signal.cancel();
+        });
+        let out = capture(command, vec![], 30_000, 1024, 0, &cancel)
+            .await
+            .unwrap();
+        cancellation.await.unwrap();
+        assert_eq!(out.outcome.termination, TransportTermination::Cancelled);
+        assert_eq!(
+            out.timing,
+            crate::CaptureTiming::Known {
+                duration_ms: out.outcome.elapsed_ms
+            }
+        );
     }
     async fn assert_stopped(path: &std::path::Path) {
         tokio::time::sleep(Duration::from_millis(30)).await;

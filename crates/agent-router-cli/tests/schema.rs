@@ -63,7 +63,7 @@ fn list_names_every_contract_with_its_supported_versions() {
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
     assert_eq!(versions("feedback-report"), json!([1, 2, 3, 4, 5]));
-    assert_eq!(versions("run-observation"), json!([1, 2]));
+    assert_eq!(versions("run-observation"), json!([1, 2, 3]));
     assert_eq!(
         entries
             .iter()
@@ -1114,4 +1114,46 @@ fn run_observation_v2_emits_missing_evidence_without_inferred_native_facts() {
     assert_eq!(output["attempts"][0]["transport"], Value::Null);
     assert_eq!(output["attempts"][0]["native"]["usage"], "unknown");
     assert_conforms("run-observation", &output);
+}
+
+#[test]
+fn run_observation_v3_schema_qualifies_only_local_intervals() {
+    let document = schema("run-observation");
+    let output =
+        observation_json_version(RunState::Failed, Some(RunFailure::Crash), None, Some("3"));
+    assert_eq!(output["schema_version"], 3);
+    assert_eq!(
+        output["timings"][0]["measurement"],
+        json!({"status":"unknown","reason":"missing_record"})
+    );
+    assert_conforms("run-observation", &output);
+    let mut known = output.clone();
+    known["timings"][0]["measurement"] = json!({"status":"known","duration_ms":0});
+    known["timings"][0]["timing_event_sha256"] = json!("a".repeat(64));
+    assert!(json_schema::violations(&document, &known).is_empty());
+    for (pointer, value) in [
+        ("/timings/0/measurement/duration_ms", json!(-1)),
+        ("/timings/0/measurement/status", json!("estimated")),
+        ("/timings/0/scope", json!("native_model")),
+        ("/timings/0/clock", json!("wall_clock")),
+        ("/timings/0/ordinal", json!(6)),
+        ("/timings/0/timing_event_sha256", json!("not-a-hash")),
+        ("/attempts/0/native/duration", json!(0)),
+        ("/unknown/duration", json!(0)),
+    ] {
+        let mut invalid = known.clone();
+        *invalid.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted {pointer}"
+        );
+    }
+    for key in known["timings"][0].as_object().unwrap().keys() {
+        let mut invalid = known.clone();
+        invalid["timings"][0].as_object_mut().unwrap().remove(key);
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted missing {key}"
+        );
+    }
 }

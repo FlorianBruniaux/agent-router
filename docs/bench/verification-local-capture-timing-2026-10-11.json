@@ -1,0 +1,286 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-11",
+  "scope": "F05b-a qualified local supervisor capture intervals; opt-in observe v3",
+  "base_sha": "7c46d8677f375d0262a7fc498cf4f60ca6c98efa",
+  "source_sha256": {
+    "crates/agent-router-cli/src/command.rs": "88d22a1f41f89c55109ef355d9379d27e17a45910d798dfb72579baf4c827ab0",
+    "crates/agent-router-cli/src/contracts.rs": "18ed878baf2c48151e66a98e67fa1b3a1f507db181e24824b3284827ff36c1cc",
+    "crates/agent-router-cli/src/run_observation.rs": "d5a44da290137d472046511e210a6e9078950eef1e0f074c38cfae617e4daa41",
+    "crates/agent-router-cli/src/schemas/run-observation.schema.json": "733ecef9703b2c0a6b126749f8991a6d69480f8bd5bc31adf555735dfb2f26d4",
+    "crates/agent-router-cli/tests/execution.rs": "22f7f60be3ab0c191b8a6f6f3d6dd3087f450411fb616a99db5de909ffae9f75",
+    "crates/agent-router-cli/tests/schema.rs": "43b1f7b97d567a8dac12761a3015ae2e089049b04d90ae2d1e784b26dbfbe53a",
+    "crates/router-runtime/src/lib.rs": "4976ec671d535be1c4bce8c10c07eac72996306f7c4cfa00159691fb7d301177",
+    "crates/router-runtime/src/observation.rs": "c358550f21a080a4c10e3c3397ff0b38028da7414c9e15aea73bc63d274626a3",
+    "crates/router-runtime/src/process.rs": "a6606d9ff90a99c6b1b1b3f510e1fc7d5ecac62746779140ea128f115b453af5",
+    "crates/router-runtime/src/store.rs": "1691ca11276d31958f935dbd6c0ce84ae88106cb2791a1bf4bcfefa52efd57c8",
+    "crates/router-runtime/src/store/escalation.rs": "bca87182cef361c27e110f03ab481db8705c455a96737ec18a2f6abc3b71905a",
+    "crates/router-runtime/src/store/observation.rs": "896efe1fd336d6442c4d8758ee50861d2a2083d319a2064c87d24e5178b1dec2",
+    "crates/router-runtime/tests/observation_v2_adversarial.rs": "821aec0d21ad16f02a26a1d3295e14a0ca37ce087607022f4a9ee37bd653c83a",
+    "crates/router-runtime/tests/runtime.rs": "3c7070b00751f8be645f89a08bb494fde04e201ff6ad4be6e676da9b51c89e32",
+    "crates/router-runtime/src/timing.rs": "b7d036f78359106a2a83b68d66c39e8e41847d3e47f1c1000f7a28f5a1089a38"
+  },
+  "local_gates": [
+    {
+      "name": "fmt",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "seconds": 1.39,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "seconds": 17.75,
+      "log_sha256": "caa636ec9c7cba2c4f265005f356629e3a1e8fe35395de581375a782de9931bc"
+    },
+    {
+      "name": "tests",
+      "command": [
+        "rtk",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "seconds": 588.0,
+      "log_sha256": "fc3bec8063243a2293a9b9dd12dd6a06fcfdde7f3f7db80cb8b4d3ce4a89835d"
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "seconds": 0.66,
+      "log_sha256": "2e4e80ee43765b4661fede0f1bf4794d588506fd0ce87f2d8d9befcb9bfd15e3"
+    },
+    {
+      "name": "adrs",
+      "command": [
+        "python3.14",
+        "-B",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.11,
+      "log_sha256": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d"
+    },
+    {
+      "name": "syntax",
+      "command": [
+        "python3.14",
+        "-B",
+        "scripts/check-host-syntax.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.05,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "name": "secrets",
+      "command": [
+        "rtk",
+        "proxy",
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "seconds": 1.74,
+      "log_sha256": "8021a84ffdde78a5a91a06577e5b7118419d1761eebf63d2fc3d16cc53d51c1e"
+    }
+  ],
+  "rust_result_counts": {
+    "passed": 1753,
+    "ignored": 42,
+    "filtered_out": 320,
+    "suites": 191,
+    "interpretation": "RTK aggregation of successful result lines including nested helper invocations, not unique test definitions. Ignored native opt-in tests are not successes."
+  },
+  "test_environment": {
+    "platform": "macOS ARM64",
+    "cargo_build_jobs": 2,
+    "test_threads": 1,
+    "git_trace2_event": "0 in verification subprocesses only; no global configuration change",
+    "socket_tests": "run outside the tool sandbox"
+  },
+  "independent_review": {
+    "kind": "read-only static review by separate Rust security reviewer",
+    "result": "no confirmed unresolved finding",
+    "frozen_manifest_sha256": "7db93dea6788511a407bc0a5adb6c418533b84a10511b9aaebef8e96657f46cc",
+    "frozen_patch_sha256": "6f0c336598956a75b97dc0d0ef1930d543d0c0ea300e1d2ba9afd72bebcf9edd",
+    "paths_reviewed": 20,
+    "rust_paths_reviewed": 15,
+    "final_rust_bytes_unchanged": true,
+    "final_combined_documentation_review": "no findings on JSON contracts, observation guide, ADR index and finite-client follow-up receipt",
+    "behavior_tests_by_reviewer": false
+  },
+  "behavioral_evidence": {
+    "red": [
+      "CLI rejected schema version 3 before implementation",
+      "Real capture producer lacked the required qualified timing record before implementation"
+    ],
+    "green": [
+      "Real capture producer persists qualified timing with its exact attempt evidence",
+      "Legacy elapsed values do not certify durations; missing timing stays unknown",
+      "Timeout, nonzero-exit and retry attempts retain separate capture intervals",
+      "Reopen preserves completed timing without manufacturing new endpoints",
+      "Malformed, duplicate, mismatched, unsupported and oversized records refuse v3",
+      "Unusable monotonic endpoints report explicit unknown reasons",
+      "Timing append failure rolls back attempt evidence, finish and transition",
+      "V1/v2 existing formats remain stable for the same unchanged journal",
+      "CLI schema registry and published v3 shape pass validation"
+    ],
+    "coverage_limit": "These are local lifecycle/projection tests, not a native model turn or a benchmark advantage."
+  },
+  "historical_runs": [
+    {
+      "kind": "feature before integration with latest main",
+      "gates": [
+        {
+          "name": "fmt",
+          "exit_code": 0,
+          "seconds": 0.95
+        },
+        {
+          "name": "clippy",
+          "exit_code": 0,
+          "seconds": 45.7
+        },
+        {
+          "name": "tests",
+          "exit_code": 0,
+          "seconds": 653.92
+        },
+        {
+          "name": "harness",
+          "exit_code": 0,
+          "seconds": 4.37
+        },
+        {
+          "name": "adrs",
+          "exit_code": 0,
+          "seconds": 0.1
+        },
+        {
+          "name": "syntax",
+          "exit_code": 1,
+          "seconds": 0.05
+        }
+      ],
+      "resolution": "Full Rust suite passed. Syntax invocation used an old Python without tomllib; rerun with required Python 3.14 passed. No source correction was needed."
+    },
+    {
+      "kind": "final pre-integration source checks",
+      "gates": [
+        {
+          "name": "fmt-final",
+          "command": [
+            "rtk",
+            "proxy",
+            "cargo",
+            "fmt",
+            "--all",
+            "--",
+            "--check"
+          ],
+          "exit_code": 0,
+          "seconds": 1.55
+        },
+        {
+          "name": "clippy-final",
+          "command": [
+            "rtk",
+            "cargo",
+            "clippy",
+            "--workspace",
+            "--all-targets",
+            "--all-features",
+            "--locked",
+            "--",
+            "-D",
+            "warnings"
+          ],
+          "exit_code": 0,
+          "seconds": 3.53
+        },
+        {
+          "name": "syntax-python314",
+          "command": [
+            "python3.14",
+            "-B",
+            "scripts/check-host-syntax.py"
+          ],
+          "exit_code": 0,
+          "seconds": 0.06
+        },
+        {
+          "name": "secrets",
+          "command": [
+            "rtk",
+            "proxy",
+            "gitleaks",
+            "dir",
+            ".",
+            "--config",
+            ".gitleaks.toml",
+            "--redact",
+            "--no-banner"
+          ],
+          "exit_code": 0,
+          "seconds": 1.52
+        }
+      ]
+    },
+    {
+      "kind": "implementer sandbox-limited targeted runs",
+      "result": "101 integration results passed, 6 ignored; library run had 158 passed, 2 ignored and one listener permission refusal. The final unrestricted workspace gate supersedes that environmental block."
+    }
+  ],
+  "limits": [
+    "Local capture starts before dispatch/capability validation and ends after child wait/reap and bounded stdout/stderr drains.",
+    "Excludes initial pre-start checks, subsequent cleanup confirmation, host-state cleanup, decoding, artifact/journal writes, preparation and human waits.",
+    "Native/provider, phase, physical-cleanup and end-to-end durations remain unknown.",
+    "No new real-provider trial or external M4 Codex backfill.",
+    "Existing attempt-correlation projection continues to accept v2 only.",
+    "Full GitHub CI equivalence, Linux timing validation, native composition and savings are not established by these macOS checks."
+  ],
+  "remote_ci": "Not claimed. Existing project remote jobs are blocked by billing; inspect the new PR separately."
+}

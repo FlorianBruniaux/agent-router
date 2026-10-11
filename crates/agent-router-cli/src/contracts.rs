@@ -60,7 +60,11 @@ pub(crate) const CONTRACTS: [Contract; 6] = [
     Contract {
         name: "run-observation",
         command: "observe --json",
-        versions: &[SchemaVersion::Number(1), SchemaVersion::Number(2)],
+        versions: &[
+            SchemaVersion::Number(1),
+            SchemaVersion::Number(2),
+            SchemaVersion::Number(3),
+        ],
         schema: include_str!("schemas/run-observation.schema.json"),
     },
     Contract {

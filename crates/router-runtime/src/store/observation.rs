@@ -389,3 +389,101 @@ fn project_v2(db: &Connection, id: &str) -> Result<RunObservationV2> {
     report.summary.snapshot_sha256 = digest("run-observation-v2", &report)?;
     Ok(report)
 }
+
+/// Explicit version 3. Missing markers never qualify legacy elapsed fields.
+pub fn observe_run_v3(root: &Path, id: &str) -> Result<RunObservationV3> {
+    if id.is_empty() || id.len() > 1024 {
+        return Err(RuntimeError::Invalid("observation run id"));
+    }
+    let mut db = control_connection(root, false)?;
+    let tx = db.transaction()?;
+    let report = project_v3(&tx, id).map_err(|error| match error {
+        RuntimeError::Json(_) => RuntimeError::Integrity("observation malformed timing"),
+        other => other,
+    })?;
+    tx.commit()?;
+    Ok(report)
+}
+
+fn project_v3(db: &Connection, id: &str) -> Result<RunObservationV3> {
+    use crate::timing::{
+        AttemptTimingObservation, AttemptTimingRecord, CaptureTiming, TimingUnknownReason,
+    };
+    let mut observation = project_v2(db, id)?;
+    let mut timings: Vec<_> = observation
+        .attempts
+        .iter()
+        .map(|attempt| AttemptTimingObservation {
+            ordinal: attempt.ordinal,
+            attempt_key_sha256: attempt.attempt_key_sha256.clone(),
+            timing_event_sha256: None,
+            scope: "supervisor_capture",
+            clock: "monotonic_same_invocation",
+            start_boundary: "before_dispatch_validation",
+            end_boundary: "after_reap_and_both_output_drains",
+            precision: "milliseconds_truncated",
+            measurement: CaptureTiming::Unknown {
+                reason: TimingUnknownReason::MissingRecord,
+            },
+        })
+        .collect();
+    // project_v2 already admits every byte and verifies the complete chain.
+    let mut query = db.prepare(&format!(
+        "{EVENT_COLUMNS} WHERE run_id=?1 ORDER BY sequence"
+    ))?;
+    let mut rows = query.query([id])?;
+    let mut prior: Option<RuntimeEvent> = None;
+    while let Some(row) = rows.next()? {
+        let event = event_from_row(row)?;
+        if event.kind.starts_with("attempt.timing.") {
+            if event.kind != "attempt.timing.v1" || event.detail.len() > 2048 {
+                return Err(RuntimeError::Integrity("observation timing format"));
+            }
+            let record: AttemptTimingRecord = serde_json::from_str(&event.detail)?;
+            let index = record
+                .ordinal
+                .checked_sub(1)
+                .ok_or(RuntimeError::Integrity("observation timing ordinal"))?
+                as usize;
+            let attempt = observation
+                .attempts
+                .get(index)
+                .ok_or(RuntimeError::Integrity("observation timing ordinal"))?;
+            let timing = timings
+                .get_mut(index)
+                .ok_or(RuntimeError::Integrity("observation timing ordinal"))?;
+            let evidence_event = prior
+                .as_ref()
+                .ok_or(RuntimeError::Integrity("observation timing binding"))?;
+            if evidence_event.kind != "attempt.evidence.v1"
+                || event.previous_hash != evidence_event.event_hash
+                || event.sequence != evidence_event.sequence + 1
+                || event.state != evidence_event.state
+                || Some(&record.attempt_evidence_sha256)
+                    != attempt.sources.attempt_evidence_sha256.as_ref()
+                || record.attempt_evidence_sha256 != evidence_event.event_hash
+                || timing.timing_event_sha256.is_some()
+            {
+                return Err(RuntimeError::Integrity("observation timing binding"));
+            }
+            let evidence: router_types::AttemptEvidence =
+                serde_json::from_str(&evidence_event.detail)?;
+            if evidence.identity.attempt != record.ordinal
+                || !record.valid(evidence.transport.elapsed_ms)
+            {
+                return Err(RuntimeError::Integrity("observation timing qualification"));
+            }
+            timing.measurement = record.measurement;
+            timing.timing_event_sha256 = Some(event.event_hash.clone());
+        }
+        prior = Some(event);
+    }
+    observation.summary.schema_version = 3;
+    observation.summary.snapshot_sha256.clear();
+    let mut report = RunObservationV3 {
+        observation,
+        timings,
+    };
+    report.observation.summary.snapshot_sha256 = digest("run-observation-v3", &report)?;
+    Ok(report)
+}

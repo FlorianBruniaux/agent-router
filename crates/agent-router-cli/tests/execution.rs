@@ -1304,10 +1304,15 @@ fn observation_schema_version_is_explicit_and_default_stays_v1() {
     assert_eq!(v2["schema_version"], 2);
     assert_eq!(v2["attempts"], serde_json::json!([]));
     assert_eq!(v2["unknown"]["transport"], "unknown");
+    let v3: Value = serde_json::from_slice(&read(Some("3"))).unwrap();
+    assert_eq!(v3["schema_version"], 3);
+    assert_eq!(v3["attempts"], serde_json::json!([]));
+    assert_eq!(v3["unknown"]["duration"], "unknown");
+    assert_eq!(read(None), read(Some("1")));
     command()
         .args(["observe", "--store"])
         .arg(&f.store)
-        .args(["--run-id", "cli-run", "--schema-version", "3", "--json"])
+        .args(["--run-id", "cli-run", "--schema-version", "4", "--json"])
         .assert()
         .code(2);
 }

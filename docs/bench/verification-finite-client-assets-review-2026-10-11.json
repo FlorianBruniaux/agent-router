@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-11",
+  "scope": "Post-fix independent review and merge of preparation-only finite-client assets",
+  "source_head": "35724f63893ae1dd489bf4b034b0a7759c0f5dec",
+  "merge_sha": "7c46d8677f375d0262a7fc498cf4f60ca6c98efa",
+  "combined_tree_sha": "4139b1ba3469aa05bfea38f9b4ce4170eb846b3c",
+  "pull_request": "https://github.com/FlorianBruniaux/agent-router/pull/163",
+  "static_review": {
+    "schema_version": 1,
+    "subject": {
+      "base_sha": "0c836b123e052b464db7a760f8eab7e72343ee51",
+      "diff_sha256": "be9453e1ecc1b74649d94840db3563682429bc0916566c28d214e4db610beea4",
+      "head_sha": "35724f63893ae1dd489bf4b034b0a7759c0f5dec",
+      "number": 163,
+      "provider": "github",
+      "repository": "FlorianBruniaux/agent-router"
+    },
+    "recommendation": "APPROVE",
+    "body": "Independent static review covers all seven changed paths, including corrected directory ownership cleanup; no confirmed defect remains for preparation-only scope. Final local checks at the exact head are now complete across macOS ARM64 and Linux ARM64 Docker/Debian. This is neither GitHub cloud CI success nor qualification of the copied native finite-client composition. F12a remains NO_GO.",
+    "coverage": {
+      "complete": true,
+      "reviewed_paths": [
+        "crates/router-runtime/src/finite_client.rs",
+        "crates/router-runtime/src/private_program.rs",
+        "crates/router-runtime/tests/finite_client.rs",
+        "docs/adr/0029-finite-client-owned-assets.md",
+        "docs/adr/README.md",
+        "docs/bench/verification-finite-client-assets-2026-10-11.json",
+        "docs/reference/json-contracts.md"
+      ],
+      "unread_paths": [],
+      "unknowns": []
+    },
+    "findings": [],
+    "validation": [
+      {
+        "command": "extract_review_slice.py inventory and seven scoped slices",
+        "status": "pass",
+        "evidence": "Frozen annotated diff digest matched; independent reviewer read all seven paths."
+      },
+      {
+        "command": "source-bound hashes and unchanged caller bytes",
+        "status": "pass",
+        "evidence": "Six changed-source hashes match report; root git-show comparison confirms host_state.rs, bubblewrap.rs and sandbox.rs match the frozen head."
+      },
+      {
+        "command": "independent behavioral execution",
+        "status": "unknown",
+        "evidence": "Reviewer role permits read-only static analysis only; no tests executed by this reviewer. Source-bound author results are identified separately."
+      },
+      {
+        "command": "source-bound local quality, packaging, RustSec, fuzz and native workflow evidence",
+        "status": "pass",
+        "evidence": "Separate owner execution: all 21 native Linux workflow commands, three 10-second fuzz targets, fresh cleanup regression and selected local gates pass. Ten retained evidence hashes verified by root. Earlier failures remain documented; no production source or lockfile changed."
+      }
+    ]
+  },
+  "local_execution": {
+    "verdict": "selected_local_checks_passed_across_runs",
+    "full_github_ci_equivalent": false,
+    "platforms": [
+      "macOS 26.5.1 ARM64",
+      "Linux ARM64 Docker, Debian bookworm, Docker Linux kernel"
+    ],
+    "scope": "PR-triggered quality, security, packaging, parser fuzz and native Linux workflow commands; no cloud runner invocation",
+    "native_linux_commands_passed": 21,
+    "fuzz_targets_passed": [
+      "host_snapshot",
+      "provider_sse",
+      "phase_scope"
+    ],
+    "rustsec_advisory_db_commit": "7eebec69c352c7191b1f13eb95dd510eeca5d1de",
+    "source_changes": false,
+    "lock_changes": false,
+    "real_provider_call": false,
+    "finite_client_f12a_macos": "NO_GO unchanged; this verification does not qualify the new copied native finite-client composition",
+    "reused_mac_quality": {
+      "report": "docs/bench/verification-finite-client-assets-2026-10-11.json",
+      "status": "nine prior checks passed; exact source hashes reverified on committed HEAD"
+    },
+    "environment_corrections": [
+      {
+        "scope": "test subprocesses",
+        "change": "GIT_TRACE2_EVENT=0",
+        "reason": "prevent asynchronous external git-ai notes in disposable repos",
+        "global_config_changed": false
+      },
+      {
+        "scope": "packaging scan subprocess",
+        "change": "GITLEAKS_CONFIG points to unchanged repository .gitleaks.toml; --require-gitleaks used",
+        "reason": "seven exact synthetic digest matches already present in repository allowlist; no additional exclusions",
+        "raw_failed_scan_retained": true
+      },
+      {
+        "scope": "disposable Linux container",
+        "change": "install rustfmt/clippy, allow namespaced proc mounts, and use --init",
+        "reason": "missing tool components, restricted proc mount, and orphan zombies under PID1",
+        "docker_reference": "https://docs.docker.com/reference/cli/docker/container/run/",
+        "raw_failed_runs_retained": true
+      }
+    ],
+    "limits": [
+      "Linux ARM64 Debian container is not the Ubuntu AMD64 cloud runner",
+      "macOS full Rust gate reused from unchanged source-bound prior run; new missing checks and cleanup regression run in this turn",
+      "This does not lift finite-client F12a NO_GO or demonstrate a native model turn"
+    ]
+  },
+  "retained_local_evidence": {
+    "mac_missing_checks": {
+      "file_name": "summary.json",
+      "sha256": "2db17e1976600f7168e12a5cb672911e68a6d5c69582568b0ad9b09080bf8f81",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "mac_packaging_corrected": {
+      "file_name": "summary.json",
+      "sha256": "730893c7e8c5eb9813c3bfdbdb023473ca709e938999f9b5758057f66b8ab767",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "package_synthetic_policy_proof": {
+      "file_name": "policy-proof.json",
+      "sha256": "c3dd7f96434db46f3312347d0d08bf5f831534adfb9789e96d2abd6634b8e74c",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "linux_initial": {
+      "file_name": "summary.json",
+      "sha256": "ec330a0a07ea078c90f0876e3f9bb8ca4a445992903b6bd1451f6054e795feac",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "linux_quality_fuzz": {
+      "file_name": "summary.json",
+      "sha256": "c0d89342c36e89761eb7ce121a926f72cf8875b8d6b63d0ba2f8d65ad2d586a5",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "linux_native_final": {
+      "file_name": "summary.json",
+      "sha256": "497de171e5c1887e6820a11949a4cfa29101f8e3eed75799ad689b2bc6fefa3e",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "candidate_base_init_comparison": {
+      "file_name": "summary.json",
+      "sha256": "5ef717ca053e5b5629cddb10b48f71aab82bbb1742dfa8e56982c90e04c67fd8",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "cleanup_regression": {
+      "file_name": "ar-pr163-cleanup-regression.log",
+      "sha256": "8fb21a1aa206e7fbd47e1ea00bed5f446589f14f63de22f0890dc9a46356242d",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "gitleaks_dir": {
+      "file_name": "ar-pr163-gitleaks-dir.log",
+      "sha256": "2f57baf44437c873a97742f38222dc8f92c9f0b088274304a86f815e3adc4eb6",
+      "availability": "private local evidence; not bundled in the repository"
+    },
+    "gitleaks_git": {
+      "file_name": "ar-pr163-gitleaks-git.log",
+      "sha256": "46ea2cf79d09e400874bbcd823e5005f23f74c7cee5382fce6a3f26d28b922f2",
+      "availability": "private local evidence; not bundled in the repository"
+    }
+  },
+  "remote_checks": {
+    "reviewed_head": "35724f63893ae1dd489bf4b034b0a7759c0f5dec",
+    "failure_checks": 9,
+    "cause": "account billing/spending refusal before execution",
+    "macos_matrix": "cancelled",
+    "ci_pass": false
+  },
+  "acceptance_boundary": "Preparation only. Copied wrapper compatibility, OS write exclusion, memory limits and physical-send admission remain open; no model turn or measured savings claim."
+}

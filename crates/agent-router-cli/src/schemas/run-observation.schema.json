@@ -1,14 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:agent-router:schema:run-observation:2",
+  "$id": "urn:agent-router:schema:run-observation:3",
   "title": "run-observation",
-  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown.",
+  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown. Opt-in version 3 adds qualified local supervisor capture intervals; native and aggregate duration stay unknown.",
   "oneOf": [
     {
       "$ref": "#/$defs/v1"
     },
     {
       "$ref": "#/$defs/v2"
+    },
+    {
+      "$ref": "#/$defs/v3"
     }
   ],
   "$defs": {
@@ -637,6 +640,153 @@
           "$ref": "#/$defs/durable_attempt"
         }
       ]
+    },
+    "v3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "snapshot_sha256",
+        "identity",
+        "horizon",
+        "known",
+        "unknown",
+        "completeness",
+        "attempts",
+        "timings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 3
+        },
+        "snapshot_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "horizon": {
+          "$ref": "#/$defs/horizon"
+        },
+        "known": {
+          "$ref": "#/$defs/known"
+        },
+        "unknown": {
+          "$ref": "#/$defs/unknowns"
+        },
+        "completeness": {
+          "$ref": "#/$defs/completeness"
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/attempt"
+          }
+        },
+        "timings": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/timing"
+          }
+        }
+      }
+    },
+    "timing_measurement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "duration_ms"
+          ],
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "duration_ms": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reason"
+          ],
+          "properties": {
+            "status": {
+              "const": "unknown"
+            },
+            "reason": {
+              "enum": [
+                "missing_record",
+                "clock_regression",
+                "duration_overflow"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "attempt_key_sha256",
+        "timing_event_sha256",
+        "scope",
+        "clock",
+        "start_boundary",
+        "end_boundary",
+        "precision",
+        "measurement"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "attempt_key_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "timing_event_sha256": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "const": "supervisor_capture"
+        },
+        "clock": {
+          "const": "monotonic_same_invocation"
+        },
+        "start_boundary": {
+          "const": "before_dispatch_validation"
+        },
+        "end_boundary": {
+          "const": "after_reap_and_both_output_drains"
+        },
+        "precision": {
+          "const": "milliseconds_truncated"
+        },
+        "measurement": {
+          "$ref": "#/$defs/timing_measurement"
+        }
+      }
     }
   }
 }
