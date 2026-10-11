@@ -1,0 +1,17 @@
+{
+  "repo": "apple-oss-distributions/xnu",
+  "revision": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea",
+  "match_to_installed_kernel": "UNKNOWN",
+  "files": {
+    "bsd/kern/kern_resource.c": {
+      "sha256": "ffd547faab964b7860476a3b1e1c82525389666450b08eda19f9f5229eddd054",
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/kern/kern_resource.c#L1647",
+      "start_line": 1647
+    },
+    "osfmk/vm/vm_map.c": {
+      "sha256": "25e61323f40fa0d5dc3da5b01f8eb2e1dc78f5338b41a7a43e7d86ad04cae039",
+      "url": "https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/osfmk/vm/vm_map.c#L22084",
+      "start_line": 22084
+    }
+  }
+}

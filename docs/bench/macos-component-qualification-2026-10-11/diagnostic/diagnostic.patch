@@ -1,0 +1,286 @@
+--- original/main.rs
++++ src/main.rs
+@@ -1,11 +1,12 @@
+ #![forbid(unsafe_code)]
+ //! Dedicated child: resource limits never modify the router parent.
+-mod watchdog;
+ use rustix::process::{Resource, Rlimit, getrlimit, setrlimit};
+ use std::{
+     ffi::{OsStr, OsString},
+-    os::unix::process::CommandExt,
++    io::Read,
+     process::Command,
++    process::Stdio,
++    time::{Duration, Instant},
+ };
+ 
+ fn main() {
+@@ -16,6 +17,9 @@
+ }
+ fn run() -> Result<(), &'static str> {
+     let all_args: Vec<OsString> = std::env::args_os().skip(1).collect();
++    if !exact_probe_args(&all_args) {
++        return Err("diagnostic_exact_probe_arguments_required");
++    }
+     let mut args = all_args.clone().into_iter();
+     let mut values = Vec::new();
+     for (index, name) in [
+@@ -57,10 +61,6 @@
+         }
+     }
+     let next = args.next().ok_or("arguments")?;
+-    if next == "--supervise-v1" {
+-        let code = watchdog::supervise(all_args[..10].to_vec(), args.collect())?;
+-        std::process::exit(code);
+-    }
+     let resources = [
+         Resource::Cpu,
+         Resource::As,
+@@ -68,25 +68,40 @@
+         Resource::Nproc,
+         Resource::Fsize,
+     ];
++    for resource in resources.into_iter().chain([Resource::Core]) {
++        emit_limit("inherited", resource, getrlimit(resource));
++    }
+     for (resource, value) in resources.into_iter().zip(&values) {
+         if let Some(value) = value {
+-            let hard = getrlimit(resource).maximum.unwrap_or(u64::MAX);
+-            let value = (*value).min(hard);
+-            setrlimit(
++            let inherited = getrlimit(resource);
++            let hard = inherited.maximum.unwrap_or(u64::MAX);
++            let requested = *value;
++            let value = requested.min(hard);
++            if resource == Resource::As {
++                emit_vsz("before_address_space_setrlimit");
++            }
++            let result = setrlimit(
+                 resource,
+                 Rlimit {
+                     current: Some(value),
+                     maximum: Some(value),
+                 },
+-            )
+-            .map_err(|_| match resource {
+-                Resource::Cpu => "setrlimit.cpu",
+-                Resource::As => "setrlimit.address_space",
+-                Resource::Nofile => "setrlimit.open_files",
+-                Resource::Nproc => "setrlimit.processes",
+-                Resource::Fsize => "setrlimit.file_size",
+-                _ => "setrlimit",
+-            })?;
++            );
++            println!(
++                "{}",
++                attempt_json(
++                    resource,
++                    requested,
++                    value,
++                    inherited,
++                    getrlimit(resource),
++                    result.as_ref().err().map(|e| e.raw_os_error())
++                )
++            );
++            if resource == Resource::As {
++                emit_vsz("after_address_space_setrlimit");
++            }
++            result.map_err(|_| failure_code(resource))?;
+         }
+     }
+     setrlimit(
+@@ -112,7 +127,7 @@
+             }
+         }
+         println!(
+-            "router-sandbox-helper-v1:limits-applied:address-space={}",
++            "instrumented-diagnostic-only:limits-applied:address-space={}",
+             if values[1].is_some() {
+                 "enforced"
+             } else {
+@@ -121,17 +136,171 @@
+         );
+         return Ok(());
+     }
+-    if next != "--" {
+-        return Err("arguments");
+-    }
+-    let program = args.next().ok_or("arguments")?;
+-    if !std::path::Path::new(&program).is_absolute() {
+-        return Err("absolute_program_required");
+-    }
+-    let arguments: Vec<OsString> = args.collect();
+-    if arguments.len() > 256 {
+-        return Err("arguments");
+-    }
+-    let _error = Command::new(program).args(arguments).exec();
+-    Err("exec")
+-}
++    Err("diagnostic_probe_required")
++}
++
++// Scratch-only guard: there is no worker or supervisor entry point.
++const EXACT_ARGS: [&str; 11] = [
++    "--cpu-seconds",
++    "300",
++    "--address-space-bytes",
++    "8589934592",
++    "--max-open-files",
++    "256",
++    "--max-processes",
++    "256",
++    "--max-file-bytes",
++    "16777216",
++    "--probe",
++];
++fn exact_probe_args(args: &[OsString]) -> bool {
++    args.iter()
++        .map(OsString::as_os_str)
++        .eq(EXACT_ARGS.map(OsStr::new))
++}
++fn resource_name(resource: Resource) -> &'static str {
++    match resource {
++        Resource::Cpu => "cpu",
++        Resource::As => "address_space",
++        Resource::Nofile => "open_files",
++        Resource::Nproc => "processes",
++        Resource::Fsize => "file_size",
++        Resource::Core => "core",
++        _ => "other",
++    }
++}
++fn failure_code(resource: Resource) -> &'static str {
++    match resource {
++        Resource::Cpu => "setrlimit.cpu",
++        Resource::As => "setrlimit.address_space",
++        Resource::Nofile => "setrlimit.open_files",
++        Resource::Nproc => "setrlimit.processes",
++        Resource::Fsize => "setrlimit.file_size",
++        _ => "setrlimit",
++    }
++}
++fn limit_number(value: Option<u64>) -> String {
++    value.map_or_else(|| "null".into(), |v| v.to_string())
++}
++fn emit_limit(phase: &str, resource: Resource, limit: Rlimit) {
++    println!(
++        "{{\"diagnostic\":true,\"event\":\"limit\",\"phase\":\"{phase}\",\"pid\":{},\"resource\":\"{}\",\"soft\":{},\"hard\":{}}}",
++        std::process::id(),
++        resource_name(resource),
++        limit_number(limit.current),
++        limit_number(limit.maximum)
++    );
++}
++fn attempt_json(
++    resource: Resource,
++    requested: u64,
++    clamped: u64,
++    before: Rlimit,
++    after: Rlimit,
++    errno: Option<i32>,
++) -> String {
++    format!(
++        "{{\"diagnostic\":true,\"event\":\"setrlimit\",\"pid\":{},\"resource\":\"{}\",\"requested\":{requested},\"clamped\":{clamped},\"before_soft\":{},\"before_hard\":{},\"effective_soft\":{},\"effective_hard\":{},\"errno\":{},\"applied\":{},\"qualification\":false}}",
++        std::process::id(),
++        resource_name(resource),
++        limit_number(before.current),
++        limit_number(before.maximum),
++        limit_number(after.current),
++        limit_number(after.maximum),
++        errno.map_or_else(|| "null".into(), |e| e.to_string()),
++        errno.is_none()
++    )
++}
++fn emit_vsz(phase: &str) {
++    // Absolute executable, empty environment, fixed numeric-only projection.
++    // One second collection deadline; at most 128 bytes read after exit.
++    let value = own_vsz_kib();
++    println!(
++        "{{\"diagnostic\":true,\"event\":\"own_vsz\",\"phase\":\"{phase}\",\"pid\":{},\"vsz_kib\":{},\"available\":{}}}",
++        std::process::id(),
++        limit_number(value),
++        value.is_some()
++    );
++}
++fn own_vsz_kib() -> Option<u64> {
++    let mut child = Command::new("/bin/ps")
++        .args(["-o", "vsz=", "-p", &std::process::id().to_string()])
++        .env_clear()
++        .stdin(Stdio::null())
++        .stdout(Stdio::piped())
++        .stderr(Stdio::null())
++        .spawn()
++        .ok()?;
++    let started = Instant::now();
++    loop {
++        match child.try_wait() {
++            Ok(Some(status)) => {
++                if !status.success() {
++                    return None;
++                }
++                let mut output = String::new();
++                child
++                    .stdout
++                    .take()?
++                    .take(128)
++                    .read_to_string(&mut output)
++                    .ok()?;
++                return output.trim().parse().ok();
++            }
++            Ok(None) if started.elapsed() < Duration::from_secs(1) => {
++                std::thread::sleep(Duration::from_millis(5))
++            }
++            _ => {
++                let _ = child.kill();
++                let _ = child.wait();
++                return None;
++            }
++        }
++    }
++}
++
++#[cfg(test)]
++mod diagnostic_checks {
++    use super::*;
++    #[test]
++    fn refusal_has_numeric_errno_and_never_claims_qualification() {
++        let limits = Rlimit {
++            current: None,
++            maximum: None,
++        };
++        let text = attempt_json(
++            Resource::As,
++            8589934592,
++            8589934592,
++            limits,
++            limits,
++            Some(22),
++        );
++        assert!(text.contains("\"errno\":22"));
++        assert!(text.contains("\"applied\":false"));
++        assert!(text.contains("\"qualification\":false"));
++        assert!(text.contains("\"effective_soft\":null"));
++        assert!(!text.contains("limits-applied"));
++        assert!(!text.contains("GO"));
++        assert_eq!(failure_code(Resource::As), "setrlimit.address_space");
++    }
++    #[test]
++    fn only_exact_bounded_probe_arguments_are_accepted() {
++        let expected = EXACT_ARGS.map(OsString::from).to_vec();
++        assert!(exact_probe_args(&expected));
++        for replacement in ["none", "17179869184"] {
++            let mut changed = expected.clone();
++            changed[3] = replacement.into();
++            assert!(!exact_probe_args(&changed));
++        }
++        for replacement in ["--supervise-v1", "--"] {
++            let mut changed = expected.clone();
++            changed[10] = replacement.into();
++            assert!(!exact_probe_args(&changed));
++        }
++        let mut extra = expected.clone();
++        extra.push("/bin/true".into());
++        assert!(!exact_probe_args(&extra));
++        assert!(!exact_probe_args(&[]));
++    }
++}

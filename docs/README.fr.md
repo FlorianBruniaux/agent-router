@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Précontrôle des ressources F12a](bench/finite-client-qualification-2026-10-11/README.md), 2026-10-11 : refus du helper copié avec les 8 Gio demandés, contrôles locaux et gates natives restantes. NO_GO. [Composants macOS vérifiés séparément](bench/macos-component-qualification-2026-10-11/README.md) : 47 résultats et diagnostic instrumenté du refus, sans qualification native complète.
+
 [English](README.md) | Français
 
 Tous les guides, spécifications et pages de référence de `docs/`, classés selon
@@ -75,7 +77,8 @@ sauf celles marquées (FR).
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Agent Router utilisé sur son propre code](bench/self-dogfood-b1b-2026-10-10/README.md) (EN) | 2026-10-10 : essai B1b guidé par le routage ; statut dans le rapport, aucun gain comparatif établi |
-| [Premier diagnostic assisté M4](bench/measurement-m4/README.md) | Tâche et configurations scellées, proposition de 600 000 tokens à approuver ; aucun essai lancé |
+| [Bilan mesuré M4 v2](bench/measurement-m4-v2-result-2026-10-11/README.md) | 156 434 tokens hôte ; un changement unique accepté et intégré via [le suivi #164](bench/m4-fix-integration-2026-10-11.md) ; aucun gain ni qualification native établis |
+| [Premier protocole M4](bench/measurement-m4/README.md) | Protocole historique v1 conservé après l'essai interrompu ; scellement inchangé |
 | [Préparation des mesures M1–M3](bench/measurement-m123/README.md) | Catalogue de campagne, bilan des traces et répétition hors ligne ; aucun gain établi |
 | [Candidat de calibration v2](bench/calibration-v2/README.md) (FR) | 2026-10-05 : protocole de collecte et modèle de préparation incomplet, sans autorisation d'exécution |
 | [Décision sur l'entrée automatique](bench/owned-entry-2026-10-07/README.md) | 2026-10-07 : app-server direct et ACP non admis ; contrôle par envoi et comparaison comportementale encore incomplets |

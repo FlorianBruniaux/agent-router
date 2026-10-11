@@ -93,6 +93,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-11: add a reviewed-resource preflight for the owned finite-client helper copy, preserving exact limits and source/copy freshness checks. Publish [the F12a resource stop](docs/bench/finite-client-qualification-2026-10-11/README.md) and [independent macOS component evidence](docs/bench/macos-component-qualification-2026-10-11/README.md); the 8 GiB request remains refused and native admission stays NO_GO. Test historical M3 fixtures against their declared Git base while retaining current report regressions and the initial failed run.
+
 - 2026-10-11: retain reviewed finite-client asset copies and identity-bound preparation previews (PR #163, ADR 0029). Independent post-fix review and local macOS/Linux checks support preparation-only integration; copied native launch composition remains F12a NO_GO. See the [review receipt](docs/bench/verification-finite-client-assets-review-2026-10-11.json).
 
 - 2026-10-11: add opt-in `observe --schema-version 3` with qualified local supervisor capture durations. Persist a bounded timing record atomically with its exact attempt evidence; missing legacy records remain unknown. Preserve v1/v2 formats and native/provider duration unknowns. See [ADR 0030](docs/adr/0030-qualified-local-capture-timing.md); broader phase, cleanup and end-to-end timing under #117 remains open.

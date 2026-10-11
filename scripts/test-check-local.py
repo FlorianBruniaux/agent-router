@@ -308,6 +308,27 @@ class LocalCheckTests(unittest.TestCase):
                     "    def test_regression(self):\n"
                     f"        Path({str(marker)!r}).touch()\n"
                     "        self.fail('bench regression sentinel')\n")
+                if identifier == "measurement-m3-tests":
+                    # Exercise the real baseline wrapper with a sealed disposable
+                    # Git fixture, then prove the current suite's sentinel propagates.
+                    fixture = self.root / "docs/bench/calibration-v2/fixture"
+                    fixture.parent.mkdir(parents=True, exist_ok=True)
+                    fixture.write_text("historical fixture\n")
+                    pilot = self.root / "docs/bench/campaign-next/pilot/fixture"
+                    pilot.parent.mkdir(parents=True, exist_ok=True)
+                    pilot.write_text("fixture\n")
+                    changes = self.root / "tests/fixtures/evaluation/accepted-changes-v1.json"
+                    changes.parent.mkdir(parents=True, exist_ok=True)
+                    changes.write_text("{}\n")
+                    paths = [path.relative_to(self.root).as_posix() for path in (fixture, pilot, changes)]
+                    self.init_git(paths)
+                    revision = subprocess.check_output(["git", "-C", str(self.root), "rev-parse", "HEAD"], text=True).strip()
+                    candidate = self.root / "docs/bench/measurement-m123/m3/candidate.json"
+                    candidate.write_text(json.dumps({"source_commit": revision, "repository_inputs": {
+                        paths[0]: self.runner.digest(fixture)}}))
+                    scripts = self.root / "scripts"
+                    scripts.mkdir(exist_ok=True)
+                    shutil.copyfile(SCRIPT.with_name("check-m3-baseline.py"), scripts / "check-m3-baseline.py")
                 checks = [c for c in self.runner.build_checks(self.root, self.out, ["quality"])
                           if c["id"] == identifier]
                 self.assertEqual(len(checks), 1, "bench suite must be registered")

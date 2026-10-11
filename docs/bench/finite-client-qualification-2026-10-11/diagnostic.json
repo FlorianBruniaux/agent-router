@@ -1,0 +1,134 @@
+{
+  "F12a": "NO_GO",
+  "architecture": "aarch64",
+  "authority": "diagnostic_only_no_product_approval_or_capability_proof",
+  "evidence_kind": "finite_client_owned_resource_preflight_diagnostic",
+  "model_turn": "NOT_ATTEMPTED",
+  "native_launch": "NOT_ATTEMPTED",
+  "os": "macos",
+  "probe_error": "runtime.resource.unsupported: address_space",
+  "process_limit_scope": "per_user_not_per_task",
+  "product_broker_authority": "UNSUPPORTED",
+  "proof_freshness": "NOT_APPLICABLE_NO_PROOF_STORED",
+  "provider_send": "NOT_ATTEMPTED",
+  "requested_limits": {
+    "address_space_bytes": 8589934592,
+    "cpu_seconds": 300,
+    "max_file_bytes": 16777216,
+    "max_open_files": 256,
+    "max_processes": 256
+  },
+  "requirements": {
+    "asset_write_exclusion": "NOT_ATTEMPTED",
+    "broker_exact_port": "NOT_ATTEMPTED",
+    "copied_wrapper_compatibility": "NOT_ATTEMPTED",
+    "mach_dns": "NOT_ATTEMPTED",
+    "memory": "NO_GO_REQUESTED_LIMIT_REFUSED",
+    "physical_send_admission": "NOT_ATTEMPTED",
+    "task_descendant_containment": "NOT_ATTEMPTED"
+  },
+  "review_sha256": "8335016c22a29c1a4e15892f132bc16ea33878553eeb24c7d34117404ea7d88b",
+  "schema_version": 1,
+  "source_asset_sha256": {
+    "client": "87d3626845987d5f8a655e344dfb0032113a42e428d42734d09e312b1c5d3f5b",
+    "configuration": "57ea9c5267219765cb0db15c02c48ca0e3b6fe3928420141716df99136a18ee5",
+    "helper": "e4f6af14bd2795836fe32fad4f2bd150b007b179fbcd7ee425bfff4b0ad75ed3",
+    "native": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+    "profile": "6906c7cd0f1fe84d3891a055adeb34e2d5475c71dcbbd91fb83d6a813e031d5f",
+    "wrapper": "8857d087219f0f39d3e3c163e5d0a0aed690cc22f34b50c7eee3d74f93e69688"
+  },
+  "previous_capture": {
+    "F12a": "NO_GO",
+    "architecture": "aarch64",
+    "authority": "diagnostic_only_no_product_approval_or_capability_proof",
+    "evidence_kind": "finite_client_owned_resource_preflight_diagnostic",
+    "model_turn": "NOT_ATTEMPTED",
+    "native_launch": "NOT_ATTEMPTED",
+    "os": "macos",
+    "probe_error": "runtime.resource.unsupported: address_space",
+    "process_limit_scope": "per_user_not_per_task",
+    "product_broker_authority": "UNSUPPORTED",
+    "proof_freshness": "NOT_APPLICABLE_NO_PROOF_STORED",
+    "provider_send": "NOT_ATTEMPTED",
+    "requested_limits": {
+      "address_space_bytes": 8589934592,
+      "cpu_seconds": 300,
+      "max_file_bytes": 16777216,
+      "max_open_files": 256,
+      "max_processes": 256
+    },
+    "requirements": {
+      "asset_write_exclusion": "NOT_ATTEMPTED",
+      "broker_exact_port": "NOT_ATTEMPTED",
+      "copied_wrapper_compatibility": "NOT_ATTEMPTED",
+      "mach_dns": "NOT_ATTEMPTED",
+      "memory": "NO_GO_REQUESTED_LIMIT_REFUSED",
+      "physical_send_admission": "NOT_ATTEMPTED",
+      "task_descendant_containment": "NOT_ATTEMPTED"
+    },
+    "review_sha256": "5157fafe7f7c89af0e6d04d08d18dbc9915d7d9df657374bf281135ec8492409",
+    "schema_version": 1,
+    "source_asset_sha256": {
+      "client": "879a3a8bd3d071fb5fa8a726a369ed67c2b290b3d5979f0d957ea3cc2c51ba0a",
+      "configuration": "7749a73b8415e2fa74771d9e42c05a40d40a89420ecbe476e3439af133ef770d",
+      "helper": "1a5e8d6a4846f2102bb49520ad7e3ed67a0fa99b828f118306ce2af535a18859",
+      "native": "16593cc2f422d5f398a8e40f550ebbaf1245392528957be342c295920a300704",
+      "profile": "6906c7cd0f1fe84d3891a055adeb34e2d5475c71dcbbd91fb83d6a813e031d5f",
+      "wrapper": "8857d087219f0f39d3e3c163e5d0a0aed690cc22f34b50c7eee3d74f93e69688"
+    },
+    "memory_controls": [
+      {
+        "address_space_bytes": "8589934592",
+        "exit": 125,
+        "stdout": "",
+        "stderr": "sandbox-helper.setrlimit.address_space\n"
+      },
+      {
+        "address_space_bytes": "17179869184",
+        "exit": 125,
+        "stdout": "",
+        "stderr": "sandbox-helper.setrlimit.address_space\n"
+      },
+      {
+        "address_space_bytes": "none",
+        "exit": 0,
+        "stdout": "router-sandbox-helper-v1:limits-applied:address-space=not-requested\n",
+        "stderr": ""
+      }
+    ],
+    "memory_inventory": {
+      "supervisor_observation_not_worker_map": {
+        "phase": "framed_supervisor_waiting_before_worker_spawn",
+        "vsz_kib": "410060880",
+        "ps_exit": 0
+      },
+      "diagnostic_caps_not_approved": [
+        {
+          "diagnostic_limit_gib": 64,
+          "exit": 125,
+          "stdout": "",
+          "stderr": "sandbox-helper.setrlimit.address_space\n"
+        },
+        {
+          "diagnostic_limit_gib": 128,
+          "exit": 125,
+          "stdout": "",
+          "stderr": "sandbox-helper.setrlimit.address_space\n"
+        },
+        {
+          "diagnostic_limit_gib": 512,
+          "exit": 0,
+          "stdout": "router-sandbox-helper-v1:limits-applied:address-space=enforced\n",
+          "stderr": ""
+        },
+        {
+          "diagnostic_limit_gib": 1024,
+          "exit": 0,
+          "stdout": "router-sandbox-helper-v1:limits-applied:address-space=enforced\n",
+          "stderr": ""
+        }
+      ]
+    }
+  },
+  "source_base": "727dcd21849e9f0513c69c740fd1aade1cd540bd"
+}

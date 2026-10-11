@@ -1,5 +1,7 @@
 # Documentation index
 
+[F12a owned resource preflight](bench/finite-client-qualification-2026-10-11/README.md), 2026-10-11: exact copied-helper refusal at 8 GiB, source-bound local checks and remaining native gates. NO_GO. [Independent macOS components](bench/macos-component-qualification-2026-10-11/README.md): 47 results and instrumented refusal evidence, without complete native qualification.
+
 English | [Français](README.fr.md)
 
 Every guide, specification and reference page under `docs/`, grouped by what
@@ -77,7 +79,7 @@ written in French.
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
 | [M4 stop report](bench/measurement-m4-result-2026-10-10/README.md) (FR) | 279,563 host tokens, 0 worker assignments, coherent counters and late interruption |
-| [M4 v2 measured result](bench/measurement-m4-v2-result-2026-10-11/README.md) (FR) | 156,434 host tokens, two candidates pass 21 local checks each, one exact patch rejected; human acceptance pending |
+| [M4 v2 measured result](bench/measurement-m4-v2-result-2026-10-11/README.md) (FR) | 156,434 host tokens; one unique change subsequently accepted and integrated via [#164 follow-up](bench/m4-fix-integration-2026-10-11.md); no savings or native qualification |
 | [M4 v2 sealed protocol](bench/measurement-m4-v2/README.md) (FR) | Historical approval proposal, subsequently approved and executed; original seal preserved |
 | [Original M4 protocol](bench/measurement-m4/README.md) (FR) | Historical sealed v1, preserved unchanged after the approved attempt stopped |
 | [Measurement preparation M1–M3](bench/measurement-m123/README.md) (FR) | Campaign catalog, trace accounting and offline comparison rehearsal; no savings claim |

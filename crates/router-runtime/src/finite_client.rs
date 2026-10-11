@@ -687,6 +687,40 @@ impl FiniteClientReview {
     }
 }
 impl ApprovedFiniteClient {
+    /// Runs only the retained helper's bounded `--probe`, with the exact reviewed
+    /// limits. This is a resource preflight, not native launch, OS qualification,
+    /// provider admission or a persisted capability proof. A successful probe
+    /// observes applied rlimits; it does not establish task-level containment.
+    /// The caller must trust the helper integration code, as for ResourceSupervisor.
+    pub async fn probe_owned_resources(&self, limits: &ResourceLimits) -> Result<()> {
+        let reviewed = &self.reviewed;
+        if limits.args()? != reviewed.resource_arguments {
+            return Err(RuntimeError::Integrity("finite client resource limits"));
+        }
+        reviewed.check_files()?;
+        let assets = reviewed
+            .owned_assets
+            .as_ref()
+            .ok_or(RuntimeError::Sandbox)?;
+        reviewed.owned_state.as_ref().ok_or(RuntimeError::Sandbox)?;
+        let helper = &assets.pins[2];
+        let expected = BTreeMap::from([(
+            std::path::PathBuf::from(&helper.path),
+            helper.sha256.clone(),
+        )]);
+        let result = crate::ResourceSupervisor::probe_expected(
+            Path::new(&helper.path),
+            limits.clone(),
+            crate::DenySandbox,
+            &expected,
+        )
+        .await;
+        // Recheck even after a refusal: a changed composition is not an OS verdict.
+        reviewed.check_files()?;
+        result.map(|_| ())
+    }
+}
+impl ApprovedFiniteClient {
     /// Checks the helper's concrete current limits as well as the live contract.
     #[allow(clippy::too_many_arguments)]
     pub fn validate_with_resources<'a>(
