@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-11",
+  "decision": "accept_for_integration",
+  "decision_source": "explicit_user_request",
+  "request_excerpt": "Vas-y, int\u00e8gre le correctif M4",
+  "selected_candidate": "router",
+  "equivalent_candidate": "cheapfixed",
+  "accepted_change_count": 1,
+  "candidate_file": "docs/bench/campaign-next/pilot/run_pilot.py",
+  "candidate_file_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7",
+  "candidate_patch_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+  "scope": "Acceptance for repository integration after local checks, not a new blind trial or a native execution result.",
+  "frozen_trial_artifacts_changed": false,
+  "provider_invoice": "unknown",
+  "total_end_to_end_cost": "unknown",
+  "savings_demonstrated": false
+}
