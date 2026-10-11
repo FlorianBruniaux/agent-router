@@ -356,6 +356,32 @@ flowchart TD
 
 </details>
 
+### How skills are suggested
+
+A skill is a set of instructions that guides work, such as a testing method.
+You, or an integration in your coding host, supply the task and skill
+descriptions. Local search matches task words against those descriptions; the
+router then checks candidates against the catalog, task, host and selected model.
+
+```mermaid
+flowchart TD
+    U["You or a host integration"] --> T["Task sent to the CLI"]
+    M["Supplied skill descriptions"] --> R["Local BM25 search"]
+    T -->|"route with --retrieval"| R
+    T -->|"or supplied candidates"| F["Check trust and compatibility"]
+    R -->|"candidates, or none on abstention"| F
+    C["Catalog + host and model capabilities"] --> F
+    F --> D["Decision: skill identifiers per phase"]
+    D --> V["You or the host review the suggestion"]
+```
+
+Suggestion does not read skill bodies. Verified body loading belongs to the
+separate preparation path, with its own required inputs and checks. Agent Router
+installs no hook and does not automatically scan your Claude or Codex directories.
+Without `--retrieval`, `route` uses candidates supplied in the request. The
+[skill selection guide](docs/skill-selection.md) (FR) covers use cases,
+abstention and a reproducible offline example.
+
 ### What must hold before anything runs
 
 Routing and preparation never execute anything. A run starts only when every

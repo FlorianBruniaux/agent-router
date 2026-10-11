@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Documentation
 
+- 2026-10-11: explain skill suggestions in both READMEs and the [skill selection guide](docs/skill-selection.md): explicit caller, metadata search, catalog/host/model compatibility, abstention and separate body preparation. Add Mermaid flowcharts and a synthetic offline CLI example; distinguish v1/v2 route retrieval from contextual v3 search and personal hooks.
+
 - 2026-10-11: publish the [M4 stop report](docs/bench/measurement-m4-result-2026-10-10/README.md): 279,563 host tokens spent on coordination, no worker assignment started, and no savings demonstrated. Prepare [M4 v2](docs/bench/measurement-m4-v2/README.md) as three single-response patch attempts with local verification, a proposed 300,000-token envelope and a tested offline admission ledger. Approval is pending; no v2 model call is launched.
 
 - 2026-10-10: seal the [M4 assisted diagnostic proposal](docs/bench/measurement-m4/README.md) after #158 merged: one reproducible report-cost defect, three fixed configurations and a 600,000 host-token admission envelope. Record that Router selects the lightweight baseline, that the threshold is not an enforced in-flight cap, and that approval and live trace binding remain pending. No trial or task solution is launched.

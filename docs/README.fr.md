@@ -25,6 +25,7 @@ sauf celles marquées (FR).
 
 | Page | Contenu |
 | --- | --- |
+| [Parcours des suggestions de skills](skill-selection.md) (FR) | Qui déclenche la recherche, filtrage, chargement et essai hors ligne |
 | [Recherche](retrieval.md) | Recherche dans les catalogues, signaux de contexte, fusion de classements, vecteurs locaux |
 | [Classification du risque](risk-classification.md) | Plancher de risque déterministe |
 | [Génération de plans](plan-generation.md) | Affectations globales de plans, bornées et sous budgets |
