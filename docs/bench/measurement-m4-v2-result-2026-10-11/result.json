@@ -1,0 +1,353 @@
+{
+  "schema_version": 1,
+  "protocol_id": "m4-assisted-t1-v2",
+  "date": "2026-10-11",
+  "protocol_seal_sha256": "c4507b04725739cf6e1e416b24acbdd4f71fb7927b5a4f82ffdd84e22ab5cdb6",
+  "protocol_merge_commit": "0c836b123e052b464db7a760f8eab7e72343ee51",
+  "source_commit": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+  "source_file": "docs/bench/campaign-next/pilot/run_pilot.py",
+  "source_file_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+  "ledger_status": "complete",
+  "scope": "Assisted single-response patch generation; host usage, not provider invoice or native runtime qualification",
+  "participants": [
+    {
+      "assignment_id": "m4v2-t1-router-r1",
+      "arm_id": "router",
+      "allocation_tokens": 100000,
+      "host_evidence": {
+        "status": "reliable_host_counters",
+        "requested": {
+          "model": "gpt-6-luna",
+          "effort": "medium"
+        },
+        "observed": [
+          {
+            "model": "gpt-6-luna",
+            "effort": "medium"
+          }
+        ],
+        "scope": "exact host participant, not provider invoice",
+        "runtime_cli_version": "0.162.0-alpha.17.2",
+        "snapshot_sha256": "4c19b5351df4d7746f15fe23f6759d57d86d491e5dd6bbfb00c3efe3ca9262d3",
+        "snapshot_bytes": 214757,
+        "response_record_count": 1,
+        "response_records": [
+          {
+            "ordinal": 14,
+            "timestamp": "2026-10-11T06:58:56.838Z",
+            "response_identity_sha256": "9eaa52392b1950dad7785dc0f95544d314ca686f6f8acc66bffa7968ef52093c",
+            "usage": {
+              "input_tokens": 51675,
+              "cached_input_tokens": 17152,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 248,
+              "reasoning_output_tokens": 54,
+              "total_tokens": 51923
+            },
+            "cumulative": {
+              "input_tokens": 51675,
+              "cached_input_tokens": 17152,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 248,
+              "reasoning_output_tokens": 54,
+              "total_tokens": 51923
+            }
+          }
+        ],
+        "cumulative": {
+          "input_tokens": 51675,
+          "cached_input_tokens": 17152,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 248,
+          "reasoning_output_tokens": 54,
+          "total_tokens": 51923
+        },
+        "sum_matches_cumulative": true,
+        "task_started_count": 1,
+        "task_complete_count": 1,
+        "tool_call_count": 0,
+        "history_origin": "not_declared",
+        "terminal": true,
+        "provider_identity_verified": false
+      },
+      "host_task_timestamps": {
+        "task_started": "2026-10-11T06:58:50.694Z",
+        "task_complete": "2026-10-11T06:58:56.872Z"
+      },
+      "evaluation": {
+        "arm_id": "router",
+        "patch_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+        "candidate_source_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7",
+        "outside_report_unchanged": true,
+        "mechanical_pass": true,
+        "human_acceptance": "pending",
+        "checks": [
+          {
+            "check": "public-default",
+            "exit_code": 0,
+            "duration_seconds": 0.142945,
+            "log_sha256": "58cf6b14e50da63ce06cdc2c9242aab41fe092685f1320207114aab30283d6f8",
+            "log_file": "logs/router-public-default.log"
+          },
+          {
+            "check": "public-additional",
+            "exit_code": 0,
+            "duration_seconds": 0.168066,
+            "log_sha256": "41c4931cf0254dfbfb535191696d8e6e031791a092b7fb9a7f8d1f1464e7f4b3",
+            "log_file": "logs/router-public-additional.log"
+          },
+          {
+            "check": "existing-tests",
+            "exit_code": 0,
+            "duration_seconds": 2.146748,
+            "log_sha256": "0958219fc37312b8d5dc321b8f6b86b5e5e6b2192069d4798c8201d47e8a4126",
+            "log_file": "logs/router-existing-tests.log"
+          }
+        ],
+        "patch_file": "patches/router.patch",
+        "patch_bytes": 744,
+        "patch_ends_newline": true
+      },
+      "prompt_evidence": {
+        "requested_sha256": "9c501878c201fd85853eae17d0fe68faeccc7de3e05ec728b392edf76b4ca65e",
+        "requested_bytes": 7648,
+        "request_surface": "visible direct spawn_agent tool invocation; arguments retained privately",
+        "history_requested": "fork_turns=none",
+        "independent_host_log_content_verification": "UNKNOWN",
+        "reason": "Task text absent from child trace; parent message argument stored opaquely. This is a visibility limit, not observed prompt drift. Full platform context is not controlled."
+      }
+    },
+    {
+      "assignment_id": "m4v2-t1-strongfixed-r1",
+      "arm_id": "strongfixed",
+      "allocation_tokens": 100000,
+      "host_evidence": {
+        "status": "reliable_host_counters",
+        "requested": {
+          "model": "gpt-6.1-sol",
+          "effort": "medium"
+        },
+        "observed": [
+          {
+            "model": "gpt-6.1-sol",
+            "effort": "medium"
+          }
+        ],
+        "scope": "exact host participant, not provider invoice",
+        "runtime_cli_version": "0.162.0-alpha.17.2",
+        "snapshot_sha256": "4675f3622f779a53514f1d535962df25ec55bc8f33da74d5ab7443c1a6688c81",
+        "snapshot_bytes": 218074,
+        "response_record_count": 1,
+        "response_records": [
+          {
+            "ordinal": 14,
+            "timestamp": "2026-10-11T07:03:10.398Z",
+            "response_identity_sha256": "92e406e1de7631d13fa2fec61c19ae85eb6363ce91cdefadb78dbc0cf145ee33",
+            "usage": {
+              "input_tokens": 52287,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 283,
+              "reasoning_output_tokens": 95,
+              "total_tokens": 52570
+            },
+            "cumulative": {
+              "input_tokens": 52287,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 283,
+              "reasoning_output_tokens": 95,
+              "total_tokens": 52570
+            }
+          }
+        ],
+        "cumulative": {
+          "input_tokens": 52287,
+          "cached_input_tokens": 0,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 283,
+          "reasoning_output_tokens": 95,
+          "total_tokens": 52570
+        },
+        "sum_matches_cumulative": true,
+        "task_started_count": 1,
+        "task_complete_count": 1,
+        "tool_call_count": 0,
+        "history_origin": "not_declared",
+        "terminal": true,
+        "provider_identity_verified": false
+      },
+      "host_task_timestamps": {
+        "task_started": "2026-10-11T07:02:58.777Z",
+        "task_complete": "2026-10-11T07:03:10.424Z"
+      },
+      "evaluation": {
+        "arm_id": "strongfixed",
+        "patch_sha256": "8bfd4e084f04de6a29b184423560bdd9f102b18253ffb30c98ff5b563eb76b28",
+        "patch_applied": false,
+        "mechanical_pass": false,
+        "status": "rejected_unapplicable_patch",
+        "reason": "git apply --check refuses the exact returned patch at line 13; final newline absent; no repair permitted",
+        "acceptance_tests": "not_run",
+        "human_acceptance": "not_accepted",
+        "checks": [
+          {
+            "check": "git apply --check",
+            "exit_code": 128,
+            "log_sha256": "120bcc61126aae2ab8836a3cb713813abce566718323a8c463b7ff5a4562fd13",
+            "log_file": "logs/strongfixed-apply-check.log"
+          }
+        ],
+        "patch_file": "patches/strongfixed.patch",
+        "patch_bytes": 713,
+        "patch_ends_newline": false
+      },
+      "prompt_evidence": {
+        "requested_sha256": "9c501878c201fd85853eae17d0fe68faeccc7de3e05ec728b392edf76b4ca65e",
+        "requested_bytes": 7648,
+        "request_surface": "visible direct spawn_agent tool invocation; arguments retained privately",
+        "history_requested": "fork_turns=none",
+        "independent_host_log_content_verification": "UNKNOWN",
+        "reason": "Task text absent from child trace; parent message argument stored opaquely. This is a visibility limit, not observed prompt drift. Full platform context is not controlled."
+      }
+    },
+    {
+      "assignment_id": "m4v2-t1-cheapfixed-r1",
+      "arm_id": "cheapfixed",
+      "allocation_tokens": 100000,
+      "host_evidence": {
+        "status": "reliable_host_counters",
+        "requested": {
+          "model": "gpt-6-luna",
+          "effort": "medium"
+        },
+        "observed": [
+          {
+            "model": "gpt-6-luna",
+            "effort": "medium"
+          }
+        ],
+        "scope": "exact host participant, not provider invoice",
+        "runtime_cli_version": "0.162.0-alpha.17.2",
+        "snapshot_sha256": "4ef11240607eab314b5e19faa67729e5979d8f73435d21c507b4d21cd90c800f",
+        "snapshot_bytes": 215791,
+        "response_record_count": 1,
+        "response_records": [
+          {
+            "ordinal": 16,
+            "timestamp": "2026-10-11T07:04:44.652Z",
+            "response_identity_sha256": "68707365264dfc9243ca86fd37473d9ce4b1fbf3cd3fdce90907c317731349bd",
+            "usage": {
+              "input_tokens": 51610,
+              "cached_input_tokens": 45824,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 331,
+              "reasoning_output_tokens": 137,
+              "total_tokens": 51941
+            },
+            "cumulative": {
+              "input_tokens": 51610,
+              "cached_input_tokens": 45824,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 331,
+              "reasoning_output_tokens": 137,
+              "total_tokens": 51941
+            }
+          }
+        ],
+        "cumulative": {
+          "input_tokens": 51610,
+          "cached_input_tokens": 45824,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 331,
+          "reasoning_output_tokens": 137,
+          "total_tokens": 51941
+        },
+        "sum_matches_cumulative": true,
+        "task_started_count": 1,
+        "task_complete_count": 1,
+        "tool_call_count": 0,
+        "history_origin": "not_declared",
+        "terminal": true,
+        "provider_identity_verified": false
+      },
+      "host_task_timestamps": {
+        "task_started": "2026-10-11T07:04:34.589Z",
+        "task_complete": "2026-10-11T07:04:44.869Z"
+      },
+      "evaluation": {
+        "arm_id": "cheapfixed",
+        "patch_sha256": "69f0e061006336231de44c57c23c98c2a6dd5f6e5010f3395088d06bdb28e0c6",
+        "candidate_source_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7",
+        "outside_report_unchanged": true,
+        "mechanical_pass": true,
+        "human_acceptance": "pending",
+        "checks": [
+          {
+            "check": "public-default",
+            "exit_code": 0,
+            "duration_seconds": 0.213251,
+            "log_sha256": "58cf6b14e50da63ce06cdc2c9242aab41fe092685f1320207114aab30283d6f8",
+            "log_file": "logs/cheapfixed-public-default.log"
+          },
+          {
+            "check": "public-additional",
+            "exit_code": 0,
+            "duration_seconds": 0.212208,
+            "log_sha256": "41c4931cf0254dfbfb535191696d8e6e031791a092b7fb9a7f8d1f1464e7f4b3",
+            "log_file": "logs/cheapfixed-public-additional.log"
+          },
+          {
+            "check": "existing-tests",
+            "exit_code": 0,
+            "duration_seconds": 2.33625,
+            "log_sha256": "a546018313cdbe6c7af8b1f5321d66aa8ae1bb3faf427600da7b1ebee121228f",
+            "log_file": "logs/cheapfixed-existing-tests.log"
+          }
+        ],
+        "patch_file": "patches/cheapfixed.patch",
+        "patch_bytes": 744,
+        "patch_ends_newline": true
+      },
+      "prompt_evidence": {
+        "requested_sha256": "9c501878c201fd85853eae17d0fe68faeccc7de3e05ec728b392edf76b4ca65e",
+        "requested_bytes": 7648,
+        "request_surface": "visible direct spawn_agent tool invocation; arguments retained privately",
+        "history_requested": "fork_turns=none",
+        "independent_host_log_content_verification": "UNKNOWN",
+        "reason": "Task text absent from child trace; parent message argument stored opaquely. This is a visibility limit, not observed prompt drift. Full platform context is not controlled."
+      }
+    }
+  ],
+  "totals": {
+    "usage": {
+      "input_tokens": 155572,
+      "cached_input_tokens": 62976,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 862,
+      "reasoning_output_tokens": 286,
+      "total_tokens": 156434
+    },
+    "envelope_tokens": 300000,
+    "overshoot_tokens": 0,
+    "mechanical_passes": 2,
+    "artifact_rejections": 1,
+    "human_accepted": 0,
+    "human_reviews_pending": 2,
+    "tokens_per_human_accepted_patch": null,
+    "cost_money": null
+  },
+  "separate_overhead": {
+    "prior_v1_host_tokens": 279563,
+    "parent_preparation_coordination_and_publication_tokens": null,
+    "human_review_time_seconds": null,
+    "note": "Excluded from the participant envelope, incomplete/UNKNOWN, never free."
+  },
+  "comparison_limits": [
+    "One public task, one response per configuration.",
+    "Router execute-stage projection and Luna fixed use the same model and effort.",
+    "Injected context and cache differ; provider physical identity and invoice are not verified.",
+    "Two candidate patches pass local checks but await human acceptance.",
+    "No model-selection advantage, broad savings, full-plan execution or native qualification is demonstrated."
+  ]
+}

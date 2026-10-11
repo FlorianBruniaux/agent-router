@@ -76,7 +76,8 @@ written in French.
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
 | [M4 stop report](bench/measurement-m4-result-2026-10-10/README.md) (FR) | 279,563 host tokens, 0 worker assignments, coherent counters and late interruption |
-| [M4 v2 proposal](bench/measurement-m4-v2/README.md) (FR) | Three single-response patches, local tests and a 300,000-token proposal; awaiting approval |
+| [M4 v2 measured result](bench/measurement-m4-v2-result-2026-10-11/README.md) (FR) | 156,434 host tokens, two candidates pass 21 local checks each, one exact patch rejected; human acceptance pending |
+| [M4 v2 sealed protocol](bench/measurement-m4-v2/README.md) (FR) | Historical approval proposal, subsequently approved and executed; original seal preserved |
 | [Original M4 protocol](bench/measurement-m4/README.md) (FR) | Historical sealed v1, preserved unchanged after the approved attempt stopped |
 | [Measurement preparation M1–M3](bench/measurement-m123/README.md) (FR) | Campaign catalog, trace accounting and offline comparison rehearsal; no savings claim |
 | [Calibration v2 candidate](bench/calibration-v2/README.md) (FR) | 2026-10-05: collection protocol and incomplete preparation template; no run authorization |

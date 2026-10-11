@@ -1,5 +1,7 @@
 # Mesurer Agent Router sur son propre développement
 
+> Mise à jour du 11 octobre : [M4 v2 a terminé les trois configurations](../measurement-m4-v2-result-2026-10-11/README.md), pour 156 434 tokens hôte. Deux patchs passent les contrôles locaux, un est refusé ; l’acceptation humaine reste en attente. Les étapes futures décrites ci-dessous reflètent la préparation historique de M1–M3.
+
 État du 10 octobre 2026 : préparation M1, M2 et M3 livrée et validée localement. Aucun comparatif réel lancé par ce lot, aucun gain économique établi.
 
 La [PR #158](https://github.com/FlorianBruniaux/agent-router/pull/158) a fusionné ces lots sur `main` au commit `e65a22ecb0a294b67a18e7e7ba867b506aba427f`. Le [protocole M4](../measurement-m4/README.md) fixe maintenant une tâche réelle, les 3 configurations et une proposition de budget ; accord et collecte en direct restent à vérifier avant lancement.

@@ -1,0 +1,13 @@
+--- a/docs/bench/campaign-next/pilot/run_pilot.py
++++ b/docs/bench/campaign-next/pilot/run_pilot.py
+@@ -716,8 +716,8 @@
+                     continue
+                 valid = [r for r in rows if not r["invalid"]]
+                 accepted = [r for r in valid if r["accepted"]]
+-                list_costs = [r["cost_list_microusd"] for r in valid]
+-                product_costs = [r["cost_product_microusd"] for r in valid]
++                list_costs = [r["cost_list_microusd"] for r in rows]
++                product_costs = [r["cost_product_microusd"] for r in rows]
+                 def ratio(costs):
+                     if not accepted or any(c is None for c in costs):
+                         return None

@@ -1,0 +1,57 @@
+{
+  "preflight": {
+    "checked_at": "2026-10-11T06:57:46.522346+00:00",
+    "seal_valid": true,
+    "collector_tests": {
+      "passed": 18,
+      "exit_code": 0,
+      "log_file": "logs/collector-tests.log",
+      "log_sha256": "a62b39606ac0945ac725f6ba818042dd24c0238586e1e1f51fd4b99c7b68884c"
+    },
+    "historical_replay": {
+      "total_tokens": 279563,
+      "response_count": 5,
+      "sha256": "238ab73e3e814ed343b9944df8db5acf906e2fa151afbf9115e1af4148d357ed",
+      "terminal": true
+    },
+    "available_models_and_efforts": "gpt-6-luna/medium and gpt-6.1-sol/medium are exposed by the active collaboration tool",
+    "participant_paths_unused": true,
+    "workspaces": [
+      {
+        "base": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+        "clean": true,
+        "source_hashes_match": true,
+        "arm_id": "router"
+      },
+      {
+        "base": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+        "clean": true,
+        "source_hashes_match": true,
+        "arm_id": "strongfixed"
+      },
+      {
+        "base": "e65a22ecb0a294b67a18e7e7ba867b506aba427f",
+        "clean": true,
+        "source_hashes_match": true,
+        "arm_id": "cheapfixed"
+      }
+    ]
+  },
+  "python_version": "3.14.8",
+  "participant_host_version": "0.162.0-alpha.17.2",
+  "successful_candidate_checks": {
+    "public_cases": 4,
+    "existing_campaign_tests": 17,
+    "arms": [
+      "router",
+      "cheapfixed"
+    ]
+  },
+  "strongfixed_tests": "not_run: exact artifact rejected before application",
+  "local_check_history_note": "Router public-default and public-additional also passed an initial unlogged pair of checks before the retained logged evaluation. No extra model response was requested.",
+  "rust_checks_this_trial": "not_run: publication is documentation/evidence only; no Rust or production fix applied",
+  "independent_model_review": "none, as approved",
+  "raw_host_logs": "retained privately, not included in public evidence",
+  "human_review": "pending",
+  "original_sealed_protocol": "unchanged, including its historical awaiting-approval fields"
+}
