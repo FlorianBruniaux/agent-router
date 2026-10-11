@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Client copié en isolation Linux](bench/linux-copied-client-2026-10-11/README.md), 2026-10-11 : client natif épinglé, contrôles du port broker et des copies protégées à 8 Gio inchangés ; activité détachée contrôlée avant/après destruction du conteneur. Diagnostic seulement, F12a NO_GO.
+
 [Vrai helper en isolation Linux](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11 : helper inchangé, borne de 8 Gio installée ; refus d’allocation avec fork/exec et quatre cas de nettoyage validés. Composant de diagnostic seulement, F12a NO_GO.
 
 [Diagnostic du démarrage à 8 Gio](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11 : quatre contrôles du chargeur refusent la limite inchangée ; géométrie de 384 Gio conforme aux constantes GPU de XNU épinglé. Attribution au noyau installé UNKNOWN, F12a NO_GO.

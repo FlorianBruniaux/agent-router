@@ -928,3 +928,7 @@ mod resource_binding_tests {
         }
     }
 }
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "finite_client/linux_qualification.rs"]
+mod linux_qualification;
