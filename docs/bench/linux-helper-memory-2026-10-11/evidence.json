@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "diagnostic_only": true,
+  "f12a": "NO_GO",
+  "source_base": "7da1a4725f9639f1dc14c51679bfc90284d04ba4",
+  "source_sha256": {
+    "Cargo.toml": "94700dfd6af4220e368a168acc4eebf3cd0b5f0d02fda9407271c5205810c08a",
+    "Cargo.lock": "c5ae233315eea44ee1f58585e75daab930fe992e4327c611fa6fff868036cf73",
+    "crates/router-sandbox-helper/Cargo.toml": "228890242334db4eb58c246ccabaf33d6b4626573f95a9a3b59b1f05c0dde806",
+    "crates/router-sandbox-helper/src/main.rs": "a47c1fe93db576b85833cfac0b1d99224c46a35bb1e37c3951b4ed063f1ec768",
+    "crates/router-sandbox-helper/src/watchdog.rs": "5674862f711dda9dbcb820f9ff35d986f5dc4aee4c46b32c616ef9fed0a2bad4"
+  },
+  "build_input": {
+    "compressed_bytes": 47850188,
+    "unpacked_file_bytes": 222083595,
+    "sha256": "8b5e0ad21bb19c75ac2a015d56a03c19ec1bfefb3a290c606b53220ef855274c"
+  },
+  "build": {
+    "command": [
+      "/usr/local/bin/docker",
+      "run",
+      "--pull=never",
+      "--rm",
+      "--name",
+      "ar-f12a-build-b119e7d69aaa",
+      "--network=none",
+      "--read-only",
+      "--cap-drop=ALL",
+      "--security-opt=no-new-privileges",
+      "--user=65534:65534",
+      "--memory=8589934592",
+      "--memory-swap=8589934592",
+      "--pids-limit=256",
+      "--cpus=2",
+      "--tmpfs=/work:rw,exec,nosuid,nodev,size=1073741824,mode=1777",
+      "--env=CARGO_HOME=/work/cargo",
+      "--env=RUSTUP_HOME=/usr/local/rustup",
+      "--env=TMPDIR=/work/tmp",
+      "--entrypoint=/bin/sh",
+      "-i",
+      "sha256:e51d0265072d2d9d5d320f6a44dde6b9ef13653b035098febd68cce8fa7c0bc4",
+      "-c",
+      "set -eu; ulimit -c 0; ulimit -v 8388608; mkdir /work/tmp; tar -xz -C /work; cd /work/source; rustc -V >&2; cargo build --offline --locked -p router-sandbox-helper --release >&2; tar -c -C target/release router-sandbox-helper"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 23.840009500010638,
+    "timeout_seconds": 180,
+    "stdout_sha256": "1dbf1e8b7f23f42325bb7b8ed0dbc20c6f9f4b11bf7121bf455274b1bc09f3c3",
+    "stderr_sha256": "b748c93d6048b78355456c3f6df4ba66c3ce7c51575937a89652b9841a3c99c8",
+    "container_absent": true
+  },
+  "compiler_stderr": "rustc 1.85.1 (4eb161250 2025-03-15)\n   Compiling rustix v1.1.4\n   Compiling bitflags v2.13.1\n   Compiling linux-raw-sys v0.12.1\n   Compiling router-sandbox-helper v0.0.1 (/work/source/crates/router-sandbox-helper)\n    Finished `release` profile [optimized] target(s) in 11.32s\n",
+  "binary_sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+  "build_image": {
+    "Id": "sha256:e51d0265072d2d9d5d320f6a44dde6b9ef13653b035098febd68cce8fa7c0bc4",
+    "Os": "linux",
+    "Architecture": "arm64"
+  },
+  "runtime_image": {
+    "Id": "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+    "Os": "linux",
+    "Architecture": "arm64"
+  },
+  "runtime_receipt": {
+    "command": [
+      "/usr/local/bin/docker",
+      "run",
+      "--pull=never",
+      "--rm",
+      "--name",
+      "ar-f12a-runtime-66aae4a52bb64282",
+      "--network=none",
+      "--read-only",
+      "--cap-drop=ALL",
+      "--security-opt=no-new-privileges",
+      "--user=65534:65534",
+      "--memory=8589934592",
+      "--memory-swap=8589934592",
+      "--pids-limit=32",
+      "--cpus=1",
+      "--tmpfs=/work:rw,exec,nosuid,nodev,size=67108864,mode=1777",
+      "--entrypoint=/bin/sh",
+      "-i",
+      "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+      "-c",
+      "set -eu; tar -x -C /work; exec /usr/local/bin/python3 -I /work/inside.py"
+    ],
+    "exit_code": 0,
+    "stop_reason": null,
+    "timeout_seconds": 45,
+    "elapsed_seconds": 1.6080359170155134,
+    "helper_sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "fixture_sha256": "c2d75c873c4697535e4577f61e81689f8b0e3c025378083b46fbff97bddcb426",
+    "input_sha256": "c3feb96f6fe78b2dcb9069a56cf3216d370eb8d16992f29395768d5e846129b0",
+    "stdout_sha256": "dda7ccb72a399e162179fc53bb939ec7e335467bfb57cd473cef1ad2961e7164",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_bytes": 2661,
+    "stderr_bytes": 0,
+    "cleanup_exit_code": 0,
+    "container_absent": true
+  },
+  "runtime": {
+    "diagnostic_only": true,
+    "f12a": "NO_GO",
+    "helper_sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "requested_address_space_bytes": 8589934592,
+    "controller_limits_before_after": [
+      -1,
+      -1
+    ],
+    "probe": "enforced",
+    "direct": {
+      "pid": 9,
+      "soft_hard": [
+        8589934592,
+        8589934592
+      ],
+      "memory": {
+        "soft_hard": [
+          8589934592,
+          8589934592
+        ],
+        "small_allocation_bytes": 4194304,
+        "large_mapping_errno": 12,
+        "large_allocation_refused": true,
+        "raise_and_remove_refused": true
+      },
+      "fork": {
+        "soft_hard": [
+          8589934592,
+          8589934592
+        ],
+        "small_allocation_bytes": 4194304,
+        "large_mapping_errno": 12,
+        "large_allocation_refused": true,
+        "raise_and_remove_refused": true
+      },
+      "exec": {
+        "pid": 11,
+        "soft_hard": [
+          8589934592,
+          8589934592
+        ],
+        "memory": {
+          "soft_hard": [
+            8589934592,
+            8589934592
+          ],
+          "small_allocation_bytes": 4194304,
+          "large_mapping_errno": 12,
+          "large_allocation_refused": true,
+          "raise_and_remove_refused": true
+        }
+      }
+    },
+    "supervision": [
+      {
+        "case": "normal",
+        "exit_code": 0,
+        "worker": {
+          "pid": 13,
+          "soft_hard": [
+            8589934592,
+            8589934592
+          ],
+          "memory": {
+            "soft_hard": [
+              8589934592,
+              8589934592
+            ],
+            "small_allocation_bytes": 4194304,
+            "large_mapping_errno": 12,
+            "large_allocation_refused": true,
+            "raise_and_remove_refused": true
+          },
+          "fork": {
+            "soft_hard": [
+              8589934592,
+              8589934592
+            ],
+            "small_allocation_bytes": 4194304,
+            "large_mapping_errno": 12,
+            "large_allocation_refused": true,
+            "raise_and_remove_refused": true
+          },
+          "exec": {
+            "pid": 16,
+            "soft_hard": [
+              8589934592,
+              8589934592
+            ],
+            "memory": {
+              "soft_hard": [
+                8589934592,
+                8589934592
+              ],
+              "small_allocation_bytes": 4194304,
+              "large_mapping_errno": 12,
+              "large_allocation_refused": true,
+              "raise_and_remove_refused": true
+            }
+          }
+        },
+        "supervisor_soft_hard": [
+          -1,
+          -1
+        ],
+        "lease": "group-clean",
+        "adopted_reaped": [],
+        "elapsed_seconds": 0.29059466699982295
+      },
+      {
+        "case": "deadline",
+        "exit_code": 124,
+        "worker": {
+          "pid": 18,
+          "soft_hard": [
+            8589934592,
+            8589934592
+          ],
+          "descendant": 20
+        },
+        "supervisor_soft_hard": [
+          -1,
+          -1
+        ],
+        "lease": "group-clean",
+        "adopted_reaped": [
+          {
+            "pid": 20,
+            "status": 15
+          }
+        ],
+        "elapsed_seconds": 0.2688166249999995
+      },
+      {
+        "case": "eof",
+        "exit_code": 125,
+        "worker": {
+          "pid": 22,
+          "soft_hard": [
+            8589934592,
+            8589934592
+          ],
+          "descendant": 24
+        },
+        "supervisor_soft_hard": [
+          -1,
+          -1
+        ],
+        "lease": "group-clean",
+        "adopted_reaped": [
+          {
+            "pid": 24,
+            "status": 15
+          }
+        ],
+        "elapsed_seconds": 0.15942274999997608
+      },
+      {
+        "case": "extra",
+        "exit_code": 125,
+        "worker": {
+          "pid": 26,
+          "soft_hard": [
+            8589934592,
+            8589934592
+          ],
+          "descendant": 28
+        },
+        "supervisor_soft_hard": [
+          -1,
+          -1
+        ],
+        "lease": "group-clean",
+        "adopted_reaped": [
+          {
+            "pid": 28,
+            "status": 15
+          }
+        ],
+        "elapsed_seconds": 0.1398501670000769
+      }
+    ],
+    "cgroups": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "pids.max": "32"
+    },
+    "kernel": "6.12.76-linuxkit",
+    "architecture": "aarch64"
+  },
+  "failed_attempts": [
+    {
+      "phase": "build",
+      "reason": "Read-only /tmp: rustc could not create its temporary directory.",
+      "receipt": {
+        "command": [
+          "/usr/local/bin/docker",
+          "run",
+          "--pull=never",
+          "--rm",
+          "--name",
+          "ar-f12a-build-0fbd5d57cdb7",
+          "--network=none",
+          "--read-only",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          "--user=65534:65534",
+          "--memory=8589934592",
+          "--memory-swap=8589934592",
+          "--pids-limit=256",
+          "--cpus=2",
+          "--tmpfs=/work:rw,nosuid,nodev,size=1073741824,mode=1777",
+          "--env=CARGO_HOME=/work/cargo",
+          "--env=RUSTUP_HOME=/usr/local/rustup",
+          "--entrypoint=/bin/sh",
+          "-i",
+          "sha256:e51d0265072d2d9d5d320f6a44dde6b9ef13653b035098febd68cce8fa7c0bc4",
+          "-c",
+          "set -eu; ulimit -c 0; ulimit -v 8388608; tar -xz -C /work; cd /work/source; rustc -V >&2; cargo build --offline --locked -p router-sandbox-helper --release >&2; tar -c -C target/release router-sandbox-helper"
+        ],
+        "exit_code": 101,
+        "elapsed_seconds": 6.608877541992115,
+        "timeout_seconds": 180,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "bad7b410f574e9f799ad808f2909d4700a84c3e31083beb426b138886fc8452c",
+        "container_absent": true
+      },
+      "stderr": "rustc 1.85.1 (4eb161250 2025-03-15)\n   Compiling rustix v1.1.4\n   Compiling bitflags v2.13.1\nerror: couldn't create a temp dir: Read-only file system (os error 30) at path \"/tmp/rustcgAwR6g\"\n\nerror: could not compile `rustix` (build script) due to 1 previous error\nwarning: build failed, waiting for other jobs to finish...\nerror: couldn't create a temp dir: Read-only file system (os error 30) at path \"/tmp/rustcBpZa4w\"\n\nerror: could not compile `bitflags` (lib) due to 1 previous error\n"
+    },
+    {
+      "phase": "build",
+      "reason": "Default noexec tmpfs: Cargo could not execute the rustix build script.",
+      "receipt": {
+        "command": [
+          "/usr/local/bin/docker",
+          "run",
+          "--pull=never",
+          "--rm",
+          "--name",
+          "ar-f12a-build-f88e9b217fd9",
+          "--network=none",
+          "--read-only",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          "--user=65534:65534",
+          "--memory=8589934592",
+          "--memory-swap=8589934592",
+          "--pids-limit=256",
+          "--cpus=2",
+          "--tmpfs=/work:rw,nosuid,nodev,size=1073741824,mode=1777",
+          "--env=CARGO_HOME=/work/cargo",
+          "--env=RUSTUP_HOME=/usr/local/rustup",
+          "--env=TMPDIR=/work/tmp",
+          "--entrypoint=/bin/sh",
+          "-i",
+          "sha256:e51d0265072d2d9d5d320f6a44dde6b9ef13653b035098febd68cce8fa7c0bc4",
+          "-c",
+          "set -eu; ulimit -c 0; ulimit -v 8388608; mkdir /work/tmp; tar -xz -C /work; cd /work/source; rustc -V >&2; cargo build --offline --locked -p router-sandbox-helper --release >&2; tar -c -C target/release router-sandbox-helper"
+        ],
+        "exit_code": 101,
+        "elapsed_seconds": 4.401052291010274,
+        "timeout_seconds": 180,
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "8b0fb6d2652a47740587a889651c48b08d749d3cd89563c1d4a1d92aae60d84a",
+        "container_absent": true
+      },
+      "stderr": "rustc 1.85.1 (4eb161250 2025-03-15)\n   Compiling rustix v1.1.4\n   Compiling bitflags v2.13.1\n   Compiling linux-raw-sys v0.12.1\nerror: failed to run custom build command for `rustix v1.1.4`\n\nCaused by:\n  could not execute process `/work/source/target/release/build/rustix-bdbe8d4478b6f24c/build-script-build` (never executed)\n\nCaused by:\n  Permission denied (os error 13)\nwarning: build failed, waiting for other jobs to finish...\n"
+    },
+    {
+      "phase": "runtime-fixture",
+      "reason": "Collector encoded the frame little endian; helper expects big endian. No product code change.",
+      "receipt": {
+        "command": [
+          "/usr/local/bin/docker",
+          "run",
+          "--pull=never",
+          "--rm",
+          "--name",
+          "ar-f12a-runtime-dca1e8a0cd96",
+          "--network=none",
+          "--read-only",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          "--user=65534:65534",
+          "--memory=8589934592",
+          "--memory-swap=8589934592",
+          "--pids-limit=32",
+          "--cpus=1",
+          "--tmpfs=/work:rw,exec,nosuid,nodev,size=67108864,mode=1777",
+          "--entrypoint=/bin/sh",
+          "-i",
+          "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+          "-c",
+          "set -eu; tar -x -C /work; exec /usr/local/bin/python3 -I /work/inside.py"
+        ],
+        "exit_code": 1,
+        "elapsed_seconds": 1.8607763750187587,
+        "fixture_sha256": "2a025f94cf432d64b70583f08c09808e06adf01e5dd7d787ef2c877ece3d94cc",
+        "helper_sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+        "container_absent": true
+      },
+      "stderr": "Traceback (most recent call last):\n  File \"/work/inside.py\", line 197, in <module>\n    main()\n  File \"/work/inside.py\", line 180, in main\n    rows = [supervise(case) for case in ('normal', 'deadline', 'eof', 'extra')]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/inside.py\", line 180, in <listcomp>\n    rows = [supervise(case) for case in ('normal', 'deadline', 'eof', 'extra')]\n            ^^^^^^^^^^^^^^^\n  File \"/work/inside.py\", line 132, in supervise\n    row = ready_line(process.stdout)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/inside.py\", line 97, in ready_line\n    assert line.endswith(b'\\n') and len(line) < 8192\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n"
+    },
+    {
+      "phase": "runtime-fixture",
+      "reason": "Namespace PID 1 waited for the supervisor before reaping its adopted fixture child. The zombie prevented group disappearance. Collector now reaps that child during cleanup; no product code change.",
+      "receipt": {
+        "command": [
+          "/usr/local/bin/docker",
+          "run",
+          "--pull=never",
+          "--rm",
+          "--name",
+          "ar-f12a-runtime-9742172473bf4077",
+          "--network=none",
+          "--read-only",
+          "--cap-drop=ALL",
+          "--security-opt=no-new-privileges",
+          "--user=65534:65534",
+          "--memory=8589934592",
+          "--memory-swap=8589934592",
+          "--pids-limit=32",
+          "--cpus=1",
+          "--tmpfs=/work:rw,exec,nosuid,nodev,size=67108864,mode=1777",
+          "--entrypoint=/bin/sh",
+          "-i",
+          "sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84",
+          "-c",
+          "set -eu; tar -x -C /work; exec /usr/local/bin/python3 -I /work/inside.py"
+        ],
+        "exit_code": 1,
+        "stop_reason": null,
+        "timeout_seconds": 45,
+        "elapsed_seconds": 3.510264125012327,
+        "helper_sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+        "fixture_sha256": "1af7d53841398c543025552153dbecd70b04effee293ddcc1269a6ed11221f0c",
+        "input_sha256": "70e1a833d5dbefbc6e1b191a398569e5a702e29f791af858f449250624649b1b",
+        "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "stderr_sha256": "86a6b0156c9eaa58d7696516138695f450c86ef0c202203a78cc2c7f87b1ae24",
+        "stdout_bytes": 0,
+        "stderr_bytes": 594,
+        "cleanup_exit_code": 0,
+        "container_absent": true
+      },
+      "stderr": "Traceback (most recent call last):\n  File \"/work/inside.py\", line 212, in <module>\n    main()\n  File \"/work/inside.py\", line 195, in main\n    rows = [supervise(case) for case in ('normal', 'deadline', 'eof', 'extra')]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/inside.py\", line 195, in <listcomp>\n    rows = [supervise(case) for case in ('normal', 'deadline', 'eof', 'extra')]\n            ^^^^^^^^^^^^^^^\n  File \"/work/inside.py\", line 162, in supervise\n    assert not stdout and not stderr\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError\n",
+      "reason_attribution": "Source-based inference; original helper stderr was not retained by the failed collector. Exact helper error label is UNKNOWN."
+    }
+  ],
+  "private_artifacts": "/private/tmp/ar-linux-helper-20261011",
+  "runtime_artifacts": "/private/tmp/ar-linux-helper-runtime-final-20261011",
+  "scope": {
+    "production_source_changed": false,
+    "provider_calls": 0,
+    "remote_image_origin": "UNKNOWN",
+    "physical_oom_enforcement": "NOT_TESTED",
+    "native_admission": "NO_GO",
+    "supervisor_address_space": "outside worker limits by existing design; container cgroup remains 8 GiB",
+    "lease_authority": "group-clean only, not namespace-clean",
+    "native_codex_client": "NOT_TESTED",
+    "detached_descendants": "NOT_TESTED"
+  }
+}

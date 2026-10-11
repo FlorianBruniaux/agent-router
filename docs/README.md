@@ -1,5 +1,7 @@
 # Documentation index
 
+[Real helper in Linux isolation](bench/linux-helper-memory-2026-10-11/README.md), 2026-10-11: unchanged helper installs 8 GiB; direct/fork/exec allocation refusal and four cleanup cases pass. Diagnostic component only, F12a NO_GO.
+
 [Strict 8 GiB startup follow-up](bench/macos-strict-memory-startup-2026-10-11/README.md), 2026-10-11: four loader controls still refuse the unchanged limit; exact 384 GiB geometry matches pinned XNU GPU reservation constants. Source-to-host attribution remains UNKNOWN, F12a NO_GO.
 
 [Physical-memory experiment](bench/macos-memory-protection-2026-10-11/README.md), 2026-10-11: five direct-child observation/termination cases, one physical-limit API refusal, measured overshoot and preserved NO_GO. [Proposed monitoring contract](adr/0031-macos-physical-memory-observation.md).
