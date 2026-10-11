@@ -1,0 +1,77 @@
+CHANGELOG.md
+  s_e827e256e15185::t_4c1e57a7c0d874 19-20
+crates/router-runtime/examples/finite_client_supervision.rs
+  s_ae085abdb4f4d0::t_c8619a772a524a 40,87-99,378-384,816-848
+crates/router-runtime/src/finite_client.rs
+  s_ae085abdb4f4d0::t_9738c17259c042 17,482,565-567,586-591,594-646,701-734,739-741,764-765,871-875
+crates/router-runtime/src/finite_client/linux_qualification.rs
+  s_ae085abdb4f4d0::t_2611e308ab4996 153-156,186,295
+crates/router-runtime/tests/finite_client.rs
+  s_ae085abdb4f4d0::t_514d0fe38b7a75 644,858,900-922,1093-1258
+docs/README.fr.md
+  s_e827e256e15185::t_d9a416e30a0f1a 3-4
+docs/README.md
+  s_e827e256e15185::t_1007afa7e8ae4a 3-4
+docs/adr/0029-finite-client-owned-assets.md
+  s_6046e7291dac88::t_aa63a8342b2b6c 4,8,11
+docs/adr/0032-finite-client-owned-startup.md
+  s_ae085abdb4f4d0::t_190636ce69f4c0 1-36
+docs/adr/README.md
+  s_6046e7291dac88::t_0e4ab316f84a89 43,48-49
+docs/bench/linux-owned-startup-2026-10-11/README.md
+  s_ae085abdb4f4d0::t_69a15ba8f32ba0 1-40
+docs/bench/linux-owned-startup-2026-10-11/evidence.json
+  s_488c1f2a8a73a2::t_8e4405561c8e79 1-549
+docs/bench/linux-owned-startup-2026-10-11/run.py
+  s_488c1f2a8a73a2::t_fe051da245c8d2 1-24
+docs/bench/linux-owned-startup-2026-10-11/verification.json
+  s_ae085abdb4f4d0::t_b9f63b5b36696d 1-1029
+docs/reference/json-contracts.md
+  s_ae085abdb4f4d0::t_fa6935de9239c0 636-643
+docs/superpowers/plans/2026-10-11-linux-finite-startup.md
+  s_ae085abdb4f4d0::t_c98b77ef9ad776 1-25
+scripts/test-linux-copied-client-evidence.py
+  s_ae085abdb4f4d0::t_88fb2aebd85f06 103-111,113-114
+scripts/test-linux-owned-startup-evidence.py
+  s_ae085abdb4f4d0::t_72b4dc86e35d11 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a75838d0375b073474c7166501fea0672b60a174",
+  "prompts": {},
+  "sessions": {
+    "s_488c1f2a8a73a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07172-9765-7811-8998-5776ebeb40d9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_6046e7291dac88": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a127be-059e-76e3-bc62-d46dd0515124",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
