@@ -5,7 +5,7 @@ Responsable de coordination : agent principal ; arbitrages de produit et accepta
 
 ## État courant et prochaine décision, 11 octobre
 
-Les PR #163 à #166 sont fusionnées : copies privées des exécutables liées à la
+Les PR #163 à #167 sont fusionnées : copies privées des exécutables liées à la
 revue, correction M4 acceptée, durées locales v3 et préflight des ressources.
 L’[essai assisté M4](m4-fix-integration-2026-10-11.md) a produit une correction
 acceptée ; ni économies générales ni usage natif automatique ne sont établis.
@@ -16,6 +16,11 @@ acceptée ; ni économies générales ni usage natif automatique ne sont établi
    La prochaine étape est une revue du contrat mémoire macOS si l’on veut
    poursuivre avec un autre mécanisme. Aucun relèvement ou retrait de limite
    n’est adopté ; F12a reste NO_GO.
+   L’[expérience suivante](macos-memory-protection-2026-10-11/README.md) valide cinq
+   cas de surveillance/arrêt d’un enfant direct. L’API de plafond physique est
+   refusée (Mach 8) ; le dépassement mesuré exclut toute promesse de plafond
+   strict. [ADR 0031](../adr/0031-macos-physical-memory-observation.md) propose un
+   mode distinct, encore sans intégration produit ni admission native.
 2. Le lot de mesures de cette passe permet à la [corrélation](../attempt-correlation.md)
    de lire un export complet v3 et de contrôler ses liaisons de durée. Le calcul
    B1 reste inchangé, sans agrégation de durée. Restent les identités et usages
