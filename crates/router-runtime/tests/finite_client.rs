@@ -641,7 +641,7 @@ fn owned_codex_state_produces_private_config_and_survives_until_approval_drop() 
             value["native"]["environment"]["CODEX_HOME"],
             f.manifest.private_state
         );
-        assert_eq!(value["native"]["environment"].as_object().unwrap().len(), 4);
+        assert_eq!(value["native"]["environment"].as_object().unwrap().len(), 5);
         assert_eq!(
             value["stdin_sha256"],
             content_digest(f.run.stdin.as_bytes())
@@ -855,7 +855,7 @@ fn owned_copy_preparation_is_separate_from_manifest_only_proofs() {
     let a = f.approve_codex(ResourceLimits::default());
     assert_eq!(
         a.proof_binding(&f.host.id).unwrap().adapter_id,
-        "finite-client-contract-v3"
+        "finite-client-contract-v4"
     );
     let (s, v, _) = f.proof(&a);
     assert!(a.validate(&f.run, &f.host, &s, &v, 101).is_ok());
@@ -897,26 +897,29 @@ fn substituted_copy_directory_is_preserved_when_approval_is_dropped() {
 }
 
 #[test]
-fn authenticated_v2_binding_cannot_validate_owned_v3_copies() {
-    let mut f = Fixture::new();
-    let a = f.approve_codex(ResourceLimits::default());
-    let (_s, v, mut record) = f.proof(&a);
-    record.proof_id = "old-v2".into();
-    record.sequence = 2;
-    record.binding.adapter_id = "finite-client-contract-v2".into();
-    let mut store = CapabilityProofStore::create(&f.root.join("proofs")).unwrap();
-    let key = CapabilityProofKey::derive(&[19; 32], store.store_id()).unwrap();
-    let proof = key.authenticate(record).unwrap();
-    let source = EvidenceSource {
-        id: "old-v2".into(),
-        kind: EvidenceKind::HostRuntime,
-        observed_version: Some("fixture-1".into()),
-        observed_at_unix_seconds: 100,
-        content_sha256: proof.digest().unwrap(),
-    };
-    store.append(&proof, &[19; 32]).unwrap();
-    drop(store);
-    assert!(a.validate(&f.run, &f.host, &source, &v, 101).is_err());
+fn authenticated_prior_bindings_cannot_validate_owned_startup() {
+    for version in ["v2", "v3"] {
+        let mut f = Fixture::new();
+        let a = f.approve_codex(ResourceLimits::default());
+        let (current, v, mut record) = f.proof(&a);
+        a.validate(&f.run, &f.host, &current, &v, 101).unwrap();
+        record.proof_id = format!("old-{version}");
+        record.sequence = 2;
+        record.binding.adapter_id = format!("finite-client-contract-{version}");
+        let mut store = CapabilityProofStore::create(&f.root.join("proofs")).unwrap();
+        let key = CapabilityProofKey::derive(&[19; 32], store.store_id()).unwrap();
+        let proof = key.authenticate(record).unwrap();
+        let source = EvidenceSource {
+            id: format!("old-{version}"),
+            kind: EvidenceKind::HostRuntime,
+            observed_version: Some("fixture-1".into()),
+            observed_at_unix_seconds: 100,
+            content_sha256: proof.digest().unwrap(),
+        };
+        store.append(&proof, &[19; 32]).unwrap();
+        drop(store);
+        assert!(a.validate(&f.run, &f.host, &source, &v, 101).is_err());
+    }
 }
 
 // Synthetic trusted helper scripts verify preflight wiring, not OS enforcement.
@@ -1086,4 +1089,170 @@ async fn resource_probe_detects_copy_drift_before_a_second_helper_effect() {
             .is_err()
     );
     assert!(!marker.exists());
+}
+
+#[test]
+fn owned_state_prepares_native_startup_without_opening_configuration_parent() {
+    let mut f = Fixture::new();
+    let broker = f.broker.take().unwrap();
+    let store = f.root.join("startup-store");
+    fs::create_dir(&store).unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let state = broker.prepare_codex_state(&store, &f.run).unwrap();
+    let home = state.path().to_owned();
+    let slot = home.join("tmp/installation_id");
+    assert!(
+        slot.exists(),
+        "native mutable installation state must be produced before review"
+    );
+    assert_eq!(
+        fs::read_link(home.join("installation_id")).unwrap(),
+        PathBuf::from("tmp/installation_id")
+    );
+    let id = fs::read_to_string(&slot).unwrap();
+    assert_eq!(id.len(), 36);
+    for i in [8, 13, 18, 23] {
+        assert_eq!(id.as_bytes()[i], b'-');
+    }
+    assert_eq!(id.as_bytes()[14], b'4');
+    assert_eq!(id.as_bytes()[19], b'8');
+    assert_eq!(
+        fs::metadata(&slot).unwrap().permissions().mode() & 0o777,
+        0o644
+    );
+    assert_eq!(
+        fs::metadata(home.join("config.toml"))
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o400
+    );
+    assert!(!home.join("auth.json").exists());
+    f.manifest.configuration = state.configuration().clone();
+    f.manifest.private_state = home.to_str().unwrap().into();
+    let review = FiniteClientReview::with_codex_state(
+        f.manifest.clone(),
+        &f.run,
+        broker,
+        ResourceLimits::default(),
+        state,
+    )
+    .unwrap();
+    let digest = review.approval_digest().to_owned();
+    let approved = review.approve(&digest).unwrap();
+    assert!(slot.exists());
+    drop(approved);
+    assert!(
+        !home.exists(),
+        "startup and its alias follow the existing owner cleanup"
+    );
+}
+
+#[test]
+fn corrupted_startup_is_refused_before_review() {
+    let mut f = Fixture::new();
+    let broker = f.broker.take().unwrap();
+    let store = f.root.join("startup-store");
+    fs::create_dir(&store).unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let state = broker.prepare_codex_state(&store, &f.run).unwrap();
+    fs::write(state.path().join("tmp/installation_id"), b"tampered").unwrap();
+    f.manifest.configuration = state.configuration().clone();
+    f.manifest.private_state = state.path().to_str().unwrap().into();
+    assert!(
+        FiniteClientReview::with_codex_state(
+            f.manifest.clone(),
+            &f.run,
+            broker,
+            ResourceLimits::default(),
+            state
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn startup_substitution_refuses_fresh_validation() {
+    for attack in [
+        "content",
+        "slot-symlink",
+        "slot-inode",
+        "slot-mode",
+        "alias-target",
+        "alias-inode",
+    ] {
+        let mut f = Fixture::new();
+        let a = f.approve_codex(ResourceLimits::default());
+        let (s, v, _) = f.proof(&a);
+        a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+        let home = PathBuf::from(&f.manifest.private_state);
+        let slot = home.join("tmp/installation_id");
+        let alias = home.join("installation_id");
+        let outside = f.root.join("outside-control");
+        fs::write(&outside, b"untouched").unwrap();
+        match attack {
+            "content" => fs::write(&slot, b"tampered").unwrap(),
+            "slot-symlink" => {
+                if slot.exists() {
+                    fs::remove_file(&slot).unwrap();
+                }
+                symlink(&outside, &slot).unwrap();
+            }
+            "slot-inode" => {
+                let bytes = fs::read(&slot).unwrap_or_else(|_| b"initial".to_vec());
+                fs::write(home.join("tmp/replacement"), bytes).unwrap();
+                fs::set_permissions(
+                    home.join("tmp/replacement"),
+                    fs::Permissions::from_mode(0o644),
+                )
+                .unwrap();
+                fs::rename(home.join("tmp/replacement"), &slot).unwrap();
+            }
+            "slot-mode" => {
+                if !slot.exists() {
+                    fs::write(&slot, b"initial").unwrap();
+                }
+                fs::set_permissions(&slot, fs::Permissions::from_mode(0o666)).unwrap();
+            }
+            "alias-target" => {
+                if fs::symlink_metadata(&alias).is_ok() {
+                    fs::remove_file(&alias).unwrap();
+                }
+                symlink(&outside, &alias).unwrap();
+            }
+            "alias-inode" => {
+                if fs::symlink_metadata(&alias).is_ok() {
+                    fs::remove_file(&alias).unwrap();
+                }
+                symlink("tmp/installation_id", &alias).unwrap();
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            a.validate(&f.run, &f.host, &s, &v, 101).is_err(),
+            "startup change must invalidate approval: {attack}"
+        );
+        assert_eq!(fs::read(&outside).unwrap(), b"untouched");
+    }
+}
+
+#[test]
+#[cfg(target_os = "macos")]
+fn native_preview_keeps_sqlite_in_the_private_tmp() {
+    let mut f = Fixture::new();
+    let a = f.approve_codex(ResourceLimits::default());
+    let (s, v, _) = f.proof(&a);
+    let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
+    let value = serde_json::to_value(guard.launch_plan().unwrap()).unwrap();
+    assert_eq!(
+        value["native"]["environment"]["CODEX_SQLITE_HOME"],
+        format!("{}/tmp", f.manifest.private_state)
+    );
+    assert_eq!(value["native"]["environment"].as_object().unwrap().len(), 5);
+    assert!(
+        value["native"]["environment"]
+            .get("OPENAI_API_KEY")
+            .is_none()
+    );
 }

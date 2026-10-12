@@ -37,6 +37,7 @@ const NATIVE_PIN: &str = "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c
 #[serde(deny_unknown_fields)]
 struct LinuxCanary {
     assets: [FiniteClientFile; 6],
+    native_environment: BTreeMap<String, String>,
     heartbeat: String,
     allowed_file: String,
     denied_read: String,
@@ -82,6 +83,19 @@ fn parse_task(bytes: &[u8], digest: &str, now: u64) -> Result<Task> {
         || task.expires_at - now > 60
     {
         return Err(RuntimeError::Invalid("diagnostic binding"));
+    }
+    if let Some(c) = &task.linux_canary {
+        let home = &task.home;
+        let expected = BTreeMap::from([
+            ("PATH".into(), "/usr/bin:/bin".into()),
+            ("HOME".into(), home.clone()),
+            ("CODEX_HOME".into(), home.clone()),
+            ("TMPDIR".into(), format!("{home}/tmp")),
+            ("CODEX_SQLITE_HOME".into(), format!("{home}/tmp")),
+        ]);
+        if c.native_environment != expected {
+            return Err(RuntimeError::Integrity("diagnostic native environment"));
+        }
     }
     Ok(task)
 }
@@ -361,7 +375,13 @@ async fn worker(digest: &str) -> Result<Value> {
         .stderr(Stdio::piped())
         .kill_on_drop(true);
     #[cfg(target_os = "linux")]
-    native_command.env("CODEX_SQLITE_HOME", home.join("tmp"));
+    native_command.envs(
+        &task
+            .linux_canary
+            .as_ref()
+            .ok_or(RuntimeError::Sandbox)?
+            .native_environment,
+    );
     let mut native_process = native_command.spawn()?;
     fs::write(
         diagnostic_private_file(&home, "diagnostic-pids.json"),
@@ -792,5 +812,38 @@ mod tests {
             "(allow network-outbound (remote tcp \"localhost:12345\"))\n"
         );
         assert!(broker_rule(0).is_err());
+    }
+    fn linux_row() -> Value {
+        let mut row = serde_json::to_value(task()).unwrap();
+        let pin = json!({"path":"/private/tmp/asset","sha256":"a".repeat(64)});
+        row["linux_canary"] = json!({"assets":[pin.clone(),pin.clone(),pin.clone(),pin.clone(),pin.clone(),pin],
+            "heartbeat":"/evidence/heartbeat","allowed_file":"/private/tmp/workspace/patch.txt","denied_read":"/private/tmp/denied","hold":false,
+            "native_environment":{"PATH":"/usr/bin:/bin","HOME":"/private/tmp/home","CODEX_HOME":"/private/tmp/home","TMPDIR":"/private/tmp/home/tmp","CODEX_SQLITE_HOME":"/private/tmp/home/tmp"}});
+        row
+    }
+    fn parse_row(row: Value) -> Result<Task> {
+        let bytes = serde_json::to_vec(&row).unwrap();
+        parse_task(&bytes, &router_adapter_api::content_digest(&bytes), 100)
+    }
+    #[test]
+    fn linux_task_carries_only_the_producer_native_environment() {
+        assert!(
+            parse_row(linux_row()).is_ok(),
+            "the five owned native environment fields must be accepted"
+        );
+        for key in ["HOME", "CODEX_HOME", "TMPDIR", "CODEX_SQLITE_HOME"] {
+            let mut row = linux_row();
+            row["linux_canary"]["native_environment"][key] = json!("/outside");
+            assert!(parse_row(row).is_err(), "changed state path {key}");
+        }
+        let mut row = linux_row();
+        row["linux_canary"]["native_environment"]["LD_PRELOAD"] = json!("/outside/library");
+        assert!(parse_row(row).is_err(), "injected environment variable");
+        let mut row = linux_row();
+        row["linux_canary"]["native_environment"]
+            .as_object_mut()
+            .unwrap()
+            .remove("CODEX_SQLITE_HOME");
+        assert!(parse_row(row).is_err(), "missing SQLite binding");
     }
 }

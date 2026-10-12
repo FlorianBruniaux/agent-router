@@ -100,8 +100,18 @@ class Receipts(unittest.TestCase):
             r.validate_complete(row)
             self.assertEqual(row['provisional']['copy_hashes'][:4],
                 [summary['binaries_sha256'][x] for x in ('client','native','helper','wrapper')])
+        # Historical product sources belong to PR171's tested head, not HEAD.
+        # Freeze their published hashes and cross-check the actual final build inputs.
+        # This also works from a source archive without historical Git objects.
+        frozen = {
+            'crates/router-runtime/src/finite_client.rs': '403ad0c617738ca9905c35c3e68cfa47895c7ec0ac3f0d470634116230297319',
+            'crates/router-runtime/src/finite_client/linux_qualification.rs': 'c1b63f78b449fd0e3e11006e9afb9172b68afcf07575d028a73194203d4aa378',
+            'crates/router-runtime/examples/finite_client_supervision.rs': '2e990275deecbf10f084f72cafdc36df38dd3e07191df3136fb6b972887716d4',
+        }
+        self.assertEqual(evidence['source_inputs']['final_controller']['source_sha256'], frozen)
         for f, expected in evidence['source_sha256'].items():
-            self.assertEqual(hashlib.sha256((ROOT/f).read_bytes()).hexdigest(), expected, f)
+            actual = frozen[f] if f in frozen else hashlib.sha256((ROOT/f).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, f)
         self.assertEqual(summary['inside_sha256'], evidence['source_sha256']['docs/bench/linux-copied-client-2026-10-11/inside.py'])
 
     def test_container_limits_and_no_network(self):

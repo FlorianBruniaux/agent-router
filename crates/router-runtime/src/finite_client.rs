@@ -14,7 +14,7 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     net::{IpAddr, Ipv4Addr, TcpListener},
-    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
+    os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
     path::Path,
 };
 
@@ -479,7 +479,7 @@ impl ApprovedFiniteClient {
             binary_sha256: m.client.sha256.clone(),
             observed_version: m.native_version.clone(),
             adapter_id: if r.owned_assets.is_some() {
-                "finite-client-contract-v3"
+                "finite-client-contract-v4"
             } else {
                 "finite-client-contract-v2"
             }
@@ -562,6 +562,9 @@ pub struct FiniteCodexState {
     state: HostState,
     configuration: FiniteClientFile,
     tmp_identity: PinnedIdentity,
+    installation: FiniteClientFile,
+    installation_identity: PinnedIdentity,
+    installation_alias: PinnedIdentity,
 }
 impl FiniteCodexState {
     pub fn path(&self) -> &Path {
@@ -580,7 +583,66 @@ impl FiniteCodexState {
         {
             return Err(RuntimeError::Integrity("finite client owned configuration"));
         }
+        if file_identity(&self.installation, false)?.identity != self.installation_identity.identity
+            || installation_alias(&self.path().join("installation_id"))?.identity
+                != self.installation_alias.identity
+        {
+            return Err(RuntimeError::Integrity("finite client startup state"));
+        }
         Ok(())
+    }
+    fn startup_binding(&self) -> Result<String> {
+        Ok(content_digest(&serde_json::to_vec(&(
+            "finite-codex-startup-v1",
+            &self.tmp_identity.identity,
+            &self.installation,
+            &self.installation_identity.identity,
+            &self.installation_alias.identity,
+            "tmp/installation_id",
+            "CODEX_SQLITE_HOME",
+        ))?))
+    }
+
+    fn native_environment(&self) -> BTreeMap<String, String> {
+        let home = self.path().to_string_lossy().into_owned();
+        BTreeMap::from([
+            ("PATH".into(), "/usr/bin:/bin".into()),
+            ("HOME".into(), home.clone()),
+            ("CODEX_HOME".into(), home.clone()),
+            ("TMPDIR".into(), format!("{home}/tmp")),
+            ("CODEX_SQLITE_HOME".into(), format!("{home}/tmp")),
+        ])
+    }
+}
+fn installation_alias(path: &Path) -> Result<PinnedIdentity> {
+    if fs::read_link(path)? != Path::new("tmp/installation_id") {
+        return Err(RuntimeError::Integrity("finite client startup alias"));
+    }
+    #[cfg(target_os = "linux")]
+    let flags = nix::libc::O_PATH | nix::libc::O_NOFOLLOW;
+    #[cfg(target_os = "macos")]
+    let flags = nix::libc::O_SYMLINK;
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    return Err(RuntimeError::Sandbox);
+    #[cfg(any(target_os = "linux", target_os = "macos"))]
+    {
+        let file = OpenOptions::new()
+            .read(true)
+            .custom_flags(flags)
+            .open(path)?;
+        let metadata = file.metadata()?;
+        let identity = FileIdentity::from(&metadata);
+        if !metadata.file_type().is_symlink()
+            || metadata.uid() != rustix::process::geteuid().as_raw()
+            || FileIdentity::from(&fs::symlink_metadata(path)?) != identity
+            || fs::read_link(path)? != Path::new("tmp/installation_id")
+        {
+            return Err(RuntimeError::Integrity("finite client startup alias"));
+        }
+        Ok(PinnedIdentity {
+            identity,
+            _file: file,
+        })
     }
 }
 fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8>> {
@@ -636,10 +698,47 @@ impl OwnedBroker {
                 .ok_or(RuntimeError::Invalid("finite client tmp path"))?,
             true,
         )?;
+        // Only this new private state is initialized; no personal installation ID
+        // or credential is imported. A valid v4-shaped ID avoids native chmod.
+        let mut nonce = [0; 32];
+        File::open("/dev/urandom")?.read_exact(&mut nonce)?;
+        let hex = content_digest(&nonce);
+        let id = format!(
+            "{}-{}-4{}-8{}-{}",
+            &hex[..8],
+            &hex[8..12],
+            &hex[13..16],
+            &hex[17..20],
+            &hex[20..32]
+        );
+        let installation_path = tmp.join("installation_id");
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .custom_flags(nix::libc::O_NOFOLLOW)
+            .open(&installation_path)?;
+        file.write_all(id.as_bytes())?;
+        file.set_permissions(fs::Permissions::from_mode(0o644))?;
+        file.sync_all()?;
+        let installation = FiniteClientFile {
+            path: installation_path
+                .to_str()
+                .ok_or(RuntimeError::Invalid("finite client installation path"))?
+                .into(),
+            sha256: content_digest(id.as_bytes()),
+        };
+        let installation_identity = file_identity(&installation, false)?;
+        let alias = state.path().join("installation_id");
+        std::os::unix::fs::symlink("tmp/installation_id", &alias)?;
+        let installation_alias = installation_alias(&alias)?;
         Ok(FiniteCodexState {
             state,
             configuration,
             tmp_identity,
+            installation,
+            installation_identity,
+            installation_alias,
         })
     }
 }
@@ -662,7 +761,8 @@ impl FiniteClientReview {
         let mut review = Self::with_resources(manifest, run, broker, limits)?;
         let assets = FiniteClientAssets::prepare(&review.manifest, run)?;
         let bytes = serde_json::to_vec(&(
-            "finite-client-copy-review-v1",
+            "finite-client-copy-review-v2",
+            &state.startup_binding()?,
             &review.approval,
             &assets.pins,
             assets
@@ -768,13 +868,11 @@ impl FiniteClientValidation<'_> {
         }
         r.check_files()?;
         let assets = r.owned_assets.as_ref().ok_or(RuntimeError::Sandbox)?;
-        let home = r.manifest.private_state.clone();
-        let environment = BTreeMap::from([
-            ("PATH".into(), "/usr/bin:/bin".into()),
-            ("HOME".into(), home.clone()),
-            ("CODEX_HOME".into(), home.clone()),
-            ("TMPDIR".into(), format!("{home}/tmp")),
-        ]);
+        let environment = r
+            .owned_state
+            .as_ref()
+            .ok_or(RuntimeError::Sandbox)?
+            .native_environment();
         let native = FiniteClientInvocation {
             program: assets.pins[1].path.clone(),
             argv: vec!["app-server".into(), "--listen".into(), "stdio://".into()],
