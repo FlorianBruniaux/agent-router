@@ -45,7 +45,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0031](0031-macos-physical-memory-observation.md) | Separate macOS physical-memory observation from hard limits | proposed | 2026-10-11 | 2026-10-11 | - |
 
-| [0032](0032-finite-client-owned-startup.md) | Bind producer-owned finite-client startup state | implemented | 2026-10-11 | 2026-10-11 | - |
+| [0032](0032-finite-client-owned-startup.md) | Bind producer-owned finite-client startup state | implemented | 2026-10-11 | 2026-10-13 | - |
 
 ## Frontmatter fields
 

@@ -2,7 +2,7 @@
 use crate::{Result, RuntimeError, private_program::PrivateProgram};
 use std::{
     collections::BTreeMap,
-    fs,
+    fs::{self, File},
     io::Write,
     os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt, PermissionsExt},
     path::{Path, PathBuf},
@@ -19,6 +19,9 @@ pub struct HostState {
     store: PathBuf,
     program: String,
     private_program: Option<PrivateProgram>,
+    directory: OwnedDirectory,
+    store_directory: OwnedDirectory,
+    cleanup_attempted: bool,
 }
 impl HostState {
     pub(crate) fn path(&self) -> &Path {
@@ -47,7 +50,7 @@ impl HostState {
         if !matches!(program, "codex" | "claude") {
             return Ok(None);
         }
-        private_directory(store)?;
+        let store_directory = OwnedDirectory::open(store)?;
         // These built-in read roots are granted even without extra read_roots.
         let builtins: &[&str] = if cfg!(target_os = "macos") {
             &["/bin", "/sbin", "/usr", "/System", "/Library"]
@@ -71,12 +74,17 @@ impl HostState {
             SEQUENCE.fetch_add(1, Ordering::Relaxed)
         ));
         fs::DirBuilder::new().mode(0o700).create(&path)?;
+        let directory = OwnedDirectory::open(&path)?;
         let state = Self {
             path,
             store: store.into(),
             program: program.into(),
             private_program: None,
+            directory,
+            store_directory,
+            cleanup_attempted: false,
         };
+        state.check_directories()?;
         if program == "codex" {
             if let Some(key) = environment.get("OPENAI_API_KEY") {
                 let mut file = fs::OpenOptions::new()
@@ -108,7 +116,7 @@ impl HostState {
         writes: &mut Vec<PathBuf>,
         environment: &mut BTreeMap<String, String>,
     ) -> Result<()> {
-        private_directory(&self.path)?;
+        self.check_directories()?;
         if program != self.program {
             return Err(RuntimeError::Sandbox);
         }
@@ -150,8 +158,28 @@ impl HostState {
         );
         Ok(())
     }
+    fn check_directories(&self) -> Result<()> {
+        self.store_directory.check(&self.store)?;
+        self.directory.check(&self.path)
+    }
+
+    fn remove_owned_directory(&mut self) -> Result<()> {
+        // Explicit cleanup consumes its single attempt even on refusal. Drop
+        // must not retry after an error or partial deletion against a new path.
+        self.cleanup_attempted = true;
+        // A missing pathname cannot prove cleanup: an owned directory may have
+        // been moved. Do not infer deletion from nlink either: APFS retains it
+        // on an open, removed directory. Refuse absent or changed paths alike.
+        self.check_directories()?;
+        // Like PrivateProgram, this identity check requires exclusion of writers
+        // during removal. It is not atomic against another trusted same-UID
+        // writer; a future backend must stop workers and protect the store first.
+        fs::remove_dir_all(&self.path)?;
+        Ok(())
+    }
+
     pub(crate) fn cleanup(mut self) -> Result<()> {
-        let state_cleanup = crate::stale::remove_stale(&self.path);
+        let state_cleanup = self.remove_owned_directory();
         let program_cleanup = self
             .private_program
             .take()
@@ -162,9 +190,45 @@ impl HostState {
 }
 impl Drop for HostState {
     fn drop(&mut self) {
-        let _ = crate::stale::remove_stale(&self.path);
+        if !self.cleanup_attempted {
+            let _ = self.remove_owned_directory();
+        }
     }
 }
+// Hold an open descriptor so an unlinked original inode cannot be recycled.
+// Capture mode/owner at creation; mutable contents do not change ownership.
+struct OwnedDirectory {
+    file: File,
+    identity: (u64, u64, u32, u32),
+}
+impl OwnedDirectory {
+    fn identity(meta: &fs::Metadata) -> (u64, u64, u32, u32) {
+        (meta.dev(), meta.ino(), meta.uid(), meta.mode())
+    }
+    fn open(path: &Path) -> Result<Self> {
+        private_directory(path)?;
+        let file = fs::OpenOptions::new()
+            .read(true)
+            .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_DIRECTORY)
+            .open(path)?;
+        let directory = Self {
+            identity: Self::identity(&file.metadata()?),
+            file,
+        };
+        directory.check(path)?;
+        Ok(directory)
+    }
+    fn check(&self, path: &Path) -> Result<()> {
+        private_directory(path)?;
+        if Self::identity(&fs::symlink_metadata(path)?) != self.identity
+            || Self::identity(&self.file.metadata()?) != self.identity
+        {
+            return Err(RuntimeError::Integrity("host state directory changed"));
+        }
+        Ok(())
+    }
+}
+
 fn private_directory(path: &Path) -> Result<()> {
     let meta = fs::symlink_metadata(path)?;
     if !meta.is_dir()
@@ -365,6 +429,206 @@ printf approved
         state.cleanup().unwrap();
         assert!(!directory.exists());
     }
+    #[test]
+    fn host_state_cleanup_preserves_substituted_home() {
+        for explicit in [false, true] {
+            for replacement in ["directory", "file", "symlink"] {
+                let temp = tempfile::tempdir().unwrap();
+                let store = fs::canonicalize(temp.path()).unwrap();
+                fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+                let state = HostState::create(&store, "codex", &BTreeMap::new())
+                    .unwrap()
+                    .unwrap();
+                let home = state.path.clone();
+                fs::write(home.join("owned"), b"owned").unwrap();
+                let moved = store.join("moved");
+                fs::rename(&home, &moved).unwrap();
+                let outside = store.join("outside");
+                fs::create_dir(&outside).unwrap();
+                fs::write(outside.join("foreign"), b"keep").unwrap();
+                match replacement {
+                    "directory" => {
+                        fs::DirBuilder::new().mode(0o700).create(&home).unwrap();
+                        fs::write(home.join("foreign"), b"keep").unwrap();
+                    }
+                    "file" => fs::write(&home, b"keep").unwrap(),
+                    _ => std::os::unix::fs::symlink(&outside, &home).unwrap(),
+                }
+                if explicit {
+                    assert!(state.cleanup().is_err(), "must refuse {replacement}");
+                } else {
+                    drop(state);
+                }
+                assert!(
+                    fs::symlink_metadata(&home).is_ok(),
+                    "must preserve {replacement}"
+                );
+                assert_eq!(fs::read(moved.join("owned")).unwrap(), b"owned");
+                assert_eq!(fs::read(outside.join("foreign")).unwrap(), b"keep");
+                if replacement == "file" {
+                    assert_eq!(fs::read(&home).unwrap(), b"keep");
+                } else {
+                    assert_eq!(fs::read(home.join("foreign")).unwrap(), b"keep");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn host_state_cleanup_preserves_substituted_store() {
+        for explicit in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(temp.path()).unwrap();
+            let store = root.join("store");
+            fs::DirBuilder::new().mode(0o700).create(&store).unwrap();
+            let state = HostState::create(&store, "codex", &BTreeMap::new())
+                .unwrap()
+                .unwrap();
+            let home = state.path.clone();
+            fs::write(home.join("owned"), b"owned").unwrap();
+            let name = home.file_name().unwrap().to_owned();
+            let moved = root.join("moved-store");
+            fs::rename(&store, &moved).unwrap();
+            fs::DirBuilder::new().mode(0o700).create(&store).unwrap();
+            fs::DirBuilder::new().mode(0o700).create(&home).unwrap();
+            fs::write(home.join("foreign"), b"keep").unwrap();
+            if explicit {
+                assert!(state.cleanup().is_err());
+            } else {
+                drop(state);
+            }
+            assert_eq!(fs::read(home.join("foreign")).unwrap(), b"keep");
+            assert_eq!(fs::read(moved.join(name).join("owned")).unwrap(), b"owned");
+        }
+    }
+
+    #[test]
+    fn host_state_cleanup_refuses_changed_private_modes() {
+        for parent in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(temp.path()).unwrap();
+            let store = root.join("store");
+            fs::DirBuilder::new().mode(0o700).create(&store).unwrap();
+            let state = HostState::create(&store, "codex", &BTreeMap::new())
+                .unwrap()
+                .unwrap();
+            let home = state.path.clone();
+            fs::write(home.join("owned"), b"keep").unwrap();
+            fs::set_permissions(
+                if parent { &store } else { &home },
+                fs::Permissions::from_mode(0o755),
+            )
+            .unwrap();
+            assert!(state.cleanup().is_err());
+            assert_eq!(fs::read(home.join("owned")).unwrap(), b"keep");
+        }
+    }
+
+    #[test]
+    fn host_state_cleanup_refuses_missing_home_even_if_already_removed() {
+        for moved in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = fs::canonicalize(temp.path()).unwrap();
+            fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+            let state = HostState::create(&store, "claude", &BTreeMap::new())
+                .unwrap()
+                .unwrap();
+            let home = state.path.clone();
+            fs::write(home.join("owned"), b"keep").unwrap();
+            let destination = store.join("moved");
+            if moved {
+                fs::rename(&home, &destination).unwrap();
+            } else {
+                fs::remove_dir_all(&home).unwrap();
+            }
+            assert!(state.cleanup().is_err());
+            assert!(!home.exists());
+            if moved {
+                assert_eq!(fs::read(destination.join("owned")).unwrap(), b"keep");
+            }
+        }
+    }
+
+    #[test]
+    fn host_state_cleanup_removes_child_alias_without_touching_target() {
+        for explicit in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = fs::canonicalize(temp.path()).unwrap();
+            fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+            let state = HostState::create(&store, "claude", &BTreeMap::new())
+                .unwrap()
+                .unwrap();
+            let home = state.path.clone();
+            let outside = store.join("outside");
+            fs::create_dir(&outside).unwrap();
+            fs::write(outside.join("foreign"), b"keep").unwrap();
+            std::os::unix::fs::symlink(&outside, home.join("alias")).unwrap();
+            if explicit {
+                state.cleanup().unwrap();
+            } else {
+                drop(state);
+            }
+            assert!(!home.exists());
+            assert_eq!(fs::read(outside.join("foreign")).unwrap(), b"keep");
+        }
+    }
+
+    #[test]
+    fn host_state_drop_does_not_retry_refused_cleanup() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = fs::canonicalize(temp.path()).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let mut state = HostState::create(&store, "codex", &BTreeMap::new())
+            .unwrap()
+            .unwrap();
+        let home = state.path.clone();
+        fs::write(home.join("owned"), b"keep").unwrap();
+        let moved = store.join("moved");
+        fs::rename(&home, &moved).unwrap();
+        assert!(state.remove_owned_directory().is_err());
+        fs::rename(&moved, &home).unwrap();
+        drop(state);
+        assert_eq!(fs::read(home.join("owned")).unwrap(), b"keep");
+    }
+
+    #[test]
+    fn host_state_refuses_substituted_grants_and_cleans_owned_program() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = fs::canonicalize(temp.path()).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let source = store.join("source");
+        fs::write(&source, b"inert fixture").unwrap();
+        let hash = crate::sandbox::binary_hash(&source).unwrap();
+        let state =
+            HostState::create_with_program(&store, "codex", &BTreeMap::new(), &source, &hash)
+                .unwrap()
+                .unwrap();
+        let copy = state
+            .private_program_path("codex", &hash)
+            .unwrap()
+            .to_owned();
+        let home = state.path.clone();
+        let moved = store.join("moved");
+        fs::rename(&home, &moved).unwrap();
+        fs::DirBuilder::new().mode(0o700).create(&home).unwrap();
+        fs::write(home.join("foreign"), b"keep").unwrap();
+        let mut reads = Vec::new();
+        let mut writes = Vec::new();
+        let mut environment = BTreeMap::new();
+        assert!(
+            state
+                .extend("codex", &store, &mut reads, &mut writes, &mut environment)
+                .is_err()
+        );
+        assert!(reads.is_empty());
+        assert!(writes.is_empty());
+        assert!(environment.is_empty());
+        assert!(state.cleanup().is_err());
+        assert_eq!(fs::read(home.join("foreign")).unwrap(), b"keep");
+        assert!(!copy.parent().unwrap().exists());
+        assert!(moved.is_dir());
+    }
+
     #[test]
     fn host_state_is_unique_private_and_api_key_only_then_removed() {
         let temp = tempfile::tempdir().unwrap();
