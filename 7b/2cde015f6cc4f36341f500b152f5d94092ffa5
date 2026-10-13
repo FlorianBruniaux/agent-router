@@ -1,0 +1,37 @@
+CHANGELOG.md
+  s_ae085abdb4f4d0::t_1642cf2fb50a02 19-20
+crates/router-runtime/src/host_state.rs
+  s_edae00164c4bc3::t_b4b63075116e20 5,22-24,53,77,83-85,87,119,161-180,182,193-195,198-231,432-631
+docs/README.md
+  s_ae085abdb4f4d0::t_bc09cde4f456f7 3-4
+docs/adr/0032-finite-client-owned-startup.md
+  s_ae085abdb4f4d0::t_08c336f02a9b4a 6,37-40
+docs/adr/README.md
+  s_ae085abdb4f4d0::t_81b3b3376ffbd5 48
+docs/bench/host-state-cleanup-2026-10-13.md
+  s_ae085abdb4f4d0::t_36790b5cd55f4e 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b2cde015f6cc4f36341f500b152f5d94092ffa5",
+  "prompts": {},
+  "sessions": {
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_edae00164c4bc3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135ea-f172-7f02-944f-04532cb53a51",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
