@@ -48,6 +48,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0032](0032-finite-client-owned-startup.md) | Bind producer-owned finite-client startup state | implemented | 2026-10-11 | 2026-10-13 | - |
 
 | [0033](0033-host-state-writer-exclusion.md) | Require writer exclusion for host-state disposal | implemented | 2026-10-15 | 2026-10-15 | - |
+| [0034](0034-offline-evaluation-evidence.md) | Keep evaluator qualification and supplied usage accounting separate | implemented | 2026-10-15 | 2026-10-15 | - |
 
 ## Frontmatter fields
 

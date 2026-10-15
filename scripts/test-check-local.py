@@ -291,6 +291,7 @@ class LocalCheckTests(unittest.TestCase):
     def test_registered_bench_regressions_execute_and_retain_failure(self):
         cases = [
             ("measurement-m4-v2-tests", "docs/bench/measurement-m4-v2/tests", "test_measurement.py"),
+            ("accepted-evidence-tests", "docs/bench/accepted-evidence-2026-10-15", "test_projection.py"),
             ("physical-send-tests", "docs/bench/physical-send-feasibility-2026-10-07", "test_probe.py"),
             ("startup-outage-tests", "docs/bench/physical-send-feasibility-2026-10-07/outage-cancellation", "test_outage.py"),
             ("owned-entry-tests", "docs/bench/owned-entry-qualification-2026-10-08", "test_direct_client.py"),

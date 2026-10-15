@@ -4,8 +4,12 @@
 
 Experimental, local and explainable routing for Claude Code and Codex.
 
-Current status, 2026-10-11: offline routing and accepted-revision cost calculation
+Current status, 2026-10-15: offline routing and accepted-revision cost calculation
 are available. The [assisted M4 trial produced an accepted correction](docs/bench/m4-fix-integration-2026-10-11.md); it does not establish savings.
+[Evaluator qualification](docs/evaluator-qualification.md) checks required cases before comparison;
+[supplied usage pricing](docs/supplied-usage-pricing.md) joins explicit per-call usage
+to the existing cost calculator. Both operate offline on supplied evidence.
+The [retained M4 dossier](docs/bench/accepted-evidence-2026-10-15/README.md) keeps missing monetary totals unknown.
 Automatic daily use still depends on native macOS qualification, currently blocked
 by the [8 GiB address-space limit](docs/bench/macos-memory-followup-2026-10-11/README.md).
 A [bounded physical-memory experiment](docs/bench/macos-memory-protection-2026-10-11/README.md)

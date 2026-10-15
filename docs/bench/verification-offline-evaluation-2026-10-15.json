@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-15",
+  "scope": "Offline evaluator qualification, supplied usage pricing and historical accepted evidence",
+  "baseline_sha": "a93b0f731915559bef18e40caf2ca8966a3caacb",
+  "delivery": "local_uncommitted",
+  "implementation_manifest_sha256": "bf5007fce65fcd1d4bb8cc6164a4fb7406f99ecc07ec6831405cbc61283e4278",
+  "implementation_files": [
+    {
+      "path": "crates/agent-router-cli/src/command.rs",
+      "sha256": "459add9ef278cf68db1d7a6aa30b838887f075c91cf82974629e41e734964767"
+    },
+    {
+      "path": "crates/agent-router-cli/src/evaluation.rs",
+      "sha256": "d88df7a5bd6a34afe1069d063b1e8ac3cf9e46f6b9d33fe86d6ca38eaec31048"
+    },
+    {
+      "path": "crates/agent-router-cli/tests/offline_evidence.rs",
+      "sha256": "e26683ee169779f6dfc043827ee713253185923807395d2cb564af08cb11327c"
+    },
+    {
+      "path": "crates/router-eval/src/evaluator_qualification.rs",
+      "sha256": "d483991db162bbed6b0e619e0849bd45ace39e99e256f84b7e5c4de5fd121051"
+    },
+    {
+      "path": "crates/router-eval/src/lib.rs",
+      "sha256": "a8660c8df964814f87ac03e3ce521124de0d331dd54e28578ea0ec74962edc60"
+    },
+    {
+      "path": "crates/router-eval/tests/evaluator_qualification.rs",
+      "sha256": "ec5b01f60a6721e42df6a94aaa324f346fcff6c07f83c2c13c9de3ac7f9d7f27"
+    },
+    {
+      "path": "crates/router-feedback/src/lib.rs",
+      "sha256": "a68e73fd8a4f54771000a1f87e79fb38340d8be3679ecb3bbc99bec9fc16e4b0"
+    },
+    {
+      "path": "crates/router-feedback/src/supplied_usage_pricing.rs",
+      "sha256": "f9629b702c2cf9502776738f4e8779cca7233567884545a4a6dd2b04882c1242"
+    },
+    {
+      "path": "crates/router-feedback/tests/supplied_usage_pricing.rs",
+      "sha256": "9ad1dd5d6e3c3af88dc5ada4afe5ea582c21e869281af20fb5a2aafd22b4dbdd"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/accepted-changes-input.json",
+      "sha256": "eb8409e5b668176249972f6a89f4b4ca1ece4554edbed869a9f8d44238e36b74"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/accepted-changes-report.json",
+      "sha256": "a57b2d4115afe2cab03a97db54abfe183f7df282991ae2c3301913e0def6c3dc"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/dossier.json",
+      "sha256": "15a188f412a9d00408b7db054cb4a13cf9c77aa4e040564cfce43bae0f451c14"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/project.py",
+      "sha256": "a75ab16ff428c06ab4f7b1d02f4ec51746209b5c01f88aa1139976ecfffdd253"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/test_projection.py",
+      "sha256": "6f38ab4044ac880328616df946b46b551e5126fbc4c63af6deb0776382593bae"
+    },
+    {
+      "path": "docs/bench/accepted-evidence-2026-10-15/verify.py",
+      "sha256": "1d7e525dd92c500b4d1e3702c463ee69fb1748fde616c319d67d0939c4ac1c4c"
+    },
+    {
+      "path": "scripts/check-local.py",
+      "sha256": "3de594d5e65ea52455b507a443f65c46f513b2ddf19d75db2c21015ea790dbe7"
+    },
+    {
+      "path": "scripts/test-check-local.py",
+      "sha256": "8b996a1ce55ac4f1f771e8f64834a5748dd10893b071e4950416a5f688ce9af2"
+    },
+    {
+      "path": "tests/fixtures/evaluation/evaluator-qualification/rare-case-permutation.json",
+      "sha256": "310cf5a3b29c41ff00a50f4be6e0433f4235b7d2e0948f2a3ceff26757edf6f6"
+    },
+    {
+      "path": "tests/fixtures/evaluation/supplied-usage-pricing/complete.json",
+      "sha256": "0888a8d643172abc84353a7476d141dbc4086267a9549e359b6bd8d5a1995b8c"
+    }
+  ],
+  "review": {
+    "status": "approved",
+    "independent_static_review": true,
+    "finding": "F1 qualification case identity overlap",
+    "resolution": "reproduced_red_then_fixed_and_reviewed",
+    "reviewer_executed_tests": false
+  },
+  "checks": [
+    {
+      "id": "fmt",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 24.24,
+      "log": "fmt.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 260.22,
+      "log": "clippy.log",
+      "log_sha256": "51b8d77fc9b453d9347df9dc3fac0855d60ad2c7e9158cc4a5b39905339bc25f"
+    },
+    {
+      "id": "workspace-tests",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1538.49,
+      "log": "workspace-tests.log",
+      "rust_result_counts": {
+        "passed": 1807,
+        "failed": 0,
+        "ignored": 42,
+        "suites": 194,
+        "count_basis": "sum_of_reported_result_lines_including_nested_helper_output_not_unique_tests"
+      },
+      "log_sha256": "b0a1035206122849d9ca72eb8ef5384e4f753cd4035bb526d2ae0f1a57954f62"
+    },
+    {
+      "id": "harness",
+      "argv": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 7.97,
+      "log": "harness.log",
+      "log_sha256": "10082fbe1a24bd376e3bdee2aae5599ea80af3e8f604eeba9c55d641f810b2c8"
+    },
+    {
+      "id": "adrs",
+      "argv": [
+        "python3",
+        "-B",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.16,
+      "log": "adrs.log",
+      "log_sha256": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d"
+    },
+    {
+      "id": "local-runner",
+      "argv": [
+        "/opt/homebrew/bin/python3.14",
+        "-B",
+        "scripts/test-check-local.py"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 12.83,
+      "log": "local-runner-final.log",
+      "log_sha256": "fc732d364e9dfdbd31ec3414c8363a11a0282568e4b35e98563d3b5c82444168"
+    },
+    {
+      "id": "accepted-evidence",
+      "argv": [
+        "/opt/homebrew/bin/python3.14",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "docs/bench/accepted-evidence-2026-10-15",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.76,
+      "log": "accepted-evidence-final.log",
+      "log_sha256": "d1d9c16ad5228d6a7b5eb63f5aefc173071bc3ab3d924fe061b0f26818a0e282"
+    },
+    {
+      "id": "historical-projection",
+      "argv": [
+        "/opt/homebrew/bin/python3.14",
+        "-B",
+        "docs/bench/accepted-evidence-2026-10-15/verify.py",
+        "--cli",
+        "/private/tmp/ar-eval-174-target/debug/agent-router"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.45,
+      "log": "historical-projection-final.log",
+      "log_sha256": "d846c7ca9861a8f05600f246f4dc8ebe1c34f003e00950e54aaa7ea4ce12e1fc"
+    },
+    {
+      "id": "secrets",
+      "argv": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--config",
+        ".gitleaks.toml",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.73,
+      "log": "secrets-final.log",
+      "log_sha256": "279a623f6182b52bf43a6b08664218298090ef26327754f1a6e3fa6f29919b90"
+    }
+  ],
+  "earlier_environment_failure": {
+    "check": "local-runner",
+    "cause": "Python 3.9 below required 3.11",
+    "final_interpreter": "Python 3.14.8",
+    "initial_full_gate_exit_code": 1
+  },
+  "benchmark_provider_calls": 0,
+  "native_ignored_tests_executed": false,
+  "limits": [
+    "supplied_evidence_not_authenticated",
+    "no_independent_oracle_qualification",
+    "no_native_admission_change",
+    "no_measured_savings"
+  ]
+}

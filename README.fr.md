@@ -4,8 +4,12 @@
 
 Un routage expérimental, local et explicable pour Claude Code et Codex.
 
-État au 11 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
+État au 15 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
 acceptée sont disponibles. L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; il ne démontre pas d’économie.
+La [qualification de l’évaluateur](docs/evaluator-qualification.md) contrôle les cas requis avant comparaison.
+Le [raccordement des usages fournis](docs/supplied-usage-pricing.md) relie des compteurs par appel
+au calculateur de coûts existant. Ces deux outils fonctionnent hors ligne sur des preuves fournies.
+Le [dossier M4 conservé](docs/bench/accepted-evidence-2026-10-15/README.md) garde les montants manquants inconnus.
 L’usage automatique quotidien attend la qualification native macOS, actuellement
 bloquée par la [limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
 Une [expérience bornée sur la mémoire physique](docs/bench/macos-memory-protection-2026-10-11/README.md)

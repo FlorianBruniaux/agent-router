@@ -7,6 +7,19 @@ receipts, trace hashes and a proposed decision. Every human-validation flag is
 false. Passing these fixtures establishes reproducible contract behavior, not
 100 independently validated decisions or a measured model improvement.
 
+## Check the evaluator before comparing cost
+
+The [offline evaluator qualification command](evaluator-qualification.md)
+tracks required cases by identity, so exchanging a rare successful case for a
+different success cannot hide a regression behind the same aggregate pass count.
+Missing or noncomparable evidence stays inconclusive. Supplied qualification
+witnesses are not an independently authenticated oracle.
+
+The [usage pricing bridge](supplied-usage-pricing.md) reuses existing
+accepted-revision accounting. Its portable export does not make incomplete
+costs complete. The [retained M4 projection](bench/accepted-evidence-2026-10-15/README.md)
+illustrates this boundary using historical artifacts without another model call.
+
 ## Artifacts
 
 `tests/fixtures/evaluation/replays/candidate-001.json` through `candidate-100.json`

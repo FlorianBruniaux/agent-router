@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod evaluator_qualification;
+pub use evaluator_qualification::*;
+
 mod qualified_pricing;
 pub use qualified_pricing::*;
 
