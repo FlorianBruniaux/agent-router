@@ -139,7 +139,7 @@ pub fn render(root: &Path) -> Result<Files> {
             root,
             &format!("harness/skills/{skill}/evals/scenarios.json"),
         )?;
-        validate_scenarios(&scenarios)?;
+        validate_scenarios(&scenarios, &skill)?;
         for tree in [".agents/skills", ".claude/skills"] {
             files.insert(format!("{tree}/{skill}/SKILL.md"), content.clone());
             files.insert(
@@ -192,15 +192,24 @@ pub fn render(root: &Path) -> Result<Files> {
     Ok(files)
 }
 
-fn validate_scenarios(text: &str) -> Result<()> {
+fn validate_scenarios(text: &str, expected_skill: &str) -> Result<()> {
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
     struct Scenarios {
+        #[serde(default)]
+        skill: Option<String>,
         positive: Vec<String>,
         negative: Vec<String>,
     }
     let scenarios: Scenarios =
         serde_json::from_str(text).map_err(|_| Error::Invalid("skill scenarios"))?;
+    if scenarios
+        .skill
+        .as_deref()
+        .is_some_and(|skill| skill != expected_skill)
+    {
+        return Err(Error::Invalid("skill scenarios identity"));
+    }
     if scenarios.positive.len() < 8
         || scenarios.negative.len() < 2
         || scenarios

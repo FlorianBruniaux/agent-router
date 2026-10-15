@@ -22,6 +22,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-15: bound concurrent startup of the four synthetic finite-client resource-probe fixtures with a shared test slot. Require the malformed-protocol fixture to prove helper execution so a startup timeout cannot masquerade as protocol rejection. Preserve the production three-second probe deadline and resource limits.
+
 - 2026-10-15: require [writer exclusion before private host-state disposal](docs/adr/0033-host-state-writer-exclusion.md). Retain exposed homes/program copies on ambiguous cleanup or async abandonment, reject group-only evidence, and keep filesystem obligations quarantined across restart. HostState on macOS now refuses group-only cleanup; 8 GiB and F12a NO_GO remain unchanged.
 
 - 2026-10-13: bind [private host-state cleanup](docs/bench/host-state-cleanup-2026-10-13.md) to retained home/store identities. Refuse substituted or missing paths and changed modes, avoid Drop retries after explicit failure, and preserve independent program-copy cleanup. Keep 8 GiB and F12a NO_GO.
@@ -31,6 +33,8 @@ reasons); every change was verified locally on macOS.
 - 2026-10-11: integrate the accepted M4 report-cost correction. Invalid attempts retain their list/product costs in totals and cost-per-accepted-change ratios; unknown costs remain unknown. Add four regressions and record [the subsequent acceptance](docs/bench/m4-fix-integration-2026-10-11.md), preserving frozen trial evidence and its measurement limits.
 
 ### Documentation
+
+- 2026-10-15: add a [shared autonomous handoff template](assets/prompts/autonomous-handoff.md) and extend the development handoff skill with resume revalidation of revisions, concurrent edits, evidence and current authority. Cover bounded rendering and changed-material recovery refusal; no provider trial or host activation is implied.
 
 - 2026-10-11: add [copied-client Linux qualification](docs/bench/linux-copied-client-2026-10-11/README.md) using the existing producer, pinned real Codex, Landlock/seccomp and an external namespace owner at unchanged 8 GiB. Preserve protected-copy, broker and detached-child observations, lifecycle receipts and negative evidence tests; production broker-only execution remains refused and F12a stays NO_GO.
 

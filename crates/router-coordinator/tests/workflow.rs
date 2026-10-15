@@ -494,22 +494,36 @@ async fn durable_reopen_preserves_verified_steps_and_rejects_changed_material() 
         .router
         .validate_receipt(&context, &f.router.route(&context).unwrap())
         .unwrap();
-    let mut changed = final_request.clone();
-    changed.prompt.push_str("modified");
-    assert!(
-        coordinator
-            .reopen_step(
-                &f.definition,
-                "plan",
-                0,
-                &f.router,
-                &context,
-                &proof,
-                changed,
-                artifacts.clone()
-            )
-            .is_err()
-    );
+    let before = runtime.summary(&id).unwrap();
+    for mutation in ["prompt", "source", "scope", "artifact contract"] {
+        let mut changed = final_request.clone();
+        let mut changed_artifacts = artifacts.clone();
+        match mutation {
+            "prompt" => changed.prompt.push_str("modified"),
+            "source" => changed.source_state = "different-revision".into(),
+            "scope" => changed.scope.push("src/unapproved.rs".into()),
+            _ => changed_artifacts.max_input_bytes -= 1,
+        }
+        assert!(
+            coordinator
+                .reopen_step(
+                    &f.definition,
+                    "plan",
+                    0,
+                    &f.router,
+                    &context,
+                    &proof,
+                    changed,
+                    changed_artifacts,
+                )
+                .is_err(),
+            "resumed with changed {mutation}"
+        );
+        let after = runtime.summary(&id).unwrap();
+        assert_eq!(after.state, before.state, "changed {mutation}");
+        assert_eq!(after.attempts, before.attempts, "changed {mutation}");
+        assert_eq!(coordinator.service_controls(&f.definition).unwrap(), 0);
+    }
     let reopened = coordinator
         .reopen_step(
             &f.definition,

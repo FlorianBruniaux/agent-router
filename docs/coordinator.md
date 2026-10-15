@@ -65,6 +65,31 @@ Dependency data is appended before approval and before that gate, never after it
 
 ## Results and handoff
 
+### Autonomous task context
+
+Use the shared [autonomous handoff template](../assets/prompts/autonomous-handoff.md)
+for a planner's task dossier or a session transfer. It carries the objective,
+deliverables, non-goals, constraints, source identity, file ownership, acceptance,
+applicable decisions, blocking questions, authority references, selected history,
+candidate evidence, next actor/action and stop conditions. Do not copy the entire
+exploration or omit uncertainties to make the context appear complete.
+
+The `${name}` fields use the existing `PromptTemplate`/`render_prompt` mechanism.
+A caller supplies all 15 text variables, explicit compatible hosts/models, a byte
+ceiling and an output contract, then seals the template with `seal_prompt`.
+There is no default model, catalog registration or execution grant in this file.
+For product preparation, register the reviewed template through the existing
+asset/catalog path and use the normal final-request approval. Rendering tests
+exercise synthetic host/model compatibility without making provider calls.
+
+The template is a first format, not a semantic validator: rendering cannot prove
+that a decision is applicable, an open question resolved or an approval valid.
+A planner may return a filled dossier as `NativeFinalText`, still untrusted data.
+Keep its provenance and bounds through the existing artifact grants; a changed
+dossier changes the final prompt and requires review of the new material.
+
+### Artifact transport
+
 `NativeFinalText` and `Patch` are declared output sources. They are independent
 of optional stdout/stderr diagnostic retention. Native text is extracted only
 from a complete, successful native stream: Claude `result` success text or Codex
