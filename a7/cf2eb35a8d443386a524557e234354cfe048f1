@@ -1,0 +1,72 @@
+CHANGELOG.md
+  s_64104967e715dd::t_372d7ee62f301d 19-20,31
+  s_e827e256e15185::t_9c0eca03974a29 32
+crates/router-runtime/tests/finite_client.rs
+  s_64104967e715dd::t_2078d3187c3d89 936-941,944,986
+  s_64104967e715dd::t_f53f48bb87d686 993-994
+  s_64104967e715dd::t_9ee2bfd8290dfd 997,1045,1078
+.agents/skills/ar-session-handoff/SKILL.md
+  s_64104967e715dd::t_c5f2d25069316e 3,10-11,19-22,26-66,82-88
+.agents/skills/ar-session-handoff/evals/scenarios.json
+  s_64104967e715dd::t_8c6ba840499012 2,4-15,19-25
+.claude/settings.json
+  s_64104967e715dd::t_bae4da73d60d69 7
+.claude/skills/ar-session-handoff/SKILL.md
+  s_64104967e715dd::t_76b440fd4f327b 3,10-11,19-22,26-66,82-88
+.claude/skills/ar-session-handoff/evals/scenarios.json
+  s_64104967e715dd::t_afcfb62dbce42b 2,4-15,19-25
+.codex/hooks.json
+  s_64104967e715dd::t_689b0e0d23c6a9 7
+.harness-generated.json
+  s_64104967e715dd::t_aabba5f488633e 14-15,21,32-33,40
+assets/prompts/autonomous-handoff.md
+  s_64104967e715dd::t_ba045cf153e6c2 1-82
+crates/router-coordinator/tests/workflow.rs
+  s_ff3dff62f4ff19::t_8b00b7be34b7e5 497-526
+crates/router-workflow/tests/handoff.rs
+  s_64104967e715dd::t_3a453b1bcbdf3d 1-140
+docs/coordinator.md
+  s_ff3dff62f4ff19::t_652c38a6b8419a 68-92
+docs/harness.md
+  s_64104967e715dd::t_3197244cc9f9b5 105,111-138
+harness/skills/ar-session-handoff/SKILL.md
+  s_64104967e715dd::t_de3f1a4609b5e2 3,10-11,19-22,26-66,82-88
+harness/skills/ar-session-handoff/evals/scenarios.json
+  s_64104967e715dd::t_ebbe5aec0546bc 2,4-15,19-25
+xtask/src/projection.rs
+  s_64104967e715dd::t_82c867e66efacd 142,195,199-200,206-212
+xtask/tests/harness.rs
+  s_64104967e715dd::t_8610f2b221c965 75-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a7cf2eb35a8d443386a524557e234354cfe048f1",
+  "prompts": {},
+  "sessions": {
+    "s_64104967e715dd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f31-c9b6-7f52-adc8-1ffb8966e03b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ff3dff62f4ff19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f3e-7b62-7742-a7c5-083cab4a1c36",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
