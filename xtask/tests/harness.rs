@@ -73,6 +73,52 @@ fn generation_is_deterministic_idempotent_and_dual_host() {
 }
 
 #[test]
+fn handoff_routing_corpus_identity_reaches_both_hosts_and_cannot_name_another_skill() {
+    let dir = fixture();
+    let relative = "harness/skills/ar-session-handoff/evals/scenarios.json";
+    let mut scenarios: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(dir.path().join(relative)).unwrap()).unwrap();
+    scenarios["skill"] = "ar-session-handoff".into();
+    fs::write(
+        dir.path().join(relative),
+        serde_json::to_string(&scenarios).unwrap(),
+    )
+    .unwrap();
+    install(dir.path());
+    for host in [".agents", ".claude"] {
+        let projected: serde_json::Value = serde_json::from_str(
+            &fs::read_to_string(dir.path().join(format!(
+                "{host}/skills/ar-session-handoff/evals/scenarios.json"
+            )))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(projected["skill"], "ar-session-handoff");
+    }
+    scenarios["skill"] = "ar-rust-quality".into();
+    fs::write(
+        dir.path().join(relative),
+        serde_json::to_string(&scenarios).unwrap(),
+    )
+    .unwrap();
+    assert!(matches!(
+        projection::render(dir.path()),
+        Err(xtask::Error::Invalid("skill scenarios identity"))
+    ));
+    // A rejected canonical update never overwrites the last projected corpus.
+    for host in [".agents", ".claude"] {
+        let projected: serde_json::Value = serde_json::from_str(
+            &fs::read_to_string(dir.path().join(format!(
+                "{host}/skills/ar-session-handoff/evals/scenarios.json"
+            )))
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(projected["skill"], "ar-session-handoff");
+    }
+}
+
+#[test]
 fn check_detects_drift_missing_and_stale_outputs() {
     for mutation in ["changed", "missing", "stale"] {
         let dir = fixture();

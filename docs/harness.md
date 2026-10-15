@@ -102,11 +102,39 @@ Skills: `ar-contracts`, `ar-host-adapter`, `ar-rust-quality`,
 `ar-contract-tests`, `ar-permissions-security`, and `ar-session-handoff`.
 Each defines triggers, exclusions, inputs, bounded steps, executable checks and
 stop conditions. The host adapter skill requires a separately authorized
-adapter issue; it does not start #10. Eight positive prompts and two negative
+adapter issue; it does not start #10. At least eight positive prompts and two negative
 prompts per skill are projected to both hosts. Their structure is checked;
 BM25 calibration and live global index rebuilds are excluded from #12, so
 automatic routing accuracy remains `UNKNOWN`. These are text skills, not
 executable extensions.
+
+## Autonomous handoff and resume
+
+The `ar-session-handoff` skill covers both task transfer and resumption, using
+the repository's [shared template](../assets/prompts/autonomous-handoff.md).
+Its canonical source is `harness/skills/ar-session-handoff/SKILL.md`; generation
+publishes identical instructions and trigger scenarios under `.agents/skills/`
+and `.claude/skills/`. The template remains a repository asset shared by both.
+The handoff scenarios include the `skill` identity required by the BM25 router;
+generation rejects an identity that names another skill. Legacy scenario files
+without that field remain accepted by the harness's structural check. Per-host
+calibration may use a caller-selected temporary cache; it does not update global
+indexes or prove host discovery or agent behavior.
+
+On receipt, preserve the historical handoff and compare its workspace, branch,
+base/candidate revision, dirty paths and evidence with the live state. Revalidate
+only the facts required for the next action, rerunning affected checks when
+inputs changed or evidence is missing. Classify evidence as current, stale,
+missing or UNKNOWN and append the actual observations, unresolved blockers,
+current authority, next actor and exact next action. Old check results retain
+their original revision; they cannot establish current success.
+
+A statement of completed work does not authorize another provider call, push
+or publication. Inspect receipts or external state before considering repetition;
+unknown external outcomes remain UNKNOWN. Product-run recovery still requires
+the coordinator's exact reconstruction, not this prose procedure. These skill
+instructions do not automatically run checks or prove that an agent followed
+them; tests of template rendering and coordinator refusal have narrower scope.
 
 ## SessionStart advisory protocol
 

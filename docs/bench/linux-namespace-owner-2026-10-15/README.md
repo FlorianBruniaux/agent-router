@@ -31,6 +31,8 @@ While the lot was under verification, PR #177 merged into main. Integrate `446c6
 
 Rebuild the actual helper, copied client and diagnostic controller offline with the integrated sources, then repeat all four Linux cases. The `integrated_campaign` and `integrated_build` fields in [evidence](evidence.json) retain these newer binaries and the complete source-manifest binding separately from the initial campaign. Both campaigns are required by the receipt test. The same cleanup outcomes, zero provider turns and unchanged 8 GiB apply. F12a stays NO_GO.
 
+A further main update, PR #178 (`1c64110a505c4e4a604675b9c94abc900e2442ea`), changes handoff tooling and bounds concurrent startup of four synthetic probe fixtures. Preserve both changelog entries and revalidate the merged tests. All 34 checks, including the full workspace suite with normal libtest parallelism, pass again; see `latest_integration` in the verification receipt. The 231 recorded executable/library/example/fixture inputs are byte-identical to the integrated Linux build, so its four actual Linux receipts keep their exact scope. Hook activation remains UNKNOWN.
+
 ## Reproduction and limits
 
 Build the workspace offline with Rust 1.85.1 and the pinned lockfile. Build `router-sandbox-helper`, the `finite_client_supervision` example and router-runtime's unit-test executable in release mode. Compile this folder's `isolate.c` with `cc -O2 -Wall -Wextra -Werror`. Place the resulting files under names `helper`, `client`, `controller`, `wrapper` and the retained Debian bubblewrap binary under `namespace`. Supply the pinned native binary separately:
