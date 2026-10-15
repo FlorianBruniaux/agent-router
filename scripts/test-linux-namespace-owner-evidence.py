@@ -89,14 +89,14 @@ class Receipts(unittest.TestCase):
 
     def test_recorded_campaign(self):
         evidence = json.loads((FOLDER / "evidence.json").read_text())
-        campaign = evidence["campaign"]
-        self.assertEqual([x["case"] for x in campaign["cases"]], list(r.CASES))
-        for row in campaign["cases"]:
-            r.validate_complete(row)
-            self.assertEqual(row["provisional"]["copy_hashes"][:4],
-                [campaign["binaries_sha256"][x] for x in ("client", "native", "helper", "wrapper")])
-            self.assertEqual(row["provisional"]["namespace_owner"]["sha256"],
-                campaign["binaries_sha256"]["namespace"])
+        for campaign in (evidence["campaign"], evidence["integrated_campaign"]):
+            self.assertEqual([x["case"] for x in campaign["cases"]], list(r.CASES))
+            for row in campaign["cases"]:
+                r.validate_complete(row)
+                self.assertEqual(row["provisional"]["copy_hashes"][:4],
+                    [campaign["binaries_sha256"][x] for x in ("client", "native", "helper", "wrapper")])
+                self.assertEqual(row["provisional"]["namespace_owner"]["sha256"],
+                    campaign["binaries_sha256"]["namespace"])
         # These are immutable build inputs, not a demand that future product HEADs match.
         for name in ("run.py", "inside.py", "isolate.c"):
             key = "docs/bench/linux-namespace-owner-2026-10-15/" + name

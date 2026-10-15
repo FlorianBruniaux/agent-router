@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "input_sha256": "3b42f707abbf5c7b1f29a6c5252a5f8993cdc9eecd702492e4d64496853218c2",
+  "report_sha256": "e779579535db74cf68d3127510751bd7d0ea0c1d77f894fde098f45c3d0a79e1",
+  "evidence_trust": "supplied_unverified",
+  "cohort_sha256": "3709caea45df5e3ae84145b8b07219ac77f543376811dff9b9b4f8d6b11756e1",
+  "cohort": {
+    "complete": true,
+    "assignments": [
+      {
+        "assignment_id": "m4v2-t1-router-r1",
+        "start_sequence": 1,
+        "task_start_sha256": "55c894b76339a89c3225003a48ba9db485a67de9d205144df4a63052cbaf947d",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf"
+      },
+      {
+        "assignment_id": "m4v2-t1-strongfixed-r1",
+        "start_sequence": 2,
+        "task_start_sha256": "8cf368b1387c3480ee83d192082ffbc6746047c165278dcbe3957797211547cb",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf"
+      },
+      {
+        "assignment_id": "m4v2-t1-cheapfixed-r1",
+        "start_sequence": 3,
+        "task_start_sha256": "2d2e9b81134c255f1aab052924101295ac9ed8cfe313ae5c75f89291605c15bf",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf"
+      }
+    ]
+  },
+  "analysis_sequence": 8,
+  "selected": [
+    {
+      "assignment_id": "m4v2-t1-cheapfixed-r1",
+      "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7",
+      "status": "pending",
+      "verdict_sequence": 7
+    },
+    {
+      "assignment_id": "m4v2-t1-router-r1",
+      "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7",
+      "status": "accepted",
+      "verdict_sequence": 8
+    },
+    {
+      "assignment_id": "m4v2-t1-strongfixed-r1",
+      "revision_sha256": null,
+      "status": "unknown",
+      "verdict_sequence": null
+    }
+  ],
+  "selected_accepted_changes": 1,
+  "revision_history": [
+    {
+      "sequence": 4,
+      "binding": {
+        "assignment_id": "m4v2-t1-router-r1",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+        "candidate_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+        "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+      },
+      "predecessor_sha256": null
+    },
+    {
+      "sequence": 5,
+      "binding": {
+        "assignment_id": "m4v2-t1-cheapfixed-r1",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+        "candidate_sha256": "69f0e061006336231de44c57c23c98c2a6dd5f6e5010f3395088d06bdb28e0c6",
+        "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+      },
+      "predecessor_sha256": null
+    }
+  ],
+  "verdict_history": [
+    {
+      "sequence": 6,
+      "binding": {
+        "assignment_id": "m4v2-t1-router-r1",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+        "candidate_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+        "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+      },
+      "status": "pending",
+      "verifier_outcome": "passed",
+      "verifier_sha256": "e8af6e689ec8029e085e0aad82174582ebb45766537affd47159e4d17fca95a6",
+      "reviewer_sha256": null,
+      "acceptance_sequence": null,
+      "cost_frontier_sequence": null
+    },
+    {
+      "sequence": 7,
+      "binding": {
+        "assignment_id": "m4v2-t1-cheapfixed-r1",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+        "candidate_sha256": "69f0e061006336231de44c57c23c98c2a6dd5f6e5010f3395088d06bdb28e0c6",
+        "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+      },
+      "status": "pending",
+      "verifier_outcome": "passed",
+      "verifier_sha256": "40f8c5697bcdf880b080b8360113d53b3a950df2a7cf8d56fe00f8826ace7a55",
+      "reviewer_sha256": null,
+      "acceptance_sequence": null,
+      "cost_frontier_sequence": null
+    },
+    {
+      "sequence": 8,
+      "binding": {
+        "assignment_id": "m4v2-t1-router-r1",
+        "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+        "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+        "candidate_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+        "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+      },
+      "status": "accepted",
+      "verifier_outcome": "passed",
+      "verifier_sha256": "e8af6e689ec8029e085e0aad82174582ebb45766537affd47159e4d17fca95a6",
+      "reviewer_sha256": "65defb288690a948bc2c01fd03a55a755fd39ce8ffefb9e517e62c4902906936",
+      "acceptance_sequence": null,
+      "cost_frontier_sequence": 8
+    }
+  ],
+  "acceptance_history": [
+    {
+      "acceptance": {
+        "sequence": 8,
+        "binding": {
+          "assignment_id": "m4v2-t1-router-r1",
+          "source_sha256": "5f9b229952e1c328001b279e27d20b9c71953a10e280877a3138980aa6b15641",
+          "criteria_sha256": "346c5aabb54675117ab70117eb20279914510df2de253fe0260dff75c0b4afcf",
+          "candidate_sha256": "c67a94f81ab8f7ca67dbe49d2aebecc59db3ee67c1ad6a1d34e7308a75a28c9e",
+          "revision_sha256": "129ae3e8932d7307151ca03692fb9301564e17a95ae20b5dccd5261a534d01b7"
+        },
+        "status": "accepted",
+        "verifier_outcome": "passed",
+        "verifier_sha256": "e8af6e689ec8029e085e0aad82174582ebb45766537affd47159e4d17fca95a6",
+        "reviewer_sha256": "65defb288690a948bc2c01fd03a55a755fd39ce8ffefb9e517e62c4902906936",
+        "acceptance_sequence": null,
+        "cost_frontier_sequence": 8
+      },
+      "cohort_costs_at_frontier": {
+        "model": {
+          "known_subtotal_microusd": 0,
+          "total_microusd": null,
+          "observation_count": 0,
+          "missing_expected_count": 0,
+          "inventory_coverage": "unknown"
+        },
+        "ci": {
+          "known_subtotal_microusd": 0,
+          "total_microusd": null,
+          "observation_count": 0,
+          "missing_expected_count": 0,
+          "inventory_coverage": "unknown"
+        },
+        "human": {
+          "known_subtotal_microusd": 0,
+          "total_microusd": null,
+          "observation_count": 0,
+          "missing_expected_count": 0,
+          "inventory_coverage": "unknown"
+        }
+      },
+      "assignment_model_cost_at_frontier": {
+        "known_subtotal_microusd": 0,
+        "total_microusd": null,
+        "observation_count": 0,
+        "missing_expected_count": 0,
+        "inventory_coverage": "unknown"
+      }
+    }
+  ],
+  "inventories": [
+    {
+      "kind": "model",
+      "coverage": "unknown",
+      "expected": []
+    },
+    {
+      "kind": "ci",
+      "coverage": "unknown",
+      "expected": []
+    },
+    {
+      "kind": "human",
+      "coverage": "unknown",
+      "expected": []
+    }
+  ],
+  "observations": [],
+  "off_cohort_observation_count": 0,
+  "cohort_costs": {
+    "model": {
+      "known_subtotal_microusd": 0,
+      "total_microusd": null,
+      "observation_count": 0,
+      "missing_expected_count": 0,
+      "inventory_coverage": "unknown"
+    },
+    "ci": {
+      "known_subtotal_microusd": 0,
+      "total_microusd": null,
+      "observation_count": 0,
+      "missing_expected_count": 0,
+      "inventory_coverage": "unknown"
+    },
+    "human": {
+      "known_subtotal_microusd": 0,
+      "total_microusd": null,
+      "observation_count": 0,
+      "missing_expected_count": 0,
+      "inventory_coverage": "unknown"
+    }
+  },
+  "cost_per_selected_accepted_change": {
+    "model": null,
+    "ci": null,
+    "human": null
+  }
+}

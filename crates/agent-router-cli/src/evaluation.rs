@@ -596,6 +596,42 @@ pub(crate) fn replay(
 }
 pub(crate) fn run(command: EvalCommand) -> Result<Outcome, CliError> {
     match command {
+        EvalCommand::EvaluatorQualification { input, json } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let raw = read_bounded(
+                &input,
+                router_eval::MAX_EVALUATOR_QUALIFICATION_BYTES,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )?;
+            let report = router_eval::evaluator_qualification_report(&raw)
+                .map_err(|_| CliError::Product("eval.evaluator_qualification.invalid"))?;
+            json_output(&report, ExitCode::SUCCESS)
+        }
+        EvalCommand::SuppliedUsagePricing {
+            input,
+            portable,
+            json,
+        } => {
+            if !json {
+                return Err(CliError::JsonOutputRequired);
+            }
+            let raw = read_bounded(
+                &input,
+                router_feedback::MAX_SUPPLIED_USAGE_PRICING_BYTES,
+                CliError::RequestRead,
+                CliError::RequestTooLarge,
+            )?;
+            let report = router_feedback::supplied_usage_pricing_report(&raw)
+                .map_err(|_| CliError::Product("eval.supplied_usage_pricing.invalid"))?;
+            if portable {
+                json_output(&report.portable_pricing, ExitCode::SUCCESS)
+            } else {
+                json_output(&report, ExitCode::SUCCESS)
+            }
+        }
         EvalCommand::AttemptCorrelation {
             input,
             observation,

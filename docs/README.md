@@ -90,6 +90,10 @@ written in French.
 | [Backend execution](backend-execution.md) | Executing a signed backend decision |
 | [Accepted revision costs](accepted-changes.md) | 2026-10-07: offline exact-revision accounting, revocation and missing-cost coverage; supplied evidence only |
 | [Attempt correlation](attempt-correlation.md) | 2026-10-10: offline B1 CLI and complete observe-v2 projection; supplied evidence, no native usage collection |
+| [Offline evaluation verification](bench/offline-evaluation-evidence-2026-10-15.md) | Local contract tests, independent review and remaining measurement evidence |
+| [Evaluator qualification](evaluator-qualification.md) | Required-case comparisons, supplied qualification witnesses and explicit inconclusive outcomes |
+| [Supplied usage pricing](supplied-usage-pricing.md) | Offline per-physical usage bridge, estimated prices and an allowlisted portable projection |
+| [Retained M4 acceptance evidence](bench/accepted-evidence-2026-10-15/README.md) | Three historical attempts, one accepted revision, unknown monetary totals; no new trial |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |

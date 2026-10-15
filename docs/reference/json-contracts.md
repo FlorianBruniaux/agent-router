@@ -613,6 +613,25 @@ checks the supplied calculation and joins; it is not independent verification
 of a provider, reviewer, invoice or patch. Cost categories and null totals
 remain distinct from approved allocations, elapsed time and measured benefit.
 
+## Offline evaluator and supplied pricing evidence
+
+`eval evaluator-qualification --input FILE --json` uses a separate schema-1
+contract owned by `router-eval`. Its supplied qualification witnesses,
+required-case comparisons and retained verdicts do not authenticate an oracle
+or authorize adoption. See [the qualification guide](../evaluator-qualification.md).
+
+`eval supplied-usage-pricing --input FILE --json` uses a separate schema-1
+contract owned by `router-feedback`. It applies qualified rates to supplied
+per-physical-call usage and invokes the existing accepted-change calculator.
+The full report can contain caller identifiers. Only its `--portable` projection
+is an allowlisted export; it preserves unknown totals and marks prices as
+estimates, not invoices. See [the pricing guide](../supplied-usage-pricing.md).
+
+Both parse bounded strict JSON and retain supplied, unverified evidence.
+They do not modify observation v2/v3, stores, replay formats or the public
+`schema` registry. [ADR 0034](../adr/0034-offline-evaluation-evidence.md) records
+the separation from native collection and execution authority.
+
 ## Private finite-client preparation
 
 `FiniteClientManifest` is a library-only private schema-1 contract with strict

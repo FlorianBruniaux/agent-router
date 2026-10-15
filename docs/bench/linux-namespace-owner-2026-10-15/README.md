@@ -10,7 +10,7 @@ The separate [Linux collector](run.py) exercises normal return, deadline, stdin 
 
 Normal, deadline and EOF require the matching helper namespace-clean lease before disposing the home and all five copies, releasing the broker and disposing the diagnostic namespace wrapper. Helper death retains an active lease and every owner despite a stable heartbeat. It stays UNKNOWN until the outer container is destroyed; the diagnostic never synthesizes a namespace proof from that observation.
 
-[Evidence](evidence.json) records exact source/input/image hashes and four case receipts. Source hashes describe the recorded build, not later HEADs. [Local verification](verification.json) records 32 quality checks and the completed workspace suites separately from Linux observations. An unchanged CPU termination test exceeded its ten-second wall-clock assertion once; isolated and complete limits-suite reruns pass, followed by all remaining packages and workspace doctests. Its cause remains UNKNOWN and the initial failure is retained. The collector is an explicit diagnostic, never an automatic native batch or runtime capability issuer.
+[Evidence](evidence.json) records exact source/input/image hashes and four case receipts. Source hashes describe the recorded build, not later HEADs. [Local verification](verification.json) records the initial 32 quality checks and completed workspace suites separately from Linux observations. An unchanged CPU termination test exceeded its ten-second wall-clock assertion once; isolated and complete limits-suite reruns pass, followed by all remaining packages and workspace doctests. Its cause remains UNKNOWN and the initial failure is retained. The collector is an explicit diagnostic, never an automatic native batch or runtime capability issuer.
 
 ## Observed result
 
@@ -24,6 +24,12 @@ Normal, deadline and EOF require the matching helper namespace-clean lease befor
 All four cases observe increasing heartbeat before stop and stable values after inner namespace termination. The independent observer confirms stability before outer fallback teardown. All task containers and heartbeat volumes are then removed by exact owned identity. These observations apply to this fixed canary and composition.
 
 Earlier failures are retained in the evidence: two diagnostic-only compile references, the initial readonly errno expectation and a 60-second collector timeout. Correcting the witness and extending only the collector window did not change the 8 GiB bounds or the helper's 25-second workload deadline.
+
+## Integrated main follow-up
+
+While the lot was under verification, PR #177 merged into main. Integrate `446c648eee2288477a617a182725cae89cd08d0d`, reserve ADR 0035 and repeat the full local quality gate. Its result is recorded under `integration` in [local verification](verification.json). Product sources remain stable throughout that gate.
+
+Rebuild the actual helper, copied client and diagnostic controller offline with the integrated sources, then repeat all four Linux cases. The `integrated_campaign` and `integrated_build` fields in [evidence](evidence.json) retain these newer binaries and the complete source-manifest binding separately from the initial campaign. Both campaigns are required by the receipt test. The same cleanup outcomes, zero provider turns and unchanged 8 GiB apply. F12a stays NO_GO.
 
 ## Reproduction and limits
 
