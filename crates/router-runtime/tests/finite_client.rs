@@ -933,8 +933,15 @@ fn resource_helper(f: &mut Fixture, body: &str) {
 fn successful_probe() -> &'static str {
     "printf 'router-sandbox-helper-v1:limits-applied:address-space=enforced\\n'"
 }
+
+// These fixtures launch real copied shell helpers against the production 3 s
+// deadline. Share a fixture slot to bound concurrent helper startup while the
+// remaining finite-client tests retain libtest's normal parallel execution.
+static RESOURCE_PROBE_SLOT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 #[tokio::test]
 async fn owned_resource_probe_runs_copied_helper_with_exact_limits_only() {
+    let _slot = RESOURCE_PROBE_SLOT.lock().await;
     let mut f = Fixture::new();
     let marker = f.root.join("helper-invocation");
     resource_helper(
@@ -976,15 +983,18 @@ async fn owned_resource_probe_runs_copied_helper_with_exact_limits_only() {
 }
 #[tokio::test]
 async fn owned_resource_probe_keeps_memory_refusal_and_rejects_bad_protocol() {
+    let _slot = RESOURCE_PROBE_SLOT.lock().await;
     for body in [
         "echo sandbox-helper.setrlimit.address_space >&2; exit 125",
         "echo malformed",
         "echo sandbox-helper.other >&2; exit 125",
     ] {
         let mut f = Fixture::new();
-        resource_helper(&mut f, body);
+        let marker = f.root.join("probe-executed");
+        resource_helper(&mut f, &format!("touch '{}'; {body}", marker.display()));
         let a = f.approve_codex(ResourceLimits::default());
         let result = a.probe_owned_resources(&ResourceLimits::default()).await;
+        assert!(marker.exists(), "helper did not execute before {result:?}");
         if body.contains("address_space") {
             assert!(matches!(
                 result,
@@ -1032,6 +1042,7 @@ async fn resource_probe_refuses_unowned_or_changed_limits_before_helper_effect()
 }
 #[tokio::test]
 async fn resource_probe_refuses_source_drift_before_effect_and_during_probe() {
+    let _slot = RESOURCE_PROBE_SLOT.lock().await;
     for during in [false, true] {
         let mut f = Fixture::new();
         let source = PathBuf::from(&f.manifest.client.path);
@@ -1064,6 +1075,7 @@ async fn resource_probe_refuses_source_drift_before_effect_and_during_probe() {
 
 #[tokio::test]
 async fn resource_probe_detects_copy_drift_before_a_second_helper_effect() {
+    let _slot = RESOURCE_PROBE_SLOT.lock().await;
     let mut f = Fixture::new();
     let marker = f.root.join("invocation");
     resource_helper(

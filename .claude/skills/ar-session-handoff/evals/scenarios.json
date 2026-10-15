@@ -1,16 +1,27 @@
 {
+  "skill": "ar-session-handoff",
   "positive": [
-    "Prepare a handoff for the next Agent Router session",
-    "Record branch and verification limits for the reviewer",
-    "Write the exact next action after this harness change",
-    "Transfer the task without losing uncommitted ownership",
-    "Prépare la passation de cette session",
-    "Documente les preuves et les UNKNOWN",
-    "Rédige le relais pour la prochaine tâche",
-    "Summarize the current issue scope for another developer"
+    "Prepare an Agent Router session handoff with the next owner and exact action",
+    "Write the Agent Router task handoff with branch, candidate revision and verification evidence",
+    "Transfer this Agent Router session using an autonomous handoff dossier",
+    "Resume the Agent Router handoff and revalidate its source revision and scope",
+    "The Agent Router handoff says Work Done but HEAD changed; revalidate before resuming",
+    "Check the Agent Router handoff for stale evidence before the next session resumes",
+    "Prépare la passation de la session Agent Router avec le prochain responsable",
+    "Rédige un relais Agent Router autonome avec contraintes et questions bloquantes",
+    "Transmets cette tâche Agent Router dans un dossier de passation sans historique de conversation",
+    "Reprends la passation Agent Router et revalide les preuves avant toute modification",
+    "Vérifie la révision et les modifications concurrentes du relais de session Agent Router",
+    "La passation Agent Router est périmée, revalide les faits avant de reprendre la session"
   ],
   "negative": [
     "Open a production deployment",
-    "Fix a Rust compiler error"
+    "Fix a Rust compiler error in Agent Router",
+    "Restart a failed Agent Router production worker process",
+    "Change the Agent Router routing policy from model feedback",
+    "Review an Agent Router Rust module for security defects",
+    "Explain the Agent Router coordinator state machine",
+    "Rédige une ADR Agent Router sur le sandbox Linux",
+    "Corrige les tests unitaires Agent Router et lance Clippy"
   ]
 }
