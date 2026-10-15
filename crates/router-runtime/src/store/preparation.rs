@@ -127,7 +127,14 @@ impl Preparation<'_> {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn register_probe(&self) -> Result<(String, PathBuf)> {
+        self.register_probe_with_host_state(false)
+    }
+    pub(crate) fn register_probe_with_host_state(
+        &self,
+        host_state: bool,
+    ) -> Result<(String, PathBuf)> {
         self.update(|_, _, c| {
             if c.stage != Stage::LeaseOnly || !settled(c) || c.probes.len() >= MAX_PROBES {
                 return Err(RuntimeError::CleanupUnknown);
@@ -136,7 +143,8 @@ impl Preparation<'_> {
                 "runtime-preparation-probe-v1",
                 &(&c.run_id, c.sequence, c.probes.len()),
             )?;
-            let (record, path) = self.store.leases.create(&id, 0)?;
+            let (mut record, path) = self.store.leases.create(&id, 0)?;
+            record.require_namespace(host_state);
             c.probes.push(Probe {
                 id: id.clone(),
                 record,
@@ -146,7 +154,15 @@ impl Preparation<'_> {
         })
     }
 
+    #[cfg(test)]
     pub(crate) fn resolve_probe(&self, id: &str) -> Result<ProcessCleanupEvidence> {
+        self.resolve_probe_and_state(id, None)
+    }
+    pub(crate) fn resolve_probe_and_state(
+        &self,
+        id: &str,
+        state: Option<crate::HostState>,
+    ) -> Result<ProcessCleanupEvidence> {
         // Return the opaque lock from the transaction closure: it must outlive
         // both the resolved projection and its append-only event commit.
         let proof = self.update(|tx, run, c| {
@@ -155,7 +171,21 @@ impl Preparation<'_> {
                 .iter_mut()
                 .find(|p| p.id == id)
                 .ok_or(RuntimeError::Integrity("unregistered preparation probe"))?;
-            match self.store.leases.cleanup_proof(id, 0, &probe.record) {
+            let proof = self
+                .store
+                .leases
+                .cleanup_proof(id, 0, &probe.record)
+                .and_then(|proof| {
+                    if probe.record.needs_host_cleanup() && state.is_none() {
+                        return Err(RuntimeError::CleanupUnknown);
+                    }
+                    if let Some(state) = state {
+                        state.cleanup_with_proof(&proof)?;
+                        probe.record.host_state_cleaned();
+                    }
+                    Ok(proof)
+                });
+            match proof {
                 Ok(proof) => {
                     probe.evidence = Some(proof.evidence);
                     Ok(Some(proof))
@@ -328,7 +358,7 @@ pub(super) fn recover(
         if probe.evidence.is_some() {
             continue;
         }
-        if let Ok(proof) = store.leases.cleanup_proof(&probe.id, 0, &probe.record) {
+        if let Ok(proof) = store.leases.recovery_proof(&probe.id, 0, &probe.record) {
             probe.evidence = Some(proof.evidence);
             locks.push(proof);
             changed = true;
@@ -465,6 +495,93 @@ mod tests {
             );
             drop(held);
         }
+    }
+
+    #[test]
+    fn confirmed_probe_host_cleanup_survives_restart() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        let prep = lease_only(&store);
+        let (id, path) = prep.register_probe_with_host_state(true).unwrap();
+        let mut state =
+            crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                .unwrap()
+                .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), true).unwrap();
+        fs::write(&path, b"router-runtime-lease-v1:namespace-clean\n").unwrap();
+        assert_eq!(
+            prep.resolve_probe_and_state(&id, Some(state)).unwrap(),
+            ProcessCleanupEvidence::NamespaceTerminated
+        );
+        assert!(!home.exists());
+        prep.complete().unwrap();
+        store
+            .transition("run", RunState::Cancelled, "fixture-complete", None)
+            .unwrap();
+        drop(prep);
+        drop(store);
+        Store::open(&root)
+            .unwrap()
+            .require_cleanup_complete()
+            .unwrap();
+    }
+
+    #[test]
+    fn group_only_probe_cannot_settle_exposed_host_state() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        let prep = lease_only(&store);
+        let (id, path) = prep.register_probe_with_host_state(true).unwrap();
+        let mut state =
+            crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                .unwrap()
+                .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        fs::write(&path, b"router-runtime-lease-v1:group-clean\n").unwrap();
+        assert!(matches!(
+            prep.resolve_probe_and_state(&id, Some(state)),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(home.exists());
+        assert!(prep.complete().is_err());
+        retained(&store);
+        drop(prep);
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        retained(&store);
+    }
+
+    #[test]
+    fn refused_probe_home_cleanup_survives_restart() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        let prep = lease_only(&store);
+        let (id, path) = prep.register_probe_with_host_state(true).unwrap();
+        let mut state =
+            crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                .unwrap()
+                .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        fs::rename(&home, root.join("moved-home")).unwrap();
+        fs::DirBuilder::new().mode(0o700).create(&home).unwrap();
+        fs::write(home.join("foreign"), b"keep").unwrap();
+        assert!(matches!(
+            prep.resolve_probe_and_state(&id, Some(state)),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(home.exists());
+        assert!(prep.complete().is_err());
+        retained(&store);
+        drop(prep);
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        retained(&store);
     }
 
     #[test]
