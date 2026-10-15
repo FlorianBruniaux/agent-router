@@ -3,7 +3,7 @@ adr: "0032"
 title: "Bind producer-owned finite-client startup state"
 status: implemented
 created: 2026-10-11
-last_modified: 2026-10-11
+last_modified: 2026-10-13
 scope: "Private startup preparation and Linux diagnostic only; no native execution authority"
 amended_by: []
 supersedes: []
@@ -34,3 +34,7 @@ F12a stays NO_GO. Durable PendingRun/ApprovedRun dispatch, an approved namespace
 ## Verification
 
 Contract tests exercise the real producer and authenticated proof validator, including corruption before review, slot and alias substitutions, stale v2/v3 bindings and exact preview environment. Diagnostic parser tests refuse redirected home/tmp/SQLite paths and LD_PRELOAD. The external four-case campaign covers normal completion, deadline, EOF and helper death, with detached activity before teardown and an independently stable heartbeat after namespace destruction. Source/build/campaign hashes and the local verification results live in the dated report; they do not establish a useful patch or savings.
+
+## Host-state cleanup follow-up, 2026-10-13
+
+[Private host-state cleanup](../bench/host-state-cleanup-2026-10-13.md) retains descriptors for the home and runtime store, requiring device/inode/owner/mode equality before writable grants and recursive deletion. It refuses missing paths, consumes a single explicit cleanup attempt and keeps independent program-copy disposal. A refusal leaves ambiguous or moved state for reconciliation. This extends the existing descriptor-ownership pattern; it does not atomically exclude concurrent same-UID writers or qualify a production namespace owner. The unchanged 8 GiB bound and F12a NO_GO remain in force.

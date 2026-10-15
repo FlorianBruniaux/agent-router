@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-13: bind [private host-state cleanup](docs/bench/host-state-cleanup-2026-10-13.md) to retained home/store identities. Refuse substituted or missing paths and changed modes, avoid Drop retries after explicit failure, and preserve independent program-copy cleanup. Keep 8 GiB and F12a NO_GO.
+
 - 2026-10-11: bind [producer-owned finite-client startup](docs/bench/linux-owned-startup-2026-10-11/README.md) before review, including private installation state and SQLite location. Reject changed startup identities and prior owned v2/v3 proofs; preserve the 8 GiB limit and production admission refusal.
 
 - 2026-10-11: integrate the accepted M4 report-cost correction. Invalid attempts retain their list/product costs in totals and cost-per-accepted-change ratios; unknown costs remain unknown. Add four regressions and record [the subsequent acceptance](docs/bench/m4-fix-integration-2026-10-11.md), preserving frozen trial evidence and its measurement limits.
