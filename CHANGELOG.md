@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-15: transfer [finite-client preparation resources](docs/adr/0035-finite-client-namespace-ownership.md) into the namespace lifecycle. Retain the broker and copies until a matching locked stop proof permits disposal; refuse generic home-write dispatch and preserve ambiguous ownership. Keep 8 GiB and F12a NO_GO.
+
 - 2026-10-15: require [writer exclusion before private host-state disposal](docs/adr/0033-host-state-writer-exclusion.md). Retain exposed homes/program copies on ambiguous cleanup or async abandonment, reject group-only evidence, and keep filesystem obligations quarantined across restart. HostState on macOS now refuses group-only cleanup; 8 GiB and F12a NO_GO remain unchanged.
 
 - 2026-10-13: bind [private host-state cleanup](docs/bench/host-state-cleanup-2026-10-13.md) to retained home/store identities. Refuse substituted or missing paths and changed modes, avoid Drop retries after explicit failure, and preserve independent program-copy cleanup. Keep 8 GiB and F12a NO_GO.

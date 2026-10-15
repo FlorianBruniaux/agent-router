@@ -42,6 +42,10 @@ struct LinuxCanary {
     allowed_file: String,
     denied_read: String,
     hold: bool,
+    #[serde(default)]
+    release_after_canary: bool,
+    #[serde(default)]
+    namespace_owner: Option<String>,
 }
 const MAX_INPUT: usize = 8192;
 const MAX_OUTPUT: usize = 65536;
@@ -343,10 +347,16 @@ async fn worker(digest: &str) -> Result<Value> {
     {
         return Err(RuntimeError::Sandbox);
     }
-    if fs::write(workspace.join("outside-scope"), b"no")
-        .err()
-        .is_none_or(|e| e.kind() != std::io::ErrorKind::PermissionDenied)
-    {
+    let outside_scope = fs::write(workspace.join("outside-scope"), b"no");
+    if outside_scope.err().is_none_or(|e| {
+        let readonly_namespace = cfg!(target_os = "linux")
+            && task
+                .linux_canary
+                .as_ref()
+                .is_some_and(|c| c.namespace_owner.is_some())
+            && e.raw_os_error() == Some(nix::libc::EROFS);
+        e.kind() != std::io::ErrorKind::PermissionDenied && !readonly_namespace
+    }) {
         return Err(RuntimeError::Sandbox);
     }
     eprintln!(
@@ -517,7 +527,8 @@ fn linux_checks(task: &Task, home: &Path) -> Result<()> {
     if limits.current != Some(8589934592) || limits.maximum != Some(8589934592) {
         return Err(RuntimeError::Sandbox);
     }
-    let output = std::process::Command::new(&c.assets[3].path)
+    let mut command = std::process::Command::new(&c.assets[3].path);
+    command
         .arg("--canary")
         .args(c.assets.iter().map(|p| &p.path))
         .args([
@@ -526,10 +537,11 @@ fn linux_checks(task: &Task, home: &Path) -> Result<()> {
             c.denied_read.clone(),
             c.allowed_file.clone(),
             c.heartbeat.clone(),
-        ])
-        .env_clear()
-        .env("PATH", "/usr/bin:/bin")
-        .output()?;
+        ]);
+    if let Some(owner) = &c.namespace_owner {
+        command.arg(owner);
+    }
+    let output = command.env_clear().env("PATH", "/usr/bin:/bin").output()?;
     if !output.status.success() || output.stdout.len() > 4096 || !output.stderr.is_empty() {
         return Err(RuntimeError::Sandbox);
     }
@@ -537,7 +549,19 @@ fn linux_checks(task: &Task, home: &Path) -> Result<()> {
         .map_err(|_| RuntimeError::Invalid("Linux canary output"))?;
     println!("AR_LINUX_READY:{observed}");
     std::io::stdout().flush()?;
-    if c.hold {
+    if c.release_after_canary {
+        let deadline = std::time::Instant::now() + Duration::from_secs(40);
+        loop {
+            if std::fs::read(&c.allowed_file)? == b"namespace-release" {
+                std::fs::write(&c.allowed_file, b"scope-ok")?;
+                break;
+            }
+            if std::time::Instant::now() >= deadline {
+                return Err(RuntimeError::Limit);
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    } else if c.hold {
         std::thread::sleep(Duration::from_secs(40));
     }
     Ok(())
