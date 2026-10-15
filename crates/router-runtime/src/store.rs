@@ -783,7 +783,17 @@ impl Store {
     pub fn cleanup_evidence(&self, id: &str) -> Result<router_types::ProcessCleanupEvidence> {
         cleanup_evidence(&*self.lock()?, id)
     }
+    #[cfg(test)]
     pub fn attempt(&self, id: &str, max: u32, supervised: bool) -> Result<Option<PathBuf>> {
+        self.attempt_with_host_state(id, max, supervised, false)
+    }
+    pub(crate) fn attempt_with_host_state(
+        &self,
+        id: &str,
+        max: u32,
+        supervised: bool,
+        host_state: bool,
+    ) -> Result<Option<PathBuf>> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
@@ -798,7 +808,7 @@ impl Store {
         let mut created = None;
         let stored = (|| {
             if supervised {
-                let (record, path) = match self.create_lease(&tx, id, run.attempts) {
+                let (mut record, path) = match self.create_lease(&tx, id, run.attempts) {
                     Ok(created) => created,
                     Err(error) => {
                         // O_EXCL may have succeeded before a later write or sync
@@ -813,6 +823,7 @@ impl Store {
                         return Err(error);
                     }
                 };
+                record.require_namespace(host_state);
                 created = Some(path);
                 tx.execute(
                     "INSERT INTO attempt_leases(run_id,attempt,record) VALUES(?1,?2,?3)",
@@ -879,7 +890,15 @@ impl Store {
         };
         remove_owned_regular_file(&self.root.join("leases").join(format!("{digest}.lease")));
     }
+    #[cfg(test)]
     pub fn confirm_attempt_cleanup(&self, id: &str) -> Result<()> {
+        self.confirm_attempt_cleanup_and_state(id, None)
+    }
+    pub(crate) fn confirm_attempt_cleanup_and_state(
+        &self,
+        id: &str,
+        state: Option<crate::HostState>,
+    ) -> Result<()> {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
@@ -890,12 +909,30 @@ impl Store {
                 |r| r.get(0),
             )
             .optional()?;
-        let Some(record) = record else {
+        if record.is_none() && state.is_none() {
             return Ok(());
-        };
-        let proof = serde_json::from_str::<LeaseRecord>(&record)
-            .map_err(|_| RuntimeError::CleanupUnknown)
-            .and_then(|record| self.leases.cleanup_proof(id, run.attempts, &record));
+        }
+        let proof = record
+            .ok_or(RuntimeError::CleanupUnknown)
+            .and_then(|record| {
+                serde_json::from_str::<LeaseRecord>(&record)
+                    .map_err(|_| RuntimeError::CleanupUnknown)
+            })
+            .and_then(|mut record| {
+                let proof = self.leases.cleanup_proof(id, run.attempts, &record)?;
+                if record.needs_host_cleanup() && state.is_none() {
+                    return Err(RuntimeError::CleanupUnknown);
+                }
+                if let Some(state) = state {
+                    state.cleanup_with_proof(&proof)?;
+                    record.host_state_cleaned();
+                    tx.execute(
+                        "UPDATE attempt_leases SET record=?3 WHERE run_id=?1 AND attempt=?2",
+                        params![id, run.attempts, serde_json::to_string(&record)?],
+                    )?;
+                }
+                Ok(proof)
+            });
         match proof {
             Ok(proof) => {
                 let evidence = serde_json::to_string(&proof.evidence)?;
@@ -1117,7 +1154,7 @@ impl Store {
                             .ok()
                             .and_then(|record| {
                                 self.leases
-                                    .cleanup_proof(&run.run_id, run.attempts, &record)
+                                    .recovery_proof(&run.run_id, run.attempts, &record)
                                     .ok()
                             }) {
                             Some(lock) => {
@@ -2264,6 +2301,170 @@ pub(crate) mod tests {
         ));
         store.verify_events().unwrap();
     }
+    #[test]
+    fn confirmed_host_cleanup_clears_only_its_durable_obligation() {
+        for marker in ["pending", "namespace-clean"] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+            let store = Store::open(&root).unwrap();
+            store.register(&summary("run")).unwrap();
+            for state in [RunState::AwaitingApproval, RunState::Queued] {
+                store.transition("run", state, "", None).unwrap();
+            }
+            let prep = store.begin_preparation("run").unwrap();
+            prep.no_child_yet().unwrap();
+            prep.complete().unwrap();
+            drop(prep);
+            let path = store
+                .attempt_with_host_state("run", 1, true, true)
+                .unwrap()
+                .unwrap();
+            let mut state =
+                crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                    .unwrap()
+                    .unwrap();
+            let home = state.path().to_owned();
+            state.arm_cleanup(Some(&path), true).unwrap();
+            fs::write(&path, format!("router-runtime-lease-v1:{marker}\n")).unwrap();
+            store
+                .confirm_attempt_cleanup_and_state("run", Some(state))
+                .unwrap();
+            assert!(!home.exists());
+            let record: String = store
+                .lock()
+                .unwrap()
+                .query_row(
+                    "SELECT record FROM attempt_leases WHERE run_id='run'",
+                    [],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert!(
+                !serde_json::from_str::<LeaseRecord>(&record)
+                    .unwrap()
+                    .needs_host_cleanup()
+            );
+            store
+                .transition("run", RunState::Cancelled, "fixture-complete", None)
+                .unwrap();
+            drop(store);
+            Store::open(&root)
+                .unwrap()
+                .require_cleanup_complete()
+                .unwrap();
+        }
+    }
+
+    #[test]
+    fn group_only_cleanup_retains_host_state_and_durable_authority() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        store
+            .writer_lock("run", "/fixture", &["src".into()])
+            .unwrap();
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        let path = store
+            .attempt_with_host_state("run", 1, true, true)
+            .unwrap()
+            .unwrap();
+        let mut state =
+            crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                .unwrap()
+                .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        fs::write(&path, b"router-runtime-lease-v1:group-clean\n").unwrap();
+        assert!(matches!(
+            store.confirm_attempt_cleanup_and_state("run", Some(state)),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(home.exists());
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(
+            store
+                .lock()
+                .unwrap()
+                .prepare("SELECT 1 FROM writer_locks WHERE run_id='run'")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+        store.verify_events().unwrap();
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+    }
+
+    #[test]
+    fn refused_home_cleanup_remains_quarantined_after_restart() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        store.register(&summary("run")).unwrap();
+        for state in [RunState::AwaitingApproval, RunState::Queued] {
+            store.transition("run", state, "", None).unwrap();
+        }
+        store
+            .writer_lock("run", "/fixture", &["src".into()])
+            .unwrap();
+        let prep = store.begin_preparation("run").unwrap();
+        prep.no_child_yet().unwrap();
+        prep.complete().unwrap();
+        drop(prep);
+        let path = store
+            .attempt_with_host_state("run", 1, true, true)
+            .unwrap()
+            .unwrap();
+        let mut state =
+            crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                .unwrap()
+                .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        fs::rename(&home, root.join("moved-home")).unwrap();
+        fs::DirBuilder::new().mode(0o700).create(&home).unwrap();
+        fs::write(home.join("foreign"), b"keep").unwrap();
+        assert!(matches!(
+            store.confirm_attempt_cleanup_and_state("run", Some(state)),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert_eq!(fs::read(home.join("foreign")).unwrap(), b"keep");
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(
+            store
+                .lock()
+                .unwrap()
+                .prepare("SELECT 1 FROM writer_locks WHERE run_id='run'")
+                .unwrap()
+                .exists([])
+                .unwrap()
+        );
+        store.verify_events().unwrap();
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        assert!(matches!(
+            store.require_cleanup_complete(),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+    }
+
     #[test]
     fn recovery_requires_private_lease_proof_before_releasing_writer_authority() {
         for status in [

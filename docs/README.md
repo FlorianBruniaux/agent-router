@@ -1,5 +1,7 @@
 # Documentation index
 
+[Host-state writer exclusion](bench/host-state-writer-exclusion-2026-10-15.md), 2026-10-15: require the exact locked stop proof before disposal, preserve exposed state on Drop and quarantine incomplete filesystem cleanup across restart. 8 GiB unchanged; F12a NO_GO.
+
 [Private host-state cleanup](bench/host-state-cleanup-2026-10-13.md), 2026-10-13: preserve substituted home/store paths, refuse ambiguous absence and prevent Drop retries. Local macOS tests; 8 GiB unchanged, F12a NO_GO.
 
 [Producer-owned Linux startup](bench/linux-owned-startup-2026-10-11/README.md), 2026-10-11: bind installation/SQLite startup before review and qualify the same producer under unchanged 8 GiB. Diagnostic only, F12a NO_GO.

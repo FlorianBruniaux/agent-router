@@ -22,6 +22,9 @@ pub struct HostState {
     directory: OwnedDirectory,
     store_directory: OwnedDirectory,
     cleanup_attempted: bool,
+    possibly_running: bool,
+    writer_lease: Option<crate::leases::CleanupLease>,
+    pid_namespace: bool,
 }
 impl HostState {
     pub(crate) fn path(&self) -> &Path {
@@ -83,6 +86,9 @@ impl HostState {
             directory,
             store_directory,
             cleanup_attempted: false,
+            possibly_running: false,
+            writer_lease: None,
+            pid_namespace: false,
         };
         state.check_directories()?;
         if program == "codex" {
@@ -178,7 +184,53 @@ impl HostState {
         Ok(())
     }
 
-    pub(crate) fn cleanup(mut self) -> Result<()> {
+    /// Called before capture is polled, including any cancellable spawn path.
+    /// An arming failure also retains the state rather than guessing no spawn.
+    pub(crate) fn arm_cleanup(&mut self, lease: Option<&Path>, pid_namespace: bool) -> Result<()> {
+        if self.possibly_running {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        self.possibly_running = true;
+        self.pid_namespace = pid_namespace;
+        self.check_directories()?;
+        let path = lease.ok_or(RuntimeError::CleanupUnknown)?;
+        if path.starts_with(&self.path) {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        self.writer_lease = Some(crate::leases::CleanupLease::pin(path)?);
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn cleanup(self) -> Result<()> {
+        if !self.possibly_running {
+            return self.cleanup_owned();
+        }
+        let proof = self
+            .writer_lease
+            .as_ref()
+            .ok_or(RuntimeError::CleanupUnknown)?
+            .proof()?;
+        self.cleanup_with_proof(&proof)
+    }
+    pub(crate) fn cleanup_with_proof(self, proof: &crate::leases::CleanupProof) -> Result<()> {
+        if !self.possibly_running
+            || !proof.excludes_writers()
+            || (proof.evidence == router_types::ProcessCleanupEvidence::NamespaceTerminated
+                && !self.pid_namespace)
+            || !self
+                .writer_lease
+                .as_ref()
+                .ok_or(RuntimeError::CleanupUnknown)?
+                .matches(proof)?
+        {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        // The caller owns the opaque lock until deletion and durable settlement
+        // finish. A pending helper cannot acquire it or launch after recovery.
+        self.cleanup_owned()
+    }
+    fn cleanup_owned(mut self) -> Result<()> {
         let state_cleanup = self.remove_owned_directory();
         let program_cleanup = self
             .private_program
@@ -190,7 +242,13 @@ impl HostState {
 }
 impl Drop for HostState {
     fn drop(&mut self) {
-        if !self.cleanup_attempted {
+        if self.possibly_running {
+            // A dropped/failed async operation cannot prove all writers stopped.
+            // Do not even remove the read-only program copy while it may be live.
+            if let Some(program) = self.private_program.take() {
+                program.preserve();
+            }
+        } else if !self.cleanup_attempted {
             let _ = self.remove_owned_directory();
         }
     }
@@ -429,6 +487,194 @@ printf approved
         state.cleanup().unwrap();
         assert!(!directory.exists());
     }
+    #[test]
+    fn detached_writer_outlives_group_marker_and_prevents_home_cleanup() {
+        use std::io::Write;
+        use std::process::{Child, Command, Stdio};
+        use std::time::{Duration, Instant};
+        const CHILD_HOME: &str = "AR_CLEANUP_FIXTURE_CHILD_HOME";
+        if let Some(home) = std::env::var_os(CHILD_HOME) {
+            nix::unistd::setsid().unwrap();
+            let mut file = fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(Path::new(&home).join("heartbeat"))
+                .unwrap();
+            loop {
+                file.write_all(b"x").unwrap();
+                file.flush().unwrap();
+                std::thread::sleep(Duration::from_millis(10));
+            }
+        }
+        struct Writer(Child);
+        impl Drop for Writer {
+            fn drop(&mut self) {
+                let _ = self.0.kill();
+                let _ = self.0.wait();
+            }
+        }
+        let temp = tempfile::tempdir().unwrap();
+        let store = fs::canonicalize(temp.path()).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let mut state = HostState::create(&store, "codex", &BTreeMap::new())
+            .unwrap()
+            .unwrap();
+        let home = state.path.clone();
+        let heartbeat = home.join("heartbeat");
+        let leases = crate::leases::LeaseStorage::open(&store).unwrap();
+        let (_, path) = leases.create("detached", 1).unwrap();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        let _writer = Writer(Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "host_state::tests::detached_writer_outlives_group_marker_and_prevents_home_cleanup", "--nocapture"])
+            .env(CHILD_HOME, &home).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).spawn().unwrap());
+        let deadline = Instant::now() + Duration::from_secs(3);
+        while fs::metadata(&heartbeat).map_or(true, |m| m.len() == 0) {
+            assert!(Instant::now() < deadline, "writer did not start");
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        fs::write(&path, b"router-runtime-lease-v1:group-clean\n").unwrap();
+        assert!(state.cleanup().is_err());
+        let first = fs::metadata(&heartbeat).unwrap().len();
+        while fs::metadata(&heartbeat).unwrap().len() == first {
+            assert!(
+                Instant::now() < deadline,
+                "detached writer stopped unexpectedly"
+            );
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        assert!(home.is_dir());
+        drop(_writer); // Reap the owned child before the fixture directory is removed.
+    }
+
+    #[test]
+    fn exposed_host_state_requires_exact_unlocked_namespace_lease() {
+        use nix::fcntl::{Flock, FlockArg};
+        for case in [
+            "pending",
+            "namespace",
+            "group",
+            "active",
+            "held",
+            "replaced",
+            "symlink",
+            "wrong-proof",
+            "no-namespace",
+            "drop",
+            "no-lease",
+        ] {
+            let temp = tempfile::tempdir().unwrap();
+            let store = fs::canonicalize(temp.path()).unwrap();
+            fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+            let source = store.join("inert-program");
+            fs::write(&source, b"inert, never executed").unwrap();
+            let hash = crate::sandbox::binary_hash(&source).unwrap();
+            let mut state =
+                HostState::create_with_program(&store, "codex", &BTreeMap::new(), &source, &hash)
+                    .unwrap()
+                    .unwrap();
+            let home = state.path.clone();
+            fs::write(home.join("owned"), b"keep").unwrap();
+            let program = state
+                .private_program_path("codex", &hash)
+                .unwrap()
+                .to_owned();
+            let leases = crate::leases::LeaseStorage::open(&store).unwrap();
+            let (record, path) = leases.create("case", 1).unwrap();
+            if case == "no-lease" {
+                assert!(state.arm_cleanup(None, true).is_err());
+            } else {
+                state
+                    .arm_cleanup(Some(&path), case != "no-namespace")
+                    .unwrap();
+            }
+            let mut held = None;
+            match case {
+                "namespace" | "no-namespace" | "held" => {
+                    fs::write(&path, b"router-runtime-lease-v1:namespace-clean\n").unwrap()
+                }
+                "group" => fs::write(&path, b"router-runtime-lease-v1:group-clean\n").unwrap(),
+                "active" => fs::write(&path, b"router-runtime-lease-v1:active\n").unwrap(),
+                "replaced" | "symlink" => {
+                    fs::rename(&path, path.with_extension("original")).unwrap();
+                    if case == "replaced" {
+                        fs::write(&path, b"router-runtime-lease-v1:namespace-clean\n").unwrap();
+                        fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+                    } else {
+                        std::os::unix::fs::symlink(path.with_extension("original"), &path).unwrap();
+                    }
+                }
+                _ => {}
+            }
+            if case == "held" {
+                held = Some(
+                    Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock)
+                        .unwrap(),
+                );
+            }
+            if case == "drop" || case == "no-lease" {
+                drop(state);
+            } else if case == "wrong-proof" {
+                let (other, _) = leases.create("other", 1).unwrap();
+                let proof = leases.cleanup_proof("other", 1, &other).unwrap();
+                assert!(state.cleanup_with_proof(&proof).is_err());
+            } else {
+                let result = state.cleanup();
+                assert_eq!(
+                    result.is_ok(),
+                    matches!(case, "pending" | "namespace"),
+                    "{case}"
+                );
+            }
+            if matches!(case, "pending" | "namespace") {
+                assert!(!home.exists(), "{case}");
+                assert!(!program.parent().unwrap().exists(), "{case}");
+                if case == "pending" {
+                    assert_eq!(
+                        leases.cleanup_proof("case", 1, &record).unwrap().evidence,
+                        ProcessCleanupEvidence::NotStarted
+                    );
+                }
+            } else {
+                assert_eq!(fs::read(home.join("owned")).unwrap(), b"keep", "{case}");
+                assert_eq!(
+                    fs::read(&program).unwrap(),
+                    b"inert, never executed",
+                    "{case}"
+                );
+                // All actors here are inert; explicitly dispose only this test's retained copy.
+                fs::remove_dir_all(program.parent().unwrap()).unwrap();
+            }
+            drop(held);
+        }
+    }
+
+    #[test]
+    fn recovered_pending_lease_cannot_be_reacquired_during_cleanup() {
+        use nix::fcntl::{Flock, FlockArg};
+        let temp = tempfile::tempdir().unwrap();
+        let store = fs::canonicalize(temp.path()).unwrap();
+        fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+        let mut state = HostState::create(&store, "codex", &BTreeMap::new())
+            .unwrap()
+            .unwrap();
+        let home = state.path.clone();
+        let leases = crate::leases::LeaseStorage::open(&store).unwrap();
+        let (record, path) = leases.create("pending", 1).unwrap();
+        state.arm_cleanup(Some(&path), false).unwrap();
+        let proof = leases.cleanup_proof("pending", 1, &record).unwrap();
+        assert!(Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock).is_err());
+        state.cleanup_with_proof(&proof).unwrap();
+        assert!(!home.exists());
+        assert!(Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock).is_err());
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            b"router-runtime-lease-v1:recovered\n"
+        );
+        drop(proof);
+        let _lock =
+            Flock::lock(File::open(path).unwrap(), FlockArg::LockExclusiveNonblock).unwrap();
+    }
+
     #[test]
     fn host_state_cleanup_preserves_substituted_home() {
         for explicit in [false, true] {

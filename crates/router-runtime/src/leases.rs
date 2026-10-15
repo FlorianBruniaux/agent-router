@@ -18,6 +18,22 @@ const RECOVERED: &[u8] = b"router-runtime-lease-v1:recovered\n";
 pub(crate) struct LeaseRecord {
     name: String,
     identity: FileIdentity,
+    #[serde(default)]
+    namespace_required: bool,
+    #[serde(default)]
+    host_state_pending: bool,
+}
+impl LeaseRecord {
+    pub(crate) fn require_namespace(&mut self, required: bool) {
+        self.namespace_required = required;
+        self.host_state_pending = required;
+    }
+    pub(crate) fn needs_host_cleanup(&self) -> bool {
+        self.host_state_pending
+    }
+    pub(crate) fn host_state_cleaned(&mut self) {
+        self.host_state_pending = false;
+    }
 }
 pub(crate) struct LeaseStorage {
     directory: File,
@@ -79,6 +95,8 @@ impl LeaseStorage {
             LeaseRecord {
                 name: name.clone(),
                 identity: FileIdentity::from_file(&file)?,
+                namespace_required: false,
+                host_state_pending: false,
             },
             self.path.join(name),
         ))
@@ -134,6 +152,20 @@ impl LeaseStorage {
     }
     /// The caller retains this lock through the durable terminal transition.
     /// Invalidating pending under the lock prevents a delayed helper spawning.
+    /// Recovery has no live HostState owner. A process-stop marker cannot prove
+    /// that a refused/interrupted filesystem cleanup completed.
+    pub(crate) fn recovery_proof(
+        &self,
+        id: &str,
+        attempt: u32,
+        record: &LeaseRecord,
+    ) -> Result<CleanupProof> {
+        if record.needs_host_cleanup() {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        self.cleanup_proof(id, attempt, record)
+    }
+
     pub fn cleanup_proof(
         &self,
         id: &str,
@@ -152,38 +184,134 @@ impl LeaseStorage {
             )
             .map_err(|_| RuntimeError::CleanupUnknown)?,
         );
-        let metadata = file.metadata()?;
-        if !metadata.is_file()
-            || metadata.nlink() != 1
-            || metadata.permissions().mode() & 0o077 != 0
-            || !record.identity.matches(&file)?
+        let proof = lock_cleanup(file, &record.identity)?;
+        if record.namespace_required && !proof.excludes_writers() {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        Ok(proof)
+    }
+}
+
+/// Retain the exact helper lease before any process can receive the home.
+/// The opaque proof owns its lock throughout the caller's deletion operation.
+pub(crate) struct CleanupLease {
+    #[cfg(test)]
+    directory: File,
+    #[cfg(test)]
+    name: std::ffi::OsString,
+    file: File,
+    identity: FileIdentity,
+}
+impl CleanupLease {
+    pub(crate) fn pin(path: &Path) -> Result<Self> {
+        if !path.is_absolute() || std::fs::canonicalize(path)? != path {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        let parent = path.parent().ok_or(RuntimeError::CleanupUnknown)?;
+        let directory = OpenOptions::new()
+            .read(true)
+            .custom_flags(nix::libc::O_DIRECTORY | nix::libc::O_NOFOLLOW)
+            .open(parent)?;
+        let meta = directory.metadata()?;
+        if meta.uid() != rustix::process::geteuid().as_raw() || meta.mode() & 0o077 != 0 {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        let name = path
+            .file_name()
+            .ok_or(RuntimeError::CleanupUnknown)?
+            .to_owned();
+        let file = open_lease_at(&directory, &name)?;
+        let identity = FileIdentity::from_file(&file)?;
+        // No helper has been dispatched yet. Validate/invalidate pending under
+        // the normal protocol only when cleanup is actually requested.
+        let meta = file.metadata()?;
+        if !meta.is_file()
+            || meta.nlink() != 1
+            || meta.mode() & 0o077 != 0
+            || meta.uid() != rustix::process::geteuid().as_raw()
+            || meta.len() != PENDING.len() as u64
         {
             return Err(RuntimeError::CleanupUnknown);
         }
-        let mut lock = Flock::lock(file, FlockArg::LockExclusiveNonblock)
-            .map_err(|_| RuntimeError::CleanupUnknown)?;
-        let mut status = Vec::new();
-        (&mut *lock).take(96).read_to_end(&mut status)?;
-        let evidence = if status == PENDING {
-            lock.seek(SeekFrom::Start(0))?;
-            lock.write_all(RECOVERED)?;
-            lock.set_len(RECOVERED.len() as u64)?;
-            lock.sync_all()?;
-            router_types::ProcessCleanupEvidence::NotStarted
-        } else if status == RECOVERED {
-            router_types::ProcessCleanupEvidence::NotStarted
-        } else if status == GROUP_CLEAN {
-            router_types::ProcessCleanupEvidence::GroupTerminated
-        } else if status == NAMESPACE_CLEAN {
-            router_types::ProcessCleanupEvidence::NamespaceTerminated
-        } else {
+        let mut bytes = Vec::new();
+        (&file).take(96).read_to_end(&mut bytes)?;
+        if bytes != PENDING {
             return Err(RuntimeError::CleanupUnknown);
-        };
-        Ok(CleanupProof {
-            _lock: lock,
-            evidence,
+        }
+        Ok(Self {
+            #[cfg(test)]
+            directory,
+            #[cfg(test)]
+            name,
+            file,
+            identity,
         })
     }
+    pub(crate) fn matches(&self, proof: &CleanupProof) -> Result<bool> {
+        Ok(self.identity.matches(&self.file)? && self.identity.matches(&proof._lock)?)
+    }
+    #[cfg(test)]
+    pub(crate) fn proof(&self) -> Result<CleanupProof> {
+        // Reopen, never dup: flock on a dup would share the helper's lock.
+        let file = open_lease_at(&self.directory, &self.name)?;
+        if !self.identity.matches(&self.file)? {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        lock_cleanup(file, &self.identity)
+    }
+}
+fn open_lease_at(directory: &File, name: &std::ffi::OsStr) -> Result<File> {
+    openat(
+        directory,
+        name,
+        OFlags::RDWR | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+        Mode::empty(),
+    )
+    .map(File::from)
+    .map_err(|_| RuntimeError::CleanupUnknown)
+}
+impl CleanupProof {
+    pub(crate) fn excludes_writers(&self) -> bool {
+        matches!(
+            self.evidence,
+            router_types::ProcessCleanupEvidence::NotStarted
+                | router_types::ProcessCleanupEvidence::NamespaceTerminated
+        )
+    }
+}
+fn lock_cleanup(file: File, identity: &FileIdentity) -> Result<CleanupProof> {
+    let metadata = file.metadata()?;
+    if !metadata.is_file()
+        || metadata.nlink() != 1
+        || metadata.uid() != rustix::process::geteuid().as_raw()
+        || metadata.permissions().mode() & 0o077 != 0
+        || !identity.matches(&file)?
+    {
+        return Err(RuntimeError::CleanupUnknown);
+    }
+    let mut lock = Flock::lock(file, FlockArg::LockExclusiveNonblock)
+        .map_err(|_| RuntimeError::CleanupUnknown)?;
+    let mut status = Vec::new();
+    (&mut *lock).take(96).read_to_end(&mut status)?;
+    let evidence = if status == PENDING {
+        lock.seek(SeekFrom::Start(0))?;
+        lock.write_all(RECOVERED)?;
+        lock.set_len(RECOVERED.len() as u64)?;
+        lock.sync_all()?;
+        router_types::ProcessCleanupEvidence::NotStarted
+    } else if status == RECOVERED {
+        router_types::ProcessCleanupEvidence::NotStarted
+    } else if status == GROUP_CLEAN {
+        router_types::ProcessCleanupEvidence::GroupTerminated
+    } else if status == NAMESPACE_CLEAN {
+        router_types::ProcessCleanupEvidence::NamespaceTerminated
+    } else {
+        return Err(RuntimeError::CleanupUnknown);
+    };
+    Ok(CleanupProof {
+        _lock: lock,
+        evidence,
+    })
 }
 
 /// Observation only: even a cleanup marker is not an opaque cleanup proof.
@@ -264,6 +392,7 @@ fn observe_lease_checked(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     // router-sandbox-helper cannot depend on this crate, and this crate cannot
     // link the helper binary, so the two spellings are pinned against each
@@ -276,6 +405,39 @@ mod tests {
             std::str::from_utf8(marker).unwrap().replace('\n', "\\n")
         )
     }
+    #[test]
+    fn historical_lease_records_do_not_invent_host_cleanup() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap();
+        let storage = LeaseStorage::open(&root).unwrap();
+        let (mut record, path) = storage.create("legacy", 1).unwrap();
+        let mut value = serde_json::to_value(&record).unwrap();
+        value.as_object_mut().unwrap().remove("namespace_required");
+        value.as_object_mut().unwrap().remove("host_state_pending");
+        let legacy: LeaseRecord = serde_json::from_value(value).unwrap();
+        assert!(!legacy.needs_host_cleanup());
+        std::fs::write(&path, GROUP_CLEAN).unwrap();
+        assert_eq!(
+            storage
+                .recovery_proof("legacy", 1, &legacy)
+                .unwrap()
+                .evidence,
+            router_types::ProcessCleanupEvidence::GroupTerminated
+        );
+        record.require_namespace(true);
+        assert!(storage.cleanup_proof("legacy", 1, &record).is_err());
+        std::fs::write(&path, NAMESPACE_CLEAN).unwrap();
+        assert!(storage.recovery_proof("legacy", 1, &record).is_err());
+        record.host_state_cleaned();
+        assert_eq!(
+            storage
+                .recovery_proof("legacy", 1, &record)
+                .unwrap()
+                .evidence,
+            router_types::ProcessCleanupEvidence::NamespaceTerminated
+        );
+    }
+
     #[test]
     fn helper_lease_markers_equal_the_runtime_markers() {
         for (name, marker) in [

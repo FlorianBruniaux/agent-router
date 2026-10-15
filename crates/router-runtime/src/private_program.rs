@@ -147,6 +147,12 @@ impl PrivateProgram {
         current.is_dir() && current.dev() == owned.dev() && current.ino() == owned.ino()
     }
 
+    pub(crate) fn preserve(mut self) {
+        if let Some(directory) = self.directory.take() {
+            let _ = directory.keep();
+        }
+    }
+
     pub(crate) fn cleanup(mut self) -> Result<()> {
         let unchanged = self.same_directory();
         if let Some(directory) = self.directory.take() {

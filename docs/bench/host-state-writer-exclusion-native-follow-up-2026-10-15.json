@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "scope": "PR176 native recovery and cleanup classification follow-up",
+  "f12a": "NO_GO",
+  "provider_turns": 0,
+  "base_commit": "89ff3c04f2fcb98591e6767cf487622965c2bf79",
+  "changed_rust_sha256": {
+    "crates/router-runtime/src/native_version.rs": "a8959beb5a41644c4991f1d37c393efa6b1b5c3fcbfe4ab77a8331e3afb711cf",
+    "crates/agent-router-cli/tests/session_budgets.rs": "b9fb24bcb5d8dda07578dc82ccbab220477c0c8fe5f231e8c231e963a088282d"
+  },
+  "local_quality_before_classification_fix": {
+    "checks_passed": 32,
+    "summary_sha256": "ec667707bc253ca1c72292e84bc75a15b681819cc1dbbba84ed68903f787686c"
+  },
+  "final_required_rust_gate": {
+    "checks_passed": 4,
+    "summary_sha256": "87a2f3f5f927b6a4faf8ed63e590eedd92d77e3dd4beb03044ddc19fd0201d8c",
+    "parallel_attempt_exit_code": 101,
+    "parallel_failed_test": "router-local-api::server::tests::a_panicking_handler_answers_500_and_costs_no_slot",
+    "serial_resume_phases": [
+      {
+        "id": "local-api-serial",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "router-local-api",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 28.261613166992902,
+        "log_sha256": "03af5d4ffe4bac2a8e5c198b0548fd3cb3d7442e8f3858dfdd929261af5ecb96"
+      },
+      {
+        "id": "remaining-packages",
+        "argv": [
+          "cargo",
+          "test",
+          "-p",
+          "router-doctor",
+          "-p",
+          "router-eval",
+          "-p",
+          "router-policy",
+          "-p",
+          "router-prepare",
+          "-p",
+          "router-retrieval",
+          "-p",
+          "router-runtime",
+          "-p",
+          "router-sandbox-helper",
+          "-p",
+          "router-types",
+          "-p",
+          "router-validation",
+          "-p",
+          "router-workflow",
+          "-p",
+          "xtask",
+          "--all-features",
+          "--locked",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 324.38104570799624,
+        "log_sha256": "adc22970f60f1dd74da1e32bcd74b6a74a2f74c24fdf8beb3c7751f0aa327dee"
+      },
+      {
+        "id": "workspace-doctests",
+        "argv": [
+          "cargo",
+          "test",
+          "--workspace",
+          "--all-features",
+          "--locked",
+          "--doc",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit_code": 0,
+        "seconds": 8.817301999995834,
+        "log_sha256": "01c5920fd263a5367d1d256b461b070ef8ae114699352b958bbc5b7d6b6a3119"
+      },
+      {
+        "id": "harness",
+        "argv": [
+          "cargo",
+          "run",
+          "-p",
+          "xtask",
+          "--locked",
+          "--",
+          "check"
+        ],
+        "exit_code": 0,
+        "seconds": 0.5080154580064118,
+        "log_sha256": "7f85029214c85ee33000ad8dc3bddff33ded40532ea5cf2489c9fc16d1c8d956"
+      }
+    ]
+  },
+  "native_linux_behavior": {
+    "exit_code": 0,
+    "command_script_sha256": "4bb4e31f43260e5fdd599893cfa30ccd8c85d48edb5e3907189c975e6e092aea",
+    "log_sha256": "40b8ec74d7d1c1b10d6d6e0c152fc7b0517af4c694a66e81c6c9088ccd499a8b",
+    "test_result_rows": 39,
+    "source_manifest_sha256": "c776beb4d1c383c797d7533a434a99cb6577db71d172361ff2dc74b9524a0990",
+    "source_and_bound": {
+      "matched_source_files": 422,
+      "memory_max": "8589934592",
+      "memory_swap_max": "0"
+    },
+    "container_id": "88b1e207edd536df518e7cf916580c1f4ae28baf062d90b36c10de23cc28ca28",
+    "memory_bytes": 8589934592,
+    "memory_swap_bytes": 8589934592,
+    "network": "none",
+    "host_mounts": false,
+    "root_readonly": true,
+    "linux_clippy": "UNAVAILABLE: cargo-clippy absent from existing Rust image; final warnings-denied workspace Clippy passed on macOS"
+  },
+  "reproductions": {
+    "ci_runs": [
+      38717030695,
+      38716999539
+    ],
+    "budget_old_expectation_red_sha256": "4ecf910ad7ff03e0e7b1353d2dcd89ca357f33f0a2f89150fdef39b5e7fa89a2",
+    "cleanup_classification_red_sha256": "0870d707d5ba5a8921dad54a8650c6cd0e9512cca70404a735a13c2050db48ca",
+    "corrected_budget_green_sha256": "0fd7a2edd3531dce5b7912fe01c4f5016d81c71ae1bb4775a5e7652ccb97688e",
+    "cleanup_classification_green_sha256": "20e2dd8d074963f4caf59e1dd57fe21662dc2013541d255417a83e1e1b89dc0e"
+  },
+  "review": "Independent static review: no unresolved findings on either correction",
+  "limits": "No new finite-client execution, provider send or capability authority"
+}

@@ -1222,18 +1222,24 @@ impl Runtime {
                 .transition(id, RunState::Cancelled, "cancelled_before_attempt", None)?;
             return Err(RuntimeError::Cancelled);
         }
-        if let Some(path) = self.store.attempt(
+        let lease_path = self.store.attempt_with_host_state(
             id,
             self.limits.max_attempts,
             supervisor.parent_lifetime_enforced(),
-        )? {
+            host_state.is_some(),
+        )?;
+        if let Some(state) = &mut host_state {
+            state.arm_cleanup(lease_path.as_deref(), supervisor.pid_namespace_isolated())?;
+        }
+        if let Some(path) = lease_path {
             command.env("ROUTER_RUNTIME_LEASE", path);
         }
         if self.store.cancel_requested(id)? {
             cancel.cancel();
         }
         if cancel.is_cancelled() {
-            self.store.confirm_attempt_cleanup(id)?;
+            self.store
+                .confirm_attempt_cleanup_and_state(id, host_state.take())?;
             self.store.finish_attempt(id, "cancelled_before_spawn")?;
             self.store
                 .transition(id, RunState::Cancelled, "cancelled_before_spawn", None)?;
@@ -1252,7 +1258,8 @@ impl Runtime {
         {
             Ok(guard) => guard.flatten(),
             Err(error) => {
-                self.store.confirm_attempt_cleanup(id)?;
+                self.store
+                    .confirm_attempt_cleanup_and_state(id, host_state.take())?;
                 self.store.finish_attempt(id, "budget_dispatch_refused")?;
                 self.store.transition(
                     id,
@@ -1284,7 +1291,10 @@ impl Runtime {
         };
         // A watchdog's exit or killpg observation is not a descendant-cleanup
         // proof. Keep authority quarantined if its durable claim is absent.
-        if let Err(error) = self.store.confirm_attempt_cleanup(id) {
+        if let Err(error) = self
+            .store
+            .confirm_attempt_cleanup_and_state(id, host_state.take())
+        {
             self.store.finish_attempt(id, "cleanup_unknown")?;
             self.store.transition(
                 id,
@@ -1293,18 +1303,6 @@ impl Runtime {
                 Some(RunFailure::Interrupted),
             )?;
             return Err(error);
-        }
-        if let Some(state) = host_state.take() {
-            if state.cleanup().is_err() {
-                self.store.finish_attempt(id, "host_state_cleanup_failed")?;
-                self.store.transition(
-                    id,
-                    RunState::Failed,
-                    "host_state_cleanup_failed",
-                    Some(RunFailure::Interrupted),
-                )?;
-                return Err(RuntimeError::CleanupUnknown);
-            }
         }
         let output = match captured {
             Ok(v) => v,
