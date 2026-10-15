@@ -1,0 +1,97 @@
+CHANGELOG.md
+  s_06dce32f69286a::t_14eacbcd169f78 17-22
+README.fr.md
+  s_06dce32f69286a::t_627735c5d12233 7,9-12
+README.md
+  s_06dce32f69286a::t_83a9529013a39f 7,9-12
+crates/agent-router-cli/src/command.rs
+  s_06dce32f69286a::t_3611bd37ce4a8d 954-970,1182-1183
+crates/agent-router-cli/src/evaluation.rs
+  s_06dce32f69286a::t_503ea543de07c1 599-634
+crates/agent-router-cli/tests/offline_evidence.rs
+  s_06dce32f69286a::t_4b6cfcfc548b45 1-124
+crates/router-eval/src/evaluator_qualification.rs
+  s_06dce32f69286a::t_8feed95c253093 1-564
+crates/router-eval/src/lib.rs
+  s_06dce32f69286a::t_3138a88de0ff1c 3-5
+crates/router-eval/tests/evaluator_qualification.rs
+  s_06dce32f69286a::t_facce92addb0ed 1-382
+crates/router-feedback/src/lib.rs
+  s_06dce32f69286a::t_881c4740744194 3-5
+crates/router-feedback/src/supplied_usage_pricing.rs
+  s_06dce32f69286a::t_4d8b45a21c9805 1-223
+crates/router-feedback/tests/supplied_usage_pricing.rs
+  s_06dce32f69286a::t_55ccf187fa0ac3 1-404
+docs/README.md
+  s_06dce32f69286a::t_ae2330c714593b 93-96
+docs/adr/0034-offline-evaluation-evidence.md
+  s_06dce32f69286a::t_11a3d30e88b6b3 1-67
+docs/adr/README.md
+  s_06dce32f69286a::t_504b4ea6259645 51
+docs/bench/accepted-evidence-2026-10-15/README.md
+  s_06dce32f69286a::t_764ca4c1e6a73b 1-103
+docs/bench/accepted-evidence-2026-10-15/accepted-changes-input.json
+  s_06dce32f69286a::t_d637d5457960ed 1-137
+docs/bench/accepted-evidence-2026-10-15/accepted-changes-report.json
+  s_06dce32f69286a::t_91eca47a04698a 1-226
+docs/bench/accepted-evidence-2026-10-15/dossier.json
+  s_06dce32f69286a::t_8d6290d51a3cc1 1-152
+docs/bench/accepted-evidence-2026-10-15/project.py
+  s_06dce32f69286a::t_b6cea0c8156a71 1-191
+docs/bench/accepted-evidence-2026-10-15/test_projection.py
+  s_06dce32f69286a::t_85441b9d6794c9 1-93
+docs/bench/accepted-evidence-2026-10-15/verify.py
+  s_06dce32f69286a::t_cd52f5176b82e7 1-72
+docs/bench/linux-namespace-owner-2026-10-15/README.md
+  s_e827e256e15185::t_ecb862c9309bee 13,28-33
+docs/bench/linux-namespace-owner-2026-10-15/evidence.json
+  s_e827e256e15185::t_4a733054e9ab3a 25,676-1211
+docs/bench/linux-namespace-owner-2026-10-15/verification.json
+  s_e827e256e15185::t_159a7f1243ee5d 653-1211
+docs/bench/offline-evaluation-evidence-2026-10-15.md
+  s_06dce32f69286a::t_ae745c06ff9771 1-81
+docs/bench/verification-offline-evaluation-2026-10-15.json
+  s_06dce32f69286a::t_2a18ea73456cc5 1-261
+docs/evaluation.md
+  s_06dce32f69286a::t_ea6207aa0a01a1 10-22
+docs/evaluator-qualification.md
+  s_06dce32f69286a::t_aec5ad8ddd0546 1-125
+docs/reference/json-contracts.md
+  s_06dce32f69286a::t_1e47d8a462e79f 616-634
+docs/supplied-usage-pricing.md
+  s_06dce32f69286a::t_c1494b8068e247 1-103
+scripts/check-local.py
+  s_06dce32f69286a::t_676f6247ea241a 61
+scripts/test-check-local.py
+  s_06dce32f69286a::t_a7d5b4ac396442 294
+scripts/test-linux-namespace-owner-evidence.py
+  s_e827e256e15185::t_d283ca2762d8d0 92-99
+tests/fixtures/evaluation/evaluator-qualification/rare-case-permutation.json
+  s_06dce32f69286a::t_48ae94ff1ebbc6 1-133
+tests/fixtures/evaluation/supplied-usage-pricing/complete.json
+  s_06dce32f69286a::t_57a21ef6a889b3 1-419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a14a990d039c4edabe593e7f13d86c89e855c4b2",
+  "prompts": {},
+  "sessions": {
+    "s_06dce32f69286a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f7b-8a64-7c90-bfe5-5965facb37b1",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
