@@ -147,7 +147,9 @@ async fn probe_native_version_inner(
         (None, None, Some((record, _))) => {
             let proof = leases.cleanup_proof(&id, 0, record)?;
             if let Some(state) = host_state.take() {
-                state.cleanup_with_proof(&proof)?;
+                state
+                    .cleanup_with_proof(&proof)
+                    .map_err(|_| RuntimeError::CleanupUnknown)?;
             }
             proof.evidence
         }

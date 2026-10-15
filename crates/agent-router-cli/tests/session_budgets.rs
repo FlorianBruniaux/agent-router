@@ -326,7 +326,7 @@ fn native_concurrent_roots_commit_once_and_ignore_claimed_zero_usage() {
 
 #[test]
 #[ignore = "requires native sandbox, built helper and local SIGKILL; synthetic provider only"]
-fn native_sigkill_cleanup_never_refunds_a_committed_allocation() {
+fn native_sigkill_retains_host_cleanup_authority_and_committed_allocation() {
     let f = Fixture::new(
         "trap '' TERM; while :; do printf x >> src/heartbeat; /bin/sleep 0.02; done",
         10000,
@@ -362,31 +362,68 @@ fn native_sigkill_cleanup_never_refunds_a_committed_allocation() {
     assert_eq!(output.status.signal(), Some(9));
     let config: AdmissionConfig =
         serde_json::from_value(read(&f.root.join("definition.json"))["admission"].clone()).unwrap();
+    let db = rusqlite::Connection::open(f.store.join("runtime.sqlite3")).unwrap();
+    let record: String = db
+        .query_row(
+            "SELECT record FROM attempt_leases WHERE run_id=?1 AND attempt=1",
+            [RUN_ID],
+            |row| row.get(0),
+        )
+        .unwrap();
+    let record: Value = serde_json::from_str(&record).unwrap();
+    assert_eq!(record["host_state_pending"], true);
+    let lease = f
+        .store
+        .join("leases")
+        .join(record["name"].as_str().unwrap());
+    drop(db);
+    // A stopped namespace excludes writers. It cannot stand in for the lost
+    // HostState owner or discharge its unfinished filesystem obligation.
     let until = Instant::now() + Duration::from_secs(8);
     loop {
+        let marker = fs::read(&lease).unwrap();
+        if marker == b"router-runtime-lease-v1:namespace-clean\n"
+            || marker == b"router-runtime-lease-v1:group-clean\n"
+        {
+            break;
+        }
+        assert!(
+            Instant::now() < until,
+            "helper did not publish its stop marker"
+        );
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    for _ in 0..2 {
         let runtime = router_runtime::Runtime::open_with_admission(
             &f.store,
             router_runtime::RuntimeLimits::default(),
             &config,
         )
         .unwrap();
-        let evidence = runtime.cleanup_evidence(RUN_ID).unwrap();
+        assert_eq!(
+            runtime.cleanup_evidence(RUN_ID).unwrap(),
+            ProcessCleanupEvidence::Unknown
+        );
         let store = router_runtime::AdmissionStore::open(&registry, &h).unwrap();
         let state = store.session_budget_status("session", &b).unwrap();
         assert_eq!(state.committed_allocation, amount(100, 4500));
         assert_eq!(state.observed_tokens, None);
-        if evidence != ProcessCleanupEvidence::Unknown {
-            assert_eq!(store.status().unwrap().granted, 0);
-            break;
-        }
         assert_eq!(
             store.status().unwrap().granted,
             1,
-            "UNKNOWN cleanup retains capacity"
+            "unfinished host cleanup retains capacity across restart"
         );
-        assert!(Instant::now() < until);
+        assert!(
+            fs::read_dir(&f.store).unwrap().any(|entry| {
+                entry
+                    .unwrap()
+                    .file_name()
+                    .as_encoded_bytes()
+                    .starts_with(b"host-state-")
+            }),
+            "the exposed home must remain available for reconciliation"
+        );
         drop(runtime);
-        std::thread::sleep(Duration::from_millis(20));
     }
     let bytes = fs::metadata(&heartbeat).unwrap().len();
     std::thread::sleep(Duration::from_millis(100));
