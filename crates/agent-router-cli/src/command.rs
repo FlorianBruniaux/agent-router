@@ -951,6 +951,23 @@ pub enum AuditCommand {
 
 #[derive(Subcommand)]
 pub enum EvalCommand {
+    /// Check supplied evaluator qualification and required-case comparisons offline.
+    EvaluatorQualification {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Price supplied per-physical-call usage through existing revision accounting.
+    SuppliedUsagePricing {
+        #[arg(long)]
+        input: PathBuf,
+        /// Emit only the allowlisted portable pricing projection.
+        #[arg(long)]
+        portable: bool,
+        #[arg(long)]
+        json: bool,
+    },
     /// Correlate supplied runtime attempts with supplied physical observations.
     #[command(group(
         ArgGroup::new("attempt_correlation_source")
@@ -1162,6 +1179,8 @@ impl Commands {
             Self::Eval { command } => match command {
                 EvalCommand::AttemptCorrelation { json, .. }
                 | EvalCommand::AcceptedChanges { json, .. }
+                | EvalCommand::EvaluatorQualification { json, .. }
+                | EvalCommand::SuppliedUsagePricing { json, .. }
                 | EvalCommand::Tradeoffs { json, .. }
                 | EvalCommand::Metrics { json, .. }
                 | EvalCommand::Seal { json, .. }

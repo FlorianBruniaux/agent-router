@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 
+mod supplied_usage_pricing;
+pub use supplied_usage_pricing::*;
+
 mod accepted_changes;
 pub use accepted_changes::*;
 mod attempt_correlation;
