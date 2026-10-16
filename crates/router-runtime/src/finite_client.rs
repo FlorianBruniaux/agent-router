@@ -1175,4 +1175,4 @@ pub use linux_backend::LINUX_FINITE_PROFILE_V2;
 pub(crate) use linux_backend::LinuxFiniteSupervisor;
 
 mod write_workspace;
-pub use write_workspace::FiniteClientWorkspace;
+pub use write_workspace::{FiniteClientWorkspace, FiniteOutputMode};

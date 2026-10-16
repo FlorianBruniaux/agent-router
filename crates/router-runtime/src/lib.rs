@@ -13,11 +13,13 @@ mod diagnostics;
 mod error;
 mod escalation;
 mod finite_client;
+#[doc(hidden)]
+pub mod finite_tools;
 mod generated;
 pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
     FiniteClientReview, FiniteClientValidation, FiniteClientWorkspace, FiniteCodexState,
-    LINUX_FINITE_PROFILE_V2, OwnedBroker, PendingFiniteClientRun,
+    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, OwnedBroker, PendingFiniteClientRun,
 };
 mod host_state;
 mod leases;

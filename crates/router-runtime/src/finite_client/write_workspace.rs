@@ -3,6 +3,13 @@ use super::*;
 use std::path::PathBuf;
 const MAX_FILE: u64 = 32768;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FiniteOutputMode {
+    ReplaceExisting,
+    CreateNew,
+}
+
 pub struct FiniteClientWorkspace {
     path: PathBuf,
     parent: PathBuf,
@@ -11,11 +18,11 @@ pub struct FiniteClientWorkspace {
     task_id: String,
     head: String,
     relative: String,
-    preimage: String,
+    preimage: Option<String>,
     view_identity: PinnedIdentity,
     parent_identity: PinnedIdentity,
     source_identity: PinnedIdentity,
-    target_identity: PinnedIdentity,
+    target_identity: Option<PinnedIdentity>,
 }
 #[derive(Clone)]
 pub(super) struct WriteDispatch {
@@ -25,7 +32,7 @@ pub(super) struct WriteDispatch {
     pub(super) task_id: String,
     pub(super) head: String,
     pub(super) relative: String,
-    pub(super) preimage: String,
+    pub(super) preimage: Option<String>,
 }
 impl WriteDispatch {
     pub(super) async fn check_sources(
@@ -74,6 +81,13 @@ fn target_hash(path: &Path) -> Result<String> {
     }
     Ok(content_digest(&bytes))
 }
+fn absent(path: &Path) -> Result<()> {
+    match fs::symlink_metadata(path) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(e) => Err(e.into()),
+        Ok(_) => Err(RuntimeError::Scope),
+    }
+}
 impl FiniteClientWorkspace {
     pub fn path(&self) -> &Path {
         &self.path
@@ -84,8 +98,21 @@ impl FiniteClientWorkspace {
     pub fn scope(&self) -> &[String] {
         std::slice::from_ref(&self.relative)
     }
-    pub fn preimage_sha256(&self) -> &str {
-        &self.preimage
+    pub fn preimage_sha256(&self) -> Option<&str> {
+        self.preimage.as_deref()
+    }
+    pub(super) fn existing_preimage(&self) -> Result<&str> {
+        self.preimage.as_deref().ok_or(RuntimeError::Sandbox)
+    }
+    fn check_initial_target(&self) -> Result<()> {
+        for root in [&self.path, &self.source] {
+            match &self.preimage {
+                Some(expected) if target_hash(&root.join(&self.relative))? == *expected => {}
+                Some(_) => return Err(RuntimeError::SourceChanged),
+                None => absent(&root.join(&self.relative))?,
+            }
+        }
+        Ok(())
     }
     pub(super) fn dispatch(&self) -> WriteDispatch {
         WriteDispatch {
@@ -103,12 +130,17 @@ impl FiniteClientWorkspace {
             != self.view_identity.identity
             || directory(self.parent.to_str().ok_or(RuntimeError::Scope)?, true)?.identity
                 != self.parent_identity.identity
-            || FileIdentity::from(&target_file(&self.path.join(&self.relative))?.metadata()?)
-                != self.target_identity.identity
-            || FileIdentity::from(&self.target_identity._file.metadata()?)
-                != self.target_identity.identity
         {
             return Err(RuntimeError::Integrity("finite workspace identity"));
+        }
+        match &self.target_identity {
+            Some(expected)
+                if FileIdentity::from(
+                    &target_file(&self.path.join(&self.relative))?.metadata()?,
+                ) == expected.identity
+                    && FileIdentity::from(&expected._file.metadata()?) == expected.identity => {}
+            Some(_) => return Err(RuntimeError::Integrity("finite workspace target identity")),
+            None => absent(&self.path.join(&self.relative))?,
         }
         Ok(())
     }
@@ -122,10 +154,10 @@ impl FiniteClientWorkspace {
             || run.sandbox != router_types::ExecutionSandbox::WorkspaceWrite
             || directory(self.source.to_str().ok_or(RuntimeError::Scope)?, false)?.identity
                 != self.source_identity.identity
-            || target_hash(&self.path.join(&self.relative))? != self.preimage
         {
             return Err(RuntimeError::Integrity("finite workspace review"));
         }
+        self.check_initial_target()?;
         Ok(())
     }
     fn binding(&self) -> Result<String> {
@@ -143,7 +175,7 @@ impl FiniteClientWorkspace {
                 &self.view_identity.identity,
                 &self.parent_identity.identity,
                 &self.source_identity.identity,
-                &self.target_identity.identity,
+                &self.target_identity.as_ref().map(|p| &p.identity),
             ),
         )
     }
@@ -151,6 +183,9 @@ impl FiniteClientWorkspace {
     /// handle is unavailable. Executed views remain retained for patch review.
     pub async fn discard(self) -> Result<()> {
         self.check_identity()?;
+        if self.preimage.is_none() {
+            self.check_initial_target()?;
+        }
         if directory(self.source.to_str().ok_or(RuntimeError::Scope)?, false)?.identity
             != self.source_identity.identity
         {
@@ -193,6 +228,20 @@ impl FiniteClientReview {
     }
 }
 impl crate::Runtime {
+    /// Records an explicit existing-file or absent-file output grant. Preparation
+    /// never creates the output and never grants execution or publication.
+    /// The current Linux backend refuses CreateNew until its tools profile is
+    /// independently approved and qualified.
+    pub async fn prepare_finite_output_workspace(
+        &self,
+        source: &Path,
+        task_id: &str,
+        relative: &str,
+        mode: FiniteOutputMode,
+    ) -> Result<FiniteClientWorkspace> {
+        self.prepare_finite_workspace_inner(source, task_id, &[relative.into()], mode)
+            .await
+    }
     /// Copies the clean public Git snapshot into a private, detached write view
     /// before context/review construction. One existing flat file only. This
     /// grants no native execution, admission, publication or integration.
@@ -201,6 +250,21 @@ impl crate::Runtime {
         source: &Path,
         task_id: &str,
         scope: &[String],
+    ) -> Result<FiniteClientWorkspace> {
+        self.prepare_finite_workspace_inner(
+            source,
+            task_id,
+            scope,
+            FiniteOutputMode::ReplaceExisting,
+        )
+        .await
+    }
+    async fn prepare_finite_workspace_inner(
+        &self,
+        source: &Path,
+        task_id: &str,
+        scope: &[String],
+        mode: FiniteOutputMode,
     ) -> Result<FiniteClientWorkspace> {
         if !router_adapter_api::safe_identifier(task_id)
             || task_id.len() > 96
@@ -214,7 +278,13 @@ impl crate::Runtime {
         let relative = scope[0].clone();
         let source_identity = directory(source.to_str().ok_or(RuntimeError::Scope)?, false)?;
         crate::workspace::safe_scope(source, scope)?;
-        let preimage = target_hash(&source.join(&relative))?;
+        let preimage = match mode {
+            FiniteOutputMode::ReplaceExisting => Some(target_hash(&source.join(&relative))?),
+            FiniteOutputMode::CreateNew => {
+                absent(&source.join(&relative))?;
+                None
+            }
+        };
         let head = crate::source_state(source).await?;
         let parent = self
             .store
@@ -237,10 +307,15 @@ impl crate::Runtime {
         let path = crate::workspace::create(source, &parent, task_id, &head, None).await?;
         fs::set_permissions(&path, fs::Permissions::from_mode(0o700))?;
         let view_identity = directory(path.to_str().ok_or(RuntimeError::Scope)?, true)?;
-        let file = target_file(&path.join(&relative))?;
-        let target_identity = PinnedIdentity {
-            identity: FileIdentity::from(&file.metadata()?),
-            _file: file,
+        let target_identity = if preimage.is_some() {
+            let file = target_file(&path.join(&relative))?;
+            Some(PinnedIdentity {
+                identity: FileIdentity::from(&file.metadata()?),
+                _file: file,
+            })
+        } else {
+            absent(&path.join(&relative))?;
+            None
         };
         let view = FiniteClientWorkspace {
             path,
@@ -258,11 +333,11 @@ impl crate::Runtime {
         };
         if crate::source_state(source).await? != view.head
             || crate::source_state(view.path()).await? != view.head
-            || target_hash(&view.path.join(&view.relative))? != view.preimage
         {
             return Err(RuntimeError::SourceChanged);
         }
         view.check_identity()?;
+        view.check_initial_target()?;
         Ok(view)
     }
 }
@@ -297,6 +372,131 @@ mod tests {
         (root, runtime, source)
     }
     #[tokio::test]
+    async fn explicitly_approved_creation_keeps_output_absent_until_the_write() {
+        let (_root, runtime, source) = fixture().await;
+        let view = runtime
+            .prepare_finite_output_workspace(
+                &source,
+                "new-output",
+                "review.json",
+                FiniteOutputMode::CreateNew,
+            )
+            .await
+            .unwrap();
+        assert!(!source.join("review.json").exists());
+        assert!(
+            !view.path().join("review.json").exists(),
+            "preparation must never precreate the approved output"
+        );
+        assert_eq!(view.preimage_sha256(), None);
+        assert!(matches!(
+            view.existing_preimage(),
+            Err(RuntimeError::Sandbox)
+        ));
+        view.dispatch().check_sources(None).await.unwrap();
+        view.discard().await.unwrap();
+    }
+    #[tokio::test]
+    async fn creation_grant_rejects_a_preexisting_file_or_a_dangling_symlink() {
+        let (_root, runtime, source) = fixture().await;
+        assert!(
+            runtime
+                .prepare_finite_output_workspace(
+                    &source,
+                    "existing",
+                    "allowed.rs",
+                    FiniteOutputMode::CreateNew,
+                )
+                .await
+                .is_err()
+        );
+        std::os::unix::fs::symlink("missing", source.join("review.json")).unwrap();
+        assert!(
+            runtime
+                .prepare_finite_output_workspace(
+                    &source,
+                    "link",
+                    "review.json",
+                    FiniteOutputMode::CreateNew,
+                )
+                .await
+                .is_err()
+        );
+        assert!(
+            fs::symlink_metadata(source.join("review.json"))
+                .unwrap()
+                .file_type()
+                .is_symlink()
+        );
+    }
+    #[tokio::test]
+    async fn an_appeared_creation_target_revokes_the_frozen_absence() {
+        let (_root, runtime, source) = fixture().await;
+        let view = runtime
+            .prepare_finite_output_workspace(
+                &source,
+                "appeared",
+                "review.json",
+                FiniteOutputMode::CreateNew,
+            )
+            .await
+            .unwrap();
+        let before = view.binding().unwrap();
+        fs::write(view.path().join("review.json"), b"unexpected").unwrap();
+        assert!(view.check_initial_target().is_err());
+        assert_eq!(
+            view.binding().unwrap(),
+            before,
+            "changed state cannot mint a fresh approval implicitly"
+        );
+        assert!(!source.join("review.json").exists());
+    }
+    #[tokio::test]
+    async fn a_new_private_output_is_captured_without_touching_the_source_index() {
+        let (_root, runtime, source) = fixture().await;
+        let original_index = fs::read(source.join(".git/index")).unwrap();
+        let original_head = crate::source_state(&source).await.unwrap();
+        let view = runtime
+            .prepare_finite_output_workspace(
+                &source,
+                "new-patch",
+                "review.json",
+                FiniteOutputMode::CreateNew,
+            )
+            .await
+            .unwrap();
+        // An authored local effect tests patch capture, not native tool access.
+        fs::write(view.path().join("review.json"), b"{\"findings\":[]}\n").unwrap();
+        let (patch, paths) =
+            crate::workspace::patch(view.path(), view.scope(), view.source_state())
+                .await
+                .unwrap();
+        assert_eq!(paths, ["review.json"]);
+        let text = String::from_utf8(patch).unwrap();
+        assert!(text.contains("new file mode 100644"));
+        assert!(text.contains("+{\"findings\":[]}"));
+        assert_eq!(fs::read(source.join(".git/index")).unwrap(), original_index);
+        assert_eq!(crate::source_state(&source).await.unwrap(), original_head);
+        assert!(!source.join("review.json").exists());
+    }
+    #[tokio::test]
+    async fn an_appeared_symlink_is_not_treated_as_an_absent_output() {
+        let (_root, runtime, source) = fixture().await;
+        let view = runtime
+            .prepare_finite_output_workspace(
+                &source,
+                "appeared-link",
+                "review.json",
+                FiniteOutputMode::CreateNew,
+            )
+            .await
+            .unwrap();
+        std::os::unix::fs::symlink("missing", view.path().join("review.json")).unwrap();
+        assert!(view.check_identity().is_err());
+        assert!(view.check_initial_target().is_err());
+        assert!(!source.join("review.json").exists());
+    }
+    #[tokio::test]
     async fn finite_workspace_is_prepared_before_review_and_keeps_original_bytes() {
         let (_root, runtime, source) = fixture().await;
         let view = runtime
@@ -314,6 +514,30 @@ mod tests {
             b"before\n"
         );
         assert_eq!(fs::read(source.join("allowed.rs")).unwrap(), b"before\n");
+        assert_eq!(
+            view.existing_preimage().unwrap(),
+            content_digest(b"before\n")
+        );
+        // Some serializes transparently, preserving the existing v1 approval.
+        let legacy_binding = crate::digest(
+            "finite-workspace-review-v1",
+            &(
+                &view.path,
+                &view.parent,
+                &view.source,
+                &view.owner,
+                &view.task_id,
+                &view.head,
+                &view.relative,
+                view.existing_preimage().unwrap(),
+                &view.view_identity.identity,
+                &view.parent_identity.identity,
+                &view.source_identity.identity,
+                &view.target_identity.as_ref().unwrap().identity,
+            ),
+        )
+        .unwrap();
+        assert_eq!(view.binding().unwrap(), legacy_binding);
         let a = fs::metadata(view.path().join("allowed.rs")).unwrap();
         let b = fs::metadata(source.join("allowed.rs")).unwrap();
         assert_ne!((a.dev(), a.ino()), (b.dev(), b.ino()));

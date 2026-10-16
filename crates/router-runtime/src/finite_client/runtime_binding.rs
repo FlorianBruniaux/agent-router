@@ -120,11 +120,13 @@ impl Runtime {
             return Err(RuntimeError::Integrity("finite client runtime request"));
         }
         if run.sandbox == router_types::ExecutionSandbox::WorkspaceWrite {
-            client
+            let view = client
                 .owned_workspace
                 .as_ref()
-                .ok_or(RuntimeError::Sandbox)?
-                .check_for_review(&self.store.root, id, run)?;
+                .ok_or(RuntimeError::Sandbox)?;
+            // Creation is preparation-only while the tool boundary is unqualified.
+            view.existing_preimage()?;
+            view.check_for_review(&self.store.root, id, run)?;
             // This entrance produces a private patch artifact. It cannot mint
             // source publication authority by treating its mutable view as the
             // original repository or by converting to a generic PendingRun.
