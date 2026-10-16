@@ -1,0 +1,55 @@
+crates/router-runtime/src/finite_client.rs
+  s_ae085abdb4f4d0::t_2d3f1263840025 1178
+crates/router-runtime/src/finite_client/linux_backend.rs
+  s_ded836f56a6d83::t_31c51cac590cdf 110-114
+crates/router-runtime/src/finite_client/runtime_binding.rs
+  s_ded836f56a6d83::t_1a342dfa0f2423 123,126-129
+crates/router-runtime/src/finite_client/write_workspace.rs
+  s_ded836f56a6d83::t_6dd66b3046aeb6 6-12,21,25,35,84-90,101-115,136-144,160,178,186-188,231-244,253-267,281-287,310-318,340,375-499,517-540
+crates/router-runtime/src/finite_tools.rs
+  s_a3c8391baca17a::t_482faafa814097 1-177
+crates/router-runtime/src/finite_tools/mcp_stdio.rs
+  s_a3c8391baca17a::t_d2a168c67980d4 1-478
+crates/router-runtime/src/finite_tools/policy.rs
+  s_ae085abdb4f4d0::t_3ab628a7b07eb2 1-1301
+crates/router-runtime/src/lib.rs
+  s_ded836f56a6d83::t_3b00ec0ed442ee 16-17,22
+docs/adr/0038-inert-finite-tools-and-output-creation.md
+  s_ded836f56a6d83::t_8e9913b5a2a607 1-32
+docs/adr/README.md
+  s_ded836f56a6d83::t_aeddb9b1bf4e83 57-58
+docs/superpowers/specs/2026-10-16-finite-local-tools-design.md
+  s_ded836f56a6d83::t_4140db7fafe90c 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cb6f33b807aebae67e035e83f156b30e02f2c969",
+  "prompts": {},
+  "sessions": {
+    "s_a3c8391baca17a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135bc-ff66-7702-881d-4d28557ef2f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ded836f56a6d83": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2411f16c-88e6-4622-9ccc-03c30968a7a1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
