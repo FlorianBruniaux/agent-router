@@ -1,0 +1,153 @@
+{
+  "tests": 10,
+  "failures": 0,
+  "errors": 0,
+  "models_started": 0,
+  "memory_max": 8589934592,
+  "swap_max": 0,
+  "observations": [
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": true,
+      "exit_code": 1,
+      "namespace_clean": true,
+      "stdout": "\nrunning 1 test\ntest useful_check ... FAILED\n\nfailures:\n\n---- useful_check stdout ----\n\nthread 'useful_check' panicked at /candidate/feedback-tests.rs:1:55:\nassertion `left == right` failed\n  left: 41\n right: 42\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    useful_check\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\n",
+      "stderr": ""
+    },
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": true,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "\nrunning 1 test\ntest useful_check ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\n",
+      "stderr": ""
+    },
+    {
+      "mode": "legacy",
+      "baseline": true,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533186]\"}\n",
+      "stderr": ""
+    },
+    {
+      "mode": "legacy",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533189]\"}\n~",
+      "stderr": ""
+    },
+    {
+      "mode": "legacy-write",
+      "baseline": true,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533192]\"}\n~",
+      "stderr": ""
+    },
+    {
+      "mode": "legacy-write",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533195]\"}\n~",
+      "stderr": ""
+    },
+    {
+      "mode": "native-tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 125,
+      "namespace_clean": true,
+      "stdout": "",
+      "stderr": "linux-isolation:tool-native-no-write:0\n"
+    },
+    {
+      "mode": "native-tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533201]\"}\n~",
+      "stderr": ""
+    },
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": true,
+      "parent_eof": true,
+      "feedback": false,
+      "exit_code": 125,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": true, \"pid_namespace\": \"pid:[4026533205]\"}\n",
+      "stderr": ""
+    },
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": true,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 124,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": true, \"pid_namespace\": \"pid:[4026533207]\"}\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "stderr": ""
+    },
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 0,
+      "namespace_clean": true,
+      "stdout": "~~~~~~~~~~~~~~~~~~~~~~~{\"probe\": \"guard-v1\", \"child\": 3, \"memory_bytes\": 8589934592, \"hold\": false, \"pid_namespace\": \"pid:[4026533209]\"}\n~",
+      "stderr": ""
+    },
+    {
+      "mode": "tools",
+      "baseline": false,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 125,
+      "namespace_clean": true,
+      "stdout": "",
+      "stderr": "linux-isolation:tool-scratch:0\n"
+    },
+    {
+      "mode": "tools",
+      "baseline": true,
+      "hold": false,
+      "parent_eof": false,
+      "feedback": false,
+      "exit_code": 125,
+      "namespace_clean": true,
+      "stdout": "",
+      "stderr": "linux-isolation:arguments:0\n"
+    }
+  ]
+}

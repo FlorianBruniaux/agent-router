@@ -1,6 +1,6 @@
 # Finite local tools and harness feedback
 
-Implementation status: preparation and inert protocol/policy only. The current runtime continues to refuse tools and new-output execution. Automatic approval review refused the proposed C guard changes before any modification. The security profile, socket permissions, memory limits and private mounts are unchanged. The launcher design below is not implemented or qualified by this slice.
+Implementation status: preparation and inert protocol/policy are delivered. After explicit operator approval, the exact guard patch passed the component canaries in [ADR 0039](../../adr/0039-finite-tool-guard-canaries.md). The current Runtime still refuses tools and new-output execution; its configuration, admission, private mounts and memory limits are unchanged. The native launcher below remains unimplemented and unqualified.
 
 This extends the approved local-only F12a work at 33dc663. The human request is to connect local tools and H1 feedback to the benchmark with no model execution or wider private access. These implementation choices are the builder's, not new benchmark budgets. PRs 180/181 remain dependencies, not merge authority.
 

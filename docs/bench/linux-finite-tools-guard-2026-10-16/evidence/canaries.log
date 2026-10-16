@@ -1,0 +1,15 @@
+test_actual_supplied_feedback_runs_red_then_green_within_the_scratch_cap (__main__.GuardTests.test_actual_supplied_feedback_runs_red_then_green_within_the_scratch_cap) ... ok
+test_legacy_profile_still_enforces_the_original_boundary (__main__.GuardTests.test_legacy_profile_still_enforces_the_original_boundary) ... ok
+test_legacy_scoped_write_retains_the_existing_one_file_boundary (__main__.GuardTests.test_legacy_scoped_write_retains_the_existing_one_file_boundary) ... ok
+test_native_profile_refuses_an_explicit_workspace_write_grant (__main__.GuardTests.test_native_profile_refuses_an_explicit_workspace_write_grant) ... ok
+test_native_tools_profile_allows_the_mounted_local_ipc_endpoint (__main__.GuardTests.test_native_tools_profile_allows_the_mounted_local_ipc_endpoint) ... ok
+test_parent_eof_stops_the_detached_tool_namespace (__main__.GuardTests.test_parent_eof_stops_the_detached_tool_namespace) ... ok
+test_timeout_stops_the_detached_tool_namespace (__main__.GuardTests.test_timeout_stops_the_detached_tool_namespace) ... ok
+test_tool_profile_has_no_network_and_only_scratch_writes (__main__.GuardTests.test_tool_profile_has_no_network_and_only_scratch_writes) ... ok
+test_tool_profile_refuses_a_different_scratch_root (__main__.GuardTests.test_tool_profile_refuses_a_different_scratch_root) ... ok
+test_unpatched_guard_refuses_the_new_profile_before_the_child (__main__.GuardTests.test_unpatched_guard_refuses_the_new_profile_before_the_child) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 6.202s
+
+OK
