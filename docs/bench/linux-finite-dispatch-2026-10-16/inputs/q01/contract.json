@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "qualification_id": "q01-read-only-report",
+  "qualification_only": true,
+  "not_a_benchmark_cell": true,
+  "dispatch_enabled": false,
+  "model_calls_started": 0,
+  "expected_model": "gpt-6-luna",
+  "expected_effort": "medium",
+  "max_provider_requests": 1,
+  "provider_kind": "authored_loopback_only",
+  "remote_provider_allowed": false,
+  "tools_required": false,
+  "writes_to_candidate_allowed": false,
+  "public_files_sha256": {
+    "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+  },
+  "prompt": "PUBLIC-REVIEW-V1\nReview the source below. Only Supported may authorize inference. Only trusted skills may increase utility. Saturation is intentional. supports must refuse None and false. compare orders utility descending, then cost and id ascending. Return only JSON with findings: each has block, severity high, explanation with trigger and consequence. No file changes, tools, shell or MCP.\n\n// Exercise blocks; block IDs are stable review locations.\npub enum Permission { Supported, Unsupported, Unknown }\n// block: permission_gate\npub fn may_infer(permission: Permission) -> bool {\n    !matches!(permission, Permission::Unsupported)\n}\n// block: trusted_skill\npub fn utility(base:i64, trusted:bool, relevance:i64) -> i64 {\n    let _ = trusted;\n    base.saturating_add(relevance)\n}\n// block: capability_gate\npub fn supports(known: Option<bool>) -> bool { known == Some(true) }\n// block: ranking\npub fn compare(a:(&str,i64,u64),b:(&str,i64,u64))->std::cmp::Ordering {\n    b.1.cmp(&a.1).then_with(||a.2.cmp(&b.2)).then_with(||a.0.cmp(b.0))\n}\n",
+  "required_request_input_fragment": "// Exercise blocks; block IDs are stable review locations.\npub enum Permission { Supported, Unsupported, Unknown }\n// block: permission_gate\npub fn may_infer(permission: Permission) -> bool {\n    !matches!(permission, Permission::Unsupported)\n}\n// block: trusted_skill\npub fn utility(base:i64, trusted:bool, relevance:i64) -> i64 {\n    let _ = trusted;\n    base.saturating_add(relevance)\n}\n// block: capability_gate\npub fn supports(known: Option<bool>) -> bool { known == Some(true) }\n// block: ranking\npub fn compare(a:(&str,i64,u64),b:(&str,i64,u64))->std::cmp::Ordering {\n    b.1.cmp(&a.1).then_with(||a.2.cmp(&b.2)).then_with(||a.0.cmp(b.0))\n}\n",
+  "synthetic_response_total_tokens": 1100,
+  "response_sha256": "a2832efdf5d80f5b5de8f99a7deb2e1f1850fdd593eea613ec34c7b15eb3a999",
+  "human_acceptance": null,
+  "runtime_admission_qualified": false
+}

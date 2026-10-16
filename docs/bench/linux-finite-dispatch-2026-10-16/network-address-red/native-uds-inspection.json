@@ -1,0 +1,24 @@
+{
+  "archive_sha256": "da1fb76975416fe137f174dd3fd6c7b778ace11629f0607451474bfd78d98d83",
+  "source_version": "codex rust-v0.159.2",
+  "scope": "local official source archive inspection, not native behavior test",
+  "linux_native_uds_provider_supported": "NOT_DEMONSTRATED",
+  "findings": [
+    {
+      "path": "codex-rs/codex-client/src/provider.rs",
+      "line": 47,
+      "fact": "provider base_url and headers, no UDS destination field"
+    },
+    {
+      "path": "codex-rs/http-client/src/client_builder.rs",
+      "line": 36,
+      "fact": "public builder has no socket-path transport option; unix/uds search of codex-client/http-client has no match"
+    },
+    {
+      "path": "codex-rs/network-proxy/src/http_proxy.rs",
+      "line": 975,
+      "fact": "x-unix-socket relay uses cfg target_os macos; non-macos branch returns unix sockets not supported"
+    }
+  ],
+  "recommendation": "Do not assume Linux UDS support. Qualify a narrower loopback-only network namespace plus exclusively retained wildcard listener, or keep backend refused. No global/private access or capability widening."
+}

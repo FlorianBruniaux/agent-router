@@ -25,6 +25,7 @@ const MAX_CONFIGURATION: u64 = 64 * 1024;
 /// Ownership of an already-bound loopback listener, not a port number from JSON.
 /// This object is neither serializable nor cloneable. A preparation guard borrows it.
 pub struct OwnedBroker {
+    isolation: Option<std::sync::Arc<isolated_network::IsolatedNetwork>>,
     listener: TcpListener,
     endpoint: String,
     instance: String,
@@ -38,9 +39,35 @@ impl OwnedBroker {
         let mut nonce = [0; 32];
         File::open("/dev/urandom")?.read_exact(&mut nonce)?;
         Ok(Self {
+            isolation: None,
             listener,
             endpoint: format!("tcp://{address}"),
             instance: content_digest(&nonce),
+        })
+    }
+    /// An exclusive wildcard listener is safe only in a verified loopback-only
+    /// network namespace with no capability to change that namespace. This is
+    /// a local qualification entrance, never support for a routed host.
+    pub fn from_isolated_listener(listener: TcpListener) -> Result<Self> {
+        let isolation = std::sync::Arc::new(isolated_network::IsolatedNetwork::capture()?);
+        isolated_network::check_listener(&listener)?;
+        let address = listener.local_addr()?;
+        let mut nonce = [0; 32];
+        File::open("/dev/urandom")?.read_exact(&mut nonce)?;
+        let instance = crate::digest(
+            "finite-isolated-broker-v1",
+            &(
+                hex::encode(nonce),
+                isolation.identity(),
+                address.to_string(),
+            ),
+        )?;
+        isolation.check()?;
+        Ok(Self {
+            isolation: Some(isolation),
+            listener,
+            endpoint: format!("tcp://127.0.0.1:{}", address.port()),
+            instance,
         })
     }
     pub fn endpoint(&self) -> &str {
@@ -52,13 +79,22 @@ impl OwnedBroker {
     fn check(&self, manifest: &FiniteClientManifest) -> Result<()> {
         if manifest.broker_endpoint != self.endpoint
             || manifest.broker_instance_sha256 != self.instance
-            || format!("tcp://{}", self.listener.local_addr()?) != self.endpoint
+            || (self.isolation.is_none()
+                && format!("tcp://{}", self.listener.local_addr()?) != self.endpoint)
         {
             return Err(RuntimeError::Integrity("finite client broker binding"));
+        }
+        if let Some(isolation) = &self.isolation {
+            isolation.check()?;
+            isolated_network::check_listener(&self.listener)?;
+            if self.endpoint != format!("tcp://127.0.0.1:{}", self.listener.local_addr()?.port()) {
+                return Err(RuntimeError::Sandbox);
+            }
         }
         Ok(())
     }
 }
+mod isolated_network;
 
 #[derive(Eq, PartialEq, serde::Serialize)]
 struct FileIdentity {
@@ -323,6 +359,8 @@ pub struct FiniteClientReview {
     resource_arguments: Vec<String>,
     owned_state: Option<FiniteCodexState>,
     owned_assets: Option<FiniteClientAssets>,
+    owned_namespace: Option<FiniteClientNamespace>,
+    owned_workspace: Option<FiniteClientWorkspace>,
 }
 impl FiniteClientReview {
     pub fn new(
@@ -426,10 +464,15 @@ impl FiniteClientReview {
             resource_arguments,
             owned_state: None,
             owned_assets: None,
+            owned_namespace: None,
+            owned_workspace: None,
         })
     }
     fn check_files(&self) -> Result<()> {
         self.broker.check(&self.manifest)?;
+        if let Some(namespace) = &self.owned_namespace {
+            namespace.check()?;
+        }
         if let Some(assets) = &self.owned_assets {
             assets.check()?;
         }
@@ -445,6 +488,9 @@ impl FiniteClientReview {
             if file_identity(pin, *executable)?.identity != expected.identity {
                 return Err(RuntimeError::Integrity("finite client file identity"));
             }
+        }
+        if let Some(workspace) = &self.owned_workspace {
+            workspace.check_identity()?;
         }
         Ok(())
     }
@@ -468,7 +514,26 @@ impl ApprovedFiniteClient {
     /// binds the complete reviewed task, native/configuration/private-state and
     /// retained broker instance, not a digest declared by an observation.
     pub fn proof_binding(&self, host_snapshot_id: &str) -> Result<CapabilityProofBinding> {
-        let r = &self.reviewed;
+        self.reviewed.proof_binding(host_snapshot_id)
+    }
+    /// Reopens the live authenticated store and rechecks every input. Callers
+    /// must retain the returned borrow through their preparation boundary.
+    /// It does not construct a process, claim an OS canary or authorize a send.
+    pub fn validate<'a>(
+        &'a self,
+        run: &PreparedRun,
+        host: &HostSnapshot,
+        source: &EvidenceSource,
+        verifier: &StoredCapabilityProofVerifier,
+        now: u64,
+    ) -> Result<FiniteClientValidation<'a>> {
+        validate_review(&self.reviewed, run, host, source, verifier, now)
+    }
+}
+
+impl FiniteClientReview {
+    fn proof_binding(&self, host_snapshot_id: &str) -> Result<CapabilityProofBinding> {
+        let r = self;
         let m = &r.manifest;
         if host_snapshot_id != m.host_snapshot_id {
             return Err(RuntimeError::Integrity("finite client reviewed host"));
@@ -478,7 +543,9 @@ impl ApprovedFiniteClient {
             host_snapshot_id: host_snapshot_id.into(),
             binary_sha256: m.client.sha256.clone(),
             observed_version: m.native_version.clone(),
-            adapter_id: if r.owned_assets.is_some() {
+            adapter_id: if r.owned_namespace.is_some() {
+                "finite-client-contract-v5"
+            } else if r.owned_assets.is_some() {
                 "finite-client-contract-v4"
             } else {
                 "finite-client-contract-v2"
@@ -497,62 +564,59 @@ impl ApprovedFiniteClient {
             .map_err(|_| RuntimeError::Invalid("finite client proof binding"))?;
         Ok(binding)
     }
-    /// Reopens the live authenticated store and rechecks every input. Callers
-    /// must retain the returned borrow through their preparation boundary.
-    /// It does not construct a process, claim an OS canary or authorize a send.
-    pub fn validate<'a>(
-        &'a self,
-        run: &PreparedRun,
-        host: &HostSnapshot,
-        source: &EvidenceSource,
-        verifier: &StoredCapabilityProofVerifier,
-        now: u64,
-    ) -> Result<FiniteClientValidation<'a>> {
-        let r = &self.reviewed;
-        if prepared_digest(run)? != r.run_digest
-            || host.harness != run.host
-            || host.id != r.manifest.host_snapshot_id
-            || !host.supported_models.contains(&run.requested_model)
-            || host
-                .supported_efforts
-                .get(&run.requested_model)
-                .is_none_or(|efforts| !efforts.contains(&run.requested_effort))
-            || !host.capabilities.contains(&Capability::Network)
-        {
-            return Err(RuntimeError::Integrity("finite client current task"));
-        }
-        r.check_files()?;
-        verifier
-            .require_live()
-            .map_err(|_| RuntimeError::Integrity("finite client historical proof"))?;
-        let proof = verifier
-            .verify(source, Capability::Network, host, now)
-            .map_err(|_| RuntimeError::Integrity("finite client authenticated proof"))?;
-        if proof.binding != self.proof_binding(&host.id)?
-            || proof.tier != CapabilityProofTier::Proven
-            || proof.observed_at_unix_seconds > now
-            || proof.expires_at_unix_seconds <= now
-        {
-            return Err(RuntimeError::Integrity(
-                "finite client proof binding or freshness",
-            ));
-        }
-        Ok(FiniteClientValidation { approved: self })
+}
+fn validate_review<'a>(
+    reviewed: &'a FiniteClientReview,
+    run: &PreparedRun,
+    host: &HostSnapshot,
+    source: &EvidenceSource,
+    verifier: &StoredCapabilityProofVerifier,
+    now: u64,
+) -> Result<FiniteClientValidation<'a>> {
+    let r = reviewed;
+    if prepared_digest(run)? != r.run_digest
+        || host.harness != run.host
+        || host.id != r.manifest.host_snapshot_id
+        || !host.supported_models.contains(&run.requested_model)
+        || host
+            .supported_efforts
+            .get(&run.requested_model)
+            .is_none_or(|efforts| !efforts.contains(&run.requested_effort))
+        || !host.capabilities.contains(&Capability::Network)
+    {
+        return Err(RuntimeError::Integrity("finite client current task"));
     }
+    r.check_files()?;
+    verifier
+        .require_live()
+        .map_err(|_| RuntimeError::Integrity("finite client historical proof"))?;
+    let proof = verifier
+        .verify(source, Capability::Network, host, now)
+        .map_err(|_| RuntimeError::Integrity("finite client authenticated proof"))?;
+    if proof.binding != reviewed.proof_binding(&host.id)?
+        || proof.tier != CapabilityProofTier::Proven
+        || proof.observed_at_unix_seconds > now
+        || proof.expires_at_unix_seconds <= now
+    {
+        return Err(RuntimeError::Integrity(
+            "finite client proof binding or freshness",
+        ));
+    }
+    Ok(FiniteClientValidation { reviewed })
 }
 
 /// A borrow keeps the reviewed listener alive; it is not executable authority.
 /// File checks and a later path-based exec would remain separate steps (TOCTOU).
 pub struct FiniteClientValidation<'a> {
-    approved: &'a ApprovedFiniteClient,
+    reviewed: &'a FiniteClientReview,
 }
 impl FiniteClientValidation<'_> {
     pub fn broker_endpoint(&self) -> &str {
-        self.approved.reviewed.broker.endpoint()
+        self.reviewed.broker.endpoint()
     }
     /// Trusted controller access only. No listener is transferred to the worker.
     pub fn broker_listener(&self) -> &TcpListener {
-        &self.approved.reviewed.broker.listener
+        &self.reviewed.broker.listener
     }
 }
 
@@ -564,6 +628,8 @@ pub struct FiniteCodexState {
 }
 struct FiniteCodexStartup {
     configuration: FiniteClientFile,
+    catalog: FiniteClientFile,
+    catalog_identity: PinnedIdentity,
     tmp_identity: PinnedIdentity,
     installation: FiniteClientFile,
     installation_identity: PinnedIdentity,
@@ -604,6 +670,11 @@ impl FiniteCodexStartup {
         {
             return Err(RuntimeError::Integrity("finite client owned configuration"));
         }
+        if self.catalog.sha256 != content_digest(&codex_local_catalog(run)?)
+            || file_identity(&self.catalog, false)?.identity != self.catalog_identity.identity
+        {
+            return Err(RuntimeError::Integrity("finite local catalog changed"));
+        }
         if file_identity(&self.installation, false)?.identity != self.installation_identity.identity
             || installation_alias(&home.join("installation_id"))?.identity
                 != self.installation_alias.identity
@@ -614,7 +685,9 @@ impl FiniteCodexStartup {
     }
     fn binding(&self) -> Result<String> {
         Ok(content_digest(&serde_json::to_vec(&(
-            "finite-codex-startup-v1",
+            "finite-codex-startup-v2",
+            &self.catalog,
+            &self.catalog_identity.identity,
             &self.tmp_identity.identity,
             &self.installation,
             &self.installation_identity.identity,
@@ -655,6 +728,25 @@ fn installation_alias(path: &Path) -> Result<PinnedIdentity> {
         })
     }
 }
+// Operator-authored metadata for the coded local transport only. This is not
+// vendor discovery, a real model context measurement or provider availability.
+fn codex_local_catalog(run: &PreparedRun) -> Result<Vec<u8>> {
+    if !token(run.requested_model.as_str(), 128) {
+        return Err(RuntimeError::Invalid("finite local catalog model"));
+    }
+    Ok(serde_json::to_vec(&serde_json::json!({"models":[{
+        "slug":run.requested_model,"display_name":"Authored local fixture, no model",
+        "description":"Operator-authored local Responses transport metadata; no real model availability claim",
+        "base_instructions":"Local authored transport qualification. Return the requested JSON only. Do not call tools.",
+        "default_reasoning_level":run.requested_effort,
+        "supported_reasoning_levels":[{"effort":run.requested_effort,"description":"Reviewed local fixture identifier"}],
+        "shell_type":"shell_command","visibility":"none","supported_in_api":true,"priority":0,
+        "support_verbosity":false,"default_verbosity":null,"apply_patch_tool_type":null,
+        "truncation_policy":{"mode":"bytes","limit":32768},"experimental_supported_tools":[],
+        "include_skills_usage_instructions":false,"include_plugin_usage_instructions":false,"include_apps_usage_instructions":false,
+        "context_window":262144,"tool_mode":"direct"
+    }]}))?)
+}
 fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8>> {
     // JSON string escaping is also valid for these bounded ASCII TOML strings.
     // Reject non-token model names rather than permit configuration injection.
@@ -663,9 +755,12 @@ fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8
     }
     let model = serde_json::to_string(run.requested_model.as_str())?;
     let effort = serde_json::to_string(&run.requested_effort)?;
-    let address = broker.listener.local_addr()?;
+    let address = broker
+        .endpoint
+        .strip_prefix("tcp://")
+        .ok_or(RuntimeError::Sandbox)?;
     let config = format!(
-        "model = {model}\nmodel_provider = \"local_fixture\"\nmodel_reasoning_effort = {effort}\napproval_policy = \"on-request\"\napprovals_reviewer = \"user\"\nsandbox_mode = \"read-only\"\nweb_search = \"disabled\"\n[features]\nshell_tool = false\nunified_exec = false\napps = false\n[model_providers.local_fixture]\nname = \"Finite client preparation, local fixture only\"\nbase_url = \"http://{address}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n"
+        "model = {model}\nmodel_provider = \"local_fixture\"\nmodel_reasoning_effort = {effort}\nmodel_catalog_json = \"local-model-catalog.json\"\napproval_policy = \"on-request\"\napprovals_reviewer = \"user\"\nsandbox_mode = \"read-only\"\nweb_search = \"disabled\"\n[features]\ncode_mode.enabled = false\ncode_mode_host = false\ncode_mode_only = false\nshell_tool = false\nunified_exec = false\napps = false\n[model_providers.local_fixture]\nname = \"Finite client preparation, local fixture only\"\nbase_url = \"http://{address}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n"
     );
     Ok(config.into_bytes())
 }
@@ -738,6 +833,24 @@ impl OwnedBroker {
                 .into(),
             sha256: content_digest(id.as_bytes()),
         };
+        let catalog_bytes = codex_local_catalog(run)?;
+        let catalog_path = state.path().join("local-model-catalog.json");
+        let mut catalog_file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o400)
+            .custom_flags(nix::libc::O_NOFOLLOW)
+            .open(&catalog_path)?;
+        catalog_file.write_all(&catalog_bytes)?;
+        catalog_file.sync_all()?;
+        let catalog = FiniteClientFile {
+            path: catalog_path
+                .to_str()
+                .ok_or(RuntimeError::Invalid("finite catalog path"))?
+                .into(),
+            sha256: content_digest(&catalog_bytes),
+        };
+        let catalog_identity = file_identity(&catalog, false)?;
         let installation_identity = file_identity(&installation, false)?;
         let alias = state.path().join("installation_id");
         std::os::unix::fs::symlink("tmp/installation_id", &alias)?;
@@ -746,6 +859,8 @@ impl OwnedBroker {
             state,
             startup: FiniteCodexStartup {
                 configuration,
+                catalog,
+                catalog_identity,
                 tmp_identity,
                 installation,
                 installation_identity,
@@ -873,7 +988,7 @@ impl FiniteClientValidation<'_> {
     /// Derives the known Seatbelt/helper composition as a private preview.
     /// This remains unavailable on other OSes and never constructs a process.
     pub fn launch_plan(&self) -> Result<FiniteClientLaunchPlan> {
-        let r = &self.approved.reviewed;
+        let r = self.reviewed;
         r.owned_state.as_ref().ok_or(RuntimeError::Sandbox)?;
         if !cfg!(target_os = "macos") {
             return Err(RuntimeError::Sandbox);
@@ -1053,3 +1168,11 @@ pub(crate) use namespace_state::FiniteClientResources;
 mod runtime_binding;
 pub(crate) use runtime_binding::bind_runtime_definition;
 pub use runtime_binding::{ApprovedFiniteClientRun, PendingFiniteClientRun};
+
+mod linux_backend;
+use linux_backend::FiniteClientNamespace;
+pub use linux_backend::LINUX_FINITE_PROFILE_V2;
+pub(crate) use linux_backend::LinuxFiniteSupervisor;
+
+mod write_workspace;
+pub use write_workspace::FiniteClientWorkspace;

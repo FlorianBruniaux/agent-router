@@ -586,6 +586,20 @@ fn owned_codex_state_produces_private_config_and_survives_until_approval_drop() 
     )));
     assert!(text.contains("request_max_retries = 0"));
     assert!(text.contains("shell_tool = false"));
+    assert!(text.contains("code_mode.enabled = false"));
+    assert!(text.contains("code_mode_host = false"));
+    assert!(text.contains("code_mode_only = false"));
+    assert!(text.contains("model_catalog_json = \"local-model-catalog.json\""));
+    let catalog_path = home.join("local-model-catalog.json");
+    let catalog: serde_json::Value =
+        serde_json::from_slice(&fs::read(&catalog_path).unwrap()).unwrap();
+    assert_eq!(catalog["models"][0]["slug"], "fixture-model");
+    assert_eq!(catalog["models"][0]["tool_mode"], "direct");
+    assert!(catalog["models"][0]["apply_patch_tool_type"].is_null());
+    assert_eq!(
+        fs::metadata(catalog_path).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
     assert!(!home.join("auth.json").exists());
     f.manifest.configuration = config;
     f.manifest.private_state = home.to_str().unwrap().into();
@@ -1187,6 +1201,9 @@ fn corrupted_startup_is_refused_before_review() {
 #[test]
 fn startup_substitution_refuses_fresh_validation() {
     for attack in [
+        "catalog-content",
+        "catalog-inode",
+        "catalog-mode",
         "content",
         "slot-symlink",
         "slot-inode",
@@ -1204,6 +1221,25 @@ fn startup_substitution_refuses_fresh_validation() {
         let outside = f.root.join("outside-control");
         fs::write(&outside, b"untouched").unwrap();
         match attack {
+            "catalog-content" => {
+                let path = home.join("local-model-catalog.json");
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+                fs::write(&path, b"{}").unwrap();
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o400)).unwrap();
+            }
+            "catalog-inode" => {
+                let path = home.join("local-model-catalog.json");
+                let bytes = fs::read(&path).unwrap();
+                fs::remove_file(&path).unwrap();
+                fs::write(&path, bytes).unwrap();
+                fs::set_permissions(&path, fs::Permissions::from_mode(0o400)).unwrap();
+            }
+            "catalog-mode" => fs::set_permissions(
+                home.join("local-model-catalog.json"),
+                fs::Permissions::from_mode(0o600),
+            )
+            .unwrap(),
+
             "content" => fs::write(&slot, b"tampered").unwrap(),
             "slot-symlink" => {
                 if slot.exists() {

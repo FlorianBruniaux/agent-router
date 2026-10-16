@@ -1,0 +1,137 @@
+{
+  "admission": {
+    "granted": 0,
+    "max_tickets": 4096,
+    "policy_sha256": "ddb947af42aa710bee864ae2ea38b858dfcc935e06217c626729feade7080d61",
+    "released": 1,
+    "schema_version": 1,
+    "waiting": 0
+  },
+  "attempts": [
+    {
+      "authorization_id": "2072619282fe1d05b7b54110929d625a142b6d1997df9fe53933960a1e1f73de",
+      "candidate_id": "primary",
+      "cleanup": "namespace_terminated",
+      "context_hash": "17977eeae31fe454c618c488239818ec766596156f90805e9bf259bd7ef64fb6",
+      "decision_origin": "deterministic",
+      "definition_hash": "1c8f62ac10cc05ba99150c76f61d70103050775b967a772532f3f81fcdb33070",
+      "effort": "medium",
+      "failure": null,
+      "finished_event_hash": "b7e25e3873854a79e24d31e6f50a9f07a62c4dd6de7a26b0f5ca884a31381e63",
+      "identity": {
+        "attempt": 1,
+        "run_id": "q01"
+      },
+      "model": "gpt-6-luna",
+      "observed_cost_microusd": null,
+      "observed_tokens": null,
+      "pool_hash": "e836cb13d59c638cbbc25020a756275378b3d365d6552138e6d64f1088366938",
+      "sandbox": "read_only",
+      "schema_version": 1,
+      "source_state": "03a0751d6670967c334dceade219c7899b58494b",
+      "started_event_hash": "6b5e6d770095670ab514626c4c449e80328c6a301e1c2eb0f2dbfaef01d5173b",
+      "state": "cancelled",
+      "task_execution_sha256": "bbac203949ddfae25eff04136c2d0ef35f45fd57358b596eac0ed3b60672c991",
+      "transition_event_hash": "59839e9b82e671839b4eb258ac1ec321437343e985c05558933aa853fe7b4d30",
+      "transport": {
+        "elapsed_ms": 736,
+        "exit_code": 125,
+        "termination": "cancelled"
+      },
+      "workflow": null
+    }
+  ],
+  "authored_local_requests": 1,
+  "availability": "operator_simulated_local_fixture",
+  "cleanup": "namespace_terminated",
+  "completion": {
+    "memory_enforcement": "enforced",
+    "objective": "unknown",
+    "output_artifacts": {
+      "attempt": 1,
+      "created_at_unix_seconds": 1792167841,
+      "expires_at_unix_seconds": 1792171441,
+      "run_id": "q01",
+      "schema_version": 1,
+      "state": "retained",
+      "stderr": {
+        "bytes": 824,
+        "path": "/task/q01-cancel-current/runtime/outputs/a2711eea930464385da44b58d78ce04ae7759fb33a693cf07fc517566866d2df-1-stderr.bin",
+        "sha256": "a6f36272fa1640ad11027f035df087c8c5707dd2702753625455c19096f8f02e"
+      },
+      "stdout": {
+        "bytes": 101,
+        "path": "/task/q01-cancel-current/runtime/outputs/a2711eea930464385da44b58d78ce04ae7759fb33a693cf07fc517566866d2df-1-stdout.bin",
+        "sha256": "a24b150047c7c0325fc995c81c1ae00a254c7b5888c4a76cea5078b1fa3a27e3"
+      },
+      "truncated": false
+    },
+    "run": {
+      "approval_digest": "69520681f6be0c1290875b71849f6ef4502dafd099ae1ebc5e897f5c767987af",
+      "artifact_sha256": null,
+      "attempts": 1,
+      "definition_hash": "1c8f62ac10cc05ba99150c76f61d70103050775b967a772532f3f81fcdb33070",
+      "failure": null,
+      "node_id": "execute",
+      "output_retention": {
+        "mode": "private_artifacts",
+        "retention_seconds": 3600
+      },
+      "plan_id": "89538ff9285b3dabd5e4e6047bef91a00293d6be8b440c97f74e109382a03a9e",
+      "receipt_id": "2072619282fe1d05b7b54110929d625a142b6d1997df9fe53933960a1e1f73de",
+      "run_id": "q01",
+      "state": "cancelled",
+      "worktree": null
+    },
+    "runtime_evidence": {
+      "events": [
+        {
+          "kind": "session_started",
+          "sequence": 0
+        },
+        {
+          "kind": "turn_started",
+          "sequence": 1
+        }
+      ],
+      "executed_effort": null,
+      "executed_models": [],
+      "missing_evidence": [
+        "validation.not_run",
+        "objective.not_verified",
+        "effort.runtime_unknown",
+        "model.runtime_unknown",
+        "stream.truncated"
+      ],
+      "objective": "unknown",
+      "schema_version": 1,
+      "stream_complete": false,
+      "transport": {
+        "elapsed_ms": 736,
+        "exit_code": 125,
+        "termination": "cancelled"
+      },
+      "transport_success": false,
+      "validation": "unknown"
+    },
+    "stderr_bytes": 824,
+    "stderr_sha256": "a6f36272fa1640ad11027f035df087c8c5707dd2702753625455c19096f8f02e",
+    "stdout_bytes": 101,
+    "stdout_sha256": "a24b150047c7c0325fc995c81c1ae00a254c7b5888c4a76cea5078b1fa3a27e3",
+    "transport": {
+      "elapsed_ms": 736,
+      "exit_code": 125,
+      "termination": "cancelled"
+    },
+    "validation": "unknown"
+  },
+  "context_overhead": "unknown",
+  "human_acceptance": null,
+  "memory_bytes": 8589934592,
+  "model_calls_started": 0,
+  "qualification": "q01-cancel",
+  "schema_version": 1,
+  "scripted_usage_is_accounting": false,
+  "source_unchanged": true,
+  "swap_bytes": 0
+}

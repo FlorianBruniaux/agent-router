@@ -1,0 +1,51 @@
+0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869  /task/programs/client
+0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869  /work/source/target/release/finite-codex-client
+7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8  /task/programs/guard
+d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4  /task/programs/helper
+    Finished `release` profile [optimized] target(s) in 0.03s
+     Running unittests src/lib.rs (/work/source/target/release/deps/router_runtime-6ab7485013e354f4)
+
+running 1 test
+test finite_client::linux_backend::e2e_tests::q01_real_approved_local_report ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 54.26s
+
+    Finished `release` profile [optimized] target(s) in 0.07s
+     Running unittests src/lib.rs (/work/source/target/release/deps/router_runtime-6ab7485013e354f4)
+
+running 1 test
+test finite_client::linux_backend::e2e_tests::q02_real_approved_bounded_replacement ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 59.16s
+
+    Finished `release` profile [optimized] target(s) in 0.04s
+     Running unittests src/lib.rs (/work/source/target/release/deps/router_runtime-6ab7485013e354f4)
+
+running 1 test
+test finite_client::linux_backend::e2e_tests::q01_real_timeout_keeps_namespace_cleanup_and_releases_admission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 68.86s
+
+    Finished `release` profile [optimized] target(s) in 0.05s
+     Running unittests src/lib.rs (/work/source/target/release/deps/router_runtime-6ab7485013e354f4)
+
+running 1 test
+test finite_client::linux_backend::e2e_tests::q01_real_cancel_keeps_namespace_cleanup_and_releases_admission ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 56.87s
+
+{
+  "admission": {
+    "granted": 1,
+    "max_tickets": 4096,
+    "policy_sha256": "34d81d4ee931e8a28298e0bf8338a93a8bef06ebbd3cc571efe2599745fe1276",
+    "released": 0,
+    "schema_version": 1,
+    "waiting": 0
+  },
+  "attempts": [],
+  "case": "parent_eof",
+  "cleanup": "unknown",
+  "model_calls_started": 0,
+  "private_state_retained": true
+}

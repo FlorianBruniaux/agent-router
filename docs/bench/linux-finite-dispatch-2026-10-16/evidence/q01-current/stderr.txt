@@ -1,0 +1,5 @@
+WARNING: proceeding, even though we could not create PATH aliases: Operation not permitted (os error 1)
+2026-10-16T16:20:56.168507Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while create skills root dir: Read-only file system (os error 30)
+2026-10-16T16:20:56.178371Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while create skills root dir: Read-only file system (os error 30)
+2026-10-16T16:20:56.182395Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while create skills root dir: Read-only file system (os error 30)
+2026-10-16T16:20:56.184875Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while create skills root dir: Read-only file system (os error 30)

@@ -666,6 +666,17 @@ The preview derives invocation paths from the retained copies and rechecks them
 before rendering. Native launch and OS admission remain unavailable; see
 [ADR 0029](../adr/0029-finite-client-owned-assets.md).
 
+The dedicated Linux entrance is separate from that legacy preview. It retains
+its namespace executable, uses proof adapter `finite-client-contract-v5` and
+requires a combined runtime approval, durable admission and live OS canaries.
+Producer startup v2 additionally pins a credential-free operator catalogue for
+the coded local transport. An opaque preapproved workspace may bind one existing
+file for a private replacement and patch artifact. Finite runs cannot reopen as
+generic publication handles, and finite writes reject integration authority.
+No serialized type, database schema or ordinary execution digest changes.
+See [ADR 0037](../adr/0037-qualified-local-finite-dispatch.md) for the exact
+platform, evidence and remaining provider/benchmark/publication boundaries.
+
 ## Qualified local capture observation
 
 `observe --schema-version 3` adds bounded local capture timing rows while v1 stays

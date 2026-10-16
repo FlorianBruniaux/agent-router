@@ -1,0 +1,57 @@
+{
+  "scope": "corrected guard and exclusive reservation component, not full Runtime/native replay",
+  "guard_sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8",
+  "model_calls_started": 0,
+  "external_network_used": false,
+  "mode": "positive",
+  "status": "PASS_EXCLUSIVE_LOOPBACK_COMPONENT",
+  "foreign_bind_refusals": [
+    {
+      "reuseaddr": false,
+      "reuseport": false,
+      "errno": 98
+    },
+    {
+      "reuseaddr": true,
+      "reuseport": false,
+      "errno": 98
+    },
+    {
+      "reuseaddr": false,
+      "reuseport": true,
+      "errno": 98
+    },
+    {
+      "reuseaddr": true,
+      "reuseport": true,
+      "errno": 98
+    }
+  ],
+  "connections": [
+    {
+      "label": "broker_primary",
+      "connected": true,
+      "owned_marker": true,
+      "errno": null
+    },
+    {
+      "label": "broker_alias",
+      "connected": true,
+      "owned_marker": true,
+      "errno": null
+    },
+    {
+      "label": "other_port",
+      "connected": false,
+      "errno": 13
+    },
+    {
+      "label": "external_same_port",
+      "connected": false,
+      "errno": 101
+    }
+  ],
+  "owned_accepts": 2,
+  "exit_code": 0,
+  "stderr": ""
+}

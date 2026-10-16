@@ -1,0 +1,21 @@
+event: response.created
+data: {"type": "response.created", "response": {"id": "resp_owned_readonly", "object": "response", "created_at": 1, "status": "in_progress", "model": "gpt-6-luna", "output": []}}
+
+event: response.output_item.added
+data: {"type": "response.output_item.added", "output_index": 0, "item": {"id": "msg_owned_readonly", "type": "message", "role": "assistant", "status": "in_progress", "content": []}}
+
+event: response.content_part.added
+data: {"type": "response.content_part.added", "item_id": "msg_owned_readonly", "output_index": 0, "content_index": 0, "part": {"type": "output_text", "text": "", "annotations": []}}
+
+event: response.output_text.delta
+data: {"type": "response.output_text.delta", "item_id": "msg_owned_readonly", "output_index": 0, "content_index": 0, "delta": "{\"findings\":[{\"block\":\"permission_gate\",\"severity\":\"high\",\"explanation\":\"Permission::Unknown passes may_infer even though only Supported may authorize inference.\"},{\"block\":\"trusted_skill\",\"severity\":\"high\",\"explanation\":\"With trusted=false and positive relevance, utility still increases the score because trusted is ignored.\"}]}"}
+
+event: response.output_text.done
+data: {"type": "response.output_text.done", "item_id": "msg_owned_readonly", "output_index": 0, "content_index": 0, "text": "{\"findings\":[{\"block\":\"permission_gate\",\"severity\":\"high\",\"explanation\":\"Permission::Unknown passes may_infer even though only Supported may authorize inference.\"},{\"block\":\"trusted_skill\",\"severity\":\"high\",\"explanation\":\"With trusted=false and positive relevance, utility still increases the score because trusted is ignored.\"}]}"}
+
+event: response.output_item.done
+data: {"type": "response.output_item.done", "output_index": 0, "item": {"id": "msg_owned_readonly", "type": "message", "role": "assistant", "status": "completed", "content": [{"type": "output_text", "text": "{\"findings\":[{\"block\":\"permission_gate\",\"severity\":\"high\",\"explanation\":\"Permission::Unknown passes may_infer even though only Supported may authorize inference.\"},{\"block\":\"trusted_skill\",\"severity\":\"high\",\"explanation\":\"With trusted=false and positive relevance, utility still increases the score because trusted is ignored.\"}]}", "annotations": []}]}}
+
+event: response.completed
+data: {"type": "response.completed", "response": {"id": "resp_owned_readonly", "object": "response", "created_at": 1, "status": "completed", "model": "gpt-6-luna", "output": [{"id": "msg_owned_readonly", "type": "message", "role": "assistant", "status": "completed", "content": [{"type": "output_text", "text": "{\"findings\":[{\"block\":\"permission_gate\",\"severity\":\"high\",\"explanation\":\"Permission::Unknown passes may_infer even though only Supported may authorize inference.\"},{\"block\":\"trusted_skill\",\"severity\":\"high\",\"explanation\":\"With trusted=false and positive relevance, utility still increases the score because trusted is ignored.\"}]}", "annotations": []}]}], "usage": {"input_tokens": 1000, "input_tokens_details": {"cached_tokens": 0}, "output_tokens": 100, "output_tokens_details": {"reasoning_tokens": 0}, "total_tokens": 1100}}}
+

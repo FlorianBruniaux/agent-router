@@ -163,6 +163,22 @@ impl Preparation<'_> {
         id: &str,
         state: Option<crate::HostState>,
     ) -> Result<ProcessCleanupEvidence> {
+        self.resolve_probe_and_state_locked(id, state)
+            .map(|proof| proof.evidence)
+    }
+    pub(crate) fn resolve_probe_and_state_locked(
+        &self,
+        id: &str,
+        state: Option<crate::HostState>,
+    ) -> Result<CleanupProof> {
+        self.resolve_probe_and_state_observed(id, state, |_| Ok(()))
+    }
+    pub(crate) fn resolve_probe_and_state_observed(
+        &self,
+        id: &str,
+        state: Option<crate::HostState>,
+        observe: impl FnOnce(&CleanupProof) -> Result<()>,
+    ) -> Result<CleanupProof> {
         // Return the opaque lock from the transaction closure: it must outlive
         // both the resolved projection and its append-only event commit.
         let proof = self.update(|tx, run, c| {
@@ -179,6 +195,7 @@ impl Preparation<'_> {
                     if probe.record.needs_host_cleanup() && state.is_none() {
                         return Err(RuntimeError::CleanupUnknown);
                     }
+                    observe(&proof)?;
                     if let Some(state) = state {
                         state.cleanup_with_proof(&proof)?;
                         probe.record.host_state_cleaned();
@@ -200,9 +217,7 @@ impl Preparation<'_> {
                 }
             }
         })?;
-        proof
-            .map(|p| p.evidence)
-            .ok_or(RuntimeError::CleanupUnknown)
+        proof.ok_or(RuntimeError::CleanupUnknown)
     }
 
     pub(crate) fn complete(&self) -> Result<()> {
@@ -582,6 +597,43 @@ mod tests {
         drop(store);
         let store = Store::open(&root).unwrap();
         retained(&store);
+    }
+
+    #[test]
+    fn failed_locked_observation_cannot_discharge_host_cleanup_after_restart() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+        let store = Store::open(&root).unwrap();
+        let prep = lease_only(&store);
+        let (id, path) = prep.register_probe_with_host_state(true).unwrap();
+        let mut state = crate::HostState::create(&root, "codex", &Default::default())
+            .unwrap()
+            .unwrap();
+        let home = state.path().to_owned();
+        state.arm_cleanup(Some(&path), true).unwrap();
+        fs::write(&path, b"router-runtime-lease-v1:namespace-clean\n").unwrap();
+        let mut observed = false;
+        assert!(matches!(
+            prep.resolve_probe_and_state_observed(&id, Some(state), |proof| {
+                observed = true;
+                assert_eq!(proof.evidence, ProcessCleanupEvidence::NamespaceTerminated);
+                assert!(
+                    Flock::lock(File::open(&path).unwrap(), FlockArg::LockExclusiveNonblock)
+                        .is_err()
+                );
+                assert!(home.exists(), "observation must precede disposal");
+                Err(RuntimeError::Integrity("retained bundle changed"))
+            }),
+            Err(RuntimeError::CleanupUnknown)
+        ));
+        assert!(observed);
+        assert!(home.exists());
+        retained(&store);
+        drop(prep);
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        retained(&store);
+        assert_eq!(store.get("run").unwrap().attempts, 0);
     }
 
     #[test]

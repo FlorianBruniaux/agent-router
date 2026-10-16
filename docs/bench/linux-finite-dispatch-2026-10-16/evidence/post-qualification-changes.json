@@ -1,0 +1,10 @@
+{
+  "compiled_production_and_linux_controller_drift": false,
+  "test_only_change": {
+    "path": "crates/router-runtime/tests/runtime.rs",
+    "before_sha256": "7ee2193604281ab75bfcd9cd499f593e12301df40bf74e21ab3d38c157146713",
+    "after_sha256": "61958c1b50afd13ebfeeb0e34afe4ff934852af686889291e20046a8c15c2394",
+    "reason": "isolate synthetic Git fixture helpers from personal async notes hooks; unchanged publication assertions"
+  },
+  "documentation_and_evidence_added": true
+}

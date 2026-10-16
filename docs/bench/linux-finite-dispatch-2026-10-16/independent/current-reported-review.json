@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "reviewer_thread": "01a135bc-ff66-7702-881d-4d28557ef2f2",
+  "provenance": "Reported by the independent coordinating chat; recorded by runtime owner. No primary report written after approval reviewer usage failure.",
+  "scope": "Independent read-only receipt/byte checks, plus separately identified owner oracle execution.",
+  "model_calls_started": 0,
+  "benchmark_result_written": false,
+  "benchmark_runtime_go": false,
+  "client_sha256": "0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869",
+  "guard_sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8",
+  "cases": {
+    "q01-current": {
+      "receipt_sha256": "732fe9d55883c3ce9a5503c701bae1fc3744fdedd8653a23537bd3d443cf112c",
+      "strict_oracle": "PASS",
+      "primary_production_decoder": "PASS",
+      "receipt_bytes_chain_order": "PASS",
+      "cleanup": "namespace_terminated",
+      "admission": "released",
+      "accounting": "NULL"
+    },
+    "q02-current": {
+      "receipt_bytes_patch_chain_replacement": "PASS",
+      "primary_production_decoder": "PASS",
+      "patch_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "independent_external_oracle": "BLOCKED_NESTED_SANDBOX",
+      "compiler_exit": 71,
+      "compiler_error": "sandbox-exec: sandbox_apply: Operation not permitted",
+      "owner_external_oracle": {
+        "status": "PASS",
+        "tests": 4,
+        "report_sha256": "c157671c482af10e642abd965233939ea2804abd94f1beff81f0cd81945c7ffe",
+        "frozen_bytes_match_submission": "independently verified",
+        "execution_provenance": "runtime owner, not independent replay"
+      },
+      "cleanup": "namespace_terminated",
+      "admission": "released",
+      "accounting": "NULL"
+    },
+    "q01-timeout-current": {
+      "receipt_sha256": "f9628b6b87aaf571bc763a911746d12e84d7b21abc3eebc6c76569127320edbd",
+      "receipt_bytes_decoder": "PASS",
+      "elapsed_ms": 5105,
+      "termination": "timed_out",
+      "cleanup": "namespace_terminated",
+      "admission": "released",
+      "accounting": "NULL"
+    },
+    "q01-cancel-current": {
+      "receipt_sha256": "059ce6d168a709dc61196c1739b07d4033af7c6ddf5d1f404f4a022997b37dee",
+      "receipt_bytes_chain_decoder": "PASS",
+      "elapsed_ms": 736,
+      "termination": "cancelled",
+      "cleanup": "namespace_terminated",
+      "admission": "released",
+      "accounting": "NULL"
+    },
+    "q01-eof-current": {
+      "status": "PASS_FAIL_CLOSED_RECEIPT_CONSISTENCY_IN_MEMORY",
+      "parent_receipt_sha256": "b90200206901f2e777eeb8cb37c2b36ddfcf2ed09a4bc101ce0b31a0b8e922b1",
+      "recovery_sha256": "ad98cc124936e3c74e21206ef323430e7c2a4170b2d027044de994062d708084",
+      "scope": "Independent receipt consistency and pinned client/guard; OS effects and double recovery execution from runtime owner",
+      "complete_cleanup": "UNKNOWN",
+      "private_state_retained": true,
+      "admission_granted": 1,
+      "admission_released": 0,
+      "model_calls_started": 0,
+      "primary_report_written": false,
+      "benchmark_runtime_go": false
+    }
+  }
+}

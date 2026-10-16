@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "compiled": true,
+  "assertion_failure": false,
+  "stop_reason": null,
+  "process_reaped": true,
+  "tests": 4,
+  "reason": "confined_external_behavior",
+  "candidate_compiler_cannot_read_hidden_source": true,
+  "acceptance_sha256": "072e26ddcfb71bfd284cbced9acdd3dc3c04ae72960d48f6676f7bc339224563",
+  "human_acceptance": null,
+  "evaluation_feedback_returned_to_candidate": false
+}

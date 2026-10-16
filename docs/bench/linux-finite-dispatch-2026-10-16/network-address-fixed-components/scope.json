@@ -1,0 +1,21 @@
+{
+  "status": "PASS_COMPONENTS_ONLY_FRESH_RUNTIME_PENDING",
+  "source_and_binary_pins_confirmed_by_runtime_owner": true,
+  "positive_network": "none",
+  "negative_network": {
+    "name": "ar-finite-ip-negative-20261016",
+    "id": "11af100f1e43193f3af13c70bca15c8f3a22c33e9f90d92edbbca3667a125c78",
+    "internal_verified": true
+  },
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "capabilities": 0,
+  "no_new_privileges": true,
+  "private_files_mounted": false,
+  "native_codex_started": false,
+  "model_calls_started": 0,
+  "runtime_authority_qualified": false,
+  "benchmark_runtime_go": false,
+  "correction": "constrained environment and exclusive listener, not per-IP filtering by Landlock",
+  "negative_expectation": "first script expected old diagnostic label; exact corrected expectation replayed; no permission rule relaxed"
+}

@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "reason": "frozen_io_only_not_acceptance",
+  "files_sha256": {
+    "AGENTS.md": "9b69bb4220b34146622bd2933b82de422c753bf19350fe714a6dd261c8bc388b",
+    "lib.rs": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+    "statement.md": "ad289a08c170cf7c49f86d9e1545ca2015f06f45313b632b4a8c0d8b4be3f546"
+  },
+  "private_state_copied": false,
+  "runtime_cleanup_proven": false
+}

@@ -72,7 +72,7 @@ fn finite_review(f: &Fixture, limits: ResourceLimits) -> FiniteClientReview {
 #[tokio::test]
 async fn runtime_finite_approval_binds_the_owned_review_in_the_existing_store() {
     let f =
-        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
     let runtime = f.runtime();
     let client = finite_review(&f, ResourceLimits::default());
     let client_digest = client.approval_digest().to_owned();
@@ -139,7 +139,7 @@ async fn runtime_finite_approval_binds_the_owned_review_in_the_existing_store() 
 #[tokio::test]
 async fn runtime_finite_approval_refuses_the_preparation_digest_alone() {
     let f =
-        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
     let runtime = f.runtime();
     let client = finite_review(&f, ResourceLimits::default());
     let digest = client.approval_digest().to_owned();
@@ -170,7 +170,7 @@ async fn runtime_finite_approval_refuses_the_preparation_digest_alone() {
 async fn runtime_finite_review_refuses_cross_task_request_and_memory_changes() {
     for change in 0..8 {
         let mut f =
-            Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true)
+            Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true)
                 .await;
         let runtime = f.runtime();
         let limits = match change {
@@ -224,7 +224,7 @@ async fn runtime_finite_review_refuses_cross_task_request_and_memory_changes() {
 #[tokio::test]
 async fn runtime_finite_approval_rechecks_files_before_queueing() {
     let f =
-        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
     let runtime = f.runtime();
     let client = finite_review(&f, ResourceLimits::default());
     let pending = runtime
@@ -319,7 +319,7 @@ async fn runtime_finite_validation_reopens_live_proofs_and_keeps_the_listener_ow
     use router_adapter_api::{CapabilityAttemptOutcome, CapabilityProofKey};
     use std::net::TcpListener;
     let f =
-        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
     let runtime = f.runtime();
     let client = finite_review(&f, ResourceLimits::default());
     let pending = runtime
@@ -389,8 +389,9 @@ async fn runtime_finite_validation_reopens_live_proofs_and_keeps_the_listener_ow
 #[tokio::test]
 async fn runtime_finite_validation_refuses_expired_evidence_and_cancelled_approval() {
     for expired in [false, true] {
-        let f = Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true)
-            .await;
+        let f =
+            Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true)
+                .await;
         let runtime = f.runtime();
         let client = finite_review(&f, ResourceLimits::default());
         let pending = runtime
@@ -424,7 +425,7 @@ async fn runtime_finite_validation_refuses_expired_evidence_and_cancelled_approv
 #[tokio::test]
 async fn runtime_finite_review_cannot_replace_an_existing_plain_definition() {
     let f =
-        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
     let runtime = f.runtime();
     let plain = runtime
         .review(
@@ -462,4 +463,67 @@ async fn runtime_finite_review_cannot_replace_an_existing_plain_definition() {
         RunState::AwaitingApproval
     );
     runtime.approve(plain, &original_digest).unwrap();
+}
+
+#[tokio::test]
+async fn finite_execution_requires_durable_admission_before_any_probe_or_attempt() {
+    let f =
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
+    let runtime = f.runtime();
+    let review = finite_review(&f, ResourceLimits::default());
+    let pending = runtime
+        .review_finite_client(
+            "finite-1",
+            &f.router,
+            &f.context,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            review,
+        )
+        .await
+        .unwrap();
+    let digest = pending.approval_digest().to_owned();
+    let approved = runtime.approve_finite_client(pending, &digest).unwrap();
+    assert!(matches!(
+        runtime
+            .execute_finite_client(approved, &FakeAdapter("exit 99"), Cancellation::default())
+            .await,
+        Err(RuntimeError::Invalid("finite client durable admission"))
+    ));
+    assert_eq!(runtime.summary("finite-1").unwrap().state, RunState::Queued);
+    assert_eq!(runtime.summary("finite-1").unwrap().attempts, 0);
+    let events = observe_events(&f.temp.path().join("runtime"), "finite-1").unwrap();
+    assert!(
+        !events
+            .iter()
+            .any(|e| e.kind == "preparation.cycle.v1" || e.kind == "admission.intent.v1")
+    );
+}
+
+#[tokio::test]
+async fn finite_write_without_the_actual_preapproved_view_refuses_before_registering() {
+    let f =
+        Fixture::new_at_with_network(true, tempfile::tempdir().unwrap(), false, true, true).await;
+    let runtime = f.runtime();
+    let client = finite_review(&f, ResourceLimits::default());
+    assert!(matches!(
+        runtime
+            .review_finite_client(
+                "finite-1",
+                &f.router,
+                &f.context,
+                f.request.clone(),
+                f.plan.clone(),
+                "execute",
+                client
+            )
+            .await,
+        Err(RuntimeError::Sandbox)
+    ));
+    assert!(matches!(
+        runtime.summary("finite-1"),
+        Err(RuntimeError::NotFound)
+    ));
+    assert!(!f.temp.path().join("runtime/worktrees").exists());
 }

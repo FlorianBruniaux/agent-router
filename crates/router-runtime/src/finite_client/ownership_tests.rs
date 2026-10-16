@@ -112,6 +112,32 @@ fn transfer(approved: ApprovedFiniteClient) -> HostState {
     approved.into_namespace_state().unwrap()
 }
 
+// A closed ephemeral port can be reassigned by another concurrent test before
+// this assertion binds it. A retained broker never becomes bindable at all.
+fn broker_released(address: SocketAddr, bound: std::time::Duration) -> bool {
+    let deadline = std::time::Instant::now() + bound;
+    loop {
+        if TcpListener::bind(address).is_ok() {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+}
+#[test]
+fn broker_release_wait_still_refuses_a_retained_listener() {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let address = listener.local_addr().unwrap();
+    assert!(!broker_released(
+        address,
+        std::time::Duration::from_millis(25)
+    ));
+    drop(listener);
+    assert!(broker_released(address, std::time::Duration::from_secs(1)));
+}
+
 #[test]
 fn namespace_handoff_keeps_every_copy_and_the_bound_broker() {
     let f = fixture();
@@ -128,7 +154,10 @@ fn namespace_handoff_keeps_every_copy_and_the_bound_broker() {
     drop(state);
     assert!(!f.home.exists());
     assert!(f.copies.iter().all(|p| !p.exists()));
-    assert!(TcpListener::bind(f.address).is_ok());
+    assert!(broker_released(
+        f.address,
+        std::time::Duration::from_secs(1)
+    ));
 }
 
 #[test]
@@ -146,7 +175,10 @@ fn matching_stop_proof_disposes_the_complete_client_and_releases_the_broker() {
         state.cleanup_with_proof(&proof).unwrap();
         assert!(!f.home.exists());
         assert!(f.copies.iter().all(|p| !p.exists()));
-        assert!(TcpListener::bind(f.address).is_ok());
+        assert!(broker_released(
+            f.address,
+            std::time::Duration::from_secs(1)
+        ));
     }
 }
 
@@ -286,5 +318,92 @@ fn arming_the_bundle_requires_namespace_mode_but_pending_can_be_invalidated() {
     state.cleanup_with_proof(&proof).unwrap();
     assert!(!f.home.exists());
     assert!(f.copies.iter().all(|p| !p.exists()));
-    assert!(TcpListener::bind(f.address).is_ok());
+    assert!(broker_released(
+        f.address,
+        std::time::Duration::from_secs(1)
+    ));
+}
+
+#[test]
+fn namespace_copy_is_bound_and_disposed_with_the_unexposed_bundle() {
+    let f = fixture();
+    let source = f.store.parent().unwrap().join("namespace");
+    fs::write(&source, b"namespace fixture").unwrap();
+    fs::set_permissions(&source, fs::Permissions::from_mode(0o500)).unwrap();
+    let old_binding = f.approved.proof_binding("fixture-host").unwrap();
+    let reviewed = f
+        .approved
+        .reviewed
+        .with_linux_namespace(FiniteClientFile {
+            path: source.to_str().unwrap().into(),
+            sha256: content_digest(b"namespace fixture"),
+        })
+        .unwrap();
+    let namespace = reviewed.owned_namespace.as_ref().unwrap().pin.path.clone();
+    let digest = reviewed.approval_digest().to_owned();
+    let approved = reviewed.approve(&digest).unwrap();
+    assert_ne!(approved.proof_binding("fixture-host").unwrap(), old_binding);
+    let state = approved.into_namespace_state().unwrap();
+    assert!(Path::new(&namespace).is_file());
+    assert!(TcpListener::bind(f.address).is_err());
+    drop(state);
+    assert!(!Path::new(&namespace).exists());
+    assert!(!f.home.exists());
+    assert!(f.copies.iter().all(|path| !path.exists()));
+    assert!(broker_released(
+        f.address,
+        std::time::Duration::from_secs(1)
+    ));
+}
+
+#[test]
+fn changed_retained_namespace_refuses_handoff() {
+    let f = fixture();
+    let source = f.store.parent().unwrap().join("namespace");
+    fs::write(&source, b"namespace fixture").unwrap();
+    fs::set_permissions(&source, fs::Permissions::from_mode(0o500)).unwrap();
+    let reviewed = f
+        .approved
+        .reviewed
+        .with_linux_namespace(FiniteClientFile {
+            path: source.to_str().unwrap().into(),
+            sha256: content_digest(b"namespace fixture"),
+        })
+        .unwrap();
+    let pin = &reviewed.owned_namespace.as_ref().unwrap().pin;
+    fs::set_permissions(&pin.path, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::write(&pin.path, b"replaced namespace").unwrap();
+    fs::set_permissions(&pin.path, fs::Permissions::from_mode(0o500)).unwrap();
+    let digest = reviewed.approval_digest().to_owned();
+    assert!(
+        reviewed
+            .approve(&digest)
+            .unwrap()
+            .into_namespace_state()
+            .is_err()
+    );
+}
+
+#[test]
+fn read_only_probe_requires_exact_namespace_exit_before_rearming_for_the_task() {
+    let f = fixture();
+    let mut state = transfer(f.approved);
+    let leases = LeaseStorage::open(&f.store).unwrap();
+    let (first, path) = leases.create("readonly-probe", 0).unwrap();
+    state.arm_cleanup(Some(&path), true).unwrap();
+    fs::write(&path, "router-runtime-lease-v1:group-clean\n").unwrap();
+    let group = leases.cleanup_proof("readonly-probe", 0, &first).unwrap();
+    assert!(state.finish_read_only_probe(&group).is_err());
+    drop(group);
+    fs::write(&path, "router-runtime-lease-v1:namespace-clean\n").unwrap();
+    let proof = leases.cleanup_proof("readonly-probe", 0, &first).unwrap();
+    state.finish_read_only_probe(&proof).unwrap();
+    assert!(f.home.is_dir() && f.copies.iter().all(|p| p.is_dir()));
+    drop(proof);
+    let (second, path) = leases.create("real-task", 1).unwrap();
+    state.arm_cleanup(Some(&path), true).unwrap();
+    fs::write(&path, "router-runtime-lease-v1:namespace-clean\n").unwrap();
+    let proof = leases.cleanup_proof("real-task", 1, &second).unwrap();
+    state.cleanup_with_proof(&proof).unwrap();
+    assert!(!f.home.exists() && f.copies.iter().all(|p| !p.exists()));
 }
