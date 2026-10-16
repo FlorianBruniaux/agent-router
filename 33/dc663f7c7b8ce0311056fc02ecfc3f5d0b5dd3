@@ -1,0 +1,255 @@
+docs/bench/linux-finite-dispatch-2026-10-16/independent/current-reported-review.json
+  s_ae085abdb4f4d0::t_23c4d7cc77a466 1-71
+Cargo.lock
+  s_ae085abdb4f4d0::t_d0b83b3a8105f0 1180
+crates/router-runtime/Cargo.toml
+  s_ae085abdb4f4d0::t_966731321eaf99 24,27
+crates/router-runtime/src/admission/runtime.rs
+  s_ae085abdb4f4d0::t_2a4c9591b11ae5 60-65,73-87,485-522
+crates/router-runtime/src/bin/finite-codex-client.rs
+  s_ae085abdb4f4d0::t_067d31ca79f436 1-336
+crates/router-runtime/src/bin/finite-codex-client/replacement.rs
+  s_a3c8391baca17a::t_105fcc63ccdca7 1-512
+crates/router-runtime/src/finite_client.rs
+  s_ae085abdb4f4d0::t_884a427718dd3c 28,42,48-72,82-83,87-93,97,362-363,467-468,473-475,492-494,517-536,546-548,567-587,589-605,611,615,619,631-632,673-677,688-690,731-749,758-761,763,836-853,862-863,991,1171-1178
+crates/router-runtime/src/finite_client/isolated_network.rs
+  s_67362ad3557062::t_268015ae35c2cb 1-241
+crates/router-runtime/src/finite_client/linux_backend.rs
+  s_ae085abdb4f4d0::t_517b2cf1277622 1-690
+crates/router-runtime/src/finite_client/linux_e2e.rs
+  s_ae085abdb4f4d0::t_0bd5889f17c294 1-1060
+crates/router-runtime/src/finite_client/namespace_state.rs
+  s_ae085abdb4f4d0::t_abd4957dd2c878 7-8,27-29
+crates/router-runtime/src/finite_client/ownership_tests.rs
+  s_ae085abdb4f4d0::t_255f3564df39bf 115-140,157-160,178-181,321-408
+crates/router-runtime/src/finite_client/runtime_binding.rs
+  s_ae085abdb4f4d0::t_bccf2765785005 34-35,61,68-79,122-134,241-269
+crates/router-runtime/src/finite_client/write_workspace.rs
+  s_ae085abdb4f4d0::t_d7d78cec6a19a9 1-414
+crates/router-runtime/src/host_state.rs
+  s_ae085abdb4f4d0::t_726d02f6b36ad8 186-189,250-275
+crates/router-runtime/src/store/preparation.rs
+  s_ae085abdb4f4d0::t_87e44aaea9be9a 166-181,198,220,603-639
+crates/router-runtime/support/linux-finite-guard.c
+  s_ae085abdb4f4d0::t_1ab3ddfd75ee03 1-248
+crates/router-runtime/tests/finite_client.rs
+  s_ae085abdb4f4d0::t_69041801bd2ba5 589-602,1204-1206,1224-1242
+crates/router-runtime/tests/runtime.rs
+  s_ae085abdb4f4d0::t_3d80b9a81ae3b3 82-88,3988-3992
+crates/router-runtime/tests/runtime/finite_client_binding.rs
+  s_ae085abdb4f4d0::t_c8bfcbf922fec7 75,142,173,227,322,392-394,428,467-529
+docs/adr/0036-finite-client-runtime-approval.md
+  s_ae085abdb4f4d0::t_4d05571f4224a8 4,8,30-31
+docs/adr/0037-qualified-local-finite-dispatch.md
+  s_ae085abdb4f4d0::t_7fd79fcf113823 1-44
+docs/adr/README.md
+  s_ae085abdb4f4d0::t_627181eb6888c9 54-55
+docs/bench/linux-finite-dispatch-2026-10-16/README.md
+  s_ae085abdb4f4d0::t_26eb76043e2436 1-63
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/client-contracts.log
+  s_ae085abdb4f4d0::t_cf50ebbb8a36e4 1-23
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/container.json
+  s_ae085abdb4f4d0::t_418848efc44e10 1-25
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/controller-consistency.json
+  s_ae085abdb4f4d0::t_837b7b65ea6178 1-61
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/executed-source-inventory.json
+  s_ae085abdb4f4d0::t_e7714cc00634b4 1-5814
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/legacy-and-network-contracts.log
+  s_ae085abdb4f4d0::t_43c88a6a8a552b 1-37
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/legacy-network2/legacy-refusal.json
+  s_ae085abdb4f4d0::t_de0cf8e2fa99d7 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/lifecycle.log
+  s_ae085abdb4f4d0::t_593b0dd72c3c9b 1-51
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/local-quality.json
+  s_ae085abdb4f4d0::t_606c6aee5cbbd5 1-590
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/parent-eof.log
+  s_ae085abdb4f4d0::t_ab23c7b39ced88 1-6
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/post-qualification-changes.json
+  s_ae085abdb4f4d0::t_2b64f78615e499 1-10
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/discovery/discovery.stderr
+  s_ae085abdb4f4d0::t_7cb3f1fd0f0b4a 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/discovery/discovery.stdout
+  s_ae085abdb4f4d0::t_2317998f3eb541 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/generic-reopen-refusal.txt
+  s_ae085abdb4f4d0::t_d829b521b1f02d 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/pins.json
+  s_ae085abdb4f4d0::t_6e6a40b5f38a3f 1-94
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/provider.json
+  s_ae085abdb4f4d0::t_6bf49db0aa9828 1-8
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/receipt.json
+  s_ae085abdb4f4d0::t_7467b9ec85fba7 1-137
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/result.json
+  s_ae085abdb4f4d0::t_0537b702cb9967 1-533
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/stderr.txt
+  s_ae085abdb4f4d0::t_dc1ed176091d49 1-5
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-cancel-current/stdout.jsonl
+  s_ae085abdb4f4d0::t_6558fc90005206 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/discovery/discovery.stderr
+  s_ae085abdb4f4d0::t_190e358523df81 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/discovery/discovery.stdout
+  s_ae085abdb4f4d0::t_630cee042f43bb 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/generic-reopen-refusal.txt
+  s_ae085abdb4f4d0::t_8967f05e9334e6 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/pins.json
+  s_ae085abdb4f4d0::t_7dc4a9061aaf34 1-94
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/provider.json
+  s_ae085abdb4f4d0::t_d464621ab5a79c 1-8
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/receipt.json
+  s_ae085abdb4f4d0::t_0c58afc7054948 1-166
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/result.json
+  s_ae085abdb4f4d0::t_30172a4958e6d8 1-571
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/stderr.txt
+  s_ae085abdb4f4d0::t_116ab9ff38ece6 1-5
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-current/stdout.jsonl
+  s_ae085abdb4f4d0::t_336adb40919673 1-4
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/discovery/discovery.stderr
+  s_ae085abdb4f4d0::t_064fbdbf203a79 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/discovery/discovery.stdout
+  s_ae085abdb4f4d0::t_b3c380660d690a 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/eof-recovery.json
+  s_ae085abdb4f4d0::t_0de5147a20d4e0 1-15
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/parent-eof.json
+  s_ae085abdb4f4d0::t_ba09669cf4f766 1-16
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/pins.json
+  s_ae085abdb4f4d0::t_877b4e24621b89 1-94
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/provider.json
+  s_ae085abdb4f4d0::t_c89527baec06e5 1-8
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-eof-current/recovery.log
+  s_ae085abdb4f4d0::t_40968753b60e5f 1-6
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/discovery/discovery.stderr
+  s_ae085abdb4f4d0::t_ade98dc16edbe5 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/discovery/discovery.stdout
+  s_ae085abdb4f4d0::t_01e426a89b45c6 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/generic-reopen-refusal.txt
+  s_ae085abdb4f4d0::t_57ce7a40dfc2fa 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/pins.json
+  s_ae085abdb4f4d0::t_6d3694728b20b9 1-94
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/provider.json
+  s_ae085abdb4f4d0::t_99d2bbaf430948 1-8
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/receipt.json
+  s_ae085abdb4f4d0::t_1a91d7f58ab497 1-137
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/result.json
+  s_ae085abdb4f4d0::t_45ebbec8621a73 1-533
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/stderr.txt
+  s_ae085abdb4f4d0::t_01e769ce5e18c6 1-5
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q01-timeout-current/stdout.jsonl
+  s_ae085abdb4f4d0::t_fe5a16362d6023 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/change.patch
+  s_ae085abdb4f4d0::t_cd575550268384 1-15
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/discovery/discovery.stderr
+  s_ae085abdb4f4d0::t_6b813c97a9d12f 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/discovery/discovery.stdout
+  s_ae085abdb4f4d0::t_4d002ec587f546 1-2
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/external-acceptance.json
+  s_ae085abdb4f4d0::t_f39f1ca0541947 1-13
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/freeze.json
+  s_ae085abdb4f4d0::t_80a33d20e7b4c3 1-11
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/generic-reopen-refusal.txt
+  s_ae085abdb4f4d0::t_c195f6d931c108 1
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/pins.json
+  s_ae085abdb4f4d0::t_ceab2b12b1a91e 1-96
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/provider.json
+  s_ae085abdb4f4d0::t_d7d7c118a65de0 1-8
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/receipt.json
+  s_ae085abdb4f4d0::t_4a792c1794c6e4 1-166
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/result.json
+  s_ae085abdb4f4d0::t_4b600666499a58 1-1021
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/stderr.txt
+  s_ae085abdb4f4d0::t_ed075952fcf773 1-5
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/stdout.jsonl
+  s_ae085abdb4f4d0::t_cf0df8860a4d44 1-4
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/submission/AGENTS.md
+  s_ae085abdb4f4d0::t_281ab3649ea12b 1-15
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/submission/lib.rs
+  s_ae085abdb4f4d0::t_c0c7e7ccab9343 1-6
+docs/bench/linux-finite-dispatch-2026-10-16/evidence/q02-current/submission/statement.md
+  s_ae085abdb4f4d0::t_598624c15681fa 1-9
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/q01/candidate/review.rs
+  s_ae085abdb4f4d0::t_930933b1fa1eff 1-17
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/q01/contract.json
+  s_ae085abdb4f4d0::t_2e57eeee517085 1-24
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/q01/controller/response.sse
+  s_ae085abdb4f4d0::t_59d02587a0cf06 1-21
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/candidate/AGENTS.md
+  s_ae085abdb4f4d0::t_5442109d0af469 1-15
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/candidate/lib.rs
+  s_ae085abdb4f4d0::t_1a704a79199bcb 1-6
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/candidate/statement.md
+  s_ae085abdb4f4d0::t_d71ba34d5b47eb 1-9
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/controller/control-output.json
+  s_ae085abdb4f4d0::t_5d9afda4661ae3 1-3
+docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/descriptor.json
+  s_ae085abdb4f4d0::t_970905dac02775 1-30
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/container-constraints.txt
+  s_ae085abdb4f4d0::t_a697a7dc693f85 1-3
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/guard-source.c
+  s_ae085abdb4f4d0::t_2d9d5a15177666 1-248
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/negative-label-mismatch-before-rerun.json
+  s_ae085abdb4f4d0::t_a5ee26859046eb 1-7
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/negative.json
+  s_ae085abdb4f4d0::t_42b64edd8a0228 1-11
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/pins.json
+  s_ae085abdb4f4d0::t_e4a635c91bacec 1-4
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/positive.json
+  s_ae085abdb4f4d0::t_91e9f87c7712fc 1-57
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/scope.json
+  s_ae085abdb4f4d0::t_1809347a4f9273 1-21
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-fixed-components/witness.py
+  s_ae085abdb4f4d0::t_2719083b3fe4ba 1-56
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-red/guard-before-fix.c
+  s_ae085abdb4f4d0::t_88bc62ed0a2525 1-205
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-red/native-uds-inspection.json
+  s_ae085abdb4f4d0::t_de47f3c1dbd91e 1-24
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-red/witness.json
+  s_ae085abdb4f4d0::t_9ef14775b9975d 1-52
+docs/bench/linux-finite-dispatch-2026-10-16/network-address-red/witness.py
+  s_ae085abdb4f4d0::t_37c91955a68970 1-34
+docs/bench/linux-finite-dispatch-2026-10-16/parent-eof.py
+  s_ae085abdb4f4d0::t_b9cd91940a4063 1-44
+docs/reference/json-contracts.md
+  s_ae085abdb4f4d0::t_816b5e0ea8f762 669-679
+docs/superpowers/plans/2026-10-16-finite-client-linux-dispatch.md
+  s_ae085abdb4f4d0::t_f0b7af22f28e79 1-31
+crates/router-runtime/src/lib.rs
+  s_3ee3c344e057cf::t_3df50ed1e7512a 19-20,663,1049-1061,1072-1075,1105,1129,1137,1193,1335-1341,1626,1634,1678,1688-1698,1731-1733,1744-1763,1871-1873
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33dc663f7c7b8ce0311056fc02ecfc3f5d0b5dd3",
+  "prompts": {},
+  "sessions": {
+    "s_3ee3c344e057cf": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14564-d7dd-7171-9e41-736123be6567",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_67362ad3557062": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a143ef-da94-7a23-ae51-986013ecec07",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_a3c8391baca17a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135bc-ff66-7702-881d-4d28557ef2f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
