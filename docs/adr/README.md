@@ -50,6 +50,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0033](0033-host-state-writer-exclusion.md) | Require writer exclusion for host-state disposal | implemented | 2026-10-15 | 2026-10-15 | - |
 | [0034](0034-offline-evaluation-evidence.md) | Keep evaluator qualification and supplied usage accounting separate | implemented | 2026-10-15 | 2026-10-15 | - |
 
+| [0035](0035-finite-client-namespace-ownership.md) | Transfer finite-client resources to the namespace lifecycle | implemented | 2026-10-15 | 2026-10-15 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.

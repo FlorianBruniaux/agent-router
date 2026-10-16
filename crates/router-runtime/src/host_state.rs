@@ -19,6 +19,7 @@ pub struct HostState {
     store: PathBuf,
     program: String,
     private_program: Option<PrivateProgram>,
+    finite_client: Option<Box<crate::finite_client::FiniteClientResources>>,
     directory: OwnedDirectory,
     store_directory: OwnedDirectory,
     cleanup_attempted: bool,
@@ -83,6 +84,7 @@ impl HostState {
             store: store.into(),
             program: program.into(),
             private_program: None,
+            finite_client: None,
             directory,
             store_directory,
             cleanup_attempted: false,
@@ -122,6 +124,11 @@ impl HostState {
         writes: &mut Vec<PathBuf>,
         environment: &mut BTreeMap<String, String>,
     ) -> Result<()> {
+        // A finite client has its own immutable startup view. The generic
+        // native path would grant writes to that entire home; keep it closed.
+        if self.finite_client.is_some() {
+            return Err(RuntimeError::Sandbox);
+        }
         self.check_directories()?;
         if program != self.program {
             return Err(RuntimeError::Sandbox);
@@ -164,6 +171,26 @@ impl HostState {
         );
         Ok(())
     }
+    pub(crate) fn retain_finite_client(
+        &mut self,
+        resources: crate::finite_client::FiniteClientResources,
+    ) -> Result<()> {
+        if self.possibly_running || self.private_program.is_some() || self.finite_client.is_some() {
+            return Err(RuntimeError::Sandbox);
+        }
+        resources.check(&self.path)?;
+        self.finite_client = Some(Box::new(resources));
+        Ok(())
+    }
+
+    pub(crate) fn check_owned_resources(&self) -> Result<()> {
+        self.check_directories()?;
+        if let Some(resources) = &self.finite_client {
+            resources.check(&self.path)?;
+        }
+        Ok(())
+    }
+
     fn check_directories(&self) -> Result<()> {
         self.store_directory.check(&self.store)?;
         self.directory.check(&self.path)
@@ -192,12 +219,15 @@ impl HostState {
         }
         self.possibly_running = true;
         self.pid_namespace = pid_namespace;
-        self.check_directories()?;
+        self.check_owned_resources()?;
         let path = lease.ok_or(RuntimeError::CleanupUnknown)?;
         if path.starts_with(&self.path) {
             return Err(RuntimeError::CleanupUnknown);
         }
         self.writer_lease = Some(crate::leases::CleanupLease::pin(path)?);
+        if self.finite_client.is_some() && !pid_namespace {
+            return Err(RuntimeError::CleanupUnknown);
+        }
         Ok(())
     }
 
@@ -237,7 +267,11 @@ impl HostState {
             .take()
             .map_or(Ok(()), PrivateProgram::cleanup);
         state_cleanup?;
-        program_cleanup
+        program_cleanup?;
+        if let Some(resources) = self.finite_client.take() {
+            resources.cleanup()?;
+        }
+        Ok(())
     }
 }
 impl Drop for HostState {
@@ -247,6 +281,12 @@ impl Drop for HostState {
             // Do not even remove the read-only program copy while it may be live.
             if let Some(program) = self.private_program.take() {
                 program.preserve();
+            }
+            if let Some(resources) = self.finite_client.take() {
+                // No surviving owner can release this listener or these assets
+                // safely. Quarantine the complete bundle until controller exit.
+                // Durable cleanup remains UNKNOWN; never reconstruct it by path.
+                std::mem::forget(resources);
             }
         } else if !self.cleanup_attempted {
             let _ = self.remove_owned_directory();

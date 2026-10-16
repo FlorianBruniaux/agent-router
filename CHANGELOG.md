@@ -22,6 +22,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-15: transfer [finite-client preparation resources](docs/adr/0035-finite-client-namespace-ownership.md) into the namespace lifecycle. Retain the broker and copies until a matching locked stop proof permits disposal; refuse generic home-write dispatch and preserve ambiguous ownership. Keep 8 GiB and F12a NO_GO.
+
 - 2026-10-15: bound concurrent startup of the four synthetic finite-client resource-probe fixtures with a shared test slot. Require the malformed-protocol fixture to prove helper execution so a startup timeout cannot masquerade as protocol rejection. Preserve the production three-second probe deadline and resource limits.
 
 - 2026-10-15: require [writer exclusion before private host-state disposal](docs/adr/0033-host-state-writer-exclusion.md). Retain exposed homes/program copies on ambiguous cleanup or async abandonment, reject group-only evidence, and keep filesystem obligations quarantined across restart. HostState on macOS now refuses group-only cleanup; 8 GiB and F12a NO_GO remain unchanged.

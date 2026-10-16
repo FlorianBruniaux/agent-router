@@ -1,5 +1,7 @@
 # Documentation index
 
+[Finite-client namespace ownership](bench/linux-namespace-owner-2026-10-15/README.md), 2026-10-15: transfer startup, copies and broker into the existing locked namespace lifecycle. Selected Linux composition, 8 GiB unchanged; F12a NO_GO.
+
 [Host-state writer exclusion](bench/host-state-writer-exclusion-2026-10-15.md), 2026-10-15: require the exact locked stop proof before disposal, preserve exposed state on Drop and quarantine incomplete filesystem cleanup across restart. 8 GiB unchanged; F12a NO_GO.
 
 [Private host-state cleanup](bench/host-state-cleanup-2026-10-13.md), 2026-10-13: preserve substituted home/store paths, refuse ambiguous absence and prevent Drop retries. Local macOS tests; 8 GiB unchanged, F12a NO_GO.

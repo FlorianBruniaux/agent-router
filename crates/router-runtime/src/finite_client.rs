@@ -560,6 +560,9 @@ impl FiniteClientValidation<'_> {
 /// lifecycle, and must be consumed by a review to remain alive with approval.
 pub struct FiniteCodexState {
     state: HostState,
+    startup: FiniteCodexStartup,
+}
+struct FiniteCodexStartup {
     configuration: FiniteClientFile,
     tmp_identity: PinnedIdentity,
     installation: FiniteClientFile,
@@ -571,38 +574,14 @@ impl FiniteCodexState {
         self.state.path()
     }
     pub fn configuration(&self) -> &FiniteClientFile {
-        &self.configuration
+        &self.startup.configuration
     }
     fn check(&self, run: &PreparedRun, broker: &OwnedBroker) -> Result<()> {
-        let tmp = self.path().join("tmp");
-        let tmp = tmp
-            .to_str()
-            .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
-        if directory(tmp, true)?.identity != self.tmp_identity.identity
-            || self.configuration.sha256 != content_digest(&codex_configuration(run, broker)?)
-        {
-            return Err(RuntimeError::Integrity("finite client owned configuration"));
-        }
-        if file_identity(&self.installation, false)?.identity != self.installation_identity.identity
-            || installation_alias(&self.path().join("installation_id"))?.identity
-                != self.installation_alias.identity
-        {
-            return Err(RuntimeError::Integrity("finite client startup state"));
-        }
-        Ok(())
+        self.startup.check(self.path(), run, broker)
     }
     fn startup_binding(&self) -> Result<String> {
-        Ok(content_digest(&serde_json::to_vec(&(
-            "finite-codex-startup-v1",
-            &self.tmp_identity.identity,
-            &self.installation,
-            &self.installation_identity.identity,
-            &self.installation_alias.identity,
-            "tmp/installation_id",
-            "CODEX_SQLITE_HOME",
-        ))?))
+        self.startup.binding()
     }
-
     fn native_environment(&self) -> BTreeMap<String, String> {
         let home = self.path().to_string_lossy().into_owned();
         BTreeMap::from([
@@ -612,6 +591,37 @@ impl FiniteCodexState {
             ("TMPDIR".into(), format!("{home}/tmp")),
             ("CODEX_SQLITE_HOME".into(), format!("{home}/tmp")),
         ])
+    }
+}
+impl FiniteCodexStartup {
+    fn check(&self, home: &Path, run: &PreparedRun, broker: &OwnedBroker) -> Result<()> {
+        let tmp = home.join("tmp");
+        let tmp = tmp
+            .to_str()
+            .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
+        if directory(tmp, true)?.identity != self.tmp_identity.identity
+            || self.configuration.sha256 != content_digest(&codex_configuration(run, broker)?)
+        {
+            return Err(RuntimeError::Integrity("finite client owned configuration"));
+        }
+        if file_identity(&self.installation, false)?.identity != self.installation_identity.identity
+            || installation_alias(&home.join("installation_id"))?.identity
+                != self.installation_alias.identity
+        {
+            return Err(RuntimeError::Integrity("finite client startup state"));
+        }
+        Ok(())
+    }
+    fn binding(&self) -> Result<String> {
+        Ok(content_digest(&serde_json::to_vec(&(
+            "finite-codex-startup-v1",
+            &self.tmp_identity.identity,
+            &self.installation,
+            &self.installation_identity.identity,
+            &self.installation_alias.identity,
+            "tmp/installation_id",
+            "CODEX_SQLITE_HOME",
+        ))?))
     }
 }
 fn installation_alias(path: &Path) -> Result<PinnedIdentity> {
@@ -734,11 +744,13 @@ impl OwnedBroker {
         let installation_alias = installation_alias(&alias)?;
         Ok(FiniteCodexState {
             state,
-            configuration,
-            tmp_identity,
-            installation,
-            installation_identity,
-            installation_alias,
+            startup: FiniteCodexStartup {
+                configuration,
+                tmp_identity,
+                installation,
+                installation_identity,
+                installation_alias,
+            },
         })
     }
 }
@@ -753,7 +765,7 @@ impl FiniteClientReview {
         state: FiniteCodexState,
     ) -> Result<Self> {
         if Path::new(&manifest.private_state) != state.path()
-            || manifest.configuration != state.configuration
+            || &manifest.configuration != state.configuration()
         {
             return Err(RuntimeError::Integrity("finite client state binding"));
         }
@@ -1030,3 +1042,10 @@ mod resource_binding_tests {
 #[cfg(all(test, target_os = "linux"))]
 #[path = "finite_client/linux_qualification.rs"]
 mod linux_qualification;
+
+#[cfg(test)]
+#[path = "finite_client/ownership_tests.rs"]
+mod ownership_tests;
+
+mod namespace_state;
+pub(crate) use namespace_state::FiniteClientResources;

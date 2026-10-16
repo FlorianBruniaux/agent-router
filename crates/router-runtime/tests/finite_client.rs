@@ -1268,3 +1268,15 @@ fn native_preview_keeps_sqlite_in_the_private_tmp() {
             .is_none()
     );
 }
+
+#[test]
+fn manifest_only_review_cannot_construct_a_namespace_state_owner() {
+    let mut f = Fixture::new();
+    let approved = f.approve();
+    assert!(matches!(
+        approved.into_namespace_state(),
+        Err(router_runtime::RuntimeError::Sandbox)
+    ));
+    assert!(f.root.join("client").is_file());
+    assert!(f.root.join("state").is_dir());
+}

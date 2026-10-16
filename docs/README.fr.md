@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Propriété du client fini et du namespace](bench/linux-namespace-owner-2026-10-15/README.md), 2026-10-15 : conserver ensemble démarrage, copies et broker jusqu’au nettoyage sous preuve verrouillée. Composition Linux ciblée, 8 Gio inchangés ; F12a NO_GO.
+
 [Démarrage Linux produit et détenu](bench/linux-owned-startup-2026-10-11/README.md), 2026-10-11 : lier les fichiers de démarrage avant validation, puis qualifier ce producteur avec les 8 Gio inchangés. Diagnostic uniquement, F12a NO_GO.
 
 [Client copié en isolation Linux](bench/linux-copied-client-2026-10-11/README.md), 2026-10-11 : client natif épinglé, contrôles du port broker et des copies protégées à 8 Gio inchangés ; activité détachée contrôlée avant/après destruction du conteneur. Diagnostic seulement, F12a NO_GO.
