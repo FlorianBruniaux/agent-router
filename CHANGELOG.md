@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-16: bind producer-owned finite-client preparation to the existing durable runtime approval ([ADR 0036](docs/adr/0036-finite-client-runtime-approval.md)). Recheck live proof and queued ownership; generic execution remains closed. Keep 8 GiB unchanged; no admission or provider turn is enabled.
+
 - 2026-10-15: add offline [evaluator qualification](docs/evaluator-qualification.md) with required-case comparisons, explicit inconclusive outcomes and retained verdict history (#174). Supplied oracle claims do not establish independent qualification or authorize adoption.
 - 2026-10-15: bridge supplied physical-call usage to qualified pricing and existing accepted-revision accounting, with a separately allowlisted [portable pricing projection](docs/supplied-usage-pricing.md) (#120/#5). Incomplete totals remain unknown; no collector or provider call is added.
 - 2026-10-15: reconstruct [retained M4 acceptance evidence](docs/bench/accepted-evidence-2026-10-15/README.md) using the existing calculator: three attempts, one subsequently accepted Router revision, unknown monetary totals. No trial is rerun and no savings are inferred.

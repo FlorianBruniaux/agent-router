@@ -42,6 +42,15 @@ impl Fixture {
         useful: bool,
         integrate: bool,
     ) -> Self {
+        Self::new_at_with_network(write, temp, useful, integrate, false).await
+    }
+    async fn new_at_with_network(
+        write: bool,
+        temp: tempfile::TempDir,
+        useful: bool,
+        integrate: bool,
+        network: bool,
+    ) -> Self {
         let root = fs::canonicalize(temp.path()).unwrap().join("repo");
         fs::create_dir(&root).unwrap();
         fs::create_dir(root.join("src")).unwrap();
@@ -101,6 +110,12 @@ impl Fixture {
             request.restrictions.policy_hash = router_adapter_api::content_digest(
                 &serde_json::to_vec(&request.restrictions).unwrap(),
             );
+        }
+        if network {
+            request
+                .task
+                .required_capabilities
+                .insert(Capability::Network);
         }
         request.phase = StageKind::Execute;
         request.task.budget.max_elapsed_ms = 10_000;
@@ -4626,3 +4641,6 @@ async fn failed_capture_has_qualified_timing_and_pre_cancel_has_no_interval() {
         }
     }
 }
+
+#[path = "runtime/finite_client_binding.rs"]
+mod finite_client_binding;
