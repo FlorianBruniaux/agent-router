@@ -1,0 +1,57 @@
+crates/router-runtime/support/linux-finite-guard.c
+  s_ae085abdb4f4d0::t_c2a168f6ecfb2e 104,115,117-118,134,136,145,229-241,243-245,258,263
+docs/adr/0039-finite-tool-guard-canaries.md
+  s_ae085abdb4f4d0::t_e02bb70a14a4c3 1-30
+docs/adr/README.md
+  s_ae085abdb4f4d0::t_71ab7cb462de0a 59-60
+docs/bench/linux-finite-tools-guard-2026-10-16/README.md
+  s_ae085abdb4f4d0::t_af39224a58eddd 1-37
+docs/bench/linux-finite-tools-guard-2026-10-16/check.py
+  s_a40a3d06fae758::t_c00d210a65aa08 1-189
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/bpf-review.json
+  s_ae085abdb4f4d0::t_01b606ebf8bb4f 1-9
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/canaries.log
+  s_ae085abdb4f4d0::t_59390d7f52cb26 1-15
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/container.json
+  s_ae085abdb4f4d0::t_e643aeeb3f48d0 1-107
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/programs-and-limits.log
+  s_ae085abdb4f4d0::t_f6ec703e62cf66 1-7
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/qualification.json
+  s_ae085abdb4f4d0::t_b863c9ca819ada 1-40
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/results.json
+  s_ae085abdb4f4d0::t_efeecdedbbad1a 1-153
+docs/bench/linux-finite-tools-guard-2026-10-16/evidence/source-manifest.json
+  s_ae085abdb4f4d0::t_51becb31531ff5 1-27
+docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py
+  s_ae085abdb4f4d0::t_136ccd9db975d7 1-45
+docs/bench/linux-finite-tools-guard-2026-10-16/probe.py
+  s_a40a3d06fae758::t_076329b9f1c03a 1-154
+docs/bench/linux-finite-tools-guard-2026-10-16/reproduce.py
+  s_ae085abdb4f4d0::t_02df975bc5cbad 1-81
+docs/superpowers/specs/2026-10-16-finite-local-tools-design.md
+  s_ae085abdb4f4d0::t_a12c58914d594c 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01342726f3fcd0bc0160e8140e26c5f38caf62c8",
+  "prompts": {},
+  "sessions": {
+    "s_a40a3d06fae758": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13987-56fc-7163-a771-05b90c005330",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
