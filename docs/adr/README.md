@@ -54,6 +54,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0036](0036-finite-client-runtime-approval.md) | Bind finite-client preparation to durable runtime approval | amended | 2026-10-16 | 2026-10-16 | [0037](0037-qualified-local-finite-dispatch.md) |
 | [0037](0037-qualified-local-finite-dispatch.md) | Execute approved finite clients through a qualified local Linux backend | implemented | 2026-10-16 | 2026-10-16 | - |
 
+| [0038](0038-inert-finite-tools-and-output-creation.md) | Prepare finite output creation and inert local tool primitives | implemented | 2026-10-16 | 2026-10-16 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.

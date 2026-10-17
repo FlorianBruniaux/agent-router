@@ -107,10 +107,11 @@ fn composition_command(
     let backing = probe.map_or(tmp.as_path(), |p| p.temporary.as_path());
     let mut writes = vec![];
     if r.run.sandbox == router_types::ExecutionSandbox::WorkspaceWrite {
-        r.owned_workspace
-            .as_ref()
-            .ok_or(RuntimeError::Sandbox)?
-            .check_identity()?;
+        let workspace = r.owned_workspace.as_ref().ok_or(RuntimeError::Sandbox)?;
+        // The delivered backend still implements existing-file replacement.
+        // Preparing an absent output cannot silently opt into another profile.
+        workspace.existing_preimage()?;
+        workspace.check_identity()?;
         crate::workspace::safe_scope(Path::new(&r.run.cwd), &r.run.scope)?;
         for scope in &r.run.scope {
             let path = Path::new(&r.run.cwd).join(scope);
