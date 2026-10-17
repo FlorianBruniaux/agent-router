@@ -13,6 +13,7 @@ use std::{
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Limits {
     pub max_calls: u32,
     pub max_file_bytes: usize,
@@ -48,7 +49,8 @@ struct Scratch {
     bytes: u64,
     entries: usize,
 }
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct JournalEntry {
     pub index: u32,
     pub tool: String,
@@ -786,6 +788,55 @@ impl Engine {
         }
         self.append(record);
         serde_json::to_value(result).map_err(|_| "policy.result")
+    }
+    pub fn verify_terminal_output(&self, output: &super::ToolOutput) -> Result<(), &'static str> {
+        if output.relative != self.output {
+            return Err("policy.terminal_scope");
+        }
+        self.root.verify()?;
+        self.scratch.verify()?;
+        for (name, expected) in &self.immutable {
+            if snapshot(
+                &mut file_at(&self.root.file, name, false)?,
+                self.limits.max_file_bytes as u64,
+            )? != *expected
+            {
+                return Err("policy.terminal_public_changed");
+            }
+        }
+        let current = snapshot(
+            &mut file_at(&self.root.file, &self.output, false)?,
+            self.limits.max_file_bytes as u64,
+        )?;
+        if self.target.as_ref().is_some_and(|initial| {
+            (initial.dev, initial.ino, initial.mode) != (current.dev, current.ino, current.mode)
+        }) || (
+            current.dev,
+            current.ino,
+            current.mode,
+            current.bytes,
+            current.hash.as_str(),
+        ) != (
+            output.device,
+            output.inode,
+            output.mode,
+            output.bytes,
+            output.sha256.as_str(),
+        ) {
+            return Err("policy.terminal_output_changed");
+        }
+        self.root.verify()
+    }
+    pub fn terminal_output(&self) -> Result<Option<super::ToolOutput>, &'static str> {
+        self.verify()?;
+        Ok(self.target.as_ref().map(|pin| super::ToolOutput {
+            relative: self.output.clone(),
+            sha256: pin.hash.clone(),
+            device: pin.dev,
+            inode: pin.ino,
+            mode: pin.mode,
+            bytes: pin.bytes,
+        }))
     }
     pub fn journal(&self) -> &[JournalEntry] {
         &self.journal

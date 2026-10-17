@@ -1,0 +1,52 @@
+{
+  "scope": "local native component; authored Responses; Runtime admission remains disabled",
+  "verdict": "PASS_LOCAL_NATIVE_COMPONENT_ONLY",
+  "models_started": 0,
+  "sealed_trials_started": 0,
+  "runtime_tools_admission": false,
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "source_verification": {
+    "checked": 422,
+    "mismatches": []
+  },
+  "native_packets": [
+    {
+      "public_fixture": "t02-Lm-r1-H0",
+      "returned_tool_results": 3
+    },
+    {
+      "public_fixture": "t02-Lm-r1-H1",
+      "returned_tool_results": 4
+    },
+    {
+      "public_fixture": "t05-Lm-r1-H0",
+      "returned_tool_results": 3
+    },
+    {
+      "public_fixture": "t05-Lm-r1-H1",
+      "returned_tool_results": 4
+    },
+    {
+      "public_fixture": "t08-Lm-r1-H0",
+      "returned_tool_results": 5
+    },
+    {
+      "public_fixture": "t08-Lm-r1-H1",
+      "returned_tool_results": 4
+    }
+  ],
+  "returned_tool_results": 23,
+  "component_tests_passed": 35,
+  "guard_tests_passed": 10,
+  "raw_evidence_published": false,
+  "raw_evidence_retained_locally": true,
+  "raw_receipt_hashes": {
+    "result.json": "7c27858556290ee20c60ad96b52d8ffecc750cd68fe717cd30dd101b7de27379",
+    "source.json": "4b9469db2636c11de5b0a097c5d7d9544ec8db00a97f918493d74edba8b09b12",
+    "compiled-source-check.json": "f39c493719b6a4ba03c005b46151fece20430bbbbbd24ae3526f85ddd19a8e4d",
+    "components.log": "ae9d361b4329c33b2d842da3c0adf72072d6edfaab3552e4e3dc895e07d3342a",
+    "native.log": "eaaf6ef7e5d2ebbd6f792d92545e70fc30c512855225dcbbdaddc8e2d0067be9",
+    "programs-and-limits.log": "f069a19342061309949cca62017680af480872ec27784e8bfd64fcab8fa22f0e"
+  }
+}

@@ -39,7 +39,7 @@ def main():
     run(['docker','image','inspect',IMAGE],stdout=subprocess.DEVNULL)
     run(['docker','volume','inspect',CACHE],stdout=subprocess.DEVNULL)
     files={p:(ROOT/p).read_bytes() for p in FILES}
-    assert hashlib.sha256(files['crates/router-runtime/support/linux-finite-guard.c']).hexdigest()=='71cc65477c1badc89a6f87487b5daf75798f63904241ad9d5c4637db8b1143c5'
+    assert hashlib.sha256(files['crates/router-runtime/support/linux-finite-guard.c']).hexdigest()=='ba75d2f7ec03bed21eaf2137ba5d800bcaccbd1c3340f969dd8ebe4cd25ec487'
     assert hashlib.sha256(files['docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py']).hexdigest()=='8a62ffb5eb9c59318bd9b274d0234f11def6eeb2dafb99e5163e305f3c8fd0ca'
     with tarfile.open(output/'public-overlay.tar','w') as archive:
         manifest=[]

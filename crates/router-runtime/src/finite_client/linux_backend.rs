@@ -88,7 +88,8 @@ fn composition_command(
     let namespace = r.owned_namespace.as_ref().ok_or(RuntimeError::Sandbox)?;
     let assets = r.owned_assets.as_ref().ok_or(RuntimeError::Sandbox)?;
     let pins = &assets.pins;
-    if r.resource_arguments != ResourceLimits::default().args()?
+    if resources.startup.tools
+        || r.resource_arguments != ResourceLimits::default().args()?
         || r.manifest.native.sha256 != NATIVE_LINUX_ARM64
         || r.manifest.native_version != "0.159.2-linux-arm64-musl"
         || r.run.argv != ["--worker"]

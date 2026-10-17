@@ -83,6 +83,8 @@ def heartbeat(root, hold):
 
 def tools(hold):
     common()
+    refused(lambda: socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET))
+    refused(lambda: socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET))
     for family, kind in [(socket.AF_INET,socket.SOCK_STREAM), (socket.AF_INET,socket.SOCK_DGRAM), (socket.AF_INET6,socket.SOCK_STREAM), (socket.AF_UNIX,socket.SOCK_STREAM)]:
         refused(lambda f=family,k=kind: socket.socket(f,k))
     assert Path('/tool-guard').is_file()
@@ -128,9 +130,15 @@ def native(role, broker, denied):
     refused(lambda: socket.create_connection(('127.0.0.1',denied),timeout=1))
     for family,kind in [(socket.AF_INET,socket.SOCK_DGRAM),(socket.AF_INET6,socket.SOCK_STREAM)]:
         refused(lambda f=family,k=kind: socket.socket(f,k))
+    refused(lambda: socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET))
+    refused(lambda: socket.socketpair(socket.AF_UNIX,socket.SOCK_DGRAM))
     if role.startswith('legacy'):
+        refused(lambda: socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET))
         refused(lambda: socket.socket(socket.AF_UNIX,socket.SOCK_STREAM))
     else:
+        a,b=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET|socket.SOCK_CLOEXEC)
+        a.send(b'native-spawn-control'); assert b.recv(64)==b'native-spawn-control'; a.close(); b.close()
+        refused(lambda: socket.socketpair(socket.AF_INET,socket.SOCK_SEQPACKET))
         assert sorted(p.name for p in Path('/router-tools').iterdir())==['rpc.sock']
         assert stat.S_ISSOCK(Path('/router-tools/rpc.sock').stat().st_mode)
         with socket.socket(socket.AF_UNIX,socket.SOCK_STREAM) as stream:

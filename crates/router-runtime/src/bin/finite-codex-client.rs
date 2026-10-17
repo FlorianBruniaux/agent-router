@@ -240,6 +240,38 @@ fn execute(probe: bool) -> Result<i32, &'static str> {
 }
 fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
+    if args.as_slice() == ["--tools-owner"] {
+        // Worker bootstrap is never a Runtime approval or capability proof.
+        let result = (|| -> Result<i32, &'static str> {
+            let path = Path::new("/router-tools/boot.json");
+            let file = OpenOptions::new()
+                .read(true)
+                .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
+                .open(path)
+                .map_err(|_| "owner.bootstrap")?;
+            if !file.metadata().map_err(|_| "owner.bootstrap")?.is_file() {
+                return Err("owner.bootstrap");
+            }
+            let mut bytes = Vec::new();
+            file.take(65537)
+                .read_to_end(&mut bytes)
+                .map_err(|_| "owner.bootstrap")?;
+            let value = router_adapter_api::strict_json_limited(&bytes, 65536)
+                .map_err(|_| "owner.bootstrap")?;
+            let boot = serde_json::from_value(value).map_err(|_| "owner.bootstrap")?;
+            router_runtime::finite_tools::run_owner(boot).map_err(|error| match error {
+                router_runtime::finite_tools::FiniteToolError::Refused(code) => code,
+                router_runtime::finite_tools::FiniteToolError::Execution => "owner.execution",
+            })
+        })();
+        match result {
+            Ok(code) => std::process::exit(code),
+            Err(code) => {
+                eprintln!("finite-client:{code}");
+                std::process::exit(125);
+            }
+        }
+    }
     if args.as_slice() == ["--mcp-tools"] {
         // Absolute bound for this fixed bridge process, including a stalled
         // stdin/stdout pipe. Namespace and descendant cleanup remain with the

@@ -630,6 +630,7 @@ pub struct FiniteCodexState {
     startup: FiniteCodexStartup,
 }
 struct FiniteCodexStartup {
+    tools: bool,
     configuration: FiniteClientFile,
     catalog: FiniteClientFile,
     catalog_identity: PinnedIdentity,
@@ -669,11 +670,12 @@ impl FiniteCodexStartup {
             .to_str()
             .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
         if directory(tmp, true)?.identity != self.tmp_identity.identity
-            || self.configuration.sha256 != content_digest(&codex_configuration(run, broker)?)
+            || self.configuration.sha256
+                != content_digest(&codex_configuration_mode(run, broker, self.tools)?)
         {
             return Err(RuntimeError::Integrity("finite client owned configuration"));
         }
-        if self.catalog.sha256 != content_digest(&codex_local_catalog(run)?)
+        if self.catalog.sha256 != content_digest(&codex_local_catalog_mode(run, self.tools)?)
             || file_identity(&self.catalog, false)?.identity != self.catalog_identity.identity
         {
             return Err(RuntimeError::Integrity("finite local catalog changed"));
@@ -687,6 +689,23 @@ impl FiniteCodexStartup {
         Ok(())
     }
     fn binding(&self) -> Result<String> {
+        if self.tools {
+            return crate::digest(
+                "finite-codex-tools-startup-v1",
+                &(
+                    &self.configuration,
+                    &self.catalog,
+                    &self.catalog_identity.identity,
+                    &self.tmp_identity.identity,
+                    &self.installation,
+                    &self.installation_identity.identity,
+                    &self.installation_alias.identity,
+                    "/finite-client",
+                    "--mcp-tools",
+                    ["read_file", "write_file", "exec"],
+                ),
+            );
+        }
         Ok(content_digest(&serde_json::to_vec(&(
             "finite-codex-startup-v2",
             &self.catalog,
@@ -733,14 +752,14 @@ fn installation_alias(path: &Path) -> Result<PinnedIdentity> {
 }
 // Operator-authored metadata for the coded local transport only. This is not
 // vendor discovery, a real model context measurement or provider availability.
-fn codex_local_catalog(run: &PreparedRun) -> Result<Vec<u8>> {
+fn codex_local_catalog_mode(run: &PreparedRun, tools: bool) -> Result<Vec<u8>> {
     if !token(run.requested_model.as_str(), 128) {
         return Err(RuntimeError::Invalid("finite local catalog model"));
     }
     Ok(serde_json::to_vec(&serde_json::json!({"models":[{
         "slug":run.requested_model,"display_name":"Authored local fixture, no model",
         "description":"Operator-authored local Responses transport metadata; no real model availability claim",
-        "base_instructions":"Local authored transport qualification. Return the requested JSON only. Do not call tools.",
+        "base_instructions":if tools {"Local authored MCP qualification. Use only the three advertised finite tools. No model ran."} else {"Local authored transport qualification. Return the requested JSON only. Do not call tools."},
         "default_reasoning_level":run.requested_effort,
         "supported_reasoning_levels":[{"effort":run.requested_effort,"description":"Reviewed local fixture identifier"}],
         "shell_type":"shell_command","visibility":"none","supported_in_api":true,"priority":0,
@@ -750,7 +769,11 @@ fn codex_local_catalog(run: &PreparedRun) -> Result<Vec<u8>> {
         "context_window":262144,"tool_mode":"direct"
     }]}))?)
 }
-fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8>> {
+fn codex_configuration_mode(
+    run: &PreparedRun,
+    broker: &OwnedBroker,
+    tools: bool,
+) -> Result<Vec<u8>> {
     // JSON string escaping is also valid for these bounded ASCII TOML strings.
     // Reject non-token model names rather than permit configuration injection.
     if !token(run.requested_model.as_str(), 128) {
@@ -762,14 +785,35 @@ fn codex_configuration(run: &PreparedRun, broker: &OwnedBroker) -> Result<Vec<u8
         .endpoint
         .strip_prefix("tcp://")
         .ok_or(RuntimeError::Sandbox)?;
-    let config = format!(
+    let mut config = format!(
         "model = {model}\nmodel_provider = \"local_fixture\"\nmodel_reasoning_effort = {effort}\nmodel_catalog_json = \"local-model-catalog.json\"\napproval_policy = \"on-request\"\napprovals_reviewer = \"user\"\nsandbox_mode = \"read-only\"\nweb_search = \"disabled\"\n[features]\ncode_mode.enabled = false\ncode_mode_host = false\ncode_mode_only = false\nshell_tool = false\nunified_exec = false\napps = false\n[model_providers.local_fixture]\nname = \"Finite client preparation, local fixture only\"\nbase_url = \"http://{address}/v1\"\nwire_api = \"responses\"\nrequires_openai_auth = false\nsupports_websockets = false\nrequest_max_retries = 0\nstream_max_retries = 0\n"
     );
+    if tools {
+        config = config.replacen("[features]\n", "[agents]\nenabled = false\n[tools.experimental_request_user_input]\nenabled = false\n[tools.update_plan]\nenabled = false\n[features]\ngoals = false\nview_image = false\nmulti_agent = false\nmulti_agent_v2 = false\n", 1);
+        config.push_str("\n[mcp_servers.finite]\ncommand = \"/finite-client\"\nargs = [\"--mcp-tools\"]\nenv = {}\nenv_vars = []\nenabled_tools = [\"read_file\", \"write_file\", \"exec\"]\nrequired = true\nstartup_readiness = \"connection\"\n[mcp_servers.finite.tools.read_file]\napproval_mode = \"approve\"\n[mcp_servers.finite.tools.write_file]\napproval_mode = \"approve\"\n[mcp_servers.finite.tools.exec]\napproval_mode = \"approve\"\n");
+    }
     Ok(config.into_bytes())
 }
 impl OwnedBroker {
     /// Creates only private local files. No native invocation or provider call.
     pub fn prepare_codex_state(&self, store: &Path, run: &PreparedRun) -> Result<FiniteCodexState> {
+        self.prepare_codex_state_mode(store, run, false)
+    }
+    /// Prepares the exact local MCP startup files. This does not enable the
+    /// Runtime Tools entrance, invoke a native process or grant any capability.
+    pub fn prepare_codex_tools_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+    ) -> Result<FiniteCodexState> {
+        self.prepare_codex_state_mode(store, run, true)
+    }
+    fn prepare_codex_state_mode(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+        tools: bool,
+    ) -> Result<FiniteCodexState> {
         prepared_digest(run)?;
         let store_text = store
             .to_str()
@@ -779,7 +823,7 @@ impl OwnedBroker {
         if store.starts_with(&run.cwd) || Path::new(&run.cwd).starts_with(store) {
             return Err(RuntimeError::Scope);
         }
-        let bytes = codex_configuration(run, self)?;
+        let bytes = codex_configuration_mode(run, self, tools)?;
         let state =
             HostState::create(store, "codex", &BTreeMap::new())?.ok_or(RuntimeError::Sandbox)?;
         let tmp = state.path().join("tmp");
@@ -836,7 +880,7 @@ impl OwnedBroker {
                 .into(),
             sha256: content_digest(id.as_bytes()),
         };
-        let catalog_bytes = codex_local_catalog(run)?;
+        let catalog_bytes = codex_local_catalog_mode(run, tools)?;
         let catalog_path = state.path().join("local-model-catalog.json");
         let mut catalog_file = OpenOptions::new()
             .write(true)
@@ -861,6 +905,7 @@ impl OwnedBroker {
         Ok(FiniteCodexState {
             state,
             startup: FiniteCodexStartup {
+                tools,
                 configuration,
                 catalog,
                 catalog_identity,
@@ -1179,3 +1224,7 @@ pub(crate) use linux_backend::LinuxFiniteSupervisor;
 
 mod write_workspace;
 pub use write_workspace::{FiniteClientWorkspace, FiniteOutputMode};
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "finite_client/native_tools_tests.rs"]
+mod native_tools_tests;

@@ -119,13 +119,17 @@ static void seccomp(unsigned mode) {
       DENY(SYS_io_uring_setup),
       DENY(SYS_setxattr), DENY(SYS_fsetxattr), DENY(SYS_lsetxattr),
       DENY(SYS_removexattr), DENY(SYS_fremovexattr), DENY(SYS_lremovexattr),
-      /* Tokio's signal self-pipe uses anonymous Unix stream pairs, no addresses. */
-      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_socketpair,0,9),
+      /* Anonymous IPC only: Tokio uses STREAM; the pinned musl Codex
+       * spawn-error channel uses SEQPACKET. That second type is confined to
+       * native MCP mode, never legacy or candidate execution. SYS_socket
+       * still refuses addressed SEQPACKET creation in every mode. */
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_socketpair,0,10),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0])),
-      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,AF_UNIX,0,5),
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,AF_UNIX,0,6),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[1])),
       BPF_STMT(BPF_ALU|BPF_AND|BPF_K,~(SOCK_NONBLOCK|SOCK_CLOEXEC)),
-      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SOCK_STREAM,0,2),
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SOCK_STREAM,1,0),
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,mode==1?SOCK_SEQPACKET:SOCK_STREAM,0,2),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[2])),
       BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,0,1,0),
       BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM),

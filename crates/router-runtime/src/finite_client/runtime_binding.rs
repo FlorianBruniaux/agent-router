@@ -65,7 +65,11 @@ impl Runtime {
         request: &ExecutionRequest,
         client: &FiniteClientReview,
     ) -> Result<()> {
-        if request.tools != router_types::ToolSelection::Disabled
+        if client
+            .owned_state
+            .as_ref()
+            .is_some_and(|state| state.startup.tools)
+            || request.tools != router_types::ToolSelection::Disabled
             || request.agent.is_some()
             || !request.skills.is_empty()
             || request.required_capabilities.iter().any(|capability| {

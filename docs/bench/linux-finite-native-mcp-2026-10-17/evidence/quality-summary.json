@@ -1,0 +1,225 @@
+{
+  "verdict": "incomplete_or_failed",
+  "full_ci_equivalent": false,
+  "source_stable_during_checks": true,
+  "verified_source_sha256": "602c90a44f5fe697a2545977c6f4307a5ce7631340a5af4fefbc4f0b8461e12d",
+  "runner_sha256": "3de594d5e65ea52455b507a443f65c46f513b2ddf19d75db2c21015ea790dbe7",
+  "raw_summary_sha256": "a9f5fcec7ea87afd0479c72bc1c38f876edbcaee80b960182829fd98d8ba502f",
+  "checks": [
+    {
+      "id": "format",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "clippy-all",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "aa57419694aa26147b63f01569e2a1b40f20f0cb0d111c6ebd13a7ff4f66f5a9"
+    },
+    {
+      "id": "clippy-core",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "22e0df986057b9ba5be07526ac5fb348862a3dedef42108383cc3e088acbb889"
+    },
+    {
+      "id": "workspace-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "e8d7da5731ea705460ac43d63d835a90a6d189ebbe80ae347ceab4cc24a25d39"
+    },
+    {
+      "id": "local-api-absent",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "0bcde94723652f50d3049a9ad571c752135e00729aee6601229a6f86c0bd144e"
+    },
+    {
+      "id": "harness",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "17d2355368bfa6cf0639eeb82b22b7a0c5d2aa25f9509846464978d1b98ffad2"
+    },
+    {
+      "id": "host-syntax",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "b81b4696440134621fc08e45504e54a6af5bb03a62b084236090e862f58dbb87"
+    },
+    {
+      "id": "script-test-benchmark-startup",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "199ba496f288116d36c62f29346d4fbf0bd75745a1c893abfcbdaa4c6d5b1033"
+    },
+    {
+      "id": "script-test-check-adrs",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "71b3ee0e1728feb2153a3bc003b19d88f0e20b26ea7c6a2c7aab51ead3dc24fc"
+    },
+    {
+      "id": "script-test-check-local",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "7f8a711684cb322668bbd40a0d842a69c994830c98a1032323ea9862dd333ab9"
+    },
+    {
+      "id": "script-test-check-m3-baseline",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "79acb8f70691ddc2511a7c42d07a725478b9731f0df0a959dc32f1a96336def2"
+    },
+    {
+      "id": "script-test-linux-copied-client-evidence",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "4e64da7f4a10f7d2e0d62ed4c8edc790cac9f147656b9c510b43bea5deceb281"
+    },
+    {
+      "id": "script-test-linux-helper-evidence",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "3115917747ff7faa5da482a16830c939a5aabeed3ed08f955f5b2ee59b389ad6"
+    },
+    {
+      "id": "script-test-linux-namespace-owner-evidence",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "367fc651a22c81681cc975a5332e7ad378554d9a0e67fb917fd8b03695f0f1d3"
+    },
+    {
+      "id": "script-test-linux-owned-startup-evidence",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "8ecfcd384e0c7525651774fd661e7fb1a7ffa94f38431b1e954fb7e7e5ce2876"
+    },
+    {
+      "id": "script-test-package-binary",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "9d0969974188a2690240e9b137bd727a4d40ea19d0d763c60a274c22804cb694"
+    },
+    {
+      "id": "script-test-package-core",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "ce7652eaa201587055c553b15fe101927ab4e415e60b4ac9f96564992e9d9725"
+    },
+    {
+      "id": "script-test-release-local",
+      "status": "failed",
+      "exit_code": 1,
+      "log_sha256": "2b41a7eb3d490fd5d8f982f274885421bd471de2f57d0116c56bace20a4edbcf"
+    },
+    {
+      "id": "egress-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "6920f76d4a6bcf117e72ce265579439e7efd6b8142c2522c7a5a52d84bf5b47f"
+    },
+    {
+      "id": "native-probe-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "88907cd90d5b7f6505a6df583761f6c9dbc57c4dbb47a5a9e7cbc959765704e5"
+    },
+    {
+      "id": "native-decision-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "48962ef5d1cbefd9beff89a3c45db2373265b38b01ace682393a4287b8c9662a"
+    },
+    {
+      "id": "native-hook-failure-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "f5e6271a94b4bf8939a2b46697608a32e70afee35d443259dd176ac4df20270d"
+    },
+    {
+      "id": "campaign-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "b5000a9ee5ce5255a06a6c168daf3957db230fbf8d74e3005b8277378db1023a"
+    },
+    {
+      "id": "calibration-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "c85ae678f70ebfbc184ae9150c7f939062311ef02bfd4729e4834d670fcd65ac"
+    },
+    {
+      "id": "measurement-m1-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "f02dc821e4ae81bb98ce168967adc3836bec4ffcbd21b1f26965aa95468b7a81"
+    },
+    {
+      "id": "measurement-m2-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "dba46604767d2bc6cc3512fde1f939f78c91cb4f09423d1b5103a35e5069fe07"
+    },
+    {
+      "id": "measurement-m3-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "57c7b8191f789593dbea125c43f50426992470a448bd034cbf92e3ee874a31c8"
+    },
+    {
+      "id": "measurement-m4-v2-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "3c82caff72cbeef8ce00abb162458d19eb5938baf0dd134dd537e8b89fe6a1aa"
+    },
+    {
+      "id": "accepted-evidence-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "7719cc26f792e9b76a3ca2d59c7747658903feb7c9fde14e47ae3eb298e9af3c"
+    },
+    {
+      "id": "physical-send-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "018b749fb93613abec76e4134f6e3839abffcd218eb2a99a3423a1cef4a5a364"
+    },
+    {
+      "id": "startup-outage-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "fb4dc498c233bb03dd66c9b8b9aedcd3442a835c9b80e2370615099236476fd4"
+    },
+    {
+      "id": "owned-entry-tests",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "5e0e0698aebb5f38461ec5ebfa8abe79d85702e358eb3d168aada22dc74e40e1"
+    },
+    {
+      "id": "secrets-dir",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "5d89f03a7e9a5e0aadb3065ef4c384b1651fca77e8c80d327af60027c2683f08"
+    },
+    {
+      "id": "secrets-git",
+      "status": "passed",
+      "exit_code": 0,
+      "log_sha256": "d461356e04b0ec0c212c1b82dcc40ca7ad08ae8f905575c36f171540e44ab00c"
+    }
+  ],
+  "passed": 33,
+  "total": 34,
+  "remaining_failure": {
+    "id": "script-test-release-local",
+    "reason": "release.openssl_version_mismatch",
+    "required_openssl": "3.6.5",
+    "installed_openssl": "3.5.9",
+    "reproduced_on_base": true,
+    "release_sources_unchanged": true
+  },
+  "models_started": 0
+}

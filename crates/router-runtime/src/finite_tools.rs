@@ -1,9 +1,12 @@
 //! Finite MCP workers backed by the runtime process supervisor.
-//! No Runtime dispatch entrance, native launcher or capability proof is created.
+//! Native owner bootstrap remains worker data, never Runtime dispatch authority
+//! or a capability proof. Runtime admission stays disabled until qualification.
 mod exec;
 #[cfg(all(test, target_os = "linux"))]
 mod linux_tests;
 mod mcp_stdio;
+mod owner;
+pub use owner::{ToolOwnerBoot, run_owner};
 mod policy;
 mod session;
 mod transport;
@@ -12,6 +15,27 @@ pub use session::ToolSession;
 pub use transport::bridge_stdio;
 
 pub use policy::{JournalEntry, Limits, ToolResult};
+
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolOutput {
+    pub relative: String,
+    pub sha256: String,
+    pub device: u64,
+    pub inode: u64,
+    pub mode: u32,
+    pub bytes: u64,
+}
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolTerminal {
+    pub schema_version: u32,
+    pub binding: String,
+    pub complete: bool,
+    pub halted: bool,
+    pub output: Option<ToolOutput>,
+    pub journal: Vec<JournalEntry>,
+}
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
@@ -58,6 +82,19 @@ impl FilePolicy {
             })
             .map_err(FiniteToolError::Refused)
     }
+    pub fn terminal_output(&self) -> Result<Option<ToolOutput>, FiniteToolError> {
+        self.inner
+            .terminal_output()
+            .map_err(FiniteToolError::Refused)
+    }
+    /// Validates a terminal output against retained preparation identities.
+    /// The caller must separately own the terminal channel and exact stopped
+    /// namespace proof. This check grants no cleanup or execution authority.
+    pub fn verify_terminal_output(&self, output: &ToolOutput) -> Result<(), FiniteToolError> {
+        self.inner
+            .verify_terminal_output(output)
+            .map_err(FiniteToolError::Refused)
+    }
     pub fn halted(&self) -> bool {
         self.inner.halted()
     }
@@ -86,6 +123,79 @@ mod tests {
     use router_adapter_api::content_digest;
     use serde_json::json;
     use std::{fs, io::Cursor};
+    #[test]
+    fn terminal_output_requires_the_retained_inode_and_unchanged_public_inputs() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("candidate");
+        let scratch = temp.path().join("scratch");
+        let writer_scratch = temp.path().join("writer-scratch");
+        for p in [&root, &scratch, &writer_scratch] {
+            fs::create_dir(p).unwrap();
+        }
+        fs::write(root.join("output.rs"), b"before").unwrap();
+        fs::write(root.join("input.txt"), b"public").unwrap();
+        let public = BTreeMap::from([
+            ("output.rs".into(), content_digest(b"before")),
+            ("input.txt".into(), content_digest(b"public")),
+        ]);
+        let limits = Limits {
+            max_calls: 8,
+            max_file_bytes: 32768,
+            max_output_bytes: 8192,
+            max_total_output_bytes: 32768,
+            max_exec_ms: 20000,
+            max_total_exec_ms: 60000,
+            max_session_ms: 90000,
+            max_scratch_entries: 64,
+            max_scratch_bytes: 16777216,
+        };
+        let observer = FilePolicy::open(
+            &root,
+            &scratch,
+            public.clone(),
+            "output.rs",
+            Some(content_digest(b"before")),
+            limits.clone(),
+        )
+        .unwrap();
+        let mut writer = FilePolicy::open(
+            &root,
+            &writer_scratch,
+            public,
+            "output.rs",
+            Some(content_digest(b"before")),
+            limits,
+        )
+        .unwrap();
+        writer
+            .dispatch(
+                "write_file",
+                &json!({"path":"output.rs","content":"after"}),
+                &mut |_, _, _| unreachable!(),
+            )
+            .unwrap();
+        let observed = writer.terminal_output().unwrap().unwrap();
+        observer.verify_terminal_output(&observed).unwrap();
+        let mut forged = observed.clone();
+        forged.sha256 = content_digest(b"before");
+        assert!(observer.verify_terminal_output(&forged).is_err());
+        forged = observed.clone();
+        forged.relative = "input.txt".into();
+        assert!(observer.verify_terminal_output(&forged).is_err());
+        fs::write(root.join("input.txt"), b"changed").unwrap();
+        assert!(observer.verify_terminal_output(&observed).is_err());
+        fs::write(root.join("input.txt"), b"public").unwrap();
+        observer.verify_terminal_output(&observed).unwrap();
+        fs::remove_file(root.join("output.rs")).unwrap();
+        fs::write(root.join("output.rs"), b"after").unwrap();
+        use std::os::unix::fs::MetadataExt;
+        let meta = fs::metadata(root.join("output.rs")).unwrap();
+        forged = observed;
+        forged.device = meta.dev();
+        forged.inode = meta.ino();
+        forged.mode = meta.mode();
+        assert!(observer.verify_terminal_output(&forged).is_err());
+    }
     #[test]
     fn mcp_and_file_policy_feed_real_file_effects_back_to_the_dispatcher() {
         let root = tempfile::tempdir().unwrap();
@@ -166,6 +276,17 @@ mod tests {
             .map(|s| serde_json::from_str::<Value>(s).unwrap())
             .collect::<Vec<_>>();
         assert_eq!(executed, 2);
+        let terminal = policy
+            .terminal_output()
+            .unwrap()
+            .expect("owned output missing");
+        assert_eq!(terminal.relative, "output.rs");
+        assert_eq!(terminal.sha256, content_digest(b"after"));
+        use std::os::unix::fs::MetadataExt;
+        assert_eq!(
+            terminal.inode,
+            fs::metadata(candidate.join("output.rs")).unwrap().ino()
+        );
         assert_eq!(replies.len(), 4);
         let red: Value =
             serde_json::from_str(replies[1]["result"]["content"][0]["text"].as_str().unwrap())

@@ -2,6 +2,9 @@ use super::*;
 
 // Real durable store and producer-owned files; no native process or OS claim.
 fn finite_review(f: &Fixture, limits: ResourceLimits) -> FiniteClientReview {
+    finite_review_mode(f, limits, false)
+}
+fn finite_review_mode(f: &Fixture, limits: ResourceLimits, tools: bool) -> FiniteClientReview {
     use std::{net::TcpListener, os::unix::fs::PermissionsExt};
     let private_root = f.temp.path().canonicalize().unwrap();
     let snapshot = fixture_proofs::from_observation(
@@ -35,9 +38,12 @@ fn finite_review(f: &Fixture, limits: ResourceLimits) -> FiniteClientReview {
     // This fixture models the separate finite-client preparation contract.
     run.missing_runtime_evidence.clear();
     let broker = OwnedBroker::from_listener(TcpListener::bind(("127.0.0.1", 0)).unwrap()).unwrap();
-    let state = broker
-        .prepare_codex_state(&private_root.join("runtime"), &run)
-        .unwrap();
+    let state = if tools {
+        broker.prepare_codex_tools_state(&private_root.join("runtime"), &run)
+    } else {
+        broker.prepare_codex_state(&private_root.join("runtime"), &run)
+    }
+    .unwrap();
     let pin = |name: &str, executable: bool| {
         let path = private_root.join(name);
         fs::write(&path, name).unwrap();
@@ -526,4 +532,28 @@ async fn finite_write_without_the_actual_preapproved_view_refuses_before_registe
         Err(RuntimeError::NotFound)
     ));
     assert!(!f.temp.path().join("runtime/worktrees").exists());
+}
+
+#[tokio::test]
+async fn runtime_refuses_mcp_startup_before_creating_a_run_or_attempt() {
+    let f =
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
+    let runtime = f.runtime();
+    let client = finite_review_mode(&f, ResourceLimits::default(), true);
+    let refused = runtime
+        .review_finite_client(
+            "finite-1",
+            &f.router,
+            &f.context,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            client,
+        )
+        .await;
+    assert!(matches!(refused, Err(RuntimeError::Sandbox)));
+    assert!(matches!(
+        runtime.summary("finite-1"),
+        Err(RuntimeError::NotFound)
+    ));
 }
