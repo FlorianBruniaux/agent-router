@@ -101,7 +101,7 @@ static void isolated_network(void) {
     check(!ferror(f)&&masks==31&&nnp==1,"capability-bound");fclose(f);
 }
 #define DENY(n) BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,(n),0,1), BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM)
-static void seccomp(void) {
+static void seccomp(unsigned mode) {
     /* TCP/IPv4 stream creation only. No DNS/UDP, IPv6, Unix or raw sockets. */
     struct sock_filter code[]={
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,arch)),
@@ -112,10 +112,10 @@ static void seccomp(void) {
       DENY(SYS_pidfd_getfd), DENY(SYS_mount), DENY(SYS_umount2), DENY(SYS_setns),
       DENY(SYS_unshare), DENY(SYS_bpf), DENY(SYS_perf_event_open),
       #ifdef SYS_chmod
-      DENY(SYS_chmod),
+      DENY(mode==2?UINT32_MAX:SYS_chmod),
 #endif
-      DENY(SYS_fchmod), DENY(SYS_fchmodat), DENY(452), /* fchmodat2 */
-      DENY(SYS_fchown), DENY(SYS_fchownat), DENY(SYS_utimensat),
+      DENY(mode==2?UINT32_MAX:SYS_fchmod), DENY(mode==2?UINT32_MAX:SYS_fchmodat), DENY(mode==2?UINT32_MAX:452), /* fchmodat2 */
+      DENY(SYS_fchown), DENY(SYS_fchownat), DENY(mode==2?UINT32_MAX:SYS_utimensat),
       DENY(SYS_io_uring_setup),
       DENY(SYS_setxattr), DENY(SYS_fsetxattr), DENY(SYS_lsetxattr),
       DENY(SYS_removexattr), DENY(SYS_fremovexattr), DENY(SYS_lremovexattr),
@@ -131,8 +131,9 @@ static void seccomp(void) {
       BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM),
       BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,nr)),
-      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_socket,0,9),
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,SYS_socket,0,11),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[0])),
+      BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,mode==1?AF_UNIX:AF_INET,1,0),
       BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,AF_INET,0,6),
       BPF_STMT(BPF_LD|BPF_W|BPF_ABS,offsetof(struct seccomp_data,args[1])),
       BPF_STMT(BPF_ALU|BPF_AND|BPF_K,~(SOCK_NONBLOCK|SOCK_CLOEXEC)),
@@ -141,6 +142,7 @@ static void seccomp(void) {
       BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,0,2,0),
       BPF_JUMP(BPF_JMP|BPF_JEQ|BPF_K,IPPROTO_TCP,1,0),
       BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ERRNO|EPERM),
+      BPF_STMT(BPF_RET|BPF_K,mode==2?(SECCOMP_RET_ERRNO|EPERM):SECCOMP_RET_ALLOW),
       BPF_STMT(BPF_RET|BPF_K,SECCOMP_RET_ALLOW)
     };
     struct sock_fprog program={(unsigned short)(sizeof(code)/sizeof(code[0])),code};
@@ -224,8 +226,23 @@ static void probe(unsigned broker,unsigned denied_port,const char *hidden,const 
     struct stat heartbeat;check(!stat(pathbuf,&heartbeat)&&heartbeat.st_size>1,"detached-positive");
     printf("{\"linux_finite_probe\":\"v2\",\"memory_bytes\":8589934592,\"nonce\":\"%s\",\"detached_pid\":%ld,\"workspace_write\":%s}\n",nonce,(long)child,nw?"true":"false");fflush(stdout);
 }
+static void tool_exec(int argc,char **argv) {
+    check(argc>=5&&!strcmp(argv[3],"--"),"tool-arguments");
+    check(!strcmp(argv[2],"/candidate/.scratch"),"tool-scratch");
+    check(syscall(CREATE,NULL,0,1)>=6,"tool-landlock-abi6");
+    struct ruleset rules={ALL_FS,3,3};
+    int fd=(int)syscall(CREATE,&rules,sizeof(rules),0);check(fd>=0,"tool-ruleset");
+    path(fd,"/usr",READ);path(fd,"/proc",FS_READ|FS_READDIR);
+    path(fd,"/candidate",READ);path(fd,argv[2],ALL_FS);
+    path(fd,"/tool-guard",FS_EXEC);
+    path(fd,"/dev/null",FS_READ|FS_WRITE);path(fd,"/dev/urandom",FS_READ);
+    check(!prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)&&!syscall(RESTRICT,fd,0),"tool-restrict");close(fd);seccomp(2);
+    execv(argv[4],&argv[4]);fail("tool-exec");
+}
 int main(int argc,char **argv) {
-    check(argc>=10&&!strcmp(argv[1],"--restrict-v1"),"arguments");
+    if(argc>1&&!strcmp(argv[1],"--tool-exec-v1"))tool_exec(argc,argv);
+    unsigned mode=argc>1&&!strcmp(argv[1],"--restrict-tools-v1");
+    check(argc>=10&&(!strcmp(argv[1],"--restrict-v1")||mode),"arguments");
     unsigned broker=port(argv[2]);const char *home=argv[3],*workspace=argv[4];
     unsigned nw=count(argv[5]);int cursor=6;check(cursor+(int)nw<argc,"write-arguments");char **writes=&argv[cursor];cursor+=(int)nw;
     unsigned nr=count(argv[cursor++]);check(nr>=5&&cursor+(int)nr<argc,"read-arguments");char **reads=&argv[cursor];cursor+=(int)nr;
@@ -238,11 +255,12 @@ int main(int argc,char **argv) {
     for(unsigned i=0;i<nr;i++)path(fd,reads[i],READ);
     path(fd,"/usr",READ);path(fd,"/proc",FS_READ|FS_READDIR);
     path(fd,home,READ);path(fd,workspace,READ);
+    if(mode){check(!nw,"tool-native-no-write");path(fd,"/finite-client",READ);path(fd,"/router-tools",FS_READ|FS_READDIR);}
     char tmp[4096];check(snprintf(tmp,sizeof(tmp),"%s/tmp",home)<(int)sizeof(tmp),"tmp-path");path(fd,tmp,ALL_FS);
     for(unsigned i=0;i<nw;i++)path(fd,writes[i],ALL_FS);
     path(fd,"/dev/null",FS_READ|FS_WRITE);path(fd,"/dev/urandom",FS_READ);
     struct net_rule net={2,broker};check(!syscall(ADD,fd,2,&net,0),"network-rule");
-    check(!prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)&&!syscall(RESTRICT,fd,0),"restrict");close(fd);seccomp();
+    check(!prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)&&!syscall(RESTRICT,fd,0),"restrict");close(fd);seccomp(mode);
     if(do_probe)probe(broker,other,hidden,home,workspace,control,nonce,nr,reads,nw,writes);
     execv(argv[cursor],&argv[cursor]);fail("exec");
 }

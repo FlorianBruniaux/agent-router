@@ -1,0 +1,40 @@
+{
+  "scope": "Linux guard component canaries; not native MCP or Runtime tools admission",
+  "status": "PASS",
+  "tests_passed": 10,
+  "models_started": 0,
+  "real_provider_calls": 0,
+  "sealed_trials_started": 0,
+  "runtime_tools_qualified": false,
+  "native_mcp_qualified": false,
+  "memory_max": 8589934592,
+  "memory_swap_max": 0,
+  "scratch_tmpfs_bytes": 16777216,
+  "approved_patch_sha256": "2366c3babcf9e408cb6b118e748d7e4d1cccd3ceb6a8d5bcfb7ef68e09e5cdb2",
+  "guard_before_sha256": "10d84b1466f133ce88a2e75f961bd0ffa32fe89b97a8c71b9b2d07c50ec191da",
+  "guard_after_sha256": "71cc65477c1badc89a6f87487b5daf75798f63904241ad9d5c4637db8b1143c5",
+  "supplied_feedback_sha256": "8a62ffb5eb9c59318bd9b274d0234f11def6eeb2dafb99e5163e305f3c8fd0ca",
+  "local_results_sha256": "deddeaf2eb66808ce5206e0f6ccddd98b1a8197e8e8c73265dd4be5b7d7d4a21",
+  "history": [
+    {
+      "stage": "default Docker path masking",
+      "result": "BLOCKED_BEFORE_GUARD",
+      "control": "unwrapped bubblewrap proc mount also refused"
+    },
+    {
+      "stage": "initial scratch mount construction",
+      "result": "HARNESS_FAILURE",
+      "correction": "precreated empty scratch mount point before readonly candidate bind"
+    },
+    {
+      "stage": "default linker selection",
+      "result": "FEEDBACK_COMPILE_FAILED",
+      "correction": "immutable Rust compiler adapter selects a fixed absolute linker; no new socket permission"
+    },
+    {
+      "stage": "actual self PID namespace versus controller",
+      "result": "PASS",
+      "note": "reading init namespace descriptors remains protected; no such access is required"
+    }
+  ]
+}
