@@ -146,6 +146,9 @@ fn directory(path: &str, private: bool) -> Result<PinnedIdentity> {
         _file: file,
     })
 }
+pub(crate) fn retain_tool_program(pin: &FiniteClientFile) -> Result<impl Send> {
+    file_identity(pin, true)
+}
 fn file_identity(pin: &FiniteClientFile, executable: bool) -> Result<PinnedIdentity> {
     if !is_digest(&pin.sha256) {
         return Err(RuntimeError::Invalid("finite client file digest"));

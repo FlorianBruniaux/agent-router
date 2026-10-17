@@ -57,6 +57,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0038](0038-inert-finite-tools-and-output-creation.md) | Prepare finite output creation and inert local tool primitives | implemented | 2026-10-16 | 2026-10-16 | - |
 
 | [0039](0039-finite-tool-guard-canaries.md) | Test approved finite tool guard modes before runtime integration | implemented | 2026-10-16 | 2026-10-16 | - |
+| [0040](0040-supervised-finite-mcp-workers.md) | Reuse runtime supervision for finite MCP workers | accepted | 2026-10-17 | 2026-10-17 | - |
 
 ## Frontmatter fields
 

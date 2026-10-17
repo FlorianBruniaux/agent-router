@@ -17,6 +17,50 @@ fn keys(value: &Value, required: &[&str], optional: &[&str]) -> Result<(), &'sta
     Ok(())
 }
 
+// Legacy Codex sends request/trace context here. It is bounded, discarded,
+// and never merged with tool arguments or interpreted as execution authority.
+fn metadata(params: &Value) -> Result<(), &'static str> {
+    let Some(meta) = params.get("_meta") else {
+        return Ok(());
+    };
+    if !meta.is_object() {
+        return Err("mcp.metadata_shape");
+    }
+    fn walk(value: &Value, depth: usize, nodes: &mut usize) -> Result<(), &'static str> {
+        *nodes += 1;
+        if depth > 8 || *nodes > 128 {
+            return Err("mcp.metadata_bound");
+        }
+        match value {
+            Value::String(text) if text.len() > 1024 => return Err("mcp.metadata_bound"),
+            Value::Array(values) => {
+                for value in values {
+                    walk(value, depth + 1, nodes)?;
+                }
+            }
+            Value::Object(fields) => {
+                for (key, value) in fields {
+                    if key.is_empty() || key.len() > 128 || key.chars().any(char::is_control) {
+                        return Err("mcp.metadata_bound");
+                    }
+                    walk(value, depth + 1, nodes)?;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+    walk(meta, 0, &mut 0)?;
+    if serde_json::to_vec(meta)
+        .map_err(|_| "mcp.metadata_encode")?
+        .len()
+        > 4096
+    {
+        return Err("mcp.metadata_bound");
+    }
+    Ok(())
+}
+
 fn scalar_id(value: &Value) -> bool {
     value.as_i64().is_some()
         || value.as_u64().is_some()
@@ -195,14 +239,16 @@ pub fn serve(
                 if !ready {
                     return Err("mcp.state");
                 }
-                keys(&params, &[], &[])?;
+                keys(&params, &[], &["_meta"])?;
+                metadata(&params)?;
                 reply(&mut writer, id, json!({"tools":tools()}))?;
             }
             "tools/call" => {
                 if !ready {
                     return Err("mcp.state");
                 }
-                keys(&params, &["name", "arguments"], &[])?;
+                keys(&params, &["name", "arguments"], &["_meta"])?;
+                metadata(&params)?;
                 let name = params["name"].as_str().ok_or("mcp.tool")?;
                 arguments(name, &params["arguments"])?;
                 let result = match dispatch(name, params["arguments"].clone()) {
@@ -471,6 +517,87 @@ mod tests {
         assert!(
             serve(Cursor::new(bad), &mut vec![], |_, _| panic!(
                 "invalid flag dispatched"
+            ))
+            .is_err()
+        );
+    }
+    #[test]
+    fn native_metadata_is_context_only_and_never_replaces_tool_arguments() {
+        let frames = [
+            init("2025-06-18"),
+            json!({"jsonrpc":"2.0","method":"notifications/initialized"}),
+            json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{"_meta":{"traceparent":"00-authored-parent-context","tracestate":"authored=context"}}}),
+            json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"read_file","arguments":{"path":"public.txt"},"_meta":{"callId":"call-01","threadId":"thread-01","sessionId":"session-01","windowId":"window-01","itemId":"item-01","plugin_id":"fixture","path":"../private","arguments":{"path":"../private"},"approval_digest":"not-authority","progressToken":1}}}),
+        ];
+        let input: Vec<u8> = frames
+            .iter()
+            .flat_map(|v| {
+                let mut b = serde_json::to_vec(v).unwrap();
+                b.push(b'\n');
+                b
+            })
+            .collect();
+        let mut calls = 0;
+        let mut output = Vec::new();
+        serve(std::io::Cursor::new(input), &mut output, |name, args| {
+            calls += 1;
+            assert_eq!(name, "read_file");
+            assert_eq!(args, json!({"path":"public.txt"}));
+            Ok(json!({"content":"public"}))
+        })
+        .unwrap();
+        assert_eq!(calls, 1);
+        let replies: Vec<Value> = output
+            .split(|b| *b == b'\n')
+            .filter(|b| !b.is_empty())
+            .map(|b| serde_json::from_slice(b).unwrap())
+            .collect();
+        assert_eq!(replies.len(), 3);
+        assert_eq!(replies[2]["result"]["isError"], false);
+    }
+
+    #[test]
+    fn metadata_is_bounded_before_dispatch_and_is_never_an_extra_argument() {
+        let mut deep = json!({});
+        for _ in 0..12 {
+            deep = json!({"next":deep});
+        }
+        for metadata in [
+            Value::Null,
+            json!("not-object"),
+            json!({"long":"x".repeat(5000)}),
+            json!({"a":"x".repeat(900),"b":"x".repeat(900),"c":"x".repeat(900),"d":"x".repeat(900),"e":"x".repeat(900)}),
+            json!({"many":vec![0;129]}),
+            deep,
+        ] {
+            let bytes = input(&[
+                init("2025-06-18"),
+                ready(),
+                request(
+                    2,
+                    "tools/call",
+                    json!({"name":"read_file","arguments":{"path":"public.txt"},"_meta":metadata}),
+                ),
+            ]);
+            assert!(
+                serve(Cursor::new(bytes), Vec::new(), |_, _| panic!(
+                    "invalid metadata dispatched"
+                ))
+                .is_err()
+            );
+        }
+        let bytes = input(&[
+            init("2025-06-18"),
+            ready(),
+            request(
+                2,
+                "tools/call",
+                json!({"name":"read_file","arguments":{"path":"public.txt","_meta":{}},"_meta":{"callId":"id"}}),
+            ),
+        ]);
+        assert!(
+            serve(Cursor::new(bytes), Vec::new(), |_, _| panic!(
+                "extra argument dispatched"
             ))
             .is_err()
         );

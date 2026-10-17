@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "source_overlay_sha256": "2f475005d1dc57ae3ebbbafc0461d59b3945ffc142e084788b28dca2beaa68f2",
+  "programs": {
+    "/work/source/target/release/deps/router_runtime-6ab7485013e354f4": "993b0da51068f0422e2020ced1cb6a2624fe12b8449f685b97da8b0c2387a3b5",
+    "/task/programs/client": "e02fb478a93ed6201b27b8ccef51f270c3f6787c23f06dd5dd3c822376ec7a38",
+    "/task/programs/namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+    "/task/programs/helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "/task/programs/guard": "123a7b1d34f89224c9e6b217311726dcf7e53ee9721b2eb954f487f744f17d16",
+    "/task/programs/compiler/rustc": "63c7270bbf40502d1306f0994160830582a45a4f87a104a4b1220934a403f368"
+  },
+  "authority": false
+}

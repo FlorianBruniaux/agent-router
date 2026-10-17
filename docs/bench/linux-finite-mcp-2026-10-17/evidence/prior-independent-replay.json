@@ -1,0 +1,11 @@
+{
+  "scope": "Independent replay before the final bounded _meta compatibility change; not a replay of the final 33-test source.",
+  "status": "PASS_LOCAL_COMPONENT_ONLY",
+  "tests_passed": 31,
+  "tests_failed": 0,
+  "binary_hashes_unchanged": true,
+  "models_started": 0,
+  "native_sdk_started": 0,
+  "tests_log_sha256": "dae72878ed69b3a88b944be051b7358ec1275f304e8026b830990af83e237c2e",
+  "authority": false
+}

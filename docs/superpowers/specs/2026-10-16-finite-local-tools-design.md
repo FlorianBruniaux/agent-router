@@ -1,6 +1,6 @@
 # Finite local tools and harness feedback
 
-Implementation status: preparation and inert protocol/policy are delivered. After explicit operator approval, the exact guard patch passed the component canaries in [ADR 0039](../../adr/0039-finite-tool-guard-canaries.md). The current Runtime still refuses tools and new-output execution; its configuration, admission, private mounts and memory limits are unchanged. The native launcher below remains unimplemented and unqualified.
+Implementation status: preparation and inert protocol/policy are delivered. After explicit operator approval, the exact guard patch passed the component canaries in [ADR 0039](../../adr/0039-finite-tool-guard-canaries.md). The current Runtime still refuses tools and new-output execution; its configuration, admission, private mounts and memory limits are unchanged. [ADR 0040](../../adr/0040-supervised-finite-mcp-workers.md) adds supervised MCP worker sessions and the fixed bridge. The native launcher below remains unimplemented and unqualified; automatic approval review refused its addition because it could enter a model path. The tests use authored MCP callers without a native SDK or model.
 
 This extends the approved local-only F12a work at 33dc663. The human request is to connect local tools and H1 feedback to the benchmark with no model execution or wider private access. These implementation choices are the builder's, not new benchmark budgets. PRs 180/181 remain dependencies, not merge authority.
 

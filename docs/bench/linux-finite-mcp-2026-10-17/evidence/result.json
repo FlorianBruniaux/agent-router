@@ -1,0 +1,10 @@
+{
+  "verdict": "PASS_LOCAL_COMPONENT_ONLY",
+  "models_started": 0,
+  "native_sdk_started": 0,
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "scratch_bytes": 16777216,
+  "product_tools_admission": false,
+  "sealed_trials_started": 0
+}
