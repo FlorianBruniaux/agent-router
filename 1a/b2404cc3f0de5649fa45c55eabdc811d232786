@@ -1,0 +1,103 @@
+crates/router-runtime/src/bin/finite-codex-client.rs
+  s_227860d9404065::t_305f40bc46190b 243-256
+crates/router-runtime/src/finite_client.rs
+  s_227860d9404065::t_4c96c7c0a6e61d 149-151
+crates/router-runtime/src/finite_tools.rs
+  s_227860d9404065::t_fb7f185d2082cc 1-5,8-12
+crates/router-runtime/src/finite_tools/exec.rs
+  s_227860d9404065::t_d1d4b15202ed50 1-301
+crates/router-runtime/src/finite_tools/linux_tests.rs
+  s_54625244d98a26::t_b5ea1556c270c4 1-375
+crates/router-runtime/src/finite_tools/mcp_stdio.rs
+  s_54625244d98a26::t_d466ffa9d2ab9c 20-63,242-243,250-251,524-604
+crates/router-runtime/src/finite_tools/session.rs
+  s_23331b61241bc7::t_33ff3f996b4e9c 1-271
+crates/router-runtime/src/finite_tools/transport.rs
+  s_592023fb892cc1::t_f10c27706d8d54 1-129
+docs/adr/0040-supervised-finite-mcp-workers.md
+  s_54625244d98a26::t_b96379a3e2cd41 1-36
+docs/adr/README.md
+  s_ae085abdb4f4d0::t_bcc8ce45b292bd 60
+docs/bench/linux-finite-mcp-2026-10-17/README.md
+  s_488c1f2a8a73a2::t_bce9c002120f05 1-30
+docs/bench/linux-finite-mcp-2026-10-17/bridge-watchdog.py
+  s_ae085abdb4f4d0::t_ad817f5e139c82 1-51
+docs/bench/linux-finite-mcp-2026-10-17/evidence/bridge-watchdog.log
+  s_488c1f2a8a73a2::t_d02a55ca0e7ce9 1
+docs/bench/linux-finite-mcp-2026-10-17/evidence/compiled-source-check.json
+  s_488c1f2a8a73a2::t_b49b104a28aafe 1
+docs/bench/linux-finite-mcp-2026-10-17/evidence/container.json
+  s_488c1f2a8a73a2::t_78373f7bcdcc4d 1-106
+docs/bench/linux-finite-mcp-2026-10-17/evidence/frozen-programs.json
+  s_488c1f2a8a73a2::t_64bda0d7a2beea 1-13
+docs/bench/linux-finite-mcp-2026-10-17/evidence/mcp-tests.log
+  s_488c1f2a8a73a2::t_6e5e2dcb2bfef9 1-232
+docs/bench/linux-finite-mcp-2026-10-17/evidence/prior-independent-replay.json
+  s_488c1f2a8a73a2::t_a01342a4a19cef 1-11
+docs/bench/linux-finite-mcp-2026-10-17/evidence/programs-and-limits.log
+  s_488c1f2a8a73a2::t_3e1247d944bd01 1-9
+docs/bench/linux-finite-mcp-2026-10-17/evidence/result.json
+  s_488c1f2a8a73a2::t_3bc85f5155777e 1-10
+docs/bench/linux-finite-mcp-2026-10-17/evidence/source-overlay.json
+  s_488c1f2a8a73a2::t_adb40a25d97d3d 1-87
+docs/bench/linux-finite-mcp-2026-10-17/reproduce.py
+  s_ae085abdb4f4d0::t_a69cd050057b15 1-122
+docs/superpowers/specs/2026-10-16-finite-local-tools-design.md
+  s_ae085abdb4f4d0::t_29fd232cafdb16 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ab2404cc3f0de5649fa45c55eabdc811d232786",
+  "prompts": {},
+  "sessions": {
+    "s_227860d9404065": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "04fb1641-00b7-464b-a7ea-65659accd973",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_23331b61241bc7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14507-d628-70f1-9e90-73cbff41779b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_488c1f2a8a73a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a07172-9765-7811-8998-5776ebeb40d9",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_54625244d98a26": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f5cf83c4-2477-4ee1-a20d-b9f58e3c52e0",
+        "model": "unknown"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_592023fb892cc1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13ef9-a7a2-70c0-810c-f2b1bb109816",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
