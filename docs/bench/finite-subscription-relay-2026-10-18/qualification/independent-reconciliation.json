@@ -26,5 +26,7 @@
     "network_mode": "none",
     "privileged": false,
     "host_bind_mounts": 0
-  }
+  },
+  "source_commit": "2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0",
+  "later_source_change": "portability-correction.json; original native qualification not replayed"
 }

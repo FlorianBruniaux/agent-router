@@ -6,7 +6,7 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "4371a56cdfadd88fda3ec49a1af4d2693c222b27d05805eb3fe2b2155aacd9d1"
+      "sha256": "e84ded260078cabe55121e390a8d937e048d1467e032743c67c8bb95af84c3f4"
     },
     {
       "path": "budget-proposal.json",
@@ -274,7 +274,7 @@
     },
     {
       "path": "qualification/independent-reconciliation.json",
-      "sha256": "ca98541133d69a3ad3dad204888e3b01d9a62e75a0247a132e47f60d38928bff"
+      "sha256": "aef30b81596d7aac9ba07c482e97b59710312e222da818dafb26aebc48d24af6"
     },
     {
       "path": "qualification/isolation-summary.json",
@@ -289,8 +289,12 @@
       "sha256": "9f9fbc2383ee770a2a221686497473ee40ea7eb4ca9cb2ef1cb4508dbe76b016"
     },
     {
+      "path": "qualification/portability-correction.json",
+      "sha256": "36c3698b6d1a6e4639f36a37be97fc82bcf63414d8d4a2745faf2280da1002df"
+    },
+    {
       "path": "qualification/qualification.json",
-      "sha256": "e77a6bb6016debbfe7cbb3e03c925db935673572695d18464ea6e5bb31ef9922"
+      "sha256": "52aa1892aa4c393bde6269f3500d805be7f613e1d47cc1cefffbaf0ffee7cf06"
     },
     {
       "path": "qualification/recipe.template.json",

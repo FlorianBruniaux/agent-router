@@ -393,11 +393,8 @@ impl FiniteClientWorkspace {
                 &self.view_identity._file,
                 self.relative.as_str(),
                 flags,
-                Mode::from_raw_mode(
-                    (observed.mode & 0o777)
-                        .try_into()
-                        .map_err(|_| RuntimeError::Scope)?,
-                ),
+                // Nine permission bits fit mode_t on both Linux and macOS.
+                Mode::from_raw_mode((observed.mode & 0o777) as _),
             )
             .map_err(std::io::Error::from)?,
         );

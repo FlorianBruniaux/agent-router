@@ -60,7 +60,8 @@
       "record": "local-quality.json",
       "diagnostic": "cpu-diagnostic.json"
     },
-    "independent_reconciliation": "independent-reconciliation.json"
+    "independent_reconciliation": "independent-reconciliation.json",
+    "post_qualification_portability_correction": "portability-correction.json"
   },
   "privacy": {
     "guard_sha256": "316a23abce370ab23b7c617904cc61e5af7cf42c252136b6606da2fac9cb024b",
@@ -79,7 +80,7 @@
   "budget_approved": null,
   "actual_subscription_debit": null,
   "real_provider_auth_or_availability_verified": false,
-  "remote_ci": "billing blocked before jobs started; no remote CI passing verdict",
+  "remote_ci": "resumed after initial publication; original connector had a Linux Clippy conversion failure, corrected separately; no global passing verdict",
   "raw_receipts": "retained privately; published derivatives contain counters and hashes only",
   "integrated_base_commit": "e78690dd50c5259ca9865274ade69c61493f3b70"
 }

@@ -1,0 +1,32 @@
+{
+  "base_commit": "2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0",
+  "path": "crates/router-runtime/src/finite_client/write_workspace.rs",
+  "before_sha256": "579de2d9152c5bdb5a1275b1fc37caa8cb030d3253380b533e69c17f82565a7e",
+  "after_sha256": "cb15728b2ff189b0786cc13e36d789b309d765c146efffc5da5d8b8c8e565069",
+  "change": "Convert only masked nine permission bits to inferred platform mode_t; preserve every permission value, remove unreachable fallible conversion.",
+  "format": "PASS",
+  "macos_clippy_workspace_all_targets_all_features": "PASS",
+  "macos_write_workspace_tests": 9,
+  "tests_log_sha256": "de2861b21a42a1d66b40355dd38d04666e2ea9adb5ad5aca66bcde5bf967bc58",
+  "clippy_log_sha256": "191bcf74c136bd9833ec46cbc0ec60abd32ed5064af146dea6ff76f3d4380a13",
+  "linux_local_clippy": "UNAVAILABLE: component absent in existing isolated toolchain; no installation or network opening",
+  "native_qualification_replayed_after_this_change": false,
+  "original_native_evidence_commit": "2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0",
+  "global_workspace_validation": "BLOCKED by retained CPU wall-time failure",
+  "memory_limit_bytes": 8589934592,
+  "private_access_expanded": false,
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "remote_ci_at_original_commit": {
+    "run": 39134867280,
+    "secrets": "PASS",
+    "clippy_macos": "PASS",
+    "clippy_linux": "FAIL: useless_conversion in this line",
+    "macos_workspace": "cancelled",
+    "security_audit": "PASS",
+    "parser_fuzz": "PASS",
+    "billing_block_current": false
+  },
+  "macos_coupling_tests": 2,
+  "coupling_log_sha256": "54f1925ea0b8c0f94b98b8d8e679705393df824b1cf9d19449ce208e87782483"
+}
