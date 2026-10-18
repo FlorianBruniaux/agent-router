@@ -1,0 +1,45 @@
+crates/router-runtime/src/finite_client/write_workspace.rs
+  s_f14159e3bfdc3d::t_f55bd724e33f5c 396-397
+docs/bench/finite-subscription-relay-2026-10-18/README.md
+  s_19097d9dd42cbd::t_eebeec61bb6687 38,49-52
+docs/bench/finite-subscription-relay-2026-10-18/publication-manifest.json
+  s_19097d9dd42cbd::t_0cc88fbbaf5039 9,277,291-294,297
+docs/bench/finite-subscription-relay-2026-10-18/qualification/independent-reconciliation.json
+  s_e827e256e15185::t_ff49c88df3e28d 29-31
+docs/bench/finite-subscription-relay-2026-10-18/qualification/portability-correction.json
+  s_19097d9dd42cbd::t_f5e1865a2c6a39 1-32
+docs/bench/finite-subscription-relay-2026-10-18/qualification/qualification.json
+  s_e827e256e15185::t_e4c0c7bdef3683 63-64,83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ab71472f1b20a49ef317eece606bb752bfe7840",
+  "prompts": {},
+  "sessions": {
+    "s_19097d9dd42cbd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14398-1078-7c70-a4f0-8ef745ebc7cc",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_e827e256e15185": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a12567-61ab-7c62-8b43-ea0028444170",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_f14159e3bfdc3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1261f-7516-70e1-b57c-5d4d56724919",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
