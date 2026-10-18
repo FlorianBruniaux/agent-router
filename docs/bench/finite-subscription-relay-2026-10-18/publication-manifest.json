@@ -2,11 +2,11 @@
   "schema_version": 1,
   "date": "2026-10-18",
   "source_patch_sha256": "9652bae15567801105f42c5c791bcd5acd6abe976cb2e538441da6ec2173952f",
-  "host_capsule_manifest_sha256": "1abdc76b0f6cf7f260843b43715ab51ca68ecc42ac2082833717e6c7b544ca12",
+  "host_capsule_manifest_sha256": "a030cbe9769a1e94130faacf85828bb3089827453178e0a36e9e7cf0b5191f82",
   "files": [
     {
       "path": "README.md",
-      "sha256": "e84ded260078cabe55121e390a8d937e048d1467e032743c67c8bb95af84c3f4"
+      "sha256": "248260f3bf0955549d07032fe540052525c71cf0f5218401c0cae9040953e20b"
     },
     {
       "path": "budget-proposal.json",
@@ -14,7 +14,7 @@
     },
     {
       "path": "capsule-manifest.json",
-      "sha256": "1abdc76b0f6cf7f260843b43715ab51ca68ecc42ac2082833717e6c7b544ca12"
+      "sha256": "a030cbe9769a1e94130faacf85828bb3089827453178e0a36e9e7cf0b5191f82"
     },
     {
       "path": "check-offline.py",
@@ -265,12 +265,20 @@
       "sha256": "3cafe3eedc9d55fedaf1e21da3d744922f750b407d25890cdf4ee94c2a9673f8"
     },
     {
+      "path": "qualification/ci-1ab7147.json",
+      "sha256": "f9891408897c06446f001997dddb3a7b1e9c384d5b321d741b8e7ae503a2e29f"
+    },
+    {
       "path": "qualification/cpu-diagnostic.json",
       "sha256": "a467785b16b51da73149eb7f484b256b0bb51561e54ecdfe860574c3fab5cb01"
     },
     {
       "path": "qualification/crosshost-summary.json",
       "sha256": "3cb4821473a59731c41584f45a73f41e4b54bc9d7cb4ebead7ad34041b85c01b"
+    },
+    {
+      "path": "qualification/current-native-replay.json",
+      "sha256": "02e8409f1891622d507e6877c0b0840b720a055a9bd915ec895f18f58c5135f4"
     },
     {
       "path": "qualification/independent-reconciliation.json",
@@ -294,7 +302,7 @@
     },
     {
       "path": "qualification/qualification.json",
-      "sha256": "52aa1892aa4c393bde6269f3500d805be7f613e1d47cc1cefffbaf0ffee7cf06"
+      "sha256": "23f899795d4bc107c6ee81901aa51131b2961bec62deac711c615d1974f314ea"
     },
     {
       "path": "qualification/recipe.template.json",
@@ -317,5 +325,6 @@
   "actual_provider_requests": 0,
   "budget_approved": null,
   "raw_sdk_payloads_published": false,
-  "raw_runtime_receipts_published": false
+  "raw_runtime_receipts_published": false,
+  "qualified_code_commit": "1ab71472f1b20a49ef317eece606bb752bfe7840"
 }

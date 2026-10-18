@@ -1,6 +1,6 @@
 # Finite Codex subscription relay: offline qualification
 
-The candidate connects the finite Linux Runtime to a parent-owned Codex subscription relay and one durable results file. Offline qualification passed on 18 October 2026 with the actual Codex 0.159.2 Linux ARM64 client. The upstream returned coded responses. No provider request, real model trial or real budget approval occurred.
+Offline qualification of code commit `1ab71472f1b20a49ef317eece606bb752bfe7840` passed with the actual Codex 0.159.2 Linux ARM64 client. The finite Runtime, parent-owned subscription relay and durable consumption ledger were exercised in three fresh cases. The upstream returned coded responses. No provider request, real model trial or real budget approval occurred.
 
 The 24 benchmark assignments remain `not_run`. Synthetic counters below are test inputs, not an observed subscription debit or a model-quality result.
 
@@ -35,7 +35,9 @@ python3 -B check-offline.py
 python3 -B qualification/relay-controller-macos-e2e-test.py
 ```
 
-The host capsule has 141 passing tests. The portable Mac bridge has four passing tests. Runtime tests, format, Clippy, ADR checks and harness parity were checked separately. The integrated source passed 33 of 34 local quality checks with an unchanged source snapshot. The workspace check failed on the helper's unchanged ten-second wall-time assertion; its runner also reported an EPERM collection error. [The quality receipt](qualification/local-quality.json) preserves that result. [The CPU diagnostic](qualification/cpu-diagnostic.json) observed only 0.48 to 0.61 CPU seconds over ten elapsed seconds, at system loads of 166 to 180. The diagnostic stopped those three processes at the deadline; the complete helper group independently failed the same assertion. No threshold changed. Full workspace validation and merge readiness remain blocked until a complete replay succeeds on a suitable host. Documentation was added after the source gate and checked separately. Remote CI resumed after initial publication: secrets, dependency audit and parser fuzz passed. Linux Clippy found a platform-specific conversion warning; macOS Clippy passed and its workspace job was cancelled. The previous billing block is historical. Hook activation remains `UNKNOWN`.
+The host capsule has 141 passing tests and the portable Mac bridge has four. The corrected code passed all 11 CI checks, including workspace tests on Linux and macOS and native Linux enforcement. [The CI receipt](qualification/ci-1ab7147.json) binds these results to `1ab71472`. [The fresh native replay](qualification/current-native-replay.json) records the three subscription cases, 1,666 tracked files checked without mismatch, and container shutdown after cleanup. Hook activation remains `UNKNOWN`.
+
+The earlier local quality run remains 33/34: the helper exceeded its unchanged ten-second wall-time assertion and the runner reported an EPERM collection error. [Its receipt](qualification/local-quality.json) and [CPU diagnostic](qualification/cpu-diagnostic.json) remain unchanged. The diagnostic measured only 0.48 to 0.61 CPU seconds over ten elapsed seconds under heavy host contention. CI success does not rewrite that local result. The previous CI billing block is historical.
 
 A native replay requires the pinned public SDK, guard, helper, compiler, image and verified Linux namespace composition. [The inert recipe template](qualification/recipe.template.json) has `ready=false` and unresolved container, binary and fresh-root placeholders. It cannot launch as supplied. The owner must verify those pins and use fresh Linux and Mac output roots for another offline qualification. This recipe is not a real benchmark launcher.
 
@@ -49,4 +51,10 @@ A real launch still requires Florian's budget decision, a fresh account/authenti
 
 ## Portability correction after native qualification
 
-[The correction receipt](qualification/portability-correction.json) records a conversion of the same nine permission bits into the platform mode type. It removes a Linux Clippy warning without changing file permissions. Format, macOS workspace Clippy and 11 targeted tests passed locally, including post-stop promotion and the stopped-namespace prerequisite. The available isolated Linux toolchain lacks Clippy; no component was installed and no network was opened. Native evidence belongs to commit `2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0` and was not rerun for this conversion-only correction. The global CPU timing blocker remains.
+[The correction receipt](qualification/portability-correction.json) records a conversion of the same nine permission bits into the platform mode type. It removes a Linux Clippy warning without changing file permissions. Format, macOS workspace Clippy and 11 targeted tests passed locally, including post-stop promotion and the stopped-namespace prerequisite. The available isolated Linux toolchain lacks Clippy; no component was installed and no network was opened. The initial native evidence belongs to `2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0`. The subsequent three-case replay and CI now qualify the corrected code at `1ab71472`; the historical correction receipt remains unchanged. The local CPU timing failure is retained separately.
+
+## Publication boundary
+
+The final evidence update changes documentation only. CI and native execution evidence above apply to code commit `1ab71472`; a later documentation commit is not presented as an executed native binary. The replay used an independent cache copy and fresh roots, preserved the original container and cache through read-only access, and stopped its own container after all three cleanup proofs were checked. Raw Runtime receipts, synthetic private patches and SDK streams are not published.
+
+The host capsule manifest and its verification receipt retain their original frozen identity. Their pending native-evidence note is historical. Current native and CI status is recorded in `qualification/qualification.json` and the new replay record; the 141 host tests are not presented as newly executed.

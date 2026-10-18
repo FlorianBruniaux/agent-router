@@ -1,9 +1,9 @@
 {
-  "status": "OFFLINE_COUPLING_QUALIFIED_GLOBAL_GATE_BLOCKED",
+  "status": "CURRENT_CODE_OFFLINE_NATIVE_QUALIFIED_AND_CI_PASSED",
   "date": "2026-10-18",
   "base_commit": "2670585c180a2b7dc0699e67ec8cae981a16d81b",
   "source_patch_sha256": "9652bae15567801105f42c5c791bcd5acd6abe976cb2e538441da6ec2173952f",
-  "controller_capsule_manifest_sha256": "1abdc76b0f6cf7f260843b43715ab51ca68ecc42ac2082833717e6c7b544ca12",
+  "controller_capsule_manifest_sha256": "a030cbe9769a1e94130faacf85828bb3089827453178e0a36e9e7cf0b5191f82",
   "cases": [
     {
       "case": "Linux native Runtime + local coded controller",
@@ -43,25 +43,27 @@
     "controller_errors": 0,
     "controller_failures": 0,
     "mac_bridge_tests": 4,
-    "rust_runtime_suite_pre_final_observation_change": "245 passed,2ignored; final owner gate pending",
+    "rust_runtime_suite_pre_final_observation_change": "historical precursor: 245 passed, 2 ignored; superseded by current CI and native replay records",
     "rust_subscription_transport_tests": "7 passed,1ignored",
     "explicit_real_host_prelude_linux": "PASS, 0.18seconds with explicit bounded relay; previous copy-based relay failed",
-    "clippy_workspace": "PASS before final test-only crosshost scaffold",
+    "clippy_workspace": "PASS on qualified code in local macOS and CI Linux/macOS",
     "clippy_runtime_all_targets_all_features": "PASS on final source",
     "format": "PASS",
     "adr_tests": 30,
     "xtask": "parity PASS; runtime activation UNKNOWN",
     "openssl_upstream_commit": "c67dbb2634f656c2ae1509a7853280e218cd84de",
     "openssl_tests": 27,
-    "final_integrated_quality": {
+    "independent_reconciliation": "independent-reconciliation.json",
+    "post_qualification_portability_correction": "portability-correction.json",
+    "historical_local_integrated_quality": {
       "status": "BLOCKED",
       "passed": 33,
       "total": 34,
       "record": "local-quality.json",
       "diagnostic": "cpu-diagnostic.json"
     },
-    "independent_reconciliation": "independent-reconciliation.json",
-    "post_qualification_portability_correction": "portability-correction.json"
+    "current_ci": "ci-1ab7147.json",
+    "current_native_subscription_replay": "current-native-replay.json"
   },
   "privacy": {
     "guard_sha256": "316a23abce370ab23b7c617904cc61e5af7cf42c252136b6606da2fac9cb024b",
@@ -80,7 +82,10 @@
   "budget_approved": null,
   "actual_subscription_debit": null,
   "real_provider_auth_or_availability_verified": false,
-  "remote_ci": "resumed after initial publication; original connector had a Linux Clippy conversion failure, corrected separately; no global passing verdict",
+  "remote_ci": "all 11 checks passed on code commit 1ab71472; later documentation-only commits must report their own CI status",
   "raw_receipts": "retained privately; published derivatives contain counters and hashes only",
-  "integrated_base_commit": "e78690dd50c5259ca9865274ade69c61493f3b70"
+  "integrated_base_commit": "e78690dd50c5259ca9865274ade69c61493f3b70",
+  "qualified_code_commit": "1ab71472f1b20a49ef317eece606bb752bfe7840",
+  "historical_evidence": "local-quality.json, cpu-diagnostic.json, portability-correction.json and prior native receipts remain unchanged",
+  "frozen_host_capsule_status": "capsule-manifest.json and host-verification.json retain their historical snapshot; current status is recorded here and in current-native-replay.json"
 }

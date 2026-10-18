@@ -1,0 +1,115 @@
+{
+  "status": "ALL_11_CI_CHECKS_PASSED",
+  "checked_at_utc": "2026-10-18T14:43:35.404885+00:00",
+  "tested_code_commit": "1ab71472f1b20a49ef317eece606bb752bfe7840",
+  "pull_request_url": "https://github.com/FlorianBruniaux/agent-router/pull/186",
+  "checks": [
+    {
+      "name": "native-runtime",
+      "workflowName": "Native Linux runtime enforcement",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971481/job/117700435546",
+      "startedAt": "2026-10-18T14:26:13Z",
+      "completedAt": "2026-10-18T14:40:23Z"
+    },
+    {
+      "name": "native-runtime",
+      "workflowName": "Native Linux runtime enforcement",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135967783/job/117700424883",
+      "startedAt": "2026-10-18T14:26:10Z",
+      "completedAt": "2026-10-18T14:40:15Z"
+    },
+    {
+      "name": "quality (ubuntu-latest)",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971376/job/117700435432",
+      "startedAt": "2026-10-18T14:26:12Z",
+      "completedAt": "2026-10-18T14:42:00Z"
+    },
+    {
+      "name": "quality (ubuntu-latest)",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135967678/job/117700424719",
+      "startedAt": "2026-10-18T14:26:09Z",
+      "completedAt": "2026-10-18T14:41:34Z"
+    },
+    {
+      "name": "rustsec",
+      "workflowName": "Rust dependency security audit",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971417/job/117700435455",
+      "startedAt": "2026-10-18T14:26:12Z",
+      "completedAt": "2026-10-18T14:32:33Z"
+    },
+    {
+      "name": "rustsec",
+      "workflowName": "Rust dependency security audit",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135967679/job/117700424771",
+      "startedAt": "2026-10-18T14:26:09Z",
+      "completedAt": "2026-10-18T14:30:41Z"
+    },
+    {
+      "name": "smoke",
+      "workflowName": "parser-fuzz",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971446/job/117700435618",
+      "startedAt": "2026-10-18T14:26:13Z",
+      "completedAt": "2026-10-18T14:30:48Z"
+    },
+    {
+      "name": "quality (macos-latest)",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971376/job/117700435449",
+      "startedAt": "2026-10-18T14:26:16Z",
+      "completedAt": "2026-10-18T14:31:27Z"
+    },
+    {
+      "name": "quality (macos-latest)",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135967678/job/117700424666",
+      "startedAt": "2026-10-18T14:26:12Z",
+      "completedAt": "2026-10-18T14:31:23Z"
+    },
+    {
+      "name": "secrets",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135971376/job/117700435246",
+      "startedAt": "2026-10-18T14:26:13Z",
+      "completedAt": "2026-10-18T14:26:46Z"
+    },
+    {
+      "name": "secrets",
+      "workflowName": "Rust and project harness",
+      "status": "COMPLETED",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/FlorianBruniaux/agent-router/actions/runs/39135967678/job/117700424499",
+      "startedAt": "2026-10-18T14:26:09Z",
+      "completedAt": "2026-10-18T14:26:31Z"
+    }
+  ],
+  "independent_receipt_sha256": "c2758ee6450d7c22fff09e776e40964ede167079b49df58cbb8dbb2053550fb6",
+  "scope": "CI evidence applies to the tested code commit; later documentation-only commits have separate CI status.",
+  "historical_local_33_of_34_result_reclassified": false,
+  "sealed_benchmark": {
+    "all_24_not_run": true,
+    "model_calls_started": 0,
+    "budget_approved": null
+  }
+}
