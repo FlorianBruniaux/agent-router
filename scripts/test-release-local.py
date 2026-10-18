@@ -358,7 +358,7 @@ class LocalReleaseTests(unittest.TestCase):
         script = mirror / "scripts/release-local.py"
         text = script.read_text()
         self.assertIn('OPENSSL = Path("/opt/homebrew/bin/openssl")', text)
-        for version in ("3.6.4", "3.6", "3.6.50", "3.6.6"):
+        for version in ("3.5.8", "3.5", "3.5.90", "3.5.10", "3.6.5", "3.6.6"):
             with self.subTest(version=version):
                 stub = mirror / f"openssl-{version}"
                 # A permissive verifier must never be reached through an unpinned version.
@@ -374,7 +374,7 @@ class LocalReleaseTests(unittest.TestCase):
         self.signed_preparation()
         mirror = self.make_mirror()
         stub = mirror / "openssl-stub"
-        stub.write_text("#!/bin/sh\nif [ \"$1\" = version ]; then echo 'OpenSSL 3.6.5 stub'; exit 0; fi\n"
+        stub.write_text("#!/bin/sh\nif [ \"$1\" = version ]; then echo 'OpenSSL 3.5.9 stub'; exit 0; fi\n"
                         "echo 'Error loading key' >&2\nexit 1\n")
         stub.chmod(0o755)
         script = mirror / "scripts/release-local.py"
