@@ -1,0 +1,233 @@
+crates/router-runtime/src/admission/runtime.rs
+  s_3605cf53b51080::t_5818a536ef672c 65,74,82,89,493-515,518-519,521,525,528-532,536-542,544,546-547,549,551-554
+crates/router-runtime/src/bin/finite-codex-client.rs
+  s_3605cf53b51080::t_fca96dc73f841f 16-17,245-266,313-321
+crates/router-runtime/src/bin/finite-codex-client/tools_probe.rs
+  s_3605cf53b51080::t_9ec3a80415b8dc 1-205
+crates/router-runtime/src/finite_client.rs
+  s_3605cf53b51080::t_3524a7ad61a1d9 367-368,474-475,499-501,633-642,651,692-697,701-706,720-728,837,846,853,864,921,947,1270-1277
+crates/router-runtime/src/finite_client/coupling_linux_tests.rs
+  s_3605cf53b51080::t_796755179a383a 1-217
+crates/router-runtime/src/finite_client/coupling_tests.rs
+  s_3605cf53b51080::t_98973203e23d22 1-101
+crates/router-runtime/src/finite_client/linux_backend.rs
+  s_3605cf53b51080::t_23e6adeca1f03d 53-61,78-89,91,112-113,118-123,137,183-185,205-219,221-280,293-305,374-376,415-416,418-420,436-479,481-487,572-573,580-582,633-635,637-639,669,679,685-693,710-711,867,872,879,887-890
+crates/router-runtime/src/finite_client/linux_e2e.rs
+  s_3605cf53b51080::t_d351c0bfc3d1b9 35,41-52,60-72,101,103-141,228-230,232-234,317,321,346-347,354-356,385-387,391-393,406,410,425-431,446-447,497,549-553,586-598,600-606,634-642,707-714,739-765,793-801,847-883,890-899,910-912,926,933-942,953,975-983,990-994,1020-1086,1108-1157,1160,1178-1190,1193,1208-1265,1307-1308,1356-1357,1359-1363,1372-1429,1435,1528-1664
+crates/router-runtime/src/finite_client/namespace_state.rs
+  s_3605cf53b51080::t_a734b2171be428 53-83
+crates/router-runtime/src/finite_client/native_tools_tests.rs
+  s_3605cf53b51080::t_8f9378d829b52d 37,71-73,93-97,114-124,251
+crates/router-runtime/src/finite_client/ownership_tests.rs
+  s_3605cf53b51080::t_3ef5581ede1c54 7-54
+crates/router-runtime/src/finite_client/runtime_binding.rs
+  s_3605cf53b51080::t_2e8a3a8dae807f 68-71,74-89,92-96,98-99,154-156,212
+crates/router-runtime/src/finite_client/subscription_controller.rs
+  s_3605cf53b51080::t_59861b1b81635e 1-657
+crates/router-runtime/src/finite_client/subscription_controller_tests.rs
+  s_3605cf53b51080::t_eabb39835374ac 1-327
+crates/router-runtime/src/finite_client/subscription_preparation.rs
+  s_3605cf53b51080::t_80265c537a134a 1-89
+crates/router-runtime/src/finite_client/tools_probe_view.rs
+  s_3605cf53b51080::t_eeecba481cea62 1-158
+crates/router-runtime/src/finite_client/tools_state.rs
+  s_3605cf53b51080::t_d0600ddb1fc7ee 1-471
+crates/router-runtime/src/finite_client/write_workspace.rs
+  s_3605cf53b51080::t_4f058439a3d635 345-442
+crates/router-runtime/src/finite_tools.rs
+  s_3605cf53b51080::t_bee855eb72ef62 9,90-95
+crates/router-runtime/src/finite_tools/owner.rs
+  s_3605cf53b51080::t_972737d660a847 32-40,174-181,185-189,200-220
+crates/router-runtime/src/finite_tools/policy.rs
+  s_3605cf53b51080::t_d51698b0e9c52a 37,792-808
+crates/router-runtime/src/host_state.rs
+  s_3605cf53b51080::t_129d3be1fdef0d 276-298
+crates/router-runtime/src/lib.rs
+  s_3605cf53b51080::t_1c7ebea4deb8bc 22-24,144,559,576,670-676,767,978,1064-1065,1264-1274,1389-1423,1433-1468,1583-1588,1656-1674
+crates/router-runtime/src/store.rs
+  s_3605cf53b51080::t_0cc6d0b2a7f53a 902-914,939-940,2319-2373
+crates/router-runtime/support/linux-finite-guard.c
+  s_3605cf53b51080::t_36eed108301f20 176,195-202,275
+docs/adr/0042-owned-subscription-relay.md
+  s_3605cf53b51080::t_765019fbac2d07 1-49
+docs/adr/README.md
+  s_3605cf53b51080::t_7782c9ee51711d 63-64
+docs/bench/finite-subscription-relay-2026-10-18/README.md
+  s_3cad389ce36775::t_de2d1b1660fe62 1-48
+docs/bench/finite-subscription-relay-2026-10-18/budget-proposal.json
+  s_3cad389ce36775::t_139a77ffccf8cc 1-63
+docs/bench/finite-subscription-relay-2026-10-18/capsule-manifest.json
+  s_3cad389ce36775::t_f5f25a912178d0 1-246
+docs/bench/finite-subscription-relay-2026-10-18/check-offline.py
+  s_3cad389ce36775::t_0b7e96562d0685 1-21
+docs/bench/finite-subscription-relay-2026-10-18/controller/host-auth-metadata.json
+  s_3cad389ce36775::t_1f6a92847d0308 1-6
+docs/bench/finite-subscription-relay-2026-10-18/controller/launch-intent.json
+  s_3cad389ce36775::t_494516e055feb9 1-324
+docs/bench/finite-subscription-relay-2026-10-18/controller/native-catalog-adapter/expected-native-catalog.json
+  s_3cad389ce36775::t_6abde538c9a454 1
+docs/bench/finite-subscription-relay-2026-10-18/controller/native-catalog-adapter/native_tool_responses.py
+  s_3cad389ce36775::t_cd9aa09a2ded70 1-88
+docs/bench/finite-subscription-relay-2026-10-18/controller/native-catalog-adapter/test_native_adapter.py
+  s_3cad389ce36775::t_2d339fef58eb7e 1-111
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/manifest.json
+  s_3cad389ce36775::t_61ec181a0b56d5 1-258
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H0/candidate/AGENTS.md
+  s_3cad389ce36775::t_dd20b716db2eb5 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H0/candidate/lib.rs
+  s_3cad389ce36775::t_780b4193dcec31 1-6
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H0/candidate/statement.md
+  s_3cad389ce36775::t_f57dc9d638ee5e 1-9
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H0/controller/tool-script.json
+  s_3cad389ce36775::t_e14dc60b9898d4 1-54
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/AGENTS.md
+  s_3cad389ce36775::t_9f0e4556c81073 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/HARNESS.md
+  s_3cad389ce36775::t_92bae356175ac3 1-19
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/feedback-tests.rs
+  s_3cad389ce36775::t_32b86791209b13 1-8
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/feedback.py
+  s_3cad389ce36775::t_7ca3fa94f82fd5 1-45
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/lib.rs
+  s_3cad389ce36775::t_8a2759f70f22ee 1-6
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/statement.md
+  s_3cad389ce36775::t_df2920224ba28c 1-9
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/controller/tool-script.json
+  s_3cad389ce36775::t_ed7629cbd064c4 1-66
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H0/candidate/AGENTS.md
+  s_3cad389ce36775::t_077608b46b6f5f 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H0/candidate/review.rs
+  s_3cad389ce36775::t_664a782a1f5679 1-17
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H0/candidate/statement.md
+  s_3cad389ce36775::t_10ba859e28ea1b 1-14
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H0/controller/tool-script.json
+  s_3cad389ce36775::t_85c05320f40230 1-52
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/candidate/AGENTS.md
+  s_3cad389ce36775::t_37c25e3cbd6de8 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/candidate/HARNESS.md
+  s_3cad389ce36775::t_65fd08e6c3d6cf 1-19
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/candidate/feedback.py
+  s_3cad389ce36775::t_3f0b01ebbf7768 1-45
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/candidate/review.rs
+  s_3cad389ce36775::t_0bf76ede21059b 1-17
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/candidate/statement.md
+  s_3cad389ce36775::t_98f638612cc42e 1-14
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t05-Lm-r1-H1/controller/tool-script.json
+  s_3cad389ce36775::t_e6b841edbffcdd 1-66
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H0/candidate/AGENTS.md
+  s_3cad389ce36775::t_f8541a97d157da 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H0/candidate/lib.rs
+  s_3cad389ce36775::t_df521586281083 1-9
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H0/candidate/statement.md
+  s_3cad389ce36775::t_594e885d0177b6 1-12
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H0/candidate/tests.rs
+  s_3cad389ce36775::t_4bf02453f34d29 1
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H0/controller/tool-script.json
+  s_3cad389ce36775::t_f2b15739bb0524 1-81
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/AGENTS.md
+  s_3cad389ce36775::t_764eb759cb3f2c 1-15
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/HARNESS.md
+  s_3cad389ce36775::t_a88171fd8c5f88 1-19
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/check.rs
+  s_3cad389ce36775::t_a47a91646b5f86 1-2
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/feedback.py
+  s_3cad389ce36775::t_6cf29fb04f7809 1-45
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/lib.rs
+  s_3cad389ce36775::t_4b696f6ed20fab 1-9
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/statement.md
+  s_3cad389ce36775::t_9d025667e27a69 1-12
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/candidate/tests.rs
+  s_3cad389ce36775::t_565463447baee2 1
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t08-Lm-r1-H1/controller/tool-script.json
+  s_3cad389ce36775::t_ba7dd49dbcc4df 1-66
+docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/tool_responses.py
+  s_3cad389ce36775::t_27e645ce280c2f 1-144
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-native-request.json
+  s_3cad389ce36775::t_be9457cac78a40 1-172
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-offline.py
+  s_3cad389ce36775::t_c828be214709a4 1-227
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-results-test.py
+  s_3cad389ce36775::t_7c5daf01d0a963 1-320
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-results-v2-test.py
+  s_3cad389ce36775::t_90b8a8c8301883 1-172
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-results-v2.py
+  s_3cad389ce36775::t_265eff26ce1a9a 1-458
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-results.py
+  s_3cad389ce36775::t_e9b17690680c23 1-345
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-session-driver-test.py
+  s_3cad389ce36775::t_6f205f309714fa 1-117
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-session-driver.py
+  s_3cad389ce36775::t_42df4efaadd23f 1-199
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-session-fixtures.json
+  s_3cad389ce36775::t_56f2b8c9fa537c 1
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-session-test.py
+  s_3cad389ce36775::t_78caa6d0d83eff 1-204
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-session.py
+  s_3cad389ce36775::t_519633b6abe46b 1-226
+docs/bench/finite-subscription-relay-2026-10-18/controller/relay-controller-test.py
+  s_3cad389ce36775::t_3fec9c361a2380 1-286
+docs/bench/finite-subscription-relay-2026-10-18/controller/sealed-inputs/manifest-24-preparation.json
+  s_3cad389ce36775::t_64fd396bae7ed0 1-391
+docs/bench/finite-subscription-relay-2026-10-18/controller/sealed-inputs/results.template.json
+  s_3cad389ce36775::t_40fe06d8a041ed 1-513
+docs/bench/finite-subscription-relay-2026-10-18/controller/subscription_gateway.py
+  s_3cad389ce36775::t_dd92234f42b715 1-300
+docs/bench/finite-subscription-relay-2026-10-18/controller/test_subscription_gateway.py
+  s_3cad389ce36775::t_48f2424ff0f846 1-239
+docs/bench/finite-subscription-relay-2026-10-18/host-verification.json
+  s_3cad389ce36775::t_e6412a2bc3d384 1-30
+docs/bench/finite-subscription-relay-2026-10-18/offline-tests.json
+  s_3cad389ce36775::t_07321a4d7b2d11 1-11
+docs/bench/finite-subscription-relay-2026-10-18/offline-tests.log
+  s_3cad389ce36775::t_c3ccbf928ef20e 1-146
+docs/bench/finite-subscription-relay-2026-10-18/publication-manifest.json
+  s_3cad389ce36775::t_366ee68f42ef3e 1-317
+docs/bench/finite-subscription-relay-2026-10-18/qualification/bridge-source-provenance.json
+  s_3cad389ce36775::t_70aa28e7fa4b3c 1-6
+docs/bench/finite-subscription-relay-2026-10-18/qualification/cpu-diagnostic.json
+  s_3cad389ce36775::t_ca7210d549df0f 1-72
+docs/bench/finite-subscription-relay-2026-10-18/qualification/crosshost-summary.json
+  s_3cad389ce36775::t_dca398f0172d77 1-35
+docs/bench/finite-subscription-relay-2026-10-18/qualification/independent-reconciliation.json
+  s_3cad389ce36775::t_71b5146f70c8d3 1-30
+docs/bench/finite-subscription-relay-2026-10-18/qualification/isolation-summary.json
+  s_3cad389ce36775::t_1d1c2b60f4da70 1-14
+docs/bench/finite-subscription-relay-2026-10-18/qualification/local-quality.json
+  s_3cad389ce36775::t_ddf9c7e05cafc7 1-693
+docs/bench/finite-subscription-relay-2026-10-18/qualification/mac-public-summary.json
+  s_3cad389ce36775::t_1650d090e93a9b 1-31
+docs/bench/finite-subscription-relay-2026-10-18/qualification/qualification.json
+  s_3cad389ce36775::t_9d8bf7f7e8725a 1-85
+docs/bench/finite-subscription-relay-2026-10-18/qualification/recipe.template.json
+  s_3cad389ce36775::t_c1bfd2fa0029fa 1-57
+docs/bench/finite-subscription-relay-2026-10-18/qualification/relay-controller-macos-e2e-test.py
+  s_3cad389ce36775::t_82cd21fe562642 1-37
+docs/bench/finite-subscription-relay-2026-10-18/qualification/relay-controller-macos-e2e.py
+  s_3cad389ce36775::t_cf66b4674247c1 1-151
+docs/bench/finite-subscription-relay-2026-10-18/secret-scan.json
+  s_3cad389ce36775::t_b915c9eb833dfa 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2ea53a9c786403dd78b1e6cf2ed82bca3b1615c0",
+  "prompts": {},
+  "sessions": {
+    "s_3605cf53b51080": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13694-acd3-7190-8d33-691c11d3d458",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_3cad389ce36775": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "caf3336f-4a0c-47b5-9bc7-daa572bafe1a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
