@@ -1,0 +1,33 @@
+docs/local-ci.md
+  s_3a5ca9026ab08a::t_48634b63ebcdc2 45
+docs/release-local.md
+  s_1c07bc650abb4a::t_b846662bd33a42 26,30,35,38-42
+scripts/release-local.py
+  s_3a5ca9026ab08a::t_0da2dd6bf53909 33
+scripts/test-release-local.py
+  s_3a5ca9026ab08a::t_eec888468fb978 361,377
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c67dbb2634f656c2ae1509a7853280e218cd84de",
+  "prompts": {},
+  "sessions": {
+    "s_1c07bc650abb4a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13ecc-26b7-7fc2-88c5-5b726fab0740",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_3a5ca9026ab08a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a149ae-2a22-7782-bde4-26adf6784073",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
