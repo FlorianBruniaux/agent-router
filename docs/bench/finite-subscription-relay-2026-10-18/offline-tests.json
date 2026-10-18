@@ -1,0 +1,11 @@
+{
+  "tests": 141,
+  "failures": 0,
+  "errors": 0,
+  "successful": true,
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "synthetic_approval_and_account_inputs_only": true,
+  "real_campaign_created": false,
+  "scope": "host composition + versioned results with coded responses; not native Runtime evidence"
+}

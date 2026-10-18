@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "assignment_id": "t08-Lm-r1-H0",
+  "model": "gpt-6-luna",
+  "effort": "medium",
+  "marker": "R2-LOCAL-TOOLS-V1",
+  "steps": [
+    {
+      "tool": "mcp__finite__read_file",
+      "arguments": {
+        "path": "statement.md"
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__write_file",
+      "arguments": {
+        "path": "tests.rs",
+        "content": "#[cfg(test)] mod regression {use super::*;\n#[test] fn failures_are_in_numerator() { assert_eq!(metrics(&[Some(70),Some(30)], &[Some(false),Some(true)]),Ok(Some((100,1)))); }\n#[test] fn unknown_cost_keeps_whole_ratio_unknown() { assert_eq!(metrics(&[None,Some(30)], &[Some(false),Some(true)]),Ok(None)); }\n#[test] fn no_success_has_no_ratio() { assert_eq!(metrics(&[Some(10)], &[Some(false)]),Ok(None)); }\n#[test] fn outcome_unknown_and_length_invalid() {\n assert_eq!(metrics(&[Some(2)], &[None]),Ok(None));\n assert_eq!(metrics(&[], &[Some(true)]),Err(\"length\"));\n}\n#[test] fn wide_sum_and_known_zero() {\n assert_eq!(metrics(&[Some(u64::MAX),Some(u64::MAX)], &[Some(true),Some(false)]),Ok(Some((36893488147419103230,1))));\n assert_eq!(metrics(&[Some(0)], &[Some(true)]),Ok(Some((0,1))));\n}\n}\n",
+        "create_new": false
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__write_file",
+      "arguments": {
+        "path": ".scratch/own-check.rs",
+        "create_new": true,
+        "content": "include!(\"../lib.rs\");\ninclude!(\"../tests.rs\");\n"
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__exec",
+      "arguments": {
+        "argv": [
+          "rustc",
+          "--edition=2021",
+          "--test",
+          ".scratch/own-check.rs",
+          "-o",
+          ".scratch/own-check"
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__exec",
+      "arguments": {
+        "argv": [
+          ".scratch/own-check",
+          "--test-threads=1"
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      },
+      "stdout_contains": "test result: ok."
+    }
+  ],
+  "provider_kind": "authored_loopback_only",
+  "not_a_benchmark_trial": true
+}

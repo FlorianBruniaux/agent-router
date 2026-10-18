@@ -1,0 +1,48 @@
+# Finite Codex subscription relay: offline qualification
+
+The candidate connects the finite Linux Runtime to a parent-owned Codex subscription relay and one durable results file. Offline qualification passed on 18 October 2026 with the actual Codex 0.159.2 Linux ARM64 client. The upstream returned coded responses. No provider request, real model trial or real budget approval occurred.
+
+The 24 benchmark assignments remain `not_run`. Synthetic counters below are test inputs, not an observed subscription debit or a model-quality result.
+
+## Verified behavior
+
+| Case | Result | Observations |
+| --- | --- | --- |
+| Linux controller and native Runtime | PASS | Four coded responses, three actual tool returns, 2,400 synthetic tokens and 13,100 synthetic equivalent microcredits; private patch captured after namespace cleanup |
+| Unknown usage on the second coded response | PASS | The 600-token and 3,275-microcredit known prefix survives; further work stops, cleanup is confirmed, no private patch is promoted |
+| Mac controller and ledger, Linux native Runtime | PASS | Same run, approval, channel nonce and cleanup fingerprint on both hosts; four receipts and three actual tool returns |
+
+The worker keeps the qualified public-only mounts, fixed finite tools and 8 GiB bound. The qualification container also has an aggregate 8 GiB limit, no swap and no external network route. No home directory or credential file was mounted into Linux. The guard enforcement policy is unchanged. Its probe was updated for the existing MCP mode; the exact source is covered by the retained Linux qualification.
+
+The initial interactive bridge used `std::io::copy` and failed to deliver the controller ACK within the existing five-second window on Linux. Explicit bounded reads and writes passed the same prelude in 0.18 seconds. The window was not increased. The underlying standard-library mechanism was not traced.
+
+## Source and activation contract
+
+`OwnedSubscriptionController::pair` creates the private channel. `FiniteClientReview::with_subscription_controller` binds its account, controller, configuration, assignment and fresh instance into the review. The public Runtime review, approval and finite execution methods use that owner. A prepared profile without the owner is refused. Subscription admission uses `codex_subscription_relay`, never `local_fixture`.
+
+Before worker spawn, the host persists `begin_trial` and acknowledges `runtime_ready`. Every response passes a durable consumption barrier before the Runtime closes its HTTP stream. The Runtime emits its cleanup event after the exact stopped-namespace proof and cleanup transaction. A copied JSON cleanup declaration cannot create that event.
+
+The versioned host entry, `controller/relay-controller-results-v2.py::run_subscription`, requires an explicit positive budget and the exact reviewed launch digest. The digest binds code, account, configuration and destination. Credential reads occur only inside the fixed host sender after those gates. Qualification never invokes that sender against the real account. Equivalent credits remain separate from micro-USD and from the actual subscription debit. An observed stop threshold is not a provider billing cap.
+
+[ADR 0042](../../adr/0042-owned-subscription-relay.md) records the boundary. The frozen source candidate has SHA-256 `9652bae15567801105f42c5c791bcd5acd6abe976cb2e538441da6ec2173952f`, based on `2670585c180a2b7dc0699e67ec8cae981a16d81b`. The separate OpenSSL fix is `c67dbb2634f656c2ae1509a7853280e218cd84de`; its four files are excluded from the coupling patch.
+
+## Reproduce the host checks
+
+Copy this folder to a fresh temporary directory before running the checker, because it writes its own local test receipts.
+
+```sh
+python3 -B check-offline.py
+python3 -B qualification/relay-controller-macos-e2e-test.py
+```
+
+The host capsule has 141 passing tests. The portable Mac bridge has four passing tests. Runtime tests, format, Clippy, ADR checks and harness parity were checked separately. The integrated source passed 33 of 34 local quality checks with an unchanged source snapshot. The workspace check failed on the helper's unchanged ten-second wall-time assertion; its runner also reported an EPERM collection error. [The quality receipt](qualification/local-quality.json) preserves that result. [The CPU diagnostic](qualification/cpu-diagnostic.json) observed only 0.48 to 0.61 CPU seconds over ten elapsed seconds, at system loads of 166 to 180. The diagnostic stopped those three processes at the deadline; the complete helper group independently failed the same assertion. No threshold changed. Full workspace validation and merge readiness remain blocked until a complete replay succeeds on a suitable host. Documentation was added after the source gate and checked separately. Remote CI remained blocked by billing before execution. Hook activation remains `UNKNOWN`.
+
+A native replay requires the pinned public SDK, guard, helper, compiler, image and verified Linux namespace composition. [The inert recipe template](qualification/recipe.template.json) has `ready=false` and unresolved container, binary and fresh-root placeholders. It cannot launch as supplied. The owner must verify those pins and use fresh Linux and Mac output roots for another offline qualification. This recipe is not a real benchmark launcher.
+
+## Published evidence and privacy
+
+[The qualification record](qualification/qualification.json) and [cross-host summary](qualification/crosshost-summary.json) contain counters, bindings and hashes. Full Runtime receipts, private artifact paths, descriptors and SDK payloads stay outside Git. The ledger/report hashes were independently reconciled by the Runtime integration chat.
+
+The request fixture and launch-intent derivative are explicitly synthetic. They contain no session UUIDs, observed account data or reusable historical consent. The original sealed intent remains unchanged outside the capsule. The synthetic derivative intentionally fails the legacy gateway CLI seal check before transport; the host test expects that refusal.
+
+A real launch still requires Florian's budget decision, a fresh account/authentication check and the exact launch approval. Provider availability, actual subscription consumption and the 24 trial outcomes remain unverified.

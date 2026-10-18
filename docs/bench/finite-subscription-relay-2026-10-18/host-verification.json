@@ -1,0 +1,30 @@
+{
+  "host_status": "PASS",
+  "host_tests": 141,
+  "secrets_scan": "PASS",
+  "frozen_dependencies_unchanged": true,
+  "session_sha256": "9c5809752b2f2940c62fbdaaa4cadad4a4649a0fb1b8581b0caf4e7561081cc5",
+  "capsule_manifest_sha256": "a030cbe9769a1e94130faacf85828bb3089827453178e0a36e9e7cf0b5191f82",
+  "model_calls_started": 0,
+  "external_provider_requests": 0,
+  "real_campaign_created": false,
+  "real_budget_approved": false,
+  "execution_authorized": false,
+  "native_runtime_evidence": "Linux known/unknown E2E PASS; Mac controller to Linux Runtime E2E PASS; Runtime evidence held by its owner",
+  "gates_implemented": [
+    "Runtime ready/ACK binds frozen session configuration before worker dispatch",
+    "SSE chunk delivery preserves bytes, bounded nonblocking IO and per-request durable barrier",
+    "Runtime-only cleanup lane binds run/approval/session/nonce to the single result state",
+    "subscription results initialization requires explicit budget and destination-bound exact approval",
+    "possible provider-start accounting remains UNKNOWN until verified responses"
+  ],
+  "test_fixture_pipe_fix": "concurrent producer instead of blocking os.write before reader; reproduced before fixture correction",
+  "limits": [
+    "Python tests do not prove native Runtime cleanup; common Linux evidence is required",
+    "source review and stored JSON do not create Runtime execution authority",
+    "48 credit-equivalent proposal is observed stop only, not guaranteed subscription debit"
+  ],
+  "secrets_scan_findings": 0,
+  "synthetic_request_fixture": true,
+  "synthetic_intent_without_historical_authority": true
+}

@@ -1,0 +1,14 @@
+{
+  "image_sha256": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "network": "none",
+  "root_readonly": true,
+  "capabilities_dropped": [
+    "ALL"
+  ],
+  "host_home_or_auth_mounted": false,
+  "mounts": "existing public build-cache volume only",
+  "raw_container_inspection_sha256": "b7b8de88c9d40a494d9e64aef8492802025c1a709b979c79d5cbbeac1ba9bd77",
+  "scope": "offline qualification container; worker guard policies remain unchanged"
+}

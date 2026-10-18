@@ -65,15 +65,38 @@ impl Runtime {
         request: &ExecutionRequest,
         client: &FiniteClientReview,
     ) -> Result<()> {
-        if client
+        let tools = client.owned_tools.is_some();
+        // A prepared remote profile alone cannot borrow fixture quota/accounting.
+        client.provider_identity()?;
+        let startup_tools = client
             .owned_state
             .as_ref()
-            .is_some_and(|state| state.startup.tools)
-            || request.tools != router_types::ToolSelection::Disabled
+            .is_some_and(|state| state.startup.tools);
+        let selected_tools = match &request.tools {
+            router_types::ToolSelection::AllowList(names) if tools => {
+                names.len() == 3
+                    && names.iter().map(String::as_str).collect::<BTreeSet<_>>()
+                        == BTreeSet::from([
+                            "mcp__finite__read_file",
+                            "mcp__finite__write_file",
+                            "mcp__finite__exec",
+                        ])
+            }
+            router_types::ToolSelection::Disabled => !tools,
+            _ => false,
+        };
+        if startup_tools != tools
+            || !selected_tools
             || request.agent.is_some()
             || !request.skills.is_empty()
+            || (tools
+                && (!request.required_capabilities.contains(&Capability::Tools)
+                    || !request
+                        .required_capabilities
+                        .contains(&Capability::WorkspaceWrite)))
             || request.required_capabilities.iter().any(|capability| {
-                !matches!(capability, Capability::Network | Capability::WorkspaceWrite)
+                !(matches!(capability, Capability::Network | Capability::WorkspaceWrite)
+                    || tools && *capability == Capability::Tools)
             })
         {
             return Err(RuntimeError::Sandbox);
@@ -128,8 +151,9 @@ impl Runtime {
                 .owned_workspace
                 .as_ref()
                 .ok_or(RuntimeError::Sandbox)?;
-            // Creation is preparation-only while the tool boundary is unqualified.
-            view.existing_preimage()?;
+            if !tools {
+                view.existing_preimage()?;
+            }
             view.check_for_review(&self.store.root, id, run)?;
             // This entrance produces a private patch artifact. It cannot mint
             // source publication authority by treating its mutable view as the
@@ -185,6 +209,7 @@ impl Runtime {
                 None,
                 None,
                 Some(client.approval_digest()),
+                Some(client.provider_identity()?),
             )
             .await?;
         self.store

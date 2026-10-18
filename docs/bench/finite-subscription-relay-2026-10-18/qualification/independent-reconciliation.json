@@ -1,0 +1,30 @@
+{
+  "status": "PASS_RECONCILIATION_OF_RETAINED_EVIDENCE",
+  "new_native_run": false,
+  "compiled_source_files_checked": 423,
+  "source_mismatches": [],
+  "host_and_runtime_bindings_match": true,
+  "cleanup_proof_matches": true,
+  "synthetic_tokens": 2400,
+  "synthetic_equivalent_microcredits": 13100,
+  "verified_responses": 4,
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "raw_paths_or_payloads_published": false,
+  "receipt_sha256": {
+    "results.json": "35ae368e610a4917ac4f94492cd486a779b663acef6f7e73cb80dbabfa9c42af",
+    "cross-host-report.json": "7990982cb7e42d4022dc126b6feed5fa88c92f35e437fa8698c753326a9a8807",
+    "expected-binding.json": "5043037acffe454ec2a19a9fdd029ce1bd12526a012d11fba8c6c51c52e0d77d",
+    "crosshost-runtime-receipt.json": "347c999ff0deb19d921d8f32566b20d6a98522111a8d1a077291008fe47d789b",
+    "crosshost-join.json": "3cb4821473a59731c41584f45a73f41e4b54bc9d7cb4ebead7ad34041b85c01b"
+  },
+  "container_inspected_read_only": {
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "network_mode": "none",
+    "privileged": false,
+    "host_bind_mounts": 0
+  }
+}

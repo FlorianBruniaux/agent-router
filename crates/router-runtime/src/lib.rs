@@ -19,7 +19,9 @@ mod generated;
 pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
     FiniteClientReview, FiniteClientValidation, FiniteClientWorkspace, FiniteCodexState,
-    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, OwnedBroker, PendingFiniteClientRun,
+    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker,
+    OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
+    SubscriptionControllerPeer,
 };
 mod host_state;
 mod leases;
@@ -139,6 +141,7 @@ pub struct PendingRun {
     workflow: Option<WorkflowExecutionContract>,
     artifacts: Option<RunArtifactContract>,
     finite_client_binding: Option<String>,
+    finite_client_provider: Option<String>,
 }
 pub struct ApprovedRun {
     pending: PendingRun,
@@ -553,6 +556,7 @@ impl Runtime {
     ) -> Result<PendingRun> {
         self.review_decision_bound(
             run_id, router, context, decision, request, plan, node_id, workflow, artifacts, None,
+            None,
         )
         .await
     }
@@ -569,6 +573,7 @@ impl Runtime {
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
         finite_client_binding: Option<&str>,
+        finite_client_provider: Option<&str>,
     ) -> Result<PendingRun> {
         if context.has_signed_catalog() {
             return Err(RuntimeError::Invalid(
@@ -662,7 +667,13 @@ impl Runtime {
             None,
         )?;
         if let Some(shared) = &self.admission {
-            shared.validate_request_bound(context, &request, &node.owner, finite_client_binding)?;
+            shared.validate_request_bound(
+                context,
+                &request,
+                &node.owner,
+                finite_client_binding,
+                finite_client_provider,
+            )?;
         }
         let definition_hash = self.definition_hash(
             &request,
@@ -753,6 +764,7 @@ impl Runtime {
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
             finite_client_binding: finite_client_binding.map(str::to_owned),
+            finite_client_provider: finite_client_provider.map(str::to_owned),
         };
         if let Some(shared) = &self.admission {
             shared.validate(&pending)?;
@@ -963,6 +975,7 @@ impl Runtime {
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
             finite_client_binding: None,
+            finite_client_provider: None,
         };
         self.validate_pending_escalation(&pending, false)?;
         self.validate_pending_generated(&pending, false)?;
@@ -1048,7 +1061,8 @@ impl Runtime {
         if approved.pending.finite_client_binding.is_some() {
             return Err(RuntimeError::Sandbox);
         }
-        self.execute_admitted(approved, adapter, supervisor, cancel, authority, None)
+        // Keep concurrent workflow futures bounded on the caller's stack.
+        Box::pin(self.execute_admitted(approved, adapter, supervisor, cancel, authority, None))
             .await
     }
     #[allow(clippy::too_many_arguments)]
@@ -1247,6 +1261,17 @@ impl Runtime {
                 return Err(error);
             }
         };
+        if let Some(finite) = finite {
+            if let Err(error) = finite.arm_subscription(id, &pending.run.approval_digest) {
+                self.store.transition(
+                    id,
+                    RunState::Blocked,
+                    "subscription_controller_not_ready",
+                    Some(RunFailure::Policy),
+                )?;
+                return Err(error);
+            }
+        }
         if let Err(error) = self
             .validate_pending_escalation(&pending, true)
             .and_then(|()| self.validate_pending_generated(&pending, true))
@@ -1361,10 +1386,41 @@ impl Runtime {
         };
         // A watchdog's exit or killpg observation is not a descendant-cleanup
         // proof. Keep authority quarantined if its durable claim is absent.
-        if let Err(error) = self
-            .store
-            .confirm_attempt_cleanup_and_state(id, host_state.take())
-        {
+        let require_tools_complete = captured.as_ref().is_ok_and(|output| {
+            output.outcome.exit_code == Some(0)
+                && output.outcome.termination == router_types::TransportTermination::Exited
+                && !output.output_limited
+                && !output.output_incomplete
+                && !cancel.is_cancelled()
+        });
+        let mut stopped_tools = None;
+        let mut subscription_stop = None;
+        if let Err(error) = self.store.confirm_attempt_cleanup_and_state_observed(
+            id,
+            host_state.take(),
+            |state, proof| {
+                // Other backends retain their original cleanup path. Only the
+                // producer-owned finite entrance may read a tools terminal.
+                if finite.is_some_and(finite_client::LinuxFiniteSupervisor::uses_tools) {
+                    stopped_tools = state
+                        .observe_finite_tools(proof, require_tools_complete)?
+                        .map(Box::new);
+                    if let Some(controller) = finite.and_then(|f| f.subscription()) {
+                        subscription_stop = Some(digest(
+                            "runtime-subscription-stopped-v1",
+                            &(
+                                id,
+                                &pending.run.approval_digest,
+                                1u32,
+                                &proof.evidence,
+                                controller.binding(),
+                            ),
+                        )?);
+                    }
+                }
+                Ok(())
+            },
+        ) {
             self.store.finish_attempt(id, "cleanup_unknown")?;
             self.store.transition(
                 id,
@@ -1373,6 +1429,42 @@ impl Runtime {
                 Some(RunFailure::Interrupted),
             )?;
             return Err(error);
+        }
+        if let (Some(finite), Some(proof)) = (finite, subscription_stop.as_deref()) {
+            let status = if require_tools_complete {
+                "completed"
+            } else if cancel.is_cancelled() {
+                "interrupted"
+            } else {
+                "failed"
+            };
+            if let Err(error) = finite.finish_subscription(proof, status) {
+                self.store
+                    .finish_attempt(id, "subscription_observation_unknown")?;
+                self.store.transition(
+                    id,
+                    RunState::Failed,
+                    "subscription_observation_unknown",
+                    Some(RunFailure::Policy),
+                )?;
+                return Err(error);
+            }
+            self.store.event(
+                id,
+                "finite_subscription.stopped.v1",
+                &serde_json::to_string(&(
+                    proof,
+                    finite.subscription_observation()?,
+                    "credit_equivalents_not_subscription_debit_or_usd",
+                ))?,
+            )?;
+        }
+        if let Some(observed) = &stopped_tools {
+            self.store.event(
+                id,
+                "finite_tools.stopped.v1",
+                &serde_json::to_string(&observed.terminal)?,
+            )?;
         }
         let output = match captured {
             Ok(v) => v,
@@ -1488,7 +1580,12 @@ impl Runtime {
                 transport: output.outcome.clone(),
                 cleanup: ProcessCleanupEvidence::Unknown,
                 observed_cost_microusd: None,
-                observed_tokens: None,
+                observed_tokens: finite
+                    .map(|f| f.subscription_observation())
+                    .transpose()?
+                    .flatten()
+                    .filter(|o| !o.usage_unknown && o.verified_responses > 0)
+                    .map(|o| o.known_prefix_tokens),
                 started_event_hash: String::new(),
                 finished_event_hash: String::new(),
                 transition_event_hash: String::new(),
@@ -1556,7 +1653,25 @@ impl Runtime {
         };
         if state == RunState::SucceededTransport {
             if run.sandbox == ExecutionSandbox::WorkspaceWrite {
-                let capture = self.capture_artifact(&pending, Path::new(&run.cwd)).await;
+                let capture = async {
+                    if let Some(observed) = &stopped_tools {
+                        observed
+                            .output
+                            .as_ref()
+                            .ok_or(RuntimeError::Integrity("finite tools output not verified"))?
+                            .check()?;
+                    }
+                    self.capture_artifact(&pending, Path::new(&run.cwd)).await?;
+                    if let Some(observed) = &stopped_tools {
+                        observed
+                            .output
+                            .as_ref()
+                            .ok_or(RuntimeError::Integrity("finite tools capture owner absent"))?
+                            .check()?;
+                    }
+                    Ok::<(), RuntimeError>(())
+                }
+                .await;
                 if let Err(error) = capture {
                     self.store
                         .transition(id, RunState::Verifying, "artifact_check", None)?;

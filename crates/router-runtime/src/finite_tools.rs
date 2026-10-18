@@ -6,7 +6,7 @@ mod exec;
 mod linux_tests;
 mod mcp_stdio;
 mod owner;
-pub use owner::{ToolOwnerBoot, run_owner};
+pub use owner::{ToolOwnerBoot, ToolOwnerProbe, run_owner};
 mod policy;
 mod session;
 mod transport;
@@ -85,6 +85,12 @@ impl FilePolicy {
     pub fn terminal_output(&self) -> Result<Option<ToolOutput>, FiniteToolError> {
         self.inner
             .terminal_output()
+            .map_err(FiniteToolError::Refused)
+    }
+    /// Binds retained preparation identities; this digest is not authority.
+    pub fn preparation_binding(&self) -> Result<String, FiniteToolError> {
+        self.inner
+            .preparation_binding()
             .map_err(FiniteToolError::Refused)
     }
     /// Validates a terminal output against retained preparation identities.

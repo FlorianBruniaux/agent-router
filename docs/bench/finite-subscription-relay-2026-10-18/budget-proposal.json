@@ -1,0 +1,63 @@
+{
+  "scope": "final_proposal_for_24_trials_not_approved",
+  "consulted_on": "2026-10-18",
+  "source": "https://learn.chatgpt.com/docs/pricing",
+  "unit": "credit_equivalents_not_subscription_debit_or_usd",
+  "assignments": 24,
+  "four_medium_t08_are_included": true,
+  "model_counts": {
+    "gpt-6-luna": 12,
+    "gpt-6-astra": 12
+  },
+  "rates_per_million": {
+    "gpt-6-luna": {
+      "input": 2.5,
+      "cached": 0.25,
+      "output": 12.5
+    },
+    "gpt-6-astra": {
+      "input": 250,
+      "cached": 25,
+      "output": 1250
+    }
+  },
+  "observed_campaign_stop_microcredits": 48000000,
+  "observed_cumulative_token_stop_per_trial": 6000,
+  "worker_wall_milliseconds": 60000,
+  "retries": 0,
+  "escalations": 0,
+  "concurrent_trials": 1,
+  "scenarios_microcredits": [
+    24240000,
+    36360000
+  ],
+  "scenarios_are_assumptions_not_measurements": true,
+  "conditional_all_output_bound_microcredits": 90900000,
+  "bound_assumptions": "each cell actually stays within 6000 billed cumulative input+output tokens; Standard speed; no in-flight overrun or extra charges",
+  "hard_provider_cap": false,
+  "inflight_overrun_possible": true,
+  "actual_subscription_debit": null,
+  "api_key_billing_allowed": false,
+  "credit_purchase_allowed": false,
+  "no_budget_default_in_real_entry": true,
+  "requires_positive_explicit_budget_and_exact_configuration_approval": true,
+  "execution_authorized": false,
+  "real_budget_approved": false,
+  "real_model_calls_started": 0,
+  "stop_on": [
+    "unknown_usage",
+    "incomplete_cleanup",
+    "observed_budget_reached",
+    "token_limit",
+    "deadline",
+    "model_identity_mismatch",
+    "non_success_native_terminal"
+  ],
+  "costs_include_failed_attempts": true,
+  "campaign_can_stop_before_all_24_are_run": true,
+  "excluded_from_proposal": [
+    "current coordination conversations and preparation inference",
+    "historical benchmark campaigns",
+    "human review time"
+  ]
+}

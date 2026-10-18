@@ -1,0 +1,85 @@
+{
+  "status": "OFFLINE_COUPLING_QUALIFIED_GLOBAL_GATE_BLOCKED",
+  "date": "2026-10-18",
+  "base_commit": "2670585c180a2b7dc0699e67ec8cae981a16d81b",
+  "source_patch_sha256": "9652bae15567801105f42c5c791bcd5acd6abe976cb2e538441da6ec2173952f",
+  "controller_capsule_manifest_sha256": "1abdc76b0f6cf7f260843b43715ab51ca68ecc42ac2082833717e6c7b544ca12",
+  "cases": [
+    {
+      "case": "Linux native Runtime + local coded controller",
+      "status": "PASS",
+      "actual_tool_results": 3,
+      "coded_responses": 4,
+      "known_synthetic_tokens": 2400,
+      "known_synthetic_equivalent_microcredits": 13100,
+      "namespace_cleanup": "confirmed",
+      "source_unchanged": true,
+      "private_patch_captured": true
+    },
+    {
+      "case": "Linux native Runtime + unknown usage on coded response2",
+      "status": "PASS",
+      "known_prefix_synthetic_tokens": 600,
+      "known_prefix_synthetic_equivalent_microcredits": 3275,
+      "complete_usage": "UNKNOWN",
+      "subsequent_trials": "stopped",
+      "namespace_cleanup": "confirmed",
+      "source_unchanged": true,
+      "private_patch_captured": false
+    },
+    {
+      "case": "Mac controller and ledger + Linux native Runtime",
+      "status": "PASS",
+      "actual_tool_results": 3,
+      "coded_responses": 4,
+      "known_synthetic_tokens": 2400,
+      "known_synthetic_equivalent_microcredits": 13100,
+      "same_run_approval_nonce_and_cleanup": true,
+      "namespace_cleanup": "confirmed"
+    }
+  ],
+  "checks": {
+    "controller_offline_tests": 141,
+    "controller_errors": 0,
+    "controller_failures": 0,
+    "mac_bridge_tests": 4,
+    "rust_runtime_suite_pre_final_observation_change": "245 passed,2ignored; final owner gate pending",
+    "rust_subscription_transport_tests": "7 passed,1ignored",
+    "explicit_real_host_prelude_linux": "PASS, 0.18seconds with explicit bounded relay; previous copy-based relay failed",
+    "clippy_workspace": "PASS before final test-only crosshost scaffold",
+    "clippy_runtime_all_targets_all_features": "PASS on final source",
+    "format": "PASS",
+    "adr_tests": 30,
+    "xtask": "parity PASS; runtime activation UNKNOWN",
+    "openssl_upstream_commit": "c67dbb2634f656c2ae1509a7853280e218cd84de",
+    "openssl_tests": 27,
+    "final_integrated_quality": {
+      "status": "BLOCKED",
+      "passed": 33,
+      "total": 34,
+      "record": "local-quality.json",
+      "diagnostic": "cpu-diagnostic.json"
+    },
+    "independent_reconciliation": "independent-reconciliation.json"
+  },
+  "privacy": {
+    "guard_sha256": "316a23abce370ab23b7c617904cc61e5af7cf42c252136b6606da2fac9cb024b",
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "private_access_expanded": false,
+    "credentials_copied_to_linux": false,
+    "raw_sdk_payloads_published": false,
+    "historical_launch_authority_published": false,
+    "guard_enforcement_policy_unchanged": true,
+    "guard_probe": "updated for existing MCP mode; exact source covered by retained Linux qualification"
+  },
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "real_24_rows": "all not_run",
+  "budget_approved": null,
+  "actual_subscription_debit": null,
+  "real_provider_auth_or_availability_verified": false,
+  "remote_ci": "billing blocked before jobs started; no remote CI passing verdict",
+  "raw_receipts": "retained privately; published derivatives contain counters and hashes only",
+  "integrated_base_commit": "e78690dd50c5259ca9865274ade69c61493f3b70"
+}

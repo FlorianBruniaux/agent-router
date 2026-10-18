@@ -62,6 +62,7 @@ impl SharedAdmission {
             &pending.request,
             &pending.node.owner,
             pending.finite_client_binding.as_deref(),
+            pending.finite_client_provider.as_deref(),
         )
     }
     pub fn validate_request(
@@ -70,7 +71,7 @@ impl SharedAdmission {
         request: &ExecutionRequest,
         owner: &str,
     ) -> Result<(String, String)> {
-        self.validate_request_bound(context, request, owner, None)
+        self.validate_request_bound(context, request, owner, None, None)
     }
     pub fn validate_request_bound(
         &self,
@@ -78,12 +79,14 @@ impl SharedAdmission {
         request: &ExecutionRequest,
         owner: &str,
         finite_binding: Option<&str>,
+        finite_provider: Option<&str>,
     ) -> Result<(String, String)> {
         let provider = provider_identity(
             context
                 .asset_requirements(&request.candidate_id)
                 .map(|a| a.provider.as_str()),
             finite_binding,
+            finite_provider,
         )?;
         if !self.registry.policy().providers.contains_key(&provider) {
             return Err(RuntimeError::Invalid("admission unknown provider"));
@@ -487,34 +490,68 @@ mod tests {
 mod finite_provider_tests {
     use super::*;
     #[test]
+    fn subscription_uses_separate_quota_and_refuses_fixture_or_unbound_profile() {
+        let binding = "a".repeat(64);
+        assert_eq!(
+            provider_identity(
+                Some("codex_subscription_relay"),
+                Some(&binding),
+                Some("codex_subscription_relay")
+            )
+            .unwrap(),
+            "codex_subscription_relay"
+        );
+        assert!(
+            provider_identity(
+                Some("local_fixture"),
+                Some(&binding),
+                Some("codex_subscription_relay")
+            )
+            .is_err()
+        );
+        assert!(provider_identity(Some("codex_subscription_relay"), Some(&binding), None).is_err());
+        assert!(provider_identity(None, None, Some("codex_subscription_relay")).is_err());
+    }
+    #[test]
     fn local_fixture_provider_needs_a_finite_binding_and_cannot_mask_a_remote_provider() {
         let binding = "a".repeat(64);
-        assert!(provider_identity(None, None).is_err());
-        assert!(provider_identity(None, Some("receipt-is-not-a-binding")).is_err());
+        assert!(provider_identity(None, None, None).is_err());
+        assert!(provider_identity(None, Some("receipt-is-not-a-binding"), None).is_err());
         assert_eq!(
-            provider_identity(None, Some(&binding)).unwrap(),
+            provider_identity(None, Some(&binding), None).unwrap(),
             "local_fixture"
         );
         assert_eq!(
-            provider_identity(Some("local_fixture"), Some(&binding)).unwrap(),
+            provider_identity(Some("local_fixture"), Some(&binding), None).unwrap(),
             "local_fixture"
         );
-        assert!(provider_identity(Some("remote"), Some(&binding)).is_err());
-        assert_eq!(provider_identity(Some("remote"), None).unwrap(), "remote");
+        assert!(provider_identity(Some("remote"), Some(&binding), None).is_err());
+        assert_eq!(
+            provider_identity(Some("remote"), None, None).unwrap(),
+            "remote"
+        );
     }
 }
 
-// The finite producer emits only credential-free local_fixture configuration.
-// Only its opaque, combined review binding selects this branch. JSON receipts,
-// generic v2 runs and v3 remote-provider declarations cannot gain this identity.
-fn provider_identity(asset_provider: Option<&str>, finite_binding: Option<&str>) -> Result<String> {
+// The private finite entrance supplies both binding and provider identity. A
+// remote subscription can never silently select authored fixture admission.
+fn provider_identity(
+    asset_provider: Option<&str>,
+    finite_binding: Option<&str>,
+    finite_provider: Option<&str>,
+) -> Result<String> {
     if let Some(binding) = finite_binding {
+        let provider = finite_provider.unwrap_or("local_fixture");
         if !router_adapter_api::is_digest(binding)
-            || asset_provider.is_some_and(|provider| provider != "local_fixture")
+            || !matches!(provider, "local_fixture" | "codex_subscription_relay")
+            || asset_provider.is_some_and(|declared| declared != provider)
         {
-            return Err(RuntimeError::Invalid("finite local provider binding"));
+            return Err(RuntimeError::Invalid("finite provider binding"));
         }
-        return Ok("local_fixture".into());
+        return Ok(provider.into());
+    }
+    if finite_provider.is_some() {
+        return Err(RuntimeError::Approval);
     }
     asset_provider
         .map(str::to_owned)

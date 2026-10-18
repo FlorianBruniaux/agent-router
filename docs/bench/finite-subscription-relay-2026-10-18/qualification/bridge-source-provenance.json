@@ -1,0 +1,6 @@
+{
+  "original_mac_driver_sha256": "bf445e1d134db9e0fd231375f1d3771fb221b81957649dd3cc2c32b253396739",
+  "portable_copy_sha256": "e1d995784cdf395183929da2d881b11ce218f6556f9fa788f68430e503ce7fed",
+  "change": "public capsule lookup made relative to this documentation folder; no transport or permission change",
+  "original_mac_driver_tests": 4
+}

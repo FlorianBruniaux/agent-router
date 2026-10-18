@@ -29,6 +29,15 @@ pub struct ToolOwnerBoot {
     pub broker_port: u16,
     pub reads: Vec<String>,
     pub context: String,
+    pub probe: Option<ToolOwnerProbe>,
+}
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ToolOwnerProbe {
+    pub denied_port: u16,
+    pub hidden: String,
+    pub control: String,
+    pub nonce: String,
 }
 
 /// No model call is made by constructing this data. Production dispatch must
@@ -162,11 +171,22 @@ fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
         .arg("0")
         .arg(boot.reads.len().to_string())
         .args(&boot.reads);
-
+    if let Some(probe) = &boot.probe {
+        command
+            .arg("--probe-v1")
+            .arg(probe.denied_port.to_string())
+            .arg(&probe.hidden)
+            .arg(&probe.control)
+            .arg(&probe.nonce);
+    }
     command
         .arg("--")
         .arg(&boot.client.path)
-        .arg("--worker")
+        .arg(if boot.probe.is_some() {
+            "--tools-probe-peer"
+        } else {
+            "--worker"
+        })
         .env_clear()
         .env("PATH", "/usr/bin:/bin")
         .env("HOME", &boot.home)
@@ -177,7 +197,27 @@ fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
         .stdin(Stdio::piped())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-
+    if let Some(probe) = &boot.probe {
+        let (read, hash) = boot
+            .sandbox
+            .public
+            .iter()
+            .find(|(name, _)| *name != &boot.sandbox.output)
+            .ok_or("owner.probe_public")?;
+        command
+            .env("ROUTER_FINITE_PROBE_NONCE", &probe.nonce)
+            .env("ROUTER_FINITE_PROBE_OUTPUT", &boot.sandbox.output)
+            .env("ROUTER_FINITE_PROBE_READ", read)
+            .env("ROUTER_FINITE_PROBE_READ_SHA256", hash)
+            .env(
+                "ROUTER_FINITE_PROBE_CREATE",
+                boot.preimage.is_none().to_string(),
+            )
+            .env(
+                "ROUTER_FINITE_PROBE_EXEC_MS",
+                boot.limits.max_exec_ms.min(5000).to_string(),
+            );
+    }
     let child = command.spawn();
     let result = (|| -> Result<i32, &'static str> {
         let mut child = child.map_err(|_| "owner.native_spawn")?;

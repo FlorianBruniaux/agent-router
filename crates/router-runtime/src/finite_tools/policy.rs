@@ -34,7 +34,7 @@ pub struct ToolResult {
     pub truncated: bool,
     pub elapsed_ms: u64,
 }
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 struct Pin {
     dev: u64,
     ino: u64,
@@ -788,6 +788,23 @@ impl Engine {
         }
         self.append(record);
         serde_json::to_value(result).map_err(|_| "policy.result")
+    }
+    pub fn preparation_binding(&self) -> Result<String, &'static str> {
+        self.verify()?;
+        let bytes = serde_json::to_vec(&(
+            "finite-file-policy-preparation-v1",
+            self.root.identity,
+            self.scratch.identity,
+            &self.public,
+            &self.immutable,
+            &self.target,
+            &self.limits,
+        ))
+        .map_err(|_| "policy.binding")?;
+        if bytes.len() > 32768 {
+            return Err("policy.binding_bound");
+        }
+        Ok(content_digest(&bytes))
     }
     pub fn verify_terminal_output(&self, output: &super::ToolOutput) -> Result<(), &'static str> {
         if output.relative != self.output {

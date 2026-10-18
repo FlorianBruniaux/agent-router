@@ -60,6 +60,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0040](0040-supervised-finite-mcp-workers.md) | Reuse runtime supervision for finite MCP workers | accepted | 2026-10-17 | 2026-10-17 | - |
 | [0041](0041-native-finite-mcp-component.md) | Qualify the native finite MCP component | accepted | 2026-10-17 | 2026-10-17 | - |
 
+| [0042](0042-owned-subscription-relay.md) | Bind subscription transport and observations to the finite Runtime owner | proposed | 2026-10-18 | 2026-10-18 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.
