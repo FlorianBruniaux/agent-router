@@ -1,0 +1,49 @@
+crates/router-doctor/tests/database_locks.rs
+  s_ae085abdb4f4d0::t_80e9aaf8031a7f 34-41
+crates/router-runtime/examples/campaign/packets.json
+  s_ae085abdb4f4d0::t_58838c321d6d73 1-406
+crates/router-runtime/examples/campaign/recipe.rs
+  s_ae085abdb4f4d0::t_8195938ff139c3 1-86
+crates/router-runtime/examples/finite-campaign.rs
+  s_ae085abdb4f4d0::t_960c28d13f3854 1-975
+crates/router-runtime/src/finite_client/campaign_discovery.rs
+  s_ae085abdb4f4d0::t_59d8d08a12eb64 1-352
+crates/router-runtime/src/finite_client/linux_backend.rs
+  s_15322205a229a3::t_7f92dec8b3e1fc 891-893
+docs/README.fr.md
+  s_ae085abdb4f4d0::t_822bc6ab803234 3-4
+docs/README.md
+  s_ae085abdb4f4d0::t_417b4b8169e7db 3-4
+docs/bench/finite-campaign-launcher-2026-10-18/README.md
+  s_15322205a229a3::t_d5f73a6fd8c99d 1-37
+docs/bench/finite-campaign-launcher-2026-10-18/local-quality.json
+  s_15322205a229a3::t_e07ba5adbad4b8 1-131
+docs/bench/finite-campaign-launcher-2026-10-18/qualification.json
+  s_15322205a229a3::t_c6ef33b0c50b84 1-206
+docs/bench/finite-campaign-launcher-2026-10-18/qualify-offline.py
+  s_ae085abdb4f4d0::t_1f2edd052a54f1 1-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5fedbdd3aecb207c5869bf27ff32a22ba9d7017b",
+  "prompts": {},
+  "sessions": {
+    "s_15322205a229a3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a14f0c-423f-7df3-aaac-dc468867048f",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
