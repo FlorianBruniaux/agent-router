@@ -1,0 +1,170 @@
+{
+  "scope": "recovered source only; no historical command executed",
+  "historical_date": "2026-10-18",
+  "recovery_date": "2026-10-19",
+  "files": [
+    {
+      "path": "relay-controller-subscription-launcher-test.py",
+      "sha256": "7715e5d7372d61eb435177e9b1285aa56d6063a4d0d116468c16f49a596ec36b",
+      "bytes": 11379,
+      "historical_sha256_matches": true
+    },
+    {
+      "path": "relay-controller-subscription-launcher.py",
+      "sha256": "f8f9ddce0bcc99e6737b3ba545321d4dceca9207f4fd5ad76ea60de63bdcf611",
+      "bytes": 14041,
+      "historical_sha256_matches": true
+    },
+    {
+      "path": "relay-controller-subscription-parent-test.py",
+      "sha256": "7fbc75da64e6fe42137f7dd0f8c5ef73f7f4c8341c9fa1db2ba4f1af0606270f",
+      "bytes": 13083,
+      "historical_sha256_matches": true
+    },
+    {
+      "path": "relay-controller-subscription-parent.py",
+      "sha256": "a2472426c9498df51a47c3a71e4785496241330ac468ebfb2ccdbca85cbc2d9b",
+      "bytes": 12975,
+      "historical_sha256_matches": true
+    },
+    {
+      "path": "relay-controller-subscription-timeout-test.py",
+      "sha256": "db3da37dec1cc2c08f1833cbd610a784f53427b914a8cff015091f59c845b0e2",
+      "bytes": 5997,
+      "historical_sha256_matches": true
+    }
+  ],
+  "replayed_text_edits": [
+    {
+      "journal_line": 7130,
+      "file": "relay-controller-subscription-launcher-test.py",
+      "action": "add"
+    },
+    {
+      "journal_line": 7153,
+      "file": "relay-controller-subscription-launcher-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7153,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "add"
+    },
+    {
+      "journal_line": 7172,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7219,
+      "file": "relay-controller-subscription-launcher-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7267,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "add"
+    },
+    {
+      "journal_line": 7292,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7292,
+      "file": "relay-controller-subscription-parent.py",
+      "action": "add"
+    },
+    {
+      "journal_line": 7310,
+      "file": "relay-controller-subscription-launcher-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7321,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7321,
+      "file": "relay-controller-subscription-parent.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7345,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7361,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7367,
+      "file": "relay-controller-subscription-parent.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7384,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7392,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7406,
+      "file": "relay-controller-subscription-parent.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7436,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7436,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7508,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "constant rename"
+    },
+    {
+      "journal_line": 7508,
+      "file": "relay-controller-subscription-launcher-test.py",
+      "action": "constant rename"
+    },
+    {
+      "journal_line": 7508,
+      "file": "relay-controller-subscription-parent-test.py",
+      "action": "constant rename"
+    },
+    {
+      "journal_line": 7646,
+      "file": "relay-controller-subscription-timeout-test.py",
+      "action": "add"
+    },
+    {
+      "journal_line": 7660,
+      "file": "relay-controller-subscription-launcher.py",
+      "action": "update"
+    },
+    {
+      "journal_line": 7684,
+      "file": "relay-controller-subscription-timeout-test.py",
+      "action": "update"
+    }
+  ],
+  "all_five_historical_hashes_match": true,
+  "provider_calls": 0,
+  "live_registry_accessed": false,
+  "method": "Replay only recorded text edits, never historical commands; compare with delivery hashes recorded on 2026-10-18.",
+  "source": "Current Codex session, historical delivery dated 2026-10-18",
+  "qualified_controller_unchanged": true
+}

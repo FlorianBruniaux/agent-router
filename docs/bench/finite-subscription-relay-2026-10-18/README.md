@@ -58,3 +58,7 @@ A real launch still requires Florian's budget decision, a fresh account/authenti
 The final evidence update changes documentation only. CI and native execution evidence above apply to code commit `1ab71472`; a later documentation commit is not presented as an executed native binary. The replay used an independent cache copy and fresh roots, preserved the original container and cache through read-only access, and stopped its own container after all three cleanup proofs were checked. Raw Runtime receipts, synthetic private patches and SDK streams are not published.
 
 The host capsule manifest and its verification receipt retain their original frozen identity. Their pending native-evidence note is historical. Current native and CI status is recorded in `qualification/qualification.json` and the new replay record; the 141 host tests are not presented as newly executed.
+
+## Recovered host delivery
+
+The [five-file host snapshot and offline checker](host/README.md) preserve the separate production parent delivery from 18 October. Its 26 historical tests were replayed with coded responses on 19 October; the source hashes match the original delivery. This restoration does not change the qualification receipts above, reconcile the stopped campaign, or authorize another model request.
