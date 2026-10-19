@@ -31,7 +31,14 @@ fn lock_probe_child() {
 
 fn probe_locked(path: &Path) -> bool {
     let output = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", "lock_probe_child", "--nocapture"])
+        // Sequential libtest prefixes uncaptured stdout on the same line.
+        // Keep the single child test's marker framing independent of the parent.
+        .args([
+            "--exact",
+            "lock_probe_child",
+            "--nocapture",
+            "--test-threads=2",
+        ])
         .env(PROBE_PATH, path)
         .output()
         .unwrap();

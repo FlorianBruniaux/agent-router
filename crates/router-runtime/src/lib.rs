@@ -1048,7 +1048,8 @@ impl Runtime {
         if approved.pending.finite_client_binding.is_some() {
             return Err(RuntimeError::Sandbox);
         }
-        self.execute_admitted(approved, adapter, supervisor, cancel, authority, None)
+        // Keep concurrent workflow futures bounded on the caller's stack.
+        Box::pin(self.execute_admitted(approved, adapter, supervisor, cancel, authority, None))
             .await
     }
     #[allow(clippy::too_many_arguments)]
