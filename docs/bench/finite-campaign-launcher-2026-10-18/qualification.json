@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "scope": "Six separate coded-response native transport qualifications; no real campaign outcome",
+  "base_commit": "61af984fce308bef633f7ced170ec27f445d3f49",
+  "native_launcher_sha256": "f754a3668954ad21d963a451165b6f2e95ee299803e2ebfaf476407f048e91ae",
+  "compiled_source_manifest_sha256": "88d48221cb4dc38c88307a476f8a10523893434496abc86756c8112789ca586c",
+  "modified_native_source_hashes": {
+    "crates/router-runtime/examples/finite-campaign.rs": "4f75ced143789cc8605b10bd95ac28fb61f721b2ed7fc773a371a6c216006cdc",
+    "crates/router-runtime/examples/campaign/recipe.rs": "5c0ed344157777e3a331a599ac57909997e987e53ee014cfe86240de0998b3f4",
+    "crates/router-runtime/examples/campaign/packets.json": "2d4d225e528fff5ba402e7265140521f212d7b4a3443c3dd62f1db00f9e0281a",
+    "crates/router-runtime/src/finite_client/campaign_discovery.rs": "07efe1679e4d7aab8ce755fc04d036e78f4c32fa19f0b786f6f5dcaae509173f",
+    "crates/router-runtime/src/finite_client/linux_backend.rs": "356d54bbdf0cffb5e8a184bfe5d95a7d9e6f4cafa4a1d52d61b10358f62ad36a"
+  },
+  "programs": {
+    "client": "0241a006b5e5a969b218a64d28ebee8b71bf54242959d508d9b3c31d1fe8080a",
+    "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+    "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+    "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+    "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33"
+  },
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "network": "isolated broker only; outer container network none",
+  "host_binds": 0,
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "auth_read": false,
+  "cases": [
+    {
+      "assignment_id": "t02-Lx-r1-H0",
+      "passed": true,
+      "model_requested": "gpt-6-luna",
+      "effort_requested": "xhigh",
+      "condition": "H0",
+      "packet_sha256": "ef8c836f6fe267b105e1aaf3973db84436dc1341ce07aceeb53d36659979664f",
+      "coded_responses": 4,
+      "actual_tool_returns": 3,
+      "native_client_elapsed_ms": 7066,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 385,
+        "relative": "lib.rs",
+        "sha256": "9fcd5c1aae506d60b3507de4165333394ae9a64b8349b80b6a78335479a2dca5"
+      },
+      "feedback_evidence": null,
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "b90a8fab53f75cddeeebca1fdc5b1770525ffff156c5901fef204c6fa97c31ec"
+    },
+    {
+      "assignment_id": "t02-Lm-r1-H1",
+      "passed": true,
+      "model_requested": "gpt-6-luna",
+      "effort_requested": "medium",
+      "condition": "H1",
+      "packet_sha256": "61ae696298f7e9e44891a46600d28fcb0e66423408a08ea95d490e917be64484",
+      "coded_responses": 5,
+      "actual_tool_returns": 4,
+      "native_client_elapsed_ms": 5189,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 385,
+        "relative": "lib.rs",
+        "sha256": "9fcd5c1aae506d60b3507de4165333394ae9a64b8349b80b6a78335479a2dca5"
+      },
+      "feedback_evidence": {
+        "assignment_id": "t02-Lm-r1-H1",
+        "native_stdout_sha256": "4bfea5801db12139063ddad7e32c6f731fd79fb1933adbc4b42c4b23487cf210",
+        "rust_tests_executed": 4,
+        "expected_feedback_failure": true,
+        "model_calls_started": 0,
+        "supplements_original_receipt": true
+      },
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "4890e6827220da699343db2c27edaa4a6ac14a0056e7ccdbd14fa260ce2f3feb"
+    },
+    {
+      "assignment_id": "t08-Am-r1-H0",
+      "passed": true,
+      "model_requested": "gpt-6-astra",
+      "effort_requested": "medium",
+      "condition": "H0",
+      "packet_sha256": "4bac414e5602a1d73cdf6f4c7b49d29993f1af859464dcb9b9d342fe6561c221",
+      "coded_responses": 4,
+      "actual_tool_returns": 3,
+      "native_client_elapsed_ms": 2551,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 74,
+        "relative": "tests.rs",
+        "sha256": "04517f58f1219d6994839d11b9d75bb2b05286e2664bda710e51e78114f82855"
+      },
+      "feedback_evidence": null,
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "9c83fa44fc43a238fd314ba5f11406760d1623db2c0ab89f0fe4eda3d65f452d"
+    },
+    {
+      "assignment_id": "t08-Ax-r1-H1",
+      "passed": true,
+      "model_requested": "gpt-6-astra",
+      "effort_requested": "xhigh",
+      "condition": "H1",
+      "packet_sha256": "0becc895b7073ee0c6fa39076792fd4ecb85d00c08093027fe8ea765d711a1af",
+      "coded_responses": 5,
+      "actual_tool_returns": 4,
+      "native_client_elapsed_ms": 3527,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 134,
+        "relative": "tests.rs",
+        "sha256": "d7fa73194c4ac82eb8353d656691e82aed4538f1762e71e499e77b3ed1ba23f3"
+      },
+      "feedback_evidence": {
+        "native_stdout_sha256": "d4dc71ede17dc35397a383b65460aef5c0e83cb0a6cda5964a3d1bddc32b6f5e",
+        "rust_tests_executed": 1,
+        "expected_feedback_failure": true,
+        "json_shape_valid": false
+      },
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "57371ea3ce3b06a8f97e6d86468ee69203ace65d804d30fa1fd2e7a2662c8bf6"
+    },
+    {
+      "assignment_id": "t05-Lm-r1-H0",
+      "passed": true,
+      "model_requested": "gpt-6-luna",
+      "effort_requested": "medium",
+      "condition": "H0",
+      "packet_sha256": "be93eb978649cb6464e761c4a71c108dc65b54995ab00f50de1676bce30656a7",
+      "coded_responses": 4,
+      "actual_tool_returns": 3,
+      "native_client_elapsed_ms": 930,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 16,
+        "relative": "review.json",
+        "sha256": "9ba8071ce819632d6b70ddc2d9e13da3b5d20201af51595badc4aaf1647bd878"
+      },
+      "feedback_evidence": null,
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "3fc1a5cda2ab3527f0dec9de0104cfea7269c3e263213d45ea465b3d7d7af418"
+    },
+    {
+      "assignment_id": "t05-Lx-r1-H1",
+      "passed": true,
+      "model_requested": "gpt-6-luna",
+      "effort_requested": "xhigh",
+      "condition": "H1",
+      "packet_sha256": "693e9dfd4f28bb4cd70b8d273ad4ad64aa00fb5d41db2b921b89671643f972cb",
+      "coded_responses": 5,
+      "actual_tool_returns": 4,
+      "native_client_elapsed_ms": 1987,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "admission_released": true,
+      "submission": {
+        "bytes": 16,
+        "relative": "review.json",
+        "sha256": "9ba8071ce819632d6b70ddc2d9e13da3b5d20201af51595badc4aaf1647bd878"
+      },
+      "feedback_evidence": {
+        "native_stdout_sha256": "3c9ee44afb15133d39b71451cab2901c72b2ee13c6f8fc325645252f9406ec68",
+        "rust_tests_executed": 0,
+        "expected_feedback_failure": false,
+        "json_shape_valid": true
+      },
+      "model_calls_started": 0,
+      "actual_provider_requests": 0,
+      "private_receipt_sha256": "d605b095d13afd7e9ce60912d4047949b99b2aba445557697a2dfc2c133cab6f"
+    }
+  ],
+  "retained_failed_attempt": {
+    "assignment_id": "t05-Lx-r1-H1",
+    "stage": "preparation_rejected",
+    "attempts": 0,
+    "provider_requests": 0,
+    "proof_ended_at_unix_seconds": 1792356184,
+    "proof_max_age_seconds": 300,
+    "failure_receipt_file_mtime": 1792357306.245181,
+    "host_delay_cause": "UNKNOWN",
+    "replayed_with_fresh_proofs_and_same_binary": true,
+    "limits_changed": false
+  },
+  "independent_review": "No actionable finding reported for approval, fixed assignment, bounded export and diagnostic responder; six native receipts also independently reconciled",
+  "global_quality": "PASS on2026-10-19: format, Clippy, serial all-feature locked workspace tests, harness parity and secret scan"
+}

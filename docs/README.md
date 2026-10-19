@@ -1,5 +1,7 @@
 # Documentation index
 
+[One-cell Linux campaign launcher](bench/finite-campaign-launcher-2026-10-18/README.md), 2026-10-18: sealed assignment, exact parent approval and bounded private output; local qualification is separate from real model trials.
+
 [Finite-client namespace ownership](bench/linux-namespace-owner-2026-10-15/README.md), 2026-10-15: transfer startup, copies and broker into the existing locked namespace lifecycle. Selected Linux composition, 8 GiB unchanged; F12a NO_GO.
 
 [Host-state writer exclusion](bench/host-state-writer-exclusion-2026-10-15.md), 2026-10-15: require the exact locked stop proof before disposal, preserve exposed state on Drop and quarantine incomplete filesystem cleanup across restart. 8 GiB unchanged; F12a NO_GO.
