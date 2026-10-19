@@ -1049,3 +1049,7 @@ mod ownership_tests;
 
 mod namespace_state;
 pub(crate) use namespace_state::FiniteClientResources;
+
+mod runtime_binding;
+pub(crate) use runtime_binding::bind_runtime_definition;
+pub use runtime_binding::{ApprovedFiniteClientRun, PendingFiniteClientRun};

@@ -15,8 +15,9 @@ mod escalation;
 mod finite_client;
 mod generated;
 pub use finite_client::{
-    ApprovedFiniteClient, FiniteClientInvocation, FiniteClientLaunchPlan, FiniteClientReview,
-    FiniteClientValidation, FiniteCodexState, OwnedBroker,
+    ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
+    FiniteClientReview, FiniteClientValidation, FiniteCodexState, OwnedBroker,
+    PendingFiniteClientRun,
 };
 mod host_state;
 mod leases;
@@ -135,6 +136,7 @@ pub struct PendingRun {
     decision: ExecutionDecision,
     workflow: Option<WorkflowExecutionContract>,
     artifacts: Option<RunArtifactContract>,
+    finite_client_binding: Option<String>,
 }
 pub struct ApprovedRun {
     pending: PendingRun,
@@ -459,16 +461,19 @@ impl Runtime {
     }
     fn validate_pending_retention(&self, pending: &PendingRun) -> Result<()> {
         if pending.run.output_retention != self.limits.output_retention
-            || self.definition_hash(
-                &pending.request,
-                &pending.receipt,
-                &pending.plan,
-                &pending.node.id,
-                pending.run.workflow.as_ref(),
-                pending.artifacts.as_ref(),
-                pending.decision.binding(),
-                pending.decision.escalation_binding(),
-                pending.decision.generated_binding(),
+            || finite_client::bind_runtime_definition(
+                &self.definition_hash(
+                    &pending.request,
+                    &pending.receipt,
+                    &pending.plan,
+                    &pending.node.id,
+                    pending.run.workflow.as_ref(),
+                    pending.artifacts.as_ref(),
+                    pending.decision.binding(),
+                    pending.decision.escalation_binding(),
+                    pending.decision.generated_binding(),
+                )?,
+                pending.finite_client_binding.as_deref(),
             )? != pending.run.definition_hash
         {
             return Err(RuntimeError::Approval);
@@ -543,6 +548,25 @@ impl Runtime {
         node_id: &str,
         workflow: Option<(&WorkflowExecutionContract, u32)>,
         artifacts: Option<&RunArtifactContract>,
+    ) -> Result<PendingRun> {
+        self.review_decision_bound(
+            run_id, router, context, decision, request, plan, node_id, workflow, artifacts, None,
+        )
+        .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    async fn review_decision_bound(
+        &self,
+        run_id: &str,
+        router: &PhaseRouter,
+        context: &ValidatedPhaseContext,
+        decision: &ExecutionDecision,
+        request: ExecutionRequest,
+        plan: WorkflowPlan,
+        node_id: &str,
+        workflow: Option<(&WorkflowExecutionContract, u32)>,
+        artifacts: Option<&RunArtifactContract>,
+        finite_client_binding: Option<&str>,
     ) -> Result<PendingRun> {
         if context.has_signed_catalog() {
             return Err(RuntimeError::Invalid(
@@ -649,6 +673,8 @@ impl Runtime {
             decision.escalation_binding(),
             decision.generated_binding(),
         )?;
+        let definition_hash =
+            finite_client::bind_runtime_definition(&definition_hash, finite_client_binding)?;
         let approval_digest = digest(
             "runtime-approval-v1",
             &(run_id, &definition_hash, &request.source_state),
@@ -724,6 +750,7 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
+            finite_client_binding: finite_client_binding.map(str::to_owned),
         };
         if let Some(shared) = &self.admission {
             shared.validate(&pending)?;
@@ -732,6 +759,12 @@ impl Runtime {
         Ok(pending)
     }
     pub fn approve(&self, pending: PendingRun, approved_digest: &str) -> Result<ApprovedRun> {
+        if pending.finite_client_binding.is_some() {
+            return Err(RuntimeError::Approval);
+        }
+        self.approve_pending(pending, approved_digest)
+    }
+    fn approve_pending(&self, pending: PendingRun, approved_digest: &str) -> Result<ApprovedRun> {
         self.validate_pending_retention(&pending)?;
         let current = self.store.get(&pending.run.run_id)?;
         if approved_digest != current.approval_digest
@@ -752,6 +785,9 @@ impl Runtime {
         pending: PendingRun,
         approved_digest: &str,
     ) -> Result<ApprovedRun> {
+        if pending.finite_client_binding.is_some() {
+            return Err(RuntimeError::Approval);
+        }
         self.validate_pending_retention(&pending)?;
         let current = self.store.get(&pending.run.run_id)?;
         if current.state != RunState::Queued
@@ -924,6 +960,7 @@ impl Runtime {
             decision: decision.clone(),
             workflow: workflow.map(|(contract, _)| contract.clone()),
             artifacts: artifacts.cloned(),
+            finite_client_binding: None,
         };
         self.validate_pending_escalation(&pending, false)?;
         self.validate_pending_generated(&pending, false)?;
@@ -956,6 +993,10 @@ impl Runtime {
         Ok(previewed)
     }
     fn retry_guards(&self, pending: &PendingRun) -> Result<()> {
+        if pending.finite_client_binding.is_some() {
+            return Err(RuntimeError::Approval);
+        }
+
         if pending.decision.generated_binding().is_some() {
             return Err(RuntimeError::Invalid(
                 "generated plan requires a new global review",
@@ -1001,6 +1042,10 @@ impl Runtime {
         cancel: Cancellation,
         authority: Option<&dyn ActivationAuthority>,
     ) -> Result<RunCompletion> {
+        // A finite review cannot fall back to a generic broad-network backend.
+        if approved.pending.finite_client_binding.is_some() {
+            return Err(RuntimeError::Sandbox);
+        }
         if let Some(shared) = &self.admission {
             if !supervisor.parent_lifetime_enforced() {
                 return Err(RuntimeError::Sandbox);

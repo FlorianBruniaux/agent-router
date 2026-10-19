@@ -42,7 +42,7 @@ the workspace tests took 477 seconds and the ignored/native suites took
 
 | Group | Checks | Prerequisites and limits |
 | --- | --- | --- |
-| `quality` | Format, all-feature and core Clippy, workspace tests, core-only local API test, harness parity, host syntax, Python tooling/bench fixtures, secret scans of files and history | Rust with Clippy/rustfmt, Python 3.11+, Gitleaks 8.30.1, Git; release tests require exact OpenSSL 3.6.5 at `/opt/homebrew/bin/openssl` |
+| `quality` | Format, all-feature and core Clippy, workspace tests, core-only local API test, harness parity, host syntax, Python tooling/bench fixtures, secret scans of files and history | Rust with Clippy/rustfmt, Python 3.11+, Gitleaks 8.30.1, Git; release tests require exact OpenSSL 3.5.9 at `/opt/homebrew/bin/openssl` |
 | `native` | Build CLI/helper, then all tests explicitly ignored in the standard workspace suite | Seatbelt on macOS or Bubblewrap on Linux, Git, `nc`, compiler, local sockets; includes two bounded CPU/disk stress tests and synthetic host programs, no real inference |
 | `audit` | Audit `Cargo.lock` against a newly fetched advisory database; record its Git commit and preserve lockfile hashes | Existing cargo-audit 0.22.2 and network access to RustSec; an unavailable database does not count as a clean audit |
 | `packaging` | Fetch locked dependency archives, export the core with complete license evidence, verify the source archive | Cargo registry access or existing cache, Python and Gitleaks; the archive is written in the evidence directory |
