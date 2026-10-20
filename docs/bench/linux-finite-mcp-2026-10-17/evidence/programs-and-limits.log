@@ -1,0 +1,9 @@
+ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6  /task/programs/namespace
+d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4  /task/programs/helper
+e02fb478a93ed6201b27b8ccef51f270c3f6787c23f06dd5dd3c822376ec7a38  /task/programs/client
+123a7b1d34f89224c9e6b217311726dcf7e53ee9721b2eb954f487f744f17d16  /task/programs/guard
+63c7270bbf40502d1306f0994160830582a45a4f87a104a4b1220934a403f368  /task/programs/compiler/rustc
+1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97  /usr/local/rustup/toolchains/1.85.1-aarch64-unknown-linux-gnu/bin/rustc
+bd456a27bf1066667bc2da08cfd998e7b2c6b3e9a9a48583cc52524176d43dca  /usr/bin/aarch64-linux-gnu-gcc-12
+8589934592
+0

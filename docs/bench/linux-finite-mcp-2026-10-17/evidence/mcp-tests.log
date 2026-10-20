@@ -1,0 +1,232 @@
+
+running 33 tests
+test finite_tools::exec::tests::entry_programs_are_absolute_and_scratch_cannot_escape ... ok
+test finite_tools::exec::tests::linux_tool_exec_refuses_uncapped_scratch_before_effect ... ok
+test finite_tools::linux_tests::linux_mcp_feedback_red_write_green ... FEEDBACK_REPLY [
+    Object {
+        "id": Number(1),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "capabilities": Object {
+                "tools": Object {
+                    "listChanged": Bool(false),
+                },
+            },
+            "protocolVersion": String("2025-06-18"),
+            "serverInfo": Object {
+                "name": String("agent-router-finite"),
+                "version": String("1"),
+            },
+        },
+    },
+    Object {
+        "id": Number(2),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":379,\"exit_code\":1,\"stderr\":\"\",\"stdout\":\"\\nrunning 1 test\\ntest useful_check ... FAILED\\n\\nfailures:\\n\\n---- useful_check stdout ----\\n\\nthread 'useful_check' panicked at /candidate/feedback-tests.rs:1:54:\\nassertion `left == right` failed\\n  left: 41\\n right: 42\\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\\n\\n\\nfailures:\\n    useful_check\\n\\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\\n\\n\\n\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+    Object {
+        "id": Number(3),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":0,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+    Object {
+        "id": Number(4),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":340,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"\\nrunning 1 test\\ntest useful_check ... ok\\n\\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\\n\\n\\n\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+]
+RED_WRITE_GREEN {"green":{"elapsed_ms":340,"exit_code":0,"stderr":"","stdout":"\nrunning 1 test\ntest useful_check ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\n","termination":"exited","truncated":false},"journal":[{"argument_sha256":"a342c3f1aa47df340b739b829054764294faa07c924a0252688b13c7a6f99e97","elapsed_ms":379,"exit_code":1,"file_sha256":null,"index":1,"output_bytes":420,"status":"returned","tool":"exec","truncated":false},{"argument_sha256":"0fe7dbcf11ecfd293089305c8d087d91288ec61eb4297e9f22ea49c5026b56f9","elapsed_ms":0,"exit_code":0,"file_sha256":"1959139a9a62c58cf4dcd48c60756bf3670f5e879bf781305b85e137bdd9afb7","index":2,"output_bytes":0,"status":"returned","tool":"write_file","truncated":false},{"argument_sha256":"a342c3f1aa47df340b739b829054764294faa07c924a0252688b13c7a6f99e97","elapsed_ms":340,"exit_code":0,"file_sha256":null,"index":3,"output_bytes":138,"status":"returned","tool":"exec","truncated":false}],"red":{"elapsed_ms":379,"exit_code":1,"stderr":"","stdout":"\nrunning 1 test\ntest useful_check ... FAILED\n\nfailures:\n\n---- useful_check stdout ----\n\nthread 'useful_check' panicked at /candidate/feedback-tests.rs:1:54:\nassertion `left == right` failed\n  left: 41\n right: 42\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace\n\n\nfailures:\n    useful_check\n\ntest result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s\n\n\n","termination":"exited","truncated":false}}
+ok
+test finite_tools::linux_tests::linux_mcp_fixed_cli_bridge_reaches_owned_session_without_a_model ... FIXED_CLI_NO_MODEL {"exit_code":0,"output_created":true,"replies":2}
+ok
+test finite_tools::linux_tests::linux_mcp_scratch_survives_compile_then_run ... SCRATCH_REPLY [
+    Object {
+        "id": Number(1),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "capabilities": Object {
+                "tools": Object {
+                    "listChanged": Bool(false),
+                },
+            },
+            "protocolVersion": String("2025-06-18"),
+            "serverInfo": Object {
+                "name": String("agent-router-finite"),
+                "version": String("1"),
+            },
+        },
+    },
+    Object {
+        "id": Number(2),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":0,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+    Object {
+        "id": Number(3),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":259,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+    Object {
+        "id": Number(4),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":161,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"ACTUAL_COMPILED_CHECK\\n\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+]
+PERSISTENT_SCRATCH {"elapsed_ms":161,"exit_code":0,"stderr":"","stdout":"ACTUAL_COMPILED_CHECK\n","termination":"exited","truncated":false}
+ok
+test finite_tools::linux_tests::linux_mcp_timeout_stops_detached_writer_before_sticky_refusal ... TIMEOUT_REPLY [
+    Object {
+        "id": Number(1),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "capabilities": Object {
+                "tools": Object {
+                    "listChanged": Bool(false),
+                },
+            },
+            "protocolVersion": String("2025-06-18"),
+            "serverInfo": Object {
+                "name": String("agent-router-finite"),
+                "version": String("1"),
+            },
+        },
+    },
+    Object {
+        "id": Number(2),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("Tool request refused."),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(true),
+        },
+    },
+    Object {
+        "id": Number(3),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("Tool request refused."),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(true),
+        },
+    },
+]
+TIMEOUT_STOPPED_DETACHED {"heartbeat_bytes":70,"journal":[{"argument_sha256":"e56961acac792a60cb6c9ff7a0f375be2966f94803ad9a2f207c7a96a958c5b2","elapsed_ms":907,"exit_code":null,"file_sha256":null,"index":1,"output_bytes":0,"status":"postcondition_failed","tool":"exec","truncated":false}]}
+ok
+test finite_tools::linux_tests::linux_mcp_tool_cannot_access_private_files_network_or_public_writes ... PRIVACY_REPLY [
+    Object {
+        "id": Number(1),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "capabilities": Object {
+                "tools": Object {
+                    "listChanged": Bool(false),
+                },
+            },
+            "protocolVersion": String("2025-06-18"),
+            "serverInfo": Object {
+                "name": String("agent-router-finite"),
+                "version": String("1"),
+            },
+        },
+    },
+    Object {
+        "id": Number(2),
+        "jsonrpc": String("2.0"),
+        "result": Object {
+            "content": Array [
+                Object {
+                    "text": String("{\"elapsed_ms\":133,\"exit_code\":0,\"stderr\":\"\",\"stdout\":\"ACTUAL_PRIVATE_NETWORK_WRITE_MEMORY_REFUSALS\\n\",\"termination\":\"exited\",\"truncated\":false}"),
+                    "type": String("text"),
+                },
+            ],
+            "isError": Bool(false),
+        },
+    },
+]
+PRIVACY {"elapsed_ms":133,"exit_code":0,"stderr":"","stdout":"ACTUAL_PRIVATE_NETWORK_WRITE_MEMORY_REFUSALS\n","termination":"exited","truncated":false}
+ok
+test finite_tools::mcp_stdio::tests::actual_dispatch_results_flow_red_then_write_then_green ... ok
+test finite_tools::mcp_stdio::tests::dispatch_refusal_returns_static_tool_error_and_never_echoes_arguments ... ok
+test finite_tools::mcp_stdio::tests::explicit_creation_flag_is_forwarded_and_boolean_only ... ok
+test finite_tools::mcp_stdio::tests::initialize_versions_and_exact_tool_catalog_round_trip ... ok
+test finite_tools::mcp_stdio::tests::malformed_duplicate_fields_and_complex_ids_are_rejected_without_dispatch ... ok
+test finite_tools::mcp_stdio::tests::metadata_is_bounded_before_dispatch_and_is_never_an_extra_argument ... ok
+test finite_tools::mcp_stdio::tests::native_metadata_is_context_only_and_never_replaces_tool_arguments ... ok
+test finite_tools::mcp_stdio::tests::oversized_messages_and_message_flood_stop_before_tool_dispatch ... ok
+test finite_tools::mcp_stdio::tests::unknown_or_uninitialized_methods_and_bad_tool_args_never_dispatch ... ok
+test finite_tools::policy::tests::absent_output_requires_explicit_creation_and_refuses_duplicate_creation ... ok
+test finite_tools::policy::tests::cumulative_output_exec_session_and_scratch_byte_limits_stop_later_effects ... ok
+test finite_tools::policy::tests::exec_returns_red_feedback_and_revalidates_public_inputs_after_callback ... ok
+test finite_tools::policy::tests::file_output_time_and_scratch_exhaustion_are_sticky ... ok
+test finite_tools::policy::tests::ninth_call_and_truncated_output_make_refusal_sticky_before_further_writes ... ok
+test finite_tools::policy::tests::oversized_arguments_and_permission_changes_are_logged_without_content ... ok
+test finite_tools::policy::tests::real_wall_clock_overrides_a_zero_callback_duration ... ok
+test finite_tools::policy::tests::refuses_traversal_symlinks_hardlinks_and_changed_preimages ... ok
+test finite_tools::policy::tests::replacing_an_immutable_inode_with_identical_bytes_is_still_refused ... ok
+test finite_tools::policy::tests::scratch_writes_persist_and_exec_created_files_are_scoped ... ok
+test finite_tools::policy::tests::writes_only_the_approved_existing_inode_and_reads_public_bytes ... ok
+test finite_tools::session::tests::connections_share_owned_creation_and_a_protocol_failure_stops_later_effects ... ok
+test finite_tools::session::tests::incomplete_client_input_cannot_hold_the_session_past_its_deadline ... ok
+test finite_tools::session::tests::response_backpressure_cannot_hold_the_session_past_its_deadline ... ok
+test finite_tools::tests::mcp_and_file_policy_feed_real_file_effects_back_to_the_dispatcher ... ok
+test finite_tools::transport::tests::bridge_transfers_actual_mcp_replies_and_stops_at_eof ... ok
+test finite_tools::transport::tests::peer_eof_while_input_is_idle_is_never_a_successful_bridge ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 217 filtered out; finished in 2.70s
+

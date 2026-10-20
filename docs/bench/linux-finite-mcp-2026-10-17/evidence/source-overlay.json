@@ -1,0 +1,87 @@
+[
+  {
+    "path": "crates/router-runtime/src/finite_client.rs",
+    "bytes": 45791,
+    "sha256": "56363a5a1ab002f557405dc6efff76240151547f1e71567dc1321bc8d94a5236"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_client/linux_backend.rs",
+    "bytes": 26630,
+    "sha256": "3621e2fe938d3e28347e375795240692636929b06e39618003735424ed8a48d9"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_client/runtime_binding.rs",
+    "bytes": 10849,
+    "sha256": "49c8d38534ed3f959eb3a4855c3fac6c5886a0e2d7af2b5f6d38cff95c928af5"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_client/write_workspace.rs",
+    "bytes": 23495,
+    "sha256": "a89ebd6929692d4b13b403312eacf5a7ba32c5772e9c0c07628eb8739d944ffb"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools.rs",
+    "bytes": 6946,
+    "sha256": "926c1444a53afe393f67d332ad91f69b71eb89ff392c472a08891dda00b43ab7"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/mcp_stdio.rs",
+    "bytes": 22357,
+    "sha256": "4ef5a352b111b3786a94df9908b708ec0b32001fc244c7bad3424ad8aacf8a5b"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/policy.rs",
+    "bytes": 44844,
+    "sha256": "0aec09c02a8b32f57660a7e87069ec2dfc9e2e8a86d8aee2ff9027d26a45a4b2"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/exec.rs",
+    "bytes": 11524,
+    "sha256": "86f4d7cc6bf935d92a087b164f89706e1bcc8fc97d73fe0ad76e4d1ca8d6fa71"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/transport.rs",
+    "bytes": 4815,
+    "sha256": "bcc331178744befd9423632a0766e449badd6293e714b0121d816e6a71df6cc1"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/session.rs",
+    "bytes": 10228,
+    "sha256": "964ebbf7d1e0fa6406dfa0083007e0a44d19e2bc5b5f7f204c9c64c8b7832674"
+  },
+  {
+    "path": "crates/router-runtime/src/finite_tools/linux_tests.rs",
+    "bytes": 13743,
+    "sha256": "3150c581ccc9d7ba670423daaad30921df5395ead88377415ad7e5e257bcd10c"
+  },
+  {
+    "path": "crates/router-runtime/src/lib.rs",
+    "bytes": 85771,
+    "sha256": "550e5dc731aa64535fb0dfdf165d4ad84f731245e1309e2214d3d559ac6b4a2c"
+  },
+  {
+    "path": "crates/router-runtime/src/bin/finite-codex-client.rs",
+    "bytes": 12084,
+    "sha256": "6a92c3d80905f00be550985794b16bbb00eda487b98b5df885340791f399dc94"
+  },
+  {
+    "path": "crates/router-runtime/support/linux-finite-guard.c",
+    "bytes": 16106,
+    "sha256": "71cc65477c1badc89a6f87487b5daf75798f63904241ad9d5c4637db8b1143c5"
+  },
+  {
+    "path": "crates/router-runtime/tests/runtime.rs",
+    "bytes": 162944,
+    "sha256": "61958c1b50afd13ebfeeb0e34afe4ff934852af686889291e20046a8c15c2394"
+  },
+  {
+    "path": "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py",
+    "bytes": 2243,
+    "sha256": "8a62ffb5eb9c59318bd9b274d0234f11def6eeb2dafb99e5163e305f3c8fd0ca"
+  },
+  {
+    "path": "docs/bench/linux-finite-mcp-2026-10-17/bridge-watchdog.py",
+    "bytes": 2123,
+    "sha256": "2f6933a13d7a4033bb588211b031ef8c86db5ba83623fc4032942bdd890462ec"
+  }
+]

@@ -1,7 +1,15 @@
-//! Inert local-tool protocol and file policy building blocks.
-//! No runtime caller, native process launcher, capability proof or execution grant.
+//! Finite MCP workers backed by the runtime process supervisor.
+//! No Runtime dispatch entrance, native launcher or capability proof is created.
+mod exec;
+#[cfg(all(test, target_os = "linux"))]
+mod linux_tests;
 mod mcp_stdio;
 mod policy;
+mod session;
+mod transport;
+pub use exec::ExecSandbox;
+pub use session::ToolSession;
+pub use transport::bridge_stdio;
 
 pub use policy::{JournalEntry, Limits, ToolResult};
 use serde_json::Value;

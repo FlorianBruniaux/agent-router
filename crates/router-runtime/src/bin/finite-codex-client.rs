@@ -240,6 +240,20 @@ fn execute(probe: bool) -> Result<i32, &'static str> {
 }
 fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
+    if args.as_slice() == ["--mcp-tools"] {
+        // Absolute bound for this fixed bridge process, including a stalled
+        // stdin/stdout pipe. Namespace and descendant cleanup remain with the
+        // existing outer helper, never with this transport deadline.
+        std::thread::spawn(|| {
+            std::thread::sleep(std::time::Duration::from_secs(90));
+            std::process::exit(125);
+        });
+        std::process::exit(if router_runtime::finite_tools::bridge_stdio().is_ok() {
+            0
+        } else {
+            125
+        });
+    }
     let mode = match args.as_slice() {
         [mode] if mode == "--worker" => false,
         [mode] if mode == "--version-probe" => true,
