@@ -1316,3 +1316,53 @@ fn manifest_only_review_cannot_construct_a_namespace_state_owner() {
     assert!(f.root.join("client").is_file());
     assert!(f.root.join("state").is_dir());
 }
+
+#[test]
+fn owned_mcp_startup_has_only_the_fixed_server_and_no_authentication() {
+    let mut f = Fixture::new();
+    let broker = f.broker.take().unwrap();
+    let store = f.root.join("mcp-preparation");
+    fs::create_dir(&store).unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let state = broker.prepare_codex_tools_state(&store, &f.run).unwrap();
+    let text = fs::read_to_string(&state.configuration().path).unwrap();
+    let sections: Vec<_> = text
+        .lines()
+        .filter(|line| line.starts_with("[mcp_servers."))
+        .collect();
+    assert_eq!(
+        sections,
+        [
+            "[mcp_servers.finite]",
+            "[mcp_servers.finite.tools.read_file]",
+            "[mcp_servers.finite.tools.write_file]",
+            "[mcp_servers.finite.tools.exec]",
+        ]
+    );
+    assert_eq!(text.matches("approval_mode = \"approve\"").count(), 3);
+    for expected in [
+        "command = \"/finite-client\"",
+        "args = [\"--mcp-tools\"]",
+        "enabled_tools = [\"read_file\", \"write_file\", \"exec\"]",
+        "env_vars = []",
+        "required = true",
+        "startup_readiness = \"connection\"",
+        "shell_tool = false",
+        "unified_exec = false",
+        "apps = false",
+        "request_max_retries = 0",
+    ] {
+        assert!(text.contains(expected), "missing {expected}");
+    }
+    assert!(!state.path().join("auth.json").exists());
+    let catalog: serde_json::Value =
+        serde_json::from_slice(&fs::read(state.path().join("local-model-catalog.json")).unwrap())
+            .unwrap();
+    assert_eq!(catalog["models"][0]["tool_mode"], "direct");
+    assert!(
+        catalog["models"][0]["base_instructions"]
+            .as_str()
+            .unwrap()
+            .contains("three advertised finite tools")
+    );
+}

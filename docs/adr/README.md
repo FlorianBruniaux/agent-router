@@ -58,6 +58,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0039](0039-finite-tool-guard-canaries.md) | Test approved finite tool guard modes before runtime integration | implemented | 2026-10-16 | 2026-10-16 | - |
 | [0040](0040-supervised-finite-mcp-workers.md) | Reuse runtime supervision for finite MCP workers | accepted | 2026-10-17 | 2026-10-17 | - |
+| [0041](0041-native-finite-mcp-component.md) | Qualify the native finite MCP component | accepted | 2026-10-17 | 2026-10-17 | - |
 
 ## Frontmatter fields
 

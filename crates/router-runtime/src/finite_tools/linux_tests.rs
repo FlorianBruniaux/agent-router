@@ -34,6 +34,15 @@ fn setup(
     output: &str,
     new: bool,
 ) -> (ToolSession, PathBuf, PathBuf) {
+    setup_limits(name, files, output, new, limits())
+}
+fn setup_limits(
+    name: &str,
+    files: &[(&str, &[u8])],
+    output: &str,
+    new: bool,
+    limits: Limits,
+) -> (ToolSession, PathBuf, PathBuf) {
     let root = PathBuf::from(std::env::var("AR_MCP_ROOT").unwrap()).join(name);
     mkdir(&root);
     let candidate = root.join("candidate");
@@ -72,7 +81,7 @@ fn setup(
         Some(content_digest(&fs::read(candidate.join(output)).unwrap()))
     };
     (
-        ToolSession::open(sandbox, preimage, limits()).unwrap(),
+        ToolSession::open(sandbox, preimage, limits).unwrap(),
         candidate,
         scratch,
     )
@@ -217,7 +226,7 @@ for path in [{private:?}, '/work', '/router-tools', '/unavailable/config.toml','
  try: open(path).read()
  except OSError as e: assert e.errno==errno.ENOENT
  else: raise AssertionError(path)
-for action in [lambda:open('statement.txt','w'),lambda:os.chmod('statement.txt',0o600),lambda:socket.socket(socket.AF_INET,socket.SOCK_STREAM),lambda:socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)]:
+for action in [lambda:open('statement.txt','w'),lambda:os.chmod('statement.txt',0o600),lambda:socket.socket(socket.AF_INET,socket.SOCK_STREAM),lambda:socket.socket(socket.AF_UNIX,socket.SOCK_STREAM),lambda:socket.socket(socket.AF_UNIX,socket.SOCK_SEQPACKET),lambda:socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)]:
  try: action()
  except OSError as e: assert e.errno in (errno.EPERM,errno.EACCES,errno.EROFS)
  else: raise AssertionError('effect allowed')
@@ -372,4 +381,53 @@ fn linux_mcp_fixed_cli_bridge_reaches_owned_session_without_a_model() {
         "FIXED_CLI_NO_MODEL {}",
         json!({"exit_code":captured.outcome.exit_code,"replies":replies.len(),"output_created":true})
     );
+}
+
+#[test]
+#[ignore = "requires the explicit Linux lab and 16 MiB scratch mount"]
+fn linux_session_deadline_stops_a_longer_exec_and_its_detached_writer() {
+    let mut budget = limits();
+    budget.max_session_ms = 500;
+    let (mut session, candidate, scratch) = setup_limits(
+        "session-deadline",
+        &[("output.rs", b"original")],
+        "output.rs",
+        false,
+        budget,
+    );
+    let script = "import os,time\nf=os.open('.scratch/heartbeat',os.O_CREAT|os.O_WRONLY,0o600)\np=os.fork()\nif p==0:\n os.setsid()\n while True:\n  os.write(f,b'x');time.sleep(0.01)\nwhile True: time.sleep(0.01)\n";
+    let frames = [
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"session-deadline","version":"1"}}}),
+        json!({"jsonrpc":"2.0","method":"notifications/initialized"}),
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"exec","arguments":{"argv":["python3","-c",script],"timeout_ms":3000}}}),
+    ];
+    let bytes: Vec<_> = frames
+        .iter()
+        .flat_map(|v| {
+            let mut b = serde_json::to_vec(v).unwrap();
+            b.push(b'\n');
+            b
+        })
+        .collect();
+    let (client, server) = UnixStream::pair().unwrap();
+    let started = std::time::Instant::now();
+    std::thread::scope(|scope| {
+        let serving = scope.spawn(|| session.serve(server));
+        let _ = transport::relay(Cursor::new(bytes), &mut Vec::new(), client);
+        assert!(serving.join().unwrap().is_err());
+    });
+    assert!(
+        started.elapsed() < std::time::Duration::from_secs(2),
+        "exec exceeded the absolute session deadline: {:?}",
+        started.elapsed()
+    );
+    assert!(session.halted());
+    let before = fs::metadata(scratch.join("heartbeat")).unwrap().len();
+    assert!(before > 1);
+    std::thread::sleep(std::time::Duration::from_millis(100));
+    assert_eq!(
+        fs::metadata(scratch.join("heartbeat")).unwrap().len(),
+        before
+    );
+    assert_eq!(fs::read(candidate.join("output.rs")).unwrap(), b"original");
 }

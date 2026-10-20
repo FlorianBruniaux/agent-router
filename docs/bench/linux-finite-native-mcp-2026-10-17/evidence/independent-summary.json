@@ -1,0 +1,13 @@
+{
+  "scope": "component archive reconciled by exact oracle input identity and real SDK tool results",
+  "public_archive_sha256": "268e8b86438753d11e38a8f68141edf464a53507e4a551fb9807cbccee7dd797",
+  "independent_oracle_sha256": "8642eccb091e78db6883e196d8396682e2590ca1083317d6feb422d1ac5a58a1",
+  "public_files_checked": 101,
+  "total_native_results_revalidated": 23,
+  "all_passed": true,
+  "runtime_admission_qualified": false,
+  "model_calls_started": 0,
+  "candidate_byte_identity_checked": true,
+  "successful_objectives": 6,
+  "source_report_sha256": "b63371be8bc825073e7c775fa019f3255afa48bc55acda36e0b5fbc1220a795a"
+}

@@ -1,4 +1,4 @@
-//! One policy and budget owner across MCP connections; no native launcher.
+//! One policy and budget owner across MCP connections.
 use super::{ExecSandbox, FilePolicy, FiniteToolError, Limits};
 use std::{
     io::{BufReader, Read, Write},
@@ -12,6 +12,7 @@ pub struct ToolSession {
     sequence: u32,
     connections: u32,
     deadline: Instant,
+    stop: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 impl ToolSession {
     pub fn open(
@@ -37,6 +38,7 @@ impl ToolSession {
             sequence: 0,
             connections: 0,
             deadline,
+            stop: Default::default(),
         })
     }
     /// Only sockets with the session's absolute I/O deadline are accepted.
@@ -64,7 +66,8 @@ impl ToolSession {
                         .build()
                         .map_err(|_| FiniteToolError::Execution)?;
                     super::serve_mcp(input, output, |name, args| {
-                        self.policy
+                        let value = self
+                            .policy
                             .dispatch(name, &args, &mut |argv, timeout, cap| {
                                 self.sequence += 1;
                                 runtime
@@ -75,7 +78,11 @@ impl ToolSession {
                                         self.sequence,
                                     ))
                                     .map_err(|_| FiniteToolError::Execution)
-                            })
+                            });
+                        if self.policy.halted() {
+                            self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+                        }
+                        value
                     })
                 })
                 .join()
@@ -84,8 +91,30 @@ impl ToolSession {
         .and_then(|result| result);
         if result.is_err() {
             self.failed = true;
+            self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
         }
         result
+    }
+    pub fn stop_signal(&self) -> std::sync::Arc<std::sync::atomic::AtomicBool> {
+        self.stop.clone()
+    }
+    pub fn terminal(
+        &self,
+        binding: &str,
+        complete: bool,
+    ) -> Result<super::ToolTerminal, FiniteToolError> {
+        if !router_adapter_api::is_digest(binding) {
+            return Err(FiniteToolError::Refused("terminal.binding"));
+        }
+        let output = self.policy.terminal_output()?;
+        Ok(super::ToolTerminal {
+            schema_version: 1,
+            binding: binding.into(),
+            complete: complete && !self.halted() && output.is_some(),
+            halted: self.halted(),
+            output,
+            journal: self.journal().to_vec(),
+        })
     }
     pub fn halted(&self) -> bool {
         self.failed || self.policy.halted()
@@ -193,11 +222,20 @@ mod tests {
                 })
                 .collect()
         }
+        assert!(!session.terminal(&"a".repeat(64), true).unwrap().complete);
+        assert!(session.terminal("invalid", true).is_err());
+        let stop = session.stop_signal();
         replay(&mut session, frames("first", true)).unwrap();
         assert_eq!(fs::read(candidate.join("review.json")).unwrap(), b"first");
         replay(&mut session, frames("second", false)).unwrap();
         assert_eq!(fs::read(candidate.join("review.json")).unwrap(), b"second");
+        let terminal = session.terminal(&"a".repeat(64), true).unwrap();
+        assert!(terminal.complete && !terminal.halted);
+        assert_eq!(terminal.output.unwrap().sha256, content_digest(b"second"));
+        assert!(!stop.load(std::sync::atomic::Ordering::SeqCst));
         assert!(replay(&mut session, b"{bad}\n".to_vec()).is_err());
+        assert!(stop.load(std::sync::atomic::Ordering::SeqCst));
+        assert!(!session.terminal(&"a".repeat(64), true).unwrap().complete);
         assert!(replay(&mut session, frames("forbidden", false)).is_err());
         assert_eq!(fs::read(candidate.join("review.json")).unwrap(), b"second");
     }
