@@ -1,0 +1,52 @@
+{
+  "scope": "exact guard component; no bwrap/native model/full Runtime replay",
+  "guard_sha256": "3bf55ab3a0e35946225f17937c14f9e18a7efbe7d17b6476dc5cc41f5ed79934",
+  "model_calls_started": 0,
+  "exit_code": 0,
+  "stderr": "",
+  "external_network_used": false,
+  "connections": [
+    {
+      "label": "owned_broker",
+      "address": "127.0.0.1",
+      "port": 50383,
+      "connected": true,
+      "errno": null
+    },
+    {
+      "label": "foreign_same_port",
+      "address": "127.0.0.2",
+      "port": 50383,
+      "connected": true,
+      "errno": null
+    },
+    {
+      "label": "other_port",
+      "address": "127.0.0.1",
+      "port": 50471,
+      "connected": false,
+      "errno": 13
+    }
+  ],
+  "status": "FAIL_BROKER_ADDRESS_ISOLATION_CONFIRMED",
+  "container": {
+    "id": "97c13ce97958900cd357fe7100fdea6fc3f855239bcbf4a8b17aa92a65d18216",
+    "name": "ar-finite-ip-diagnostic-20261016",
+    "network": "none",
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "swap_bytes": 0,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "read_only_root": true,
+    "only_bind_mount": "public diagnostic guard and script, read-only"
+  },
+  "source_guard_sha256": "90fa314758a7617abe38eb553998cabd443cbf9de290240955118e399dccfc82",
+  "production_runtime_go": false,
+  "kernel_reference": "https://docs.kernel.org/userspace-api/landlock.html#network-flags"
+}

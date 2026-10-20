@@ -1,11 +1,11 @@
 ---
 adr: "0036"
 title: "Bind finite-client preparation to durable runtime approval"
-status: implemented
+status: amended
 created: 2026-10-16
 last_modified: 2026-10-16
 scope: "Combined review, approval and live evidence validation; no dispatch backend"
-amended_by: []
+amended_by: ["0037"]
 supersedes: []
 superseded_by: []
 related: ["0028", "0032", "0035"]
@@ -26,6 +26,8 @@ The nonserializable, noncloneable `PendingFiniteClientRun` retains both reviews.
 Generic approval, resume, retry and dispatch cannot accept a finite binding. Reopening a finite run as a plain runtime definition fails its definition comparison. No API converts either combined owner into a generic execution handle or a Command. Dropping the unexposed owner disposes preparation resources; the durable record remains observable, but cannot reconstruct ephemeral owners after restart. Cancel that record and prepare a new run for a new client instance.
 
 ## Remaining dispatch boundary
+
+Amended by [ADR 0037](0037-qualified-local-finite-dispatch.md) for qualified local coded transport and private patch artifacts. The limits below describe the original approval-only slice; general provider, benchmark and publication authority remain separate.
 
 This decision connects approval, not end-to-end execution. The production client is still a diagnostic canary, and ControllerBrokerOnly remains unsupported. No useful simulated-provider task, paid provider request, native qualification or F12a GO is claimed.
 

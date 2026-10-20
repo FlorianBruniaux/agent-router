@@ -1,0 +1,137 @@
+{
+  "admission": {
+    "granted": 0,
+    "max_tickets": 4096,
+    "policy_sha256": "ed2d70684a779e0e2cd6439fd7c2a87bf1cb9bbb7e674bf1ff5a5cfd4afe5bb6",
+    "released": 1,
+    "schema_version": 1,
+    "waiting": 0
+  },
+  "attempts": [
+    {
+      "authorization_id": "ae70c0cd6fd6a2dd326e8d85e3e6726d01b74f093040028f041acc8417445fa8",
+      "candidate_id": "primary",
+      "cleanup": "namespace_terminated",
+      "context_hash": "e95a9662d64574653212947958fc7ae37089e77001dfd62db3c3255d15b85aa2",
+      "decision_origin": "deterministic",
+      "definition_hash": "992267790cb646846748a0f1819ecd252b2df57627ed7e120b29aca7d6e69747",
+      "effort": "medium",
+      "failure": "timeout",
+      "finished_event_hash": "b0d2f2c6317658fcf3f4d96aee54bebde589c73f1ab98c0acad32702f744107b",
+      "identity": {
+        "attempt": 1,
+        "run_id": "q01"
+      },
+      "model": "gpt-6-luna",
+      "observed_cost_microusd": null,
+      "observed_tokens": null,
+      "pool_hash": "e836cb13d59c638cbbc25020a756275378b3d365d6552138e6d64f1088366938",
+      "sandbox": "read_only",
+      "schema_version": 1,
+      "source_state": "e380e3c52fdbde00259c356c0276252213b46826",
+      "started_event_hash": "da2c41c4d3c096fb48044b6856af2ded7c0342e93bff80517b38c213fcbcc1e3",
+      "state": "timed_out",
+      "task_execution_sha256": "43a1258ff6907860c437e8c1bcb0fd5f412e9824aa99cd628c96f8deb4645b39",
+      "transition_event_hash": "7d21dfa421eef74fea428084af8b4d6cc57752196cd6af86551e01fe5247d7ca",
+      "transport": {
+        "elapsed_ms": 5105,
+        "exit_code": 124,
+        "termination": "timed_out"
+      },
+      "workflow": null
+    }
+  ],
+  "authored_local_requests": 1,
+  "availability": "operator_simulated_local_fixture",
+  "cleanup": "namespace_terminated",
+  "completion": {
+    "memory_enforcement": "enforced",
+    "objective": "unknown",
+    "output_artifacts": {
+      "attempt": 1,
+      "created_at_unix_seconds": 1792167784,
+      "expires_at_unix_seconds": 1792171384,
+      "run_id": "q01",
+      "schema_version": 1,
+      "state": "retained",
+      "stderr": {
+        "bytes": 824,
+        "path": "/task/q01-timeout-current/runtime/outputs/a2711eea930464385da44b58d78ce04ae7759fb33a693cf07fc517566866d2df-1-stderr.bin",
+        "sha256": "e5885710dbada90163d16e9889a3732dfc94615b0860637b579f87d9fe0a0d78"
+      },
+      "stdout": {
+        "bytes": 101,
+        "path": "/task/q01-timeout-current/runtime/outputs/a2711eea930464385da44b58d78ce04ae7759fb33a693cf07fc517566866d2df-1-stdout.bin",
+        "sha256": "0ac1e27f8835df7999a5e7ab2e32628efc7c14445dda3f1b05762224d8fb4af6"
+      },
+      "truncated": false
+    },
+    "run": {
+      "approval_digest": "6e81a38ab8818af8dfdf30a9a2eba4c69b029feea61cae69d2bc834e228f1c9e",
+      "artifact_sha256": null,
+      "attempts": 1,
+      "definition_hash": "992267790cb646846748a0f1819ecd252b2df57627ed7e120b29aca7d6e69747",
+      "failure": "timeout",
+      "node_id": "execute",
+      "output_retention": {
+        "mode": "private_artifacts",
+        "retention_seconds": 3600
+      },
+      "plan_id": "89538ff9285b3dabd5e4e6047bef91a00293d6be8b440c97f74e109382a03a9e",
+      "receipt_id": "ae70c0cd6fd6a2dd326e8d85e3e6726d01b74f093040028f041acc8417445fa8",
+      "run_id": "q01",
+      "state": "timed_out",
+      "worktree": null
+    },
+    "runtime_evidence": {
+      "events": [
+        {
+          "kind": "session_started",
+          "sequence": 0
+        },
+        {
+          "kind": "turn_started",
+          "sequence": 1
+        }
+      ],
+      "executed_effort": null,
+      "executed_models": [],
+      "missing_evidence": [
+        "validation.not_run",
+        "objective.not_verified",
+        "effort.runtime_unknown",
+        "model.runtime_unknown",
+        "stream.truncated"
+      ],
+      "objective": "unknown",
+      "schema_version": 1,
+      "stream_complete": false,
+      "transport": {
+        "elapsed_ms": 5105,
+        "exit_code": 124,
+        "termination": "timed_out"
+      },
+      "transport_success": false,
+      "validation": "unknown"
+    },
+    "stderr_bytes": 824,
+    "stderr_sha256": "e5885710dbada90163d16e9889a3732dfc94615b0860637b579f87d9fe0a0d78",
+    "stdout_bytes": 101,
+    "stdout_sha256": "0ac1e27f8835df7999a5e7ab2e32628efc7c14445dda3f1b05762224d8fb4af6",
+    "transport": {
+      "elapsed_ms": 5105,
+      "exit_code": 124,
+      "termination": "timed_out"
+    },
+    "validation": "unknown"
+  },
+  "context_overhead": "unknown",
+  "human_acceptance": null,
+  "memory_bytes": 8589934592,
+  "model_calls_started": 0,
+  "qualification": "q01-timeout",
+  "schema_version": 1,
+  "scripted_usage_is_accounting": false,
+  "source_unchanged": true,
+  "swap_bytes": 0
+}

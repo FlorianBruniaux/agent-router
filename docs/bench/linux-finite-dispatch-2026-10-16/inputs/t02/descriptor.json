@@ -1,0 +1,30 @@
+{
+  "assignment_id": "t02-Lm-r1-H0",
+  "task_id": "t02",
+  "arm": "Lm",
+  "repetition": 1,
+  "attempt": 1,
+  "pair_id": "t02-Lm-r1",
+  "condition": "H0",
+  "model": "gpt-6-luna",
+  "effort": "medium",
+  "acceptance_sha256": "072e26ddcfb71bfd284cbced9acdd3dc3c04ae72960d48f6676f7bc339224563",
+  "status": "not_run",
+  "cwd": "/Users/florianbruniaux/Sites/perso/agent-router/docs/bench/luna-astra-router-e2e-2026-10-16/inputs/r2-v1/t02-Lm-r1-H0/candidate",
+  "dispatch_enabled": false,
+  "approved_budget_microcredits": null,
+  "fresh_session_required": true,
+  "ignore_global_instructions_required": true,
+  "packet_sha256": "ef8c836f6fe267b105e1aaf3973db84436dc1341ce07aceeb53d36659979664f",
+  "input": "Read statement.md and AGENTS.md. Follow HARNESS.md if present. Complete the task in the allowed output files.",
+  "live_transport_admission": "NOT_QUALIFIED_FOR_THIS_PACKET",
+  "qualification_only": true,
+  "model_calls_started": 0,
+  "runtime_dispatch_qualified": false,
+  "provider_mode": "authored_loopback_only",
+  "acceptance_origin": "sealed_r2_external_evaluator",
+  "allowed_outputs": [
+    "lib.rs"
+  ],
+  "controller_material_in_candidate": false
+}

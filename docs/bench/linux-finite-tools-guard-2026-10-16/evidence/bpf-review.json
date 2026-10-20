@@ -1,0 +1,9 @@
+{
+  "scope": "interpreted exact SYS_socket BPF source fragments, not kernel execution or whole filter equivalence",
+  "cases": 14850,
+  "mode0_matches_original": true,
+  "mode1_unix_and_ipv4_stream_predicate": true,
+  "mode2_socket_denied": true,
+  "old_sha256": "10d84b1466f133ce88a2e75f961bd0ffa32fe89b97a8c71b9b2d07c50ec191da",
+  "new_sha256": "71cc65477c1badc89a6f87487b5daf75798f63904241ad9d5c4637db8b1143c5"
+}

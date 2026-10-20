@@ -1,0 +1,94 @@
+{
+  "actual_workspace": "/task/q01-timeout-current/candidate",
+  "catalog": {
+    "path": "/task/q01-timeout-current/runtime/host-state-4755-1792167733443826166-1/local-model-catalog.json",
+    "sha256": "ecee8919dc8986fdc79a1a9e92bb7303f32dbcafae0c44efb7eae2e633be61e3"
+  },
+  "client_review_digest": "4536788f97ce2ae6fac9156712095303eafd4a8e4c978407907e0c45b031fd57",
+  "copies": [
+    {
+      "path": "/task/tmp/agent-router-program-4i6emq/program",
+      "sha256": "0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-sRtzCt/program",
+      "sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-JNWr7q/program",
+      "sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-B4FP5N/program",
+      "sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-K3tg8S/program",
+      "sha256": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e"
+    },
+    {
+      "path": "/task/q01-timeout-current/runtime/host-state-4755-1792167733443826166-1/config.toml",
+      "sha256": "dd3d3f66099003320fca81b0ea559a3f7208c97df5dd4722de0aebb23de76e4e"
+    }
+  ],
+  "manifest": {
+    "broker_endpoint": "tcp://127.0.0.1:32845",
+    "broker_instance_sha256": "4c7a8cb174a169e49a0f10cd2b66b5e6e2542b132d12e2f34e708f2513fc438e",
+    "client": {
+      "path": "/task/programs/client",
+      "sha256": "0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869"
+    },
+    "configuration": {
+      "path": "/task/q01-timeout-current/runtime/host-state-4755-1792167733443826166-1/config.toml",
+      "sha256": "dd3d3f66099003320fca81b0ea559a3f7208c97df5dd4722de0aebb23de76e4e"
+    },
+    "helper": {
+      "path": "/task/programs/helper",
+      "sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4"
+    },
+    "host_snapshot_id": "q01-linux-local",
+    "native": {
+      "path": "/task/programs/native",
+      "sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+    },
+    "native_version": "0.159.2-linux-arm64-musl",
+    "private_state": "/task/q01-timeout-current/runtime/host-state-4755-1792167733443826166-1",
+    "profile": {
+      "path": "/task/programs/profile",
+      "sha256": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e"
+    },
+    "schema_version": 1,
+    "task_id": "q01",
+    "wrapper": {
+      "path": "/task/programs/guard",
+      "sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8"
+    }
+  },
+  "namespace": {
+    "path": "/task/tmp/agent-router-program-KmpQbK/program",
+    "sha256": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6"
+  },
+  "network_namespace": [
+    4,
+    4026532587
+  ],
+  "network_reservation": "exclusive-wildcard-v4-no-reuse",
+  "original_files": {
+    "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+  },
+  "original_source": "/task/q01-timeout-current/candidate",
+  "prepared_digest": "c37040f3c006e4dbb9df614d6952db8b14864be8b0de9fc80e76a895d7301714",
+  "resource_arguments": [
+    "--cpu-seconds",
+    "300",
+    "--address-space-bytes",
+    "8589934592",
+    "--max-open-files",
+    "256",
+    "--max-processes",
+    "256",
+    "--max-file-bytes",
+    "16777216"
+  ],
+  "stdin_sha256": "e1963c13391639ea69f0d0c8e3aa4f6c4cdf617e6c3d2b2a8ee46f0420ee7045"
+}

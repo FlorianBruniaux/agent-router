@@ -1,0 +1,8 @@
+{
+  "auth_header_present": false,
+  "authored_local_requests": 1,
+  "effort": "medium",
+  "model": "gpt-6-luna",
+  "model_calls_started": 0,
+  "request_sha256": "4abc6d1f416e43700036ed46e6d5802d699359f5d02ff97ca89a50c76ac1b418"
+}

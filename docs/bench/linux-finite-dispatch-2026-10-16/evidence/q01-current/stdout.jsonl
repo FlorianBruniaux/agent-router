@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a14584-3aee-7c23-b72d-7c0bcdb83edb"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"findings\":[{\"block\":\"permission_gate\",\"severity\":\"high\",\"explanation\":\"Permission::Unknown passes may_infer even though only Supported may authorize inference.\"},{\"block\":\"trusted_skill\",\"severity\":\"high\",\"explanation\":\"With trusted=false and positive relevance, utility still increases the score because trusted is ignored.\"}]}"}}
+{"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}

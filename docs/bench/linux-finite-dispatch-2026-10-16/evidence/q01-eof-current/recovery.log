@@ -1,0 +1,6 @@
+
+running 1 test
+test finite_client::linux_backend::e2e_tests::q01_parent_eof_recovery_retains_unknown_private_cleanup ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 211 filtered out; finished in 0.00s
+

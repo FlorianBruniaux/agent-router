@@ -1,0 +1,16 @@
+{
+  "controller_pid": 5276,
+  "controller_signal": "SIGTERM",
+  "positive_request_observed": {
+    "auth_header_present": false,
+    "authored_local_requests": 1,
+    "effort": "medium",
+    "model": "gpt-6-luna",
+    "model_calls_started": 0,
+    "request_sha256": "9ef3095e96ad27fdbbf16ada84c42f57010add27c33b7afb62a808cc0bf7f7cc"
+  },
+  "namespace_lease_marker": "namespace-clean",
+  "namespace_required": true,
+  "host_state_pending": true,
+  "model_calls_started": 0
+}

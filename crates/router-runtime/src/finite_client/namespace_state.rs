@@ -4,8 +4,8 @@ use super::*;
 /// Held by HostState through its exact, locked namespace cleanup boundary.
 /// Neither the bundle nor any of its owners can be reconstructed from JSON.
 pub(crate) struct FiniteClientResources {
-    reviewed: FiniteClientReview,
-    startup: FiniteCodexStartup,
+    pub(super) reviewed: FiniteClientReview,
+    pub(super) startup: FiniteCodexStartup,
 }
 impl FiniteClientResources {
     pub(crate) fn check(&self, home: &Path) -> Result<()> {
@@ -24,6 +24,9 @@ impl FiniteClientResources {
             .ok_or(RuntimeError::Integrity("missing finite client copies"))?;
         for copy in assets.copies {
             copy.cleanup()?;
+        }
+        if let Some(namespace) = self.reviewed.owned_namespace.take() {
+            namespace.copy.cleanup()?;
         }
         // On success the broker and startup pins outlive disposal of every copy.
         Ok(())

@@ -31,8 +31,8 @@ pub struct PendingFiniteClientRun {
 /// }
 /// ```
 pub struct ApprovedFiniteClientRun {
-    approved: ApprovedRun,
-    client: ApprovedFiniteClient,
+    pub(super) approved: ApprovedRun,
+    pub(super) client: ApprovedFiniteClient,
 }
 impl PendingFiniteClientRun {
     pub fn summary(&self) -> &RunSummary {
@@ -58,13 +58,25 @@ pub(crate) fn bind_runtime_definition(base: &str, client: Option<&str>) -> Resul
     }
 }
 impl Runtime {
-    fn check_finite_review(
+    pub(super) fn check_finite_review(
         &self,
         id: &str,
         context: &ValidatedPhaseContext,
         request: &ExecutionRequest,
         client: &FiniteClientReview,
     ) -> Result<()> {
+        if request.tools != router_types::ToolSelection::Disabled
+            || request.agent.is_some()
+            || !request.skills.is_empty()
+            || request.required_capabilities.iter().any(|capability| {
+                !matches!(capability, Capability::Network | Capability::WorkspaceWrite)
+            })
+        {
+            return Err(RuntimeError::Sandbox);
+        }
+        if client.owned_namespace.is_some() && client.broker.isolation.is_none() {
+            return Err(RuntimeError::Sandbox);
+        }
         let run = &client.run;
         let snapshot = self.snapshot(context)?;
         let auth = execution_authorization_digest_with_capability_acceptance(
@@ -106,6 +118,21 @@ impl Runtime {
             || !request.required_capabilities.contains(&Capability::Network)
         {
             return Err(RuntimeError::Integrity("finite client runtime request"));
+        }
+        if run.sandbox == router_types::ExecutionSandbox::WorkspaceWrite {
+            let view = client
+                .owned_workspace
+                .as_ref()
+                .ok_or(RuntimeError::Sandbox)?;
+            // Creation is preparation-only while the tool boundary is unqualified.
+            view.existing_preimage()?;
+            view.check_for_review(&self.store.root, id, run)?;
+            // This entrance produces a private patch artifact. It cannot mint
+            // source publication authority by treating its mutable view as the
+            // original repository or by converting to a generic PendingRun.
+            require_private_artifact_scope(&context.request().task.allowed_mutations)?;
+        } else if client.owned_workspace.is_some() {
+            return Err(RuntimeError::Sandbox);
         }
         prepared_digest(run)?;
         let state = client.owned_state.as_ref().ok_or(RuntimeError::Sandbox)?;
@@ -211,5 +238,34 @@ impl Runtime {
             verifier,
             crate::now()?,
         )
+    }
+}
+
+fn require_private_artifact_scope(mutations: &BTreeSet<router_types::Mutation>) -> Result<()> {
+    if mutations.contains(&router_types::Mutation::Integrate) {
+        return Err(RuntimeError::Invalid(
+            "finite writes are private artifacts only",
+        ));
+    }
+    Ok(())
+}
+#[cfg(test)]
+mod private_artifact_tests {
+    use super::*;
+    #[test]
+    fn finite_write_approval_cannot_include_source_integration_authority() {
+        let mut mutations = [
+            router_types::Mutation::Network,
+            router_types::Mutation::WorkspaceWrite,
+        ]
+        .into();
+        require_private_artifact_scope(&mutations).unwrap();
+        mutations.insert(router_types::Mutation::Integrate);
+        assert!(matches!(
+            require_private_artifact_scope(&mutations),
+            Err(RuntimeError::Invalid(
+                "finite writes are private artifacts only"
+            ))
+        ));
     }
 }

@@ -79,6 +79,13 @@ impl Fixture {
         ] {
             assert!(
                 Command::new("/usr/bin/git")
+                    // Synthetic repositories must not inherit user hooks or
+                    // asynchronous Git note writers during object-count checks.
+                    .args(["-c", "core.hooksPath=/dev/null"])
+                    .env_clear()
+                    .env("PATH", "/usr/bin:/bin")
+                    .env("GIT_CONFIG_NOSYSTEM", "1")
+                    .env("GIT_CONFIG_GLOBAL", "/dev/null")
                     .arg("-C")
                     .arg(&root)
                     .args(args)
@@ -3978,6 +3985,11 @@ async fn verified_patch(fixture: &Fixture, runtime: &Runtime, script: &'static s
 }
 fn git_output(root: &Path, args: &[&str]) -> String {
     let out = Command::new("/usr/bin/git")
+        .args(["-c", "core.hooksPath=/dev/null"])
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .arg("-C")
         .arg(root)
         .args(args)

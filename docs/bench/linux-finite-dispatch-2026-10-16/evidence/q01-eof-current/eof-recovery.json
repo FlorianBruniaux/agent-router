@@ -1,0 +1,15 @@
+{
+  "admission": {
+    "granted": 1,
+    "max_tickets": 4096,
+    "policy_sha256": "34d81d4ee931e8a28298e0bf8338a93a8bef06ebbd3cc571efe2599745fe1276",
+    "released": 0,
+    "schema_version": 1,
+    "waiting": 0
+  },
+  "attempts": [],
+  "case": "parent_eof",
+  "cleanup": "unknown",
+  "model_calls_started": 0,
+  "private_state_retained": true
+}

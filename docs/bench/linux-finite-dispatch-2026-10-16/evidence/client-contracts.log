@@ -1,0 +1,23 @@
+   Compiling router-runtime v0.0.1 (/work/source-finite-20261016/crates/router-runtime)
+    Finished `release` profile [optimized] target(s) in 2.54s
+     Running unittests src/bin/finite-codex-client.rs (/work/source/target/release/deps/finite_codex_client-aaee6985a11890ec)
+
+running 15 tests
+test replacement::tests::absent_or_group_writable_file_is_refused ... ok
+test replacement::tests::changed_preimage_is_preserved_without_truncation ... ok
+test replacement::tests::duplicate_keys_and_response_path_injection_are_refused ... ok
+test replacement::tests::event_count_bound_still_allows_inert_reasoning_items ... ok
+test replacement::tests::fifo_is_refused_without_waiting_for_a_writer ... ok
+test replacement::tests::incomplete_error_tool_and_post_terminal_events_never_write ... ok
+test replacement::tests::longest_approved_flat_name_and_nonempty_unicode_contents_work ... ok
+test replacement::tests::replaces_contents_of_only_the_existing_inode_and_truncates_its_tail ... ok
+test replacement::tests::response_and_preimage_byte_bounds_are_checked_before_writing ... ok
+test replacement::tests::symlink_and_hardlink_targets_are_never_modified ... ok
+test replacement::tests::unsafe_names_and_noncanonical_workspace_are_refused ... ok
+test tests::bounded_context_accepts_the_reviewed_fields_without_reading_any_file ... ok
+test tests::replacement_context_refuses_escapes_and_unbounded_output_before_native_access ... ok
+test tests::unsafe_context_is_refused_before_native_access ... ok
+test tests::version_probe_refuses_unreviewed_annotations_and_whitespace ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

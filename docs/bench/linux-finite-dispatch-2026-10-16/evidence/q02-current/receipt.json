@@ -1,0 +1,166 @@
+{
+  "admission": {
+    "granted": 0,
+    "max_tickets": 4096,
+    "policy_sha256": "e6c69584f2d785630d71f15a5e437cec00b7e3b1bdaebc7af73f4c91c4da271f",
+    "released": 1,
+    "schema_version": 1,
+    "waiting": 0
+  },
+  "attempts": [
+    {
+      "authorization_id": "88ee63c7c06f4b8e634254609a586d7a28fe61e92385d5c9f4f92dd243c373c6",
+      "candidate_id": "primary",
+      "cleanup": "namespace_terminated",
+      "context_hash": "36f436f31df8c431127f94d532a9f2203b794fb4eff140d5b24ff4be40e3f982",
+      "decision_origin": "deterministic",
+      "definition_hash": "764e7481681a15ef617365b38c10ad6db04e8647060c27f294acc00e205e8142",
+      "effort": "medium",
+      "failure": null,
+      "finished_event_hash": "c085c1c6ff6e34a33adbf1fab673382bcfcb3f0d7aa9cb82732ae139b053c1be",
+      "identity": {
+        "attempt": 1,
+        "run_id": "q02"
+      },
+      "model": "gpt-6-luna",
+      "observed_cost_microusd": null,
+      "observed_tokens": null,
+      "pool_hash": "68092dabbd51b1bfc764040878bbdbf2d73b005edd633aeb29bb533afdc9d2ce",
+      "sandbox": "workspace_write",
+      "schema_version": 1,
+      "source_state": "b7ade4c62332898a55d8b51f5240f248d62818ac",
+      "started_event_hash": "a1b53b79ae8a6222bc6552baff593a269b85d99e606dcdfb5be58f7985d936d1",
+      "state": "succeeded_transport",
+      "task_execution_sha256": "e867f9eb67497efa35bfa38dde01fb530a5615d3f4e052ecd418736aa7c47f13",
+      "transition_event_hash": "8cd2ce04919bab284b13c5550baa5ad3f519b5346222ab224ccfd7e235171a08",
+      "transport": {
+        "elapsed_ms": 957,
+        "exit_code": 0,
+        "termination": "exited"
+      },
+      "workflow": null
+    }
+  ],
+  "authored_local_requests": 1,
+  "availability": "operator_simulated_local_fixture",
+  "cleanup": "namespace_terminated",
+  "completion": {
+    "memory_enforcement": "enforced",
+    "objective": "unknown",
+    "output_artifacts": {
+      "attempt": 1,
+      "created_at_unix_seconds": 1792167715,
+      "expires_at_unix_seconds": 1792171315,
+      "run_id": "q02",
+      "schema_version": 1,
+      "state": "retained",
+      "stderr": {
+        "bytes": 824,
+        "path": "/task/q02-current/runtime/outputs/b76bf18b2da3950d6d74d3fcf104cf7493c8c2f20176b9c26efb8c7d122b0cd2-1-stderr.bin",
+        "sha256": "92a2aae34d67d45aa5ace43c84b88af018f36dd08b35106ca2cb69833f70a40f"
+      },
+      "stdout": {
+        "bytes": 840,
+        "path": "/task/q02-current/runtime/outputs/b76bf18b2da3950d6d74d3fcf104cf7493c8c2f20176b9c26efb8c7d122b0cd2-1-stdout.bin",
+        "sha256": "f2378f004c9b2a7167f9347605488d6207190d60f53b4484b7d33b3a4a86a0b8"
+      },
+      "truncated": false
+    },
+    "run": {
+      "approval_digest": "a07e188a0c341cf38bff495bcf93ea2ea83230cc89fc58f388fa1e84b51ff108",
+      "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "attempts": 1,
+      "definition_hash": "764e7481681a15ef617365b38c10ad6db04e8647060c27f294acc00e205e8142",
+      "failure": null,
+      "node_id": "execute",
+      "output_retention": {
+        "mode": "private_artifacts",
+        "retention_seconds": 3600
+      },
+      "plan_id": "1685da92087275d22dbee8b08a3175b30ad5a7c7fa61e003c9d8459de0062d88",
+      "receipt_id": "88ee63c7c06f4b8e634254609a586d7a28fe61e92385d5c9f4f92dd243c373c6",
+      "run_id": "q02",
+      "state": "verifying",
+      "worktree": "/task/q02-current/finite-workspaces-1e79659c2cb96fed3940b47cbce1d97e7e2801b3d2185b731cdbb50392ce3a44/worktrees/q02"
+    },
+    "runtime_evidence": {
+      "events": [
+        {
+          "kind": "session_started",
+          "sequence": 0
+        },
+        {
+          "kind": "turn_started",
+          "sequence": 1
+        },
+        {
+          "kind": "assistant_message",
+          "sequence": 2
+        },
+        {
+          "kind": "turn_completed",
+          "sequence": 3
+        }
+      ],
+      "executed_effort": null,
+      "executed_models": [],
+      "host_usage": {
+        "cache_write_input_tokens": {
+          "provenance": "host_reported",
+          "tokens": 0
+        },
+        "cached_input_tokens": {
+          "provenance": "host_reported",
+          "tokens": 0
+        },
+        "input_tokens": {
+          "provenance": "host_reported",
+          "tokens": 1000
+        },
+        "output_tokens": {
+          "provenance": "host_reported",
+          "tokens": 100
+        },
+        "reasoning_output_tokens": {
+          "provenance": "host_reported",
+          "tokens": 0
+        }
+      },
+      "missing_evidence": [
+        "validation.not_run",
+        "objective.not_verified",
+        "effort.runtime_unknown",
+        "model.runtime_unknown"
+      ],
+      "objective": "unknown",
+      "schema_version": 1,
+      "stream_complete": true,
+      "transport": {
+        "elapsed_ms": 957,
+        "exit_code": 0,
+        "termination": "exited"
+      },
+      "transport_success": true,
+      "validation": "unknown"
+    },
+    "stderr_bytes": 824,
+    "stderr_sha256": "92a2aae34d67d45aa5ace43c84b88af018f36dd08b35106ca2cb69833f70a40f",
+    "stdout_bytes": 840,
+    "stdout_sha256": "f2378f004c9b2a7167f9347605488d6207190d60f53b4484b7d33b3a4a86a0b8",
+    "transport": {
+      "elapsed_ms": 957,
+      "exit_code": 0,
+      "termination": "exited"
+    },
+    "validation": "unknown"
+  },
+  "context_overhead": "unknown",
+  "human_acceptance": null,
+  "memory_bytes": 8589934592,
+  "model_calls_started": 0,
+  "qualification": "q02-bounded-replacement",
+  "schema_version": 1,
+  "scripted_usage_is_accounting": false,
+  "source_unchanged": true,
+  "swap_bytes": 0
+}

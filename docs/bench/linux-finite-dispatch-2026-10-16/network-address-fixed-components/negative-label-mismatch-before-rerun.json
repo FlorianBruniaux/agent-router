@@ -1,0 +1,7 @@
+{
+  "chunk_id": "c18547",
+  "wall_time_seconds": 0.148841417,
+  "exit_code": 1,
+  "original_token_count": 160,
+  "output": "Traceback (most recent call last):\n  File \"/diag/witness.py\", line 21, in <module>\n    assert result.returncode==125 and b'loopback-only' in result.stderr and not sentinel.exists(),report\n                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'scope': 'corrected guard and exclusive reservation component, not full Runtime/native replay', 'guard_sha256': '7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8', 'model_calls_started': 0, 'external_network_used': False, 'mode': 'extra-interface', 'exit_code': 125, 'stderr': 'linux-isolation:no-active-interface:0\\n', 'child_executed': False}\n"
+}

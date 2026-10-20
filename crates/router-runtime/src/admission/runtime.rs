@@ -57,7 +57,12 @@ impl SharedAdmission {
                 return Err(BudgetError::Policy.into());
             }
         }
-        self.validate_request(&pending.context, &pending.request, &pending.node.owner)
+        self.validate_request_bound(
+            &pending.context,
+            &pending.request,
+            &pending.node.owner,
+            pending.finite_client_binding.as_deref(),
+        )
     }
     pub fn validate_request(
         &self,
@@ -65,11 +70,21 @@ impl SharedAdmission {
         request: &ExecutionRequest,
         owner: &str,
     ) -> Result<(String, String)> {
-        let provider = context
-            .asset_requirements(&request.candidate_id)
-            .ok_or(RuntimeError::Invalid("admission unknown provider"))?
-            .provider
-            .clone();
+        self.validate_request_bound(context, request, owner, None)
+    }
+    pub fn validate_request_bound(
+        &self,
+        context: &router_policy::ValidatedPhaseContext,
+        request: &ExecutionRequest,
+        owner: &str,
+        finite_binding: Option<&str>,
+    ) -> Result<(String, String)> {
+        let provider = provider_identity(
+            context
+                .asset_requirements(&request.candidate_id)
+                .map(|a| a.provider.as_str()),
+            finite_binding,
+        )?;
         if !self.registry.policy().providers.contains_key(&provider) {
             return Err(RuntimeError::Invalid("admission unknown provider"));
         }
@@ -466,4 +481,42 @@ mod tests {
         ));
         assert!(matches!(expired.retry(&busy), Err(RuntimeError::Limit)));
     }
+}
+
+#[cfg(test)]
+mod finite_provider_tests {
+    use super::*;
+    #[test]
+    fn local_fixture_provider_needs_a_finite_binding_and_cannot_mask_a_remote_provider() {
+        let binding = "a".repeat(64);
+        assert!(provider_identity(None, None).is_err());
+        assert!(provider_identity(None, Some("receipt-is-not-a-binding")).is_err());
+        assert_eq!(
+            provider_identity(None, Some(&binding)).unwrap(),
+            "local_fixture"
+        );
+        assert_eq!(
+            provider_identity(Some("local_fixture"), Some(&binding)).unwrap(),
+            "local_fixture"
+        );
+        assert!(provider_identity(Some("remote"), Some(&binding)).is_err());
+        assert_eq!(provider_identity(Some("remote"), None).unwrap(), "remote");
+    }
+}
+
+// The finite producer emits only credential-free local_fixture configuration.
+// Only its opaque, combined review binding selects this branch. JSON receipts,
+// generic v2 runs and v3 remote-provider declarations cannot gain this identity.
+fn provider_identity(asset_provider: Option<&str>, finite_binding: Option<&str>) -> Result<String> {
+    if let Some(binding) = finite_binding {
+        if !router_adapter_api::is_digest(binding)
+            || asset_provider.is_some_and(|provider| provider != "local_fixture")
+        {
+            return Err(RuntimeError::Invalid("finite local provider binding"));
+        }
+        return Ok("local_fixture".into());
+    }
+    asset_provider
+        .map(str::to_owned)
+        .ok_or(RuntimeError::Invalid("admission unknown provider"))
 }

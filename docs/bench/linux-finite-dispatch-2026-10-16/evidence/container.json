@@ -1,0 +1,25 @@
+{
+  "image_id": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+  "user": "65534:65534",
+  "Memory": 8589934592,
+  "MemorySwap": 8589934592,
+  "NetworkMode": "none",
+  "ReadonlyRootfs": true,
+  "CapDrop": [
+    "ALL"
+  ],
+  "SecurityOpt": [
+    "no-new-privileges",
+    "seccomp=unconfined"
+  ],
+  "PidsLimit": 256,
+  "NanoCpus": 1000000000,
+  "Tmpfs": {
+    "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+    "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+  },
+  "Binds": [
+    "ar-pr176-native-build-20261015:/work"
+  ],
+  "Privileged": false
+}

@@ -1,0 +1,61 @@
+{
+  "scope": "owner rechecks retained evidence bytes, not independent OS replay",
+  "cases": [
+    {
+      "case": "q01-current",
+      "receipt_sha256": "732fe9d55883c3ce9a5503c701bae1fc3744fdedd8653a23537bd3d443cf112c",
+      "stdout_sha256": "607a41ca61f2a69a9438552dc859e7c77f9ee57d1d9a9e5a49c9e06178bda856",
+      "transport": {
+        "elapsed_ms": 1045,
+        "exit_code": 0,
+        "termination": "exited"
+      },
+      "consistency": "PASS",
+      "cleanup": "namespace_terminated",
+      "admission_released": true,
+      "model_calls_started": 0
+    },
+    {
+      "case": "q02-current",
+      "receipt_sha256": "35688db9260a92f9be79e4e21b9e15a9db5db0cef210dc0b84a03aac69693257",
+      "stdout_sha256": "f2378f004c9b2a7167f9347605488d6207190d60f53b4484b7d33b3a4a86a0b8",
+      "transport": {
+        "elapsed_ms": 957,
+        "exit_code": 0,
+        "termination": "exited"
+      },
+      "consistency": "PASS",
+      "cleanup": "namespace_terminated",
+      "admission_released": true,
+      "model_calls_started": 0
+    },
+    {
+      "case": "q01-timeout-current",
+      "receipt_sha256": "f9628b6b87aaf571bc763a911746d12e84d7b21abc3eebc6c76569127320edbd",
+      "stdout_sha256": "0ac1e27f8835df7999a5e7ab2e32628efc7c14445dda3f1b05762224d8fb4af6",
+      "transport": {
+        "elapsed_ms": 5105,
+        "exit_code": 124,
+        "termination": "timed_out"
+      },
+      "consistency": "PASS",
+      "cleanup": "namespace_terminated",
+      "admission_released": true,
+      "model_calls_started": 0
+    },
+    {
+      "case": "q01-cancel-current",
+      "receipt_sha256": "059ce6d168a709dc61196c1739b07d4033af7c6ddf5d1f404f4a022997b37dee",
+      "stdout_sha256": "a24b150047c7c0325fc995c81c1ae00a254c7b5888c4a76cea5078b1fa3a27e3",
+      "transport": {
+        "elapsed_ms": 736,
+        "exit_code": 125,
+        "termination": "cancelled"
+      },
+      "consistency": "PASS",
+      "cleanup": "namespace_terminated",
+      "admission_released": true,
+      "model_calls_started": 0
+    }
+  ]
+}

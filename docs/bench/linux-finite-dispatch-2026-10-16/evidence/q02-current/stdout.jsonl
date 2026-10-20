@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"01a14585-2263-7ed0-8dcd-fd1db43c51cc"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"replacement\":\"pub fn score(quality: i64, costs: &[u64], latencies: &[u64], skills: &[u64]) -> Result<i64, &'static str> {\\n    if [costs.len(), latencies.len(), skills.len()].iter().any(|n| *n > 64) { return Err(\\\"work_limit\\\"); }\\n    let sum = |values: &[u64]| values.iter().map(|v| i128::from(*v)).sum::<i128>();\\n    let value = i128::from(quality) - sum(costs) / 4 - sum(latencies) / 10 + sum(skills) / 20;\\n    i64::try_from(value).map_err(|_| \\\"score_out_of_range\\\")\\n}\\n\"}"}}
+{"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":0,"cache_write_input_tokens":0,"output_tokens":100,"reasoning_output_tokens":0}}

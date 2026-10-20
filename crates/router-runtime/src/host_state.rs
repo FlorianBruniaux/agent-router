@@ -183,6 +183,10 @@ impl HostState {
         Ok(())
     }
 
+    pub(crate) fn finite_resources(&self) -> Result<&crate::finite_client::FiniteClientResources> {
+        self.finite_client.as_deref().ok_or(RuntimeError::Sandbox)
+    }
+
     pub(crate) fn check_owned_resources(&self) -> Result<()> {
         self.check_directories()?;
         if let Some(resources) = &self.finite_client {
@@ -243,6 +247,32 @@ impl HostState {
             .proof()?;
         self.cleanup_with_proof(&proof)
     }
+    /// Only a trusted backend may call this after a read-only bundle probe.
+    /// Its writable paths must have used a separately owned sacrificial view.
+    /// Keep the opaque namespace lock until that view is disposed and the
+    /// preparation record committed. Group or pending evidence cannot rearm.
+    pub(crate) fn finish_read_only_probe(
+        &mut self,
+        proof: &crate::leases::CleanupProof,
+    ) -> Result<()> {
+        if !self.possibly_running
+            || !self.pid_namespace
+            || proof.evidence != router_types::ProcessCleanupEvidence::NamespaceTerminated
+            || !self
+                .writer_lease
+                .as_ref()
+                .ok_or(RuntimeError::CleanupUnknown)?
+                .matches(proof)?
+        {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        self.check_owned_resources()?;
+        self.possibly_running = false;
+        self.writer_lease = None;
+        self.pid_namespace = false;
+        Ok(())
+    }
+
     pub(crate) fn cleanup_with_proof(self, proof: &crate::leases::CleanupProof) -> Result<()> {
         if !self.possibly_running
             || !proof.excludes_writers()

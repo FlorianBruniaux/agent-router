@@ -1,0 +1,94 @@
+{
+  "actual_workspace": "/task/q01-cancel-current/candidate",
+  "catalog": {
+    "path": "/task/q01-cancel-current/runtime/host-state-5016-1792167803566723963-1/local-model-catalog.json",
+    "sha256": "ecee8919dc8986fdc79a1a9e92bb7303f32dbcafae0c44efb7eae2e633be61e3"
+  },
+  "client_review_digest": "69797a8754a5ef6cd9b2565321c2db9fcbec3377a0d6a085d930c1d4b4a55b33",
+  "copies": [
+    {
+      "path": "/task/tmp/agent-router-program-BU9IBr/program",
+      "sha256": "0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-K5sruj/program",
+      "sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-7aLB21/program",
+      "sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-C0UDKe/program",
+      "sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8"
+    },
+    {
+      "path": "/task/tmp/agent-router-program-H8uhMw/program",
+      "sha256": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e"
+    },
+    {
+      "path": "/task/q01-cancel-current/runtime/host-state-5016-1792167803566723963-1/config.toml",
+      "sha256": "4605e8410d97d238454a53a5bb573730315ab124b23fa54d38253b2dbdec5a43"
+    }
+  ],
+  "manifest": {
+    "broker_endpoint": "tcp://127.0.0.1:40181",
+    "broker_instance_sha256": "9db693a03678b96673cf802907700342430af6f54ae5b48927ce3b5d54f00d50",
+    "client": {
+      "path": "/task/programs/client",
+      "sha256": "0afc4503861273eec9b79f9d7e5f30581c5451dedcb2362f5e7920743d448869"
+    },
+    "configuration": {
+      "path": "/task/q01-cancel-current/runtime/host-state-5016-1792167803566723963-1/config.toml",
+      "sha256": "4605e8410d97d238454a53a5bb573730315ab124b23fa54d38253b2dbdec5a43"
+    },
+    "helper": {
+      "path": "/task/programs/helper",
+      "sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4"
+    },
+    "host_snapshot_id": "q01-linux-local",
+    "native": {
+      "path": "/task/programs/native",
+      "sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+    },
+    "native_version": "0.159.2-linux-arm64-musl",
+    "private_state": "/task/q01-cancel-current/runtime/host-state-5016-1792167803566723963-1",
+    "profile": {
+      "path": "/task/programs/profile",
+      "sha256": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e"
+    },
+    "schema_version": 1,
+    "task_id": "q01",
+    "wrapper": {
+      "path": "/task/programs/guard",
+      "sha256": "7987e61aa76b51f764febe5c6af0c728c8aed18f6c7675db6b3759c953aefbb8"
+    }
+  },
+  "namespace": {
+    "path": "/task/tmp/agent-router-program-1hdJne/program",
+    "sha256": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6"
+  },
+  "network_namespace": [
+    4,
+    4026532587
+  ],
+  "network_reservation": "exclusive-wildcard-v4-no-reuse",
+  "original_files": {
+    "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+  },
+  "original_source": "/task/q01-cancel-current/candidate",
+  "prepared_digest": "38a70db3ce564d216cd19ee927d36d206f245d0363b01761bd26d6f53adb0e39",
+  "resource_arguments": [
+    "--cpu-seconds",
+    "300",
+    "--address-space-bytes",
+    "8589934592",
+    "--max-open-files",
+    "256",
+    "--max-processes",
+    "256",
+    "--max-file-bytes",
+    "16777216"
+  ],
+  "stdin_sha256": "e1963c13391639ea69f0d0c8e3aa4f6c4cdf617e6c3d2b2a8ee46f0420ee7045"
+}

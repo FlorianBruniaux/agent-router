@@ -13,11 +13,13 @@ mod diagnostics;
 mod error;
 mod escalation;
 mod finite_client;
+#[doc(hidden)]
+pub mod finite_tools;
 mod generated;
 pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
-    FiniteClientReview, FiniteClientValidation, FiniteCodexState, OwnedBroker,
-    PendingFiniteClientRun,
+    FiniteClientReview, FiniteClientValidation, FiniteClientWorkspace, FiniteCodexState,
+    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, OwnedBroker, PendingFiniteClientRun,
 };
 mod host_state;
 mod leases;
@@ -660,7 +662,7 @@ impl Runtime {
             None,
         )?;
         if let Some(shared) = &self.admission {
-            shared.validate_request(context, &request, &node.owner)?;
+            shared.validate_request_bound(context, &request, &node.owner, finite_client_binding)?;
         }
         let definition_hash = self.definition_hash(
             &request,
@@ -1046,6 +1048,20 @@ impl Runtime {
         if approved.pending.finite_client_binding.is_some() {
             return Err(RuntimeError::Sandbox);
         }
+        // Keep concurrent workflow futures bounded on the caller's stack.
+        Box::pin(self.execute_admitted(approved, adapter, supervisor, cancel, authority, None))
+            .await
+    }
+    #[allow(clippy::too_many_arguments)]
+    async fn execute_admitted(
+        &self,
+        approved: ApprovedRun,
+        adapter: &dyn HarnessAdapter,
+        supervisor: &dyn SandboxSupervisor,
+        cancel: Cancellation,
+        authority: Option<&dyn ActivationAuthority>,
+        finite: Option<&finite_client::LinuxFiniteSupervisor>,
+    ) -> Result<RunCompletion> {
         if let Some(shared) = &self.admission {
             if !supervisor.parent_lifetime_enforced() {
                 return Err(RuntimeError::Sandbox);
@@ -1056,8 +1072,10 @@ impl Runtime {
             let ticket = shared.start(&self.store, &approved.pending, &self.limits)?;
             let result = match shared.wait(&self.store, &ticket, &cancel).await {
                 Ok(()) => {
-                    self.execute_decision_inner(approved, adapter, supervisor, cancel, authority)
-                        .await
+                    self.execute_decision_inner(
+                        approved, adapter, supervisor, cancel, authority, finite,
+                    )
+                    .await
                 }
                 Err(RuntimeError::Cancelled) => {
                     match self.store.transition_queued(
@@ -1087,7 +1105,7 @@ impl Runtime {
             let standalone = approved.pending.run.workflow.is_none();
             let run_id = approved.pending.run.run_id.clone();
             let result = self
-                .execute_decision_inner(approved, adapter, supervisor, cancel, authority)
+                .execute_decision_inner(approved, adapter, supervisor, cancel, authority, finite)
                 .await;
             if standalone {
                 self.forget_plan_slot(&run_id);
@@ -1111,6 +1129,7 @@ impl Runtime {
             }
         }
     }
+    #[allow(clippy::too_many_arguments)]
     async fn execute_decision_inner(
         &self,
         approved: ApprovedRun,
@@ -1118,6 +1137,7 @@ impl Runtime {
         supervisor: &dyn SandboxSupervisor,
         cancel: Cancellation,
         authority: Option<&dyn ActivationAuthority>,
+        finite: Option<&finite_client::LinuxFiniteSupervisor>,
     ) -> Result<RunCompletion> {
         // Routing proof is not current catalog execution authority. Keep all
         // legacy execution entrances closed until a combined dispatch guard is
@@ -1173,7 +1193,7 @@ impl Runtime {
                 authority,
                 now()?,
             )?);
-            self.prepare(&pending, adapter, supervisor, &cancel, &preparation)
+            self.prepare(&pending, adapter, supervisor, &cancel, &preparation, finite)
                 .await
         };
         tokio::pin!(preparing);
@@ -1315,7 +1335,13 @@ impl Runtime {
                 return Err(error);
             }
         };
-        let validate_capabilities = || self.snapshot(&pending.context).map(|_| ());
+        let validate_capabilities = || {
+            self.snapshot(&pending.context)?;
+            if let Some(finite) = finite {
+                finite.validate_dispatch()?;
+            }
+            Ok(())
+        };
         let process = process::capture_guarded(
             command,
             run.stdin.as_bytes().to_vec(),
@@ -1600,6 +1626,7 @@ impl Runtime {
             output_artifacts,
         })
     }
+    #[allow(clippy::too_many_arguments)]
     async fn prepare(
         &self,
         pending: &PendingRun,
@@ -1607,6 +1634,7 @@ impl Runtime {
         supervisor: &dyn SandboxSupervisor,
         cancel: &Cancellation,
         preparation: &store::Preparation<'_>,
+        finite: Option<&finite_client::LinuxFiniteSupervisor>,
     ) -> Result<(PreparedRun, tokio::process::Command, Option<HostState>)> {
         if !supervisor.resource_limits_enforced() {
             return Err(RuntimeError::Sandbox);
@@ -1650,7 +1678,7 @@ impl Runtime {
             Some(&auth),
         )?;
         let initial = adapter.prepare(&validated)?;
-        let host_state = supervisor.create_host_state(&self.store.root, &initial)?;
+        let mut host_state = supervisor.create_host_state(&self.store.root, &initial)?;
         pending
             .router
             .validate_execution_assets(
@@ -1660,6 +1688,17 @@ impl Runtime {
                 now()?,
             )
             .map_err(|_| RuntimeError::Route)?;
+        if let Some(finite) = finite {
+            finite
+                .qualify(
+                    host_state.as_mut().ok_or(RuntimeError::Sandbox)?,
+                    &snapshot,
+                    preparation,
+                    &self.store.root,
+                    cancel,
+                )
+                .await?;
+        }
         let proof_versions: BTreeSet<_> = snapshot
             .capability_proofs()
             .iter()
@@ -1692,7 +1731,9 @@ impl Runtime {
         supervisor.command(
             &initial,
             &SandboxPolicy {
-                network: if request.required_capabilities.contains(&Capability::Network) {
+                network: if finite.is_some() {
+                    NetworkAuthority::ControllerBrokerOnly
+                } else if request.required_capabilities.contains(&Capability::Network) {
                     NetworkAuthority::PhaseGranted
                 } else {
                     NetworkAuthority::Deny
@@ -1703,19 +1744,26 @@ impl Runtime {
         if request.sandbox == ExecutionSandbox::WorkspaceWrite {
             self.store
                 .writer_lock(id, &request.workspace, &request.scope)?;
-            let path = workspace::create(
-                root,
-                &self.store.root,
-                id,
-                &request.source_state,
-                Some(preparation),
-            )
-            .await?;
-            let path = path
-                .to_str()
-                .ok_or(RuntimeError::Invalid("utf8 worktree"))?;
-            self.store.worktree(id, Some(path))?;
-            request.workspace = path.into();
+            if let Some(finite) = finite {
+                finite
+                    .bind_write_workspace(&self.store.root, id, &request, preparation)
+                    .await?;
+                self.store.worktree(id, Some(&request.workspace))?;
+            } else {
+                let path = workspace::create(
+                    root,
+                    &self.store.root,
+                    id,
+                    &request.source_state,
+                    Some(preparation),
+                )
+                .await?;
+                let path = path
+                    .to_str()
+                    .ok_or(RuntimeError::Invalid("utf8 worktree"))?;
+                self.store.worktree(id, Some(path))?;
+                request.workspace = path.into();
+            }
         }
         if let Some(artifacts) = &pending.artifacts {
             let patches: Vec<_> = artifacts
@@ -1823,7 +1871,9 @@ impl Runtime {
         let command = supervisor.command(
             &run,
             &SandboxPolicy {
-                network: if request.required_capabilities.contains(&Capability::Network) {
+                network: if finite.is_some() {
+                    NetworkAuthority::ControllerBrokerOnly
+                } else if request.required_capabilities.contains(&Capability::Network) {
                     NetworkAuthority::PhaseGranted
                 } else {
                     NetworkAuthority::Deny

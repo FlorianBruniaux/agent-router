@@ -51,7 +51,12 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0034](0034-offline-evaluation-evidence.md) | Keep evaluator qualification and supplied usage accounting separate | implemented | 2026-10-15 | 2026-10-15 | - |
 
 | [0035](0035-finite-client-namespace-ownership.md) | Transfer finite-client resources to the namespace lifecycle | implemented | 2026-10-15 | 2026-10-15 | - |
-| [0036](0036-finite-client-runtime-approval.md) | Bind finite-client preparation to durable runtime approval | implemented | 2026-10-16 | 2026-10-16 | - |
+| [0036](0036-finite-client-runtime-approval.md) | Bind finite-client preparation to durable runtime approval | amended | 2026-10-16 | 2026-10-16 | [0037](0037-qualified-local-finite-dispatch.md) |
+| [0037](0037-qualified-local-finite-dispatch.md) | Execute approved finite clients through a qualified local Linux backend | implemented | 2026-10-16 | 2026-10-16 | - |
+
+| [0038](0038-inert-finite-tools-and-output-creation.md) | Prepare finite output creation and inert local tool primitives | implemented | 2026-10-16 | 2026-10-16 | - |
+
+| [0039](0039-finite-tool-guard-canaries.md) | Test approved finite tool guard modes before runtime integration | implemented | 2026-10-16 | 2026-10-16 | - |
 
 ## Frontmatter fields
 
