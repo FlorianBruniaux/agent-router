@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "format": "PASS",
+  "workspace_clippy_before_doctor_test_only_change": "PASS",
+  "harness_parity": "PASS; activation UNKNOWN",
+  "scoped_secret_scan": "PASS",
+  "repository_secret_scan": "PASS",
+  "launcher_contract_tests": {
+    "passed": 5,
+    "assignment_profiles_checked": 24,
+    "negative_eligibility_cases": 72
+  },
+  "discovery_responder_tests": {
+    "passed": 2
+  },
+  "workspace_runs": [
+    {
+      "mode": "default concurrency",
+      "result": "FAIL",
+      "case": "process::tests::term_resistant_descendants_are_killed_as_a_group",
+      "observed": "heartbeat missing after150ms capture",
+      "exact_binary_isolated_replay": "PASS"
+    },
+    {
+      "mode": "RUST_TEST_THREADS=4",
+      "result": "FAIL",
+      "case": "explicit_artifact_dependency_allows_verifier_before_producer_verification",
+      "observed": "Elapsed at unchanged2s verifier timeout",
+      "exact_binary_isolated_replay": "PASS"
+    },
+    {
+      "mode": "RUST_TEST_THREADS=1 before framing fix",
+      "result": "FAIL",
+      "case": "router-doctor database_locks deep/passive",
+      "observed": "libtest prefixes the single-thread child marker on the same line; exact-line parser rejects it",
+      "causal_reproduction": "Same binary/file:threads1 lacks exact standalone marker;threads4 provides it; both child exits0"
+    }
+  ],
+  "doctor_fix": {
+    "path": "crates/router-doctor/tests/database_locks.rs",
+    "sha256": "e94f86f4e52fac37427b229fd017889007f030b19f5e8a65bb5b2ce7334565bd",
+    "change": "Explicit child --test-threads=2; one selected child test, unchanged fcntl probe and assertions",
+    "parent_threads1_passed": 5,
+    "parent_threads4_passed": 5
+  },
+  "current_full_workspace_verdict": "PASS on2026-10-19 after test-only child framing correction; prior failures retained",
+  "workspace_clippy_after_doctor_test_only_change": "PASS",
+  "final_checks": [
+    {
+      "check": "fmt",
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "rust_test_threads": null,
+      "exit_code": 0,
+      "elapsed_seconds": 1.174,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "check": "clippy",
+      "command": [
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "rust_test_threads": null,
+      "exit_code": 0,
+      "elapsed_seconds": 1.25,
+      "log_sha256": "b4c1d522726712650cca0c9d30ca7691f5269e16046141349e9d70c8d921005e"
+    },
+    {
+      "check": "workspace",
+      "command": [
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked"
+      ],
+      "rust_test_threads": 1,
+      "exit_code": 0,
+      "elapsed_seconds": 349.742,
+      "log_sha256": "3c976622b4674c9bb41aa824753eca6eeb222074eb71f7e037e461f4ba476867"
+    },
+    {
+      "check": "harness",
+      "command": [
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--",
+        "check"
+      ],
+      "rust_test_threads": null,
+      "exit_code": 0,
+      "elapsed_seconds": 0.497,
+      "log_sha256": "4df25eb928c4d7294bd664e5b3f5bbe029cfd8a2af0d5a1d82606efe06a70637"
+    },
+    {
+      "check": "secrets",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner",
+        "--report-format",
+        "json",
+        "--report-path",
+        "<private-output>/secrets.json"
+      ],
+      "rust_test_threads": null,
+      "exit_code": 0,
+      "elapsed_seconds": 0.494,
+      "log_sha256": "e764f15f1922576341e2488f9ef8b0c039504ce22015aae19bca8fd6f04057c3"
+    }
+  ],
+  "idle_sleep_prevention": "Transient caffeinate -i tied to the quality runner; no permanent setting change"
+}

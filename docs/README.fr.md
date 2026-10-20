@@ -1,5 +1,7 @@
 # Index de la documentation
 
+[Lanceur Linux par cellule](bench/finite-campaign-launcher-2026-10-18/README.md) (EN), 2026-10-18 : affectation scellée, approbation exacte du parent et sortie privée bornée ; qualification locale distincte des essais de modèles réels.
+
 [Propriété du client fini et du namespace](bench/linux-namespace-owner-2026-10-15/README.md), 2026-10-15 : conserver ensemble démarrage, copies et broker jusqu’au nettoyage sous preuve verrouillée. Composition Linux ciblée, 8 Gio inchangés ; F12a NO_GO.
 
 [Démarrage Linux produit et détenu](bench/linux-owned-startup-2026-10-11/README.md), 2026-10-11 : lier les fichiers de démarrage avant validation, puis qualifier ce producteur avec les 8 Gio inchangés. Diagnostic uniquement, F12a NO_GO.

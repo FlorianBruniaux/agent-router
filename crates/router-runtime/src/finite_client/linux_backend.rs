@@ -888,3 +888,6 @@ mod e2e_tests;
 #[cfg(all(test, target_os = "linux"))]
 #[path = "coupling_linux_tests.rs"]
 mod tools_coupling_tests;
+
+#[path = "campaign_discovery.rs"]
+mod campaign_discovery;
