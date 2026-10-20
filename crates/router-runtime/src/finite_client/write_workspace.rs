@@ -342,6 +342,101 @@ impl crate::Runtime {
     }
 }
 
+impl FiniteClientWorkspace {
+    /// Post-stop transfer into this producer-owned artifact view only. The
+    /// caller authenticates the staged terminal and retains the exact lease.
+    /// The original repository is never written or published here.
+    pub(super) fn promote_tools_output(
+        &self,
+        mut source: File,
+        observed: &crate::finite_tools::ToolOutput,
+    ) -> Result<File> {
+        use rustix::fs::{Mode, OFlags, openat};
+        use std::io::{Seek, SeekFrom};
+        self.check_identity()?;
+        self.check_initial_target()?;
+        if observed.relative != self.relative || observed.bytes > MAX_FILE {
+            return Err(RuntimeError::Scope);
+        }
+        let before = source.metadata()?;
+        if !before.is_file()
+            || before.nlink() != 1
+            || before.uid() != rustix::process::geteuid().as_raw()
+            || (before.dev(), before.ino(), before.mode(), before.len())
+                != (
+                    observed.device,
+                    observed.inode,
+                    observed.mode,
+                    observed.bytes,
+                )
+        {
+            return Err(RuntimeError::Integrity("finite staged output identity"));
+        }
+        source.seek(SeekFrom::Start(0))?;
+        let mut bytes = Vec::new();
+        source.take(MAX_FILE + 1).read_to_end(&mut bytes)?;
+        if bytes.len() as u64 != observed.bytes || content_digest(&bytes) != observed.sha256 {
+            return Err(RuntimeError::Integrity("finite staged output bytes"));
+        }
+        let create = self.preimage.is_none();
+        let flags = OFlags::RDWR
+            | OFlags::NOFOLLOW
+            | OFlags::NONBLOCK
+            | OFlags::CLOEXEC
+            | if create {
+                OFlags::CREATE | OFlags::EXCL
+            } else {
+                OFlags::empty()
+            };
+        let mut destination = File::from(
+            openat(
+                &self.view_identity._file,
+                self.relative.as_str(),
+                flags,
+                // Nine permission bits fit mode_t on both Linux and macOS.
+                Mode::from_raw_mode((observed.mode & 0o777) as _),
+            )
+            .map_err(std::io::Error::from)?,
+        );
+        let meta = destination.metadata()?;
+        if !meta.is_file()
+            || meta.nlink() != 1
+            || meta.uid() != rustix::process::geteuid().as_raw()
+            || meta.mode() & 0o7022 != 0
+        {
+            return Err(RuntimeError::Scope);
+        }
+        if let Some(expected) = &self.target_identity {
+            if FileIdentity::from(&meta) != expected.identity
+                || FileIdentity::from(&expected._file.metadata()?) != expected.identity
+            {
+                return Err(RuntimeError::Integrity("finite submitted output identity"));
+            }
+            let mut initial = Vec::new();
+            Read::by_ref(&mut destination)
+                .take(MAX_FILE + 1)
+                .read_to_end(&mut initial)?;
+            if self.preimage.as_ref() != Some(&content_digest(&initial)) {
+                return Err(RuntimeError::SourceChanged);
+            }
+        } else if meta.len() != 0 {
+            return Err(RuntimeError::Scope);
+        }
+        destination.seek(SeekFrom::Start(0))?;
+        destination.set_len(0)?;
+        destination.write_all(&bytes)?;
+        destination.sync_all()?;
+        let after = destination.metadata()?;
+        if FileIdentity::from(&after) != FileIdentity::from(&meta)
+            || after.len() != observed.bytes
+            || after.mode() != observed.mode
+        {
+            return Err(RuntimeError::Integrity("finite submitted output changed"));
+        }
+        Ok(destination)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "assignment_id": "t05-Lm-r1-H0",
+  "model": "gpt-6-luna",
+  "effort": "medium",
+  "marker": "R2-LOCAL-TOOLS-V1",
+  "steps": [
+    {
+      "tool": "mcp__finite__read_file",
+      "arguments": {
+        "path": "statement.md"
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__write_file",
+      "arguments": {
+        "path": "review.json",
+        "content": "{\"findings\": [{\"block\": \"permission_gate\", \"severity\": \"high\", \"explanation\": \"Unknown autorise une inf\u00e9rence alors que seul Supported doit l\u2019autoriser.\"}, {\"block\": \"trusted_skill\", \"severity\": \"high\", \"explanation\": \"Un skill non fiable peut augmenter l\u2019utilit\u00e9 puisque trusted est ignor\u00e9.\"}]}\n",
+        "create_new": true
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      }
+    },
+    {
+      "tool": "mcp__finite__exec",
+      "arguments": {
+        "argv": [
+          "python3",
+          "-B",
+          "-c",
+          "import json; value=json.load(open('review.json')); assert isinstance(value.get('findings'),list); print('OWN-CHECK-OK')"
+        ]
+      },
+      "expected": {
+        "exit_code": 0,
+        "termination": "exited",
+        "truncated": false
+      },
+      "stdout_contains": "OWN-CHECK-OK"
+    }
+  ],
+  "provider_kind": "authored_loopback_only",
+  "not_a_benchmark_trial": true
+}

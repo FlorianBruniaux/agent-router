@@ -32,12 +32,24 @@ fn pin(path: &Path) -> FiniteClientFile {
         sha256: content_digest(&fs::read(path).unwrap()),
     }
 }
-fn owned_review(
+fn owned_review_mode(
     root: &Path,
     run: &PreparedRun,
     listener: TcpListener,
     id: &str,
     workspace: Option<FiniteClientWorkspace>,
+    tools: bool,
+) -> FiniteClientReview {
+    owned_review_profile(root, run, listener, id, workspace, tools, None)
+}
+fn owned_review_profile(
+    root: &Path,
+    run: &PreparedRun,
+    listener: TcpListener,
+    id: &str,
+    workspace: Option<FiniteClientWorkspace>,
+    tools: bool,
+    subscription: Option<&SubscriptionControllerBinding>,
 ) -> FiniteClientReview {
     let programs = PathBuf::from(std::env::var("AR_FINITE_PROGRAMS").unwrap());
     let broker = if listener.local_addr().unwrap().ip().is_unspecified() {
@@ -45,7 +57,19 @@ fn owned_review(
     } else {
         OwnedBroker::from_listener(listener).unwrap()
     };
-    let state = broker.prepare_codex_state(root, run).unwrap();
+    let state = if let Some(binding) = subscription {
+        broker.prepare_codex_subscription_tools_state(
+            root,
+            run,
+            &binding.account_sha256,
+            &binding.controller_sha256,
+        )
+    } else if tools {
+        broker.prepare_codex_tools_state(root, run)
+    } else {
+        broker.prepare_codex_state(root, run)
+    }
+    .unwrap();
     let manifest = FiniteClientManifest {
         schema_version: 1,
         task_id: id.into(),
@@ -74,9 +98,47 @@ fn owned_review(
     } else {
         review
     };
-    review
+    let review = review
         .with_linux_namespace(pin(&programs.join("namespace")))
-        .unwrap()
+        .unwrap();
+    if tools {
+        let public = ["AGENTS.md", "statement.md", "lib.rs"]
+            .into_iter()
+            .map(|name| {
+                (
+                    name.into(),
+                    content_digest(&fs::read(Path::new(&run.cwd).join(name)).unwrap()),
+                )
+            })
+            .collect();
+        review
+            .with_mcp_tools(
+                public,
+                crate::finite_tools::Limits {
+                    max_calls: 8,
+                    max_file_bytes: 32768,
+                    max_output_bytes: 8192,
+                    max_total_output_bytes: 32768,
+                    max_exec_ms: 5000,
+                    max_total_exec_ms: 15000,
+                    max_session_ms: run.timeout_ms,
+                    max_scratch_entries: 64,
+                    max_scratch_bytes: 16777216,
+                },
+            )
+            .unwrap()
+    } else {
+        review
+    }
+}
+fn owned_review(
+    root: &Path,
+    run: &PreparedRun,
+    listener: TcpListener,
+    id: &str,
+    workspace: Option<FiniteClientWorkspace>,
+) -> FiniteClientReview {
+    owned_review_mode(root, run, listener, id, workspace, false)
 }
 fn seed_run(workspace: &Path) -> PreparedRun {
     PreparedRun {
@@ -163,8 +225,13 @@ fn serve(
 ) -> std::thread::JoinHandle<()> {
     listener.set_nonblocking(true).unwrap();
     std::thread::spawn(move || {
-        let deadline = Instant::now() + Duration::from_secs(120);
+        // Two fixed OS canaries and retained-asset hashing happen before the
+        // first request. The actual worker still has its separate 5s/25s limit.
+        let deadline = Instant::now() + Duration::from_secs(300);
         while Instant::now() < deadline {
+            if stop.load(Ordering::SeqCst) {
+                return;
+            }
             let (mut stream, _) = match listener.accept() {
                 Ok(v) => v,
                 Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
@@ -247,10 +314,11 @@ async fn discovery(
     listener: TcpListener,
     asset_store: &Path,
     workspace: Option<FiniteClientWorkspace>,
+    tools: bool,
 ) -> (ValidatedHostObservation, StoredCapabilityProofVerifier) {
     // This is an actual, separate diagnostic run. Its receipt is not dispatch
     // authority. The admitted Runtime must repeat canaries with its own owners.
-    let review = owned_review(asset_store, run, listener, "discovery", workspace);
+    let review = owned_review_mode(asset_store, run, listener, "discovery", workspace, tools);
     let binding = review.proof_binding("q01-linux-local").unwrap();
     let digest = review.approval_digest().to_owned();
     let mut state = review
@@ -275,13 +343,17 @@ async fn discovery(
     if write {
         fs::write(home.join("tmp/scoped-file"), b"private write canary").unwrap();
     }
-    let view = ProbeView {
+    let mut view = ProbeView {
+        tools: None,
         temporary: home.join("tmp"),
         control: control.clone(),
         hidden: hidden.clone(),
         denied_port: other.local_addr().unwrap().port(),
         nonce: nonce.clone(),
     };
+    if tools {
+        view.tools = Some(ToolsProbeView::prepare(&state, &view).unwrap());
+    }
     let mut command = composition_command(&state, Some(&view)).unwrap();
     let leases = LeaseStorage::open(root).unwrap();
     let (mut record, path) = leases.create("discovery", 1).unwrap();
@@ -310,10 +382,15 @@ async fn discovery(
         a > 1
             && a == b
             && fs::read(control.join("control")).unwrap() == nonce.as_bytes()
-            && (!write || fs::read(home.join("tmp/scoped-file")).unwrap() == nonce.as_bytes())
+            && (tools
+                || !write
+                || fs::read(home.join("tmp/scoped-file")).unwrap() == nonce.as_bytes())
     } else {
         false
     };
+    if tools && success {
+        view.tools.as_ref().unwrap().verify(&nonce).unwrap();
+    }
     state.cleanup_with_proof(&proof).unwrap();
     assert!(!home.exists());
     assert!(
@@ -326,11 +403,11 @@ async fn discovery(
         .split(|b| *b == b'\n')
         .filter(|l| !l.is_empty())
         .collect();
-    assert_eq!(lines.len(), 2);
+    assert_eq!(lines.len(), if tools { 3 } else { 2 });
     let canary: Value = serde_json::from_slice(lines[0]).unwrap();
     assert_eq!(canary["memory_bytes"], 8589934592u64);
     assert_eq!(canary["nonce"], nonce);
-    assert_eq!(canary["workspace_write"], write);
+    assert_eq!(canary["workspace_write"], write && !tools);
     let version: Value = serde_json::from_slice(lines[1]).unwrap();
     assert_eq!(
         version,
@@ -345,7 +422,13 @@ async fn discovery(
         .read_exact(&mut secret)
         .unwrap();
     let now = crate::now().unwrap();
-    let capabilities = if write {
+    let capabilities = if tools {
+        vec![
+            Capability::Network,
+            Capability::WorkspaceWrite,
+            Capability::Tools,
+        ]
+    } else if write {
         vec![Capability::Network, Capability::WorkspaceWrite]
     } else {
         vec![Capability::Network]
@@ -360,6 +443,8 @@ async fn discovery(
                 "live-local-{}",
                 if capability == Capability::Network {
                     "network"
+                } else if capability == Capability::Tools {
+                    "tools"
                 } else {
                     "write"
                 }
@@ -409,7 +494,7 @@ async fn discovery(
         supported_models: [run.requested_model.clone()].into(),
         supported_efforts: BTreeMap::from([(
             run.requested_model.clone(),
-            [EffortLevel::Medium].into(),
+            [run.requested_effort].into(),
         )]),
         capabilities: capabilities.into_iter().collect(),
     };
@@ -461,6 +546,11 @@ impl HarnessAdapter for Collect {
 enum Case {
     ReadOnly,
     Write,
+    McpWrite,
+    McpCreate,
+    McpTimeout,
+    McpCancel,
+    McpEofHold,
     Timeout,
     Cancel,
     EofHold,
@@ -493,9 +583,27 @@ fn replacement_stream(template: &[u8], replacement: &str) -> Vec<u8> {
     result.into_bytes()
 }
 async fn run_case(case: Case) {
-    let write = case == Case::Write;
+    run_case_mode(case, false).await;
+}
+async fn run_case_mode(case: Case, subscription: bool) {
+    run_case_profile(case, subscription, false).await;
+}
+async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
+    let external = subscription && std::env::var_os("AR_SUBSCRIPTION_EXTERNAL").is_some();
+    let tools = matches!(
+        case,
+        Case::McpWrite | Case::McpCreate | Case::McpTimeout | Case::McpCancel | Case::McpEofHold
+    );
+    let create = case == Case::McpCreate;
+    let write = case == Case::Write || tools;
     let run_id = if write { "q02" } else { "q01" };
-    let name = if write { "lib.rs" } else { "review.rs" };
+    let name = if create {
+        "result.rs"
+    } else if write {
+        "lib.rs"
+    } else {
+        "review.rs"
+    };
     assert_eq!(std::env::consts::ARCH, "aarch64");
     assert_eq!(
         fs::read_to_string("/sys/fs/cgroup/memory.max")
@@ -523,9 +631,15 @@ async fn run_case(case: Case) {
     mkdir(&source_workspace);
     let (response, expected) = if write {
         let bundle = PathBuf::from(std::env::var("AR_FINITE_WRITE_FIXTURE").unwrap());
-        let mut prompt = String::from(
-            "BOUNDED-REPLACEMENT-V1\nImplement lib.rs according to the public statement. Return only JSON with one replacement string containing the complete updated lib.rs. Do not use tools or modify other files.\n",
-        );
+        let mut prompt = if tools {
+            format!(
+                "R2-LOCAL-TOOLS-V1\nComplete the public task using the three advertised finite tools. Write the complete result to {name} only. Use .scratch for temporary checks. Return a short completion message. This is authored local qualification, not a model trial.\n"
+            )
+        } else {
+            String::from(
+                "BOUNDED-REPLACEMENT-V1\nImplement lib.rs according to the public statement. Return only JSON with one replacement string containing the complete updated lib.rs. Do not use tools or modify other files.\n",
+            )
+        };
         for name in ["AGENTS.md", "statement.md", "lib.rs"] {
             let bytes = fs::read(bundle.join("candidate").join(name)).unwrap();
             assert!(bytes.len() <= 32768);
@@ -590,7 +704,14 @@ async fn run_case(case: Case) {
     .unwrap();
     phase.phase = StageKind::Execute;
     phase.task.scope = vec![name.into()];
-    phase.task.required_capabilities = if write {
+    phase.task.required_capabilities = if tools {
+        [
+            Capability::Network,
+            Capability::WorkspaceWrite,
+            Capability::Tools,
+        ]
+        .into()
+    } else if write {
         [Capability::Network, Capability::WorkspaceWrite].into()
     } else {
         [Capability::Network].into()
@@ -615,6 +736,33 @@ async fn run_case(case: Case) {
     phase.candidates.truncate(1);
     phase.candidates[0].model = ModelId::parse("gpt-6-luna").unwrap();
     phase.candidates[0].estimated_cost_microusd = 0;
+    if subscription {
+        phase.candidates[0].effort = EffortLevel::Xhigh;
+    }
+    if tools {
+        phase.candidates[0].tools = [
+            "mcp__finite__read_file",
+            "mcp__finite__write_file",
+            "mcp__finite__exec",
+        ]
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+        for id in &phase.candidates[0].tools {
+            phase.registry.assets.push(PhaseRegisteredAsset {
+                kind: PhaseAssetKind::Tool,
+                id: id.clone(),
+                content_sha256: content_digest(include_bytes!("../finite_tools/transport.rs")),
+                trust: SkillTrust::TrustedLocal,
+                license: "FSL-1.1-ALv2".into(),
+                permission: CapabilitySupport::Supported,
+                required_capabilities: [Capability::Tools].into(),
+                required_mutations: BTreeSet::new(),
+                allowed_sandboxes: [PhaseSandbox::WorkspaceWrite].into(),
+                maximum_sensitivity: DataSensitivity::Public,
+            });
+        }
+    }
     phase.candidates[0].sandbox = if write {
         PhaseSandbox::WorkspaceWrite
     } else {
@@ -642,7 +790,15 @@ async fn run_case(case: Case) {
                 limit: 1,
             },
         )]),
-        providers: BTreeMap::from([("local_fixture".into(), 1)]),
+        providers: BTreeMap::from([(
+            if subscription {
+                "codex_subscription_relay"
+            } else {
+                "local_fixture"
+            }
+            .into(),
+            1,
+        )]),
         agents: BTreeMap::from([("worker".into(), 1)]),
         agent_mappings: vec![AdmissionAgentMapping {
             runtime_id: "fixture".into(),
@@ -688,21 +844,59 @@ async fn run_case(case: Case) {
         std::net::SocketAddr::from(([127, 0, 0, 1], listener.local_addr().unwrap().port()));
     let posts = Arc::new(AtomicUsize::new(0));
     let stop_server = Arc::new(AtomicBool::new(false));
-    let server = serve(
-        listener.try_clone().unwrap(),
-        contract.clone(),
-        response,
-        posts.clone(),
-        stop_server.clone(),
-        matches!(case, Case::Timeout | Case::Cancel | Case::EofHold),
-        root.clone(),
+    let mut server = Some(
+        if !subscription && matches!(case, Case::McpWrite | Case::McpCreate) {
+            let script = root.join("authored-tools.json");
+            let updated = expected.as_ref().unwrap();
+            let steps = json!([
+                {"tool":"mcp__finite__read_file","arguments":{"path":"statement.md"},"expected":{"exit_code":0,"termination":"exited","truncated":false}},
+                {"tool":"mcp__finite__write_file","arguments":{"path":name,"content":updated,"create_new":create},"expected":{"exit_code":0,"termination":"exited","truncated":false}},
+                {"tool":"mcp__finite__read_file","arguments":{"path":name},"expected":{"exit_code":0,"termination":"exited","truncated":false}}
+            ]);
+            fs::write(&script,serde_json::to_vec(&json!({"model":"gpt-6-luna","effort":"medium","marker":"R2-LOCAL-TOOLS-V1","steps":steps})).unwrap()).unwrap();
+            crate::finite_client::native_tools_tests::broker(
+                listener.try_clone().unwrap(),
+                PathBuf::from(std::env::var("AR_MCP_NATIVE_INPUTS").unwrap()),
+                script,
+                PathBuf::from(std::env::var("AR_MCP_NATIVE_ADAPTER").unwrap()),
+                root.clone(),
+                4,
+            )
+        } else {
+            serve(
+                listener.try_clone().unwrap(),
+                contract.clone(),
+                response,
+                posts.clone(),
+                stop_server.clone(),
+                matches!(
+                    case,
+                    Case::Timeout
+                        | Case::Cancel
+                        | Case::EofHold
+                        | Case::McpTimeout
+                        | Case::McpCancel
+                        | Case::McpEofHold
+                ),
+                root.clone(),
+            )
+        },
     );
     let discovery_root = root.join("discovery");
     mkdir(&discovery_root);
     let diagnostic_view = if write {
         Some(
             runtime
-                .prepare_finite_workspace(&source_workspace, "discovery", &[name.into()])
+                .prepare_finite_output_workspace(
+                    &source_workspace,
+                    "discovery",
+                    name,
+                    if create {
+                        FiniteOutputMode::CreateNew
+                    } else {
+                        FiniteOutputMode::ReplaceExisting
+                    },
+                )
                 .await
                 .unwrap(),
         )
@@ -713,6 +907,9 @@ async fn run_case(case: Case) {
         .as_ref()
         .map_or(source_workspace.as_path(), |v| v.path());
     let mut seed = seed_run(diagnostic_path);
+    if subscription {
+        seed.requested_effort = EffortLevel::Xhigh;
+    }
     seed.scope = vec![name.into()];
     seed.source_state = source.clone();
     seed.sandbox = if write {
@@ -726,13 +923,23 @@ async fn run_case(case: Case) {
         listener.try_clone().unwrap(),
         &store,
         diagnostic_view,
+        tools,
     )
     .await;
     let runtime = runtime.with_capability_proof_verifier(Arc::new(verifier));
     let view = if write {
         Some(
             runtime
-                .prepare_finite_workspace(&source_workspace, run_id, &[name.into()])
+                .prepare_finite_output_workspace(
+                    &source_workspace,
+                    run_id,
+                    name,
+                    if create {
+                        FiniteOutputMode::CreateNew
+                    } else {
+                        FiniteOutputMode::ReplaceExisting
+                    },
+                )
                 .await
                 .unwrap(),
         )
@@ -743,7 +950,7 @@ async fn run_case(case: Case) {
         .as_ref()
         .map_or_else(|| source_workspace.clone(), |v| v.path().to_owned());
     let caps = phase.task.required_capabilities.clone();
-    let catalog=Catalog::from_json(&serde_json::to_vec(&json!({"schema_version":1,"version":"local-authored-fixture","models":[{"id":"gpt-6-luna","stages":["execute"],"efforts":["medium"],"capabilities":caps,"quality_micros":1,"cost_micros":0,"latency_micros":1,"source":"Authored local SSE; no real model availability or price claim"}],"skills":[]})).unwrap()).unwrap();
+    let catalog=Catalog::from_json(&serde_json::to_vec(&json!({"schema_version":1,"version":"local-authored-fixture","models":[{"id":"gpt-6-luna","stages":["execute"],"efforts":[if subscription {"xhigh"} else {"medium"}],"capabilities":caps,"quality_micros":1,"cost_micros":0,"latency_micros":1,"source":"Authored local SSE; no real model availability or price claim"}],"skills":[]})).unwrap()).unwrap();
     let router = PhaseRouter::stable_v2();
     let context = router.context(phase, &snapshot, &catalog).unwrap();
     let receipt = router.route(&context).unwrap();
@@ -765,14 +972,26 @@ async fn run_case(case: Case) {
             ExecutionSandbox::ReadOnly
         },
         required_capabilities: router.execution_capabilities(&context, selected).unwrap(),
-        tools: ToolSelection::Disabled,
+        tools: if tools {
+            ToolSelection::AllowList(vec![
+                "mcp__finite__read_file".into(),
+                "mcp__finite__write_file".into(),
+                "mcp__finite__exec".into(),
+            ])
+        } else {
+            ToolSelection::Disabled
+        },
         agent: None,
         skills: vec![],
         prompt: contract["prompt"].as_str().unwrap().into(),
         mode: ExecutionMode::Execute,
         target: ExecutionTarget::ExternalWorker,
         allow_degradation: false,
-        timeout_ms: if case == Case::Timeout { 5000 } else { 25_000 },
+        timeout_ms: if matches!(case, Case::Timeout | Case::McpTimeout) {
+            5000
+        } else {
+            25_000
+        },
         max_output_bytes: 65536,
     };
     let auth = execution_authorization_digest_with_capability_acceptance(
@@ -798,7 +1017,73 @@ async fn run_case(case: Case) {
     )
     .unwrap();
     prepared.missing_runtime_evidence.clear();
-    let client = owned_review(&store, &prepared, listener, run_id, view);
+    let mut parent_peer = None;
+    let mut descriptor = None;
+    let client = if subscription {
+        stop_server.store(true, Ordering::SeqCst);
+        server.take().unwrap().join().unwrap();
+        let driver = PathBuf::from(std::env::var("AR_SUBSCRIPTION_DRIVER").unwrap());
+        let packet = json!({"qualification_only":true,"assignment_id":"t02-Lx-r1-H0",
+            "model":"gpt-6-luna","effort":"xhigh","marker":"R2-LOCAL-TOOLS-V1",
+            "output_file":"lib.rs","output_content":expected.as_ref().unwrap(),
+            "account_sha256":"b".repeat(64),"budget_microcredits":200000000u64,
+            "evidence_directory":root.to_str().unwrap()});
+        let path = root.join("subscription-descriptor.json");
+        fs::write(&path, serde_json::to_vec(&packet).unwrap()).unwrap();
+        let configuration: Value = if external {
+            println!(
+                "\nAR_RELAY_PREPARE {}",
+                serde_json::to_string(&packet).unwrap()
+            );
+            std::io::stdout().flush().unwrap();
+            json!({"configuration_sha256":std::env::var("AR_SUBSCRIPTION_CONFIG_SHA").unwrap(),
+                "controller_sha256":std::env::var("AR_SUBSCRIPTION_CONTROLLER_SHA").unwrap()})
+        } else {
+            let output = std::process::Command::new("python3")
+                .args([
+                    "-B",
+                    driver.to_str().unwrap(),
+                    "prepare",
+                    path.to_str().unwrap(),
+                ])
+                .env_clear()
+                .env("PATH", "/usr/bin:/bin")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "subscription prepare: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(output.stdout.len() < 65536);
+            serde_json::from_slice(&output.stdout).unwrap()
+        };
+        let (controller, peer) = OwnedSubscriptionController::pair(
+            "t02-Lx-r1-H0",
+            configuration["configuration_sha256"].as_str().unwrap(),
+            &"b".repeat(64),
+            configuration["controller_sha256"].as_str().unwrap(),
+        )
+        .unwrap();
+        let review = owned_review_profile(
+            &store,
+            &prepared,
+            listener,
+            run_id,
+            view,
+            tools,
+            Some(controller.binding()),
+        );
+        descriptor = Some((
+            driver,
+            path,
+            serde_json::to_value(controller.binding()).unwrap(),
+        ));
+        parent_peer = Some(peer);
+        review.with_subscription_controller(controller).unwrap()
+    } else {
+        owned_review_mode(&store, &prepared, listener, run_id, view, tools)
+    };
     fs::write(root.join("pins.json"),serde_json::to_vec_pretty(&json!({
         "manifest":&client.manifest,"copies":&client.owned_assets.as_ref().unwrap().pins,
         "namespace":&client.owned_namespace.as_ref().unwrap().pin,
@@ -820,9 +1105,59 @@ async fn run_case(case: Case) {
     assert_eq!(posts.load(Ordering::SeqCst), 0);
     let digest = pending.approval_digest().to_owned();
     let approved = runtime.approve_finite_client(pending, &digest).unwrap();
+    let mut external_parent = None;
+    let subscription_parent =
+        if let (Some(peer), Some((driver, path, mut binding))) = (parent_peer, descriptor) {
+            binding["run_id"] = run_id.into();
+            binding["attempt"] = 1.into();
+            binding["approval_digest"] = digest.clone().into();
+            let expected_path = root.join("subscription-expected-binding.json");
+            fs::write(&expected_path, serde_json::to_vec(&binding).unwrap()).unwrap();
+            if external {
+                println!(
+                    "\nAR_RELAY_BINDING {}",
+                    serde_json::to_string(&binding).unwrap()
+                );
+                std::io::stdout().flush().unwrap();
+                external_parent = Some(external_relay(peer));
+                None
+            } else {
+                let mut child = std::process::Command::new("python3")
+                    .args([
+                        "-B",
+                        driver.to_str().unwrap(),
+                        if unknown { "run-unknown" } else { "run" },
+                        path.to_str().unwrap(),
+                        expected_path.to_str().unwrap(),
+                    ])
+                    .env_clear()
+                    .env("PATH", "/usr/bin:/bin")
+                    .stdin(std::process::Stdio::piped())
+                    .stdout(std::process::Stdio::piped())
+                    .stderr(std::process::Stdio::from(
+                        fs::File::create(root.join("subscription-driver.stderr")).unwrap(),
+                    ))
+                    .spawn()
+                    .unwrap();
+                let stream = peer.into_transport();
+                let mut write = stream.try_clone().unwrap();
+                let mut read = stream;
+                let mut input = child.stdin.take().unwrap();
+                let mut output = child.stdout.take().unwrap();
+                let a = std::thread::spawn(move || relay(&mut read, &mut input));
+                let b = std::thread::spawn(move || {
+                    let result = relay(&mut output, &mut write);
+                    let _ = write.shutdown(std::net::Shutdown::Write);
+                    result
+                });
+                Some((child, a, b))
+            }
+        } else {
+            None
+        };
     let collector = Collect(Mutex::new(vec![]));
     let cancel = Cancellation::default();
-    let watcher = if case == Case::Cancel {
+    let watcher = if matches!(case, Case::Cancel | Case::McpCancel) {
         let counter = posts.clone();
         let cancellation = cancel.clone();
         Some(tokio::spawn(async move {
@@ -840,9 +1175,22 @@ async fn run_case(case: Case) {
     if let Some(watcher) = watcher {
         watcher.abort();
     }
+    if subscription {
+        fs::write(root.join("subscription-runtime-return.json"),serde_json::to_vec_pretty(&json!({"error":result.as_ref().err().map(ToString::to_string),"summary":runtime.summary(run_id).ok()})).unwrap()).unwrap();
+    }
+    if let Some((a, b)) = external_parent {
+        a.join().unwrap().unwrap();
+        b.join().unwrap().unwrap();
+    }
+    if let Some((mut child, a, b)) = subscription_parent {
+        let status = child.wait().unwrap();
+        assert!(status.success(), "inspect subscription-driver.stderr");
+        a.join().unwrap().unwrap();
+        b.join().unwrap().unwrap();
+    }
     stop_server.store(true, Ordering::SeqCst);
     assert!(
-        case != Case::EofHold,
+        !matches!(case, Case::EofHold | Case::McpEofHold),
         "EOF controller must be stopped externally while Running"
     );
     fs::write(root.join("result.json"),serde_json::to_vec_pretty(&json!({"result":result.as_ref().ok(),"error":result.as_ref().err().map(ToString::to_string),"summary":runtime.summary(run_id).ok(),"events":crate::observe_events(&store,run_id).ok(),"cleanup":runtime.cleanup_evidence(run_id).ok(),"admission":admission.status().ok(),"attempts":runtime.attempt_evidence(run_id).ok()})).unwrap()).unwrap();
@@ -856,6 +1204,64 @@ async fn run_case(case: Case) {
                 .unwrap();
             }
         }
+    }
+    if unknown {
+        let completion = result.unwrap();
+        assert!(matches!(
+            completion.run.state,
+            RunState::Cancelled | RunState::Failed
+        ));
+        assert_eq!(
+            runtime.cleanup_evidence(run_id).unwrap(),
+            ProcessCleanupEvidence::NamespaceTerminated
+        );
+        assert_eq!(admission.status().unwrap().granted, 0);
+        assert_eq!(admission.status().unwrap().released, 1);
+        assert!(!home.exists());
+        let summary: Value =
+            serde_json::from_slice(&fs::read(root.join("host-summary.json")).unwrap()).unwrap();
+        assert_eq!(summary["coded_responses"], 2);
+        assert_eq!(summary["provider_requests"], 0);
+        let ledger: Value = serde_json::from_slice(
+            &fs::read(
+                Path::new(summary["results_directory"].as_str().unwrap()).join("results.json"),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(ledger["rows"][0]["usage"]["total_tokens"], 600);
+        assert_eq!(ledger["rows"][0]["cost_microcredits"], 3275);
+        assert_eq!(ledger["rows"][0]["status"], "stopped");
+        assert_eq!(ledger["rows"][0]["relay_results"]["usage_unknown"], true);
+        assert!(
+            ledger["rows"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .skip(1)
+                .all(|r| r["status"] == "not_run")
+        );
+        assert_eq!(
+            ledger["rows"][0]["relay_results"]["cleanup_confirmation"]["writers_excluded"],
+            true
+        );
+        assert!(
+            !store
+                .join("artifacts")
+                .join(format!("{run_id}.patch"))
+                .exists()
+        );
+        for (file, hash) in &before {
+            assert_eq!(
+                content_digest(&fs::read(source_workspace.join(file)).unwrap()),
+                *hash
+            );
+        }
+        fs::write(root.join("receipt.json"),serde_json::to_vec_pretty(&json!({"qualification":"subscription_unknown_usage_stop",
+            "model_calls_started":0,"synthetic_usage":true,"provider_requests":0,"cleanup":runtime.cleanup_evidence(run_id).unwrap(),
+            "known_tokens":600,"known_equivalent_microcredits":3275,"unknown_cost":true,"memory_bytes":8589934592u64,
+            "admission":admission.status().unwrap(),"completion":completion,"source_unchanged":true})).unwrap()).unwrap();
+        return;
     }
     let completion = result.unwrap();
     let stdout = collector.0.lock().unwrap().clone();
@@ -898,8 +1304,8 @@ async fn run_case(case: Case) {
     assert_eq!(
         completion.run.state,
         match case {
-            Case::Timeout => RunState::TimedOut,
-            Case::Cancel => RunState::Cancelled,
+            Case::Timeout | Case::McpTimeout => RunState::TimedOut,
+            Case::Cancel | Case::McpCancel => RunState::Cancelled,
             _ => RunState::Verifying,
         }
     );
@@ -947,9 +1353,14 @@ async fn run_case(case: Case) {
         reopen.err().unwrap().to_string(),
     )
     .unwrap();
-    if let Some(expected) = expected {
+    if let Some(expected) = expected.filter(|_| !matches!(case, Case::McpTimeout | Case::McpCancel))
+    {
         assert_eq!(fs::read(workspace.join(name)).unwrap(), expected.as_bytes());
-        assert_ne!(content_digest(expected.as_bytes()), before[name]);
+        if create {
+            assert!(!before.contains_key(name));
+        } else {
+            assert_ne!(content_digest(expected.as_bytes()), before[name]);
+        }
         let patch = fs::read(store.join("artifacts").join(format!("{run_id}.patch"))).unwrap();
         assert_eq!(Some(content_digest(&patch)), completion.run.artifact_sha256);
         fs::write(root.join("change.patch"), patch).unwrap();
@@ -958,14 +1369,70 @@ async fn run_case(case: Case) {
         for file in before.keys() {
             fs::copy(workspace.join(file), exported.join(file)).unwrap();
         }
+        if create {
+            assert!(!source_workspace.join(name).exists());
+            fs::copy(workspace.join(name), exported.join(name)).unwrap();
+        }
     }
-    assert_eq!(posts.load(Ordering::SeqCst), 1);
-    server.join().unwrap();
+    if !matches!(case, Case::McpWrite | Case::McpCreate) {
+        assert_eq!(posts.load(Ordering::SeqCst), 1);
+    }
+    if let Some(server) = server {
+        server.join().unwrap();
+    }
+    if !subscription && matches!(case, Case::McpWrite | Case::McpCreate) {
+        let broker: Value =
+            serde_json::from_slice(&fs::read(root.join("broker.json")).unwrap()).unwrap();
+        assert_eq!(broker["requests"].as_array().unwrap().len(), 4);
+        assert_eq!(broker["observed_tool_results"], 3);
+        let events = crate::observe_events(&store, run_id).unwrap();
+        assert!(
+            events
+                .iter()
+                .any(|event| event.kind == "finite_tools.stopped.v1")
+        );
+    }
+    if subscription && !external {
+        let summary: Value =
+            serde_json::from_slice(&fs::read(root.join("host-summary.json")).unwrap()).unwrap();
+        assert_eq!(summary["coded_responses"], 4);
+        assert_eq!(summary["observed_tool_results"], 3);
+        assert_eq!(summary["synthetic_usage"], true);
+        assert_eq!(summary["provider_requests"], 0);
+        assert!(
+            crate::observe_events(&store, run_id)
+                .unwrap()
+                .iter()
+                .any(|event| event.kind == "finite_subscription.stopped.v1")
+        );
+        let ledger: Value = serde_json::from_slice(
+            &fs::read(
+                Path::new(summary["results_directory"].as_str().unwrap()).join("results.json"),
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(ledger["rows"][0]["usage"]["total_tokens"], 2400);
+        assert_eq!(ledger["rows"][0]["cost_microcredits"], 13100);
+        assert!(
+            ledger["rows"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .skip(1)
+                .all(|r| r["status"] == "not_run")
+        );
+        assert_eq!(
+            ledger["rows"][0]["relay_results"]["cleanup_confirmation"]["writers_excluded"],
+            true
+        );
+        assert_eq!(ledger["model_calls_started"], 0);
+    }
     // Completed HTTP connections may retain TIME_WAIT even after every
     // listener is closed. Refused new connections test listener ownership
     // without mistaking a kernel TIME_WAIT entry for a leaked broker.
     assert!(TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_err());
-    fs::write(root.join("receipt.json"),serde_json::to_vec_pretty(&json!({"schema_version":1,"qualification":match case {Case::Write=>"q02-bounded-replacement",Case::Timeout=>"q01-timeout",Case::Cancel=>"q01-cancel",_=>"q01"},"model_calls_started":0,"authored_local_requests":1,"memory_bytes":8589934592u64,"swap_bytes":0,"completion":completion,"cleanup":runtime.cleanup_evidence(run_id).unwrap(),"admission":admission.status().unwrap(),"source_unchanged":true,"human_acceptance":null,"scripted_usage_is_accounting":false,"availability":"operator_simulated_local_fixture","context_overhead":"unknown","attempts":runtime.attempt_evidence(run_id).unwrap()})).unwrap()).unwrap();
+    fs::write(root.join("receipt.json"),serde_json::to_vec_pretty(&json!({"schema_version":1,"qualification":match case {Case::Write=>"q02-bounded-replacement",Case::Timeout=>"q01-timeout",Case::Cancel=>"q01-cancel",Case::McpWrite=>"q03-mcp-replacement",Case::McpCreate=>"q04-mcp-create",Case::McpTimeout=>"q03-mcp-timeout",Case::McpCancel=>"q03-mcp-cancel",_=>"q01"},"model_calls_started":0,"authored_local_requests":if matches!(case,Case::McpWrite|Case::McpCreate){4}else{1},"tools":tools,"memory_bytes":8589934592u64,"swap_bytes":0,"completion":completion,"cleanup":runtime.cleanup_evidence(run_id).unwrap(),"admission":admission.status().unwrap(),"source_unchanged":true,"human_acceptance":null,"scripted_usage_is_accounting":false,"controller_location":if external {"external_mac_private_channel"} else {"linux"},"availability":if subscription {"operator_simulated_subscription_relay"} else {"operator_simulated_local_fixture"},"context_overhead":"unknown","attempts":runtime.attempt_evidence(run_id).unwrap()})).unwrap()).unwrap();
 }
 
 #[tokio::test]
@@ -1057,4 +1524,141 @@ fn q01_legacy_loopback_broker_cannot_construct_a_dispatch_command() {
         b"{\"dispatch_command_constructed\":false,\"model_calls_started\":0}\n",
     )
     .unwrap();
+}
+
+#[tokio::test]
+#[ignore = "explicit offline Linux Runtime MCP lifecycle; no model, no subscription request"]
+async fn q03_real_approved_tools_runtime_captures_only_private_output() {
+    run_case(Case::McpWrite).await;
+}
+
+#[tokio::test]
+#[ignore = "explicit offline Linux Runtime MCP creation lifecycle; no model"]
+async fn q04_real_approved_tools_runtime_preserves_absence_and_captures_new_output() {
+    run_case(Case::McpCreate).await;
+}
+
+#[tokio::test]
+#[ignore = "explicit offline Linux Runtime MCP timeout; no model"]
+async fn q03_tools_timeout_keeps_cleanup_and_releases_admission() {
+    run_case(Case::McpTimeout).await;
+}
+#[tokio::test]
+#[ignore = "explicit offline Linux Runtime MCP cancellation; no model"]
+async fn q03_tools_cancel_keeps_cleanup_and_releases_admission() {
+    run_case(Case::McpCancel).await;
+}
+#[tokio::test]
+#[ignore = "external controller stops this MCP Runtime test; no model"]
+async fn q03_tools_parent_eof_controller() {
+    run_case(Case::McpEofHold).await;
+}
+#[test]
+#[ignore = "reopens the stopped MCP Runtime store only; never executes a model"]
+fn q03_tools_parent_eof_recovery_retains_unknown_private_cleanup() {
+    let root = PathBuf::from(std::env::var("AR_FINITE_ROOT").unwrap());
+    let config: AdmissionConfig =
+        serde_json::from_slice(&fs::read(root.join("admission-config.json")).unwrap()).unwrap();
+    let pins: Value = serde_json::from_slice(&fs::read(root.join("pins.json")).unwrap()).unwrap();
+    let home = PathBuf::from(pins["manifest"]["private_state"].as_str().unwrap());
+    for _ in 0..2 {
+        let runtime =
+            Runtime::open_with_admission(&root.join("runtime"), RuntimeLimits::default(), &config)
+                .unwrap();
+        assert_eq!(
+            runtime.cleanup_evidence("q02").unwrap(),
+            ProcessCleanupEvidence::Unknown
+        );
+        let admission =
+            AdmissionStore::open(&config.registry, &config.expected_policy_sha256).unwrap();
+        assert_eq!(admission.status().unwrap().granted, 1);
+        assert_eq!(admission.status().unwrap().released, 0);
+        assert!(home.is_dir());
+        assert_eq!(runtime.summary("q02").unwrap().attempts, 1);
+        fs::write(root.join("eof-recovery.json"),serde_json::to_vec_pretty(&json!({"case":"MCP parent EOF","cleanup":"unknown","private_state_retained":true,"admission":admission.status().unwrap(),"model_calls_started":0})).unwrap()).unwrap();
+    }
+}
+
+#[tokio::test]
+#[ignore = "offline subscription profile with real native MCP, private controller and synthetic upstream only"]
+async fn subscription_runtime_tools_usage_and_cleanup_are_connected_without_models() {
+    run_case_mode(Case::McpWrite, true).await;
+}
+
+#[tokio::test]
+#[ignore = "offline subscription profile: second coded response has unknown usage; no models"]
+async fn subscription_unknown_usage_stops_and_preserves_known_cost_without_models() {
+    run_case_profile(Case::McpWrite, true, true).await;
+}
+
+fn relay<R: Read, W: Write>(input: &mut R, output: &mut W) -> std::io::Result<u64> {
+    let mut bytes = [0; 8192];
+    let mut count = 0;
+    loop {
+        let n = input.read(&mut bytes)?;
+        if n == 0 {
+            return Ok(count);
+        }
+        output.write_all(&bytes[..n])?;
+        output.flush()?;
+        count += n as u64;
+    }
+}
+
+// Qualification-only bridge. Native stdout stays captured by Runtime and cannot
+// write this framing channel. The external parent owns the Docker process/FDs.
+fn external_relay(
+    peer: SubscriptionControllerPeer,
+) -> (
+    std::thread::JoinHandle<std::io::Result<()>>,
+    std::thread::JoinHandle<std::io::Result<()>>,
+) {
+    let stream = peer.into_transport();
+    let mut write = stream.try_clone().unwrap();
+    let out = std::thread::spawn(move || {
+        let mut reader = BufReader::new(stream);
+        loop {
+            let mut line = String::new();
+            let n = Read::by_ref(&mut reader)
+                .take(300001)
+                .read_line(&mut line)?;
+            if n == 0 {
+                break;
+            }
+            if n > 300000 || !line.ends_with('\n') {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "frame_bound",
+                ));
+            }
+            let mut stdout = std::io::stdout().lock();
+            stdout.write_all(b"\nAR_RELAY_V1 ")?;
+            stdout.write_all(line.as_bytes())?;
+            stdout.flush()?;
+        }
+        Ok(())
+    });
+    let input = std::thread::spawn(move || {
+        let mut reader = std::io::stdin().lock();
+        loop {
+            let mut line = String::new();
+            let n = Read::by_ref(&mut reader)
+                .take(300001)
+                .read_line(&mut line)?;
+            if n == 0 {
+                break;
+            }
+            if n > 300000 || !line.ends_with('\n') {
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "frame_bound",
+                ));
+            }
+            write.write_all(line.as_bytes())?;
+            write.flush()?;
+        }
+        let _ = write.shutdown(std::net::Shutdown::Write);
+        Ok(())
+    });
+    (out, input)
 }

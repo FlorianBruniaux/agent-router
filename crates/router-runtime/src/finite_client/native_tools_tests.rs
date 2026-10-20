@@ -34,7 +34,7 @@ impl Drop for ScriptChild {
         let _ = self.0.wait();
     }
 }
-fn broker(
+pub(super) fn broker(
     listener: TcpListener,
     inputs: PathBuf,
     script: PathBuf,
@@ -68,7 +68,9 @@ for line in sys.stdin:
         let mut input = child.0.stdin.take().unwrap();
         let mut output = BufReader::new(child.0.stdout.take().unwrap());
         listener.set_nonblocking(true).unwrap();
-        let deadline = Instant::now() + Duration::from_secs(70);
+        // Source hashing and two fresh OS probes precede the first authored
+        // request. Their preparation time is not the worker's turn deadline.
+        let mut deadline = Instant::now() + Duration::from_secs(300);
         let mut requests = Vec::new();
         while requests.len() < count {
             assert!(Instant::now() < deadline, "native local request deadline");
@@ -88,8 +90,11 @@ for line in sys.stdin:
                 .unwrap();
             let mut reader = BufReader::new(socket.try_clone().unwrap());
             let mut first = String::new();
-            reader.read_line(&mut first).unwrap();
-            assert!(first.starts_with("POST /v1/responses "));
+            if reader.read_line(&mut first).unwrap() == 0 {
+                // The fresh OS canary proves a TCP connection without sending
+                // a provider request. It is not an authored response or call.
+                continue;
+            }
             let mut length = 0usize;
             let mut headers = 0;
             loop {
@@ -105,6 +110,17 @@ for line in sys.stdin:
                 if let Some(n) = lower.strip_prefix("content-length:") {
                     length = n.trim().parse().unwrap();
                 }
+            }
+            if first == "GET /__router_probe__ HTTP/1.0\r\n" {
+                assert_eq!(length, 0);
+                socket
+                    .write_all(b"HTTP/1.0 200 OK\r\nContent-Length: 2\r\n\r\nok")
+                    .unwrap();
+                continue;
+            }
+            assert!(first.starts_with("POST /v1/responses "));
+            if requests.is_empty() {
+                deadline = Instant::now() + Duration::from_secs(70);
             }
             assert!((1..=262144).contains(&length));
             let mut body = vec![0; length];
@@ -232,6 +248,7 @@ async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
                 .map(|name| programs.join(name).to_str().unwrap().to_owned())
                 .to_vec(),
             context: context.to_string(),
+            probe: None,
         };
         let boot_path = case.join("boot.json");
         fs::write(&boot_path, serde_json::to_vec(&boot).unwrap()).unwrap();

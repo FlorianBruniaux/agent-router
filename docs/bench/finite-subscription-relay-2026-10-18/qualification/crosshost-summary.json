@@ -1,0 +1,35 @@
+{
+  "status": "PASS_MAC_CONTROLLER_LINUX_RUNTIME_CODED_UPSTREAM",
+  "scope": "Actual cross-host private delivery and verified namespace cleanup; no model/provider",
+  "runtime_binding": {
+    "account_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "approval_digest": "b62fa921ab736c7909146532f1519f2bbaa6b33de274151b4f22cf7f558b12b4",
+    "assignment_id": "t02-Lx-r1-H0",
+    "attempt": 1,
+    "channel_instance_sha256": "5b2564065a4bd73a09e2f0c00c8dcb047f048fc34c2943729bcd16fa6fd5bf6c",
+    "configuration_sha256": "37f015bd3a20a88c3d950146a41a966209aaac6811a436cbc7cc893d13e22e7e",
+    "controller_sha256": "9c5809752b2f2940c62fbdaaa4cadad4a4649a0fb1b8581b0caf4e7561081cc5",
+    "nonce": "69467086e99e3d733c80611fef899bf375fbaa45e018130afda41587045f44f7",
+    "run_id": "q02"
+  },
+  "runtime_cleanup_fingerprint": "d20855b2c736efafb026f295262e26d713ca99b8a32c5d3c00ad15bc74197989",
+  "runtime_observation": {
+    "known_prefix_tokens": 2400,
+    "equivalent_microcredits": 13100,
+    "verified_responses": 4,
+    "usage_unknown": false
+  },
+  "host_ledger_sha256": "35ae368e610a4917ac4f94492cd486a779b663acef6f7e73cb80dbabfa9c42af",
+  "host_report_sha256": "7990982cb7e42d4022dc126b6feed5fa88c92f35e437fa8698c753326a9a8807",
+  "recipe_sha256": "14bb5d7c6acf54518ce3b0f52300375b74168f3c005ef956464432efe7ba6484",
+  "namespace_terminated": true,
+  "source_unchanged": true,
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "real_budget_approved": null,
+  "real_24_results_written": false,
+  "raw_sdk_payloads_saved": false,
+  "same_run_approval_nonce_and_cleanup_on_both_hosts": true
+}

@@ -50,7 +50,15 @@ impl FiniteClientReview {
                 &self.approval,
                 &pin,
                 &identity.identity,
-                "linux-isolated-broker-v2",
+                if self
+                    .owned_state
+                    .as_ref()
+                    .is_some_and(|state| state.startup.tools)
+                {
+                    "linux-isolated-finite-tools-v3"
+                } else {
+                    "linux-isolated-broker-v2"
+                },
             ),
         )?;
         self.owned_namespace = Some(FiniteClientNamespace {
@@ -67,7 +75,20 @@ pub const LINUX_FINITE_PROFILE_V2: &[u8] =
     b"{\"kind\":\"linux-isolated-broker-v2\",\"schema_version\":1}\n";
 const NATIVE_LINUX_ARM64: &str = "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3";
 
+struct ToolsProbeView {
+    staging: PathBuf,
+    bootstrap: PathBuf,
+    terminal: PathBuf,
+    terminal_file: File,
+    terminal_identity: FileIdentity,
+    policy: crate::finite_tools::FilePolicy,
+    binding: String,
+}
+#[path = "tools_probe_view.rs"]
+mod tools_probe_view;
+
 struct ProbeView {
+    tools: Option<ToolsProbeView>,
     temporary: std::path::PathBuf,
     control: std::path::PathBuf,
     hidden: std::path::PathBuf,
@@ -88,12 +109,18 @@ fn composition_command(
     let namespace = r.owned_namespace.as_ref().ok_or(RuntimeError::Sandbox)?;
     let assets = r.owned_assets.as_ref().ok_or(RuntimeError::Sandbox)?;
     let pins = &assets.pins;
-    if resources.startup.tools
+    let tools = r.owned_tools.as_ref();
+    if resources.startup.tools != tools.is_some()
         || r.resource_arguments != ResourceLimits::default().args()?
         || r.manifest.native.sha256 != NATIVE_LINUX_ARM64
         || r.manifest.native_version != "0.159.2-linux-arm64-musl"
         || r.run.argv != ["--worker"]
-        || fs::read(&pins[4].path)? != LINUX_FINITE_PROFILE_V2
+        || fs::read(&pins[4].path)?
+            != if tools.is_some() {
+                super::tools_state::LINUX_FINITE_TOOLS_PROFILE_V3
+            } else {
+                LINUX_FINITE_PROFILE_V2
+            }
     {
         return Err(RuntimeError::Sandbox);
     }
@@ -107,7 +134,7 @@ fn composition_command(
     let tmp = home.join("tmp");
     let backing = probe.map_or(tmp.as_path(), |p| p.temporary.as_path());
     let mut writes = vec![];
-    if r.run.sandbox == router_types::ExecutionSandbox::WorkspaceWrite {
+    if tools.is_none() && r.run.sandbox == router_types::ExecutionSandbox::WorkspaceWrite {
         let workspace = r.owned_workspace.as_ref().ok_or(RuntimeError::Sandbox)?;
         // The delivered backend still implements existing-file replacement.
         // Preparing an absent output cannot silently opt into another profile.
@@ -153,6 +180,9 @@ fn composition_command(
         "--dev",
         "/dev",
     ]);
+    if tools.is_some() {
+        command.args(["--size", "134217728", "--tmpfs", "/tmp"]);
+    }
     let mut reads: Vec<_> = assets
         .copies
         .iter()
@@ -172,9 +202,82 @@ fn composition_command(
         // The producer already places mutable native startup state in tmp.
         // Preserve that existing grant: Codex opens its valid installation ID
         // read/write even when it only reads it. The parent/config stay RO.
-        .arg("--ro-bind")
-        .arg(&r.run.cwd)
+        .arg(if tools.is_some() {
+            "--bind"
+        } else {
+            "--ro-bind"
+        })
+        .arg(match (tools, probe) {
+            (Some(_), Some(p)) => p
+                .tools
+                .as_ref()
+                .ok_or(RuntimeError::Sandbox)?
+                .staging
+                .as_path(),
+            (Some(tools), None) => tools.staging.as_path(),
+            (None, _) => Path::new(&r.run.cwd),
+        })
         .arg(&r.run.cwd);
+    if let Some(tools) = tools {
+        let stage = match probe {
+            Some(p) => p
+                .tools
+                .as_ref()
+                .ok_or(RuntimeError::Sandbox)?
+                .staging
+                .as_path(),
+            None => tools.staging.as_path(),
+        };
+        // Only a NEW explicit public projection is mounted writable. The
+        // private Git view stays outside the worker's writable mounts.
+        for name in tools
+            .boot
+            .sandbox
+            .public
+            .keys()
+            .filter(|name| *name != &tools.boot.sandbox.output)
+        {
+            command
+                .arg("--ro-bind")
+                .arg(stage.join(name))
+                .arg(Path::new(&r.run.cwd).join(name));
+        }
+        let (bootstrap, terminal) = if let Some(probe) = probe {
+            let view = probe.tools.as_ref().ok_or(RuntimeError::Sandbox)?;
+            (view.bootstrap.as_path(), view.terminal.as_path())
+        } else {
+            (
+                Path::new(&tools.bootstrap.path),
+                tools.terminal_path.as_path(),
+            )
+        };
+        command
+            .args([
+                "--size",
+                "1048576",
+                "--tmpfs",
+                "/router-tools",
+                "--chmod",
+                "700",
+                "/router-tools",
+                "--size",
+                "16777216",
+                "--tmpfs",
+                "/router-tools/scratch",
+                "--chmod",
+                "700",
+                "/router-tools/scratch",
+            ])
+            .arg("--ro-bind")
+            .arg(bootstrap)
+            .arg("/router-tools/boot.json")
+            .arg("--bind")
+            .arg(terminal)
+            .arg("/router-tools/terminal.json")
+            .arg("--ro-bind")
+            .arg(&pins[0].path)
+            .arg("/finite-client");
+    }
     for path in &writes {
         command.arg("--bind");
         if let Some(probe) = probe {
@@ -187,7 +290,19 @@ fn composition_command(
     command
         .args(["--remount-ro", "/", "--chdir"])
         .arg(&r.run.cwd)
-        .arg("--")
+        .arg("--");
+    if tools.is_some() {
+        command
+            .arg(&pins[0].path)
+            .arg("--tools-owner")
+            .current_dir(&r.run.cwd)
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1")
+            .env("ROUTER_RUNTIME_CONTAINMENT", "pid-namespace-v1");
+        return Ok(command);
+    }
+    command
         .arg(&pins[3].path)
         .arg("--restrict-v1")
         .arg(r.broker.listener.local_addr()?.port().to_string())
@@ -256,6 +371,9 @@ pub(crate) struct LinuxFiniteSupervisor {
     state: Mutex<Option<HostState>>,
     run: PreparedRun,
     write: Option<super::write_workspace::WriteDispatch>,
+    tools: bool,
+    subscription: Option<std::sync::Arc<OwnedSubscriptionController>>,
+    subscription_server: Mutex<Option<super::subscription_controller::SubscriptionServer>>,
     binding: CapabilityProofBinding,
     host: HostSnapshot,
     network: std::sync::Arc<super::isolated_network::IsolatedNetwork>,
@@ -294,7 +412,12 @@ impl LinuxFiniteSupervisor {
         fs::DirBuilder::new().mode(0o700).create(&root)?;
         let mut secret = [0; 32];
         File::open("/dev/urandom")?.read_exact(&mut secret)?;
+        let tools = client.reviewed.owned_tools.is_some();
+        let subscription = client.reviewed.owned_subscription.clone();
         Ok(Self {
+            tools,
+            subscription,
+            subscription_server: Mutex::new(None),
             state: Mutex::new(Some(client.into_namespace_state()?)),
             run,
             write,
@@ -310,8 +433,58 @@ impl LinuxFiniteSupervisor {
             }),
         })
     }
+    pub(crate) fn subscription(&self) -> Option<&OwnedSubscriptionController> {
+        self.subscription.as_deref()
+    }
+    fn start_subscription(&self, cancel: Cancellation) -> Result<()> {
+        if let Some(controller) = &self.subscription {
+            *self
+                .subscription_server
+                .lock()
+                .map_err(|_| RuntimeError::Approval)? =
+                Some(controller.start(self.broker.try_clone()?, cancel)?);
+        }
+        Ok(())
+    }
+    pub(crate) fn subscription_observation(
+        &self,
+    ) -> Result<Option<super::subscription_controller::SubscriptionObservation>> {
+        self.subscription
+            .as_ref()
+            .map(|c| c.observation())
+            .transpose()
+    }
+    pub(crate) fn arm_subscription(&self, id: &str, approval: &str) -> Result<()> {
+        if let Some(controller) = &self.subscription {
+            controller.ready(id, approval)?;
+        }
+        Ok(())
+    }
+    pub(crate) fn finish_subscription(&self, proof: &str, status: &str) -> Result<()> {
+        if let Some(mut server) = self
+            .subscription_server
+            .lock()
+            .map_err(|_| RuntimeError::Approval)?
+            .take()
+        {
+            server.stop()?;
+        }
+        if let Some(controller) = &self.subscription {
+            controller.cleanup(proof, status)?;
+        }
+        Ok(())
+    }
+    pub(crate) fn uses_tools(&self) -> bool {
+        self.tools
+    }
     fn capabilities(&self) -> Vec<Capability> {
-        if self.write.is_some() {
+        if self.tools {
+            vec![
+                Capability::Network,
+                Capability::WorkspaceWrite,
+                Capability::Tools,
+            ]
+        } else if self.write.is_some() {
             vec![Capability::Network, Capability::WorkspaceWrite]
         } else {
             vec![Capability::Network]
@@ -396,13 +569,17 @@ impl LinuxFiniteSupervisor {
         let other = TcpListener::bind(("127.0.0.1", 0))?;
         let denied_port = other.local_addr()?.port();
         drop(std::net::TcpStream::connect(other.local_addr()?)?);
-        let view = ProbeView {
+        let mut view = ProbeView {
+            tools: None,
             temporary: temporary.clone(),
             control: control.clone(),
             hidden,
             denied_port,
             nonce: nonce.clone(),
         };
+        if self.tools {
+            view.tools = Some(ToolsProbeView::prepare(state, &view)?);
+        }
         let mut command = composition_command(state, Some(&view))?;
         let (probe_id, lease) = preparation.register_probe_with_host_state(true)?;
         scratch.arm_cleanup(Some(&lease), true)?;
@@ -453,8 +630,13 @@ impl LinuxFiniteSupervisor {
                     if !lengths.windows(2).all(|p| p[0] == p[1]) {
                         return Err(RuntimeError::CleanupUnknown);
                     }
+                    if let Some(tools) = &view.tools {
+                        tools.verify(&nonce)?;
+                    }
                     if let Some(view) = &self.write {
-                        if fs::read(temporary.join("scoped-file"))? != nonce.as_bytes() {
+                        if !self.tools
+                            && fs::read(temporary.join("scoped-file"))? != nonce.as_bytes()
+                        {
                             return Err(RuntimeError::Integrity("finite bounded write effect"));
                         }
                         state
@@ -484,7 +666,7 @@ impl LinuxFiniteSupervisor {
             .split(|b| *b == b'\n')
             .filter(|line| !line.is_empty())
             .collect();
-        if lines.len() != 2 {
+        if lines.len() != if self.tools { 3 } else { 2 } {
             return Err(RuntimeError::Integrity("finite probe framing"));
         }
         let observed = router_adapter_api::strict_json_limited(lines[0], 8192)
@@ -494,11 +676,20 @@ impl LinuxFiniteSupervisor {
         if observed["linux_finite_probe"] != "v2"
             || observed["memory_bytes"] != 8589934592u64
             || observed["nonce"] != nonce
-            || observed["workspace_write"] != self.write.is_some()
+            || observed["workspace_write"] != (self.write.is_some() && !self.tools)
             || version
                 != serde_json::json!({"finite_client_probe":"v1","native_version":"codex-cli 0.159.2"})
         {
             return Err(RuntimeError::Integrity("finite observed composition"));
+        }
+        if self.tools {
+            let tool_effect = router_adapter_api::strict_json_limited(lines[2], 8192)
+                .map_err(|_| RuntimeError::Integrity("finite tools live observation"))?;
+            if tool_effect
+                != serde_json::json!({"finite_tools_probe":"v1","nonce":nonce,"direct_write_refused":true,"calls":6})
+            {
+                return Err(RuntimeError::Integrity("finite tools observed effects"));
+            }
         }
         let mut live = self
             .live
@@ -516,6 +707,8 @@ impl LinuxFiniteSupervisor {
                     "finite-{nonce}-{}",
                     if capability == Capability::Network {
                         "network"
+                    } else if capability == Capability::Tools {
+                        "tools"
                     } else {
                         "write"
                     }
@@ -671,18 +864,19 @@ impl Runtime {
         let frozen = approved.client.reviewed.run.clone();
         let supervisor =
             LinuxFiniteSupervisor::new(approved.client, snapshot.host().clone(), &self.store.root)?;
+        supervisor.start_subscription(cancel.clone())?;
         let adapter = FiniteAdapter {
             run: frozen,
             inner: adapter,
         };
-        self.execute_admitted(
+        Box::pin(self.execute_admitted(
             approved.approved,
             &adapter,
             &supervisor,
             cancel,
             None,
             Some(&supervisor),
-        )
+        ))
         .await
     }
 }
@@ -690,3 +884,7 @@ impl Runtime {
 #[cfg(all(test, target_os = "linux"))]
 #[path = "linux_e2e.rs"]
 mod e2e_tests;
+
+#[cfg(all(test, target_os = "linux"))]
+#[path = "coupling_linux_tests.rs"]
+mod tools_coupling_tests;

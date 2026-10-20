@@ -273,6 +273,29 @@ impl HostState {
         Ok(())
     }
 
+    /// Observe only after the exact retained namespace lease excludes writers.
+    pub(crate) fn observe_finite_tools(
+        &mut self,
+        proof: &crate::leases::CleanupProof,
+        require_complete: bool,
+    ) -> Result<Option<crate::finite_client::StoppedToolsObservation>> {
+        if !self.possibly_running
+            || !self.pid_namespace
+            || proof.evidence != router_types::ProcessCleanupEvidence::NamespaceTerminated
+            || !self
+                .writer_lease
+                .as_ref()
+                .ok_or(RuntimeError::CleanupUnknown)?
+                .matches(proof)?
+        {
+            return Err(RuntimeError::CleanupUnknown);
+        }
+        match self.finite_client.as_mut() {
+            Some(resources) => resources.observe_tools(require_complete),
+            None => Ok(None),
+        }
+    }
+
     pub(crate) fn cleanup_with_proof(self, proof: &crate::leases::CleanupProof) -> Result<()> {
         if !self.possibly_running
             || !proof.excludes_writers()

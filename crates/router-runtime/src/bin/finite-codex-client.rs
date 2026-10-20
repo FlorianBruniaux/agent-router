@@ -13,6 +13,8 @@ use std::{
 
 #[path = "finite-codex-client/replacement.rs"]
 mod replacement;
+#[path = "finite-codex-client/tools_probe.rs"]
+mod tools_probe;
 
 const MAX_CONTEXT: usize = 8192;
 const MAX_PROMPT: usize = 32768;
@@ -240,6 +242,28 @@ fn execute(probe: bool) -> Result<i32, &'static str> {
 }
 fn main() {
     let args: Vec<_> = std::env::args().skip(1).collect();
+    if std::env::args_os()
+        .next()
+        .is_some_and(|p| Path::new(&p).file_name() == Some(std::ffi::OsStr::new("rustc")))
+    {
+        use std::os::unix::process::CommandExt;
+        if !cfg!(target_os = "linux")
+            || args.len() > 31
+            || args.iter().any(|s| s.len() > 4096 || s.contains('\0'))
+            || args.iter().map(String::len).sum::<usize>() > 16384
+        {
+            eprintln!("finite-client:compiler.arguments");
+            std::process::exit(125);
+        }
+        let _error =
+            Command::new("/usr/local/rustup/toolchains/1.85.1-aarch64-unknown-linux-gnu/bin/rustc")
+                .args(["-C", "linker=/usr/bin/aarch64-linux-gnu-gcc-12"])
+                .args(&args)
+                .exec();
+        eprintln!("finite-client:compiler.exec");
+        std::process::exit(125);
+    }
+
     if args.as_slice() == ["--tools-owner"] {
         // Worker bootstrap is never a Runtime approval or capability proof.
         let result = (|| -> Result<i32, &'static str> {
@@ -285,6 +309,15 @@ fn main() {
         } else {
             125
         });
+    }
+    if args.as_slice() == ["--tools-probe-peer"] {
+        match tools_probe::execute() {
+            Ok(code) => std::process::exit(code),
+            Err(code) => {
+                eprintln!("finite-client:{code}");
+                std::process::exit(125);
+            }
+        }
     }
     let mode = match args.as_slice() {
         [mode] if mode == "--worker" => false,

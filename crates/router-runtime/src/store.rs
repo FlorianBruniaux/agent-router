@@ -899,6 +899,19 @@ impl Store {
         id: &str,
         state: Option<crate::HostState>,
     ) -> Result<()> {
+        self.confirm_attempt_cleanup_and_state_observed(id, state, |_, _| Ok(()))
+    }
+    /// Runs a bounded observation under the exact cleanup lease and store
+    /// transaction, before disposing the private owner or settling authority.
+    pub(crate) fn confirm_attempt_cleanup_and_state_observed<F>(
+        &self,
+        id: &str,
+        state: Option<crate::HostState>,
+        observe: F,
+    ) -> Result<()>
+    where
+        F: FnOnce(&mut crate::HostState, &crate::leases::CleanupProof) -> Result<()>,
+    {
         let mut db = self.lock()?;
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
         let run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
@@ -923,7 +936,8 @@ impl Store {
                 if record.needs_host_cleanup() && state.is_none() {
                     return Err(RuntimeError::CleanupUnknown);
                 }
-                if let Some(state) = state {
+                if let Some(mut state) = state {
+                    observe(&mut state, &proof)?;
                     state.cleanup_with_proof(&proof)?;
                     record.host_state_cleaned();
                     tx.execute(
@@ -2300,6 +2314,61 @@ pub(crate) mod tests {
             Err(RuntimeError::CleanupUnknown)
         ));
         store.verify_events().unwrap();
+    }
+    #[test]
+    fn stopped_observer_runs_before_cleanup_and_failure_retains_authority() {
+        for refuse in [false, true] {
+            let temp = tempfile::tempdir().unwrap();
+            let root = fs::canonicalize(temp.path()).unwrap().join("runtime");
+            let store = Store::open(&root).unwrap();
+            store.register(&summary("run")).unwrap();
+            for state in [RunState::AwaitingApproval, RunState::Queued] {
+                store.transition("run", state, "", None).unwrap();
+            }
+            let prep = store.begin_preparation("run").unwrap();
+            prep.no_child_yet().unwrap();
+            prep.complete().unwrap();
+            drop(prep);
+            let path = store
+                .attempt_with_host_state("run", 1, true, true)
+                .unwrap()
+                .unwrap();
+            let mut state =
+                crate::HostState::create(&root, "codex", &std::collections::BTreeMap::new())
+                    .unwrap()
+                    .unwrap();
+            let home = state.path().to_owned();
+            state.arm_cleanup(Some(&path), true).unwrap();
+            fs::write(&path, b"router-runtime-lease-v1:namespace-clean\n").unwrap();
+            let mut called = false;
+            let result = store.confirm_attempt_cleanup_and_state_observed(
+                "run",
+                Some(state),
+                |state, proof| {
+                    called = true;
+                    assert!(state.path().is_dir());
+                    assert_eq!(
+                        proof.evidence,
+                        router_types::ProcessCleanupEvidence::NamespaceTerminated
+                    );
+                    if refuse {
+                        Err(RuntimeError::Integrity("observer refused"))
+                    } else {
+                        Ok(())
+                    }
+                },
+            );
+            assert!(called);
+            if refuse {
+                assert!(matches!(result, Err(RuntimeError::CleanupUnknown)));
+                assert!(home.exists());
+                assert!(store.require_cleanup_complete().is_err());
+            } else {
+                result.unwrap();
+                assert!(!home.exists());
+                store.require_cleanup_complete().unwrap();
+            }
+        }
     }
     #[test]
     fn confirmed_host_cleanup_clears_only_its_durable_obligation() {

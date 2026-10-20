@@ -4,6 +4,54 @@ use crate::leases::LeaseStorage;
 use router_types::*;
 use std::{net::SocketAddr, path::PathBuf};
 
+#[test]
+fn subscription_preparation_binds_account_and_relay_without_credentials_or_launch() {
+    let f = fixture();
+    let mut run = f.run.clone();
+    run.requested_model = ModelId::parse("gpt-6-luna").unwrap();
+    run.requested_effort = EffortLevel::Medium;
+    let broker = &f.approved.reviewed.broker;
+    let state = broker
+        .prepare_codex_subscription_tools_state(&f.store, &run, &"a".repeat(64), &"b".repeat(64))
+        .unwrap();
+    state.check(&run, broker).unwrap();
+    let config = fs::read_to_string(&state.configuration().path).unwrap();
+    assert!(config.contains("model_provider = \"codex_subscription_relay\""));
+    assert!(!config.contains("local_fixture"));
+    assert!(!state.path().join("auth.json").exists());
+    let catalog = fs::read_to_string(&state.startup.catalog.path).unwrap();
+    assert!(!catalog.contains("No model ran"));
+    assert!(!catalog.contains("Authored local fixture"));
+    let other = broker
+        .prepare_codex_subscription_tools_state(&f.store, &run, &"c".repeat(64), &"b".repeat(64))
+        .unwrap();
+    assert_ne!(
+        state.startup_binding().unwrap(),
+        other.startup_binding().unwrap()
+    );
+    let mut wrong = run.clone();
+    wrong.requested_model = ModelId::parse("fixture-model").unwrap();
+    assert!(
+        broker
+            .prepare_codex_subscription_tools_state(
+                &f.store,
+                &wrong,
+                &"a".repeat(64),
+                &"b".repeat(64)
+            )
+            .is_err()
+    );
+    assert!(
+        broker
+            .prepare_codex_subscription_tools_state(&f.store, &run, "invalid", &"b".repeat(64))
+            .is_err()
+    );
+    assert!(
+        TcpListener::bind(f.address).is_err(),
+        "preparation retains the same exclusive broker"
+    );
+}
+
 struct Fixture {
     _root: tempfile::TempDir,
     store: PathBuf,

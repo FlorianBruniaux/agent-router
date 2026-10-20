@@ -364,6 +364,8 @@ pub struct FiniteClientReview {
     owned_assets: Option<FiniteClientAssets>,
     owned_namespace: Option<FiniteClientNamespace>,
     owned_workspace: Option<FiniteClientWorkspace>,
+    owned_tools: Option<tools_state::PreparedTools>,
+    owned_subscription: Option<std::sync::Arc<OwnedSubscriptionController>>,
 }
 impl FiniteClientReview {
     pub fn new(
@@ -469,6 +471,8 @@ impl FiniteClientReview {
             owned_assets: None,
             owned_namespace: None,
             owned_workspace: None,
+            owned_tools: None,
+            owned_subscription: None,
         })
     }
     fn check_files(&self) -> Result<()> {
@@ -491,6 +495,9 @@ impl FiniteClientReview {
             if file_identity(pin, *executable)?.identity != expected.identity {
                 return Err(RuntimeError::Integrity("finite client file identity"));
             }
+        }
+        if let Some(tools) = &self.owned_tools {
+            tools.check()?;
         }
         if let Some(workspace) = &self.owned_workspace {
             workspace.check_identity()?;
@@ -623,6 +630,16 @@ impl FiniteClientValidation<'_> {
     }
 }
 
+mod subscription_controller;
+#[path = "finite_client/subscription_preparation.rs"]
+mod subscription_preparation;
+pub use subscription_controller::{
+    OwnedSubscriptionController, SubscriptionControllerBinding, SubscriptionControllerPeer,
+};
+use subscription_preparation::{
+    SubscriptionPreparation, codex_catalog_for, codex_configuration_for,
+};
+
 /// Runtime-created, credential-free Codex home. Uses the existing HostState
 /// lifecycle, and must be consumed by a review to remain alive with approval.
 pub struct FiniteCodexState {
@@ -631,6 +648,7 @@ pub struct FiniteCodexState {
 }
 struct FiniteCodexStartup {
     tools: bool,
+    subscription: Option<SubscriptionPreparation>,
     configuration: FiniteClientFile,
     catalog: FiniteClientFile,
     catalog_identity: PinnedIdentity,
@@ -671,11 +689,21 @@ impl FiniteCodexStartup {
             .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
         if directory(tmp, true)?.identity != self.tmp_identity.identity
             || self.configuration.sha256
-                != content_digest(&codex_configuration_mode(run, broker, self.tools)?)
+                != content_digest(&codex_configuration_for(
+                    run,
+                    broker,
+                    self.tools,
+                    self.subscription.as_ref(),
+                )?)
         {
             return Err(RuntimeError::Integrity("finite client owned configuration"));
         }
-        if self.catalog.sha256 != content_digest(&codex_local_catalog_mode(run, self.tools)?)
+        if self.catalog.sha256
+            != content_digest(&codex_catalog_for(
+                run,
+                self.tools,
+                self.subscription.as_ref(),
+            )?)
             || file_identity(&self.catalog, false)?.identity != self.catalog_identity.identity
         {
             return Err(RuntimeError::Integrity("finite local catalog changed"));
@@ -689,6 +717,15 @@ impl FiniteCodexStartup {
         Ok(())
     }
     fn binding(&self) -> Result<String> {
+        let base = self.fixture_binding()?;
+        match &self.subscription {
+            Some(subscription) => {
+                crate::digest("finite-subscription-preparation-v1", &(&base, subscription))
+            }
+            None => Ok(base),
+        }
+    }
+    fn fixture_binding(&self) -> Result<String> {
         if self.tools {
             return crate::digest(
                 "finite-codex-tools-startup-v1",
@@ -797,7 +834,7 @@ fn codex_configuration_mode(
 impl OwnedBroker {
     /// Creates only private local files. No native invocation or provider call.
     pub fn prepare_codex_state(&self, store: &Path, run: &PreparedRun) -> Result<FiniteCodexState> {
-        self.prepare_codex_state_mode(store, run, false)
+        self.prepare_codex_state_mode(store, run, false, None)
     }
     /// Prepares the exact local MCP startup files. This does not enable the
     /// Runtime Tools entrance, invoke a native process or grant any capability.
@@ -806,13 +843,14 @@ impl OwnedBroker {
         store: &Path,
         run: &PreparedRun,
     ) -> Result<FiniteCodexState> {
-        self.prepare_codex_state_mode(store, run, true)
+        self.prepare_codex_state_mode(store, run, true, None)
     }
     fn prepare_codex_state_mode(
         &self,
         store: &Path,
         run: &PreparedRun,
         tools: bool,
+        subscription: Option<SubscriptionPreparation>,
     ) -> Result<FiniteCodexState> {
         prepared_digest(run)?;
         let store_text = store
@@ -823,7 +861,7 @@ impl OwnedBroker {
         if store.starts_with(&run.cwd) || Path::new(&run.cwd).starts_with(store) {
             return Err(RuntimeError::Scope);
         }
-        let bytes = codex_configuration_mode(run, self, tools)?;
+        let bytes = codex_configuration_for(run, self, tools, subscription.as_ref())?;
         let state =
             HostState::create(store, "codex", &BTreeMap::new())?.ok_or(RuntimeError::Sandbox)?;
         let tmp = state.path().join("tmp");
@@ -880,7 +918,7 @@ impl OwnedBroker {
                 .into(),
             sha256: content_digest(id.as_bytes()),
         };
-        let catalog_bytes = codex_local_catalog_mode(run, tools)?;
+        let catalog_bytes = codex_catalog_for(run, tools, subscription.as_ref())?;
         let catalog_path = state.path().join("local-model-catalog.json");
         let mut catalog_file = OpenOptions::new()
             .write(true)
@@ -906,6 +944,7 @@ impl OwnedBroker {
             state,
             startup: FiniteCodexStartup {
                 tools,
+                subscription,
                 configuration,
                 catalog,
                 catalog_identity,
@@ -1228,3 +1267,11 @@ pub use write_workspace::{FiniteClientWorkspace, FiniteOutputMode};
 #[cfg(all(test, target_os = "linux"))]
 #[path = "finite_client/native_tools_tests.rs"]
 mod native_tools_tests;
+
+mod tools_state;
+pub use tools_state::LINUX_FINITE_TOOLS_PROFILE_V3;
+
+#[cfg(test)]
+mod coupling_tests;
+
+pub(crate) use namespace_state::StoppedToolsObservation;

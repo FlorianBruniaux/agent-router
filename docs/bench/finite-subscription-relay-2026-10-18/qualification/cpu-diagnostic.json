@@ -1,0 +1,72 @@
+{
+  "helper_sha256": "6c8610b2a0528b5e280681fc7f694f89ab5c2c4969c5a7f9783fdf6717aa4c3c",
+  "limits_test_binary_sha256": "109b95791f009b7cc05476e9c4cd02654f55c1c53e665e3d7a5d79e806f01605",
+  "rlimit_cpu_seconds": 1,
+  "wall_ceiling_seconds": 10,
+  "memory_limit_changed": false,
+  "source_changes": false,
+  "instrumented_runs": [
+    {
+      "wall_seconds": 10.080507249993389,
+      "cpu_seconds": 0.481161,
+      "returncode": -9,
+      "signal": 9,
+      "deadline_intervention": true,
+      "original_assertions_pass": false,
+      "load_before": [
+        167.953125,
+        178.89013671875,
+        155.26904296875
+      ],
+      "load_after": [
+        166.541015625,
+        178.2197265625,
+        155.306640625
+      ]
+    },
+    {
+      "wall_seconds": 10.017740042007063,
+      "cpu_seconds": 0.592634,
+      "returncode": -9,
+      "signal": 9,
+      "deadline_intervention": true,
+      "original_assertions_pass": false,
+      "load_before": [
+        166.541015625,
+        178.2197265625,
+        155.306640625
+      ],
+      "load_after": [
+        177.29638671875,
+        180.177734375,
+        156.27099609375
+      ]
+    },
+    {
+      "wall_seconds": 10.02960449999955,
+      "cpu_seconds": 0.6106579999999999,
+      "returncode": -9,
+      "signal": 9,
+      "deadline_intervention": true,
+      "original_assertions_pass": false,
+      "load_before": [
+        177.29638671875,
+        180.177734375,
+        156.27099609375
+      ],
+      "load_after": [
+        172.97119140625,
+        179.125,
+        156.1748046875
+      ]
+    }
+  ],
+  "whole_limits_group": {
+    "exit_code": 101,
+    "wall_seconds": 15.05329883399827,
+    "log_sha256": "1149a065ff53249625f988410e6ab174439babc6de0490c62ff586651dae6718"
+  },
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "global_gate_reclassified": false
+}

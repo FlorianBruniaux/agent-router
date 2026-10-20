@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "scope": "Mac SessionController and results to Linux native Runtime; coded SSE only",
+  "runtime_exit_code": 0,
+  "safe_failure": null,
+  "bridge_errors": [],
+  "frames": 6,
+  "frame_bytes": 44527,
+  "frame_sha256": "6422260db37886817dd32f8851617eb3a1d38be48b0a06051bc83d12f0b9b05e",
+  "stderr_bytes": 0,
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "model_calls_started": 0,
+  "provider_requests": 0,
+  "synthetic_usage": true,
+  "raw_native_payloads_saved": false,
+  "runtime_binding": {
+    "account_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "approval_digest": "b62fa921ab736c7909146532f1519f2bbaa6b33de274151b4f22cf7f558b12b4",
+    "assignment_id": "t02-Lx-r1-H0",
+    "attempt": 1,
+    "channel_instance_sha256": "5b2564065a4bd73a09e2f0c00c8dcb047f048fc34c2943729bcd16fa6fd5bf6c",
+    "configuration_sha256": "37f015bd3a20a88c3d950146a41a966209aaac6811a436cbc7cc893d13e22e7e",
+    "controller_sha256": "9c5809752b2f2940c62fbdaaa4cadad4a4649a0fb1b8581b0caf4e7561081cc5",
+    "nonce": "69467086e99e3d733c80611fef899bf375fbaa45e018130afda41587045f44f7",
+    "run_id": "q02"
+  },
+  "coded_responses": 4,
+  "observed_tool_results": 3,
+  "synthetic_equivalent_microcredits": 13100,
+  "original_report_sha256": "7990982cb7e42d4022dc126b6feed5fa88c92f35e437fa8698c753326a9a8807"
+}

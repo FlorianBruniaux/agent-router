@@ -50,3 +50,34 @@ impl ApprovedFiniteClient {
         Ok(state)
     }
 }
+
+/// Retains the submitted inode and scratch owner through private artifact capture.
+pub(crate) struct StoppedToolsObservation {
+    pub(crate) terminal: Option<crate::finite_tools::ToolTerminal>,
+    pub(crate) output: Option<super::tools_state::VerifiedToolsOutput>,
+}
+impl FiniteClientResources {
+    pub(crate) fn observe_tools(
+        &mut self,
+        require_complete: bool,
+    ) -> Result<Option<StoppedToolsObservation>> {
+        let Some(tools) = self.reviewed.owned_tools.as_mut() else {
+            return Ok(None);
+        };
+        let terminal = tools.terminal_observation(require_complete)?;
+        let output = if require_complete {
+            let observed = terminal
+                .as_ref()
+                .ok_or(RuntimeError::Integrity("missing stopped tools terminal"))?;
+            let workspace = self
+                .reviewed
+                .owned_workspace
+                .as_ref()
+                .ok_or(RuntimeError::Sandbox)?;
+            tools.promote_output(workspace, observed)?
+        } else {
+            None
+        };
+        Ok(Some(StoppedToolsObservation { terminal, output }))
+    }
+}

@@ -173,7 +173,7 @@ static unsigned count(const char *s) {
     char *end;errno=0;unsigned long n=strtoul(s,&end,10);
     check(!errno && *s && !*end && n<=64,"count");return (unsigned)n;
 }
-static void probe(unsigned broker,unsigned denied_port,const char *hidden,const char *home,const char *workspace,const char *control,const char *nonce,unsigned nr,char **reads,unsigned nw,char **writes) {
+static void probe(unsigned broker,unsigned denied_port,const char *hidden,const char *home,const char *workspace,const char *control,const char *nonce,unsigned nr,char **reads,unsigned nw,char **writes,unsigned mode) {
     check(strlen(nonce)==64,"nonce");
     for(unsigned i=0;i<64;i++) check((nonce[i]>='0'&&nonce[i]<='9')||(nonce[i]>='a'&&nonce[i]<='f'),"nonce-hex");
     struct rlimit as,core;check(!getrlimit(RLIMIT_AS,&as)&&as.rlim_cur==BOUND&&as.rlim_max==BOUND,"as-bound");
@@ -192,7 +192,14 @@ static void probe(unsigned broker,unsigned denied_port,const char *hidden,const 
     struct sockaddr_in remote={.sin_family=AF_INET,.sin_port=htons((uint16_t)broker)};
     check(inet_pton(AF_INET,"192.0.2.1",&remote.sin_addr)==1,"external-address");
     check(connect(external,(struct sockaddr*)&remote,sizeof(remote))<0&&errno==ENETUNREACH,"external-route-refusal");close(external);
-    denied(socket(AF_INET,SOCK_DGRAM,0),"udp-denial");denied(socket(AF_INET6,SOCK_STREAM,0),"ipv6-denial");denied(socket(AF_UNIX,SOCK_STREAM,0),"unix-denial");
+    denied(socket(AF_INET,SOCK_DGRAM,0),"udp-denial");denied(socket(AF_INET6,SOCK_STREAM,0),"ipv6-denial");
+    if(mode) {
+        int local=socket(AF_UNIX,SOCK_STREAM|SOCK_CLOEXEC,0);check(local>=0,"mcp-unix-stream-positive");close(local);
+        int pair[2];check(!socketpair(AF_UNIX,SOCK_SEQPACKET|SOCK_CLOEXEC,0,pair),"mcp-anonymous-pair-positive");close(pair[0]);close(pair[1]);
+    } else {
+        denied(socket(AF_UNIX,SOCK_STREAM,0),"unix-denial");
+    }
+    denied(socket(AF_UNIX,SOCK_SEQPACKET|SOCK_CLOEXEC,0),"addressed-seqpacket-denial");
     int fd=socket(AF_INET,SOCK_STREAM,0);check(fd>=0,"bind-socket");
     struct sockaddr_in address={.sin_family=AF_INET,.sin_port=0,.sin_addr={htonl(INADDR_LOOPBACK)}};
     denied(bind(fd,(struct sockaddr*)&address,sizeof(address)),"bind-denial");close(fd);
@@ -265,6 +272,6 @@ int main(int argc,char **argv) {
     path(fd,"/dev/null",FS_READ|FS_WRITE);path(fd,"/dev/urandom",FS_READ);
     struct net_rule net={2,broker};check(!syscall(ADD,fd,2,&net,0),"network-rule");
     check(!prctl(PR_SET_NO_NEW_PRIVS,1,0,0,0)&&!syscall(RESTRICT,fd,0),"restrict");close(fd);seccomp(mode);
-    if(do_probe)probe(broker,other,hidden,home,workspace,control,nonce,nr,reads,nw,writes);
+    if(do_probe)probe(broker,other,hidden,home,workspace,control,nonce,nr,reads,nw,writes,mode);
     execv(argv[cursor],&argv[cursor]);fail("exec");
 }
