@@ -18,5 +18,11 @@ class UsefulScoreMode(unittest.TestCase):
         self.assertIn('requires the sealed t02-Lm-r1-H1 packet', result.stderr)
         self.assertNotIn('Traceback', result.stderr)
 
+    def test_evaluator_requires_explicit_useful_score_before_reading_container(self):
+        result = subprocess.run([sys.executable, '-B', str(HERE/'qualify-offline.py'), 't02-Lm-r1-H1', '--evaluate-public-score', '--output', '/does-not-exist', '--recipe', '/does-not-exist'], capture_output=True, text=True, timeout=10)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--evaluate-public-score requires --useful-score', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
 if __name__ == '__main__':
     unittest.main()

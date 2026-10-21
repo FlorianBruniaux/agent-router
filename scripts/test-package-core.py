@@ -5,6 +5,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import shutil
 from contextlib import redirect_stdout
 from pathlib import Path
 import tarfile
@@ -207,6 +208,66 @@ serde = "1"
         self.write("integrations/host/.env.local", "Never distribute")
         with self.assertRaises(CORE.PackageError):
             CORE.collect_sources(self.root, [package], "integrations", [{"relative": "integrations/private"}])
+
+    def public_score_fixture(self):
+        self.write("Cargo.toml", '[workspace]\nmembers=["crates/router-runtime"]\n')
+        self.write("Cargo.lock", "version=4\n")
+        for name in ("LICENSE.md", "NOTICE"):
+            self.write(name, "Fixture license")
+        self.write("crates/router-runtime/Cargo.toml", '[package]\nname="router-runtime"\nversion="0.1.0"\n')
+        self.write("crates/router-runtime/src/lib.rs", "pub fn fixture() {}")
+        assets = {
+            "docs/bench/native-useful-score-2026-10-21/verify.py": b"# reviewed public verifier\n",
+            "docs/bench/native-useful-score-2026-10-21/required-cases.rs": b"// reviewed public cases\n",
+            "docs/bench/native-useful-score-2026-10-21/acceptance.json": b'{"fixture":"public"}',
+            "docs/bench/native-useful-score-2026-10-21/change.patch": b"reviewed public patch\n",
+            "docs/bench/native-useful-score-2026-10-21/submission/lib.rs": b"// public authored solution\n",
+            "docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/controller/control-output.json": b'{"lib.rs":"public solution"}',
+        }
+        for name, data in assets.items():
+            self.write(name, data)
+        self.write("docs/bench/private/unrelated.json", "Never distribute")
+        return {"relative": "crates/router-runtime"}, assets
+
+    def test_selected_public_example_carries_its_exact_compile_inputs(self):
+        package, assets = self.public_score_fixture()
+        self.write("crates/router-runtime/examples/campaign/public_score.rs", "// compiler-embedded public assets")
+        files = CORE.collect_sources(self.root, [package])
+        for name, data in assets.items():
+            self.assertIn(name, files)
+            self.assertEqual(files[name], data)
+        self.assertNotIn("docs/bench/private/unrelated.json", files)
+
+    def test_unselected_public_example_does_not_export_bench_data(self):
+        package, assets = self.public_score_fixture()
+        files = CORE.collect_sources(self.root, [package])
+        self.assertFalse(set(assets) & set(files))
+
+    def test_missing_public_compile_input_refuses_incomplete_distribution(self):
+        package, _ = self.public_score_fixture()
+        self.write("crates/router-runtime/examples/campaign/public_score.rs", "// compiler-embedded public assets")
+        (self.root/"docs/bench/native-useful-score-2026-10-21/verify.py").unlink()
+        with self.assertRaisesRegex(CORE.PackageError, "source.missing_or_oversized"):
+            CORE.collect_sources(self.root, [package])
+
+    def test_finite_example_carries_its_external_test_support(self):
+        package, _ = self.public_score_fixture()
+        self.write("crates/router-runtime/examples/finite-campaign.rs", "// explicit external test support")
+        support = "tests/support/capability_verifier.rs"
+        self.write(support, "// synthetic capability verifier")
+        files = CORE.collect_sources(self.root, [package])
+        self.assertEqual(files.get(support), b"// synthetic capability verifier")
+        self.assertNotIn("docs/bench/private/unrelated.json", files)
+
+    @unittest.skipUnless(shutil.which("gitleaks"), "gitleaks is not installed")
+    def test_distribution_scan_applies_existing_policy_and_still_rejects_secrets(self):
+        repository = Path(__file__).resolve().parent.parent
+        self.write(".gitleaks.toml", (repository / ".gitleaks.toml").read_bytes())
+        fixture = "tests/fixtures/evaluation/attempt-correlation-v1.json"
+        self.assertEqual(CORE.scan_sources(self.root, {fixture: (repository / fixture).read_bytes()}, True), "passed")
+        secret = b'api_key = "' + b"ghp_" + b"b7Jq9Vt2Nk4Lm6Xr8Wz0Cs3Df5Hg1Pa7Qv9Y" + b'"\n'
+        with self.assertRaisesRegex(CORE.PackageError, "gitleaks.failed"):
+            CORE.scan_sources(self.root, {"unexpected.txt": secret}, True)
 
     def archive(self, extra=None):
         files = {"Cargo.toml": b"[workspace]\nmembers=[]\n"}

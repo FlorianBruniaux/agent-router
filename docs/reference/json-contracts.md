@@ -686,6 +686,10 @@ cleanup. Its explicit `VerificationRecord` uses the existing transaction and
 independent-verifier policy; UNKNOWN remains UNKNOWN. It supplies no generic
 execution/publication handle, JSON import, human verdict or resumption after
 Runtime disposal. See [ADR 0043](../adr/0043-finite-artifact-verification.md).
+The opt-in [public-score example](../bench/finite-public-evaluation-2026-10-21/README.md)
+executes its embedded checker and records validation Passed with objective
+UNKNOWN. Its local evidence files are not a new product JSON-import contract.
+
 
 ## Qualified local capture observation
 

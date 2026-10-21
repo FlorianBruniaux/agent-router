@@ -6,7 +6,10 @@ parser.add_argument("assignment")
 parser.add_argument("--output",type=pathlib.Path,required=True,help="Private prepared candidate directory with id and program-pins.json")
 parser.add_argument("--recipe",type=pathlib.Path,required=True,help="Verified argv recipe for this isolated Linux container")
 parser.add_argument("--useful-score",action="store_true",help="Replay the authored t02 correction with RED/GREEN feedback; external acceptance remains separate")
+parser.add_argument("--evaluate-public-score",action="store_true",help="Run the embedded public t02 evaluator and record technical validation; campaign objective stays UNKNOWN")
 args=parser.parse_args()
+if args.evaluate_public_score and not args.useful_score:
+ parser.error('--evaluate-public-score requires --useful-score')
 if args.useful_score and args.assignment!='t02-Lm-r1-H1':
  parser.error('--useful-score requires the sealed t02-Lm-r1-H1 packet')
 OUT=args.output
@@ -36,7 +39,7 @@ def prefix(manager,aid):
 def argv(container):
  shell=json.loads(args.recipe.read_text())['argv']
  fixed=shell[shell.index('unshare'):];fixed=fixed[:fixed.index('sh',fixed.index('-c')+2)+1]
- return ['docker','exec','-i',container,*fixed,'/work/source/target/release/examples/finite-campaign','--run']
+ return ['docker','exec','-i',container,*fixed,'/work/source/target/release/examples/finite-campaign','--run-public-score' if args.evaluate_public_score else '--run']
 def first_line(proc):
  if not select.select([proc.stdout],[],[],300)[0]:raise TimeoutError('runtime preparation deadline')
  raw=proc.stdout.readline(16385)
@@ -95,7 +98,7 @@ def main(aid):
   assert channel.timeout==60
   channel.deadline=channel.clock()+300
   observation=session.SessionController(channel,manager,binding,send).run()
-  proc.stdin.close();rc=proc.wait(timeout=30)
+  proc.stdin.close();rc=proc.wait(timeout=150 if args.evaluate_public_score else 30)
   report_bytes=extract(c,desc['root']+'/runtime-result.json',4*1024*1024);report=json.loads(report_bytes);(out/'runtime-result.json').write_bytes(report_bytes)
   assert rc==0 and report['source_unchanged'] is True and report['cleanup']=='namespace_terminated' and report['export_failed'] is False
   assert report['admission']['granted']==0 and report['admission']['released']==1
@@ -118,6 +121,15 @@ def main(aid):
    patch=extract(c,desc['root']+'/runtime/artifacts/'+aid+'.patch',65536)
    assert hashlib.sha256(patch).hexdigest()==report['result']['run']['artifact_sha256']
    (out/'change.patch').write_bytes(patch)
+  if args.evaluate_public_score:
+   raw=extract(c,desc['root']+'/public-score-receipt.json',32768);receipt=json.loads(raw);(out/'public-score-receipt.json').write_bytes(raw)
+   raw_result=extract(c,desc['root']+'/evaluation-result.json',32768);evaluation=json.loads(raw_result);(out/'evaluation-result.json').write_bytes(raw_result)
+   record=evaluation['verification']
+   assert record['validation']=='passed' and record['objective']=='unknown'
+   assert record['evidence_sha256']==hashlib.sha256(raw).hexdigest() and record['artifact_sha256']==hashlib.sha256(patch).hexdigest()
+   assert evaluation['summary']['state']=='verifying' and evaluation['human_acceptance'] is None
+   assert receipt['runtime_report_sha256']==hashlib.sha256(report_bytes).hexdigest()
+   assert receipt['outcomes']['candidate']['exit_code']==0 and len(receipt['outcomes']['candidate']['cases'])==12
  except Exception as exc:
   error=type(exc).__name__+': '+str(exc)[:200]
   try:proc.stdin.close()
@@ -127,7 +139,7 @@ def main(aid):
  finally:
   stderr.close();manager.close()
   summary={'assignment_id':aid,'passed':error is None,'failure':error,'model_calls_started':0,'actual_provider_requests':0,'auth_read':False,'only_current_cell_executed_natively':True,'synthetic_prefix_cells':skipped,'separate_fixture_ledger':str(root),'packet_sha256':p['packet_sha256'],'binding':binding,'calls':calls,'observed_tool_results':script.observed_tool_results,'feedback_evidence':feedback,'observation':observation,'runtime_exit_code':proc.poll()}
-  summary['qualification_mode']='useful-score' if args.useful_score else 'transport'
+  summary['qualification_mode']='evaluated-public-score' if args.evaluate_public_score else ('useful-score' if args.useful_score else 'transport')
   (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps({'assignment_id':aid,'passed':summary['passed'],'failure':error,'calls':len(calls),'models_started':0}),flush=True)
  if error:raise SystemExit(1)
 if __name__=='__main__':main(args.assignment)

@@ -46,7 +46,7 @@ attestations cannot replace the first record.
 The caller remains responsible for the evidence's provenance, required cases
 and objective evaluation. Parsing provider output or an external JSON receipt
 is not authorization to call this API. No evaluator or automatic importer is
-installed. `Verified` does not mean human acceptance or permission to publish.
+installed by the Runtime. `Verified` does not mean human acceptance or permission to publish.
 
 ## Consequences
 
@@ -64,3 +64,8 @@ a real model task or establishes a human verdict.
 
 The [local verification record](../bench/finite-artifact-verification-2026-10-21.json)
 binds the modified Rust sources, workspace gate and five native Linux cases.
+
+The [fixed public-score example caller](../bench/finite-public-evaluation-2026-10-21/README.md)
+opts in to executing the embedded reviewed checker after worker cleanup. It
+records technical validation only; the frozen campaign objective stays UNKNOWN.
+Its private receipt is produced by that invocation, not imported as authority.
