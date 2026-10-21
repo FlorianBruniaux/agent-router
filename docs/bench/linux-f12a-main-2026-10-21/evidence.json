@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "verdict": "GO_F12A_SELECTED_LINUX_ARM64",
+  "source_commit": "fc1a4ea88b3effdb768cbeb1ca2c352c10b5d542",
+  "scope": "owned finite Runtime and pinned native SDK with coded upstream; not model or business acceptance",
+  "source": {
+    "tracked_files_verified": 1685,
+    "mismatches": [],
+    "archive_sha256": "d2768dd08afa4db02f8c4fe9aba64021d91e720940ef82c65a5bef4ef578023d",
+    "manifest_sha256": "1e2e888ce560bc554c1839ebe45ccf89ebb7013b6903702bb933c1ff659c2847",
+    "historical_launcher_overlay": [
+      {
+        "path": "crates/router-runtime/examples/finite-campaign.rs",
+        "historical_sha256": "4f75ced143789cc8605b10bd95ac28fb61f721b2ed7fc773a371a6c216006cdc",
+        "current_sha256": "4f75ced143789cc8605b10bd95ac28fb61f721b2ed7fc773a371a6c216006cdc",
+        "matches": true
+      },
+      {
+        "path": "crates/router-runtime/examples/campaign/recipe.rs",
+        "historical_sha256": "5c0ed344157777e3a331a599ac57909997e987e53ee014cfe86240de0998b3f4",
+        "current_sha256": "5c0ed344157777e3a331a599ac57909997e987e53ee014cfe86240de0998b3f4",
+        "matches": true
+      },
+      {
+        "path": "crates/router-runtime/examples/campaign/packets.json",
+        "historical_sha256": "2d4d225e528fff5ba402e7265140521f212d7b4a3443c3dd62f1db00f9e0281a",
+        "current_sha256": "2d4d225e528fff5ba402e7265140521f212d7b4a3443c3dd62f1db00f9e0281a",
+        "matches": true
+      },
+      {
+        "path": "crates/router-runtime/src/finite_client/campaign_discovery.rs",
+        "historical_sha256": "07efe1679e4d7aab8ce755fc04d036e78f4c32fa19f0b786f6f5dcaae509173f",
+        "current_sha256": "07efe1679e4d7aab8ce755fc04d036e78f4c32fa19f0b786f6f5dcaae509173f",
+        "matches": true
+      },
+      {
+        "path": "crates/router-runtime/src/finite_client/linux_backend.rs",
+        "historical_sha256": "356d54bbdf0cffb5e8a184bfe5d95a7d9e6f4cafa4a1d52d61b10358f62ad36a",
+        "current_sha256": "356d54bbdf0cffb5e8a184bfe5d95a7d9e6f4cafa4a1d52d61b10358f62ad36a",
+        "matches": true
+      }
+    ]
+  },
+  "environment": {
+    "kernel": "6.12.76-linuxkit",
+    "architecture": "aarch64",
+    "rustc": "rustc 1.85.1 (4eb161250 2025-03-15)",
+    "python": "3.11.2",
+    "bubblewrap": "bubblewrap 0.8.0",
+    "memory_max": "8589934592",
+    "memory_swap_max": "0",
+    "image_sha256": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b"
+  },
+  "isolation": {
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "outer_network": "none",
+    "host_bind_mounts": 0,
+    "user": "65534:65534",
+    "root_read_only": true,
+    "capabilities_dropped": [
+      "ALL"
+    ],
+    "no_new_privileges": true,
+    "cpu_limit": 1,
+    "pids_limit": 256,
+    "temporary_bytes": 536870912,
+    "task_tmpfs_bytes": 2147483648,
+    "original_cache_read_only": true,
+    "independent_build_cache": true,
+    "original_private_access_unchanged": true
+  },
+  "programs": {
+    "client": {
+      "path": "/task/programs/client",
+      "sha256": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66"
+    },
+    "native": {
+      "path": "/task/programs/native",
+      "sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+    },
+    "helper": {
+      "path": "/task/programs/helper",
+      "sha256": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4"
+    },
+    "guard": {
+      "path": "/task/programs/guard",
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b"
+    },
+    "profile": {
+      "path": "/task/programs/profile",
+      "sha256": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33"
+    },
+    "namespace": {
+      "path": "/task/programs/namespace",
+      "sha256": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6"
+    }
+  },
+  "runtime_cases": [
+    {
+      "case": "q01-cancel",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "cancelled",
+      "termination": "cancelled",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "e19a06c66bd120f46485bae9eb02c0b9aedc247ab40be00b6eb1b6d21d57d255",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q01",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "verifying",
+      "termination": "exited",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "a2442b188da9bc93fc384fadef4a84210510e34b9ecb122056b681931314f8bf",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q01-timeout",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "timed_out",
+      "termination": "timed_out",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "8bd6427a339a76af79b1c163a50c03de1223fd3f142852da3e8b3637712d82d7",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q02",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "verifying",
+      "termination": "exited",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "877db1f8861e40769c2d7bbc6a52d709c3c533f9a8b29d0d5565741108dba41f",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q03-cancel",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "cancelled",
+      "termination": "cancelled",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "cc1e85646c1296d46f6a36785870a241dfa03d36d250d652461064dfb1636004",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q03",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "verifying",
+      "termination": "exited",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "59bc67f4a00793b062fd38c61ddfee80f69691f6bfebb1217d658b0176314708",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q03-timeout",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "timed_out",
+      "termination": "timed_out",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "6f08cd42129c8206834adb80a176c04837c6161bed31911b7325950a5b90b477",
+      "swap_bytes": 0
+    },
+    {
+      "case": "q04",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "verifying",
+      "termination": "exited",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "cf6d5942907aca96fb570f582507ebe3e00fb7329f63fc5c623173a8611f2f0e",
+      "swap_bytes": 0
+    },
+    {
+      "case": "subscription-known",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "verifying",
+      "termination": "exited",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "a64b16bbf3fe0520d3ad0f34b70c795b3b27f44ee3a9b1d4d4717c27eba64d46",
+      "swap_bytes": 0
+    },
+    {
+      "case": "subscription-unknown",
+      "memory_bytes": 8589934592,
+      "cleanup": "namespace_terminated",
+      "admission_granted": 0,
+      "admission_released": 1,
+      "source_unchanged": true,
+      "state": "cancelled",
+      "termination": "cancelled",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "model_calls_started": 0,
+      "receipt_sha256": "d681cd5a91c7d404734215b104034d146e9b1bcf37792c86b1e6556155b509fe",
+      "known_tokens": 600,
+      "known_equivalent_microcredits": 3275,
+      "unknown_cost": true
+    }
+  ],
+  "parent_eof_cases": [
+    {
+      "case": "q01-eof",
+      "namespace_stop_marker": "namespace-clean",
+      "private_cleanup": "unknown",
+      "private_state_retained": true,
+      "admission_granted": 1,
+      "admission_released": 0,
+      "stop_receipt_sha256": "56277ee9618641f29922fcdc0d90b4fd6a1d2ab4b43393845864b0429fb2e014",
+      "recovery_receipt_sha256": "c02c3fd1feea514f071aff9463ccc94b8bebc7e760604dc855f53c687057bd26"
+    },
+    {
+      "case": "q03-eof",
+      "namespace_stop_marker": "namespace-clean",
+      "private_cleanup": "unknown",
+      "private_state_retained": true,
+      "admission_granted": 1,
+      "admission_released": 0,
+      "stop_receipt_sha256": "4640c967d5b557c0a8b7a6f538bdda14de67fea89970cf76e9a213f6397237cc",
+      "recovery_receipt_sha256": "a20ff063810b321eb03e7233e149c4da353dbb2aa946fb43f4c075658e31bf93"
+    }
+  ],
+  "legacy_refusal": {
+    "dispatch_command_constructed": false,
+    "model_calls_started": 0
+  },
+  "guard": {
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "receipt_sha256": "e75543fcf97fdad27372c4a19f093ab3082862140077bcce7ca56cefb4ac0e55"
+  },
+  "launcher_cases": [
+    {
+      "case": "t02-Lm-r1-H1",
+      "passed": true,
+      "coded_responses": 5,
+      "tool_results": 4,
+      "only_current_cell_executed_natively": true,
+      "synthetic_prefix_cells": 6,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "submission": {
+        "relative": "lib.rs",
+        "bytes": 385,
+        "sha256": "9fcd5c1aae506d60b3507de4165333394ae9a64b8349b80b6a78335479a2dca5"
+      },
+      "feedback_evidence": {
+        "native_stdout_sha256": "2400293e855676a89961569766b6a884771998a970b0f5cb810f8d42f9c45251",
+        "rust_tests_executed": 4,
+        "expected_feedback_failure": true,
+        "json_shape_valid": false
+      },
+      "private_summary_sha256": "80a2411be4dd634cda0b7f53b251a7675e1ee13f1da4587696b06bc8c62a3661",
+      "private_runtime_result_sha256": "6474083b4d83ad17cccb8c4fe082264c4277b6a85ab9b24f0c21bfadebba0d87"
+    },
+    {
+      "case": "t05-Lm-r1-H0",
+      "passed": true,
+      "coded_responses": 4,
+      "tool_results": 3,
+      "only_current_cell_executed_natively": true,
+      "synthetic_prefix_cells": 16,
+      "state": "verifying",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "submission": {
+        "relative": "review.json",
+        "bytes": 16,
+        "sha256": "9ba8071ce819632d6b70ddc2d9e13da3b5d20201af51595badc4aaf1647bd878"
+      },
+      "feedback_evidence": null,
+      "private_summary_sha256": "c31d043186c0853060e1562831aa9025de4616d4f81dd507ce3f3e5d37a6483d",
+      "private_runtime_result_sha256": "bd0c39576cbe19fd5d9d570ec6feba5672c7dcd5efe985efeac5661f8739f2e5"
+    }
+  ],
+  "quality": {
+    "source_commit": "fc1a4ea88b3effdb768cbeb1ca2c352c10b5d542",
+    "format": "PASS",
+    "clippy": "PASS",
+    "workspace": {
+      "status": "PASS",
+      "passed": 1920,
+      "ignored": 43,
+      "filtered_out": 498,
+      "suites": 196,
+      "count_scope": "runner totals include nested subprocess results"
+    },
+    "harness": "PASS; activation UNKNOWN",
+    "secrets": "PASS",
+    "controller_linux": {
+      "passed": 141,
+      "failed": 0,
+      "errors": 0
+    },
+    "host_linux": {
+      "passed": 26
+    },
+    "linux_clippy": "UNAVAILABLE in existing offline toolchain; no component installed",
+    "ci": "not invoked for qualification",
+    "model_calls_started": 0,
+    "actual_provider_requests": 0,
+    "logs": {
+      "macos-clippy.log": "caa636ec9c7cba2c4f265005f356629e3a1e8fe35395de581375a782de9931bc",
+      "macos-workspace.log": "1317f5d0ed8d140a8fdf081ef4f5f0731b108b94431b2935927f275a79d58e7e",
+      "harness.log": "b1d0f510c3a86531399953f2016a375d027ab294f83d964c4f088988779992e9",
+      "gitleaks.log": "8c4d26df2ec050d97bc45e8fae8f59bbd4df5b3879c30ceb99c4acc1f5eb2c2d",
+      "linux-python-tests.log": "3814dfe9238f5777df17c9fadabaedffb67df6d3da2d73729d014121087f45f0",
+      "linux-host-tests.log": "fe333ce3a9ff4b7f4aa6922f9aa66e12550881b1f555a0ce5bd847fa6e559436",
+      "release-tests-python3.15.log": "bf47b93257e62aa0de5504a5f4329cf5e02ea8dbfcd716c5114f23380bebf6f6"
+    },
+    "release_local": {
+      "status": "PASS",
+      "tests": 27,
+      "python": "Homebrew Python 3.15",
+      "initial_system_python_3_9_import": "tomllib unavailable; tests not collected"
+    },
+    "linux_runtime_unit": {
+      "passed": 248,
+      "failed": 0,
+      "ignored": 29
+    },
+    "kernel_guard_canaries": {
+      "passed": 10,
+      "failed": 0
+    }
+  },
+  "retained_failure": {
+    "case": "legacy-refusal in first cell after two EOF cases",
+    "exit_code": 101,
+    "error": "ENOSPC before dispatch assertion; retained programs occupy about 478 MiB of the unchanged 512 MiB tmpfs",
+    "failure_log_sha256": "cd755ec388d307434b9f91782d47713eb1fc1f7ff8a970e68f4d668d3602bc97",
+    "diagnostic_sha256": "156f016c13c356bcec95877c5ac83b47a84771da95bb3f3038c8c501ac4b3929",
+    "resolution": "archive and verify first-cell evidence, stop its container, rerun remaining cases in a fresh identical cell",
+    "limits_changed": false,
+    "previous_results_rewritten": false,
+    "backups": [
+      {
+        "archive": "first-container-private-evidence.tar.gz",
+        "sha256": "f0a8e5245aca6101ca2d6760a68be66cb690c32fbf8e66991633e1cf210aea18",
+        "members": 3487,
+        "uncompressed_file_bytes": 282130996
+      },
+      {
+        "archive": "first-container-retained-programs.tar.gz",
+        "sha256": "52325cefed4122c010ca43e67c10823d484f8c64c234c90445e1166eef5bb0a7",
+        "members": 31,
+        "uncompressed_file_bytes": 501036413
+      }
+    ]
+  },
+  "collection": {
+    "first_container_stopped": true,
+    "second_container_stopped": true,
+    "outer_disposal_is_product_cleanup": false,
+    "final_runtime_source_check_sha256": "8657895d282ba8c781b52da24c5f08f2436ad76cf1d93d2da56575831a66002d",
+    "final_isolation": {
+      "unexpected_live_processes": [],
+      "zombies": 29,
+      "memory_max": "8589934592",
+      "memory_swap_max": "0",
+      "memory_peak": "891555840",
+      "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+    },
+    "second_cell_backup": {
+      "sha256": "d1160b28f1fdbdd4e847082ef329269d00d108f0f64aa72ee28417b146d38478",
+      "members": 248
+    }
+  },
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "real_campaign_ledger_opened": false,
+  "real_account_credentials_read": false,
+  "historical_usage_reconciled": false,
+  "business_acceptance": null,
+  "macos_hard_memory": "NO_GO",
+  "full_host_os_matrix": "NOT_QUALIFIED",
+  "new_independent_review": false,
+  "system_programs": {
+    "system/linker": {
+      "mode": "0o500",
+      "sha256": "bd456a27bf1066667bc2da08cfd998e7b2c6b3e9a9a48583cc52524176d43dca",
+      "uid": 65534
+    },
+    "system/rustc": {
+      "mode": "0o500",
+      "sha256": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97",
+      "uid": 65534
+    }
+  },
+  "profiles": {
+    "linux-isolated-broker-v2": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e",
+    "linux-isolated-finite-tools-v3": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33"
+  },
+  "native_distribution": {
+    "release_url": "https://github.com/openai/codex/releases/tag/rust-v0.159.2",
+    "archive_sha256": "472ee4d49464a4f8792bbf0162bd9ac18d7036dbc00900a03e95f715887e930f",
+    "elf_sha256": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3"
+  }
+}

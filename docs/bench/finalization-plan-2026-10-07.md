@@ -1,9 +1,17 @@
 # Finaliser Agent Router et mesurer son usage
 
-Plan ouvert le 7 octobre 2026, mis à jour le 11 octobre. Le statut courant ci-dessous complète les sections datées conservées comme historique. La composition native macOS reste F12a NO_GO ; les résultats de l’essai assisté ne lèvent pas cette limite.
+Plan ouvert le 7 octobre 2026, mis à jour le 21 octobre. La qualification Linux ci-dessous remplace les anciens statuts F12a pour cette cellule uniquement. La composition native macOS reste F12a NO_GO sous sa limite mémoire inchangée.
 Responsable de coordination : agent principal ; arbitrages de produit et acceptation finale : Florian.
 
-## État courant et prochaine décision, 11 octobre
+## Qualification Linux et prochaine acceptation, 21 octobre
+
+F12a est **GO pour la composition Linux ARM64 qualifiée** sur `main` à `fc1a4ea88b3effdb768cbeb1ca2c352c10b5d542`. Le [rapport et ses preuves](linux-f12a-main-2026-10-21/README.md) rattachent les parcours natifs, les refus, les arrêts et le nettoyage aux sources et exécutables testés. Le plafond de 8 Gio, le swap nul et les accès privés restent inchangés. Aucun modèle ni fournisseur réel n’a été appelé.
+
+Les cas de perte du parent arrêtent le namespace mais conservent l’état privé et la réservation avec un nettoyage `UNKNOWN`. Leur réouverture n’autorise aucun rejeu automatique. Les échecs de préparation du laboratoire et leur résolution restent dans le rapport ; aucune assertion produit n’a été assouplie.
+
+La prochaine acceptation est celle d’une correction utile via l’entrée native, avec un verdict indépendant lié à la révision exacte dans #132/#174. Les réponses simulées et le transport réussi ne valent pas acceptation métier. La corrélation et l’admission des envois réels (#120/#133), la consommation inconnue du pilote et la matrice complète F12b restent distinctes de ce GO Linux. Les sections suivantes sont historiques ; elles ne rouvrent pas les raccords déjà qualifiés et ne lèvent aucune exigence hors de cette cellule.
+
+## État historique et prochaine décision, 11 octobre
 
 Les PR #163 à #167 sont fusionnées : copies privées des exécutables liées à la
 revue, correction M4 acceptée, durées locales v3 et préflight des ressources.
