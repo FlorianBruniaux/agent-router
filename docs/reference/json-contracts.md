@@ -677,6 +677,20 @@ No serialized type, database schema or ordinary execution digest changes.
 See [ADR 0037](../adr/0037-qualified-local-finite-dispatch.md) for the exact
 platform, evidence and remaining provider/benchmark/publication boundaries.
 
+## Explicit finite artifact verification
+
+The in-memory `FiniteClientVerifier` borrows the owning Runtime and is retained
+from an approved finite run before dispatch. It reads the exact captured patch
+only while Verifying with matching definition/approval and confirmed namespace
+cleanup. Its explicit `VerificationRecord` uses the existing transaction and
+independent-verifier policy; UNKNOWN remains UNKNOWN. It supplies no generic
+execution/publication handle, JSON import, human verdict or resumption after
+Runtime disposal. See [ADR 0043](../adr/0043-finite-artifact-verification.md).
+The opt-in [public-score example](../bench/finite-public-evaluation-2026-10-21/README.md)
+executes its embedded checker and records validation Passed with objective
+UNKNOWN. Its local evidence files are not a new product JSON-import contract.
+
+
 ## Qualified local capture observation
 
 `observe --schema-version 3` adds bounded local capture timing rows while v1 stays

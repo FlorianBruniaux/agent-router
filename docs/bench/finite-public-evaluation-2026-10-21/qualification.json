@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "scope": "fixed public t02 evaluator invoked by the finite campaign owner",
+  "delivery_base": "5d77d4a1a0159bc62178ee324a03934531f3614b",
+  "built_source_base": "f0958924ec580a7cdc6f25ac93f41a949efef675",
+  "base_difference": "Only #192 test coverage and recorded evidence changed; evaluator files and production verifier bytes unchanged.",
+  "modified_source_sha256": {
+    "crates/router-runtime/examples/campaign/public_score.rs": "302aeaf4acf51ee019e82e39bbc47472977770b2db429983f87f32a990754963",
+    "crates/router-runtime/examples/finite-campaign.rs": "e496232b2d3773d8325e8c436157a5abb8eba95bf8d8267824e4386212ef4df3",
+    "docs/bench/finite-campaign-launcher-2026-10-18/qualify-offline.py": "0f634b063bb8e30f7a96e0e581d7ee1743ba0b91369a2f76ad77d06f9d501397",
+    "docs/bench/finite-campaign-launcher-2026-10-18/test-useful-score.py": "70fc3e05763eb0bf75a21c61c20bed1264038cc9e4d1ec0b38c6702127456c8b"
+  },
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "auth_read": false,
+  "real_campaign_ledger": false,
+  "coded_responses": 6,
+  "actual_tool_returns": 5,
+  "public_cases": 12,
+  "source_failed_cases": 8,
+  "runtime_report_sha256": "735fcdbd1f77d134f86246c212f8f5a94dedbcec68574e38b68dcef8df6a39d7",
+  "verification": {
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "evidence_sha256": "d425b896dbc28877552d8dc5a8c69d0badcdeddd606e6ac93ed7f7a13f93b60b",
+    "objective": "unknown",
+    "validation": "passed",
+    "verifier": "fixed-public-score-v1"
+  },
+  "run_state": "verifying",
+  "human_acceptance": null,
+  "source_publication": false,
+  "source_unchanged": true,
+  "cleanup": "namespace_terminated",
+  "admission": {
+    "granted": 0,
+    "released": 1
+  },
+  "linux_observation": {
+    "persisted_verification": {
+      "verifier": "fixed-public-score-v1",
+      "evidence_sha256": "d425b896dbc28877552d8dc5a8c69d0badcdeddd606e6ac93ed7f7a13f93b60b",
+      "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "validation": "passed",
+      "objective": "unknown"
+    },
+    "run_state": "verifying",
+    "human_acceptance": null,
+    "cgroup": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "1077284864",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "kernel": "6.12.76-linuxkit",
+    "example_sha256": "1ee6b008b2c877feb57e712aad281a975216cae35fb3a5ad5fa0fc995ea082fc",
+    "private_modes": {
+      "public-score-receipt.json": "0o600",
+      "evaluation-result.json": "0o600",
+      "runtime-result.json": "0o600"
+    }
+  },
+  "macos_example_tests": 10,
+  "linux_example_tests": 10,
+  "python_binding_tests": 17,
+  "python_cli_tests": 3,
+  "retained_failures": [
+    "Before implementation, missing evaluator functions were rejected at compile time.",
+    "The new CLI regression initially failed because --evaluate-public-score was unavailable.",
+    "The initial process test detected a child outliving a successful evaluator parent; waitid NOWAIT and group termination before reaping fixed it.",
+    "Temporary setup script generation failed with SyntaxError; corrected before setup or qualification execution."
+  ],
+  "remaining": [
+    "Frozen hidden oracle qualification under #174",
+    "Human acceptance and source integration",
+    "Native automatic entry and remaining #132 lifecycle cases",
+    "Physical-send admission and real usage reconciliation"
+  ],
+  "local_workspace": {
+    "command": "cargo test --workspace --all-features --locked --offline",
+    "result": "pass",
+    "counts": {
+      "passed": 1928,
+      "failed": 0,
+      "ignored": 43,
+      "measured": 0,
+      "filtered": 510
+    },
+    "count_semantics": "Sum of result lines, including nested helpers; separate example tests excluded",
+    "result_lines": 196,
+    "rust_test_threads": 1
+  },
+  "private_archive": {
+    "sha256": "3dc122693a990fae76be307c362833f5b4d8032d38ecb19fc7b1d093fd24d630",
+    "members": 128,
+    "uncompressed_bytes": 458756
+  },
+  "container_stopped": true,
+  "linux_constraints": {
+    "network": "none",
+    "uid": 65534,
+    "root_read_only": true,
+    "capabilities_dropped": "ALL",
+    "host_bind_mounts": 0,
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "program_sha256": {
+      "client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+      "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+      "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+      "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33",
+      "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6"
+    }
+  },
+  "checks": {
+    "format": "pass",
+    "clippy": "workspace/all-targets/all-features warnings denied; pass",
+    "harness": "parity verified; activation UNKNOWN",
+    "gitleaks": "pass",
+    "adr": "pass",
+    "remote_ci": "not run; local tests requested",
+    "independent_review": "not yet run for this evaluator lot; #192 independently reviewed and merged"
+  },
+  "log_sha256": {
+    "workspace": "acb24f79b3cfe949fbd23505002b1930258259b2746dd855ad3e845f4dc9551b",
+    "clippy": "c7740af1f69e88e12734fafc883e851c2c7c7104453eeb6995fb34b695ca4c7b",
+    "example": "7b0b7c7acf217361654ded8b13b50cc6145ee9c664b42414ff31b72cdc4f38fa",
+    "bindings": "42e0f8db8968a646d85a7742f25969a30a439788af0b1b66c4cf035b2123532b",
+    "cli": "258871489ecc51b913c460af154b2c140fd42b261affc938d8188f22f5527e9d",
+    "fmt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "harness": "0daa686200b8edc1478db3db51fc92ae09559b36460de84289379fccc620c449",
+    "gitleaks-final": "dd0f8ee0777cc53f54ee30ae732691eb91c071c9a8ca0fe14ab14a80c2ede19a"
+  },
+  "linux_image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b"
+}

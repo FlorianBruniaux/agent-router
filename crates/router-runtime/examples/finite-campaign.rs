@@ -1,5 +1,7 @@
 //! Explicit one-cell campaign parent. Only an exact private-channel approval
 //! enables dispatch. No authentication, provider HTTP or campaign ledger here.
+#[path = "campaign/public_score.rs"]
+mod public_score;
 #[path = "campaign/recipe.rs"]
 mod recipe;
 use recipe::Packet;
@@ -473,7 +475,10 @@ fn export_output(
         json!({"relative":packet.output,"bytes":bytes.len(),"sha256":output.sha256}),
     ))
 }
-async fn run(d: Descriptor, p: Packet) -> Result<()> {
+async fn run(d: Descriptor, p: Packet, evaluate_public_score: bool) -> Result<()> {
+    if evaluate_public_score {
+        public_score::check_scope(&p.assignment_id)?;
+    }
     if std::env::consts::OS != "linux"
         || std::env::consts::ARCH != "aarch64"
         || fs::read_to_string("/sys/fs/cgroup/memory.max")?.trim() != "8589934592"
@@ -687,6 +692,11 @@ async fn run(d: Descriptor, p: Packet) -> Result<()> {
     emit(&json!({"schema_version":1,"kind":"runtime_binding","binding":binding}))?;
     approve(&binding, &p)?;
     let approved = runtime.approve_finite_client(pending, &digest)?;
+    let verifier = if evaluate_public_score {
+        Some(runtime.finite_client_verifier(&approved)?)
+    } else {
+        None
+    };
     let relay_finished = relay(peer)?;
     let result = runtime
         .execute_finite_client(
@@ -719,6 +729,13 @@ async fn run(d: Descriptor, p: Packet) -> Result<()> {
     );
     result?;
     exported?;
+    if let Some(verifier) = verifier {
+        let evaluation = public_score::evaluate(&d.root, &serde_json::to_vec(&report)?, &verifier)?;
+        save(
+            &d.root.join("evaluation-result.json"),
+            &serde_json::to_vec(&evaluation)?,
+        )?;
+    }
     Ok(())
 }
 #[tokio::main]
@@ -732,14 +749,14 @@ async fn main() {
             );
             return Ok(());
         }
-        if args.len() != 2 || args[1] != "--run" {
+        if args.len() != 2 || (args[1] != "--run" && args[1] != "--run-public-score") {
             return Err::<(), Error>("usage".into());
         }
         let bytes = read_parent_line()?;
         let value = router_adapter_api::strict_json_limited(&bytes, 16384)?;
         let descriptor: Descriptor = serde_json::from_value(value)?;
         let packet = descriptor.validate()?;
-        run(descriptor, packet).await
+        run(descriptor, packet, args[1] == "--run-public-score").await
     }
     .await;
     if let Err(error) = result {

@@ -557,3 +557,46 @@ async fn runtime_refuses_mcp_startup_before_creating_a_run_or_attempt() {
         Err(RuntimeError::NotFound)
     ));
 }
+
+#[tokio::test]
+async fn finite_verifier_requires_this_approved_definition_and_refuses_before_execution() {
+    let f =
+        Fixture::new_at_with_network(false, tempfile::tempdir().unwrap(), false, true, true).await;
+    let runtime = f.runtime();
+    let client = finite_review(&f, ResourceLimits::default());
+    let pending = runtime
+        .review_finite_client(
+            "finite-1",
+            &f.router,
+            &f.context,
+            f.request.clone(),
+            f.plan.clone(),
+            "execute",
+            client,
+        )
+        .await
+        .unwrap();
+    let digest = pending.approval_digest().to_owned();
+    let approved = runtime.approve_finite_client(pending, &digest).unwrap();
+    let verifier = runtime.finite_client_verifier(&approved).unwrap();
+    let other_root = tempfile::tempdir().unwrap();
+    let other = Runtime::open(&other_root.path().join("store"), Default::default()).unwrap();
+    assert!(other.finite_client_verifier(&approved).is_err());
+    assert!(verifier.artifact().is_err());
+    assert!(
+        verifier
+            .record(VerificationRecord {
+                verifier: "explicit-checker".into(),
+                evidence_sha256: "e".repeat(64),
+                artifact_sha256: None,
+                validation: VerificationOutcome::Passed,
+                objective: VerificationOutcome::Passed,
+            })
+            .is_err()
+    );
+    assert_eq!(runtime.summary("finite-1").unwrap().attempts, 0);
+    assert_eq!(runtime.verification_record("finite-1").unwrap(), None);
+    request_cancel(&f.temp.path().join("runtime"), "finite-1").unwrap();
+    assert!(runtime.finite_client_verifier(&approved).is_err());
+    assert!(verifier.artifact().is_err());
+}
