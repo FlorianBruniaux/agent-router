@@ -122,3 +122,30 @@ fn offline_evidence_commands_refuse_malformed_documents_without_exposing_content
         assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
     }
 }
+
+#[test]
+fn tuning_case_contamination_is_inconclusive_without_creating_state() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("input.json");
+    let mut input: Value = serde_json::from_str(QUALIFICATION).unwrap();
+    input["schema_version"] = 2.into();
+    input["qualifications"][0]["tuning_case_ids"] = serde_json::json!(["rare"]);
+    input["qualifications"][0]["tuning_output_sha256"] = serde_json::json!(["b".repeat(64)]);
+    fs::write(&path, serde_json::to_vec(&input).unwrap()).unwrap();
+    let output = run("evaluator-qualification", &path, &["--json"]);
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["schema_version"], 2);
+    assert_eq!(report["comparisons"][0]["status"], "inconclusive");
+    assert_eq!(
+        report["comparisons"][0]["blockers"],
+        serde_json::json!(["decision_corpus_overlap"])
+    );
+    assert_eq!(report["adoption_authorized"], false);
+    assert_eq!(report["oracle_authenticity"], "supplied_unverified");
+    assert_eq!(fs::read_dir(dir.path()).unwrap().count(), 1);
+}

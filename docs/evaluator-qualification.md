@@ -34,7 +34,7 @@ is `regression`. These numbers test a contract, not measured model performance.
 M3/M4 scripts are inventoried, not executed or imported by this library. Their
 historical results do not establish independently authenticated evaluator labels.
 
-## Version 1 contract
+## Versioned contract (1 and 2)
 
 The input is strict JSON. Unknown fields, duplicate object keys, trailing data,
 invalid enum values, duplicate identities and unsupported schema versions fail
@@ -61,7 +61,8 @@ digits, dots, underscores or hyphens. SHA-256 values use 64 lowercase hex digits
   Unknown or changed evaluator identity, inapplicable criteria, changed bindings,
   extra cases, unknown outcomes, qualification case-ID overlap, and
   qualification/tuning output overlap also
-  prevent a conclusive comparison.
+  prevent a conclusive comparison. Version 2 additionally requires tuning case
+  identities; their overlap with required cases is inconclusive.
 - `permitted_differences` may explicitly allow `revision`, `output` and `cost`.
   It cannot allow changed inputs, criteria, cohort or evaluator identity.
 
@@ -83,10 +84,31 @@ case observations remain visible without becoming a qualified claim.
 
 Qualification witness case IDs cannot match any required case ID of a compared
 task. Qualification and tuning output digests are also excluded from held-out
-comparison outputs across all supplied evaluator versions. Tuning records carry
-only output digests, so tuning case identity is not checked. These checks prove
-exact supplied identity separation, not semantic independence or whether someone
-secretly tuned on a held-out case. No boolean can upgrade oracle authenticity.
+comparison outputs across all supplied evaluator versions, including versions
+not selected for either verdict.
+
+Version 2 requires `tuning_case_ids` in every qualification. It is a unique,
+bounded set using the same identifier syntax as required cases. Declare `[]`
+when no tuning is supplied. Both `tuning_case_ids` and `tuning_output_sha256`
+must be empty together or nonempty together. They are separate sets, not paired
+rows: one case may have several tuning outputs. Every ID counts toward the
+4,096 nested-row limit. Any tuning case ID reused by a decision case yields
+`decision_corpus_overlap`, even when its output hash differs.
+
+Version 1 remains readable with `tuning_case_ids` absent or null; a non-null set
+is rejected. A nonempty legacy `tuning_output_sha256` now makes every comparison
+`inconclusive` with `tuning_case_identity_unknown`. Existing v1 evidence declaring
+no tuning keeps its prior comparison semantics. To migrate, set `schema_version`
+to `2` and supply the complete known tuning case set for every qualification.
+Do not invent IDs or clear output hashes to remove a blocker. Missing/null IDs
+in v2, duplicate IDs and inconsistent empty sets are malformed input.
+
+The report echoes the input schema version. Task, cohort and witness seals keep
+their v1 domains because their sealed structures are unchanged. Neither version
+seals or authenticates the tuning inventory. These checks establish only exact
+supplied identity separation, not semantic independence, inventory completeness
+or whether someone secretly tuned on a held-out case. No boolean can upgrade
+oracle authenticity.
 
 A stored-output reevaluation names an earlier `verdict_id` through `reevaluates`.
 Its instance, task, cohort, revision and output must remain identical. The report
@@ -114,7 +136,10 @@ cargo test -p router-eval --test evaluator_qualification --locked --offline
 The suite covers rare-case permutation, unknown/infrastructure/missing outcomes,
 duplicate identities, version/size/row limits, redacted errors, exact seals,
 evaluator applicability and identity, permitted differences, source/input/criteria
-changes, qualification/tuning separation, history preservation and cost overflow.
+changes, qualification/tuning separation across evaluator versions, legacy
+unknown tuning identity, v2 migration and row limits, history preservation and
+cost overflow. The CLI suite checks the v2 inconclusive result without creating
+state.
 The fixture is synthetic. Passing it establishes these offline rules only.
 
 Still uncovered by this foundation: independently established and authenticated
@@ -123,3 +148,6 @@ limits, semantic hold-out separation, verified correspondence between a digest
 and external executable/output, persistent append-only history, authentic
 independent review, and measured quality or cost benefit. Issue #174 therefore
 remains partially implemented; no real trial is authorized by this report.
+
+The [2026-10-21 tuning identity verification](bench/evaluator-tuning-identity-2026-10-21.md)
+records the tested sources, local checks and remaining #174/#132 criteria.
