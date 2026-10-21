@@ -1,0 +1,47 @@
+[
+  {
+    "case": "changed_candidate",
+    "refused": true,
+    "reason": "ValueError: export binding"
+  },
+  {
+    "case": "changed_source",
+    "refused": true,
+    "reason": "ValueError: source preimage"
+  },
+  {
+    "case": "changed_patch",
+    "refused": true,
+    "reason": "ValueError: patch binding"
+  },
+  {
+    "case": "unknown_cleanup",
+    "refused": true,
+    "reason": "ValueError: unknown cleanup"
+  },
+  {
+    "case": "retained_admission",
+    "refused": true,
+    "reason": "ValueError: retained admission"
+  },
+  {
+    "case": "wrong_packet",
+    "refused": true,
+    "reason": "ValueError: packet_sha256"
+  },
+  {
+    "case": "changed_mode",
+    "refused": true,
+    "reason": "ValueError: changed scope or mode"
+  },
+  {
+    "case": "malformed_mode",
+    "refused": true,
+    "reason": "ValueError: noncanonical or replaced displayed diff"
+  },
+  {
+    "case": "extra_file",
+    "refused": true,
+    "reason": "ValueError: changed scope or mode"
+  }
+]
