@@ -97,6 +97,9 @@ mod tests {
     use std::fs;
 
     fn fixture(clean: bool) -> (tempfile::TempDir, Runtime) {
+        fixture_artifact(clean, Some(b"fixture patch\n"))
+    }
+    fn fixture_artifact(clean: bool, bytes: Option<&[u8]>) -> (tempfile::TempDir, Runtime) {
         let temp = tempfile::tempdir().unwrap();
         let runtime = Runtime::open(&temp.path().join("runtime"), Default::default()).unwrap();
         runtime.store.register(&summary("finite")).unwrap();
@@ -125,12 +128,13 @@ mod tests {
         )
         .unwrap();
         runtime.store.confirm_attempt_cleanup("finite").unwrap();
-        let bytes = b"fixture patch\n";
-        workspace::write_artifact(&runtime.store.root, "finite", bytes).unwrap();
-        runtime
-            .store
-            .artifact("finite", &router_adapter_api::content_digest(bytes))
-            .unwrap();
+        if let Some(bytes) = bytes {
+            workspace::write_artifact(&runtime.store.root, "finite", bytes).unwrap();
+            runtime
+                .store
+                .artifact("finite", &router_adapter_api::content_digest(bytes))
+                .unwrap();
+        }
         runtime
             .store
             .transition("finite", RunState::SucceededTransport, "fixture", None)
@@ -228,6 +232,23 @@ mod tests {
             assert!(verifier.artifact().is_err());
             assert!(verifier.record(record()).is_err());
             assert_eq!(runtime.verification_record("finite").unwrap(), None);
+        }
+    }
+    #[test]
+    fn finite_verifier_refuses_absent_digest_and_empty_captured_artifact() {
+        for bytes in [None, Some(b"".as_slice())] {
+            let (_temp, runtime) = fixture_artifact(true, bytes);
+            let verifier = handle(&runtime);
+            let mut evidence = record();
+            evidence.artifact_sha256 = bytes.map(router_adapter_api::content_digest);
+            assert!(verifier.artifact().is_err());
+            assert!(verifier.record(evidence).is_err());
+            assert_eq!(runtime.verification_record("finite").unwrap(), None);
+            assert_eq!(
+                runtime.summary("finite").unwrap().state,
+                RunState::Verifying
+            );
+            runtime.verify_integrity().unwrap();
         }
     }
     #[test]

@@ -186,7 +186,106 @@
     "Unit store fixtures exercise explicit pass/fail/UNKNOWN; native lifecycle cases record UNKNOWN only.",
     "No automatic import of acceptance JSON, independent evaluator qualification or human acceptance.",
     "No source publication, real model/provider/account access, usage reconciliation or savings claim.",
-    "No independent review of this new lot yet.",
     "Linux Clippy unavailable in offline image; macOS workspace Clippy passed."
-  ]
+  ],
+  "independent_review_followup": {
+    "reviewed_head": "f0958924ec580a7cdc6f25ac93f41a949efef675",
+    "reviewed_paths": 9,
+    "blocking_behavior_findings": 0,
+    "coverage_findings_resolved": [
+      "constructor Independent policy propagated through native q02/q03/q04; owner attestation refused, distinct UNKNOWN accepted",
+      "absent artifact digest and empty captured artifact refused without attestation"
+    ],
+    "production_verifier_unchanged": true,
+    "reviewed_test_file_sha256": {
+      "crates/router-runtime/src/finite_client/verification.rs": "cf5a0664ed26785b6abbffbafc6bb4f4c67185761815a2cac724812d8f46ba62",
+      "crates/router-runtime/src/finite_client/linux_e2e.rs": "7b9324baa2aa105be2945844787e75dc0cf166f2a5b1ff229f756d36dfd6149a"
+    },
+    "workspace_counts": {
+      "passed": 1928,
+      "failed": 0,
+      "ignored": 43,
+      "measured": 0,
+      "filtered": 510
+    },
+    "linux_units": {
+      "passed": 254,
+      "ignored": 29,
+      "failed": 0
+    },
+    "native": [
+      {
+        "case": "q02",
+        "exit_code": 0,
+        "elapsed_seconds": 58.164,
+        "receipt_sha256": "2c37e6dced197e80d63c5177102db5ebaaea7b178c6821a3ad2bf359216da68a"
+      },
+      {
+        "case": "q03",
+        "exit_code": 0,
+        "elapsed_seconds": 79.055,
+        "receipt_sha256": "f309cc7766d088651a981614527f1793d2fa8eea78975d711d229c214ec8ab5b"
+      },
+      {
+        "case": "q04",
+        "exit_code": 0,
+        "elapsed_seconds": 87.913,
+        "receipt_sha256": "0c2dc3a359a49eecdc827bb409f6c1305ca34d2ce7f85bec7244431b275c2022"
+      }
+    ],
+    "linux_observation": {
+      "cgroup": {
+        "memory.max": "8589934592",
+        "memory.swap.max": "0",
+        "memory.peak": "1569873920",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      },
+      "kernel": "6.12.76-linuxkit",
+      "verifications": {
+        "q02": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+          "validation": "unknown",
+          "objective": "unknown"
+        },
+        "q03": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+          "validation": "unknown",
+          "objective": "unknown"
+        },
+        "q04": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "556b5678d983a30834881c837efbf9c3131e272cdf751f23bd675dc32f4e4cde",
+          "validation": "unknown",
+          "objective": "unknown"
+        }
+      },
+      "programs": {
+        "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33",
+        "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+        "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+        "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+        "client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+        "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+        "system/linker": "bd456a27bf1066667bc2da08cfd998e7b2c6b3e9a9a48583cc52524176d43dca",
+        "system/rustc": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97"
+      }
+    },
+    "archive": {
+      "sha256": "8def609dfff803791b9909e403c6332c72be8a7626a25d7f82e9eaedcc2a0cec",
+      "members": 375,
+      "uncompressed_bytes": 1424275
+    },
+    "container_stopped": true,
+    "local_checks": "format, workspace Clippy all targets/features warnings denied, all-feature workspace tests, harness parity and Gitleaks pass",
+    "setup_failures": [
+      "initial docker exec cwd did not exist; created it before starting build",
+      "cgroup mount point absent on first q02 invocation; created the existing recipe mount point and replayed all three cases"
+    ],
+    "ci": "not run; local verification requested"
+  }
 }

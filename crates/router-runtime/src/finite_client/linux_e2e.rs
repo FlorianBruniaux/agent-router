@@ -736,6 +736,9 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
     phase.candidates.truncate(1);
     phase.candidates[0].model = ModelId::parse("gpt-6-luna").unwrap();
     phase.candidates[0].estimated_cost_microusd = 0;
+    if write && !external {
+        phase.candidates[0].verification = PhaseVerification::Independent;
+    }
     if subscription {
         phase.candidates[0].effort = EffortLevel::Xhigh;
     }
@@ -1097,6 +1100,13 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
     let home = PathBuf::from(&client.manifest.private_state);
     let reopen_request = request.clone();
     let reopen_plan = plan.clone();
+    let worker_owner = plan
+        .nodes
+        .iter()
+        .find(|n| n.id == "execute")
+        .unwrap()
+        .owner
+        .clone();
     let pending = runtime
         .review_finite_client(run_id, &router, &context, request, plan, "execute", client)
         .await
@@ -1372,6 +1382,20 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
         // Exercise only the explicit UNKNOWN bridge here. These lifecycle
         // fixtures do not evaluate a useful task or grant human acceptance.
         if !external {
+            assert!(
+                verifier
+                    .record(VerificationRecord {
+                        verifier: worker_owner,
+                        evidence_sha256: content_digest(
+                            b"worker cannot attest an independent phase"
+                        ),
+                        artifact_sha256: completion.run.artifact_sha256.clone(),
+                        validation: VerificationOutcome::Passed,
+                        objective: VerificationOutcome::Passed,
+                    })
+                    .is_err()
+            );
+            assert_eq!(runtime.verification_record(run_id).unwrap(), None);
             let summary = verifier
                 .record(VerificationRecord {
                     verifier: "explicit-lifecycle-fixture".into(),
