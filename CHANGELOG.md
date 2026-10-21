@@ -24,6 +24,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-21: reject held-out comparisons that reuse supplied tuning case identities, including across evaluator versions (#174). Evaluator qualification schema 2 requires explicit tuning IDs; legacy tuning without IDs remains inconclusive. Oracle claims remain unverified.
+
 - 2026-10-15: transfer [finite-client preparation resources](docs/adr/0035-finite-client-namespace-ownership.md) into the namespace lifecycle. Retain the broker and copies until a matching locked stop proof permits disposal; refuse generic home-write dispatch and preserve ambiguous ownership. Keep 8 GiB and F12a NO_GO.
 
 - 2026-10-15: bound concurrent startup of the four synthetic finite-client resource-probe fixtures with a shared test slot. Require the malformed-protocol fixture to prove helper execution so a startup timeout cannot masquerade as protocol rejection. Preserve the production three-second probe deadline and resource limits.

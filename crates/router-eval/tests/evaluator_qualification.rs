@@ -380,3 +380,142 @@ fn held_out_case_identity_cannot_overlap_qualification_with_different_output() {
     reseal(&mut input);
     inconclusive(&input, "decision_corpus_overlap");
 }
+
+#[test]
+fn legacy_tuning_without_case_identity_is_inconclusive_even_with_disjoint_output() {
+    let mut input = fixture();
+    input.qualifications[0]
+        .tuning_output_sha256
+        .push("b".repeat(64));
+    inconclusive(&input, "tuning_case_identity_unknown");
+}
+
+fn v2_tuning(case_ids: serde_json::Value, outputs: serde_json::Value) -> serde_json::Value {
+    let mut input = fixture();
+    for case in &mut input.verdicts[1].cases {
+        case.outcome = ObservedOutcome::Passed;
+    }
+    let mut value = serde_json::to_value(input).unwrap();
+    value["schema_version"] = 2.into();
+    value["qualifications"][0]["tuning_case_ids"] = case_ids;
+    value["qualifications"][0]["tuning_output_sha256"] = outputs;
+    value
+}
+
+fn value_report(
+    value: &serde_json::Value,
+) -> std::result::Result<EvaluatorQualificationReport, EvaluatorQualificationError> {
+    evaluator_qualification_report(&serde_json::to_vec(value).unwrap())
+}
+
+#[test]
+fn v2_reused_tuning_case_blocks_changed_output_even_from_another_evaluator_version() {
+    for other_evaluator in [false, true] {
+        let mut value = v2_tuning(
+            serde_json::json!(["rare"]),
+            serde_json::json!(["b".repeat(64)]),
+        );
+        if other_evaluator {
+            let mut other = value["qualifications"][0].clone();
+            other["evaluator"]["version"] = "earlier".into();
+            value["qualifications"][0]["tuning_case_ids"] = serde_json::json!([]);
+            value["qualifications"][0]["tuning_output_sha256"] = serde_json::json!([]);
+            value["qualifications"].as_array_mut().unwrap().push(other);
+        }
+        let r = value_report(&value).expect("v2 evidence must be readable");
+        assert_eq!(r.schema_version, 2);
+        assert_eq!(
+            r.comparisons[0].status,
+            EvaluatorComparisonStatus::Inconclusive
+        );
+        assert_eq!(r.comparisons[0].blockers, ["decision_corpus_overlap"]);
+        assert_eq!(r.comparisons[0].cases[0].candidate, ObservedOutcome::Passed);
+        assert!(!r.adoption_authorized);
+    }
+}
+
+#[test]
+fn v2_disjoint_or_explicitly_empty_tuning_preserves_supplied_only_comparison() {
+    for (ids, outputs) in [
+        (serde_json::json!([]), serde_json::json!([])),
+        (
+            serde_json::json!(["training-case"]),
+            serde_json::json!(["b".repeat(64), "c".repeat(64)]),
+        ),
+    ] {
+        let value = v2_tuning(ids, outputs);
+        let r = value_report(&value).unwrap();
+        assert_eq!(
+            r.comparisons[0].status,
+            EvaluatorComparisonStatus::RequiredCasesSatisfied
+        );
+        assert!(r.comparisons[0].blockers.is_empty());
+        assert_eq!(r.oracle_authenticity, "supplied_unverified");
+        assert!(!r.adoption_authorized);
+        assert_eq!(value_report(&value).unwrap(), r);
+    }
+}
+
+#[test]
+fn v2_tuning_output_overlap_still_blocks_reference_and_candidate() {
+    for index in 0..2 {
+        let hash = fixture().verdicts[index].output_sha256.clone();
+        let value = v2_tuning(
+            serde_json::json!(["training-case"]),
+            serde_json::json!([hash]),
+        );
+        let r = value_report(&value).unwrap();
+        assert_eq!(
+            r.comparisons[0].status,
+            EvaluatorComparisonStatus::Inconclusive
+        );
+        assert_eq!(r.comparisons[0].blockers, ["decision_corpus_overlap"]);
+    }
+}
+
+#[test]
+fn tuning_identity_requires_explicit_versioned_bounded_valid_sets() {
+    for mutation in 0..9 {
+        let mut value = v2_tuning(
+            serde_json::json!(["training-case"]),
+            serde_json::json!(["b".repeat(64)]),
+        );
+        match mutation {
+            0 => {
+                value["qualifications"][0]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("tuning_case_ids");
+            }
+            1 => value["qualifications"][0]["tuning_case_ids"] = serde_json::Value::Null,
+            2 => {
+                value["qualifications"][0]["tuning_case_ids"] =
+                    serde_json::json!(["training-case", "training-case"])
+            }
+            3 => {
+                value["qualifications"][0]["tuning_case_ids"] =
+                    serde_json::json!(["private / invalid"])
+            }
+            4 => value["qualifications"][0]["tuning_case_ids"] = serde_json::json!([]),
+            5 => value["qualifications"][0]["tuning_output_sha256"] = serde_json::json!([]),
+            6 => value["schema_version"] = 1.into(),
+            7 => value["schema_version"] = 3.into(),
+            _ => {
+                value["qualifications"][0]["tuning_case_ids"] = serde_json::json!(["x".repeat(129)])
+            }
+        }
+        assert!(
+            matches!(
+                value_report(&value),
+                Err(EvaluatorQualificationError::Invalid)
+            ),
+            "mutation {mutation}"
+        );
+    }
+    let ids: Vec<_> = (0..4097).map(|i| format!("training-{i}")).collect();
+    let value = v2_tuning(serde_json::json!(ids), serde_json::json!(["b".repeat(64)]));
+    assert!(matches!(
+        value_report(&value),
+        Err(EvaluatorQualificationError::Limit)
+    ));
+}
