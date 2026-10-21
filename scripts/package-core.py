@@ -25,6 +25,21 @@ FORBIDDEN_PARTS = {
     "target", "node_modules", "private", "telemetry", "policy-packs", "credentials",
 }
 SUFFIXES = {".rs", ".toml", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"}
+# Fixed compiler inputs of the public example, including its unit-test fixtures.
+# Keep this closure explicit: other bench data is not a distribution input.
+PUBLIC_EXAMPLE_INPUTS = {
+    "crates/router-runtime/examples/finite-campaign.rs": (
+        "tests/support/capability_verifier.rs",
+    ),
+    "crates/router-runtime/examples/campaign/public_score.rs": (
+        "docs/bench/native-useful-score-2026-10-21/verify.py",
+        "docs/bench/native-useful-score-2026-10-21/required-cases.rs",
+        "docs/bench/native-useful-score-2026-10-21/acceptance.json",
+        "docs/bench/native-useful-score-2026-10-21/change.patch",
+        "docs/bench/native-useful-score-2026-10-21/submission/lib.rs",
+        "docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/controller/control-output.json",
+    ),
+}
 CONTENT_RULES = (
     ("private_home_path", re.compile(rb"(?:/Users/|/home/)[A-Za-z0-9_.-]+[/\\]")),
     ("private_windows_path", re.compile(rb"[A-Za-z]:[\\/]+Users[\\/]+[^\s\"']+")),
@@ -220,6 +235,9 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                 if path.suffix not in SUFFIXES:
                     raise PackageError(f"source.unclassified_file: {relative}")
                 names.add(relative)
+    for anchor, inputs in PUBLIC_EXAMPLE_INPUTS.items():
+        if anchor in names:
+            names.update(inputs)
     files = {name: read_source(root, name) for name in sorted(names)}
     files["Cargo.toml"] = projected_manifest(files["Cargo.toml"], packages)
     if sum(map(len, files.values())) > MAX_TOTAL:
@@ -490,6 +508,34 @@ def verify_archive(path: Path) -> dict:
             "files": len(files) + 1, "content_sha256": manifest["content_sha256"]}
 
 
+def scan_sources(root: Path, files: dict[str, bytes], required: bool) -> str:
+    scanner = "not_available"
+    if shutil.which("gitleaks"):
+        with tempfile.TemporaryDirectory(prefix="agent-router-package-scan-") as directory:
+            staging = Path(directory) / "sources"
+            for name, data in files.items():
+                destination = staging / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+            argv = ["gitleaks", "dir", "--no-banner", "--redact", "--exit-code", "1"]
+            policy = root / ".gitleaks.toml"
+            if policy.exists() or policy.is_symlink():
+                # Scan with the repository's existing exact synthetic-fixture policy.
+                config = Path(directory) / "gitleaks.toml"
+                if policy.is_symlink() or not policy.is_file() or policy.stat().st_size > MAX_FILE:
+                    raise PackageError("gitleaks.invalid_policy")
+                data = policy.read_bytes()
+                if len(data) > MAX_FILE:
+                    raise PackageError("gitleaks.invalid_policy")
+                config.write_bytes(data)
+                argv.extend(["--config", str(config)])
+            run(argv + [str(staging)], root)
+        scanner = "passed"
+    elif required:
+        raise PackageError("gitleaks.not_available")
+    return scanner
+
+
 def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, require_gitleaks: bool, distribution: str = "core") -> dict:
     root = root.resolve()
     original_manifest = read_source(root, "Cargo.toml")
@@ -554,18 +600,7 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
     files["LICENSE-INVENTORY.json"] = json_bytes({"schema_version": 1, "scope": "Cargo.lock", "packages": inventory})
     files["SBOM.spdx.json"] = json_bytes(sbom(inventory, identity, created, distribution))
     files["THIRD_PARTY_NOTICES.md"] = notices(inventory)
-    scanner = "not_available"
-    if shutil.which("gitleaks"):
-        with tempfile.TemporaryDirectory(prefix="agent-router-package-scan-") as directory:
-            staging = Path(directory)
-            for name, data in files.items():
-                destination = staging / name
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                destination.write_bytes(data)
-            run(["gitleaks", "dir", "--no-banner", "--redact", "--exit-code", "1", str(staging)], root)
-        scanner = "passed"
-    elif require_gitleaks:
-        raise PackageError("gitleaks.not_available")
+    scanner = scan_sources(root, files, require_gitleaks)
     hashes = {name: digest(data) for name, data in sorted(files.items())}
     manifest = {
         "schema_version": 1, "kind": f"{distribution}-source", "source_commit": commit,
