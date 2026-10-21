@@ -32,6 +32,8 @@ jobs:
           python3 -B -m unittest discover -s docs/bench/native-integration-u02 -p test_probe.py -v
       - name: Replay the recovered subscription host without a provider
         run: python3 -B docs/bench/finite-subscription-relay-2026-10-18/host/test-offline.py
+      - name: Check subscription transport diagnostics without a provider
+        run: python3 -B docs/bench/finite-subscription-relay-2026-10-18/diagnostic-host/test-offline.py
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - name: Check the CLI without bundled host adapters
