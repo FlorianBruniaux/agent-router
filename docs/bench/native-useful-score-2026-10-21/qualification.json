@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-21",
+  "source_commit": "8265b8ed319febeb3f090f1316e23b8e36647cf5",
+  "product_source_unchanged_from_f12a": "fc1a4ea88b3effdb768cbeb1ca2c352c10b5d542",
+  "verdict": "pass_public_score_fixture",
+  "scope": "authored synthetic correction through qualified native entry; external public cases, no independent author review",
+  "programs": {
+    "client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+    "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+    "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+    "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33",
+    "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6"
+  },
+  "rebuilt_programs": {
+    "finite-codex-client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+    "router-sandbox-helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+    "examples/finite-campaign": "657deb86245d827761366cf2c5c993f68c315a14253e3f76b2e508e0ccd2aa3c"
+  },
+  "isolation": {
+    "limits": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "1698967552",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "unexpected_live_processes": []
+  },
+  "native": {
+    "assignment": "t02-Lm-r1-H1",
+    "coded_responses": 6,
+    "actual_tool_returns": 5,
+    "feedback_red_then_green": true,
+    "native_feedback_cases": 8,
+    "stdout_sha256": "8877ea880c3d6b3473d89faecb531e2cb3187802134f588b57ed4416429f2009",
+    "runtime_report_sha256": "2094aff9767b90726fd98d718b959d29fe9c6025be1271e1835f40e2a1e88e43",
+    "state": "verifying",
+    "objective": "unknown",
+    "validation": "unknown",
+    "cleanup": "namespace_terminated",
+    "source_unchanged": true,
+    "admission_granted": 0,
+    "admission_released": 1,
+    "submission": {
+      "bytes": 454,
+      "relative": "lib.rs",
+      "sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896"
+    }
+  },
+  "external_acceptance": {
+    "sha256": "b6c11bc4db4090d169d950cb6d0fc0490f77c0d2ef2a64cb0dc3145c6b5b998b",
+    "required_cases": 12,
+    "source_failed_cases": 8,
+    "candidate_passed_cases": 12,
+    "result_tree": "075ee9fd801052ee57fef3cae6f5fc6b6e80de3a",
+    "negative_inputs_refused": 9
+  },
+  "quality": {
+    "format": true,
+    "clippy_warnings_denied": true,
+    "workspace": {
+      "exit_code": 0,
+      "passed": 1920,
+      "ignored": 43,
+      "filtered_out": 498,
+      "suites": 196,
+      "includes_nested_results": true
+    },
+    "harness_parity": true,
+    "runtime_activation": "unknown",
+    "gitleaks": true,
+    "binding_tests": 17,
+    "cli_tests": 2,
+    "remote_ci_run": false,
+    "log_sha256": {
+      "workspace-test.log": "b58853fa75ee4fd4184e44e5442e0f37b697e56828ad1201b8adee99966d959d",
+      "clippy.log": "caa636ec9c7cba2c4f265005f356629e3a1e8fe35395de581375a782de9931bc",
+      "harness.log": "efeadbcb1c02dbd342e8e564dc6a2d0b4ae36312526cde5f424fb3ba25aa2287",
+      "gitleaks.log": "ab341c5032eac10484b00ad49c3e7fcf4620119f64c173987145c8a9e782a951"
+    }
+  },
+  "retained_failures": [
+    "Initial Linux build selected unavailable 1.85 channel; selected installed 1.85.1 without installation.",
+    "Offline dependency lookup lacked vendor configuration; selected existing /work/vendor.",
+    "Two pre-dispatch attempts refused absent /task/campaign; zero coded requests; created required empty parent before successful fresh run.",
+    "Temporary setup script quoting error before execution, corrected locally.",
+    "Malformed mode-header mutation initially passed because Git ignored the malformed header. Canonical reconstructed diff comparison now refuses it; all nine negative inputs and positive acceptance replayed."
+  ],
+  "private_archive": {
+    "sha256": "438258dab884aa954d0a048e782ec6946edcc43f59fdcf8be345bb9039c6748e",
+    "members": 260,
+    "bytes_uncompressed": 2253332,
+    "verified": true
+  },
+  "model_calls_started": 0,
+  "actual_provider_requests": 0,
+  "real_ledger_opened": false,
+  "auth_read": false,
+  "human_acceptance": null,
+  "independent_author_review": false,
+  "frozen_hidden_oracle_executed": false,
+  "source_integration": false,
+  "source_hashes": {
+    "docs/bench/finite-campaign-launcher-2026-10-18/qualify-offline.py": "b7f2a3ba8850584eb4d09ad8bc2424d8b74c72584f12b682c3a078f4e7c8d8bf",
+    "docs/bench/native-useful-score-2026-10-21/verify.py": "ff1b93561258b42967c9a99ea76d74ca69e2b89d08bdca7931f7f19121e88d73",
+    "docs/bench/native-useful-score-2026-10-21/required-cases.rs": "ce5483d9244f2c4d2c84d59802cd17abdcbdee034b5caf7b07a27cdf2f3d186d",
+    "docs/bench/native-useful-score-2026-10-21/test_acceptance.py": "cbe56b7715bcf01a512da41b5c85b55c3c13710e4033fcc893f3c1d9fbc48ab6",
+    "docs/bench/native-useful-score-2026-10-21/test-linux-inputs.py": "0b0bc157b08469858365ea4cf3c854d7e3ee00d2019e62b8293432821ee47fa5",
+    "docs/bench/finite-campaign-launcher-2026-10-18/test-useful-score.py": "250ac7b1c2ba9fcb66a0c8548bcf5b565a02eec3411b8891bd140246cd1189ee"
+  },
+  "container_stopped": true
+}

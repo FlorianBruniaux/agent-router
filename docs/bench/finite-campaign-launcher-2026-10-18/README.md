@@ -35,3 +35,9 @@ python3 -B docs/bench/finite-campaign-launcher-2026-10-18/qualify-offline.py t02
 The driver checks the model and effort actually requested, coded tool returns, feedback execution for H1, exact submission bytes, unchanged source, namespace cleanup and admission release. Transport qualification does not establish task correctness or real provider consumption.
 
 [The qualification record](qualification.json) records six passing native cases with zero provider calls and the exact artifact hashes. [The local quality record](local-quality.json) retains three failed workspace runs and targeted replays; the final sequential all-feature workspace run passed on 2026-10-19 after the Doctor test framing correction. Format, Clippy, harness parity and the repository secret scan also passed. The child still runs the same single lock probe with the same assertions; its explicit two-thread libtest setting prevents an inherited single-thread stdout prefix from corrupting the marker. A stale capability proof remains a refusal: the launcher does not extend its 300-second validity or refresh timestamps without running discovery again. No CI result from the preceding subscription relay commit qualifies this new launcher.
+
+## Useful score correction
+
+`--useful-score` is restricted to `t02-Lm-r1-H1`. It reuses the published authored correction, observes failing public feedback before the write and passing feedback afterwards, and exports the actual captured patch as well as the submission. It remains a fake-provider fixture, with no account or inference.
+
+The [external acceptance replay](../native-useful-score-2026-10-21/README.md) checks twelve named cases against that exported artifact and reconstructs its exact Git tree. It does not turn Runtime's `Verifying` state into human acceptance or qualify the frozen campaign's hidden evaluator.

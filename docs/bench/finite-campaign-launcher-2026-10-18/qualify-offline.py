@@ -5,7 +5,10 @@ parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument("assignment")
 parser.add_argument("--output",type=pathlib.Path,required=True,help="Private prepared candidate directory with id and program-pins.json")
 parser.add_argument("--recipe",type=pathlib.Path,required=True,help="Verified argv recipe for this isolated Linux container")
+parser.add_argument("--useful-score",action="store_true",help="Replay the authored t02 correction with RED/GREEN feedback; external acceptance remains separate")
 args=parser.parse_args()
+if args.useful_score and args.assignment!='t02-Lm-r1-H1':
+ parser.error('--useful-score requires the sealed t02-Lm-r1-H1 packet')
 OUT=args.output
 HOST=pathlib.Path(__file__).resolve().parent.parent/'finite-subscription-relay-2026-10-18/controller'
 def load(n,f):
@@ -61,6 +64,12 @@ def main(aid):
  steps=[{'tool':'mcp__finite__read_file','arguments':{'path':'statement.md'},'expected':expected}, {'tool':'mcp__finite__write_file','arguments':{'path':p['output'],'content':code,'create_new':p['create_new']},'expected':expected}, {'tool':'mcp__finite__read_file','arguments':{'path':p['output']},'expected':expected}]
  if p['condition']=='H1':
   steps.append({'tool':'mcp__finite__exec','arguments':{'argv':['python3','-B','feedback.py']},'expected':{**expected,'exit_code':0 if aid.startswith('t05') else 1}})
+ if args.useful_score:
+  authored=pathlib.Path(__file__).resolve().parent.parent/'linux-finite-dispatch-2026-10-16/inputs/t02/controller/control-output.json'
+  code=json.loads(authored.read_text())['lib.rs']
+  steps[1]['arguments']['content']=code
+  steps[-1]['expected']['exit_code']=0
+  steps.insert(1,{'tool':'mcp__finite__exec','arguments':{'argv':['python3','-B','feedback.py']},'expected':{**expected,'exit_code':1}})
  script=ToolScript(steps,model=p['model'],effort=p['effort'],marker='Read statement.md and AGENTS.md. Follow HARNESS.md if present.')
  calls=[]
  def send(raw,remaining):
@@ -100,9 +109,15 @@ def main(aid):
    assert len(raw)==artifact['bytes'] and hashlib.sha256(raw).hexdigest()==artifact['sha256']
    text=raw.decode();runs=re.findall(r'running ([0-9]+) tests?',text)
    if aid.startswith('t05'):assert 'JSON shape valid; defect accuracy and explanation quality are not checked.' in text
+   elif args.useful_score:assert runs==['4','4'] and 'test result: FAILED' in text and 'test result: ok. 4 passed; 0 failed' in text
    else:assert runs==(['4'] if aid.startswith('t02') else ['1']) and 'test result: FAILED' in text
    feedback={'native_stdout_sha256':artifact['sha256'],'rust_tests_executed':sum(map(int,runs)),'expected_feedback_failure':not aid.startswith('t05'),'json_shape_valid':aid.startswith('t05')}
    (out/'native-stdout.bin').write_bytes(raw)
+  if args.useful_score:
+   (out/'source-lib.rs').write_text(p['files']['lib.rs'])
+   patch=extract(c,desc['root']+'/runtime/artifacts/'+aid+'.patch',65536)
+   assert hashlib.sha256(patch).hexdigest()==report['result']['run']['artifact_sha256']
+   (out/'change.patch').write_bytes(patch)
  except Exception as exc:
   error=type(exc).__name__+': '+str(exc)[:200]
   try:proc.stdin.close()
@@ -112,6 +127,7 @@ def main(aid):
  finally:
   stderr.close();manager.close()
   summary={'assignment_id':aid,'passed':error is None,'failure':error,'model_calls_started':0,'actual_provider_requests':0,'auth_read':False,'only_current_cell_executed_natively':True,'synthetic_prefix_cells':skipped,'separate_fixture_ledger':str(root),'packet_sha256':p['packet_sha256'],'binding':binding,'calls':calls,'observed_tool_results':script.observed_tool_results,'feedback_evidence':feedback,'observation':observation,'runtime_exit_code':proc.poll()}
+  summary['qualification_mode']='useful-score' if args.useful_score else 'transport'
   (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');print(json.dumps({'assignment_id':aid,'passed':summary['passed'],'failure':error,'calls':len(calls),'models_started':0}),flush=True)
  if error:raise SystemExit(1)
 if __name__=='__main__':main(args.assignment)
