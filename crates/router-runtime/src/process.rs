@@ -299,7 +299,9 @@ mod tests {
         // Delayed startup must not turn this into a test of scheduler speed.
         // Only the descendant emits stdout, after its heartbeat. Overflow
         // therefore requests group cleanup after it has demonstrably started.
-        command.arg("-c").arg("trap '' TERM; /bin/sh -c 'trap \"\" TERM; /bin/sleep 0.25; while :; do printf x >> heartbeat; printf x; sleep 0.01; done' & wait").current_dir(temp.path());
+        // Ignore PIPE so closing the reader cannot masquerade as group cleanup;
+        // self-signals verify TERM/PIPE resistance before any activity is counted.
+        command.arg("-c").arg("trap '' TERM PIPE; /bin/sh -c 'trap \"\" TERM PIPE; /bin/sleep 0.25; kill -TERM $$; kill -PIPE $$; while :; do printf x >> heartbeat; printf x; sleep 0.01; done' & wait").current_dir(temp.path());
         let out = capture(command, vec![], 30_000, 1, 30, &Cancellation::default())
             .await
             .unwrap();
