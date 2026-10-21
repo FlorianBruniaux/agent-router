@@ -151,3 +151,9 @@ remains partially implemented; no real trial is authorized by this report.
 
 The [2026-10-21 tuning identity verification](bench/evaluator-tuning-identity-2026-10-21.md)
 records the tested sources, local checks and remaining #174/#132 criteria.
+
+The [2026-10-21 frozen t02 oracle probe](bench/t02-oracle-qualification-2026-10-21/README.md)
+executes independently labelled controls in offline Linux at unchanged 8 GiB.
+It exposes a missed unsigned-sum defect: the retained oracle is unqualified.
+This finite diagnostic preserves historical verdicts and does not authenticate
+the oracle, establish held-out adequacy or authorize runtime acceptance.

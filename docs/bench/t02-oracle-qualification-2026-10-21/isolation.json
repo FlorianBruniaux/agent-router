@@ -1,0 +1,24 @@
+{
+  "binds": null,
+  "cap_drop": [
+    "ALL"
+  ],
+  "container_id": "a565a01540fcdd10bd7487817f835ed2a3dc013b48e284d7e983f760e1739afc",
+  "image_id": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+  "memory_bytes": 8589934592,
+  "memory_plus_swap_bytes": 8589934592,
+  "mounts": [],
+  "nano_cpus": 1000000000,
+  "network_mode": "none",
+  "pids_limit": 256,
+  "private_inputs": "Copied once through stdin into /task/probe; no host bind mounts; originals not modified.",
+  "read_only_root": true,
+  "security_opt": [
+    "no-new-privileges"
+  ],
+  "tmpfs": {
+    "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+    "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+  },
+  "user": "65534:65534"
+}
