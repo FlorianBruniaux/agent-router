@@ -62,6 +62,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0042](0042-owned-subscription-relay.md) | Bind subscription transport and observations to the finite Runtime owner | proposed | 2026-10-18 | 2026-10-18 | - |
 
+| [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-21 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.

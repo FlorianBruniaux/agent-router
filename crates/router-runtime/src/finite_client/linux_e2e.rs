@@ -1105,6 +1105,11 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
     assert_eq!(posts.load(Ordering::SeqCst), 0);
     let digest = pending.approval_digest().to_owned();
     let approved = runtime.approve_finite_client(pending, &digest).unwrap();
+    let verifier = runtime.finite_client_verifier(&approved).unwrap();
+    assert!(
+        verifier.artifact().is_err(),
+        "queued is not a captured artifact"
+    );
     let mut external_parent = None;
     let subscription_parent =
         if let (Some(peer), Some((driver, path, mut binding))) = (parent_peer, descriptor) {
@@ -1363,6 +1368,21 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
         }
         let patch = fs::read(store.join("artifacts").join(format!("{run_id}.patch"))).unwrap();
         assert_eq!(Some(content_digest(&patch)), completion.run.artifact_sha256);
+        assert_eq!(verifier.artifact().unwrap(), patch);
+        // Exercise only the explicit UNKNOWN bridge here. These lifecycle
+        // fixtures do not evaluate a useful task or grant human acceptance.
+        if !external {
+            let summary = verifier
+                .record(VerificationRecord {
+                    verifier: "explicit-lifecycle-fixture".into(),
+                    evidence_sha256: content_digest(b"lifecycle fixture; objective unknown"),
+                    artifact_sha256: completion.run.artifact_sha256.clone(),
+                    validation: VerificationOutcome::Unknown,
+                    objective: VerificationOutcome::Unknown,
+                })
+                .unwrap();
+            assert_eq!(summary.state, RunState::Verifying);
+        }
         fs::write(root.join("change.patch"), patch).unwrap();
         let exported = root.join("submission");
         mkdir(&exported);

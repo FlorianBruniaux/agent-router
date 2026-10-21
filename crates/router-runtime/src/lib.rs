@@ -18,10 +18,10 @@ pub mod finite_tools;
 mod generated;
 pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
-    FiniteClientReview, FiniteClientValidation, FiniteClientWorkspace, FiniteCodexState,
-    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker,
-    OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
-    SubscriptionControllerPeer,
+    FiniteClientReview, FiniteClientValidation, FiniteClientVerifier, FiniteClientWorkspace,
+    FiniteCodexState, FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_PROFILE_V3,
+    OwnedBroker, OwnedSubscriptionController, PendingFiniteClientRun,
+    SubscriptionControllerBinding, SubscriptionControllerPeer,
 };
 mod host_state;
 mod leases;
@@ -2073,7 +2073,21 @@ impl Runtime {
         pending: &PendingRun,
         record: VerificationRecord,
     ) -> Result<RunSummary> {
-        let run = self.store.get(&pending.run.run_id)?;
+        self.record_verification_for(
+            &pending.run.run_id,
+            &pending.node.owner,
+            pending.decision.selection().candidate.verification == PhaseVerification::Independent,
+            record,
+        )
+    }
+    fn record_verification_for(
+        &self,
+        run_id: &str,
+        owner: &str,
+        independent: bool,
+        record: VerificationRecord,
+    ) -> Result<RunSummary> {
+        let run = self.store.get(run_id)?;
         if run.state != RunState::Verifying
             || !is_digest(&record.evidence_sha256)
             || record.verifier.is_empty()
@@ -2082,9 +2096,7 @@ impl Runtime {
         {
             return Err(RuntimeError::Verification);
         }
-        if pending.decision.selection().candidate.verification == PhaseVerification::Independent
-            && record.verifier == pending.node.owner
-        {
+        if independent && record.verifier == owner {
             return Err(RuntimeError::Verification);
         }
         let passed = record.validation == VerificationOutcome::Passed

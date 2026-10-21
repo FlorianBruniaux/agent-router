@@ -1253,8 +1253,10 @@ mod namespace_state;
 pub(crate) use namespace_state::FiniteClientResources;
 
 mod runtime_binding;
+mod verification;
 pub(crate) use runtime_binding::bind_runtime_definition;
 pub use runtime_binding::{ApprovedFiniteClientRun, PendingFiniteClientRun};
+pub use verification::FiniteClientVerifier;
 
 mod linux_backend;
 use linux_backend::FiniteClientNamespace;
