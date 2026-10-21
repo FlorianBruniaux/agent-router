@@ -693,3 +693,18 @@ only the retained helper's `--probe` with the reviewed resource arguments,
 checks ownership and pins before/after, and returns no launch handle or proof.
 This cannot be reconstructed from the launch-preview JSON. An applied-limit
 probe is separate from OS enforcement, native admission and task containment.
+
+
+## Finite context tools v4
+
+An explicit `FiniteContextPolicy` has schema 1, `read_windows` and at most eight valid lower-case SHA-256 `terminal_argument_sha256` entries. Unknown fields are rejected. Its digest covers the complete validated policy. It grants no capability. The [v4 profile decision](../adr/0044-finite-context-profile.md) and [qualification status](../bench/rtk-context-native-qualification/README.md) distinguish preparation from observed Linux effects.
+
+`ToolOwnerBoot` adds optional `context_policy`, `context_policy_sha256` and `catalog_sha256`. All are defaulted and omitted when absent. With policy, both digests must match the validated policy and the actual deterministic MCP tools array. The parent binds the whole bootstrap bytes, retained file identity, startup configuration and policy into the finite review. Live mismatches refuse dispatch. No worker field or environment variable can select this policy.
+
+`LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4` is exactly `{"kind":"linux-isolated-finite-tools-context-v4","schema_version":1}` followed by LF. It consumes only schema-2 `ToolTerminal` with matching policy and catalogue digests. The existing `LINUX_FINITE_TOOLS_PROFILE_V3` bytes and schema-1 terminal remain exact without policy; no absent option is added to historical hash tuples. A v3 profile cannot claim v4 policy or terminal metadata.
+
+`read_file` exposes paired integer `start_line`/`max_lines` only when enabled, each 1..32768. The optional `window` metadata binds the entire checked source; UTF-8, CRLF, whitespace and unterminated tails remain exact. Truncation removes window metadata and retains the existing budget stop.
+
+A nonempty terminal allowlist advertises `read_output` and requires it in the Runtime request allowlist. Only listed complete `exec` results may receive `view` metadata for `terminal_sgr_v1`. Non-SGR ESC returns the exact result. The complete raw result remains session-scoped, at most eight entries and 32768 content bytes. Recall consumes an invocation and its full content bytes, without another process invocation or partial recovery. Content, JSON and escaped MCP-text bounds are checked before advertising a handle.
+
+Optional journal `context` counters measure admitted raw, shown and recalled content plus full ToolResult JSON bytes, excluding the MCP envelope. They do not authenticate a process, a price or a model outcome. The Runtime still requires opaque producer state, matching approvals, fresh OS evidence and exact stopped-namespace ownership before observing or promoting output.

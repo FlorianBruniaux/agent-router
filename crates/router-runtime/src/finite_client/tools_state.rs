@@ -1,11 +1,44 @@
 //! Producer-owned MCP preparation. Worker JSON alone grants no authority.
 use super::*;
-use crate::finite_tools::{FilePolicy, Limits, ToolOwnerBoot, ToolTerminal};
+use crate::finite_tools::{
+    FilePolicy, FiniteContextPolicy, Limits, ToolOwnerBoot, ToolTerminal, open_file_policy,
+};
 use std::io::{Seek, SeekFrom};
 use std::path::PathBuf;
 
 pub const LINUX_FINITE_TOOLS_PROFILE_V3: &[u8] =
     b"{\"kind\":\"linux-isolated-finite-tools-v3\",\"schema_version\":1}\n";
+pub const LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4: &[u8] =
+    b"{\"kind\":\"linux-isolated-finite-tools-context-v4\",\"schema_version\":1}\n";
+pub(super) fn validate_profile(bytes: &[u8], context: Option<&FiniteContextPolicy>) -> Result<()> {
+    if let Some(policy) = context {
+        policy.validate().map_err(|_| RuntimeError::Sandbox)?;
+    }
+    if bytes
+        != if context.is_some() {
+            LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4
+        } else {
+            LINUX_FINITE_TOOLS_PROFILE_V3
+        }
+    {
+        return Err(RuntimeError::Sandbox);
+    }
+    Ok(())
+}
+fn context_review_digest(base: &str, context: Option<&FiniteContextPolicy>) -> Result<String> {
+    match context {
+        Some(policy) => crate::digest(
+            "finite-client-mcp-context-review-v1",
+            &(
+                base,
+                policy.digest().map_err(|_| RuntimeError::Sandbox)?,
+                crate::finite_tools::mcp_catalog_digest(Some(policy))
+                    .map_err(|_| RuntimeError::Sandbox)?,
+            ),
+        ),
+        None => Ok(base.into()),
+    }
+}
 const RUSTC: &str = "/usr/local/rustup/toolchains/1.85.1-aarch64-unknown-linux-gnu/bin/rustc";
 const LINKER: &str = "/usr/bin/aarch64-linux-gnu-gcc-12";
 struct SystemProgram {
@@ -79,6 +112,9 @@ pub(super) struct PreparedTools {
 }
 impl PreparedTools {
     pub(super) fn check(&self) -> Result<()> {
+        let boot_bytes = serde_json::to_vec(&self.boot)?;
+        crate::finite_tools::owner::validate_bootstrap_bytes(&boot_bytes, &self.bootstrap.sha256)
+            .map_err(|_| RuntimeError::Integrity("finite context bootstrap changed"))?;
         if file_identity(&self.bootstrap, false)?.identity != self.bootstrap_identity.identity
             || file_identity(&self.compiler, true)?.identity != self.compiler_identity.identity
             || FileIdentity::from(&self.terminal.metadata()?) != self.terminal_identity
@@ -140,8 +176,10 @@ impl PreparedTools {
             .map_err(|_| RuntimeError::Integrity("finite tools terminal JSON"))?;
         let observed: ToolTerminal = serde_json::from_value(value)
             .map_err(|_| RuntimeError::Integrity("finite tools terminal schema"))?;
-        if observed.schema_version != 1
-            || observed.binding != self.boot.binding
+        observed
+            .validate_context(self.boot.context_policy.as_ref())
+            .map_err(|_| RuntimeError::Integrity("finite tools terminal context"))?;
+        if observed.binding != self.boot.binding
             || observed.journal.len() > 64
             || (require_complete && !observed.complete)
             || (observed.complete
@@ -150,10 +188,15 @@ impl PreparedTools {
                     || observed.journal.len() > self.boot.limits.max_calls as usize))
             || observed.journal.iter().enumerate().any(|(i, v)| {
                 v.index as usize != i + 1
-                    || !matches!(
+                    || !(matches!(
                         v.tool.as_str(),
                         "read_file" | "write_file" | "exec" | "unknown"
-                    )
+                    ) || v.tool == "read_output"
+                        && self
+                            .boot
+                            .context_policy
+                            .as_ref()
+                            .is_some_and(|p| !p.terminal_argument_sha256.is_empty()))
                     || v.status.len() > 64
                     || v.argument_sha256.as_ref().is_some_and(|s| !is_digest(s))
                     || v.file_sha256.as_ref().is_some_and(|s| !is_digest(s))
@@ -177,10 +220,25 @@ impl PreparedTools {
 impl FiniteClientReview {
     /// Binds one explicit public inventory and output operation into a new
     /// review. It does not qualify the OS or authorize native execution.
-    pub fn with_mcp_tools(
+    pub fn with_mcp_tools(self, public: BTreeMap<String, String>, limits: Limits) -> Result<Self> {
+        self.with_mcp_mode(public, limits, None)
+    }
+    pub fn with_mcp_context(
+        self,
+        public: BTreeMap<String, String>,
+        limits: Limits,
+        policy: FiniteContextPolicy,
+    ) -> Result<Self> {
+        policy
+            .validate()
+            .map_err(|_| RuntimeError::Invalid("finite context policy"))?;
+        self.with_mcp_mode(public, limits, Some(policy))
+    }
+    fn with_mcp_mode(
         mut self,
         public: BTreeMap<String, String>,
         limits: Limits,
+        context_policy: Option<FiniteContextPolicy>,
     ) -> Result<Self> {
         if !cfg!(target_os = "linux")
             || std::env::consts::ARCH != "aarch64"
@@ -193,9 +251,11 @@ impl FiniteClientReview {
         }
         self.check_files()?;
         let state = self.owned_state.as_ref().ok_or(RuntimeError::Sandbox)?;
-        if !state.startup.tools
-            || fs::read(&self.manifest.profile.path)? != LINUX_FINITE_TOOLS_PROFILE_V3
-        {
+        validate_profile(
+            &fs::read(&self.manifest.profile.path)?,
+            context_policy.as_ref(),
+        )?;
+        if !state.startup.tools || state.startup.context_policy != context_policy {
             return Err(RuntimeError::Sandbox);
         }
         let view = self.owned_workspace.as_ref().ok_or(RuntimeError::Sandbox)?;
@@ -216,13 +276,14 @@ impl FiniteClientReview {
         .ok_or(RuntimeError::Sandbox)?;
         let scratch = observation_state.path().join("observation-scratch");
         fs::DirBuilder::new().mode(0o700).create(&scratch)?;
-        let original_policy = FilePolicy::open(
+        let original_policy = open_file_policy(
             Path::new(&self.run.cwd),
             &scratch,
             public.clone(),
             &dispatch.relative,
             dispatch.preimage.clone(),
             limits.clone(),
+            context_policy.as_ref(),
         )
         .map_err(|_| RuntimeError::Integrity("finite tools public inventory"))?;
         let staging = tool_directory.join("public-staging");
@@ -254,13 +315,14 @@ impl FiniteClientReview {
         let staging_identity = directory(staging.to_str().ok_or(RuntimeError::Scope)?, true)?;
         let stage_scratch = tool_directory.join("staging-preparation-scratch");
         fs::DirBuilder::new().mode(0o700).create(&stage_scratch)?;
-        let policy = FilePolicy::open(
+        let policy = open_file_policy(
             &staging,
             &stage_scratch,
             public.clone(),
             &dispatch.relative,
             dispatch.preimage.clone(),
             limits.clone(),
+            context_policy.as_ref(),
         )
         .map_err(|_| RuntimeError::Integrity("finite tools staged public inventory"))?;
         let system = vec![SystemProgram::open(RUSTC)?, SystemProgram::open(LINKER)?];
@@ -345,6 +407,20 @@ impl FiniteClientReview {
             reads,
             context: serde_json::to_string(&context)?,
             probe: None,
+            context_policy_sha256: context_policy
+                .as_ref()
+                .map(FiniteContextPolicy::digest)
+                .transpose()
+                .map_err(|_| RuntimeError::Sandbox)?,
+            catalog_sha256: if context_policy.is_some() {
+                Some(
+                    crate::finite_tools::mcp_catalog_digest(context_policy.as_ref())
+                        .map_err(|_| RuntimeError::Sandbox)?,
+                )
+            } else {
+                None
+            },
+            context_policy,
         };
         let bytes = serde_json::to_vec(&boot)?;
         if bytes.len() > MAX_CONTRACT {
@@ -373,6 +449,7 @@ impl FiniteClientReview {
                 &terminal_identity,
             ),
         )?;
+        self.approval = context_review_digest(&self.approval, boot.context_policy.as_ref())?;
         self.owned_tools = Some(PreparedTools {
             boot,
             bootstrap,
@@ -467,5 +544,40 @@ impl PreparedTools {
         };
         verified.check()?;
         Ok(Some(verified))
+    }
+}
+
+#[cfg(test)]
+mod context_tests {
+    use super::*;
+    fn context() -> crate::finite_tools::FiniteContextPolicy {
+        crate::finite_tools::FiniteContextPolicy {
+            schema_version: 1,
+            read_windows: true,
+            terminal_argument_sha256: Default::default(),
+        }
+    }
+    #[test]
+    fn context_policy_changes_review_digest() {
+        let base = "a".repeat(64);
+        let a = context();
+        let b = crate::finite_tools::FiniteContextPolicy {
+            read_windows: false,
+            ..context()
+        };
+        assert_eq!(context_review_digest(&base, None).unwrap(), base);
+        assert_ne!(context_review_digest(&base, Some(&a)).unwrap(), base);
+        assert_ne!(
+            context_review_digest(&base, Some(&a)).unwrap(),
+            context_review_digest(&base, Some(&b)).unwrap()
+        );
+    }
+    #[test]
+    fn v3_cannot_claim_v4_context() {
+        let context = context();
+        validate_profile(LINUX_FINITE_TOOLS_PROFILE_V3, None).unwrap();
+        validate_profile(LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4, Some(&context)).unwrap();
+        assert!(validate_profile(LINUX_FINITE_TOOLS_PROFILE_V3, Some(&context)).is_err());
+        assert!(validate_profile(LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4, None).is_err());
     }
 }

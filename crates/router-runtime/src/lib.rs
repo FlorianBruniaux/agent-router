@@ -19,9 +19,9 @@ mod generated;
 pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteClientInvocation, FiniteClientLaunchPlan,
     FiniteClientReview, FiniteClientValidation, FiniteClientWorkspace, FiniteCodexState,
-    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker,
-    OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
-    SubscriptionControllerPeer,
+    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4,
+    LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker, OwnedSubscriptionController,
+    PendingFiniteClientRun, SubscriptionControllerBinding, SubscriptionControllerPeer,
 };
 mod host_state;
 mod leases;

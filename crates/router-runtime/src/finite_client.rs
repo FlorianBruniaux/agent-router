@@ -630,6 +630,8 @@ impl FiniteClientValidation<'_> {
     }
 }
 
+#[path = "finite_client/context_startup.rs"]
+mod context_startup;
 mod subscription_controller;
 #[path = "finite_client/subscription_preparation.rs"]
 mod subscription_preparation;
@@ -648,6 +650,7 @@ pub struct FiniteCodexState {
 }
 struct FiniteCodexStartup {
     tools: bool,
+    context_policy: Option<crate::finite_tools::FiniteContextPolicy>,
     subscription: Option<SubscriptionPreparation>,
     configuration: FiniteClientFile,
     catalog: FiniteClientFile,
@@ -689,20 +692,22 @@ impl FiniteCodexStartup {
             .ok_or(RuntimeError::Invalid("finite client tmp path"))?;
         if directory(tmp, true)?.identity != self.tmp_identity.identity
             || self.configuration.sha256
-                != content_digest(&codex_configuration_for(
+                != content_digest(&context_startup::configuration(
                     run,
                     broker,
                     self.tools,
                     self.subscription.as_ref(),
+                    self.context_policy.as_ref(),
                 )?)
         {
             return Err(RuntimeError::Integrity("finite client owned configuration"));
         }
         if self.catalog.sha256
-            != content_digest(&codex_catalog_for(
+            != content_digest(&context_startup::catalog(
                 run,
                 self.tools,
                 self.subscription.as_ref(),
+                self.context_policy.as_ref(),
             )?)
             || file_identity(&self.catalog, false)?.identity != self.catalog_identity.identity
         {
@@ -717,7 +722,8 @@ impl FiniteCodexStartup {
         Ok(())
     }
     fn binding(&self) -> Result<String> {
-        let base = self.fixture_binding()?;
+        let base =
+            context_startup::binding(&self.fixture_binding()?, self.context_policy.as_ref())?;
         match &self.subscription {
             Some(subscription) => {
                 crate::digest("finite-subscription-preparation-v1", &(&base, subscription))
@@ -845,12 +851,34 @@ impl OwnedBroker {
     ) -> Result<FiniteCodexState> {
         self.prepare_codex_state_mode(store, run, true, None)
     }
+    /// Creates a distinct, credential-free context startup, without invocation.
+    pub fn prepare_codex_context_tools_state(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+        policy: crate::finite_tools::FiniteContextPolicy,
+    ) -> Result<FiniteCodexState> {
+        policy
+            .validate()
+            .map_err(|_| RuntimeError::Invalid("finite context policy"))?;
+        self.prepare_codex_state_options(store, run, true, None, Some(policy))
+    }
     fn prepare_codex_state_mode(
         &self,
         store: &Path,
         run: &PreparedRun,
         tools: bool,
         subscription: Option<SubscriptionPreparation>,
+    ) -> Result<FiniteCodexState> {
+        self.prepare_codex_state_options(store, run, tools, subscription, None)
+    }
+    fn prepare_codex_state_options(
+        &self,
+        store: &Path,
+        run: &PreparedRun,
+        tools: bool,
+        subscription: Option<SubscriptionPreparation>,
+        context_policy: Option<crate::finite_tools::FiniteContextPolicy>,
     ) -> Result<FiniteCodexState> {
         prepared_digest(run)?;
         let store_text = store
@@ -861,7 +889,13 @@ impl OwnedBroker {
         if store.starts_with(&run.cwd) || Path::new(&run.cwd).starts_with(store) {
             return Err(RuntimeError::Scope);
         }
-        let bytes = codex_configuration_for(run, self, tools, subscription.as_ref())?;
+        let bytes = context_startup::configuration(
+            run,
+            self,
+            tools,
+            subscription.as_ref(),
+            context_policy.as_ref(),
+        )?;
         let state =
             HostState::create(store, "codex", &BTreeMap::new())?.ok_or(RuntimeError::Sandbox)?;
         let tmp = state.path().join("tmp");
@@ -918,7 +952,8 @@ impl OwnedBroker {
                 .into(),
             sha256: content_digest(id.as_bytes()),
         };
-        let catalog_bytes = codex_catalog_for(run, tools, subscription.as_ref())?;
+        let catalog_bytes =
+            context_startup::catalog(run, tools, subscription.as_ref(), context_policy.as_ref())?;
         let catalog_path = state.path().join("local-model-catalog.json");
         let mut catalog_file = OpenOptions::new()
             .write(true)
@@ -944,6 +979,7 @@ impl OwnedBroker {
             state,
             startup: FiniteCodexStartup {
                 tools,
+                context_policy,
                 subscription,
                 configuration,
                 catalog,
@@ -1264,12 +1300,12 @@ pub(crate) use linux_backend::LinuxFiniteSupervisor;
 mod write_workspace;
 pub use write_workspace::{FiniteClientWorkspace, FiniteOutputMode};
 
-#[cfg(all(test, target_os = "linux"))]
+#[cfg(test)]
 #[path = "finite_client/native_tools_tests.rs"]
 mod native_tools_tests;
 
 mod tools_state;
-pub use tools_state::LINUX_FINITE_TOOLS_PROFILE_V3;
+pub use tools_state::{LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4, LINUX_FINITE_TOOLS_PROFILE_V3};
 
 #[cfg(test)]
 mod coupling_tests;

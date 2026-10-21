@@ -61,6 +61,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0041](0041-native-finite-mcp-component.md) | Qualify the native finite MCP component | accepted | 2026-10-17 | 2026-10-17 | - |
 
 | [0042](0042-owned-subscription-relay.md) | Bind subscription transport and observations to the finite Runtime owner | proposed | 2026-10-18 | 2026-10-18 | - |
+| [0044](0044-finite-context-profile.md) | Bind finite context policy to a distinct native profile | proposed | 2026-10-21 | 2026-10-21 | - |
 
 ## Frontmatter fields
 

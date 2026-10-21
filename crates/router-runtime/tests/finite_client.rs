@@ -1366,3 +1366,65 @@ fn owned_mcp_startup_has_only_the_fixed_server_and_no_authentication() {
             .contains("three advertised finite tools")
     );
 }
+
+#[test]
+fn contextual_startup_explicitly_advertises_recall_and_keeps_credentials_absent() {
+    use router_runtime::finite_tools::{FiniteContextPolicy, exec_presentation_key};
+    let mut f = Fixture::new();
+    let broker = f.broker.take().unwrap();
+    let store = f.root.join("context-preparation");
+    fs::create_dir(&store).unwrap();
+    fs::set_permissions(&store, fs::Permissions::from_mode(0o700)).unwrap();
+    let policy = FiniteContextPolicy {
+        schema_version: 1,
+        read_windows: true,
+        terminal_argument_sha256: BTreeSet::from([exec_presentation_key(
+            &["python3".into()],
+            None,
+        )
+        .unwrap()]),
+    };
+    let state = broker
+        .prepare_codex_context_tools_state(&store, &f.run, policy.clone())
+        .unwrap();
+    let text = fs::read_to_string(&state.configuration().path).unwrap();
+    assert!(
+        text.contains("enabled_tools = [\"read_file\", \"write_file\", \"exec\", \"read_output\"]")
+    );
+    assert!(text.contains("[mcp_servers.finite.tools.read_output]"));
+    assert_eq!(text.matches("approval_mode = \"approve\"").count(), 4);
+    assert!(!state.path().join("auth.json").exists());
+    f.manifest.private_state = state.path().to_str().unwrap().into();
+    f.manifest.configuration = state.configuration().clone();
+    let review = FiniteClientReview::with_codex_state(
+        f.manifest.clone(),
+        &f.run,
+        broker,
+        ResourceLimits::default(),
+        state,
+    )
+    .unwrap();
+    let before = review.approval_digest().to_owned();
+    // The v3 fixture has no qualified Linux namespace or v4 profile. Inert
+    // context startup cannot borrow those missing permissions or proofs.
+    assert!(
+        review
+            .with_mcp_context(
+                BTreeMap::new(),
+                router_runtime::finite_tools::Limits {
+                    max_calls: 8,
+                    max_file_bytes: 32768,
+                    max_output_bytes: 8192,
+                    max_total_output_bytes: 32768,
+                    max_exec_ms: 20000,
+                    max_total_exec_ms: 60000,
+                    max_session_ms: 3000,
+                    max_scratch_entries: 64,
+                    max_scratch_bytes: 16777216
+                },
+                policy
+            )
+            .is_err()
+    );
+    assert_eq!(before.len(), 64);
+}

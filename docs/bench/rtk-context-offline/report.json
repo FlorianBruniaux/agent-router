@@ -1,0 +1,396 @@
+{
+  "combined_selection": {
+    "content_reduction_basis_points": 209,
+    "delivered_content_bytes": 19181,
+    "json_reduction_basis_points": -179,
+    "net_content_bytes": 410,
+    "net_json_bytes": -415,
+    "raw_content_bytes": 19591,
+    "raw_json_bytes": 23082,
+    "recalled_content_bytes": 429,
+    "serialized_bytes": 23497,
+    "shown_content_bytes": 18752
+  },
+  "corpus_sha256": "65b65fddd7f118aafa2cc7986128cfe7bb9ee592fd4c116850a6892d670da893",
+  "evidence": {
+    "billed_tokens": "unknown",
+    "model_success": "unknown",
+    "native_linux_arm64": "not_run",
+    "provider_cost": "unknown",
+    "qualified_pricing": "unknown"
+  },
+  "fallback_count": 4,
+  "fallbacks": [
+    {
+      "fixture_id": "cursor_escape",
+      "reason": "unsupported_escape"
+    },
+    {
+      "fixture_id": "osc_escape",
+      "reason": "unsupported_escape"
+    },
+    {
+      "fixture_id": "hint_overhead",
+      "reason": "metadata_no_gain"
+    },
+    {
+      "fixture_id": "structured_diagnostic",
+      "reason": "no_sgr_gain"
+    }
+  ],
+  "measurement_basis": "authored ToolResult JSON; fixed elapsed_ms=1000; deterministic test-only recall binding; excludes MCP envelope",
+  "refusals": [
+    {
+      "fidelity": "pass",
+      "fixture_id": "source_replaced",
+      "outcome": "expected_refusal_verified"
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "foreign_handle",
+      "outcome": "expected_refusal_verified"
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "exact_call_and_byte_quotas",
+      "outcome": "expected_refusal_verified"
+    }
+  ],
+  "rows": [
+    {
+      "fidelity": "pass",
+      "fixture_id": "crlf_utf8_tail",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 15,
+      "raw_json_bytes": 117,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 117,
+      "shown_content_bytes": 15
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "crlf_utf8_tail",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 15,
+      "raw_json_bytes": 117,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 264,
+      "shown_content_bytes": 4
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "literal_escape",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 42,
+      "raw_json_bytes": 150,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 150,
+      "shown_content_bytes": 42
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "literal_escape",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 42,
+      "raw_json_bytes": 150,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 289,
+      "shown_content_bytes": 22
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "json_large_integer",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 70,
+      "raw_json_bytes": 182,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 182,
+      "shown_content_bytes": 70
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "json_large_integer",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 70,
+      "raw_json_bytes": 182,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 343,
+      "shown_content_bytes": 70
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "useful_duplicates",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 24,
+      "raw_json_bytes": 126,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 126,
+      "shown_content_bytes": 24
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "useful_duplicates",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 24,
+      "raw_json_bytes": 126,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 287,
+      "shown_content_bytes": 24
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "long_line",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 8192,
+      "raw_json_bytes": 8289,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 8289,
+      "shown_content_bytes": 8192
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "long_line",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 8192,
+      "raw_json_bytes": 8289,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 8289,
+      "shown_content_bytes": 8192
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "quota_exact",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 8192,
+      "raw_json_bytes": 8290,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 8290,
+      "shown_content_bytes": 8192
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "quota_exact",
+      "mode": "window",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 8192,
+      "raw_json_bytes": 8290,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 8451,
+      "shown_content_bytes": 8192
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "stderr_only",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 429,
+      "raw_json_bytes": 934,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 934,
+      "shown_content_bytes": 429
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "stderr_only",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 429,
+      "raw_json_bytes": 934,
+      "recalled_content_bytes": 429,
+      "serialized_bytes": 1224,
+      "shown_content_bytes": 25
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "nonzero_ok",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 414,
+      "raw_json_bytes": 919,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 919,
+      "shown_content_bytes": 414
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "nonzero_ok",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 414,
+      "raw_json_bytes": 919,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 275,
+      "shown_content_bytes": 10
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "cursor_escape",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 411,
+      "raw_json_bytes": 919,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 919,
+      "shown_content_bytes": 411
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "cursor_escape",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 411,
+      "raw_json_bytes": 919,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 919,
+      "shown_content_bytes": 411
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "osc_escape",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 417,
+      "raw_json_bytes": 930,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 930,
+      "shown_content_bytes": 417
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "osc_escape",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 417,
+      "raw_json_bytes": 930,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 930,
+      "shown_content_bytes": 417
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "hint_overhead",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 14,
+      "raw_json_bytes": 122,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 122,
+      "shown_content_bytes": 14
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "hint_overhead",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 14,
+      "raw_json_bytes": 122,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 122,
+      "shown_content_bytes": 14
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "already_truncated",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 420,
+      "raw_json_bytes": 918,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 918,
+      "shown_content_bytes": 420
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "already_truncated",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 420,
+      "raw_json_bytes": 918,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 918,
+      "shown_content_bytes": 420
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "structured_diagnostic",
+      "mode": "exact",
+      "policy_sha256": "dea9ed0956d7f31a870fddf577edbfe35693a4498b8c631a22ace7cfb86c31bf",
+      "raw_content_bytes": 951,
+      "raw_json_bytes": 1186,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 1186,
+      "shown_content_bytes": 951
+    },
+    {
+      "fidelity": "pass",
+      "fixture_id": "structured_diagnostic",
+      "mode": "view",
+      "policy_sha256": "db9a17c50c6bdbb60d3f17dac5d51253252321663960bd410d03bd9c28bd05d2",
+      "raw_content_bytes": 951,
+      "raw_json_bytes": 1186,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 1186,
+      "shown_content_bytes": 951
+    }
+  ],
+  "schema_version": 1,
+  "stopped_fixtures": [
+    {
+      "fixture_id": "long_line",
+      "reason": "admitted_output_truncated"
+    },
+    {
+      "fixture_id": "already_truncated",
+      "reason": "capture_incomplete"
+    }
+  ],
+  "summary_by_mode": {
+    "exact": {
+      "content_reduction_basis_points": 0,
+      "delivered_content_bytes": 19591,
+      "json_reduction_basis_points": 0,
+      "net_content_bytes": 0,
+      "net_json_bytes": 0,
+      "raw_content_bytes": 19591,
+      "raw_json_bytes": 23082,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 23082,
+      "shown_content_bytes": 19591
+    },
+    "view": {
+      "content_reduction_basis_points": 1240,
+      "delivered_content_bytes": 2677,
+      "json_reduction_basis_points": 597,
+      "net_content_bytes": 379,
+      "net_json_bytes": 354,
+      "raw_content_bytes": 3056,
+      "raw_json_bytes": 5928,
+      "recalled_content_bytes": 429,
+      "serialized_bytes": 5574,
+      "shown_content_bytes": 2248
+    },
+    "window": {
+      "content_reduction_basis_points": 18,
+      "delivered_content_bytes": 16504,
+      "json_reduction_basis_points": -448,
+      "net_content_bytes": 31,
+      "net_json_bytes": -769,
+      "raw_content_bytes": 16535,
+      "raw_json_bytes": 17154,
+      "recalled_content_bytes": 0,
+      "serialized_bytes": 17923,
+      "shown_content_bytes": 16504
+    }
+  }
+}

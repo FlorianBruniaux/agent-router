@@ -216,3 +216,12 @@ cargo test -p router-coordinator -p router-runtime --locked
 cargo build -p router-sandbox-helper --locked
 cargo test -p router-coordinator --test workflow native_sandbox_plan_execute_verify_handoff --locked -- --ignored --exact --nocapture
 ```
+
+
+## Finite context preparation
+
+The optional [context profile v4](bench/rtk-context-native-qualification/README.md) uses `OwnedBroker::prepare_codex_context_tools_state` and `FiniteClientReview::with_mcp_context` with the same validated parent policy. Retain the existing private output workspace, copied native assets and Linux namespace. Use the distinct v4 manifest profile and explicitly allow `mcp__finite__read_output` when terminal presentation is selected. A prepared policy or catalogue is not runtime execution authority.
+
+Startup configuration, preparation and bootstrap checks bind the complete policy. Fresh proof bindings include both the combined review digest and the distinct profile hash, so v3 proofs cannot establish v4. The terminal carries schema 2 and both policy and MCP catalogue digests, which must match retained producer data after the namespace stop fence. Untrusted telemetry cannot add a tool or change the policy.
+
+The default path keeps the three-tool v3 startup and schema-1 terminal unchanged. Native Linux ARM64 context qualification is NOT RUN on the implementation host. The authored canary, exact catalogue review and unchanged 8 GiB/zero-swap requirements are described in the qualification document. No model routing, provider call or campaign approval is added by preparation.

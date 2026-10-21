@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "authored_only": true,
+  "files": [
+    {
+      "path": "source.txt",
+      "bytes": 16,
+      "sha256": "c9b1b484cdbed79c4bc5f78603d79a5494b46dff85bb5fa834040ea418190935"
+    },
+    {
+      "path": "feedback.py",
+      "bytes": 351,
+      "sha256": "e5d5f3cf3634fd40c2b437a9f7f7008d5b7ef015de2bc0a118532817f92a8254"
+    },
+    {
+      "path": "script.json",
+      "bytes": 815,
+      "sha256": "e1dc6a131b2a9baced05748909c63d4a9a53f9115c47ba99cfcf103adc2e0d34"
+    },
+    {
+      "path": "context_responses.py",
+      "bytes": 9048,
+      "sha256": "c9ee7f882f5ba0ccb9d7593af2fe12ecc811f16c1284a6ca156449a6ecf38f85"
+    }
+  ]
+}

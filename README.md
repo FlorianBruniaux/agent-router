@@ -495,6 +495,11 @@ cargo test --workspace --locked
 cargo run -p xtask --locked -- check
 ```
 
+The [authored finite-context corpus](tests/fixtures/finite-context/README.md)
+checks exact windows, terminal views and full raw recovery without models.
+Its [offline comparison](docs/bench/rtk-context-offline/README.md) reports
+complete authored JSON sizes and preserves unknown cost and model success.
+
 Native sandbox canaries are separate from the ordinary test suite and require
 their platform prerequisites. See [runtime verification](docs/runtime.md).
 The shared Codex/Claude development harness is separate from the product.

@@ -125,6 +125,8 @@ written in French.
 | [Physical-send feasibility](bench/physical-send-feasibility-2026-10-07/README.md) | 2026-10-07: six native cases pass, broker absence times out; overall NO-GO, no real provider admission |
 | [Dedicated Codex client qualification](bench/owned-entry-qualification-2026-10-08/README.md) | 2026-10-08: bounded direct-client choice for simulated patch work; three local native scenarios, no real-provider admission |
 | [Owned-client verification](bench/verification-owned-client-2026-10-08.json) | Source-bound local gates, independent reviews and native diagnostic limits |
+| [Finite context profile v4](bench/rtk-context-native-qualification/README.md) | 2026-10-21: policy-bound preparation, schema-2 terminal and authored canary; native Linux ARM64 qualification NOT RUN |
+| [Finite context offline corpus](bench/rtk-context-offline/README.md) | 2026-10-21: authored fidelity corpus, signed byte comparison and complete raw rereads; costs and model success unknown, native qualification NOT RUN |
 | [Distribution](distribution.md) | Source distributions and license evidence |
 | [Binary distribution](binary-distribution.md) | Local native binary export |
 | [Local release](release-local.md) | Verifiable local release recipe |

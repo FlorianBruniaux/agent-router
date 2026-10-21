@@ -152,6 +152,7 @@ for line in sys.stdin:
 #[tokio::test]
 #[ignore = "requires pinned native SDK, isolated loopback Linux ARM64, fixed 8GiB and public authored packets"]
 async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
+    assert!(cfg!(target_os = "linux") && std::env::consts::ARCH == "aarch64");
     let root = PathBuf::from(std::env::var("AR_MCP_NATIVE_ROOT").unwrap());
     mkdir(&root);
     let inputs = PathBuf::from(std::env::var("AR_MCP_NATIVE_INPUTS").unwrap());
@@ -209,7 +210,7 @@ async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
         let port = listener.local_addr().unwrap().port();
         let owned = OwnedBroker::from_isolated_listener(listener.try_clone().unwrap()).unwrap();
         let run=PreparedRun{schema_version:1,receipt_id:"a".repeat(64),source_state:"b".repeat(40),scope:vec![output.clone()],authorization_digest:"c".repeat(64),snapshot_hash:"d".repeat(64),host:router_types::HarnessId::parse("codex").unwrap(),requested_model:router_types::ModelId::parse("gpt-6-luna").unwrap(),requested_effort:router_types::EffortLevel::Medium,program:"finite-client".into(),argv:vec!["--worker".into()],cwd:candidate.to_str().unwrap().into(),stdin:PreparedInput::new(b"R2-LOCAL-TOOLS-V1\nComplete the synthetic task using only approved local tools. This is authored qualification, not a model trial.\n".to_vec()),mode:router_types::ExecutionMode::Execute,target:router_types::ExecutionTarget::ExternalWorker,sandbox:router_types::ExecutionSandbox::WorkspaceWrite,timeout_ms:60000,max_output_bytes:65536,degradations:vec![],missing_runtime_evidence:vec![],parent_model_changed:false};
-        let mut state = owned.prepare_codex_tools_state(&store, &run).unwrap();
+        let state = owned.prepare_codex_tools_state(&store, &run).unwrap();
         let home_path = state.path().to_owned();
         let home = home_path.as_path();
         let configuration = state.configuration();
@@ -249,6 +250,9 @@ async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
                 .to_vec(),
             context: context.to_string(),
             probe: None,
+            context_policy: None,
+            context_policy_sha256: None,
+            catalog_sha256: None,
         };
         let boot_path = case.join("boot.json");
         fs::write(&boot_path, serde_json::to_vec(&boot).unwrap()).unwrap();
@@ -267,112 +271,13 @@ async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
             evidence.clone(),
             calls + 1,
         );
-        let leases_root = case.join("leases");
-        mkdir(&leases_root);
-        let leases = LeaseStorage::open(&leases_root).unwrap();
-        let (mut record, lease) = leases.create("native", 1).unwrap();
-        record.require_namespace(true);
-        let mut command = tokio::process::Command::new(programs.join("helper"));
-        command
-            .args(ResourceLimits::default().args().unwrap())
-            .arg("--supervise-v1")
-            .arg(programs.join("namespace"))
-            .args([
-                "--die-with-parent",
-                "--new-session",
-                "--unshare-all",
-                "--share-net",
-                "--cap-drop",
-                "ALL",
-                "--tmpfs",
-                "/",
-                "--ro-bind",
-                "/usr",
-                "/usr",
-                "--symlink",
-                "usr/bin",
-                "/bin",
-                "--symlink",
-                "usr/lib",
-                "/lib",
-                "--symlink",
-                "usr/lib64",
-                "/lib64",
-                "--proc",
-                "/proc",
-                "--dev",
-                "/dev",
-                "--size",
-                "134217728",
-                "--tmpfs",
-                "/tmp",
-            ])
-            .arg("--ro-bind")
-            .arg(&programs)
-            .arg(&programs)
-            .arg("--ro-bind")
-            .arg(home)
-            .arg(home)
-            .arg("--bind")
-            .arg(home.join("tmp"))
-            .arg(home.join("tmp"))
-            .arg("--bind")
-            .arg(&candidate)
-            .arg(&candidate)
-            .args([
-                "--size",
-                "1048576",
-                "--tmpfs",
-                "/router-tools",
-                "--chmod",
-                "700",
-                "/router-tools",
-                "--size",
-                "16777216",
-                "--tmpfs",
-                "/router-tools/scratch",
-                "--chmod",
-                "700",
-                "/router-tools/scratch",
-            ])
-            .arg("--ro-bind")
-            .arg(&boot_path)
-            .arg("/router-tools/boot.json")
-            .arg("--bind")
-            .arg(&terminal)
-            .arg("/router-tools/terminal.json")
-            .arg("--ro-bind")
-            .arg(programs.join("client"))
-            .arg("/finite-client")
-            .args(["--remount-ro", "/", "--chdir"])
-            .arg(&candidate)
-            .arg("--")
-            .arg(programs.join("client"))
-            .arg("--tools-owner")
-            .env_clear()
-            .env("PATH", "/usr/bin:/bin")
-            .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1")
-            .env("ROUTER_RUNTIME_CONTAINMENT", "pid-namespace-v1")
-            .env("ROUTER_RUNTIME_LEASE", &lease);
-        state.state.arm_cleanup(Some(&lease), true).unwrap();
-        let captured = crate::process::capture(
-            command,
-            run.stdin.as_bytes().to_vec(),
-            65000,
-            65536,
-            100,
-            &Cancellation::default(),
+        let (captured, cleanup) = capture_native_owner(
+            &programs, &candidate, &boot_path, &terminal, &case, &run, state,
         )
         .await;
-        let proof = leases.cleanup_proof("native", 1, &record).unwrap();
-        assert_eq!(proof.evidence, ProcessCleanupEvidence::NamespaceTerminated);
-        let FiniteCodexState { state, .. } = state;
-        state.cleanup_with_proof(&proof).unwrap();
-        assert!(!home.exists());
-        let captured = captured.unwrap();
         fs::write(evidence.join("stdout.jsonl"), &captured.stdout).unwrap();
         fs::write(evidence.join("stderr.txt"), &captured.stderr).unwrap();
-        fs::write(evidence.join("transport.json"),serde_json::to_vec_pretty(&json!({"exit_code":captured.outcome.exit_code,"termination":captured.outcome.termination,"truncated":captured.output_limited,"incomplete":captured.output_incomplete,"cleanup":proof.evidence,"memory_bytes":8589934592u64,"models_started":0,"runtime_tools_admission":false})).unwrap()).unwrap();
+        fs::write(evidence.join("transport.json"),serde_json::to_vec_pretty(&json!({"exit_code":captured.outcome.exit_code,"termination":captured.outcome.termination,"truncated":captured.output_limited,"incomplete":captured.output_incomplete,"cleanup":cleanup,"memory_bytes":8589934592u64,"models_started":0,"runtime_tools_admission":false})).unwrap()).unwrap();
         assert_eq!(
             captured.outcome.exit_code,
             Some(0),
@@ -410,3 +315,123 @@ async fn native_sdk_returns_actual_mcp_results_for_six_public_packets() {
         );
     }
 }
+
+#[allow(clippy::too_many_arguments)]
+async fn capture_native_owner(
+    programs: &Path,
+    candidate: &Path,
+    boot_path: &Path,
+    terminal: &Path,
+    case: &Path,
+    run: &PreparedRun,
+    mut state: FiniteCodexState,
+) -> (crate::process::Capture, ProcessCleanupEvidence) {
+    let home_path = state.path().to_owned();
+    let home = home_path.as_path();
+    let leases_root = case.join("leases");
+    mkdir(&leases_root);
+    let leases = LeaseStorage::open(&leases_root).unwrap();
+    let (mut record, lease) = leases.create("native", 1).unwrap();
+    record.require_namespace(true);
+    let mut command = tokio::process::Command::new(programs.join("helper"));
+    command
+        .args(ResourceLimits::default().args().unwrap())
+        .arg("--supervise-v1")
+        .arg(programs.join("namespace"))
+        .args([
+            "--die-with-parent",
+            "--new-session",
+            "--unshare-all",
+            "--share-net",
+            "--cap-drop",
+            "ALL",
+            "--tmpfs",
+            "/",
+            "--ro-bind",
+            "/usr",
+            "/usr",
+            "--symlink",
+            "usr/bin",
+            "/bin",
+            "--symlink",
+            "usr/lib",
+            "/lib",
+            "--symlink",
+            "usr/lib64",
+            "/lib64",
+            "--proc",
+            "/proc",
+            "--dev",
+            "/dev",
+            "--size",
+            "134217728",
+            "--tmpfs",
+            "/tmp",
+        ])
+        .arg("--ro-bind")
+        .arg(programs)
+        .arg(programs)
+        .arg("--ro-bind")
+        .arg(home)
+        .arg(home)
+        .arg("--bind")
+        .arg(home.join("tmp"))
+        .arg(home.join("tmp"))
+        .arg("--bind")
+        .arg(candidate)
+        .arg(candidate)
+        .args([
+            "--size",
+            "1048576",
+            "--tmpfs",
+            "/router-tools",
+            "--chmod",
+            "700",
+            "/router-tools",
+            "--size",
+            "16777216",
+            "--tmpfs",
+            "/router-tools/scratch",
+            "--chmod",
+            "700",
+            "/router-tools/scratch",
+        ])
+        .arg("--ro-bind")
+        .arg(boot_path)
+        .arg("/router-tools/boot.json")
+        .arg("--bind")
+        .arg(terminal)
+        .arg("/router-tools/terminal.json")
+        .arg("--ro-bind")
+        .arg(programs.join("client"))
+        .arg("/finite-client")
+        .args(["--remount-ro", "/", "--chdir"])
+        .arg(candidate)
+        .arg("--")
+        .arg(programs.join("client"))
+        .arg("--tools-owner")
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("ROUTER_RUNTIME_SUPERVISION", "framed-v1")
+        .env("ROUTER_RUNTIME_CONTAINMENT", "pid-namespace-v1")
+        .env("ROUTER_RUNTIME_LEASE", &lease);
+    state.state.arm_cleanup(Some(&lease), true).unwrap();
+    let captured = crate::process::capture(
+        command,
+        run.stdin.as_bytes().to_vec(),
+        65000,
+        65536,
+        100,
+        &Cancellation::default(),
+    )
+    .await;
+    let proof = leases.cleanup_proof("native", 1, &record).unwrap();
+    assert_eq!(proof.evidence, ProcessCleanupEvidence::NamespaceTerminated);
+    let FiniteCodexState { state, .. } = state;
+    state.cleanup_with_proof(&proof).unwrap();
+    assert!(!home.exists());
+    (captured.unwrap(), proof.evidence)
+}
+
+#[path = "native_context_tests.rs"]
+mod context;

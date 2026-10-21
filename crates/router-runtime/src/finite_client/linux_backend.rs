@@ -55,7 +55,15 @@ impl FiniteClientReview {
                     .as_ref()
                     .is_some_and(|state| state.startup.tools)
                 {
-                    "linux-isolated-finite-tools-v3"
+                    if self
+                        .owned_state
+                        .as_ref()
+                        .is_some_and(|state| state.startup.context_policy.is_some())
+                    {
+                        "linux-isolated-finite-tools-context-v4"
+                    } else {
+                        "linux-isolated-finite-tools-v3"
+                    }
                 } else {
                     "linux-isolated-broker-v2"
                 },
@@ -83,6 +91,7 @@ struct ToolsProbeView {
     terminal_identity: FileIdentity,
     policy: crate::finite_tools::FilePolicy,
     binding: String,
+    context_policy: Option<crate::finite_tools::FiniteContextPolicy>,
 }
 #[path = "tools_probe_view.rs"]
 mod tools_probe_view;
@@ -110,14 +119,20 @@ fn composition_command(
     let assets = r.owned_assets.as_ref().ok_or(RuntimeError::Sandbox)?;
     let pins = &assets.pins;
     let tools = r.owned_tools.as_ref();
-    if resources.startup.tools != tools.is_some()
+    if resources.startup.context_policy.as_ref()
+        != tools.and_then(|t| t.boot.context_policy.as_ref())
+        || resources.startup.tools != tools.is_some()
         || r.resource_arguments != ResourceLimits::default().args()?
         || r.manifest.native.sha256 != NATIVE_LINUX_ARM64
         || r.manifest.native_version != "0.159.2-linux-arm64-musl"
         || r.run.argv != ["--worker"]
         || fs::read(&pins[4].path)?
             != if tools.is_some() {
-                super::tools_state::LINUX_FINITE_TOOLS_PROFILE_V3
+                if tools.is_some_and(|tools| tools.boot.context_policy.is_some()) {
+                    super::tools_state::LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4
+                } else {
+                    super::tools_state::LINUX_FINITE_TOOLS_PROFILE_V3
+                }
             } else {
                 LINUX_FINITE_PROFILE_V2
             }
