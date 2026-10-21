@@ -294,12 +294,18 @@ mod tests {
     async fn term_resistant_descendants_are_killed_as_a_group() {
         let temp = tempfile::tempdir().unwrap();
         let heartbeat = temp.path().join("heartbeat");
+        std::fs::write(&heartbeat, []).unwrap();
         let mut command = Command::new("/bin/sh");
-        command.arg("-c").arg("trap '' TERM; /bin/sh -c 'trap \"\" TERM; while :; do printf x >> heartbeat; sleep 0.01; done' & wait").current_dir(temp.path());
-        let out = capture(command, vec![], 150, 1024, 30, &Cancellation::default())
+        // Delayed startup must not turn this into a test of scheduler speed.
+        // Only the descendant emits stdout, after its heartbeat. Overflow
+        // therefore requests group cleanup after it has demonstrably started.
+        command.arg("-c").arg("trap '' TERM; /bin/sh -c 'trap \"\" TERM; /bin/sleep 0.25; while :; do printf x >> heartbeat; printf x; sleep 0.01; done' & wait").current_dir(temp.path());
+        let out = capture(command, vec![], 30_000, 1, 30, &Cancellation::default())
             .await
             .unwrap();
-        assert_eq!(out.outcome.termination, TransportTermination::TimedOut);
+        assert_eq!(out.outcome.termination, TransportTermination::Killed);
+        assert!(out.output_limited);
+        assert_eq!(out.stdout, b"x");
         assert_eq!(
             out.timing,
             crate::CaptureTiming::Known {
