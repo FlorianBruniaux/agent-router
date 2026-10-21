@@ -1,0 +1,19 @@
+crates/router-runtime/src/process.rs
+  s_13482db90a49c5::t_813c702e771530 302-304
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ea03e87f806d2f37a5aeaffda8892d0ea1f4df41",
+  "prompts": {},
+  "sessions": {
+    "s_13482db90a49c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15dfd-e5fe-7943-98a1-67ea3d70ca04",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
