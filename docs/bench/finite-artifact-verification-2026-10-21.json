@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "scope": "Explicit finite private artifact verification; no model or publication",
+  "tested_base_commit": "201e75e712afcdd962a6a2185f30358e76b53d94",
+  "delivery_base_commit": "3e58b04d7985e0f10f137978db12d1dd56224faf",
+  "runtime_sources_unchanged_by_main_fast_forward": true,
+  "modified_rust_source_sha256": {
+    "crates/router-runtime/src/finite_client.rs": "9313f3bf7a41f128527a14ca04fe1b23bb9b9beb4d2e90852e6398104e3cb88b",
+    "crates/router-runtime/src/finite_client/linux_e2e.rs": "2931dd69038e329657438b3003e4a8055242a3371c0c1eb9683ac62c473181ed",
+    "crates/router-runtime/src/finite_client/verification.rs": "fcda34e4ec07c04362e6b1fd2419bbee1e8e55cc108da65c65bdeca25cc61ebb",
+    "crates/router-runtime/src/lib.rs": "2138ebe68cc588776e0be193e9eff73568bb4711ab8f773527ff34d66f1933a4",
+    "crates/router-runtime/tests/runtime/finite_client_binding.rs": "81e46a0c1e4c7183bd1ea59ce803700322c95f5d15b0092733d1f70bbd15e8c4"
+  },
+  "local_workspace": {
+    "command": "cargo test --workspace --all-features --locked --offline",
+    "rust_test_threads": 1,
+    "result": "pass",
+    "counts": {
+      "passed": 1927,
+      "failed": 0,
+      "ignored": 43,
+      "measured": 0,
+      "filtered": 508,
+      "result_lines": 196
+    },
+    "count_semantics": "Sum of result lines including nested helper results, not unique tests"
+  },
+  "format": "pass",
+  "clippy": "workspace all-targets all-features warnings denied; pass",
+  "harness": "parity verified; activation UNKNOWN",
+  "gitleaks": "pass",
+  "adr_check": "pass",
+  "log_sha256": {
+    "workspace": "8c5fcb31529d3c2219151f432f432ce20303b9251d159ff92558375f5244baa3",
+    "clippy": "f07c540a28b886882a81f99a1993e3a1c02afa56666aaf453d4c97d3db51ff57",
+    "harness": "3ccb67d764790e7dbdf2feb4c40bd09913d946ce5dccd9d77ee582278aa5827e",
+    "gitleaks": "a006fcaa395ab384d28105f74e84a24e07b2629f83951cd06b1437b5664a2f42"
+  },
+  "linux_units": {
+    "passed": 253,
+    "ignored": 29,
+    "failed": 0
+  },
+  "native": [
+    {
+      "case": "q02",
+      "exit_code": 0,
+      "elapsed_seconds": 69.954,
+      "receipt_sha256": "a8a3b7bb22ee5b8640c4f6baf29efb036516ea29d1ecc330de64f0d3d0746be5",
+      "run_state": "verifying",
+      "validation": "unknown",
+      "objective": "unknown",
+      "memory_enforcement": "enforced",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "human_acceptance": null,
+      "admission_granted": 0,
+      "admission_released": 1
+    },
+    {
+      "case": "q03",
+      "exit_code": 0,
+      "elapsed_seconds": 81.883,
+      "receipt_sha256": "464a3978c2dd57e0fe5ef48d87c13e4fbb0663312a0502f0bfd8a04a709684f2",
+      "run_state": "verifying",
+      "validation": "unknown",
+      "objective": "unknown",
+      "memory_enforcement": "enforced",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "human_acceptance": null,
+      "admission_granted": 0,
+      "admission_released": 1
+    },
+    {
+      "case": "q04",
+      "exit_code": 0,
+      "elapsed_seconds": 79.195,
+      "receipt_sha256": "049baae2fbb8a5710237f9a123ec15b6baf8b0940067500a8029708c50bc4c2c",
+      "run_state": "verifying",
+      "validation": "unknown",
+      "objective": "unknown",
+      "memory_enforcement": "enforced",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "human_acceptance": null,
+      "admission_granted": 0,
+      "admission_released": 1
+    },
+    {
+      "case": "q03-timeout",
+      "exit_code": 0,
+      "elapsed_seconds": 71.032,
+      "receipt_sha256": "a6cb6eb4590f1790fdfb65f92e0365014ef332859e743c82e6dafe9bda530716",
+      "run_state": "timed_out",
+      "validation": "unknown",
+      "objective": "unknown",
+      "memory_enforcement": "enforced",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "human_acceptance": null,
+      "admission_granted": 0,
+      "admission_released": 1
+    },
+    {
+      "case": "q03-cancel",
+      "exit_code": 0,
+      "elapsed_seconds": 76.113,
+      "receipt_sha256": "b0c163c23adc02f3f71bb8981737e0b9ac4100a6a479660044aad8989177cbb3",
+      "run_state": "cancelled",
+      "validation": "unknown",
+      "objective": "unknown",
+      "memory_enforcement": "enforced",
+      "cleanup": "namespace_terminated",
+      "source_unchanged": true,
+      "human_acceptance": null,
+      "admission_granted": 0,
+      "admission_released": 1
+    }
+  ],
+  "persisted_attestations": {
+    "q02": {
+      "verifier": "explicit-lifecycle-fixture",
+      "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+      "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "validation": "unknown",
+      "objective": "unknown"
+    },
+    "q03": {
+      "verifier": "explicit-lifecycle-fixture",
+      "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+      "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "validation": "unknown",
+      "objective": "unknown"
+    },
+    "q04": {
+      "verifier": "explicit-lifecycle-fixture",
+      "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+      "artifact_sha256": "556b5678d983a30834881c837efbf9c3131e272cdf751f23bd675dc32f4e4cde",
+      "validation": "unknown",
+      "objective": "unknown"
+    }
+  },
+  "linux": {
+    "kernel": "6.12.76-linuxkit",
+    "image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+    "uid": 65534,
+    "network": "none",
+    "readonly_root": true,
+    "capabilities_dropped": "ALL",
+    "host_bind_mounts": 0,
+    "cgroup": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "1705168896",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "program_sha256": {
+      "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33",
+      "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+      "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+      "client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+      "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+      "system/linker": "bd456a27bf1066667bc2da08cfd998e7b2c6b3e9a9a48583cc52524176d43dca",
+      "system/rustc": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97"
+    },
+    "container_stopped": true
+  },
+  "private_archive": {
+    "sha256": "b6e9e550a6f523324f2d4f605316e0129f977064841658033292fe10ec7a7927",
+    "members": 595,
+    "uncompressed_bytes": 2177352
+  },
+  "retained_failures": [
+    {
+      "stage": "red test",
+      "result": "missing FiniteClientVerifier API rejected by compiler before implementation"
+    },
+    {
+      "stage": "Linux build setup",
+      "result": "offline Cargo could not find serde_json when invoked outside repository root; rerun from /task/source loaded the existing vendor; no network or policy change"
+    }
+  ],
+  "limits": [
+    "Unit store fixtures exercise explicit pass/fail/UNKNOWN; native lifecycle cases record UNKNOWN only.",
+    "No automatic import of acceptance JSON, independent evaluator qualification or human acceptance.",
+    "No source publication, real model/provider/account access, usage reconciliation or savings claim.",
+    "Linux Clippy unavailable in offline image; macOS workspace Clippy passed."
+  ],
+  "independent_review_followup": {
+    "reviewed_head": "f0958924ec580a7cdc6f25ac93f41a949efef675",
+    "reviewed_paths": 9,
+    "blocking_behavior_findings": 0,
+    "coverage_findings_resolved": [
+      "constructor Independent policy propagated through native q02/q03/q04; owner attestation refused, distinct UNKNOWN accepted",
+      "absent artifact digest and empty captured artifact refused without attestation"
+    ],
+    "production_verifier_unchanged": true,
+    "reviewed_test_file_sha256": {
+      "crates/router-runtime/src/finite_client/verification.rs": "cf5a0664ed26785b6abbffbafc6bb4f4c67185761815a2cac724812d8f46ba62",
+      "crates/router-runtime/src/finite_client/linux_e2e.rs": "7b9324baa2aa105be2945844787e75dc0cf166f2a5b1ff229f756d36dfd6149a"
+    },
+    "workspace_counts": {
+      "passed": 1928,
+      "failed": 0,
+      "ignored": 43,
+      "measured": 0,
+      "filtered": 510
+    },
+    "linux_units": {
+      "passed": 254,
+      "ignored": 29,
+      "failed": 0
+    },
+    "native": [
+      {
+        "case": "q02",
+        "exit_code": 0,
+        "elapsed_seconds": 58.164,
+        "receipt_sha256": "2c37e6dced197e80d63c5177102db5ebaaea7b178c6821a3ad2bf359216da68a"
+      },
+      {
+        "case": "q03",
+        "exit_code": 0,
+        "elapsed_seconds": 79.055,
+        "receipt_sha256": "f309cc7766d088651a981614527f1793d2fa8eea78975d711d229c214ec8ab5b"
+      },
+      {
+        "case": "q04",
+        "exit_code": 0,
+        "elapsed_seconds": 87.913,
+        "receipt_sha256": "0c2dc3a359a49eecdc827bb409f6c1305ca34d2ce7f85bec7244431b275c2022"
+      }
+    ],
+    "linux_observation": {
+      "cgroup": {
+        "memory.max": "8589934592",
+        "memory.swap.max": "0",
+        "memory.peak": "1569873920",
+        "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+      },
+      "kernel": "6.12.76-linuxkit",
+      "verifications": {
+        "q02": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+          "validation": "unknown",
+          "objective": "unknown"
+        },
+        "q03": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+          "validation": "unknown",
+          "objective": "unknown"
+        },
+        "q04": {
+          "verifier": "explicit-lifecycle-fixture",
+          "evidence_sha256": "75bff633d50bc0780236188a73db16b6c9f2e8769283a6f814f20f5c68f5d02b",
+          "artifact_sha256": "556b5678d983a30834881c837efbf9c3131e272cdf751f23bd675dc32f4e4cde",
+          "validation": "unknown",
+          "objective": "unknown"
+        }
+      },
+      "programs": {
+        "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33",
+        "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+        "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+        "helper": "d1cc1e8658059c6a5040bdd27d9cc8e37a49fc4923a0243ae070c1bcc96a80d4",
+        "client": "adca62afc189704f2a915491a7aaaa28cfb2c37ec67916549b48d1aec4361f66",
+        "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+        "system/linker": "bd456a27bf1066667bc2da08cfd998e7b2c6b3e9a9a48583cc52524176d43dca",
+        "system/rustc": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97"
+      }
+    },
+    "archive": {
+      "sha256": "8def609dfff803791b9909e403c6332c72be8a7626a25d7f82e9eaedcc2a0cec",
+      "members": 375,
+      "uncompressed_bytes": 1424275
+    },
+    "container_stopped": true,
+    "local_checks": "format, workspace Clippy all targets/features warnings denied, all-feature workspace tests, harness parity and Gitleaks pass",
+    "setup_failures": [
+      "initial docker exec cwd did not exist; created it before starting build",
+      "cgroup mount point absent on first q02 invocation; created the existing recipe mount point and replayed all three cases"
+    ],
+    "ci": "not run; local verification requested"
+  }
+}
