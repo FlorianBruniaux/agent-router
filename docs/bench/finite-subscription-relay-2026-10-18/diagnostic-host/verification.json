@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "status": "offline_candidate_only",
+  "verified_on": "2026-10-21",
+  "tests": 49,
+  "source_sha256": {
+    "relay-controller-subscription-launcher.py": "6945b6beeeb216c24148e2d15f1c6e1578d6008fdc2cd1a49a1f0ec677abbfe6",
+    "relay-controller-subscription-parent.py": "a2472426c9498df51a47c3a71e4785496241330ac468ebfb2ccdbca85cbc2d9b",
+    "subscription-transport-diagnostics.py": "b4e6bfc6bc140a524135daf9c43d6dc7f26050825cfd2563d2faf8d184a388e1",
+    "test-offline.py": "ada471c27b639102fdf26844807eaa64270a8b60176f5b8c48c3f12ed6beb959",
+    "test_diagnostic_host.py": "9ef5e81fdda01d4ad51e596a0232ddb466790dc9c2678baef1a9202d4a421d7d",
+    "test_transport_diagnostics.py": "d6c653b0a07826a120174c64b19d4f5d671147943de0286a3bd682372009394f"
+  },
+  "historical_source_sha256": {
+    "relay-controller-subscription-launcher-test.py": "7715e5d7372d61eb435177e9b1285aa56d6063a4d0d116468c16f49a596ec36b",
+    "relay-controller-subscription-launcher.py": "f8f9ddce0bcc99e6737b3ba545321d4dceca9207f4fd5ad76ea60de63bdcf611",
+    "relay-controller-subscription-parent-test.py": "7fbc75da64e6fe42137f7dd0f8c5ef73f7f4c8341c9fa1db2ba4f1af0606270f",
+    "relay-controller-subscription-parent.py": "a2472426c9498df51a47c3a71e4785496241330ac468ebfb2ccdbca85cbc2d9b",
+    "relay-controller-subscription-timeout-test.py": "db3da37dec1cc2c08f1833cbd610a784f53427b914a8cff015091f59c845b0e2"
+  },
+  "qualified_controller_sha256": {
+    "relay-controller-results-v2.py": "3781df3c0a1c64b717dd46cdbf4dcedf25bcfbbd2251b4f1602db6bfea3e408a",
+    "relay-controller-session.py": "9c5809752b2f2940c62fbdaaa4cadad4a4649a0fb1b8581b0caf4e7561081cc5",
+    "subscription_gateway.py": "97f2c8bdc55f067848f12cffb5a41086aaf5adec3ed8cb36567f6540b2975f5e",
+    "relay-controller-offline.py": "c2943ce88c95b7e9aeefaf5ea827b7e9b2b0780737a84b8fe9c2bd5bbd945828",
+    "native-catalog-adapter/native_tool_responses.py": "6e2268fca17bb2bf0f241cf959fe229cf50c19ea7f44b85b67de359c24b80ffe",
+    "qualification-inputs/tool_responses.py": "7a2db0fbadfaf95c72029a234d289dfa8dc124170bb1afc4dd590963efdaf755",
+    "native-catalog-adapter/expected-native-catalog.json": "9550e472a5b090c76b35bc1db5e2e5a30d6d6d3cc41b38da826acb790713182f"
+  },
+  "public_packets_sha256": "2d4d225e528fff5ba402e7265140521f212d7b4a3443c3dd62f1db00f9e0281a",
+  "runs": [
+    {
+      "python_version": "3.9.6",
+      "qualified_controller_pins_match": 7,
+      "all_passed": true,
+      "tests": 49,
+      "suites": [
+        {
+          "suite": "guard",
+          "passed": true,
+          "tests": null,
+          "exit_code": 0
+        },
+        {
+          "suite": "launcher",
+          "passed": true,
+          "tests": 12,
+          "exit_code": 0
+        },
+        {
+          "suite": "parent",
+          "passed": true,
+          "tests": 10,
+          "exit_code": 0
+        },
+        {
+          "suite": "initial_timeout",
+          "passed": true,
+          "tests": 4,
+          "exit_code": 0
+        },
+        {
+          "suite": "transport",
+          "passed": true,
+          "tests": 20,
+          "exit_code": 0
+        },
+        {
+          "suite": "diagnostic_host",
+          "passed": true,
+          "tests": 3,
+          "exit_code": 0
+        }
+      ],
+      "models_started": 0,
+      "provider_requests": 0,
+      "credentials_accessed": false,
+      "live_registry_accessed": false,
+      "historical_hashes_unchanged": true
+    },
+    {
+      "python_version": "3.15.0",
+      "qualified_controller_pins_match": 7,
+      "all_passed": true,
+      "tests": 49,
+      "suites": [
+        {
+          "suite": "guard",
+          "passed": true,
+          "tests": null,
+          "exit_code": 0
+        },
+        {
+          "suite": "launcher",
+          "passed": true,
+          "tests": 12,
+          "exit_code": 0
+        },
+        {
+          "suite": "parent",
+          "passed": true,
+          "tests": 10,
+          "exit_code": 0
+        },
+        {
+          "suite": "initial_timeout",
+          "passed": true,
+          "tests": 4,
+          "exit_code": 0
+        },
+        {
+          "suite": "transport",
+          "passed": true,
+          "tests": 20,
+          "exit_code": 0
+        },
+        {
+          "suite": "diagnostic_host",
+          "passed": true,
+          "tests": 3,
+          "exit_code": 0
+        }
+      ],
+      "models_started": 0,
+      "provider_requests": 0,
+      "credentials_accessed": false,
+      "live_registry_accessed": false,
+      "historical_hashes_unchanged": true
+    }
+  ],
+  "historical_failure_cause": "UNKNOWN",
+  "historical_consumption": "UNKNOWN",
+  "launch_authorized": false,
+  "registry_reconciled": false,
+  "native_qualification": "NOT_RUN_FOR_THIS_CANDIDATE",
+  "remote_ci": "NOT_OBSERVED_AT_RECORDING"
+}

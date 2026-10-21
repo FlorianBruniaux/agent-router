@@ -31,3 +31,5 @@ This recovery neither approves a launch nor repairs the historical `usage_unknow
 The original consent-document digest remains part of the recovered source; the consent document itself, account metadata, credentials, live specifications, launch approvals, Runtime receipts and campaign registry are excluded. Moving the code changes destination-bound review material. Historical approvals are not reusable, and passing the offline tests authorizes no model request.
 
 This directory supplements the [native campaign launcher](../../finite-campaign-launcher-2026-10-18/README.md). It preserves the missing host source and its offline checks; native qualification, actual provider availability, subscription consumption and task acceptance remain separate evidence.
+
+A separate [diagnostic host candidate](../diagnostic-host/README.md) retains bounded, redacted transport evidence for future requests. It preserves this snapshot and the qualified controller pins; it neither reconciles the historical attempt nor authorizes a launch.
