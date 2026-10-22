@@ -69,7 +69,7 @@ fn validate_receipt(
         objective: VerificationOutcome::Unknown,
     })
 }
-fn read_private(path: &Path, bound: u64) -> Result<Vec<u8>> {
+pub(super) fn read_private(path: &Path, bound: u64) -> Result<Vec<u8>> {
     let f = OpenOptions::new()
         .read(true)
         .custom_flags(nix::libc::O_NOFOLLOW | nix::libc::O_NONBLOCK)
@@ -90,7 +90,7 @@ fn read_private(path: &Path, bound: u64) -> Result<Vec<u8>> {
     }
     Ok(bytes)
 }
-fn run_bounded(mut command: Command, deadline: Duration) -> Result<()> {
+pub(super) fn run_bounded(mut command: Command, deadline: Duration) -> Result<()> {
     command
         .stdin(Stdio::null())
         .stdout(Stdio::null())

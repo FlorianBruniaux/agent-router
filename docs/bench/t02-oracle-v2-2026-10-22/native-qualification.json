@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "scope": "one fixed authored t02-Lm-r1-H1 native qualification, not a benchmark",
+  "retained_report_sha256": "4f994f156bc6c0da059b306a0c4b901effe0cff4852385354411163ad91e7f82",
+  "source_commit": "a16e3646f6d55d1bb2e475891cb0ebb31b4e7c19",
+  "source_files_matched": 1743,
+  "changed_paths_matched": 20,
+  "cargo_lock_sha256": "a5f69ca9c55675ceafe1bdc2344367c3b77b88898d226d780d7ab6af607b2155",
+  "binary_sha256": "7436c69e6b715fc568a52df6029034f9197b88bc9d0a9c76432c92f3b2d07de1",
+  "build": "pass",
+  "native_fixture_runs": 1,
+  "coded_responses": 6,
+  "observed_tool_results": 5,
+  "native_feedback": "source failed, authored correction passed; 4 public feedback tests in each phase",
+  "v2_cases": {
+    "source": {
+      "FAILED": 12,
+      "ok": 6
+    },
+    "candidate": {
+      "ok": 18
+    }
+  },
+  "evaluator_id": "t02-score-v2",
+  "receipt_sha256": "d315a43fb821903d49731179a4a77a475e410044d527f47493b18104d7ee4d39",
+  "runtime_report_sha256": "1cb276647077def5c742e7bcf3817e99bf62959d80357bcb5d162208c0f4781e",
+  "patch_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+  "candidate_sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+  "verification": {
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "evidence_sha256": "d315a43fb821903d49731179a4a77a475e410044d527f47493b18104d7ee4d39",
+    "objective": "unknown",
+    "validation": "passed",
+    "verifier": "t02-score-v2"
+  },
+  "persisted_record_matches": true,
+  "persisted_summary_matches": true,
+  "state": "verifying",
+  "human_acceptance": null,
+  "source_publication": false,
+  "source_unchanged": true,
+  "cleanup": "namespace_terminated",
+  "file_modes": {
+    "t02-v2-receipt.json": 384,
+    "runtime-result.json": 384,
+    "evaluation-result.json": 384
+  },
+  "memory": {
+    "memory.max": "8589934592",
+    "memory.swap.max": "0",
+    "memory.peak": "1423245312",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+  },
+  "network": "none",
+  "host_mounts": [],
+  "cell_stopped": true,
+  "oom_killed": false,
+  "model_calls_started": 0,
+  "real_registry_used": false,
+  "auth_used": false,
+  "private_access_unchanged": true,
+  "historical_evidence_unchanged": true,
+  "vendor_scan": {
+    "raw_exit_code": 1,
+    "triaged_public_content_alerts": 120,
+    "not_a_clean_scanner_result": true,
+    "separate_source_scan": "previous #197 source scan passed"
+  },
+  "admission": {
+    "granted": 0,
+    "released": 1,
+    "waiting": 0
+  },
+  "previous_preparation_failure": {
+    "sha256": "e6ed7fe55c463392f309a14456f42984d840b28ce4464703ec2256eb72917052",
+    "native_fixture_runs": 0,
+    "not_rewritten": true
+  },
+  "feedback_json_shape": "not_applicable_t02; historical boolean is t05-only",
+  "limits": [
+    "Technical validation only; objective unknown and human acceptance absent",
+    "No arbitrary candidate acceptance, adoption, source publication or cost savings",
+    "No model, real provider, account, real campaign registry or benchmark",
+    "CI did not execute because of account billing restrictions",
+    "48 independently reserved cases were consumed in prior evaluator qualification"
+  ],
+  "retained_evidence": {
+    "changed-paths.json": {
+      "sha256": "a015e72fb6873fa85c3d6d30cccbc2bc90889c6ced5990ba206af9d94349edf1",
+      "bytes": 3585
+    },
+    "driver.diff": {
+      "sha256": "713a027be0235826c7e53d26363d7b060891a7504e19ff003593d4acfc9d0656",
+      "bytes": 4884
+    },
+    "native-dispatch-plan.json": {
+      "sha256": "d265c3923c381d4ba1f74a22e72f9935f9c7c6ae076c80ee47e2468ec09c2133",
+      "bytes": 2737
+    },
+    "qualify-v2-overlay.py": {
+      "sha256": "609390a2d94444b478a885d6fc8260795f7e8937c80891662b663dbef99d7a9c",
+      "bytes": 14273
+    },
+    "source-files.json": {
+      "sha256": "628cbf89834f9020c0ca29be7f950764b246e6cb91b48ae0a5efdbfae84c1d1a",
+      "bytes": 327374
+    },
+    "case/change.patch": {
+      "sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+      "bytes": 803
+    },
+    "case/evaluation-result.json": {
+      "sha256": "88ce618746ab33fbbe458d215f3457931d26fd65edc527420b0aa2bb4ed9ae36",
+      "bytes": 1111
+    },
+    "case/lib.rs": {
+      "sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+      "bytes": 454
+    },
+    "case/native-stdout.bin": {
+      "sha256": "93953a713a5251ece0a29a9570cb8aab73e3cdc9d47934f2a5bba190d46dcde2",
+      "bytes": 6732
+    },
+    "case/persisted-verification.json": {
+      "sha256": "effed39ff5413cc2a9cbac7e6206dc7be7b0ac66042ec72fb66c7b1c3249c0e2",
+      "bytes": 1243
+    },
+    "case/runtime-result.json": {
+      "sha256": "1cb276647077def5c742e7bcf3817e99bf62959d80357bcb5d162208c0f4781e",
+      "bytes": 67129
+    },
+    "case/t02-v2-receipt.json": {
+      "sha256": "d315a43fb821903d49731179a4a77a475e410044d527f47493b18104d7ee4d39",
+      "bytes": 3731
+    }
+  }
+}

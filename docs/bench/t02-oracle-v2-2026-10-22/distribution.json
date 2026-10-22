@@ -1,0 +1,28 @@
+{
+  "content_sha256": "445d67fab1bb991bb50e52d4456d15cec1388e0b5d7a672b5022ab926a462a4c",
+  "evidence": {
+    "dependency_scope": "all_core_members_all_features_all_targets",
+    "gitleaks": "passed",
+    "host_runtime": "NOT_TESTED",
+    "legal_compatibility_review": "UNKNOWN",
+    "license_inventory": "complete",
+    "license_texts": "complete",
+    "missing_licenses": [],
+    "publication": "NOT_REQUESTED",
+    "security_review": "UNKNOWN"
+  },
+  "files": 886,
+  "kind": "core-source",
+  "schema_version": 1,
+  "sha256": "5b368e397bd65e863d889f1e6ad9e51c473cb2c083726b69098f988de66e906f",
+  "verified": true,
+  "tests_passed": 33,
+  "packager_sha256": "110bd192988be1bc59a427feff6efb709e926ca7c10bf3a7cbc3369924de88e1",
+  "packaging_tests_sha256": "7cdf211ab9c5898527941461078d4a53fc6e7795ed8e2a16a1e3234399101dfb",
+  "source_baseline": "8420595a8e80dfcbe25ec7935666dde4a21759eb",
+  "working_tree_changes_included": true,
+  "example_compilation": "passed",
+  "boundary": "Only exact public engine path is exempted from suffix filter; neighboring Python, symlinks and private content remain rejected.",
+  "example_compilation_command": "cargo check -p router-runtime --all-features --example finite-campaign --locked --offline",
+  "example_compile_log_sha256": "4f8c1c3f0be03712669e2cc28b64f3482f67c1ec526c4e1cc5673b5c9d6ca547"
+}

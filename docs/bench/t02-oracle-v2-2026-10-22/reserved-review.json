@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "scope": "independent contract-derived t02 qualification reserve on frozen evaluator, not future task decision",
+  "reviewer_thread": "01a13694-acd3-7190-8d33-691c11d3d458",
+  "evaluator_sha256": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1",
+  "reserved_tests_sha256": "8e0080dfe966b1d9f8af5bbb9a379904ab5d753448eb3cef145946a7a9d500d8",
+  "reserved_labels_sha256": "3adaee4a20ef5772d392486542a3faca9a599dcaf5245eafd2e5bbf31a774d65",
+  "frozen_manifest_sha256": "952e5ebe782a392a855e6aa45972647717854b3e893e887bcbe87e17270e820d",
+  "labels_fixed_before_candidate_code_read": true,
+  "label_method": "Python arbitrary precision contract arithmetic, cross-checked before candidate evaluation with an independent Rust i128 implementation",
+  "semantic_independence": "independent values and labels; semantic families share the public contract",
+  "cases_per_control": 48,
+  "controls": [
+    {
+      "control": "correct_i128",
+      "source_sha256": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd",
+      "expected": "passed",
+      "observed": "passed",
+      "cases_passed": 48,
+      "cases_failed": 0,
+      "cases_unknown": 0
+    },
+    {
+      "control": "correct_u128",
+      "source_sha256": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f",
+      "expected": "passed",
+      "observed": "passed",
+      "cases_passed": 48,
+      "cases_failed": 0,
+      "cases_unknown": 0
+    },
+    {
+      "control": "sum_u64",
+      "source_sha256": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67",
+      "expected": "failed",
+      "observed": "failed",
+      "cases_passed": 16,
+      "cases_failed": 32,
+      "cases_unknown": 0
+    },
+    {
+      "control": "round_each",
+      "source_sha256": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3",
+      "expected": "failed",
+      "observed": "failed",
+      "cases_passed": 38,
+      "cases_failed": 10,
+      "cases_unknown": 0
+    },
+    {
+      "control": "omit_bounds",
+      "source_sha256": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b",
+      "expected": "failed",
+      "observed": "failed",
+      "cases_passed": 45,
+      "cases_failed": 3,
+      "cases_unknown": 0
+    },
+    {
+      "control": "truncate_final",
+      "source_sha256": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08",
+      "expected": "failed",
+      "observed": "failed",
+      "cases_passed": 21,
+      "cases_failed": 27,
+      "cases_unknown": 0
+    }
+  ],
+  "all_labels_match": true,
+  "source_hashes_match_before_and_after": true,
+  "reserve_consumed": true,
+  "functional_consumptions": 1,
+  "decision_cases_for_future_runs": false,
+  "isolation": {
+    "image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+    "uid": "65534:65534",
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "memory_peak_bytes": 77893632,
+    "memory_events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    },
+    "network": "none",
+    "readonly_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges"
+    ],
+    "host_bind_mounts": 0,
+    "volumes": 0,
+    "cpu_limit": 1,
+    "pids_limit": 256,
+    "container_stopped": true
+  },
+  "preparation_incidents": [
+    {
+      "category": "transfer_python_api",
+      "effect": "engine and controls not invoked"
+    },
+    {
+      "category": "driver_syntax",
+      "effect": "engine and controls not invoked"
+    },
+    {
+      "category": "engine_source_layout",
+      "effect": "import stopped before control execution"
+    }
+  ],
+  "raw_values_or_assertions_published": false,
+  "model_calls": 0,
+  "provider_requests": 0,
+  "account_or_credentials_accessed": false,
+  "real_campaign_registry_accessed": false,
+  "runtime_worker_executed": false,
+  "benchmark_executed": false,
+  "human_acceptance": null,
+  "adoption_authorized": false,
+  "historical_consumption": "UNKNOWN",
+  "historical_transport_cause": "UNKNOWN"
+}
