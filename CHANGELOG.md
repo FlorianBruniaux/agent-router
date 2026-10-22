@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-21: probe the frozen t02 oracle with independently labelled controls in offline Linux at unchanged 8 GiB (#174). The [probe](docs/bench/t02-oracle-qualification-2026-10-21/README.md) exposes an accepted overflow defect, so the oracle remains unqualified; historical verdicts and runtime admission are unchanged.
+
 - 2026-10-16: bind producer-owned finite-client preparation to the existing durable runtime approval ([ADR 0036](docs/adr/0036-finite-client-runtime-approval.md)). Recheck live proof and queued ownership; generic execution remains closed. Keep 8 GiB unchanged; no admission or provider turn is enabled.
 
 - 2026-10-15: add offline [evaluator qualification](docs/evaluator-qualification.md) with required-case comparisons, explicit inconclusive outcomes and retained verdict history (#174). Supplied oracle claims do not establish independent qualification or authorize adoption.

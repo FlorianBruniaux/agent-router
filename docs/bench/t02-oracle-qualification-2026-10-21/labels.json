@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "reviewer": "/root/review_194",
+  "review_kind": "independent_agent_public_contract_reasoning",
+  "human_review": null,
+  "hidden_oracle_read_by_reviewer": false,
+  "oracle_results_available_during_review": false,
+  "reviewed_input_sha256": {
+    "controls/correct_i128.rs": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd",
+    "controls/correct_u128.rs": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f",
+    "controls/omit_bounds.rs": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b",
+    "controls/round_each.rs": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3",
+    "controls/sum_u64.rs": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67",
+    "controls/truncate_final.rs": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08",
+    "public_witnesses.rs": "191f70f88946327485145955b4fef3758c586b97f4601104f72f4800756af9c6"
+  },
+  "manifest_sha256": "d9639787d265761ac2177ff1a19576d0da78e724ce41790ec7f1497c7550e30a",
+  "correct_controls": [
+    "correct_i128",
+    "correct_u128"
+  ],
+  "known_defects": [
+    "sum_u64",
+    "round_each",
+    "omit_bounds",
+    "truncate_final"
+  ],
+  "public_tests": 13,
+  "public_assertions": 14,
+  "blocking_findings": [],
+  "reasoning": [
+    "At most 64 u64 values give a sum below 2^70, safely inside i128/u128. Division follows the sum; final conversion is checked.",
+    "For [u64::MAX,1], the exact sum is 2^64; division by 4/10/20 gives 4611686018427387904 / 1844674407370955161 / 922337203685477580. Wrapping u64 accumulation instead yields zero.",
+    "[3,1]/4, [9,1]/10 and [19,1]/20 expose per-element rounding.",
+    "65 zero elements must be refused in each component; 64 are valid.",
+    "i64::MIN minus 1 and i64::MAX plus 1 must return score_out_of_range; empty sums preserve the exact extrema."
+  ],
+  "limits": "Independent agent review, not human acceptance or authenticated oracle provenance."
+}

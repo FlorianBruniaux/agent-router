@@ -1,0 +1,9 @@
+{
+  "controls/correct_i128.rs": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd",
+  "controls/correct_u128.rs": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f",
+  "controls/omit_bounds.rs": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b",
+  "controls/round_each.rs": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3",
+  "controls/sum_u64.rs": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67",
+  "controls/truncate_final.rs": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08",
+  "public_witnesses.rs": "191f70f88946327485145955b4fef3758c586b97f4601104f72f4800756af9c6"
+}
