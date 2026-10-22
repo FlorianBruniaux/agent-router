@@ -214,13 +214,20 @@ fn user_text(value: &Value) -> String {
     }
     text
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ReplyMode {
+    Complete,
+    Hold,
+    Truncated,
+}
+
 fn serve(
     listener: TcpListener,
     contract: Value,
     response: Vec<u8>,
     posts: Arc<AtomicUsize>,
     stop: Arc<AtomicBool>,
-    hold: bool,
+    reply: ReplyMode,
     root: PathBuf,
 ) -> std::thread::JoinHandle<()> {
     listener.set_nonblocking(true).unwrap();
@@ -295,13 +302,33 @@ fn serve(
                 "model":v["model"],"effort":v["reasoning"]["effort"],"request_sha256":content_digest(&body),
                 "auth_header_present":false,"authored_local_requests":1,"model_calls_started":0
             })).unwrap()).unwrap();
-            if hold {
+            if reply == ReplyMode::Hold {
                 while !stop.load(Ordering::SeqCst) {
                     std::thread::sleep(Duration::from_millis(20));
                 }
                 return;
             }
             write!(stream,"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",response.len()).unwrap();
+            if reply == ReplyMode::Truncated {
+                // Deliver response.created, then lose the rest of the declared
+                // HTTP body. Keep accepting until the worker exits: a retry
+                // must be observed, not hidden by closing the listener.
+                let prefix = response.windows(2).position(|w| w == b"\n\n").unwrap() + 2;
+                assert!(prefix < response.len());
+                stream.write_all(&response[..prefix]).unwrap();
+                stream.shutdown(std::net::Shutdown::Both).unwrap();
+                fs::write(
+                    root.join("response-cut.json"),
+                    serde_json::to_vec_pretty(&json!({
+                        "declared_body_bytes":response.len(), "sent_body_bytes":prefix,
+                        "sent_body_sha256":content_digest(&response[..prefix]),
+                        "listener_retained_until_worker_exit":true
+                    }))
+                    .unwrap(),
+                )
+                .unwrap();
+                continue;
+            }
             stream.write_all(&response).unwrap();
             return;
         }
@@ -545,6 +572,8 @@ impl HarnessAdapter for Collect {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Case {
     ReadOnly,
+    RefusedApproval,
+    LostResponse,
     Write,
     McpWrite,
     McpCreate,
@@ -872,15 +901,16 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
                 response,
                 posts.clone(),
                 stop_server.clone(),
-                matches!(
-                    case,
+                match case {
                     Case::Timeout
-                        | Case::Cancel
-                        | Case::EofHold
-                        | Case::McpTimeout
-                        | Case::McpCancel
-                        | Case::McpEofHold
-                ),
+                    | Case::Cancel
+                    | Case::EofHold
+                    | Case::McpTimeout
+                    | Case::McpCancel
+                    | Case::McpEofHold => ReplyMode::Hold,
+                    Case::LostResponse => ReplyMode::Truncated,
+                    _ => ReplyMode::Complete,
+                },
                 root.clone(),
             )
         },
@@ -1114,6 +1144,53 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
     assert_eq!(runtime.summary(run_id).unwrap().attempts, 0);
     assert_eq!(posts.load(Ordering::SeqCst), 0);
     let digest = pending.approval_digest().to_owned();
+    if case == Case::RefusedApproval {
+        let events = runtime.events().unwrap();
+        let mut denied = digest.clone();
+        denied.replace_range(..1, if digest.starts_with('0') { "1" } else { "0" });
+        assert!(matches!(
+            runtime.approve_finite_client(pending, &denied),
+            Err(RuntimeError::Approval)
+        ));
+        stop_server.store(true, Ordering::SeqCst);
+        server.take().unwrap().join().unwrap();
+        assert_eq!(posts.load(Ordering::SeqCst), 0);
+        assert!(!root.join("provider.json").exists());
+        assert_eq!(
+            runtime.summary(run_id).unwrap().state,
+            RunState::AwaitingApproval
+        );
+        assert_eq!(runtime.summary(run_id).unwrap().attempts, 0);
+        assert_eq!(runtime.events().unwrap(), events);
+        let status = admission.status().unwrap();
+        assert_eq!(status.granted, 0);
+        assert_eq!(status.released, 0);
+        assert_eq!(
+            crate::source_state(&source_workspace).await.unwrap(),
+            source
+        );
+        for (file, hash) in &before {
+            assert_eq!(
+                content_digest(&fs::read(source_workspace.join(file)).unwrap()),
+                *hash
+            );
+        }
+        runtime.verify_integrity().unwrap();
+        fs::write(
+            root.join("receipt.json"),
+            serde_json::to_vec_pretty(&json!({
+                "schema_version":1,"qualification":"q01-refused-approval-before-worker",
+                "authored_local_requests":0,"model_calls_started":0,"worker_attempts":0,
+                "preparation_canaries_performed":true,"worker_cleanup":"not_started",
+                "summary":runtime.summary(run_id).unwrap(),"events":events,"admission":status,
+                "source_unchanged":true,"publication":false,"human_acceptance":null,
+                "memory_bytes":8589934592u64,"swap_bytes":0
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+        return;
+    }
     let approved = runtime.approve_finite_client(pending, &digest).unwrap();
     let verifier = runtime.finite_client_verifier(&approved).unwrap();
     assert!(
@@ -1312,15 +1389,46 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
             }
         }
     }
-    assert!(
-        completion.runtime_evidence.is_some(),
-        "production Codex decoder must run inside Runtime"
-    );
+    if case == Case::LostResponse {
+        let rows: Vec<Value> = stdout
+            .split(|b| *b == b'\n')
+            .filter(|b| !b.is_empty())
+            .map(|line| router_adapter_api::strict_json_limited(line, 65536).unwrap())
+            .collect();
+        assert!(rows.iter().all(|row| row["type"] != "turn.completed"));
+        assert!(
+            runtime
+                .events()
+                .unwrap()
+                .iter()
+                .any(|event| event.kind == "protocol.observed")
+        );
+        assert!(
+            !store
+                .join("artifacts")
+                .join(format!("{run_id}.patch"))
+                .exists()
+        );
+        assert!(
+            runtime
+                .events()
+                .unwrap()
+                .iter()
+                .all(|event| event.kind != "integration.published")
+        );
+        assert!(root.join("response-cut.json").is_file());
+    } else {
+        assert!(
+            completion.runtime_evidence.is_some(),
+            "production Codex decoder must run inside Runtime"
+        );
+    }
     assert_eq!(
         completion.run.state,
         match case {
             Case::Timeout | Case::McpTimeout => RunState::TimedOut,
             Case::Cancel | Case::McpCancel => RunState::Cancelled,
+            Case::LostResponse => RunState::Failed,
             _ => RunState::Verifying,
         }
     );
@@ -1476,7 +1584,7 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
     // listener is closed. Refused new connections test listener ownership
     // without mistaking a kernel TIME_WAIT entry for a leaked broker.
     assert!(TcpStream::connect_timeout(&address, Duration::from_millis(100)).is_err());
-    fs::write(root.join("receipt.json"),serde_json::to_vec_pretty(&json!({"schema_version":1,"qualification":match case {Case::Write=>"q02-bounded-replacement",Case::Timeout=>"q01-timeout",Case::Cancel=>"q01-cancel",Case::McpWrite=>"q03-mcp-replacement",Case::McpCreate=>"q04-mcp-create",Case::McpTimeout=>"q03-mcp-timeout",Case::McpCancel=>"q03-mcp-cancel",_=>"q01"},"model_calls_started":0,"authored_local_requests":if matches!(case,Case::McpWrite|Case::McpCreate){4}else{1},"tools":tools,"memory_bytes":8589934592u64,"swap_bytes":0,"completion":completion,"cleanup":runtime.cleanup_evidence(run_id).unwrap(),"admission":admission.status().unwrap(),"source_unchanged":true,"human_acceptance":null,"scripted_usage_is_accounting":false,"controller_location":if external {"external_mac_private_channel"} else {"linux"},"availability":if subscription {"operator_simulated_subscription_relay"} else {"operator_simulated_local_fixture"},"context_overhead":"unknown","attempts":runtime.attempt_evidence(run_id).unwrap()})).unwrap()).unwrap();
+    fs::write(root.join("receipt.json"),serde_json::to_vec_pretty(&json!({"schema_version":1,"qualification":match case {Case::LostResponse=>"q01-response-lost-after-request",Case::Write=>"q02-bounded-replacement",Case::Timeout=>"q01-timeout",Case::Cancel=>"q01-cancel",Case::McpWrite=>"q03-mcp-replacement",Case::McpCreate=>"q04-mcp-create",Case::McpTimeout=>"q03-mcp-timeout",Case::McpCancel=>"q03-mcp-cancel",_=>"q01"},"model_calls_started":0,"authored_local_requests":if matches!(case,Case::McpWrite|Case::McpCreate){4}else{1},"tools":tools,"memory_bytes":8589934592u64,"swap_bytes":0,"completion":completion,"cleanup":runtime.cleanup_evidence(run_id).unwrap(),"admission":admission.status().unwrap(),"source_unchanged":true,"human_acceptance":null,"scripted_usage_is_accounting":false,"controller_location":if external {"external_mac_private_channel"} else {"linux"},"availability":if subscription {"operator_simulated_subscription_relay"} else {"operator_simulated_local_fixture"},"context_overhead":"unknown","attempts":runtime.attempt_evidence(run_id).unwrap()})).unwrap()).unwrap();
 }
 
 #[tokio::test]
@@ -1484,6 +1592,17 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
 async fn q01_real_approved_local_report() {
     run_case(Case::ReadOnly).await;
 }
+#[tokio::test]
+#[ignore = "explicit offline Linux approval refusal; preparation canaries only, no worker or model"]
+async fn q01_refused_approval_never_submits_worker_request() {
+    run_case(Case::RefusedApproval).await;
+}
+#[tokio::test]
+#[ignore = "explicit offline Linux truncated local response; no model or remote provider"]
+async fn q01_lost_response_fails_without_retry_and_cleans_namespace() {
+    run_case(Case::LostResponse).await;
+}
+
 #[tokio::test]
 #[ignore = "explicit offline ARM64 Linux bounded replacement with authored t02 response; not a benchmark cell"]
 async fn q02_real_approved_bounded_replacement() {
