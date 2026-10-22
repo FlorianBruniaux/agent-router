@@ -1,0 +1,29 @@
+crates/router-runtime/src/integration/tests/crash_tests.rs
+  s_a3c8391baca17a::t_fe005db8c64689 1-65,67-69,71-73,76-215
+  s_a3c8391baca17a::t_8ececdc6b951eb 66,70,74-75
+  s_a3c8391baca17a::t_fdd395447912e9 216-259
+crates/router-runtime/src/integration.rs
+  s_a3c8391baca17a::t_fe005db8c64689 640-641,685-690
+  s_a3c8391baca17a::t_3e82f893ed4cfa 691-695
+docs/adr/0027-verified-patch-publication.md
+  s_a3c8391baca17a::t_8fcab9dcd88cfa 100,113-114,119
+  s_a3c8391baca17a::t_7e3be3649d439a 6,101-112,115-118
+CHANGELOG.md
+  s_a3c8391baca17a::t_8fcab9dcd88cfa 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "05f6c2825c11db5d0547442075a9858d9045b121",
+  "prompts": {},
+  "sessions": {
+    "s_a3c8391baca17a": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a135bc-ff66-7702-881d-4d28557ef2f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
