@@ -16,6 +16,8 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-22: exercise actual SIGKILL of a publication fixture before and after Git ref creation (#132). Restart preserves UNKNOWN for incomplete journal evidence, refuses replay and retains staged/unstaged user edits; a completed publication is the positive control. No production authority or native qualification changes.
+
 - 2026-10-22: add a separately versioned [t02 v2 evaluator](docs/bench/t02-oracle-v2-2026-10-22/README.md) that detects unsigned sum overflow across multiple implementations (#174). Its explicit finite-fixture runtime mode preserves objective UNKNOWN, absent human acceptance, historical evidence and 8 GiB limits.
 
 - 2026-10-21: probe the frozen t02 oracle with independently labelled controls in offline Linux at unchanged 8 GiB (#174). The [probe](docs/bench/t02-oracle-qualification-2026-10-21/README.md) exposes an accepted overflow defect, so the oracle remains unqualified; historical verdicts and runtime admission are unchanged.
@@ -27,6 +29,8 @@ reasons); every change was verified locally on macOS.
 - 2026-10-15: reconstruct [retained M4 acceptance evidence](docs/bench/accepted-evidence-2026-10-15/README.md) using the existing calculator: three attempts, one subsequently accepted Router revision, unknown monetary totals. No trial is rerun and no savings are inferred.
 
 ### Fixed
+
+- 2026-10-22: retain complete Runtime attestations in the existing private event journal when a new verdict supersedes an inconclusive one (#132/#174). Commit history, current verdict and transition atomically; preserve legacy current records as observations at update time without inventing lost history.
 
 - 2026-10-21: reject held-out comparisons that reuse supplied tuning case identities, including across evaluator versions (#174). Evaluator qualification schema 2 requires explicit tuning IDs; legacy tuning without IDs remains inconclusive. Oracle claims remain unverified.
 
