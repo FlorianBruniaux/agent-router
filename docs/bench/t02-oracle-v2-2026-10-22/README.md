@@ -118,12 +118,18 @@ finite-campaign example compiles offline from that archive. The exporter permits
 only the exact public v2 Python engine path; unrelated Python files, symlinks and
 private content remain refused.
 
+## Subsequent native qualification
+
+The [native v2 replay](native-qualification.md) now records one actual authored
+fixture through the bounded entry, including persisted verification and cleanup.
+It supplements the earlier synthetic qualification above without rewriting its
+receipts or source-bound validation record.
+
 ## Remaining acceptance
 
 #174/#132 remain open for authentic human acceptance/provenance, durable verdict
 history and complete useful-task/integration/recovery evidence. The new mode is
-wired and contract-tested; its native worker composition is not replayed in this
-lot. Arbitrary-candidate acceptance remains outside the authored-fixture authority.
+wired, contract-tested and qualified natively for the fixed authored fixture. Arbitrary-candidate acceptance remains outside the authored-fixture authority.
 
 A future benchmark needs a new sealed protocol and explicit approval referencing
 the new evaluator identity. H0/H1 must use identical criteria. Do not edit or reuse
