@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "evaluator_id": "t02-score-v2",
+  "verifier_sha256": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1",
+  "cases_sha256": "a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd",
+  "required_cases": [
+    "t02_v2_empty",
+    "t02_v2_sum_before_division",
+    "t02_v2_negative_quality",
+    "t02_v2_cost_limit",
+    "t02_v2_latency_limit",
+    "t02_v2_skill_limit",
+    "t02_v2_exact_work_boundary",
+    "t02_v2_wide_sums",
+    "t02_v2_negative_overflow",
+    "t02_v2_positive_overflow",
+    "t02_v2_cancellation_before_range_check",
+    "t02_v2_extrema_identity",
+    "t02_v2_cost_above_u64",
+    "t02_v2_latency_above_u64",
+    "t02_v2_skill_above_u64",
+    "t02_v2_round_cost",
+    "t02_v2_round_latency",
+    "t02_v2_round_skill"
+  ],
+  "controls": [
+    {
+      "control": "correct_i128",
+      "source_sha256": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd",
+      "expected": "passed",
+      "observed": {
+        "outcome": "passed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 0,
+        "stdout_sha256": "51b269cea6ba23293f569cfb059c39c5896366ac58a584342580b33225e03073"
+      }
+    },
+    {
+      "control": "correct_u128",
+      "source_sha256": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f",
+      "expected": "passed",
+      "observed": {
+        "outcome": "passed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 0,
+        "stdout_sha256": "81ae45e0ce28a8b72af43b913977209dab18327a020c92221a12e4f35bd2a399"
+      }
+    },
+    {
+      "control": "sum_u64",
+      "source_sha256": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67",
+      "expected": "failed",
+      "observed": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "FAILED",
+          "t02_v2_cost_above_u64": "FAILED",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "FAILED",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "FAILED",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "FAILED"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "1f985cc41e4f494bdd3cf2490f7fe621aaa60dc304980ccf70261095495ea5a3"
+      }
+    },
+    {
+      "control": "round_each",
+      "source_sha256": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3",
+      "expected": "failed",
+      "observed": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "FAILED",
+          "t02_v2_cost_above_u64": "FAILED",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "FAILED",
+          "t02_v2_round_latency": "FAILED",
+          "t02_v2_round_skill": "FAILED",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "FAILED",
+          "t02_v2_wide_sums": "FAILED"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "400c7dedc3326dfa8f118a7b0f87094357121971892dfd00bfae2875bd257d6a"
+      }
+    },
+    {
+      "control": "omit_bounds",
+      "source_sha256": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b",
+      "expected": "failed",
+      "observed": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "FAILED",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "FAILED",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "FAILED",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "c8572e1bc57f75e8ed1380d4b62409d73627282048ecc4b72e0e43a095ed764a"
+      }
+    },
+    {
+      "control": "truncate_final",
+      "source_sha256": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08",
+      "expected": "failed",
+      "observed": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "FAILED",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "FAILED",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "98f066bfafa9e133d62e0269c6434d2f6bbf077c8e083c7bc194b501224f3668"
+      }
+    }
+  ],
+  "infrastructure": [
+    {
+      "outcome": "unknown",
+      "stage": "compile",
+      "reason": "spawn_failed",
+      "cases": {
+        "t02_v2_empty": "unknown",
+        "t02_v2_sum_before_division": "unknown",
+        "t02_v2_negative_quality": "unknown",
+        "t02_v2_cost_limit": "unknown",
+        "t02_v2_latency_limit": "unknown",
+        "t02_v2_skill_limit": "unknown",
+        "t02_v2_exact_work_boundary": "unknown",
+        "t02_v2_wide_sums": "unknown",
+        "t02_v2_negative_overflow": "unknown",
+        "t02_v2_positive_overflow": "unknown",
+        "t02_v2_cancellation_before_range_check": "unknown",
+        "t02_v2_extrema_identity": "unknown",
+        "t02_v2_cost_above_u64": "unknown",
+        "t02_v2_latency_above_u64": "unknown",
+        "t02_v2_skill_above_u64": "unknown",
+        "t02_v2_round_cost": "unknown",
+        "t02_v2_round_latency": "unknown",
+        "t02_v2_round_skill": "unknown"
+      }
+    },
+    {
+      "outcome": "unknown",
+      "stage": "compile",
+      "reason": "unexpected_exit",
+      "cases": {
+        "t02_v2_empty": "unknown",
+        "t02_v2_sum_before_division": "unknown",
+        "t02_v2_negative_quality": "unknown",
+        "t02_v2_cost_limit": "unknown",
+        "t02_v2_latency_limit": "unknown",
+        "t02_v2_skill_limit": "unknown",
+        "t02_v2_exact_work_boundary": "unknown",
+        "t02_v2_wide_sums": "unknown",
+        "t02_v2_negative_overflow": "unknown",
+        "t02_v2_positive_overflow": "unknown",
+        "t02_v2_cancellation_before_range_check": "unknown",
+        "t02_v2_extrema_identity": "unknown",
+        "t02_v2_cost_above_u64": "unknown",
+        "t02_v2_latency_above_u64": "unknown",
+        "t02_v2_skill_above_u64": "unknown",
+        "t02_v2_round_cost": "unknown",
+        "t02_v2_round_latency": "unknown",
+        "t02_v2_round_skill": "unknown"
+      }
+    },
+    {
+      "outcome": "unknown",
+      "reason": "timeout"
+    },
+    {
+      "outcome": "unknown",
+      "reason": "output_limit"
+    }
+  ],
+  "labels_sha256": "3f8d55bfa0039b92005207ada7ac2b0a4a830d0e1dd15fbd645cca2f132d4c2e",
+  "limits": {
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0
+  },
+  "compiler_version": "rustc 1.85.1 (4eb161250 2025-03-15)\nbinary: rustc\ncommit-hash: 4eb161250e340c8f48f66e2b929ef4a5bed7c181\ncommit-date: 2025-03-15\nhost: aarch64-unknown-linux-gnu\nrelease: 1.85.1\nLLVM version: 19.1.7",
+  "compiler_sha256": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97",
+  "scope": "finite multi-implementation qualification and synthetic binding fixture",
+  "runtime_worker_executed": false,
+  "benchmark_executed": false,
+  "decision_cases_executed": false,
+  "human_acceptance": null,
+  "adoption_authorized": false,
+  "model_calls": 0,
+  "registry_access": false
+}

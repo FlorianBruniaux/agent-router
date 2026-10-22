@@ -1,0 +1,10 @@
+{
+  "crates/router-runtime/examples/campaign/public_score.rs": "22ae275ddcedfabf7244f778f3f065e22636a292c008044942ea8ff330c30801",
+  "crates/router-runtime/examples/campaign/t02-v2/acceptance.json": "ff0ac52ff0480e262bcc57ba3bda69678c221f770f18e9a9c3012f38ebbdacd3",
+  "crates/router-runtime/examples/campaign/t02-v2/cases.rs": "a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd",
+  "crates/router-runtime/examples/campaign/t02-v2/verify.py": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1",
+  "crates/router-runtime/examples/campaign/t02_v2.rs": "8154c71ef62bb239a835d8892d586a0ad58239d5b155cc1a1c5d20149113165e",
+  "crates/router-runtime/examples/finite-campaign.rs": "e077993bdab5c482f87b5872d639d0f28fba64b294961fc673469d7a7fea3a20",
+  "docs/bench/t02-oracle-v2-2026-10-22/qualify.py": "cd04bee2dadf000271dec78578b4f130964efe819c3c971e390743b321b5f61f",
+  "docs/bench/t02-oracle-v2-2026-10-22/test_oracle.py": "a12d89d27ee3ff5e8e03cf74b3b390d4b3f74ef67e2b9a6f5c611e355dc70c69"
+}

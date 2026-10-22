@@ -4,6 +4,8 @@
 mod public_score;
 #[path = "campaign/recipe.rs"]
 mod recipe;
+#[path = "campaign/t02_v2.rs"]
+mod t02_v2;
 use recipe::Packet;
 use router_adapter_api::{
     authorize_execution_with_capability_acceptance, content_digest,
@@ -475,8 +477,15 @@ fn export_output(
         json!({"relative":packet.output,"bytes":bytes.len(),"sha256":output.sha256}),
     ))
 }
-async fn run(d: Descriptor, p: Packet, evaluate_public_score: bool) -> Result<()> {
-    if evaluate_public_score {
+#[derive(Clone, Copy, PartialEq)]
+enum ScoreEvaluation {
+    None,
+    PublicV1,
+    QualificationV2,
+}
+
+async fn run(d: Descriptor, p: Packet, evaluation: ScoreEvaluation) -> Result<()> {
+    if evaluation != ScoreEvaluation::None {
         public_score::check_scope(&p.assignment_id)?;
     }
     if std::env::consts::OS != "linux"
@@ -692,7 +701,7 @@ async fn run(d: Descriptor, p: Packet, evaluate_public_score: bool) -> Result<()
     emit(&json!({"schema_version":1,"kind":"runtime_binding","binding":binding}))?;
     approve(&binding, &p)?;
     let approved = runtime.approve_finite_client(pending, &digest)?;
-    let verifier = if evaluate_public_score {
+    let verifier = if evaluation != ScoreEvaluation::None {
         Some(runtime.finite_client_verifier(&approved)?)
     } else {
         None
@@ -730,7 +739,14 @@ async fn run(d: Descriptor, p: Packet, evaluate_public_score: bool) -> Result<()
     result?;
     exported?;
     if let Some(verifier) = verifier {
-        let evaluation = public_score::evaluate(&d.root, &serde_json::to_vec(&report)?, &verifier)?;
+        let report_bytes = serde_json::to_vec(&report)?;
+        let evaluation = match evaluation {
+            ScoreEvaluation::PublicV1 => public_score::evaluate(&d.root, &report_bytes, &verifier)?,
+            ScoreEvaluation::QualificationV2 => {
+                t02_v2::evaluate(&d.root, &report_bytes, &verifier)?
+            }
+            ScoreEvaluation::None => return Err("missing evaluation mode".into()),
+        };
         save(
             &d.root.join("evaluation-result.json"),
             &serde_json::to_vec(&evaluation)?,
@@ -749,14 +765,25 @@ async fn main() {
             );
             return Ok(());
         }
-        if args.len() != 2 || (args[1] != "--run" && args[1] != "--run-public-score") {
+        if args.len() != 2
+            || (args[1] != "--run"
+                && args[1] != "--run-public-score"
+                && args[1] != "--run-score-v2")
+        {
             return Err::<(), Error>("usage".into());
         }
         let bytes = read_parent_line()?;
         let value = router_adapter_api::strict_json_limited(&bytes, 16384)?;
         let descriptor: Descriptor = serde_json::from_value(value)?;
         let packet = descriptor.validate()?;
-        run(descriptor, packet, args[1] == "--run-public-score").await
+        let evaluation = if args[1] == "--run-score-v2" {
+            ScoreEvaluation::QualificationV2
+        } else if args[1] == "--run-public-score" {
+            ScoreEvaluation::PublicV1
+        } else {
+            ScoreEvaluation::None
+        };
+        run(descriptor, packet, evaluation).await
     }
     .await;
     if let Err(error) = result {

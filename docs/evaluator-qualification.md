@@ -157,3 +157,8 @@ executes independently labelled controls in offline Linux at unchanged 8 GiB.
 It exposes a missed unsigned-sum defect: the retained oracle is unqualified.
 This finite diagnostic preserves historical verdicts and does not authenticate
 the oracle, establish held-out adequacy or authorize runtime acceptance.
+
+The [versioned t02 v2 evaluator](bench/t02-oracle-v2-2026-10-22/README.md)
+detects the retained oracle’s missed overflow defect in a finite multi-implementation
+qualification. Its explicit runtime mode remains restricted to the authored
+fixture and preserves objective UNKNOWN and absent human acceptance.
