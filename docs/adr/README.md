@@ -36,7 +36,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0025](0025-run-observation.md) | Bounded passive run observation | implemented | 2026-10-07 | 2026-10-08 | - |
 
 | [0026](0026-owned-client-simulated-entry.md) | Dedicated Codex client for simulated patch work | accepted | 2026-10-08 | 2026-10-08 | - |
-| [0027](0027-verified-patch-publication.md) | Publish verified patches through a dedicated Git revision | implemented | 2026-10-08 | 2026-10-08 | - |
+| [0027](0027-verified-patch-publication.md) | Publish verified patches through a dedicated Git revision | implemented | 2026-10-08 | 2026-10-22 | - |
 
 | [0028](0028-finite-client-preparation.md) | Bind finite-client preparation to an owned broker | implemented | 2026-10-09 | 2026-10-09 | - |
 
@@ -62,7 +62,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0042](0042-owned-subscription-relay.md) | Bind subscription transport and observations to the finite Runtime owner | proposed | 2026-10-18 | 2026-10-18 | - |
 
-| [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-21 | - |
+| [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-22 | - |
 
 | [0045](0045-fresh-finite-entry.md) | Fresh entry through the existing finite Runtime | accepted | 2026-10-22 | 2026-10-22 | - |
 
