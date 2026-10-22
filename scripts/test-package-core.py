@@ -25,6 +25,7 @@ class PackagingTests(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory(prefix="agent-router-package-test-")
         self.root = Path(self.directory.name).resolve()
+        self.write("rust-toolchain.toml", '[toolchain]\nchannel="1.85"\nprofile="minimal"\ncomponents=["rustfmt", "clippy"]\n')
 
     def tearDown(self):
         self.directory.cleanup()
@@ -228,6 +229,61 @@ serde = "1"
             self.write(name, data)
         self.write("docs/bench/private/unrelated.json", "Never distribute")
         return {"relative": "crates/router-runtime"}, assets
+
+    def test_export_preserves_exact_toolchain_pin_and_refuses_missing_pin(self):
+        command = self.export_fixture()
+        pin = (self.root / "rust-toolchain.toml").read_bytes()
+        output = self.root / "pinned.tar.gz"
+        status, _ = self.strict_export(output, command)
+        self.assertEqual(status, 0)
+        self.assertEqual(self.archive_files(output).get("rust-toolchain.toml"), pin)
+        (self.root / "rust-toolchain.toml").unlink()
+        missing = self.root / "missing-pin.tar.gz"
+        status, result = self.strict_export(missing, command)
+        self.assertEqual(status, 2)
+        self.assertIn("source.missing_or_oversized", result["error"])
+        self.assertFalse(missing.exists())
+
+    def test_selected_tests_carry_only_their_reviewed_external_inputs(self):
+        cases = {
+            "crates/agent-router-cli/src/generation_proof_tests.rs": ("tests/support/capability_store.rs",),
+            "crates/agent-router-cli/tests/support/native_fixture.rs": ("tests/support/capability_store.rs",),
+            "crates/router-runtime/src/finite_tools/linux_tests.rs": (
+                "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py",),
+            "crates/router-adapter-api/tests/registry.rs": (
+                "integrations/codex/adapter.json", "integrations/claude-code/adapter.json"),
+            "crates/router-workflow/tests/handoff.rs": ("assets/prompts/autonomous-handoff.md",),
+        }
+        self.public_score_fixture()
+        for anchor, inputs in cases.items():
+            with self.subTest(anchor=anchor):
+                relative = "/".join(anchor.split("/")[:2])
+                self.write(relative + "/Cargo.toml", '[package]\nname="fixture"\nversion="0.1.0"\n')
+                self.write(anchor, "// public test input consumer")
+                for name in inputs:
+                    self.write(name, "public test fixture")
+                    self.write(str(Path(name).with_name("unrelated.txt")), "unclassified neighbor")
+                files = CORE.collect_sources(self.root, [{"relative": relative}])
+                for name in inputs:
+                    self.assertEqual(files.get(name), b"public test fixture")
+                    self.assertNotIn(str(Path(name).with_name("unrelated.txt")), files)
+                (self.root / anchor).unlink()
+                files = CORE.collect_sources(self.root, [{"relative": relative}])
+                self.assertTrue(set(inputs).isdisjoint(files))
+
+    def test_external_test_input_retains_missing_content_and_symlink_checks(self):
+        package, _ = self.public_score_fixture()
+        self.write("crates/router-runtime/src/finite_tools/linux_tests.rs", "// test consumer")
+        name = "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py"
+        with self.assertRaisesRegex(CORE.PackageError, "source.missing_or_oversized"):
+            CORE.collect_sources(self.root, [package])
+        target = self.write(name, "# /Users/private-account/secret")
+        with self.assertRaisesRegex(CORE.PackageError, "content.private_home_path"):
+            CORE.collect_sources(self.root, [package])
+        target.unlink()
+        target.symlink_to(self.write("public.txt", "safe"))
+        with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
+            CORE.collect_sources(self.root, [package])
 
     def test_selected_public_example_carries_its_exact_compile_inputs(self):
         package, assets = self.public_score_fixture()
@@ -489,6 +545,16 @@ checksum="bbbbbbbb"
         self.assertEqual(len(external_inventory["other-platform"]["license_files"]), 2)
         self.assertTrue(all(p["licenseConcluded"] == "NOASSERTION"
                             for p in json.loads(files["SBOM.spdx.json"])["packages"]))
+
+    def test_core_readme_distinguishes_cli_and_example_python_requirements(self):
+        command = self.export_fixture()
+        output = self.root / "readme.tar.gz"
+        status, result = self.strict_export(output, command)
+        self.assertEqual(status, 0, result)
+        readme = self.archive_files(output)["README.md"].decode()
+        self.assertIn("The Rust routing CLI does not require Python", readme)
+        self.assertIn("finite-campaign t02 verification example requires Python 3", readme)
+        self.assertNotIn("Python is only used by repository release tooling", readme)
 
     def test_strict_export_refuses_incomplete_external_evidence_without_output(self):
         for missing in ("cache", "checksum", "declaration", "text"):
