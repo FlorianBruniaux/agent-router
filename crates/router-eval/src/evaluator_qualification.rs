@@ -79,6 +79,10 @@ pub struct SuppliedEvaluatorQualification {
     pub max_output_bytes: u64,
     pub witnesses: Vec<QualificationWitness>,
     pub tuning_output_sha256: Vec<String>,
+    /// Schema 2 requires the complete supplied set, including an explicit empty set.
+    /// IDs and outputs are independent sets: one tuning case may have many outputs.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tuning_case_ids: Option<Vec<String>>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -247,7 +251,7 @@ pub fn evaluator_qualification_report(bytes: &[u8]) -> Result<EvaluatorQualifica
         .map(|task| compare_task(&input, &qualifications, task))
         .collect::<Result<Vec<_>>>()?;
     Ok(EvaluatorQualificationReport {
-        schema_version: 1,
+        schema_version: input.schema_version,
         cohort_sha256: input.cohort_sha256.clone(),
         oracle_authenticity: "supplied_unverified",
         adoption_authorized: false,
@@ -278,7 +282,7 @@ fn identity_valid(identity: &EvaluatorIdentity) -> bool {
 }
 fn validate(input: &EvaluatorQualificationInput) -> Result<()> {
     use EvaluatorQualificationError::{Integrity, Invalid, Limit};
-    if input.schema_version != 1 || input.cohort.is_empty() {
+    if !matches!(input.schema_version, 1 | 2) || input.cohort.is_empty() {
         return Err(Invalid);
     }
     if input.cohort.len() > MAX_INSTANCES
@@ -299,6 +303,7 @@ fn validate(input: &EvaluatorQualificationInput) -> Result<()> {
             .map(|q| {
                 q.witnesses.len()
                     + q.tuning_output_sha256.len()
+                    + q.tuning_case_ids.as_ref().map_or(0, Vec::len)
                     + q.applicable_criteria_sha256.len()
             })
             .sum::<usize>()
@@ -340,7 +345,17 @@ fn validate(input: &EvaluatorQualificationInput) -> Result<()> {
     }
     let mut evaluator_versions = BTreeSet::new();
     for q in &input.qualifications {
-        if !identity_valid(&q.evaluator)
+        let tuning_valid = match (input.schema_version, &q.tuning_case_ids) {
+            (1, None) => true,
+            (2, Some(ids)) => {
+                ids.is_empty() == q.tuning_output_sha256.is_empty()
+                    && ids.iter().all(|id| identifier(id))
+                    && unique(ids.iter().map(String::as_str))
+            }
+            _ => false,
+        };
+        if !tuning_valid
+            || !identity_valid(&q.evaluator)
             || !evaluator_versions.insert((&q.evaluator.evaluator_id, &q.evaluator.version))
             || q.max_duration_ms == 0
             || q.max_duration_ms > 3_600_000
@@ -442,6 +457,13 @@ fn compare_task(
     if reference.is_none() || candidate.is_none() {
         blockers.insert("missing_verdict");
     }
+    if input
+        .qualifications
+        .iter()
+        .any(|q| q.tuning_case_ids.is_none() && !q.tuning_output_sha256.is_empty())
+    {
+        blockers.insert("tuning_case_identity_unknown");
+    }
     for verdict in reference.into_iter().chain(candidate) {
         if verdict.instance_id != task.instance_id
             || verdict.task_contract_sha256 != task_digest
@@ -465,6 +487,9 @@ fn compare_task(
                 w.output_sha256 == verdict.output_sha256
                     || task.required_case_ids.contains(&w.case_id)
             }) || q.tuning_output_sha256.contains(&verdict.output_sha256)
+                || q.tuning_case_ids
+                    .as_ref()
+                    .is_some_and(|ids| ids.iter().any(|id| task.required_case_ids.contains(id)))
         }) {
             blockers.insert("decision_corpus_overlap");
         }

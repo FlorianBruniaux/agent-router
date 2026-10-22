@@ -94,6 +94,8 @@ written in French.
 | [Attempt correlation](attempt-correlation.md) | 2026-10-10: offline B1 CLI and complete observe-v2 projection; supplied evidence, no native usage collection |
 | [Offline evaluation verification](bench/offline-evaluation-evidence-2026-10-15.md) | Local contract tests, independent review and remaining measurement evidence |
 | [Evaluator qualification](evaluator-qualification.md) | Required-case comparisons, supplied qualification witnesses and explicit inconclusive outcomes |
+| [t02 oracle v2](bench/t02-oracle-v2-2026-10-22/README.md) | Versioned multi-implementation qualification and bounded authored-fixture attestation |
+| [Frozen t02 oracle probe](bench/t02-oracle-qualification-2026-10-21/README.md) | Offline Linux evidence of a missed overflow defect, independent public labels and unchanged 8 GiB limits |
 | [Supplied usage pricing](supplied-usage-pricing.md) | Offline per-physical usage bridge, estimated prices and an allowlisted portable projection |
 | [Retained M4 acceptance evidence](bench/accepted-evidence-2026-10-15/README.md) | Three historical attempts, one accepted revision, unknown monetary totals; no new trial |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |

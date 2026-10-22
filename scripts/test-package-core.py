@@ -250,6 +250,27 @@ serde = "1"
         with self.assertRaisesRegex(CORE.PackageError, "source.missing_or_oversized"):
             CORE.collect_sources(self.root, [package])
 
+    def test_versioned_t02_engine_is_the_only_python_example_exception(self):
+        package, _ = self.public_score_fixture()
+        known = "crates/router-runtime/examples/campaign/t02-v2/verify.py"
+        self.write(known, "# public versioned evaluator")
+        files = CORE.collect_sources(self.root, [package])
+        self.assertEqual(files[known], b"# public versioned evaluator")
+        self.write("crates/router-runtime/examples/campaign/t02-v2/unrelated.py", "# not an export input")
+        with self.assertRaisesRegex(CORE.PackageError, "source.unclassified_file"):
+            CORE.collect_sources(self.root, [package])
+
+    def test_versioned_t02_exception_keeps_content_and_symlink_guards(self):
+        package, _ = self.public_score_fixture()
+        known = "crates/router-runtime/examples/campaign/t02-v2/verify.py"
+        target = self.write(known, "# /Users/private-account/secret")
+        with self.assertRaisesRegex(CORE.PackageError, "content.private_home_path"):
+            CORE.collect_sources(self.root, [package])
+        target.unlink()
+        target.symlink_to(self.write("public.txt", "safe"))
+        with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
+            CORE.collect_sources(self.root, [package])
+
     def test_finite_example_carries_its_external_test_support(self):
         package, _ = self.public_score_fixture()
         self.write("crates/router-runtime/examples/finite-campaign.rs", "// explicit external test support")

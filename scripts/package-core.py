@@ -25,6 +25,9 @@ FORBIDDEN_PARTS = {
     "target", "node_modules", "private", "telemetry", "policy-packs", "credentials",
 }
 SUFFIXES = {".rs", ".toml", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"}
+# Only this embedded public Python engine is a classified crate source.
+# Do not allow the .py suffix globally or include neighboring scripts.
+PUBLIC_PYTHON_EXAMPLE = "crates/router-runtime/examples/campaign/t02-v2/verify.py"
 # Fixed compiler and authored replay inputs of selected public sources.
 # Keep this closure explicit: other bench data is not a distribution input.
 PUBLIC_SOURCE_INPUTS = {
@@ -211,7 +214,7 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                     raise PackageError(f"path.symlink: {path.relative_to(root).as_posix()}")
                 if path.is_file():
                     relative = path.relative_to(root).as_posix()
-                    if path.suffix not in SUFFIXES:
+                    if path.suffix not in SUFFIXES and relative != PUBLIC_PYTHON_EXAMPLE:
                         raise PackageError(f"source.unclassified_file: {relative}")
                     names.add(relative)
         for key in ("readme", "license_file"):

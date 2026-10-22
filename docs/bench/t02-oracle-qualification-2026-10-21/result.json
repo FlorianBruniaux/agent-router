@@ -1,0 +1,169 @@
+{
+  "adoption_authorized": false,
+  "child_address_space_bytes": 4294967296,
+  "child_cpu_seconds": 60,
+  "child_output_bytes": 65536,
+  "child_wall_seconds": 90,
+  "compiler_sha256": "1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97",
+  "compiler_version": "rustc 1.85.1 (4eb161250 2025-03-15)\nbinary: rustc\ncommit-hash: 4eb161250e340c8f48f66e2b929ef4a5bed7c181\ncommit-date: 2025-03-15\nhost: aarch64-unknown-linux-gnu\nrelease: 1.85.1\nLLVM version: 19.1.7",
+  "controls": [
+    {
+      "control": "correct_i128",
+      "frozen_oracle": {
+        "exit_code": 0,
+        "outcome": "passed",
+        "output_sha256": "fa72f4c839dbac6e63aeabefa4b6130499a3e718794fa41fe2d27680905576e2",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "correct",
+      "public_witnesses": {
+        "exit_code": 0,
+        "outcome": "passed",
+        "output_sha256": "f37aa1aff72d961aa1af5992222c57d594e5b8001fe4c38d4e7ab941f047c27c",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd"
+    },
+    {
+      "control": "correct_u128",
+      "frozen_oracle": {
+        "exit_code": 0,
+        "outcome": "passed",
+        "output_sha256": "fa72f4c839dbac6e63aeabefa4b6130499a3e718794fa41fe2d27680905576e2",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "correct",
+      "public_witnesses": {
+        "exit_code": 0,
+        "outcome": "passed",
+        "output_sha256": "f37aa1aff72d961aa1af5992222c57d594e5b8001fe4c38d4e7ab941f047c27c",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f"
+    },
+    {
+      "control": "sum_u64",
+      "frozen_oracle": {
+        "exit_code": 0,
+        "outcome": "passed",
+        "output_sha256": "fa72f4c839dbac6e63aeabefa4b6130499a3e718794fa41fe2d27680905576e2",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "known_defect",
+      "public_witnesses": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "7ce97a1f27d0fc3b34fcba5705e28c6332a3a38a34e4859e045ff29f3eaa1771",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67"
+    },
+    {
+      "control": "round_each",
+      "frozen_oracle": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "cdccd273449ad50e700a17c5c0af92c9a7062203995a0491d00512ba868f8d09",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "known_defect",
+      "public_witnesses": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "8eb68db90ebcdeff3d170b2672139de4fd160a4464e8967e1261f4cbca13f71d",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3"
+    },
+    {
+      "control": "omit_bounds",
+      "frozen_oracle": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "e097ac78b25cb3feb1705fa4b4b3c1d1e32caa04db95bc8127519485b9fffd79",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "known_defect",
+      "public_witnesses": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "1d845fce5c4e1c69e777955e95b9de4fcb736ff61b57c471a522ea5d4c8d7848",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b"
+    },
+    {
+      "control": "truncate_final",
+      "frozen_oracle": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "ee86d0193439667044b444bf863b815e7b32e1d8e31314af4c9da3e5d2ba7b21",
+        "reason": null,
+        "stage": "test"
+      },
+      "independent_label": "known_defect",
+      "public_witnesses": {
+        "exit_code": 101,
+        "outcome": "failed",
+        "output_sha256": "addef9183da41d60112a70648abd23de8beef3c04c716f83a94cbb69557a2131",
+        "reason": null,
+        "stage": "test"
+      },
+      "source_sha256": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08"
+    }
+  ],
+  "false_rejections": [],
+  "human_acceptance": null,
+  "infrastructure_probes": [
+    {
+      "exit_code": null,
+      "outcome": "unknown",
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reason": "spawn_failed",
+      "stage": "compile"
+    },
+    {
+      "exit_code": 1,
+      "outcome": "unknown",
+      "output_sha256": "9e0d62dafeabb49dbe819211660a45251be13c1681630b3ed8c55bda6ea22fff",
+      "reason": "compile_failed",
+      "stage": "compile"
+    }
+  ],
+  "input_sha256": {
+    "controls/correct_i128.rs": "6ee1cbc3083c1552a0a888961158086e91f1fed583e296c88a47ca9340d4bddd",
+    "controls/correct_u128.rs": "db5a3ae671c2f7f5c276987f1bf159eed9f9344659aa2345dbeab3740aecf10f",
+    "controls/omit_bounds.rs": "f94b823b54ce01065849960b65d7f72f092e8f90e447d31f7ae83e8efda7cd0b",
+    "controls/round_each.rs": "02a8f5f5056676b2667c2055346b93389c3498ed06d6b0f5474e1045c75b8cb3",
+    "controls/sum_u64.rs": "e889bf8113282d395b880da5535159cd7dd1031bb89f0ea53a5a5174fa61aa67",
+    "controls/truncate_final.rs": "cb940389280ed3ef128a5f530d5e0da0b293a00e13f7269389602a6c353c7f08",
+    "public_witnesses.rs": "191f70f88946327485145955b4fef3758c586b97f4601104f72f4800756af9c6"
+  },
+  "limits": {
+    "memory.max": "8589934592",
+    "memory.swap.max": "0"
+  },
+  "manifest_sha256": "d9639787d265761ac2177ff1a19576d0da78e724ce41790ec7f1497c7550e30a",
+  "missed_defects": [
+    "sum_u64"
+  ],
+  "model_calls": 0,
+  "oracle_authenticity": "supplied_unverified",
+  "oracle_sha256": "dcf8247d51256f888681b604b29503304eaa7fca89a9be97c3c6f1373c92b821",
+  "public_labels_match": true,
+  "registry_access": false,
+  "runner_sha256": "f2b2152039ddce199e1d8e92944dda3b78367e74c89ddf165a916ecd2f465e9e",
+  "schema_version": 1,
+  "task_id": "t02",
+  "verdict": "unqualified"
+}

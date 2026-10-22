@@ -3,7 +3,7 @@ adr: "0034"
 title: Keep evaluator qualification and supplied usage accounting separate
 status: implemented
 created: 2026-10-15
-last_modified: 2026-10-15
+last_modified: 2026-10-21
 scope: "Offline supplied-evidence evaluation and pricing; no native execution authority."
 amended_by: []
 supersedes: []
@@ -46,6 +46,20 @@ conflicting identities. Errors omit supplied values. They retain
 `supplied_unverified` evidence. Estimated prices are not invoices, credits or
 observed savings. Existing B1, observation v2/v3, feedback and replay contracts
 remain unchanged.
+
+## Amendment: tuning case identity (2026-10-21)
+
+Evaluator qualification schema 2 adds an explicit complete supplied tuning case
+ID set to each evaluator qualification. Both IDs and output hashes are excluded
+from decision evidence across all supplied versions. Their sets are separate
+because a tuning case may produce several outputs. Empty inventories must be
+explicit and consistent; every case ID consumes the existing nested-row budget.
+
+Schema 1 remains readable. Nonempty legacy tuning hashes without case identity
+produce an inconclusive comparison rather than a conclusive held-out claim.
+Task, cohort and witness seals retain their v1 domains and serialized contents.
+Tuning inventories remain unauthenticated supplied claims. This amendment adds
+no evaluator executor, persistent store or runtime authority.
 
 ## Consequences
 

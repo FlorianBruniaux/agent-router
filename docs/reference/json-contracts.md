@@ -615,9 +615,11 @@ remain distinct from approved allocations, elapsed time and measured benefit.
 
 ## Offline evaluator and supplied pricing evidence
 
-`eval evaluator-qualification --input FILE --json` uses a separate schema-1
-contract owned by `router-eval`. Its supplied qualification witnesses,
-required-case comparisons and retained verdicts do not authenticate an oracle
+`eval evaluator-qualification --input FILE --json` accepts feature-owned schemas
+1 and 2 in `router-eval`. Schema 2 requires explicit tuning case identity sets;
+legacy tuning output hashes without case identities yield inconclusive
+comparisons. The report echoes the input schema version. Supplied qualification
+witnesses, required-case comparisons and retained verdicts do not authenticate an oracle
 or authorize adoption. See [the qualification guide](../evaluator-qualification.md).
 
 `eval supplied-usage-pricing --input FILE --json` uses a separate schema-1

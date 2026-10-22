@@ -16,6 +16,10 @@ reasons); every change was verified locally on macOS.
 
 ### Added
 
+- 2026-10-22: add a separately versioned [t02 v2 evaluator](docs/bench/t02-oracle-v2-2026-10-22/README.md) that detects unsigned sum overflow across multiple implementations (#174). Its explicit finite-fixture runtime mode preserves objective UNKNOWN, absent human acceptance, historical evidence and 8 GiB limits.
+
+- 2026-10-21: probe the frozen t02 oracle with independently labelled controls in offline Linux at unchanged 8 GiB (#174). The [probe](docs/bench/t02-oracle-qualification-2026-10-21/README.md) exposes an accepted overflow defect, so the oracle remains unqualified; historical verdicts and runtime admission are unchanged.
+
 - 2026-10-21: add an authored [finite context offline corpus](docs/bench/rtk-context-offline/README.md) with exact-output assertions, deterministic complete-JSON comparisons and signed reread accounting. Usage, cost and model success stay unknown; no native qualification or model is launched.
 
 - 2026-10-21: add explicit [finite context profile v4](docs/bench/rtk-context-native-qualification/README.md) preparation, sealed policy/catalogue binding and schema-2 terminals with exact windows and raw recall. Keep legacy v3 bytes and 8 GiB unchanged; native Linux ARM64 qualification is not executed and no model is launched.
@@ -27,6 +31,8 @@ reasons); every change was verified locally on macOS.
 - 2026-10-15: reconstruct [retained M4 acceptance evidence](docs/bench/accepted-evidence-2026-10-15/README.md) using the existing calculator: three attempts, one subsequently accepted Router revision, unknown monetary totals. No trial is rerun and no savings are inferred.
 
 ### Fixed
+
+- 2026-10-21: reject held-out comparisons that reuse supplied tuning case identities, including across evaluator versions (#174). Evaluator qualification schema 2 requires explicit tuning IDs; legacy tuning without IDs remains inconclusive. Oracle claims remain unverified.
 
 - 2026-10-15: transfer [finite-client preparation resources](docs/adr/0035-finite-client-namespace-ownership.md) into the namespace lifecycle. Retain the broker and copies until a matching locked stop proof permits disposal; refuse generic home-write dispatch and preserve ambiguous ownership. Keep 8 GiB and F12a NO_GO.
 

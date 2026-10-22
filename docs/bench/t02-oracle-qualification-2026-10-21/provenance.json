@@ -1,0 +1,23 @@
+{
+  "acceptance_sha256": "072e26ddcfb71bfd284cbced9acdd3dc3c04ae72960d48f6676f7bc339224563",
+  "binding": {
+    "corpus_seal_sha256": "a21c0d8fb839a9f1e5c731c34825fa1df61fcd3434d39ccc93713e870c715a58",
+    "task_id": "t02",
+    "external_files": {
+      "hidden.rs": "dcf8247d51256f888681b604b29503304eaa7fca89a9be97c3c6f1373c92b821"
+    },
+    "evaluator_code": {
+      "pilot.py": "12cd4f5273422bb4bbb392d1ef73009425f7a279af5013e3ef1a99499504b422",
+      "manifest-12-preparation.json": "3c2073c0aac29b669df918e136bf256a714fb45d61435bf24cde09d5e9a92590",
+      "confined_evaluation.py": "2e0daf274bf6fea370f93b3f597d2d01de5891ea678165fb13068c107ce023a4",
+      "bounded_runner.py": "ceaf9e648b32dff45a70acc753b2fd655e84e5abdc2aef35db861ca1967784b4"
+    },
+    "human_acceptance": "same_named_reviewer_blind_to_model_effort_condition"
+  },
+  "r2_preparation_seal_sha256": "7fd4cae9f7951a07fe8c822bf87a01bf24a52989f8c0198f51bbb8cd4e102dfa",
+  "r2_input_hashes_verified": true,
+  "oracle_matches_saved_corpus_entry": true,
+  "corpus_manifest_digest_verified": true,
+  "oracle_origin": "retained_uncommitted_synthetic_corpus",
+  "human_review": null
+}
