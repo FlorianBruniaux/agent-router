@@ -64,6 +64,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-21 | - |
 
+| [0045](0045-fresh-finite-entry.md) | Fresh entry through the existing finite Runtime | accepted | 2026-10-22 | 2026-10-22 | - |
+
 ## Frontmatter fields
 
 Every ADR starts with a YAML frontmatter block. GitHub renders it as a table.

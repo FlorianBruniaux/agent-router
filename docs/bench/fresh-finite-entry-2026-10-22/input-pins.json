@@ -1,0 +1,46 @@
+{
+  "tool_responses.py": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/tool_responses.py",
+    "sha256": "7a2db0fbadfaf95c72029a234d289dfa8dc124170bb1afc4dd590963efdaf755"
+  },
+  "native_tool_responses.py": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/native-catalog-adapter/native_tool_responses.py",
+    "sha256": "6e2268fca17bb2bf0f241cf959fe229cf50c19ea7f44b85b67de359c24b80ffe"
+  },
+  "verify.py": {
+    "source": "crates/router-runtime/examples/campaign/t02-v2/verify.py",
+    "sha256": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1"
+  },
+  "cases.rs": {
+    "source": "crates/router-runtime/examples/campaign/t02-v2/cases.rs",
+    "sha256": "a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd"
+  },
+  "tool-script.json": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/controller/tool-script.json",
+    "sha256": "b053ce0863ad2f7627471af22c9f1e58742e9119881e9a59d454c3bb2eadccd9"
+  },
+  "AGENTS.md": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/AGENTS.md",
+    "sha256": "9b69bb4220b34146622bd2933b82de422c753bf19350fe714a6dd261c8bc388b"
+  },
+  "HARNESS.md": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/HARNESS.md",
+    "sha256": "ae4b6d8dab29b8db8ba80d6ff0678b897ff48b65b59783b934d00f58ae8619c4"
+  },
+  "feedback-tests.rs": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/feedback-tests.rs",
+    "sha256": "abef88b65f2cc0f8439f0b96079dec95624db6106a9dcaf0a0bceff2233ca690"
+  },
+  "feedback.py": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/feedback.py",
+    "sha256": "8a62ffb5eb9c59318bd9b274d0234f11def6eeb2dafb99e5163e305f3c8fd0ca"
+  },
+  "lib.rs": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/lib.rs",
+    "sha256": "13518cf6578d789587a93e2fd904c937e16e7d38f5f02dddf5527915b4063871"
+  },
+  "statement.md": {
+    "source": "docs/bench/finite-subscription-relay-2026-10-18/controller/qualification-inputs/t02-Lm-r1-H1/candidate/statement.md",
+    "sha256": "ad289a08c170cf7c49f86d9e1545ca2015f06f45313b632b4a8c0d8b4be3f546"
+  }
+}
