@@ -189,3 +189,18 @@ fn valid_submission_preserves_risk_floor_before_platform_refusal() {
     assert_eq!(rows[0]["worker_attempts"], 0);
     assert!(!d.path().join("fresh").exists());
 }
+
+#[test]
+fn qualification_mode_is_explicit_and_refuses_other_public_tasks() {
+    let d = tempfile::tempdir().unwrap();
+    let p = d.path().join("config.json");
+    let mut c = enabled(d.path());
+    c["qualification"] = json!("fresh_t02_v1");
+    fs::write(&p, c.to_string()).unwrap();
+    let v = error(command(&p).write_stdin(format!("{}\n", submission())));
+    #[cfg(feature = "qualification-fresh-t02")]
+    assert_eq!(v["error"], "finite_entry.qualification_scope");
+    #[cfg(not(feature = "qualification-fresh-t02"))]
+    assert_eq!(v["error"], "finite_entry.config");
+    assert!(!d.path().join("fresh").exists());
+}

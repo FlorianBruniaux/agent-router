@@ -23,11 +23,11 @@ use std::{
     time::Duration,
 };
 
-fn mkdir(path: &Path) -> EntryResult<()> {
+pub(super) fn mkdir(path: &Path) -> EntryResult<()> {
     fs::DirBuilder::new().mode(0o700).create(path)?;
     Ok(())
 }
-fn save(path: &Path, bytes: &[u8]) -> EntryResult<()> {
+pub(super) fn save(path: &Path, bytes: &[u8]) -> EntryResult<()> {
     let mut f = OpenOptions::new()
         .write(true)
         .create_new(true)
@@ -376,6 +376,21 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
         None
     };
     let report = json!({"schema_version":1,"session_id":output.session_id,"submission_sha256":output.submission_sha256,"run_id":RUN,"result":result.as_ref().ok(),"runtime_error":result.is_err(),"broker_error":broker_result.is_err(),"local_requests":broker_result.as_ref().ok(),"summary":runtime.summary(RUN).ok(),"events":runtime.events().ok(),"attempts":runtime.attempt_evidence(RUN).ok(),"cleanup":runtime.cleanup_evidence(RUN).ok(),"admission":admission.status().ok(),"source_unchanged":unchanged,"artifact":artifact,"output":result_output,"human_acceptance":null,"independent_verification_performed":false,"transport":"local_scripted","provider_http_calls_by_entry":0,"parent_model_activity":"unknown"});
+    #[cfg(feature = "qualification-fresh-t02")]
+    let report = if c.qualification.is_some() {
+        recheck(&config_path, &config_raw, &root)?;
+        check_source(&source, &source_hash, &s).await?;
+        let qualification =
+            super::qualification::evaluate(&root.path, &raw, &report, &verifier, &runtime)?;
+        let mut report = report;
+        report["qualification"] = qualification;
+        report["independent_verification_performed"] = json!(true);
+        report["summary"] = serde_json::to_value(runtime.summary(RUN)?)?;
+        report["events"] = serde_json::to_value(runtime.events()?)?;
+        report
+    } else {
+        report
+    };
     save(
         &root.path.join("entry-result.json"),
         &serde_json::to_vec(&report)?,
@@ -395,7 +410,7 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
     })
 }
 
-fn read_output(path: &Path) -> EntryResult<Vec<u8>> {
+pub(super) fn read_output(path: &Path) -> EntryResult<Vec<u8>> {
     let file = OpenOptions::new()
         .read(true)
         .custom_flags(libc::O_NOFOLLOW | libc::O_NONBLOCK)

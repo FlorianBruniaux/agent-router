@@ -11,6 +11,8 @@ path = "src/main.rs"
 
 [features]
 default = ["codex", "claude"]
+# Workspace qualification only; absent from normal builds.
+qualification-fresh-t02 = ["codex"]
 codex = ["dep:adapter-codex"]
 claude = ["dep:adapter-claude"]
 opencode = ["dep:adapter-opencode"]

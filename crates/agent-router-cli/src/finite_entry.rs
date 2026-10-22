@@ -1,6 +1,8 @@
 //! Fresh, one-task local-scripted entry. No provider transport or resumable handle.
 mod input;
 mod output;
+#[cfg(feature = "qualification-fresh-t02")]
+mod qualification;
 mod routing;
 mod session;
 mod transport;
@@ -34,6 +36,9 @@ use std::{
 #[serde(deny_unknown_fields)]
 struct Config {
     schema_version: u32,
+    #[cfg(feature = "qualification-fresh-t02")]
+    #[serde(default)]
+    qualification: Option<qualification::Mode>,
     enabled: bool,
     transport: String,
     root: PathBuf,
@@ -134,6 +139,11 @@ fn validate_submission(s: &Submission, c: &Config) -> Result<NormalizedTask, Cli
     {
         return Err(fail());
     }
+    #[cfg(feature = "qualification-fresh-t02")]
+    if c.qualification.is_some() {
+        qualification::check_submission(s)
+            .map_err(|_| CliError::Product("finite_entry.qualification_scope"))?;
+    }
     Ok(task)
 }
 fn validate_config(c: &Config) -> Result<(), CliError> {
@@ -209,6 +219,14 @@ pub(crate) fn run(path: &Path, json: bool) -> Result<Outcome, CliError> {
         router_adapter_api::content_digest(&raw),
     )
     .map_err(|_| CliError::Internal)?;
+    #[cfg(feature = "qualification-fresh-t02")]
+    let output = {
+        let mut output = output;
+        if config.qualification.is_some() {
+            output.qualification = Some(qualification::identity().map_err(|_| CliError::Internal)?);
+        }
+        output
+    };
     output.emit("entry.accepted",serde_json::json!({"task":task,"model":submission.model,"effort":submission.effort,"worker_attempts":0})).map_err(|_|CliError::Internal)?;
     let rt = tokio::runtime::Runtime::new().map_err(|_| CliError::Internal)?;
     let dispatched = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));

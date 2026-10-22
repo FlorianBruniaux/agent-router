@@ -27,6 +27,8 @@ pub(super) struct Output {
     writer: Arc<Mutex<Writer>>,
     pub session_id: String,
     pub submission_sha256: String,
+    #[cfg(feature = "qualification-fresh-t02")]
+    pub(super) qualification: Option<Value>,
 }
 impl Output {
     pub(super) fn new(session_id: String, submission_sha256: String) -> EntryResult<Self> {
@@ -50,6 +52,8 @@ impl Output {
             })),
             session_id,
             submission_sha256,
+            #[cfg(feature = "qualification-fresh-t02")]
+            qualification: None,
         })
     }
     pub(super) fn emit(&self, kind: &str, fields: Value) -> EntryResult<()> {
@@ -108,13 +112,26 @@ impl Output {
         binding: &str,
         config: &str,
     ) -> EntryResult<()> {
-        let digest = content_digest(&serde_json::to_vec(
-            &json!({"domain":"finite-entry-approval-v1","phase":phase,"session_id":self.session_id,"submission_sha256":self.submission_sha256,"configuration_sha256":config,"owner_digest":binding}),
-        )?);
-        self.emit(
-            "entry.approval_required",
-            json!({"phase":phase,"approval_digest":digest}),
-        )?;
+        let binding = json!({"domain":"finite-entry-approval-v1","phase":phase,"session_id":self.session_id,"submission_sha256":self.submission_sha256,"configuration_sha256":config,"owner_digest":binding});
+        #[cfg(feature = "qualification-fresh-t02")]
+        let binding = {
+            let mut binding = binding;
+            if let Some(identity) = &self.qualification {
+                binding["qualification"] = identity.clone();
+            }
+            binding
+        };
+        let digest = content_digest(&serde_json::to_vec(&binding)?);
+        let fields = json!({"phase":phase,"approval_digest":digest});
+        #[cfg(feature = "qualification-fresh-t02")]
+        let fields = {
+            let mut fields = fields;
+            if let Some(identity) = &self.qualification {
+                fields["qualification"] = identity.clone();
+            }
+            fields
+        };
+        self.emit("entry.approval_required", fields)?;
         let raw = input
             .line(16384, Instant::now() + Duration::from_secs(15))
             .map_err(|_| "approval input")?;
@@ -212,6 +229,37 @@ mod tests {
             let result = output.approval(&mut input, "runtime", "owner", "config");
             assert_eq!(result.is_ok(), change == 0, "case {change}");
             parent.join().unwrap();
+        }
+    }
+    #[cfg(feature = "qualification-fresh-t02")]
+    #[test]
+    fn qualification_identity_is_visible_and_bound_to_both_challenges() {
+        let mut previous = None;
+        for phase in ["diagnostic", "runtime"] {
+            for identity in [
+                json!({"adapter_sha256":"first"}),
+                json!({"adapter_sha256":"second"}),
+            ] {
+                let (mut output, parent_out) = pair();
+                output.qualification = Some(identity.clone());
+                let (child, parent_in) = UnixStream::pair().unwrap();
+                let mut input = Input::from_file(File::from(OwnedFd::from(child)));
+                let parent = std::thread::spawn(move || {
+                    let mut line = String::new();
+                    BufReader::new(parent_out).read_line(&mut line).unwrap();
+                    let frame: Value = serde_json::from_str(&line).unwrap();
+                    assert_eq!(frame["qualification"], identity);
+                    let response = json!({"schema_version":1,"kind":"approve","session_id":"session","submission_sha256":"task","phase":phase,"approval_digest":frame["approval_digest"]});
+                    writeln!(&parent_in, "{response}").unwrap();
+                    frame["approval_digest"].clone()
+                });
+                output
+                    .approval(&mut input, phase, "owner", "config")
+                    .unwrap();
+                let digest = parent.join().unwrap();
+                assert_ne!(previous, Some(digest.clone()));
+                previous = Some(digest);
+            }
         }
     }
 }
