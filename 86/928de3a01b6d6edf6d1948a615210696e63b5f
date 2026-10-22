@@ -1,0 +1,117 @@
+CHANGELOG.md
+  s_13482db90a49c5::t_911e2df3b3f1f0 19-22,35-36
+crates/agent-router-cli/tests/offline_evidence.rs
+  s_ae085abdb4f4d0::t_403efe54b95292 125-151
+crates/router-eval/src/evaluator_qualification.rs
+  s_ae085abdb4f4d0::t_a5f3f8bbdad213 82-85,254,285,306,348-358,460-466,490-492
+crates/router-eval/tests/evaluator_qualification.rs
+  s_ae085abdb4f4d0::t_25b7ea16703232 383-521
+crates/router-runtime/examples/campaign/public_score.rs
+  s_ae085abdb4f4d0::t_770fc9a871f7e4 72,93
+crates/router-runtime/examples/campaign/t02-v2/acceptance.json
+  s_ae085abdb4f4d0::t_b8b48b391404d7 1-85
+crates/router-runtime/examples/campaign/t02-v2/cases.rs
+  s_ae085abdb4f4d0::t_e22592382c0e92 1-84
+crates/router-runtime/examples/campaign/t02-v2/verify.py
+  s_ae085abdb4f4d0::t_c991e5d00ddf6e 1-221
+crates/router-runtime/examples/campaign/t02_v2.rs
+  s_ae085abdb4f4d0::t_95c3ebce990a78 1-207
+crates/router-runtime/examples/finite-campaign.rs
+  s_ae085abdb4f4d0::t_b36fb3b674b5f4 7-8,480-488,704,742-749,768-772,779-786
+docs/README.md
+  s_ae085abdb4f4d0::t_8d2522af87ea06 97-98
+docs/adr/0034-offline-evaluation-evidence.md
+  s_ae085abdb4f4d0::t_e41295ab4765cd 6,50-63
+docs/adr/README.md
+  s_ae085abdb4f4d0::t_eb4567ca2e48b1 51
+docs/bench/evaluator-tuning-identity-2026-10-21.md
+  s_ae085abdb4f4d0::t_9605293a369981 1-59
+docs/bench/t02-oracle-qualification-2026-10-21/README.md
+  s_ae085abdb4f4d0::t_536c211747304b 1-133
+docs/bench/t02-oracle-qualification-2026-10-21/controls.json
+  s_ae085abdb4f4d0::t_fb1bc11a732c30 1-9
+docs/bench/t02-oracle-qualification-2026-10-21/controls/correct_i128.rs
+  s_ae085abdb4f4d0::t_d587ba4215a787 1-13
+docs/bench/t02-oracle-qualification-2026-10-21/controls/correct_u128.rs
+  s_ae085abdb4f4d0::t_f1cbf0348b1a7d 1-17
+docs/bench/t02-oracle-qualification-2026-10-21/controls/omit_bounds.rs
+  s_ae085abdb4f4d0::t_f498df1d9f8c32 1-10
+docs/bench/t02-oracle-qualification-2026-10-21/controls/round_each.rs
+  s_ae085abdb4f4d0::t_d9994c680d7753 1-19
+docs/bench/t02-oracle-qualification-2026-10-21/controls/sum_u64.rs
+  s_ae085abdb4f4d0::t_79d5abbe6d7ee9 1-19
+docs/bench/t02-oracle-qualification-2026-10-21/controls/truncate_final.rs
+  s_ae085abdb4f4d0::t_53794b28e60f84 1-13
+docs/bench/t02-oracle-qualification-2026-10-21/isolation.json
+  s_ae085abdb4f4d0::t_d9428e6a7c363a 1-24
+docs/bench/t02-oracle-qualification-2026-10-21/labels.json
+  s_ae085abdb4f4d0::t_f821205e07f3ef 1-39
+docs/bench/t02-oracle-qualification-2026-10-21/provenance.json
+  s_ae085abdb4f4d0::t_71e121b3c6546c 1-23
+docs/bench/t02-oracle-qualification-2026-10-21/public_witnesses.rs
+  s_ae085abdb4f4d0::t_c144a55cc133f0 1-66
+docs/bench/t02-oracle-qualification-2026-10-21/qualify.py
+  s_ae085abdb4f4d0::t_12603eaa73c6eb 1-188
+docs/bench/t02-oracle-qualification-2026-10-21/result.json
+  s_ae085abdb4f4d0::t_55cd74b42fd15c 1-169
+docs/bench/t02-oracle-qualification-2026-10-21/test_qualify.py
+  s_ae085abdb4f4d0::t_0a009d3d914a56 1-125
+docs/bench/t02-oracle-qualification-2026-10-21/validation.json
+  s_ae085abdb4f4d0::t_12fc807a0fdc12 1-147
+docs/bench/t02-oracle-v2-2026-10-22/README.md
+  s_ae085abdb4f4d0::t_55b0e2d30ce09e 1-144
+docs/bench/t02-oracle-v2-2026-10-22/distribution.json
+  s_ae085abdb4f4d0::t_d4d98693a20474 1-28
+docs/bench/t02-oracle-v2-2026-10-22/frozen-sources.json
+  s_ae085abdb4f4d0::t_0ce46c46de0a51 1-10
+docs/bench/t02-oracle-v2-2026-10-22/isolation.json
+  s_ae085abdb4f4d0::t_4642c588e62a72 1-23
+docs/bench/t02-oracle-v2-2026-10-22/native-qualification.json
+  s_ae085abdb4f4d0::t_a75821d9b657da 1-137
+docs/bench/t02-oracle-v2-2026-10-22/native-qualification.md
+  s_ae085abdb4f4d0::t_a3b886b3bffa0d 1-63
+docs/bench/t02-oracle-v2-2026-10-22/native-receipt.json
+  s_ae085abdb4f4d0::t_b3953144ea82d9 1-85
+docs/bench/t02-oracle-v2-2026-10-22/qualification.json
+  s_ae085abdb4f4d0::t_7436c9cbfbae28 1-289
+docs/bench/t02-oracle-v2-2026-10-22/qualify.py
+  s_ae085abdb4f4d0::t_f8ffb6109c201f 1-99
+docs/bench/t02-oracle-v2-2026-10-22/reserved-review.json
+  s_ae085abdb4f4d0::t_79122127935f24 1-127
+docs/bench/t02-oracle-v2-2026-10-22/test_oracle.py
+  s_ae085abdb4f4d0::t_1ec847d6d55307 1-69
+docs/bench/t02-oracle-v2-2026-10-22/validation.json
+  s_ae085abdb4f4d0::t_1a5d61305d508a 1-136
+docs/evaluator-qualification.md
+  s_ae085abdb4f4d0::t_e4375f56daf884 37,64-65,87-111,139-142,151-164
+docs/reference/json-contracts.md
+  s_ae085abdb4f4d0::t_c262a1fa03f407 618-622
+scripts/package-core.py
+  s_13482db90a49c5::t_93b574c30d9424 28-30,217
+scripts/test-package-core.py
+  s_ae085abdb4f4d0::t_c4c2ed7e08ac9d 253-273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "86928de3a01b6d6edf6d1948a615210696e63b5f",
+  "prompts": {},
+  "sessions": {
+    "s_13482db90a49c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15dfd-e5fe-7943-98a1-67ea3d70ca04",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ae085abdb4f4d0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a11a1a-c642-7b83-a2aa-4b559d66ea06",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
