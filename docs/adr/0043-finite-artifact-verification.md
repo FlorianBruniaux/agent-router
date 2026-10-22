@@ -3,7 +3,7 @@ adr: "0043"
 title: Explicit verification of a finite private artifact
 status: accepted
 created: 2026-10-21
-last_modified: 2026-10-21
+last_modified: 2026-10-22
 scope: "In-memory explicit verifier handle; no automatic evaluator, publication or provider authority"
 amended_by: []
 supersedes: []
@@ -69,3 +69,22 @@ The [fixed public-score example caller](../bench/finite-public-evaluation-2026-1
 opts in to executing the embedded reviewed checker after worker cleanup. It
 records technical validation only; the frozen campaign objective stays UNKNOWN.
 Its private receipt is produced by that invocation, not imported as authority.
+
+## Amendment: retain accepted attestations, 2026-10-22
+
+The mutable current verification alone discarded a superseded inconclusive
+record, while its event retained only an evidence digest. The shared Runtime
+transaction now appends the full bounded record as `verification.attested.v1`
+before commit, preserving the current projection and existing digest event.
+This applies to generic and finite explicit verifiers. Reuse the event chain
+and its private storage instead of adding a history database or migration.
+
+Before overwriting a projection different from the latest full record, retain it
+as `verification.legacy_snapshot.v1`, explicitly an observation at update time.
+Compare the full record, including when a legacy writer ran between two new
+writers with the same evidence digest and different outcomes.
+Earlier lost verdicts remain UNKNOWN; opening a store does not synthesize
+history. See the [event contract](../reference/json-contracts.md#durable-verification-attestations).
+Rollback, damaged-chain refusal, size limits and reopen tests cover the write.
+No authority, sandbox or human-acceptance semantics change. The prior native
+qualification remains tied to its recorded source, not this amended writer.

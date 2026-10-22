@@ -28,6 +28,8 @@ reasons); every change was verified locally on macOS.
 
 ### Fixed
 
+- 2026-10-22: retain complete Runtime attestations in the existing private event journal when a new verdict supersedes an inconclusive one (#132/#174). Commit history, current verdict and transition atomically; preserve legacy current records as observations at update time without inventing lost history.
+
 - 2026-10-21: reject held-out comparisons that reuse supplied tuning case identities, including across evaluator versions (#174). Evaluator qualification schema 2 requires explicit tuning IDs; legacy tuning without IDs remains inconclusive. Oracle claims remain unverified.
 
 - 2026-10-15: transfer [finite-client preparation resources](docs/adr/0035-finite-client-namespace-ownership.md) into the namespace lifecycle. Retain the broker and copies until a matching locked stop proof permits disposal; refuse generic home-write dispatch and preserve ambiguous ownership. Keep 8 GiB and F12a NO_GO.
