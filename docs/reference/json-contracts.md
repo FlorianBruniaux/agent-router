@@ -693,6 +693,41 @@ executes its embedded checker and records validation Passed with objective
 UNKNOWN. Its local evidence files are not a new product JSON-import contract.
 
 
+## Durable verification attestations
+
+Each accepted Runtime verification now appends `verification.attested.v1` to
+its existing private event chain. `detail` is a serialized `VerificationRecord`:
+verifier, evidence digest, optional artifact digest, validation and objective.
+The event envelope binds the run, sequence, state and preceding event hash. Its
+2 KiB detail limit is unchanged. The current `verifications` projection,
+attestation event, existing digest-only `verification.recorded` event and any
+resulting state transition commit in one SQLite transaction. An append or
+transition failure leaves no partial verdict or history.
+
+A later permitted inconclusive-to-conclusive update retains every new full
+attestation; refused updates append none. A valid chain tail is required before
+the write. The existing full integrity check and reopening verify the retained
+chain; incremental checks retain the trust limits of ADR 0018. Hash chaining
+is local integrity evidence, not authenticated evaluator or human identity.
+
+Older builds emitted only `verification.recorded` with an evidence digest.
+When the current record differs from the latest retained full record (or none
+is retained), a
+`verification.legacy_snapshot.v1` event preserves the observed current
+`VerificationRecord` before it is overwritten. That snapshot is recorded now;
+it is not the original event or a reconstruction of lost historical verdicts.
+No events are backfilled merely by reading or opening the store. Missing earlier
+record contents remain UNKNOWN. Consumers must keep the snapshot distinct from
+new attestations and must not infer a complete pre-upgrade history. This also
+covers a legacy writer used between two new writers: the complete record is
+compared, since the same evidence digest can accompany different outcomes.
+
+Existing `Runtime::events` and run-event readers expose these additive events;
+`verification_record` still returns the current projection. There is no new
+store, schema migration, verifier-import path, human verdict or execution/
+publication permission. The finite fixture's objective remains UNKNOWN until
+an explicitly authorized verifier establishes it.
+
 ## Qualified local capture observation
 
 `observe --schema-version 3` adds bounded local capture timing rows while v1 stays

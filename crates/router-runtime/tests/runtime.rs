@@ -3398,8 +3398,24 @@ async fn inconclusive_verification_can_be_replaced_but_a_conclusive_one_cannot()
         runtime.record_verification(&pending, record("c", VerificationOutcome::Failed)),
         Err(RuntimeError::Verification)
     ));
-    assert_eq!(runtime.verification_record("run-1").unwrap(), Some(second));
+    assert_eq!(
+        runtime.verification_record("run-1").unwrap(),
+        Some(second.clone())
+    );
     assert_eq!(runtime.summary("run-1").unwrap().state, RunState::Verified);
+    // The current projection may advance, but both full attestations survive
+    // reopening. A refused third record cannot enter the durable history.
+    let before = runtime.events().unwrap();
+    drop(runtime);
+    let reopened = fixture.runtime();
+    assert_eq!(reopened.events().unwrap(), before);
+    let history: Vec<VerificationRecord> = before
+        .iter()
+        .filter(|event| event.run_id == "run-1" && event.kind == "verification.attested.v1")
+        .map(|event| serde_json::from_str(&event.detail).unwrap())
+        .collect();
+    assert_eq!(history, vec![first, second.clone()]);
+    assert_eq!(reopened.verification_record("run-1").unwrap(), Some(second));
 }
 
 #[tokio::test]

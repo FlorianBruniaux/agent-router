@@ -20,6 +20,8 @@ mod escalation;
 mod observation;
 pub use observation::{observe_run, observe_run_v2, observe_run_v3};
 mod preparation;
+#[cfg(test)]
+mod verification_history_tests;
 pub(crate) use escalation::EscalationHistory;
 pub(crate) use preparation::Preparation;
 
@@ -703,7 +705,7 @@ impl Store {
         next: Option<(RunState, Option<RunFailure>)>,
     ) -> Result<RunSummary> {
         let mut db = self.lock()?;
-        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
         if run.state != RunState::Verifying || record.artifact_sha256 != run.artifact_sha256 {
             return Err(RuntimeError::Verification);
@@ -728,10 +730,38 @@ impl Store {
             if !is_inconclusive(&old) {
                 return Err(RuntimeError::Verification);
             }
+            // Old builds retained only the evidence digest in their events.
+            // Preserve their current projection before replacing it, explicitly
+            // as a snapshot observed now, never as reconstructed old history.
+            // A pre-v1 writer may also have updated the projection after an
+            // earlier v1 attestation. Presence alone does not retain its value.
+            let latest: Option<String> = tx.query_row(
+                "SELECT detail FROM events WHERE run_id=?1 AND kind IN ('verification.attested.v1','verification.legacy_snapshot.v1') ORDER BY sequence DESC LIMIT 1",
+                [id], |row| row.get(0),
+            ).optional()?;
+            let latest = latest
+                .map(|raw| serde_json::from_str::<router_types::VerificationRecord>(&raw))
+                .transpose()?;
+            if latest.as_ref() != Some(&old) {
+                append(
+                    &tx,
+                    &run,
+                    "verification.legacy_snapshot.v1",
+                    &serde_json::to_string(&old)?,
+                )?;
+            }
         }
         tx.execute(
             "INSERT OR REPLACE INTO verifications VALUES(?1,?2)",
             params![id, serde_json::to_string(record)?],
+        )?;
+        // Keep the full attestation in the existing append-only chain, in
+        // the same transaction as its mutable projection and state change.
+        append(
+            &tx,
+            &run,
+            "verification.attested.v1",
+            &serde_json::to_string(record)?,
         )?;
         append(&tx, &run, "verification.recorded", &record.evidence_sha256)?;
         if let Some((state, failure)) = next {
