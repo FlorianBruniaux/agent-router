@@ -33,7 +33,11 @@ use router_adapter_api::{content_digest, strict_json_limited};
 use router_runtime::{FiniteClientVerifier, Runtime};
 use router_types::{VerificationOutcome, VerificationRecord};
 use serde_json::json;
-use std::{path::Path, process::Command, time::Duration};
+use std::{
+    path::Path,
+    process::Command,
+    time::{Duration, Instant},
+};
 mod process;
 
 const ENGINE: &[u8] = include_bytes!("../../../router-runtime/examples/campaign/t02-v2/verify.py");
@@ -94,13 +98,28 @@ fn validate_receipt(raw: &[u8], report: &[u8]) -> EntryResult<VerificationRecord
     })
 }
 
+pub(super) fn timeout(plan: &router_types::WorkflowPlan) -> EntryResult<Duration> {
+    let milliseconds = plan
+        .nodes
+        .iter()
+        .find(|node| node.id == "verify")
+        .map(|node| node.budget.max_elapsed_ms)
+        .filter(|value| *value > 0)
+        .ok_or("verification budget unavailable")?;
+    Ok(Duration::from_millis(milliseconds))
+}
+
 pub(super) fn evaluate(
     root: &Path,
     submission: &[u8],
     report: &Value,
     verifier: &FiniteClientVerifier<'_>,
     runtime: &Runtime,
+    timeout: Duration,
 ) -> EntryResult<Value> {
+    let deadline = Instant::now()
+        .checked_add(timeout)
+        .ok_or("verification deadline")?;
     let patch = verifier.artifact()?;
     let baseline: Value = serde_json::from_slice(BASELINE)?;
     let task: Value = serde_json::from_slice(submission)?;
@@ -157,12 +176,15 @@ pub(super) fn evaluate(
         .env("HOME", &capsule)
         .env("TMPDIR", &capsule)
         .current_dir(&capsule);
-    process::run(command, Duration::from_secs(60))?;
+    process::run(command, deadline)?;
     let raw = super::session::read_output(&capsule.join("receipt.json"))?;
     let record = validate_receipt(&raw, &raw_report)?;
     // Preserve the exact independently checked receipt before changing the durable projection.
     super::session::save(&root.join("fresh-t02-receipt.json"), &raw)?;
     std::fs::File::open(root)?.sync_all()?;
+    if Instant::now() >= deadline {
+        return Err("verification deadline exhausted before recording".into());
+    }
     let summary = verifier.record(record.clone())?;
     runtime.verify_integrity()?;
     let history: Vec<VerificationRecord> = runtime
@@ -188,6 +210,37 @@ mod tests {
     use super::*;
     use router_adapter_api::content_digest;
     use serde_json::json;
+    #[test]
+    fn checker_uses_only_the_planned_verification_budget() {
+        let value: Value = serde_json::from_slice(include_bytes!(
+            "../../../../fixtures/examples/phase-request.json"
+        ))
+        .unwrap();
+        let mut task: router_types::NormalizedTask =
+            serde_json::from_value(value["task"].clone()).unwrap();
+        for (whole, verify) in [(2000, 1000), (20000, 10000), (60000, 30000)] {
+            task.budget.max_elapsed_ms = whole;
+            let plan = router_workflow::build_plan(
+                &task,
+                router_types::WorkflowPreset::DirectSafe,
+                router_workflow::PlanLimits::default(),
+            )
+            .unwrap();
+            assert_eq!(timeout(&plan).unwrap(), Duration::from_millis(verify));
+            let mut missing = plan.clone();
+            missing.nodes.retain(|n| n.id != "verify");
+            assert!(timeout(&missing).is_err());
+            let mut exhausted = plan;
+            exhausted
+                .nodes
+                .iter_mut()
+                .find(|n| n.id == "verify")
+                .unwrap()
+                .budget
+                .max_elapsed_ms = 0;
+            assert!(timeout(&exhausted).is_err());
+        }
+    }
     #[test]
     fn receipt_cannot_promote_substituted_or_incomplete_evidence() {
         let baseline: Value = serde_json::from_slice(include_bytes!(

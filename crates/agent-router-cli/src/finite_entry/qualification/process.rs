@@ -7,7 +7,10 @@ use std::{
 };
 
 #[cfg(target_os = "linux")]
-pub(super) fn run(mut command: Command, timeout: Duration) -> EntryResult<()> {
+pub(super) fn run(mut command: Command, until: Instant) -> EntryResult<()> {
+    if Instant::now() >= until {
+        return Err("qualification deadline exhausted".into());
+    }
     command
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -15,8 +18,10 @@ pub(super) fn run(mut command: Command, timeout: Duration) -> EntryResult<()> {
         .process_group(0);
     let mut child = command.spawn()?;
     let pid = rustix::process::Pid::from_child(&child);
-    let until = Instant::now() + timeout;
     let status = loop {
+        if Instant::now() >= until {
+            break None;
+        }
         use rustix::process::{WaitId, WaitIdOptions as W, waitid};
         match waitid(WaitId::Pid(pid), W::EXITED | W::NOHANG | W::NOWAIT) {
             Ok(Some(status)) => break Some(status),
@@ -58,7 +63,7 @@ fn finish(
 #[cfg(not(target_os = "linux"))]
 pub(super) fn run(
     _command: std::process::Command,
-    _timeout: std::time::Duration,
+    _deadline: std::time::Instant,
 ) -> EntryResult<()> {
     Err("fresh qualification requires Linux".into())
 }
@@ -66,6 +71,15 @@ pub(super) fn run(
 #[cfg(all(test, target_os = "linux"))]
 mod tests {
     use super::*;
+    #[test]
+    fn staging_that_exhausted_the_deadline_cannot_spawn_a_checker() {
+        let d = tempfile::tempdir().unwrap();
+        let marker = d.path().join("marker");
+        let mut command = Command::new("/usr/bin/touch");
+        command.arg(&marker);
+        assert!(run(command, Instant::now() - Duration::from_secs(1)).is_err());
+        assert!(!marker.exists());
+    }
     #[test]
     fn refused_signal_returns_unknown_without_waiting_for_live_child() {
         let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
@@ -111,7 +125,8 @@ mod tests {
             let mut command = Command::new("/bin/sh");
             command.args(["-c", "sleep 30 & echo $! > descendant; echo $$ > leader; while [ ! -f release ]; do sleep 0.01; done; exit \"$1\"", "fixture"])
                 .arg(code.unwrap_or(0).to_string()).current_dir(d.path());
-            let runner = std::thread::spawn(move || run(command, Duration::from_secs(3)));
+            let runner =
+                std::thread::spawn(move || run(command, Instant::now() + Duration::from_secs(3)));
             let leader = ready_pid(&leader_path);
             let descendant = ready_pid(&descendant_path);
             // The observer is outside the runner's process group. It releases
@@ -141,7 +156,7 @@ mod tests {
         assert!(
             run(
                 Command::new("/no-such-fresh-checker"),
-                Duration::from_secs(1)
+                Instant::now() + Duration::from_secs(1)
             )
             .is_err()
         );
@@ -150,7 +165,7 @@ mod tests {
             "-c",
             "dd if=/dev/zero bs=65536 count=4; dd if=/dev/zero bs=65536 count=4 >&2",
         ]);
-        assert!(run(command, Duration::from_secs(2)).is_ok());
+        assert!(run(command, Instant::now() + Duration::from_secs(2)).is_ok());
     }
     #[test]
     fn child_success_requires_real_execution_and_failed_exit_refuses() {
@@ -159,12 +174,12 @@ mod tests {
         let mut c = Command::new("/bin/sh");
         c.args(["-c", "printf done > \"$1\"", "fixture"])
             .arg(&marker);
-        let result = run(c, Duration::from_secs(2));
+        let result = run(c, Instant::now() + Duration::from_secs(2));
         assert!(result.is_ok(), "{result:?}");
         assert_eq!(std::fs::read(marker).unwrap(), b"done");
         let mut c = Command::new("/bin/sh");
         c.args(["-c", "exit 9"]);
-        assert!(run(c, Duration::from_secs(2)).is_err());
+        assert!(run(c, Instant::now() + Duration::from_secs(2)).is_err());
     }
     #[test]
     fn timed_out_child_is_stopped_before_returning_unknown() {
@@ -173,7 +188,7 @@ mod tests {
         let mut c = Command::new("/bin/sh");
         c.args(["-c", "echo $$ > \"$1\"; sleep 30", "fixture"])
             .arg(&marker);
-        assert!(run(c, Duration::from_millis(100)).is_err());
+        assert!(run(c, Instant::now() + Duration::from_millis(100)).is_err());
         assert!(marker.exists(), "real owned child must have started");
         let pid: i32 = std::fs::read_to_string(marker)
             .unwrap()
@@ -194,6 +209,12 @@ fn unsupported_host_never_starts_the_child() {
     let marker = d.path().join("marker");
     let mut c = std::process::Command::new("/usr/bin/touch");
     c.arg(&marker);
-    assert!(run(c, std::time::Duration::from_secs(2)).is_err());
+    assert!(
+        run(
+            c,
+            std::time::Instant::now() + std::time::Duration::from_secs(2)
+        )
+        .is_err()
+    );
     assert!(!marker.exists());
 }

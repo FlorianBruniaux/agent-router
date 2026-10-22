@@ -82,8 +82,11 @@ case inventory and compiler hashes. Existing configuration rechecks remain.
 After the worker namespace has ended, the owning process uses its existing
 `FiniteClientVerifier` handle to capture the patch. It refuses any source,
 candidate or patch different from the reviewed fixture before compiling.
-A fresh private capsule runs the fixed checker with a 60-second wall limit and
-bounded reads. Its receipt names the actual fresh session, exact submission,
+A fresh private capsule runs the fixed checker within the existing verify
+node time budget (30 seconds for the 60-second qualification task), with
+bounded reads. Staging consumes that same deadline. Missing or exhausted
+verification budgets refuse before spawning or recording an attestation; the
+separate bounded cleanup wait grants no more checker work time. Its receipt names the actual fresh session, exact submission,
 run, route, pre-verification report, patch, candidate and checking assets.
 No campaign identities are substituted. All 18 candidate cases must pass;
 the original source must retain its known failures. The receipt is retained

@@ -172,6 +172,8 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
         .ok_or("execute node")?;
     let owner = execute.owner.clone();
     let execution_budget = execute.budget.clone();
+    #[cfg(feature = "qualification-fresh-t02")]
+    let verification_timeout = super::qualification::timeout(&plan)?;
     let store = root.path.join("runtime");
     mkdir(&store)?;
     let policy = AdmissionPolicy {
@@ -380,8 +382,14 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
     let report = if c.qualification.is_some() {
         recheck(&config_path, &config_raw, &root)?;
         check_source(&source, &source_hash, &s).await?;
-        let qualification =
-            super::qualification::evaluate(&root.path, &raw, &report, &verifier, &runtime)?;
+        let qualification = super::qualification::evaluate(
+            &root.path,
+            &raw,
+            &report,
+            &verifier,
+            &runtime,
+            verification_timeout,
+        )?;
         let mut report = report;
         report["qualification"] = qualification;
         report["independent_verification_performed"] = json!(true);

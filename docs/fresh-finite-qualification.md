@@ -9,6 +9,10 @@ Use only the fixed public t02 source and reviewed corrected candidate.
 The ordinary build rejects this configuration. No arbitrary oracle command,
 external receipt, account or campaign registry is accepted.
 
+The checker inherits the time budget of the existing verify node, including
+the 30-second allocation for the 60-second public task. It cannot borrow the
+worker allocation or fall back to a fixed larger timeout.
+
 The diagnostic and runtime approval frames include `qualification` with the
 checker identities. The parent must inspect those fields before echoing each
 fresh digest. The normal scripted transport and existing private access rules
