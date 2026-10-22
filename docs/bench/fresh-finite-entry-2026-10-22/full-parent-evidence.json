@@ -1,0 +1,324 @@
+{
+  "schema_version": 1,
+  "scope": "one fresh positive session with corrected authored parent and public artifact acceptance in that same parent process",
+  "product_revision": "9c8ee4fa06eade652b1fdae3bbbd20a900baa29f",
+  "product_source_changed": false,
+  "fresh_session_distinct_from_prior_attempt": true,
+  "source_binding": {
+    "source_head": "9c8ee4fa06eade652b1fdae3bbbd20a900baa29f",
+    "build_source_archive_sha256": "b016a966db9aa8323d8adeb9574231cdac0339402aebef073ba0984d2125720a",
+    "build_source_manifest_sha256": "e4bd4e2774f6fc8fdb4b8b2c02cccb554f3ab159b53611c212e74cab538a8ee1",
+    "compiled_source_files_checked": 469,
+    "compiled_source_manifest_sha256": "a59e902091f8d9827f276342dd179f4e90acbe59f2e3222457f0a3543ff4d050",
+    "unchanged_core12": {
+      "crates/agent-router-cli/Cargo.toml": "5b26f12100c76ea85cfdea31a21edb840e319cc2ed30039c1539b1c7b5b796f9",
+      "crates/agent-router-cli/src/command.rs": "e6df889e5568e6a4375169518cb78d3614f3e150003d260945d2323ff5b7bf9c",
+      "crates/agent-router-cli/src/finite_entry.rs": "4ea4ce52c8b9a0238715a3b7dc9e0d060cf3e4135de16db487bad4ecd8afc06a",
+      "crates/agent-router-cli/src/finite_entry/input.rs": "39c362eeb14f4515411736934f51e8ba581cef188814fe796e1c7a8d28913307",
+      "crates/agent-router-cli/src/finite_entry/output.rs": "1d4c4b1394b754467929c619c3eadfd3d81cc13d94bf0bc0718bb77a18df74fb",
+      "crates/agent-router-cli/src/finite_entry/routing.rs": "67bfb5d9de9c861a61ecc2ef49ebe9659aba28b9914eb6055b9cc38b764ca8fe",
+      "crates/agent-router-cli/src/finite_entry/session.rs": "f5e6bcee6b9e8ea256d818bee02079fee1602f2a20488c6e63dc73f545d1c62e",
+      "crates/agent-router-cli/src/finite_entry/transport.rs": "91a0a18b0afc096eb76dc27525e47f49505e7176623c12d0e68b7f5a30b44b90",
+      "crates/agent-router-cli/src/main.rs": "42dd17783b31e76ca17454fc0d7019e91e143cbf2722895ca8d54d3bc21e05d4",
+      "crates/agent-router-cli/tests/finite_entry.rs": "f128ad026d3b100e88bf33e281562af18fecf0e0cb0a5e499cdf68c52ebcab58",
+      "docs/adr/0045-fresh-finite-entry.md": "8edd15ffbbb3c1f01b8c50e02ed7b6d519150b294238558bbe280c01b550b16e",
+      "docs/adr/README.md": "a6d732cd18f8d7e516610b2ddd2f7cdf53e9d946d1f760c3a17ae86d64daaaab"
+    },
+    "controller_sha256": "22b4dce1cc95224faef78b7123fbe39527dd31b9086d23dab1ce7bffd6ca7324",
+    "qualification": "one complete authored positive, no refusal replay or real model",
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "no_host_mounts": true,
+    "network": "none"
+  },
+  "local_preflight": {
+    "observed_at": "2026-10-22T19:44:10.108471+00:00",
+    "source_head": "9c8ee4fa06eade652b1fdae3bbbd20a900baa29f",
+    "compiled_source_files_checked": 469,
+    "core_paths_checked": 12,
+    "controller_sha256": "22b4dce1cc95224faef78b7123fbe39527dd31b9086d23dab1ce7bffd6ca7324",
+    "driver_review_digest": "0e1a0f64410fde4090c7c74d08197a4be5a4b3f989a4db6551184e54fc2f8842",
+    "host_checks": [
+      {
+        "attempt": 1,
+        "result": "failed",
+        "reason": "tests invoked before preparation command completed: orchestrate module not yet present",
+        "parent_tests_passed": 8
+      },
+      {
+        "attempt": 2,
+        "result": "failed",
+        "reason": "terminal sandbox refused killpg of authored local child in oversized-line test",
+        "tests_passed": 9,
+        "tests_errored": 1
+      },
+      {
+        "attempt": 3,
+        "result": "passed",
+        "test_count": 10,
+        "execution": "per-command authorization to terminate own test children, no file grants to worker"
+      }
+    ],
+    "orphan_check": {
+      "pid": 83784,
+      "ps_exit_code": 1,
+      "output": "",
+      "meaning": "named child no longer exists"
+    },
+    "native_started": false,
+    "real_models_started": 0,
+    "private_access_expanded": false
+  },
+  "status": "passed",
+  "parent": {
+    "case": "positive",
+    "status": "passed",
+    "error": null,
+    "error_traceback": null,
+    "exit_code": 3,
+    "child_exit_code_after_stop": 3,
+    "session_id": "f0f5b52320cb5cb0c52f32f40418df97786ff38658f8021279f530ccd50b0b7a",
+    "phases": [
+      "diagnostic",
+      "runtime"
+    ],
+    "worker_requests": 6,
+    "observed_tool_results": 4,
+    "distinct_permission_denials_observed": 1,
+    "permission_denial_history_appearances": 5,
+    "model_calls": 0,
+    "provider": "authored_local_sse",
+    "not_a_benchmark_trial": true
+  },
+  "runtime_summary": {
+    "approval_digest": "c4d744ed0354b4977f0e332c3fedda56e12d5440df189c650ec4f0a4c48eee70",
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "attempts": 1,
+    "definition_hash": "af7e17867b804bbdbfc43ecd19e75d5fd0890d5babd59f2927a6c0d070601725",
+    "failure": null,
+    "node_id": "execute",
+    "output_retention": {
+      "mode": "private_artifacts",
+      "retention_seconds": 3600
+    },
+    "plan_id": "e451221f03dede8a02ed05abd748eeea1cd35ab2eb22ef89947616a24e64df1f",
+    "receipt_id": "1013629fda58e7a678a0df68d2187c3046795308026db34af0f2588ac90494df",
+    "run_id": "entry",
+    "state": "verifying"
+  },
+  "complete_runtime_summary_sha256": "9ec5611c1c6d11efded92ba2de94fc4c66c8750e7cefe2100529f720de4909c3",
+  "runtime_validation": "unknown",
+  "runtime_objective": "unknown",
+  "cleanup": "namespace_terminated",
+  "admission": {
+    "released": 1
+  },
+  "source_unchanged": true,
+  "public_acceptance": {
+    "source_sha256": "13518cf6578d789587a93e2fd904c937e16e7d38f5f02dddf5527915b4063871",
+    "candidate_sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "cases_sha256": "a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd",
+    "verifier_sha256": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1",
+    "results": {
+      "source": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "FAILED",
+          "t02_v2_cost_above_u64": "FAILED",
+          "t02_v2_cost_limit": "FAILED",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "FAILED",
+          "t02_v2_negative_overflow": "FAILED",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "FAILED",
+          "t02_v2_round_cost": "FAILED",
+          "t02_v2_round_latency": "FAILED",
+          "t02_v2_round_skill": "FAILED",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "FAILED",
+          "t02_v2_sum_before_division": "FAILED",
+          "t02_v2_wide_sums": "FAILED"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "b98b0070af292e4d43661f5d11458e28a3da40f6ca4b23aafd1aeec8b1d56829"
+      },
+      "candidate": {
+        "outcome": "passed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 0,
+        "stdout_sha256": "81ae45e0ce28a8b72af43b913977209dab18327a020c92221a12e4f35bd2a399"
+      }
+    },
+    "human_acceptance": null,
+    "model_calls": 0,
+    "not_a_benchmark_trial": true,
+    "runtime_verdict_modified": false
+  },
+  "linux": {
+    "image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+    "programs": {
+      "agent-router": "36f5380a44292a026a585efa0e682e588c227404d9f0fcf199ffc3cba2b85324",
+      "client": "2cc1d908a19ac7348745b657f90e0b411dc46594a42907b8f5755cb783a5bc1d",
+      "helper": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+      "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+      "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33"
+    },
+    "driver_digest": "0e1a0f64410fde4090c7c74d08197a4be5a4b3f989a4db6551184e54fc2f8842",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "1154895872",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "network": "none",
+    "host_mounts": [],
+    "root_read_only": true,
+    "cell_stopped": true
+  },
+  "retained": {
+    "files": {
+      "positive/argv.json": {
+        "sha256": "4bfabcbb86026637f0a70ba3e5e87d347216dac1b9132ec61805b4dba330639f",
+        "bytes": 385
+      },
+      "positive/config-preimage.json": {
+        "sha256": "c38f0931bb01161a53fa8b4150cbcbb04f1edf14d33ac1ff54257d9408060a81",
+        "bytes": 1078
+      },
+      "positive/config.json": {
+        "sha256": "c38f0931bb01161a53fa8b4150cbcbb04f1edf14d33ac1ff54257d9408060a81",
+        "bytes": 1078
+      },
+      "positive/frames.json": {
+        "sha256": "b69382da150e9fba3e496c002d1b011b005587fff21823f0a5c05d8efcf1d9d9",
+        "bytes": 166452
+      },
+      "positive/independent-readback.json": {
+        "sha256": "d05e7e632e10a438641d48ea5f948e0f4dd1e1767384cdd987396f1a4490a920",
+        "bytes": 8893
+      },
+      "positive/native-discovery-observations.json": {
+        "sha256": "436aea551ca9620048ed89faf4137d437db5540190b273d2719bc042e81f158d",
+        "bytes": 464
+      },
+      "positive/native-discovery.stderr": {
+        "sha256": "3087f13b0d34323fbc05177ef68ae53dc523d9acaf6c0c63852825479db5af2a",
+        "bytes": 104
+      },
+      "positive/native-discovery.stdout": {
+        "sha256": "9c0b780448b652dfa44e69451664affc27518c558d6754d5c335aae733bba055",
+        "bytes": 377
+      },
+      "positive/parent-result.json": {
+        "sha256": "4de1147e2d009812470d159241d764691257b277f683140bf48041ff9a79314e",
+        "bytes": 513
+      },
+      "positive/public-acceptance.json": {
+        "sha256": "1a34e2dc11d44954317258ba3e57e0820a5cfb5de7fbfd376cfd2c9d899d39c7",
+        "bytes": 2480
+      },
+      "positive/request-01.json": {
+        "sha256": "c35cbcc759a291d293f8d4982550e8de6b5f0184ec5f27d3abb18af017cf5df6",
+        "bytes": 9213
+      },
+      "positive/request-02.json": {
+        "sha256": "85b4a40092d2f4a5c845e19095ba08daa36fd4fd349f48807ec47f768eac5937",
+        "bytes": 9805
+      },
+      "positive/request-03.json": {
+        "sha256": "f0a877e52e712a6c697115aa7031855674270f90d4e0455bd6a37f899647c91f",
+        "bytes": 11017
+      },
+      "positive/request-04.json": {
+        "sha256": "51c8192e2abf07d339e29a9aeaa4f32ad47db4e8148337134ac711ecb7926e92",
+        "bytes": 12929
+      },
+      "positive/request-05.json": {
+        "sha256": "6dab9f23a870192050c8da88168b88915e5f7bd42e718fcf4eb0cbbec53b3264",
+        "bytes": 14122
+      },
+      "positive/request-06.json": {
+        "sha256": "3f9c31f95dc1a43a19e812adf01eefe444eacfc4c4da03cd86f4777c6988ec0a",
+        "bytes": 15144
+      },
+      "positive/response-01.sse": {
+        "sha256": "003d0e56e8c474f5be21ff06a253942c5f6d736a85ca88664e9edb74d9e7dd06",
+        "bytes": 1542
+      },
+      "positive/response-02.sse": {
+        "sha256": "ed1ddc68c91bc4158d4fd81dada905fcd5753d296c10b0589f3e800daa4a1583",
+        "bytes": 1534
+      },
+      "positive/response-03.sse": {
+        "sha256": "f698d319b4fa17a6a6df17d9345ec3c8b11c5f680c2f1ad1dec4314a22a1abf6",
+        "bytes": 1599
+      },
+      "positive/response-04.sse": {
+        "sha256": "415cfc5bbce44096137b15140deb0b5b5cf110cbfc656a3eb29177310d2a7e37",
+        "bytes": 3577
+      },
+      "positive/response-05.sse": {
+        "sha256": "a716ab62399a769231f66d0da5b7bb7d70eeb86ef6a9729073dfd164320e9158",
+        "bytes": 1599
+      },
+      "positive/response-06.sse": {
+        "sha256": "fc8896ecf2c2427b912b465f91010fa69fc741a52054f6c56e33dcc4f0ab516a",
+        "bytes": 1795
+      },
+      "positive/stderr.raw": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "positive/stdout.raw": {
+        "sha256": "01b7c87d70bddf4f74bb8851cfbbf13eaab64fb2d6206ba76f1882cdd67cc658",
+        "bytes": 129649
+      },
+      "positive/submission.jsonl": {
+        "sha256": "8490c43387c98f52d1937b43400de4280161cf5d8e54a1df9aa59397c7536874",
+        "bytes": 7259
+      }
+    },
+    "collection_sha256": "5ded53fe8f6441c3b0162596c129225e13fa45f274bf4a3e5ae1201d123a0ffd",
+    "archive_sha256": "a872f42c1587d728811bc3fbdf133a3ee918b4281b871232576bedcac19cb525"
+  },
+  "models_started": 0,
+  "real_registry_used": false,
+  "human_acceptance": null,
+  "publication": false,
+  "not_a_benchmark_trial": true,
+  "historical_evidence": "evidence.json remains unchanged: its original parent failed; its separate artifact check passed",
+  "limits": [
+    "Fixed authored public fixture only",
+    "No global host integration",
+    "No new lifecycle or recovery coverage",
+    "No human acceptance or real-provider accounting",
+    "No CI success claimed"
+  ]
+}
