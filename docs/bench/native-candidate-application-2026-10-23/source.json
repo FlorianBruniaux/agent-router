@@ -1,0 +1,11 @@
+{
+  "head": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+  "tree": "85e553efb400bc273f087a47c224a55ac8e9c0b5",
+  "base": "7eb3861745bcb7ead9f3b8ce0e0ea4c9d24ffcaf",
+  "archive_sha256": "9e9d53c6a13b56ca6ee93412c976dd1381bdcbe794780e458d32daf32e1db555",
+  "tracked_files": 1785,
+  "files_sha256": "1c594b8e426a5499e60d5f6380fb23cf1aabb3735745e81db676cfc4a1ab293c",
+  "modes_sha256": "e7907a75731e36c14028bed58de325d8183ec1654dc5f687ca12c0ad296f4880",
+  "content_from_git_archive": true,
+  "permissions_normalized": true
+}

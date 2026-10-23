@@ -1,0 +1,50 @@
+{
+  "source": {
+    "head": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+    "tree": "85e553efb400bc273f087a47c224a55ac8e9c0b5",
+    "review_sha256": "32d29cdb5f082c07c55da8a54da861d04be7910c9810f6823d5b70a3383283b8",
+    "annotated_diff_sha256": "70cd1bbdf2b1700fc12f11312f5e7dbd6bf9cc1c785085d3adfaf1ab99c77288",
+    "recommendation": "APPROVE",
+    "reviewed_paths": 13,
+    "findings": [],
+    "scope": "source and retained local tests only; not native qualification or merge authority"
+  },
+  "driver": {
+    "digest": "575629368bff7b8b587ba9ebd6a7172d88b24d8cd7fa5812455a205108a199d5",
+    "review_sha256": "9b0ccbe2356ce8b770c18c5021c70cb13c5c5c71661f158c048b4bd884dc4282",
+    "recommendation": "APPROVE_OFFLINE_BUILD_ONLY",
+    "source_commit": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+    "archive_files_verified": 1785,
+    "source_pins_verified": 13,
+    "input_files_verified": 11,
+    "native_execution_approved": false
+  },
+  "compiled_build": {
+    "driver_digest": "575629368bff7b8b587ba9ebd6a7172d88b24d8cd7fa5812455a205108a199d5",
+    "build_digest": "7695483cccc523576e77994bc8e38cc14ee1f797b68f5d4e2c64bf21ed73f169",
+    "review_sha256": "13b52f2d9e0d9e7c565ccf8c78a392ddf8cb9caff6ad86ed40fe31a80ca6f844",
+    "recommendation": "PASS_EXACT_BUILD_AND_FOUR_BINARIES_FOR_SCRIPTED_APPLICATION_REFUSAL",
+    "binary_count": 4,
+    "native_scope": [
+      "positive",
+      "reject_application"
+    ],
+    "native_interruption_recovery_qualified": false,
+    "ordinary_assets_absence": "Pinned build probe/log; ordinary binary not retained for independent bytes inspection"
+  },
+  "post_run": {
+    "review_sha256": "5a85e76e96efb0927aee66d35b835ff1f2511b718114114d9dae578a1baaa6d7",
+    "recommendation": "PASS_EXACT_AUTHORED_NATIVE_FIXTURE",
+    "source_commit": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+    "driver_digest": "575629368bff7b8b587ba9ebd6a7172d88b24d8cd7fa5812455a205108a199d5",
+    "build_digest": "7695483cccc523576e77994bc8e38cc14ee1f797b68f5d4e2c64bf21ed73f169",
+    "retained_files_verified": 64,
+    "native_scope": [
+      "positive",
+      "reject_application"
+    ],
+    "native_interruption_recovery_qualified": false,
+    "models_started": 0,
+    "reviewer_reruns": 0
+  }
+}
