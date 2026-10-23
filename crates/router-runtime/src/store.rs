@@ -704,6 +704,15 @@ impl Store {
         record: &router_types::VerificationRecord,
         next: Option<(RunState, Option<RunFailure>)>,
     ) -> Result<RunSummary> {
+        self.record_verification_if_current(id, record, next, None)
+    }
+    pub(crate) fn record_verification_if_current(
+        &self,
+        id: &str,
+        record: &router_types::VerificationRecord,
+        next: Option<(RunState, Option<RunFailure>)>,
+        expected: Option<&router_types::VerificationRecord>,
+    ) -> Result<RunSummary> {
         let mut db = self.lock()?;
         let tx = self.verified_transaction(&mut db, rusqlite::TransactionBehavior::Immediate)?;
         let mut run = load_opt(&tx, id)?.ok_or(RuntimeError::NotFound)?;
@@ -725,6 +734,15 @@ impl Store {
                 |r| r.get(0),
             )
             .optional()?;
+        if let Some(expected) = expected {
+            let observed = existing
+                .as_deref()
+                .map(serde_json::from_str::<router_types::VerificationRecord>)
+                .transpose()?;
+            if observed.as_ref() != Some(expected) {
+                return Err(RuntimeError::Verification);
+            }
+        }
         if let Some(existing) = existing {
             let old: router_types::VerificationRecord = serde_json::from_str(&existing)?;
             if !is_inconclusive(&old) {

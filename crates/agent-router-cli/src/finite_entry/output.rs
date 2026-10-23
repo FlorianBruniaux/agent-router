@@ -206,29 +206,31 @@ mod tests {
     }
     #[test]
     fn approval_requires_the_exact_fresh_challenge() {
-        for change in 0..7 {
-            let (output, parent_out) = pair();
-            let (child, parent_in) = UnixStream::pair().unwrap();
-            let mut input = Input::from_file(File::from(OwnedFd::from(child)));
-            let parent = std::thread::spawn(move || {
-                let mut line = String::new();
-                BufReader::new(parent_out).read_line(&mut line).unwrap();
-                let frame: Value = serde_json::from_str(&line).unwrap();
-                let mut response = json!({"schema_version":1,"kind":"approve","session_id":"session","submission_sha256":"task","phase":"runtime","approval_digest":frame["approval_digest"]});
-                match change {
-                    1 => response["session_id"] = json!("old"),
-                    2 => response["submission_sha256"] = json!("other"),
-                    3 => response["phase"] = json!("diagnostic"),
-                    4 => response["approval_digest"] = json!("wrong"),
-                    5 => response["permission"] = json!("allow"),
-                    6 => return,
-                    _ => {}
-                }
-                writeln!(&parent_in, "{response}").unwrap();
-            });
-            let result = output.approval(&mut input, "runtime", "owner", "config");
-            assert_eq!(result.is_ok(), change == 0, "case {change}");
-            parent.join().unwrap();
+        for phase in ["runtime", "accept_apply"] {
+            for change in 0..7 {
+                let (output, parent_out) = pair();
+                let (child, parent_in) = UnixStream::pair().unwrap();
+                let mut input = Input::from_file(File::from(OwnedFd::from(child)));
+                let parent = std::thread::spawn(move || {
+                    let mut line = String::new();
+                    BufReader::new(parent_out).read_line(&mut line).unwrap();
+                    let frame: Value = serde_json::from_str(&line).unwrap();
+                    let mut response = json!({"schema_version":1,"kind":"approve","session_id":"session","submission_sha256":"task","phase":phase,"approval_digest":frame["approval_digest"]});
+                    match change {
+                        1 => response["session_id"] = json!("old"),
+                        2 => response["submission_sha256"] = json!("other"),
+                        3 => response["phase"] = json!("diagnostic"),
+                        4 => response["approval_digest"] = json!("wrong"),
+                        5 => response["permission"] = json!("allow"),
+                        6 => return,
+                        _ => {}
+                    }
+                    writeln!(&parent_in, "{response}").unwrap();
+                });
+                let result = output.approval(&mut input, phase, "owner", "config");
+                assert_eq!(result.is_ok(), change == 0, "case {change}");
+                parent.join().unwrap();
+            }
         }
     }
     #[cfg(feature = "qualification-fresh-t02")]

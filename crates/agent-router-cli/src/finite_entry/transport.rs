@@ -16,7 +16,7 @@ use std::{
 
 pub(super) struct Broker {
     stop: Arc<AtomicBool>,
-    join: Option<JoinHandle<EntryResult<usize>>>,
+    join: Option<JoinHandle<EntryResult<(usize, Input)>>>,
 }
 impl Broker {
     pub(super) fn start(
@@ -79,14 +79,14 @@ impl Broker {
                 }
                 send(&mut stream, sse.as_bytes(), &flag)?;
             }
-            Ok(count)
+            Ok((count, input))
         });
         Ok(Self {
             stop,
             join: Some(join),
         })
     }
-    pub(super) fn finish(mut self) -> EntryResult<usize> {
+    pub(super) fn finish(mut self) -> EntryResult<(usize, Input)> {
         self.stop.store(true, Ordering::SeqCst);
         self.join
             .take()
@@ -273,7 +273,7 @@ mod tests {
     }
     #[test]
     fn actual_broker_requires_matching_parent_response_and_no_duplicate_request() {
-        for mode in 0..4 {
+        for mode in 0..5 {
             let listener = TcpListener::bind("127.0.0.1:0").unwrap();
             let addr = listener.local_addr().unwrap();
             let (child_in, mut parent_in) = UnixStream::pair().unwrap();
@@ -320,12 +320,26 @@ mod tests {
             if mode != 3 {
                 writeln!(parent_in, "{reply}").unwrap();
             }
+            if mode == 4 {
+                writeln!(parent_in, "next-approval").unwrap();
+            }
             drop(parent_in);
             let mut response = String::new();
             client.read_to_string(&mut response).unwrap();
-            if mode == 0 {
+            if mode == 0 || mode == 4 {
                 assert!(response.starts_with("HTTP/1.1 200"));
                 assert!(response.ends_with("data: fixture\n\n"));
+                if mode == 4 {
+                    let (count, mut recovered) = broker.finish().unwrap();
+                    assert_eq!(count, 1);
+                    assert_eq!(
+                        recovered
+                            .line(128, Instant::now() + Duration::from_secs(1))
+                            .unwrap_or_else(|_| panic!("approval input lost")),
+                        b"next-approval"
+                    );
+                    continue;
+                }
                 let mut duplicate = TcpStream::connect(addr).unwrap();
                 duplicate
                     .set_read_timeout(Some(Duration::from_secs(2)))

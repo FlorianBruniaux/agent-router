@@ -183,10 +183,11 @@ impl OwnedChild {
                 assert_eq!(fs::read_to_string(marker).unwrap(), stage);
                 return;
             }
-            assert!(
-                self.0.as_mut().unwrap().try_wait().unwrap().is_none(),
-                "child exited before {stage}"
-            );
+            if let Some(status) = self.0.as_mut().unwrap().try_wait().unwrap() {
+                let diagnostic = fs::read_to_string(marker.with_file_name("child.stderr"))
+                    .unwrap_or_else(|error| format!("cannot read fixture diagnostic: {error}"));
+                panic!("child exited before {stage}: {status}; {diagnostic}");
+            }
             assert!(Instant::now() < end, "missing {stage} boundary");
             std::thread::sleep(Duration::from_millis(10));
         }
