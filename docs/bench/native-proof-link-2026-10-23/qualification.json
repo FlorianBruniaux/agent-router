@@ -162,8 +162,24 @@
   "review": {
     "source": "Independent reviews approve ee122ba (4 paths) and f6d4b596 (Linux test-only path)",
     "driver": "Independent review of 10784f5a; build-only technical verdict",
-    "compiled_build_and_native_evidence": "Checked by primary session. Separate peer readback unavailable because its tool quota was exhausted.",
-    "review_limit": "No independent post-build or post-run verdict claimed"
+    "compiled_build_and_native_evidence": "Primary readback followed by independent review of existing artifacts; no execution replayed.",
+    "review_limit": "Independent review occurred after build and native execution; it is not retroactive prior approval. Ordinary binary was not retained; its asset exclusion is supported by the pinned build script and log.",
+    "independent_readback": {
+      "verdict": "PASS_FOR_EXACT_EXISTING_OFFLINE_NATIVE_FIXTURE",
+      "reviewed_at_utc": "2026-10-23T14:32:55.098032+00:00",
+      "report_sha256": "fff6d9f924275085de7349e0a123b4ce48f79cff61a40c50f6de329502116bd1",
+      "reviewed_pr_head": "8e435df2609ed1cadab638b02feb378415e3e812",
+      "source_archive_files_rehashed": 1779,
+      "compiled_binaries_rehashed": 4,
+      "native_input_programs_rehashed": 7,
+      "retained_evidence_files_rehashed": 30,
+      "public_trees_independently_reconstructed": true,
+      "new_executions": 0,
+      "additional_limits": [
+        "No independent rerun of tests.",
+        "Live Git/SQLite state not retained; emitted readbacks, bindings and pinned logic reviewed."
+      ]
+    }
   },
   "not_qualified": [
     "human acceptance",

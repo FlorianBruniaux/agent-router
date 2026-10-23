@@ -51,8 +51,10 @@ proves the new binding at product source `f6d4b596`, with task source revision
 `d674cbfdc683bc1a4e190934f594f925bf8ef143`. All 18 candidate criteria pass, against
 six on the source; receipt, projection and attestation agree. Both cells are
 stopped, with unchanged 8 GiB, zero swap and private accesses. Its source and
-driver received independent review; the final build and run evidence were
-checked by the primary session, with independent readback unavailable.
+driver received independent review. The final build and run evidence were
+checked by the primary session, then independently reviewed from the retained
+artifacts without replaying execution. That later review is not retroactive
+prior approval; its evidence limits are recorded in the qualification report.
 
 The [earlier 2026-10-23 Linux qualification](bench/fresh-runtime-verification-2026-10-23/README.md)
 proved one fresh fixed-fixture run at source `313bb1fa`: 18 candidate cases pass,

@@ -77,9 +77,18 @@ matching durable attestation. This distinction does not grant objective success.
   full macOS workspace was not repeated for the Linux-only test delta.
 - Independent source reviews approve the four production/contract paths and the
   later Linux test-only path. The exact driver also received independent review.
-  Its compiled build and post-run evidence were checked by the primary session;
-  a separate peer readback was unavailable because its tool quota was exhausted.
-  No independent post-build or post-run approval is claimed.
+  Its compiled build and post-run evidence were first checked by the primary
+  session while the peer had exhausted its tool quota. A subsequent independent
+  review of the existing artifacts returned
+  `PASS_FOR_EXACT_EXISTING_OFFLINE_NATIVE_FIXTURE`. It rehashed four binaries,
+  1,779 archive files, seven native input programs and 30 evidence files, and
+  independently reconstructed both public trees. Nothing was rerun. This review
+  took place after execution and is not retroactive prior approval.
++- The ordinary binary was not retained for independent rehashing: its asset
+  exclusion is supported by the pinned build script and logs. Live Git/SQLite
+  state was not retained; the independent reviewer checked emitted readbacks,
+  their bindings and the pinned source logic. The retained review report hashes
+  to `fff6d9f924275085de7349e0a123b4ce48f79cff61a40c50f6de329502116bd1`.
 
 CI was not used as acceptance evidence. No remote rerun or registry access was
 needed for these checks. The documentation commit changes no tested source.
