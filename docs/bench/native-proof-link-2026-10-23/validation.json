@@ -1,0 +1,131 @@
+{
+  "code_commit": "ee122ba4078c8f3c3eeda998b1ed3022c1d6f5c9",
+  "code_tree": "a1dd6114606f91c4e82445f32e607c643c586852",
+  "host": "macOS arm64",
+  "checks": [
+    {
+      "name": "python",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "crates/agent-router-cli/tests/fresh_t02_qualification.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "adrs",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "workspace": {
+    "reported_passes": 1985,
+    "failures": 0,
+    "ignored": 43,
+    "summaries": 197,
+    "counts_include_nested_helpers": true
+  },
+  "python_contract_tests": 7,
+  "log_sha256": {
+    "python.log": "6e603435ecca4321e9949308fbc73781a54a9878661a223b282144b326c71ed4",
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "clippy.log": "7e3b63639414657ad5a4ae36927e2e8fc7a203d1da4f981832e546db261757e2",
+    "workspace.log": "5573d69e8f83dde94b0ba37589cf9929cf4e43a126e3415ca514fb5fdff9d5f8",
+    "harness.log": "3d55f57f0a15926853754d993684130c6bff94bf47d215ed5c0f79b565fefab7",
+    "adrs.log": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d",
+    "gitleaks.log": "57b6f9facc3f74133038c058cb30d4ca178a22503b2422c15e380db52dc5c4e3"
+  },
+  "preparation_history": [
+    "Added contracts first failed for missing revision binding and reconstruction.",
+    "Portable Git-only tests initially invoked the Linux-only oracle process limits on macOS; their runner was corrected without changing the production oracle.",
+    "First workspace run failed on a noncanonical temporary path in the new test; the fixture was canonicalized.",
+    "Review moved both source checks inside the same deadline and before attestation; final gates cover the corrected source.",
+    "First Linux runner suite: 23 passed, one existing descendant test failed because reading a vanished /proc entry returned ESRCH. The cell stopped with no OOM. The test witness was corrected, preserving the failure evidence; final Linux replay is recorded separately."
+  ],
+  "ci_used": false,
+  "final_code_commit": "f6d4b5961d83ff73289e68e65831bcafbf10b6f0",
+  "final_code_delta": "Only a Linux test witness changes after ee122ba: ESRCH means the proc entry disappeared; permission errors still refuse. No production behavior changed.",
+  "final_test_only_delta_checks": {
+    "format": "passed",
+    "workspace_clippy": "passed",
+    "evidence": "Local tool outputs after f6d4b596 test-only patch; Linux regression execution is reported in qualification.json."
+  }
+}
