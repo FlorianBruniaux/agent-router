@@ -352,7 +352,11 @@ Legacy `preview` followed by `apply --approve DIGEST` still modifies the source
 working copy. Application authority is now one-shot even if a user restores the
 original source. Its multi-file working-copy writes do not share publication's
 single visibility point. See [ADR 0027](adr/0027-verified-patch-publication.md) for
-evidence limits, including Git-metadata races and native qualification.
+evidence limits, including Git-metadata races and native qualification. The
+[application and recovery qualification](bench/application-recovery-2026-10-23/README.md)
+checks exact revision bytes, a useful fixture correction and interrupted owners.
+An interrupted intent is not replayed or automatically rolled back; partial file
+writes remain possible.
 
 `keep` preserves the worktree; `discard --approve RUN_APPROVAL_DIGEST` removes only
 that owned worktree after a terminal state.
