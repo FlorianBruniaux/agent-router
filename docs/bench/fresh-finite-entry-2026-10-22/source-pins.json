@@ -1,0 +1,17 @@
+{
+  "base": "eeab311fc1eaf50e98f8801a9f7e56d08ac1165a",
+  "files": {
+    "crates/agent-router-cli/Cargo.toml": "5b26f12100c76ea85cfdea31a21edb840e319cc2ed30039c1539b1c7b5b796f9",
+    "crates/agent-router-cli/src/command.rs": "e6df889e5568e6a4375169518cb78d3614f3e150003d260945d2323ff5b7bf9c",
+    "crates/agent-router-cli/src/finite_entry.rs": "4ea4ce52c8b9a0238715a3b7dc9e0d060cf3e4135de16db487bad4ecd8afc06a",
+    "crates/agent-router-cli/src/finite_entry/input.rs": "39c362eeb14f4515411736934f51e8ba581cef188814fe796e1c7a8d28913307",
+    "crates/agent-router-cli/src/finite_entry/output.rs": "1d4c4b1394b754467929c619c3eadfd3d81cc13d94bf0bc0718bb77a18df74fb",
+    "crates/agent-router-cli/src/finite_entry/routing.rs": "67bfb5d9de9c861a61ecc2ef49ebe9659aba28b9914eb6055b9cc38b764ca8fe",
+    "crates/agent-router-cli/src/finite_entry/session.rs": "f5e6bcee6b9e8ea256d818bee02079fee1602f2a20488c6e63dc73f545d1c62e",
+    "crates/agent-router-cli/src/finite_entry/transport.rs": "91a0a18b0afc096eb76dc27525e47f49505e7176623c12d0e68b7f5a30b44b90",
+    "crates/agent-router-cli/src/main.rs": "42dd17783b31e76ca17454fc0d7019e91e143cbf2722895ca8d54d3bc21e05d4",
+    "crates/agent-router-cli/tests/finite_entry.rs": "f128ad026d3b100e88bf33e281562af18fecf0e0cb0a5e499cdf68c52ebcab58",
+    "docs/adr/0045-fresh-finite-entry.md": "8edd15ffbbb3c1f01b8c50e02ed7b6d519150b294238558bbe280c01b550b16e",
+    "docs/adr/README.md": "a6d732cd18f8d7e516610b2ddd2f7cdf53e9d946d1f760c3a17ae86d64daaaab"
+  }
+}

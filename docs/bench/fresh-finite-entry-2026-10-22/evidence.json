@@ -1,0 +1,318 @@
+{
+  "schema_version": 1,
+  "scope": "opt-in fresh public finite entry; fixed authored fixture only",
+  "source": {
+    "base": "eeab311fc1eaf50e98f8801a9f7e56d08ac1165a",
+    "source_archive_sha256": "b016a966db9aa8323d8adeb9574231cdac0339402aebef073ba0984d2125720a",
+    "pins": "source-pins.json"
+  },
+  "local_checks": {
+    "schema_version": 1,
+    "source_freeze_sha256": "ff082b8963cf039de1ff167fd6a83e83ed46109f3b2f3283e9d5416db123ef11",
+    "workspace": {
+      "reported_passes": 1957,
+      "failures": 0,
+      "ignored": 43,
+      "result_summaries": 197,
+      "counts_include_nested_helpers": true
+    },
+    "cli_v3": {
+      "passed": 80
+    },
+    "portable_parent": {
+      "passed": 8,
+      "log_sha256": "8433e5817e8ce894625882e5ed5672a56f936dcce8278f071b62867a3db6591e"
+    },
+    "checks": [
+      {
+        "name": "fmt-v3",
+        "exit_code": 0,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "harness-v3",
+        "exit_code": 0,
+        "log_sha256": "7f85029214c85ee33000ad8dc3bddff33ded40532ea5cf2489c9fc16d1c8d956"
+      },
+      {
+        "name": "adrs-v3",
+        "exit_code": 0,
+        "log_sha256": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d"
+      },
+      {
+        "name": "secrets-v3",
+        "exit_code": 0,
+        "log_sha256": "bc74c554ad5cde1900f82570274ef29c41fc4de53abcbeb4f1d2c7955eb39dae"
+      },
+      {
+        "name": "public-parent-v3",
+        "exit_code": 0,
+        "log_sha256": "c33435040849df39aab0f39b91aa6b588d4355509c5f85240e1fdadd83725bad"
+      },
+      {
+        "name": "clippy-v3",
+        "exit_code": 0,
+        "log_sha256": "763a0ed82211d082476af8de0b077bc2292377eaae09f88d6b911f66ef9d263c"
+      },
+      {
+        "name": "workspace-v3",
+        "exit_code": 0,
+        "log_sha256": "3932fb1f410887e9ea460c43c7477c3678a82afd95105c244fad51a5b0a448d8"
+      },
+      {
+        "name": "budget-green-all",
+        "exit_code": 0,
+        "log_sha256": "a02f54cfd15c8149a0aa6c58228edfd918e49426adf7633a4400cf17f011604d"
+      }
+    ]
+  },
+  "qualification": {
+    "status": "passed",
+    "evidence_kind": "composed product and independent artifact checks",
+    "single_corrected_parent_end_to_end_replayed": false,
+    "cases": [
+      {
+        "case": "disabled",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "10c8309355ff09ca0e90ff90f931685a607858f9b79132941db0dcc932144f18"
+      },
+      {
+        "case": "wrong_scope",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "a3511a535dbfbe2f29ed70e0af7ba9f18469ae5ff132f0d83b6d9e1452608314"
+      },
+      {
+        "case": "incompatible",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "a54b51defac0aeb2808530fec2f256f4b5e6dee9f9697f4e3771f4f99e581699"
+      },
+      {
+        "case": "existing_root",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "70cf292980ec4bb89fbd8455abfdb5950df056edfbb448c0c5e15b59d4054af4"
+      },
+      {
+        "case": "wrong_digest",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "80d523643e900721fc38a7660534bc5526c035e8f6353061e35afabf2e1f8cff"
+      },
+      {
+        "case": "eof_runtime",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "b3f8193f4e5dffbb50ceee11fe9f160ca933a18f345e083591fce10d1da5b23b"
+      },
+      {
+        "case": "stale_session",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "8a2d0bbfa1ee424160be2572c3541072fded0eb3fa947f44c4d08f76abc5719d"
+      },
+      {
+        "case": "stale_config",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "0982a08eb974d9091ab6b6c2edfd5a4479ee35fe1981c4047d33842a35a730a8"
+      },
+      {
+        "case": "stale_source",
+        "status": "passed",
+        "source": "native-v3",
+        "worker_requests": 0,
+        "parent_record_sha256": "712747cb30c1eeec048d1879edaa3afaffcd266cd2b612b489d5372283e7a68b"
+      },
+      {
+        "case": "positive",
+        "status": "passed",
+        "scope": "product transport and separate external acceptance",
+        "source": "native-v3 plus external-evaluation-v4",
+        "original_parent_status": "failed",
+        "original_parent_error": "IndexError: 4",
+        "worker_attempts": 1,
+        "worker_requests": 6,
+        "permission_denials_distinct": 1,
+        "parent_record_sha256": "1563d2fd3350387316846b6046abcacbb2f94c9e5f772531f8de4f631d569c41"
+      }
+    ],
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "model_calls": 0,
+    "provider_account_used": false,
+    "real_campaign_registry_used": false,
+    "source_unchanged": true,
+    "cleanup": "namespace_terminated",
+    "admission_released": 1,
+    "worker_attempts": 1,
+    "transport_elapsed_ms": 1567,
+    "elapsed_scope": "Runtime transport only; excludes preparation, diagnostics and external evaluation",
+    "observed_cost_microusd": null,
+    "observed_tokens": null,
+    "runtime_state": "verifying",
+    "runtime_validation": "unknown",
+    "runtime_objective": "unknown",
+    "human_acceptance": null,
+    "published_source": false
+  },
+  "external_acceptance": {
+    "source_sha256": "13518cf6578d789587a93e2fd904c937e16e7d38f5f02dddf5527915b4063871",
+    "candidate_sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "cases_sha256": "a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd",
+    "verifier_sha256": "4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1",
+    "results": {
+      "source": {
+        "outcome": "failed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "FAILED",
+          "t02_v2_cost_above_u64": "FAILED",
+          "t02_v2_cost_limit": "FAILED",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "FAILED",
+          "t02_v2_negative_overflow": "FAILED",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "FAILED",
+          "t02_v2_round_cost": "FAILED",
+          "t02_v2_round_latency": "FAILED",
+          "t02_v2_round_skill": "FAILED",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "FAILED",
+          "t02_v2_sum_before_division": "FAILED",
+          "t02_v2_wide_sums": "FAILED"
+        },
+        "stage": "test",
+        "exit_code": 101,
+        "stdout_sha256": "b98b0070af292e4d43661f5d11458e28a3da40f6ca4b23aafd1aeec8b1d56829"
+      },
+      "candidate": {
+        "outcome": "passed",
+        "cases": {
+          "t02_v2_cancellation_before_range_check": "ok",
+          "t02_v2_cost_above_u64": "ok",
+          "t02_v2_cost_limit": "ok",
+          "t02_v2_empty": "ok",
+          "t02_v2_exact_work_boundary": "ok",
+          "t02_v2_extrema_identity": "ok",
+          "t02_v2_latency_above_u64": "ok",
+          "t02_v2_latency_limit": "ok",
+          "t02_v2_negative_overflow": "ok",
+          "t02_v2_negative_quality": "ok",
+          "t02_v2_positive_overflow": "ok",
+          "t02_v2_round_cost": "ok",
+          "t02_v2_round_latency": "ok",
+          "t02_v2_round_skill": "ok",
+          "t02_v2_skill_above_u64": "ok",
+          "t02_v2_skill_limit": "ok",
+          "t02_v2_sum_before_division": "ok",
+          "t02_v2_wide_sums": "ok"
+        },
+        "stage": "test",
+        "exit_code": 0,
+        "stdout_sha256": "51b269cea6ba23293f569cfb059c39c5896366ac58a584342580b33225e03073"
+      }
+    },
+    "human_acceptance": null,
+    "model_calls": 0,
+    "not_a_benchmark_trial": true,
+    "runtime_verdict_modified": false,
+    "binding_controls": [
+      {
+        "case": "candidate_changed",
+        "outcome": "refused_before_evaluation"
+      },
+      {
+        "case": "artifact_digest_changed",
+        "outcome": "refused_before_evaluation"
+      }
+    ],
+    "new_worker_started": false,
+    "new_runtime_opened": false,
+    "resolution_sha256": "d18ff7bb23ce879c72c1e2ef6346d05eeb9cf20057314f320f1838221e6eddee"
+  },
+  "linux": {
+    "image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+    "programs": {
+      "agent-router": "36f5380a44292a026a585efa0e682e588c227404d9f0fcf199ffc3cba2b85324",
+      "client": "2cc1d908a19ac7348745b657f90e0b411dc46594a42907b8f5755cb783a5bc1d",
+      "helper": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+      "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+      "profile": "b45d54717da4e3580a30490d8633cd742a41367738d10367b2daf3f3b4cc1b33"
+    },
+    "native_driver_digest": "8d7cec92ed1d468abca94bfb5f30391ec26857429d0803dd3f6ac1b1f447be57",
+    "evaluation_package_digest": "d0bc3590265763eec3802d9b66abb68e2d23e17dd24378e7b12ec7f7e325da8e",
+    "network": "none",
+    "host_mounts": [],
+    "root_read_only": true,
+    "native_cell_stopped": true,
+    "evaluation_cell_stopped": true,
+    "native_memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "933990400",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "evaluation_memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "287072256",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    }
+  },
+  "retained_evidence": {
+    "native_v3": {
+      "files": 122,
+      "collection_sha256": "4dcc90e09e908bb1bfda19ad0c0328b3d91c8441231d6ed8ddc865b8f4141d3d",
+      "archive_sha256": "5f7a712eba874ee0b1e4e2621023d7cecbea8964d9fb65da11282936778586cb"
+    },
+    "external_evaluation": {
+      "files": 2,
+      "collection_sha256": "ab102b7e3c8102da4fd36ee19293d9f2b8ff5908ec5d7df13523ea4a21bad500",
+      "archive_sha256": "ed3d92758633b3ba487c90c207c1ecd7b8b5b00d0e3388744d0599b6c36d7ed3"
+    }
+  },
+  "prior_attempts": [
+    {
+      "attempt": "build-v1",
+      "status": "intentionally interrupted before native execution",
+      "reason": "post-execution source read made bounded"
+    },
+    {
+      "attempt": "native-v2",
+      "status": "failed",
+      "reason": "candidate estimates and request timeout exceeded execute node allocation",
+      "worker_attempts": 0,
+      "retained_archive_sha256": "2efa2a16e7dc69f1fc690170dd596e2d240301ebcc520c283f33e5aed4054307"
+    },
+    {
+      "attempt": "parent-v3",
+      "status": "failed",
+      "reason": "unchanged external evaluator imported outside its repository layout",
+      "product_exit_code": 3,
+      "resolution": "separate evaluation of the same retained artifact, no worker retry"
+    }
+  ],
+  "limits": [
+    "No automatic global host hook installed",
+    "No arbitrary-task oracle or fresh held-out cases qualified",
+    "No human acceptance, publication or savings claim",
+    "No active post-dispatch revocation or durable resume added",
+    "Issue #132 remains open"
+  ]
+}
