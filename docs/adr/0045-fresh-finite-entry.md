@@ -70,12 +70,49 @@ return exit 6 (`finite_entry.outcome_unknown`); pre-dispatch refusal returns 2.
 A local error or lost response is never an automatic retry or resume token.
 Private state is retained for bounded inspection rather than silently removed.
 
+### Fixed public t02 qualification
+
+The workspace-only `qualification-fresh-t02` build feature adds the explicit
+configuration value `qualification: "fresh_t02_v1"`. Ordinary builds reject
+that field and do not contain the oracle. The feature selects only the exact
+public t02 fixture; it is not a configurable verifier or a receipt import API.
+Both approval challenges display and bind the adapter, unchanged t02-v2 engine,
+case inventory and compiler hashes. Existing configuration rechecks remain.
+
+After the worker namespace has ended, the owning process uses its existing
+`FiniteClientVerifier` handle to capture the patch. It refuses any source,
+candidate or patch different from the reviewed fixture before compiling.
+A fresh private capsule runs the fixed checker within the existing verify
+node time budget (30 seconds for the 60-second qualification task), with
+bounded reads. Staging consumes that same deadline. Missing or exhausted
+verification budgets refuse before spawning or recording an attestation; the
+separate bounded cleanup wait grants no more checker work time. Its receipt names the actual fresh session, exact submission,
+run, route, pre-verification report, patch, candidate and checking assets.
+No campaign identities are substituted. All 18 candidate cases must pass;
+the original source must retain its known failures. The receipt is retained
+exclusively and synced before `record`; the live Runtime must expose the same
+record in its projection and in one `verification.attested.v1` history event.
+Validation becomes Passed, objective stays UNKNOWN, human acceptance stays
+absent and the run stays Verifying. Nothing is published to the source.
+
+This checker executes outside the terminated worker namespace. Its use is
+restricted to the separately reviewed disposable Linux qualification cell:
+network disabled, no host mounts, 8 GiB, zero swap and reviewed public assets.
+See [the qualification checklist](../fresh-finite-qualification.md).
+The adapter checks the cgroup limits; those checks alone do not attest network
+or mount isolation. Native qualification must separately retain the owner's
+cell configuration and teardown evidence. macOS refuses checker execution.
+A failed signal, timeout, malformed receipt, storage error or record mismatch
+returns the ordinary post-dispatch UNKNOWN result. The cell owner must stop
+the entire cell on any result, including detached checker descendants; the
+process-group runner is not a replacement for that outer isolation.
+
 ## Consequences
 
 The fresh entry is opt-in and limited to a public, explicitly inventoried task.
 It does not implement automatic host startup hooks, real account admission,
 model execution, dynamic multi-model selection, active revocation after
-worker dispatch, durable recovery, verification recording or publication.
+worker dispatch, durable recovery, general verification recording or publication.
 Those remain separate acceptance work for #132. The worker budget excludes
 preparation and diagnostics; each parent approval has its own bounded wait.
 
