@@ -14,6 +14,8 @@ PATCH = '9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c'
 COMPILER = '1cdb3b2cbd8c79f44e0c8ff4a5c50cce33395c8c7767eb3a51f4f17a350f8d97'
 VERIFIER = '4b85be2f53dc6027ee5edc8a062ab01401c4c20b3e23b916b9e17bb14733b4d1'
 CASES = 'a0c07b43f7ec44d87e5b7b28b8f0e98f6efdda1e0f997167e794f0cc451aaebd'
+SOURCE_TREE = 'ef46b6f37e9fb1dbb3f608cc6886a2ca5deac180'
+CANDIDATE_TREE = 'c3344fa47fb691e990ddc376357376e06be3ad91'
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 
@@ -41,6 +43,7 @@ def bind(report, submission, source, candidate, patch, compiler_sha256):
             (SOURCE, CANDIDATE, PATCH, COMPILER), 'unreviewed fixture bytes')
     require(report['schema_version'] == 1 and report['run_id'] == 'entry', 'fresh report identity')
     require(re.fullmatch('[0-9a-f]{64}', report['session_id']) is not None, 'session identity')
+    require(isinstance(report.get('source_revision'), str) and re.fullmatch('[0-9a-f]{40}', report['source_revision']) is not None, 'source revision')
     require(report['submission_sha256'] == sha(submission), 'submission binding')
     task = loads(submission)
     require(task['output'] == 'lib.rs', 'output scope')
@@ -60,9 +63,33 @@ def bind(report, submission, source, candidate, patch, compiler_sha256):
     require(report['artifact'] == {'patch': patch.decode(), 'sha256': PATCH}, 'captured patch')
     require(report['output'] == {'name': 'lib.rs', 'content': candidate.decode()}, 'candidate binding')
     require(report['human_acceptance'] is None and report['independent_verification_performed'] is False, 'pre-verification report')
-    return {'session_id': report['session_id'], 'submission_sha256': sha(submission),
+    return {'source_revision': report['source_revision'], 'session_id': report['session_id'], 'submission_sha256': sha(submission),
             'run_id': 'entry', 'receipt_id': summary['receipt_id'], 'source_sha256': SOURCE,
             'candidate_sha256': CANDIDATE, 'artifact_sha256': PATCH, 'compiler_sha256': COMPILER}
+
+
+def reconstruct(task, candidate, patch, work, run):
+    files = task['public_files']
+    require(all(re.fullmatch('[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}', n) for n in files), 'flat public paths')
+    run(['git', 'init', '-q'])
+    for name, item in files.items():
+        data = item['content'].encode()
+        require(sha(data) == item['sha256'], 'public file bytes')
+        path = work / name
+        with path.open('xb') as out:
+            out.write(data)
+        path.chmod(0o600)
+    run(['git', 'add', '--', *sorted(files)])
+    source_tree = run(['git', 'write-tree']).decode().strip()
+    require(source_tree == SOURCE_TREE, 'complete source tree')
+    (work / 'change.patch').write_bytes(patch)
+    run(['git', 'apply', '--cached', '--check', 'change.patch'])
+    run(['git', 'apply', '--cached', 'change.patch'])
+    candidate_tree = run(['git', 'write-tree']).decode().strip()
+    require(candidate_tree == CANDIDATE_TREE, 'complete candidate tree')
+    require(run(['git', 'show', ':lib.rs']) == candidate, 'patch reconstruction')
+    require(run(['git', 'diff', '--cached', '--no-ext-diff', '--no-color', source_tree, '--']) == patch, 'canonical patch')
+    return {'source_tree': source_tree, 'candidate_tree': candidate_tree, 'git_mode': '100644'}
 
 
 def read(path, bound):
@@ -110,21 +137,12 @@ def main():
         env = engine.environment(work)
         def run(argv):
             return engine.run(argv, work, env).stdout
-        run(['git', 'init', '-q'])
-        (work / 'lib.rs').write_bytes(source)
-        run(['git', 'add', '--', 'lib.rs'])
-        tree = run(['git', 'write-tree']).decode().strip()
-        (work / 'change.patch').write_bytes(patch)
-        run(['git', 'apply', '--cached', '--check', 'change.patch'])
-        run(['git', 'apply', '--cached', 'change.patch'])
-        entries = run(['git', 'ls-files', '--stage']).decode().splitlines()
-        require(len(entries) == 1 and entries[0].startswith('100644 ') and entries[0].endswith('\tlib.rs'), 'scope or mode')
-        require(run(['git', 'show', ':lib.rs']) == candidate, 'patch reconstruction')
-        require(run(['git', 'diff', '--cached', '--no-ext-diff', '--no-color', tree, '--']) == patch, 'canonical patch')
+        tree_proof = reconstruct(loads(submission), candidate, patch, work, run)
         outcomes = {label: engine.evaluate_source(data, checks, names, work)
                     for label, data in [('source', source), ('candidate', candidate)]}
     require(outcomes['source']['outcome'] == 'failed' and outcomes['candidate']['outcome'] == 'passed', 'inconclusive evaluation')
-    receipt.update({'schema_version': 1, 'scope': 'fresh_t02_v1', 'runtime_report_sha256': sha(raw_report),
+    receipt.update(tree_proof)
+    receipt.update({'schema_version': 1, 'scope': 'fresh_t02_v1', 'revision_binding': 'complete_public_tree_v1', 'runtime_report_sha256': sha(raw_report),
                     'adapter_sha256': sha(read(Path(__file__), 32768)), 'verifier_sha256': VERIFIER,
                     'cases_sha256': CASES, 'outcomes': outcomes, 'memory_bytes': 8589934592,
                     'swap_bytes': 0, 'objective': 'unknown', 'human_acceptance': None,

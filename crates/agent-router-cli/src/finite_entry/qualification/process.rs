@@ -105,13 +105,25 @@ mod tests {
             std::thread::sleep(Duration::from_millis(5));
         }
     }
+    fn missing_process(error: &std::io::Error) -> bool {
+        error.kind() == std::io::ErrorKind::NotFound || error.raw_os_error() == Some(libc::ESRCH)
+    }
+    #[test]
+    fn disappeared_proc_entry_is_absent_but_access_errors_are_not() {
+        for code in [libc::ENOENT, libc::ESRCH] {
+            assert!(missing_process(&std::io::Error::from_raw_os_error(code)));
+        }
+        for code in [libc::EPERM, libc::EACCES, libc::EIO] {
+            assert!(!missing_process(&std::io::Error::from_raw_os_error(code)));
+        }
+    }
     fn executable(pid: i32) -> bool {
         match std::fs::read_to_string(format!("/proc/{pid}/stat")) {
             Ok(stat) => {
                 let state = stat.rsplit_once(") ").unwrap().1.chars().next().unwrap();
                 !matches!(state, 'Z' | 'X')
             }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+            Err(error) if missing_process(&error) => false,
             Err(error) => panic!("process witness failed: {error}"),
         }
     }
