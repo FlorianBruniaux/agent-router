@@ -19,7 +19,10 @@ fresh digest. The normal scripted transport and existing private access rules
 remain in force. A successful checker retains `fresh-t02-receipt.json` inside
 the new private root before adding its attestation. The final entry report
 contains `qualification.verification`, `history_retained: true`, refreshed
-summary and events. Exit 3 still means Verifying, not task acceptance.
+summary and events. The nested `result` remains the worker-completion snapshot:
+its `result.validation` is still `unknown`, while the later recorded verdict is
+`qualification.verification.validation`. Read that qualified field for technical
+validation after checking. Exit 3 still means Verifying, not task acceptance.
 
 ## Required local evidence
 
@@ -43,9 +46,15 @@ receipt hashes. No model, provider or real registry is involved.
 
 ## Current evidence
 
-Implementation and portable contract tests are available. Native execution of
-this new recording path remains unqualified until a frozen pilot is reviewed
-and its results are retained. Earlier external t02 checks and the full parent
-run in #203 do not prove this new attestation path.
+The [2026-10-23 Linux qualification](bench/fresh-runtime-verification-2026-10-23/README.md)
+proves one fresh fixed-fixture run at source `313bb1fa`: 18 candidate cases pass,
+the original source fails, and the owning Runtime retains the matching receipt,
+verification and full attestation event. Both isolated cells are stopped. The
+ordinary build refuses the qualification mode and excludes its checker assets.
+
+This supplements the earlier external t02 and #203 parent evidence. It does not
+qualify arbitrary tasks, human acceptance, global automatic integration or the
+remaining recovery/lifecycle criteria. The run remains Verifying with objective
+UNKNOWN and no source publication. #132 stays open.
 
 See [ADR 0045](adr/0045-fresh-finite-entry.md) for the trust boundary.
