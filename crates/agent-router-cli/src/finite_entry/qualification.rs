@@ -3,10 +3,11 @@ use super::{EntryResult, Submission};
 use serde::Deserialize;
 use serde_json::Value;
 
-#[derive(Deserialize)]
+#[derive(Clone, Copy, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub(super) enum Mode {
     FreshT02V1,
+    FreshT02ApplyV1,
 }
 const PACKETS: &[u8] = include_bytes!("../../../router-runtime/examples/campaign/packets.json");
 pub(super) fn check_submission(s: &Submission) -> EntryResult<()> {

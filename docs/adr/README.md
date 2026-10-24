@@ -65,6 +65,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-22 | - |
 
 | [0045](0045-fresh-finite-entry.md) | Fresh entry through the existing finite Runtime | accepted | 2026-10-22 | 2026-10-22 | - |
+| [0046](0046-finite-controller-application.md) | Explicit controller acceptance and private candidate application | proposed | 2026-10-23 | 2026-10-23 | - |
 
 ## Frontmatter fields
 

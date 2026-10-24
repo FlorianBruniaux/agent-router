@@ -325,6 +325,15 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
     check_source(&source, &source_hash, &s).await?;
     let approved = runtime.approve_finite_client(pending, &digest)?;
     let verifier = runtime.finite_client_verifier(&approved)?;
+    #[cfg(feature = "qualification-fresh-t02")]
+    let application = if matches!(
+        c.qualification,
+        Some(super::qualification::Mode::FreshT02ApplyV1)
+    ) {
+        Some(runtime.finite_client_application(&approved)?)
+    } else {
+        None
+    };
     output.emit(
         "entry.dispatch",
         json!({"run_id":RUN,"model":s.model,"effort":s.effort,"receipt_id":receipt.receipt_id}),
@@ -347,7 +356,10 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
             Cancellation::default(),
         )
         .await;
-    let broker_result = broker.finish();
+    let (broker_result, _approval_input) = match broker.finish() {
+        Ok((count, input)) => (Ok(count), Some(input)),
+        Err(error) => (Err(error), None),
+    };
     let unchanged = source_state(&source).await? == source_hash
         && s.public_files.iter().all(|(name, f)| {
             read_output(&source.join(name)).is_ok_and(|b| content_digest(&b) == f.sha256)
@@ -394,12 +406,63 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
         let mut report = report;
         report["qualification"] = qualification;
         report["independent_verification_performed"] = json!(true);
+        if let Some(application) = application {
+            let mut input = _approval_input.ok_or("application input unavailable")?;
+            recheck(&config_path, &config_raw, &root)?;
+            check_source(&source, &source_hash, &s).await?;
+            let review = application.review().await?;
+            if review.source_revision != source_hash
+                || report["qualification"]["source_tree"] != review.source_tree
+                || report["qualification"]["candidate_tree"] != review.candidate_tree
+                || report["qualification"]["verification"]["artifact_sha256"]
+                    != review.artifact_sha256
+                || report["qualification"]["verification"]["evidence_sha256"]
+                    != review.technical_evidence_sha256
+            {
+                return Err("application differs from qualified candidate".into());
+            }
+            output.emit(
+                "entry.candidate_review",
+                json!({"review":review,
+                "action":"accept_candidate_and_apply_to_private_source",
+                "acceptance_provenance":"explicit_local_controller","human_acceptance":null}),
+            )?;
+            output.approval(
+                &mut input,
+                "accept_apply",
+                &review.approval_digest,
+                &config_hash,
+            )?;
+            recheck(&config_path, &config_raw, &root)?;
+            check_source(&source, &source_hash, &s).await?;
+            application
+                .accept_and_apply(&review, &review.approval_digest)
+                .await?;
+            if content_digest(&read_output(&source.join(&s.output))?) != review.candidate_sha256
+                || s.public_files
+                    .iter()
+                    .filter(|(name, _)| *name != &s.output)
+                    .any(|(name, file)| {
+                        !read_output(&source.join(name))
+                            .is_ok_and(|b| content_digest(&b) == file.sha256)
+                    })
+            {
+                return Err("applied source differs from accepted candidate".into());
+            }
+            report["source_unchanged"] = json!(false);
+            report["candidate_acceptance"] = json!({"provenance":"explicit_local_controller","objective":"passed","human_acceptance":null,
+                "verification":runtime.verification_record(RUN)?});
+            report["application"] = json!({"status":"applied","scope":"private_prepared_source","review":review,"source_publication":false});
+        }
         report["summary"] = serde_json::to_value(runtime.summary(RUN)?)?;
         report["events"] = serde_json::to_value(runtime.events()?)?;
         report
     } else {
         report
     };
+    let applied = report
+        .get("application")
+        .is_some_and(|v| v["status"] == "applied");
     save(
         &root.path.join("entry-result.json"),
         &serde_json::to_vec(&report)?,
@@ -415,7 +478,7 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
     }
     Ok(Outcome {
         output: String::new(),
-        exit_code: ExitCode::from(3),
+        exit_code: ExitCode::from(if applied { 0 } else { 3 }),
     })
 }
 

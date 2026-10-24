@@ -90,7 +90,7 @@ impl FiniteClientVerifier<'_> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
     use crate::{Runtime, store::tests::summary, workspace};
     use router_types::*;
@@ -99,7 +99,10 @@ mod tests {
     fn fixture(clean: bool) -> (tempfile::TempDir, Runtime) {
         fixture_artifact(clean, Some(b"fixture patch\n"))
     }
-    fn fixture_artifact(clean: bool, bytes: Option<&[u8]>) -> (tempfile::TempDir, Runtime) {
+    pub(in crate::finite_client) fn fixture_artifact(
+        clean: bool,
+        bytes: Option<&[u8]>,
+    ) -> (tempfile::TempDir, Runtime) {
         let temp = tempfile::tempdir().unwrap();
         let runtime = Runtime::open(&temp.path().join("runtime"), Default::default()).unwrap();
         runtime.store.register(&summary("finite")).unwrap();

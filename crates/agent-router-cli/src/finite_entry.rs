@@ -224,6 +224,13 @@ pub(crate) fn run(path: &Path, json: bool) -> Result<Outcome, CliError> {
         let mut output = output;
         if config.qualification.is_some() {
             output.qualification = Some(qualification::identity().map_err(|_| CliError::Internal)?);
+            if matches!(
+                config.qualification,
+                Some(qualification::Mode::FreshT02ApplyV1)
+            ) {
+                output.qualification.as_mut().ok_or(CliError::Internal)?["controller_application"] =
+                    serde_json::json!("explicit_accept_apply_v1");
+            }
         }
         output
     };

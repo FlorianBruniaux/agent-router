@@ -96,3 +96,28 @@ Objective remains UNKNOWN and human acceptance absent. The verifier handle gains
 no execution or application authority. The separate application/recovery fixtures
 in #205 remain separate evidence until an accepted native candidate can enter an
 explicitly approved integration path.
+
+## Explicit private application
+
+The additional opt-in mode `fresh_t02_apply_v1` checks the same fixed public
+fixture, then presents `entry.candidate_review` and a new `accept_apply` approval
+challenge. The response binds the current session, configuration and exact
+candidate review. Technical validation alone never triggers application.
+
+The controller records its acceptance separately from the technical attestation
+and applies the accepted bytes only to the freshly prepared private source.
+`candidate_acceptance` identifies explicit controller provenance;
+`human_acceptance` stays null. `application.status: applied` and exit 0 identify
+a completed checked write. The technical qualification receipt retains its
+original UNKNOWN objective. Low-level transport fields remain historical.
+
+A lost response or error after dispatch remains `finite_entry.outcome_unknown`.
+The recorded intent is never replayed automatically, including after a partial
+write. An accepted candidate with no applied event does not prove application.
+See [ADR 0046](adr/0046-finite-controller-application.md) for ownership and
+interruption limits. Native evidence for the earlier mode does not qualify this
+new application path without a separate observed run.
+
+The [2026-10-23 application qualification](bench/native-candidate-application-2026-10-23/README.md)
+records a successful exact approval/application and a wrong-digest refusal under
+the unchanged Linux bounds. Actual interrupted native recovery remains unqualified.
