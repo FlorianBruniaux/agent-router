@@ -4,6 +4,7 @@ use super::{ApprovedFiniteClientRun, FileIdentity, PinnedIdentity, directory};
 use crate::{Result, Runtime, RuntimeError, content_digest, source_state, workspace};
 use router_types::{ProcessCleanupEvidence, RunState, VerificationOutcome, VerificationRecord};
 use serde::{Deserialize, Serialize};
+pub(super) mod presentation;
 pub(super) mod resume;
 use std::{
     fs::File,

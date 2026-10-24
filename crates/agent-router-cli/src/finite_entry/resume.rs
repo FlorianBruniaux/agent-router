@@ -59,7 +59,8 @@ pub(crate) fn run(
     .map_err(|_| fail())?;
     let h = runtime.finite_resume(run_id).map_err(|_| fail())?;
     let rt = tokio::runtime::Runtime::new().map_err(|_| CliError::Internal)?;
-    let review = rt.block_on(h.review()).map_err(|_| fail())?;
+    let presentation = rt.block_on(h.presentation()).map_err(|_| fail())?;
+    let review = &presentation.review;
     let mut nonce = [0; 32];
     std::fs::File::open("/dev/urandom")
         .and_then(|mut f| f.read_exact(&mut nonce))
@@ -70,10 +71,7 @@ pub(crate) fn run(
     )
     .map_err(|_| fail())?;
     output
-        .emit(
-            "resume.review",
-            serde_json::json!({"review":review,"interactive_approval":approve}),
-        )
+        .resume_review(&presentation, approve)
         .map_err(|_| fail())?;
     if approve {
         if review.approval_digest.is_none() {
@@ -87,7 +85,7 @@ pub(crate) fn run(
         if approval.schema_version != 1 || approval.kind != "resume.approve" {
             return Err(fail());
         }
-        rt.block_on(h.apply(&review, &approval.approval_digest))
+        rt.block_on(h.apply_presented(&presentation, &approval.approval_digest))
             .map_err(|_| fail())?;
         output.emit("resume.applied", serde_json::json!({"run_id":run_id,"artifact_sha256":runtime.summary(run_id).map_err(|_| fail())?.artifact_sha256})).map_err(|_| fail())?;
     }

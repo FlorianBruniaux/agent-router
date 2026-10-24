@@ -752,3 +752,17 @@ validating runtime library. [The command protocol](finite-application-resume.md)
 requires the original admission binding and a new same-process approval on an
 intact preimage. Context, original intent, resume intent and completion remain
 separate append-only evidence; candidate bytes alone never imply completion.
+
+### Finite application display envelopes
+
+`FiniteApplicationPresentation` contains the existing `FiniteApplicationReview`
+and an inline `diff`. `FiniteResumePresentation` contains the fresh resume
+`review`, the persisted `original` review and that same artifact text. These are
+display envelopes, not persisted intent formats. Their validation rereads the
+captured artifact and checks the complete payload against current runtime state.
+The existing artifact hash binds the exact displayed bytes into approval; no
+second display digest or authority is introduced.
+
+The finite CLI emits these fields before approval. JSON consumers hash decoded
+UTF-8 bytes and render untrusted patch text as data. Limits and refusal behavior
+are documented in [the resume protocol](finite-application-resume.md).

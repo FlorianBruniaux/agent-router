@@ -232,3 +232,54 @@ async fn expired_handle_and_competing_handle_cannot_write() {
     assert_eq!(history, r.events().unwrap());
     assert_eq!(fs::read(s.join("lib.rs")).unwrap(), b"after\n");
 }
+
+#[tokio::test]
+async fn resumed_display_is_bound_to_original_and_new_approval() {
+    let (_t, r, s) = interrupted().await;
+    let h = r.finite_resume("finite").unwrap();
+    let packet = h.presentation().await.unwrap();
+    assert_eq!(packet.diff.as_bytes(), PATCH);
+    assert_eq!(
+        packet.original.approval_digest,
+        packet.review.original_approval
+    );
+    let before = r.events().unwrap();
+    for variant in 0..3 {
+        let mut bad = packet.clone();
+        match variant {
+            0 => bad.diff = bad.diff.replace("+after", "+other"),
+            1 => bad.original.output = "other.rs".into(),
+            2 => bad.review.history_sha256 = "0".repeat(64),
+            _ => unreachable!(),
+        }
+        assert!(h.validate_presentation(&bad).await.is_err());
+        assert!(
+            h.apply_presented(&bad, packet.review.approval_digest.as_ref().unwrap())
+                .await
+                .is_err()
+        );
+        assert_eq!(r.events().unwrap(), before);
+        assert_eq!(fs::read(s.join("lib.rs")).unwrap(), b"before\n");
+    }
+    h.apply_presented(&packet, packet.review.approval_digest.as_ref().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(fs::read(s.join("lib.rs")).unwrap(), b"after\n");
+}
+
+#[tokio::test]
+async fn resumed_display_refuses_artifact_replacement_after_presentation() {
+    let (_t, r, s) = interrupted().await;
+    let h = r.finite_resume("finite").unwrap();
+    let packet = h.presentation().await.unwrap();
+    let before = r.events().unwrap();
+    fs::write(r.store.root.join("artifacts/finite.patch"), b"replaced").unwrap();
+    assert!(h.presentation().await.is_err());
+    assert!(
+        h.apply_presented(&packet, packet.review.approval_digest.as_ref().unwrap())
+            .await
+            .is_err()
+    );
+    assert_eq!(r.events().unwrap(), before);
+    assert_eq!(fs::read(s.join("lib.rs")).unwrap(), b"before\n");
+}

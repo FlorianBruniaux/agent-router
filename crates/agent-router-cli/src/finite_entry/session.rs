@@ -410,7 +410,8 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
             let mut input = _approval_input.ok_or("application input unavailable")?;
             recheck(&config_path, &config_raw, &root)?;
             check_source(&source, &source_hash, &s).await?;
-            let review = application.review().await?;
+            let presentation = application.presentation().await?;
+            let review = &presentation.review;
             if review.source_revision != source_hash
                 || report["qualification"]["source_tree"] != review.source_tree
                 || report["qualification"]["candidate_tree"] != review.candidate_tree
@@ -421,12 +422,7 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
             {
                 return Err("application differs from qualified candidate".into());
             }
-            output.emit(
-                "entry.candidate_review",
-                json!({"review":review,
-                "action":"accept_candidate_and_apply_to_private_source",
-                "acceptance_provenance":"explicit_local_controller","human_acceptance":null}),
-            )?;
+            output.candidate_review(&presentation)?;
             output.approval(
                 &mut input,
                 "accept_apply",
@@ -436,7 +432,7 @@ pub(super) async fn run(entry: Entry) -> EntryResult<Outcome> {
             recheck(&config_path, &config_raw, &root)?;
             check_source(&source, &source_hash, &s).await?;
             application
-                .accept_and_apply(&review, &review.approval_digest)
+                .accept_presented(&presentation, &review.approval_digest)
                 .await?;
             if content_digest(&read_output(&source.join(&s.output))?) != review.candidate_sha256
                 || s.public_files

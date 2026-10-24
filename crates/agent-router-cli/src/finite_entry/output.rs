@@ -105,6 +105,29 @@ impl Output {
         writer.sequence += 1;
         Ok(())
     }
+    #[cfg(any(test, feature = "qualification-fresh-t02"))]
+    pub(super) fn candidate_review(
+        &self,
+        packet: &router_runtime::FiniteApplicationPresentation,
+    ) -> EntryResult<()> {
+        self.emit(
+            "entry.candidate_review",
+            json!({"review":packet.review,"diff":packet.diff,
+            "action":"accept_candidate_and_apply_to_private_source",
+            "acceptance_provenance":"explicit_local_controller","human_acceptance":null}),
+        )
+    }
+    pub(super) fn resume_review(
+        &self,
+        packet: &router_runtime::FiniteResumePresentation,
+        approve: bool,
+    ) -> EntryResult<()> {
+        self.emit(
+            "resume.review",
+            json!({"review":packet.review,"original":packet.original,
+            "diff":packet.diff,"interactive_approval":approve}),
+        )
+    }
     pub(super) fn approval(
         &self,
         input: &mut Input,
@@ -163,6 +186,80 @@ mod tests {
             .unwrap(),
             reader,
         )
+    }
+    #[test]
+    fn inline_review_preserves_maximum_text_and_binding() {
+        // Use worst-case JSON escaping at the full permitted patch size.
+        let diff = "\x1b".repeat(131072);
+        let review = router_runtime::FiniteApplicationReview {
+            run_id: "entry".into(),
+            source_revision: "1".repeat(40),
+            source_tree: "2".repeat(40),
+            candidate_tree: "3".repeat(40),
+            artifact_sha256: content_digest(diff.as_bytes()),
+            technical_evidence_sha256: "4".repeat(64),
+            technical_record_sha256: "5".repeat(64),
+            output: "lib.rs".into(),
+            preimage_sha256: "6".repeat(64),
+            candidate_sha256: "7".repeat(64),
+            approval_digest: "8".repeat(64),
+        };
+        let (output, reader) = pair();
+        let expected = review.clone();
+        let producer = std::thread::spawn(move || {
+            output
+                .candidate_review(&router_runtime::FiniteApplicationPresentation {
+                    review: review.clone(),
+                    diff: diff.clone(),
+                })
+                .unwrap();
+            output
+                .resume_review(
+                    &router_runtime::FiniteResumePresentation {
+                        review: router_runtime::FiniteResumeReview {
+                            schema_version: 1,
+                            run_id: "entry".into(),
+                            state: router_runtime::FiniteResumeState::PreimageIntact,
+                            original_approval: review.approval_digest.clone(),
+                            history_sha256: "9".repeat(64),
+                            source_snapshot: "a".repeat(64),
+                            observed_sha256: review.preimage_sha256.clone(),
+                            candidate_sha256: review.candidate_sha256.clone(),
+                            approval_digest: Some("b".repeat(64)),
+                        },
+                        original: review,
+                        diff,
+                    },
+                    true,
+                )
+                .unwrap();
+        });
+        let rows: Vec<String> = BufReader::new(reader).lines().map(Result::unwrap).collect();
+        producer.join().unwrap();
+        assert_eq!(rows.len(), 2);
+        for (i, raw) in rows.iter().enumerate() {
+            assert!(raw.len() < 1048576);
+            assert!(!raw.contains('\x1b'));
+            let row: Value = serde_json::from_str(raw).unwrap();
+            assert_eq!(row["sequence"], i);
+            assert_eq!(row["diff"].as_str().unwrap().len(), 131072);
+            assert_eq!(
+                content_digest(row["diff"].as_str().unwrap().as_bytes()),
+                expected.artifact_sha256
+            );
+            assert_eq!(
+                row[if i == 0 { "review" } else { "original" }],
+                serde_json::to_value(&expected).unwrap()
+            );
+            assert_eq!(
+                row["kind"],
+                if i == 0 {
+                    "entry.candidate_review"
+                } else {
+                    "resume.review"
+                }
+            );
+        }
     }
     #[test]
     fn output_sequence_is_shared_and_original_flags_are_restored() {
