@@ -127,3 +127,9 @@ synthetic admission configuration preserves history and later authored edits.
 Missing applied evidence remains UNKNOWN. This observes recovery without an
 application handle; it does not add a production command to resume application
 or qualify a crash midway through a write.
+
+The [authored partial-write qualification](bench/native-midwrite-2026-10-24/README.md)
+adds a real 227-byte short write followed by SIGKILL, with exact mixed bytes
+retained and two actual reopenings preserving uncertainty and later edits.
+This uses a deliberate fixture cut before synchronization, not an arbitrary
+interruption inside a kernel syscall or proof of power-loss durability.

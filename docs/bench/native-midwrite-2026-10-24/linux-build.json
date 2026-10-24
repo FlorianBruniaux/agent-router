@@ -1,0 +1,60 @@
+{
+  "result": {
+    "driver_digest": "67ad258d827db1a8176240482fd55d78454f581713ed966ec81bf7df5a39ab59",
+    "checks": [],
+    "interposer_controls": 5,
+    "status": "passed",
+    "models_started": 0
+  },
+  "new_interposer": {
+    "cut.so": "5624d85dbbbbf136679e50885c77e10ce5b62b98ef20f78bd4d9450d671a5085"
+  },
+  "reused_product_programs": {
+    "agent-router": {
+      "sha256": "7d8c256e156d3ddbfca865ba56fee5ad4bb7bb86ab575fc846b3d2e6a706e8ce",
+      "bytes": 26459544
+    },
+    "client": {
+      "sha256": "71b58136ba87e6f9d41328736da5e863e573ee599d43280e30aa6cbfa9d001b8",
+      "bytes": 2207928
+    },
+    "helper": {
+      "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "bytes": 626968
+    },
+    "guard": {
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "bytes": 72920
+    }
+  },
+  "reused_observer": {
+    "sha256": "4cc4840eef1da922621295b1f0d45f1424db72d6b7035e622e572ff9451801e4",
+    "source_tree": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db"
+  },
+  "product_program_source": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+  "cell": {
+    "id": "504b8728d8383bfce5e7b73391068052fa65a2a358edd6cfa0bb86b78400de15",
+    "running": false,
+    "oom_killed": false,
+    "exit_code": 143,
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "network": "none",
+    "user": "65534:65534",
+    "readonly_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "binds": null,
+    "tmpfs": {
+      "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+      "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+    },
+    "pids_limit": 256
+  },
+  "control_log_sha256": "8b32e06e12a00c7d93f7af96d4974eb6ab8cfb9054a6b175fc0081bde8b4a3ab"
+}
