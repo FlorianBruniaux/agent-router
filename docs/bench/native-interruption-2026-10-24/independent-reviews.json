@@ -141,7 +141,29 @@
         "unread_paths": [],
         "unknowns": []
       },
-      "findings": []
+      "findings": [],
+      "validation": [
+        {
+          "command": "Inspect retained format, Clippy, workspace, harness and Gitleaks results/logs",
+          "status": "pass",
+          "evidence": "Five peer-run local gates exit 0; independently counted 1996 reported passes, 0 failed and 43 ignored across 198 result summaries, including nested helpers. No test rerun by reviewer."
+        },
+        {
+          "command": "Review frozen build source and native driver pins, binaries, fixture controls and stopped cell",
+          "status": "pass",
+          "evidence": "Build tree82fce7b4; native commit a352f550 changes only Python collection and README relative to build tree. Six binaries rehashed; two new binaries ELF64 AArch64. Four interposer subcases pass; Linux application test summary9/0. Build cell stopped without OOM under prior restrictions."
+        },
+        {
+          "command": "GitHub commit signature verification for a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+          "status": "pass",
+          "evidence": "GitHub API verified=true, reason=valid; tree54846279d6a33d7e7781200d50575270e9adbdab."
+        },
+        {
+          "command": "Actual native interruption pilot",
+          "status": "unknown",
+          "evidence": "Authorized bounded fixture execution delegated to peer after build review; no native result claimed by this code review."
+        }
+      ]
     }
   },
   "native-evidence-review.json": {
