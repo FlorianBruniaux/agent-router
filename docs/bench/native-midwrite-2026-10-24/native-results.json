@@ -1,0 +1,75 @@
+{
+  "result": {
+    "status": "passed",
+    "driver_digest": "67ad258d827db1a8176240482fd55d78454f581713ed966ec81bf7df5a39ab59",
+    "cases": [
+      {
+        "case": "kill_partial",
+        "exit_code": 0
+      }
+    ],
+    "models_started": 0
+  },
+  "partial": {
+    "written_bytes": 227,
+    "original_bytes": 348,
+    "candidate_bytes": 454,
+    "observed_bytes": 348,
+    "original_sha256": "13518cf6578d789587a93e2fd904c937e16e7d38f5f02dddf5527915b4063871",
+    "candidate_sha256": "10b6d5b17fb59a200f52a97876ec2f112e186886dae4ed4e352e2e0950eb7896",
+    "mixed_sha256": "e15629021798db3df142134164993a45dc8e05560250a957489dc7a8174a035b",
+    "different_from_both": true,
+    "induced_short_write": true,
+    "fsync_completed": false
+  },
+  "recovery": {
+    "status": "passed",
+    "application": "unknown",
+    "candidate_accepted": true,
+    "production_resume_api": false,
+    "native_replay_attempted": false,
+    "runtime_reopened": 2,
+    "later_authored_edit_preserved": true,
+    "model_calls": 0
+  },
+  "owner": {
+    "pid": 33,
+    "returncode": -9,
+    "reaped": true
+  },
+  "cell": {
+    "id": "67bd26076cb343b101992d69ed1790e9b30823c4d81f2edb99171af08be027a8",
+    "running": false,
+    "oom_killed": false,
+    "exit_code": 143,
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "network": "none",
+    "user": "65534:65534",
+    "readonly_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "binds": null,
+    "tmpfs": {
+      "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+      "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+    },
+    "pids_limit": 256
+  },
+  "memory": {
+    "memory.max": "8589934592",
+    "memory.swap.max": "0",
+    "memory.peak": "832593920",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+  },
+  "retained_files": 46,
+  "model_calls": 0,
+  "human_acceptance": null,
+  "real_registry": false,
+  "source_publication": false
+}

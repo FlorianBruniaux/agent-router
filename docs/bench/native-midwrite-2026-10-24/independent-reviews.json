@@ -1,0 +1,198 @@
+{
+  "driver-build-review.json": {
+    "original_sha256": "ae3ebe436dd101d964383b1b52a28c6e4184c4b6aaff5656cb9b71e8610a0f40",
+    "review": {
+      "status": "APPROVE_OFFLINE_C_BUILD_ONLY",
+      "driver_digest": "67ad258d827db1a8176240482fd55d78454f581713ed966ec81bf7df5a39ab59",
+      "source_tree": "26443246c1293ef680572a9cd0aa2273e864744b",
+      "source_archive_sha256": "04e93a15006cd70dc4b1552b152c3ee569a58b5e826f09c140c0eebdaf3c1bce",
+      "source_paths_reviewed": [
+        "crates/router-runtime/examples/native-interruption/cut.c",
+        "crates/router-runtime/examples/native-interruption/qualify.py",
+        "crates/router-runtime/examples/native-interruption/test_cut.py"
+      ],
+      "archive_scope": "three changed fixture files and directory entries",
+      "driver_pins_checked": 12,
+      "provenance_fields_corrected": true,
+      "native_execution_approved": false,
+      "reviewer_executions": 0,
+      "models_started": 0,
+      "private_access_expanded": false,
+      "scope": "Build only new cut.so and exercise five disposable C controls; no native pilot until binary review.",
+      "limits": [
+        "Tree-bound review, exact commit awaits peer source freeze.",
+        "Induced real short write; no arbitrary kernel interruption or machine-crash claim."
+      ]
+    }
+  },
+  "build-native-gate-review.json": {
+    "original_sha256": "9c86d50ad1b281da4f49d5fc8975c6188f01a819265efd3e6167771002722bcc",
+    "review": {
+      "status": "PASS_BUILD_AND_DRIVER_FOR_ONE_INSTRUMENTED_SHORT_WRITE_PILOT",
+      "driver_digest": "67ad258d827db1a8176240482fd55d78454f581713ed966ec81bf7df5a39ab59",
+      "source_tree": "26443246c1293ef680572a9cd0aa2273e864744b",
+      "binaries": {
+        "agent-router": {
+          "sha256": "7d8c256e156d3ddbfca865ba56fee5ad4bb7bb86ab575fc846b3d2e6a706e8ce",
+          "origin": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+          "bytes": 26459544,
+          "format": "ELF64 AArch64"
+        },
+        "client": {
+          "sha256": "71b58136ba87e6f9d41328736da5e863e573ee599d43280e30aa6cbfa9d001b8",
+          "origin": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+          "bytes": 2207928,
+          "format": "ELF64 AArch64"
+        },
+        "helper": {
+          "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+          "origin": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+          "bytes": 626968,
+          "format": "ELF64 AArch64"
+        },
+        "guard": {
+          "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+          "origin": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+          "bytes": 72920,
+          "format": "ELF64 AArch64"
+        },
+        "finite-reopen": {
+          "sha256": "4cc4840eef1da922621295b1f0d45f1424db72d6b7035e622e572ff9451801e4",
+          "origin": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db",
+          "bytes": 3503688,
+          "format": "ELF64 AArch64"
+        },
+        "cut.so": {
+          "sha256": "5624d85dbbbbf136679e50885c77e10ce5b62b98ef20f78bd4d9450d671a5085",
+          "origin": "26443246c1293ef680572a9cd0aa2273e864744b",
+          "bytes": 70632,
+          "format": "ELF64 AArch64"
+        }
+      },
+      "reused_executables": 5,
+      "new_binaries": [
+        "cut.so"
+      ],
+      "interposer_controls": 5,
+      "build_cell": {
+        "id": "504b8728d8383bfce5e7b73391068052fa65a2a358edd6cfa0bb86b78400de15",
+        "stopped": true,
+        "oom": false,
+        "matches_prior_confinement": true
+      },
+      "native_cases_approved": [
+        "kill_partial"
+      ],
+      "reviewer_executions": 0,
+      "models_started": 0,
+      "private_access_expanded": false,
+      "constraints": {
+        "memory_bytes": 8589934592,
+        "swap_bytes": 0,
+        "network": "none",
+        "host_mounts": 0
+      },
+      "limits": [
+        "Actual induced short write followed by real owner death, not arbitrary kernel syscall interruption or machine crash.",
+        "No production resume API, no global host qualification, no merge authority."
+      ]
+    }
+  },
+  "code-review-f355551c/review.json": {
+    "original_sha256": "e0fcac1256d02e81dcf9b58331d1efe1f0e30416d2a54082a5a01592472d3fd6",
+    "review": {
+      "schema_version": 1,
+      "subject": {
+        "base_sha": "6cb5a9f9476c743fc6b06363292a15afddc39e7c",
+        "diff_sha256": "3c5dfb07cbe8922e058066e554ca405623ead9f43c8e15ad720b7b0a2886263c",
+        "head_sha": "f355551cf7a5fc76415f4c21d1368ef86190f539",
+        "number": null,
+        "provider": "local",
+        "repository": "FlorianBruniaux/agent-router"
+      },
+      "recommendation": "APPROVE",
+      "body": "Reviewed all four changed fixture/documentation paths at the exact signed source. The C fixture performs one actual short write, checks its count and stops the exact approved owner target before returning to write_all, fsync or truncation. The parent requires the precise mixed image, retains it, and preserves existing signal/reopen/history checks. Original five executables and confinement remain unchanged; only the fixture shared library is new. Documentation explicitly limits this to an induced short write followed by process death, not arbitrary kernel interruption, power loss, product resume authority or global host qualification. No remaining finding. Native pilot results are reviewed separately; no execution by reviewer.",
+      "coverage": {
+        "complete": true,
+        "reviewed_paths": [
+          "crates/router-runtime/examples/native-interruption/README.md",
+          "crates/router-runtime/examples/native-interruption/cut.c",
+          "crates/router-runtime/examples/native-interruption/qualify.py",
+          "crates/router-runtime/examples/native-interruption/test_cut.py"
+        ],
+        "unread_paths": [],
+        "unknowns": []
+      },
+      "findings": [],
+      "validation": [
+        {
+          "command": "Frozen source identity and diff inspection",
+          "status": "pass",
+          "evidence": "Three compiled/fixture archive files match f355551c; only README differs from tree26443246. All four annotated paths read. GitHub signature verified valid."
+        },
+        {
+          "command": "Review retained local gates",
+          "status": "pass",
+          "evidence": "All five gates exit0; {\"includes_nested_helpers\": true, \"reported_failures\": 0, \"reported_ignored\": 43, \"reported_passes\": 1996, \"summary_count\": 198}. Reviewer read logs without rerunning tests."
+        },
+        {
+          "command": "Review bounded Linux C build, controls and reused binaries",
+          "status": "pass",
+          "evidence": "Five C subcases pass, including aftore mixed-byte control; new .so5624d85d and five unchanged executables rehashed. Build cell stopped without OOM under same restrictions."
+        },
+        {
+          "command": "Native partial-write pilot",
+          "status": "unknown",
+          "evidence": "Peer owns the separately approved single kill_partial pilot; code review makes no native-result claim."
+        }
+      ]
+    }
+  },
+  "native-evidence-review.json": {
+    "original_sha256": "20d14636d9a87ab6524b8e5c564832077a8c92d471adc2351d40a0a5fc811ffb",
+    "review": {
+      "reviewed_at": "2026-10-24T10:38:32.041675+00:00",
+      "status": "PASS_EXACT_INDUCED_SHORT_WRITE_NATIVE_DEATH_AND_REOPEN",
+      "source_tree": "26443246c1293ef680572a9cd0aa2273e864744b",
+      "driver_digest": "67ad258d827db1a8176240482fd55d78454f581713ed966ec81bf7df5a39ab59",
+      "retained_files_rehashed": 46,
+      "input_programs_rehashed": 9,
+      "case": "kill_partial",
+      "original_bytes": 348,
+      "candidate_bytes": 454,
+      "actually_written_prefix_bytes": 227,
+      "mixed_bytes": 348,
+      "mixed_sha256": "e15629021798db3df142134164993a45dc8e05560250a957489dc7a8174a035b",
+      "mixed_differs_from_both": true,
+      "real_owner_exit": -9,
+      "runtime_reopens": 2,
+      "application": "unknown",
+      "candidate_acceptance": "passed",
+      "integration_intents": 1,
+      "integration_applied_events": 0,
+      "journal_and_later_authored_edit_preserved": true,
+      "native_replay_attempted": false,
+      "native_cell": {
+        "id": "67bd26076cb343b101992d69ed1790e9b30823c4d81f2edb99171af08be027a8",
+        "fresh": true,
+        "stopped": true,
+        "oom": false,
+        "peak_bytes": 832593920,
+        "memory_bytes": 8589934592,
+        "swap_bytes": 0,
+        "network": "none",
+        "host_mounts": 0
+      },
+      "models_started": 0,
+      "reviewer_native_executions": 0,
+      "private_access_expanded": false,
+      "limits": [
+        "Read-only review of retained evidence, not another native execution or live database inspection.",
+        "Fixture deliberately performs an actual short write before process death; no random kernel-syscall interruption or machine-crash claim.",
+        "Process stops before fsync/truncate and before returning to write_all; no persistence-across-power-loss claim.",
+        "Observer reopens persisted state without application authority; no native replay attempt or production continuation API.",
+        "No human acceptance, publication, global host qualification, real provider, benchmark or remote CI success."
+      ]
+    }
+  }
+}
