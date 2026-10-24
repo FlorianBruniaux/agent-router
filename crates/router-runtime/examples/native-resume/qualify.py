@@ -108,6 +108,7 @@ def interrupted(root, task, evidence, readback):
         assert (root/'candidate/lib.rs').stat().st_mode & 0o777 == 0o600
     before = q.source(root,evidence)
     history = q.journal(root)
+    b.save(evidence/'resume-before.json', {'source':before,'journal':history})
     code,_=invoke(root,evidence,'wrong-admission',wrong_admission=True)
     assert code!=0 and q.source(root,evidence)==before and q.journal(root)==history
     code, events = invoke(root,evidence,'inspect')
@@ -135,20 +136,24 @@ def interrupted(root, task, evidence, readback):
         assert after_history['verification']==history['verification'] and after_history['summary']==history['summary']
         assert [e[1] for e in after_history['events'][len(history['events']):]]==(['integration.resume_intent.v1','integration.resume_applied.v1'] if terminal else ['integration.resume_intent.v1'])
         snapshot=q.source(root,evidence)
+        b.save(evidence/'resume-after-attempt.json', {'source':snapshot,'journal':after_history,'terminal':terminal})
         code, events=invoke(root,evidence,'replay',True)
         assert code!=0 and events[0]['review']['approval_digest'] is None
         assert events[0]['review']['state']==('completed' if terminal else 'consumed')
         assert q.source(root,evidence)==snapshot and q.journal(root)==after_history
+        b.save(evidence/'resume-after-replay.json', {'source':snapshot,'journal':after_history,'preserved':True})
     else:
         code, events=invoke(root,evidence,'refused',True)
         assert code!=0 and events[0]['review']['approval_digest'] is None
         assert q.source(root,evidence)==before and q.journal(root)==history
+        b.save(evidence/'resume-refusal-preservation.json', {'source':before,'journal':history,'preserved':True})
     # Simulated later user edit must survive even a fresh invocation.
     target=root/'candidate/lib.rs';target.write_bytes(b'// later authored edit, preserve me\n');target.chmod(0o400)
     snapshot=q.source(root,evidence);history=q.journal(root)
     # Metadata refusal occurs before a review line, so use finite inspection.
     code,_=invoke(root,evidence,'edited')
     assert code!=0 and q.source(root,evidence)==snapshot and q.journal(root)==history
+    b.save(evidence/'resume-later-edit.json', {'source':snapshot,'journal':history,'preserved':True})
     b.save(evidence/'resume-result.json',{'status':'passed','scenario':SCENARIO,'production_command':True,
         'original_state':expected,'resume_applied':SCENARIO=='kill_before','later_edit_preserved':True,
         'models_started':0,'real_registry_access':False,'journal':history})
