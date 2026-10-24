@@ -75,7 +75,7 @@
       "resume-later-edit.json": "c44621d687ce07a1fb47af6f422ee127e35a08c2a8e7fbf0017a8a34b63664bf",
       "resume-after-attempt.json": "063b76a8d153fc42b3567501388ee643980f0027f094b23066454ca8d724b143"
     },
-    "current_observation": "preimage_intact"
+    "initial_observation": "preimage_intact"
   },
   "kill_after": {
     "before": {
@@ -152,7 +152,7 @@
       "resume-later-edit.json": "b5fa3bda193a7dad7b6cfd5fc7e59c9a2466c5aa2cc19869762f2c206ceeb378",
       "resume-refusal-preservation.json": "97c0665637e15563a9176d4279e0f46481e00ed84e50a1e502259f6977c4f3aa"
     },
-    "current_observation": "candidate_observed"
+    "initial_observation": "candidate_observed"
   },
   "kill_partial": {
     "before": {
@@ -229,7 +229,6 @@
       "resume-later-edit.json": "9f25e3749d84c1ffd9c2dc0b2419a075b4bd3b61ce3d9c72fd18b377a69ee27d",
       "resume-refusal-preservation.json": "28eb6a944d675084e8837354bee72e8df0b61000515e199c7858f769328e199d"
     },
-    "current_observation": "divergent",
     "partial_write": {
       "written_bytes": 227,
       "original_bytes": 348,
@@ -241,7 +240,8 @@
       "different_from_both": true,
       "induced_short_write": true,
       "fsync_completed": false
-    }
+    },
+    "initial_observation": "divergent"
   },
   "resume_interrupted": {
     "before": {
@@ -320,14 +320,14 @@
       "resume-later-edit.json": "70f2a0dcce2583831307bbd98117912f6f1a1119eb4f6eccf62162ef8219f386",
       "resume-after-attempt.json": "43374a6bcbd8f394e0995a03408cda02482f9f3a78cb6a4daee25650aa2104e1"
     },
-    "current_observation": "preimage_intact",
     "resume_interruption": {
       "stopped_signal": 19,
       "exit": {
         "returncode": -9,
         "reaped": true
       }
-    }
+    },
+    "initial_observation": "preimage_intact"
   },
   "later_edit": {
     "before": {
@@ -404,6 +404,6 @@
       "resume-later-edit.json": "abd03dc5991e21216b841e9e38d4d8a7fec1bed77df4282a034a3c5661dbc730",
       "resume-refusal-preservation.json": "836eb3700db9ed2cd907d618d5ddd6b7bc22efde9e71d15295a480ad1a9dd719"
     },
-    "current_observation": "divergent"
+    "initial_observation": "divergent"
   }
 }
