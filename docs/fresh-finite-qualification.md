@@ -120,4 +120,10 @@ new application path without a separate observed run.
 
 The [2026-10-23 application qualification](bench/native-candidate-application-2026-10-23/README.md)
 records a successful exact approval/application and a wrong-digest refusal under
-the unchanged Linux bounds. Actual interrupted native recovery remains unqualified.
+the unchanged Linux bounds. The [2026-10-24 interruption qualification](bench/native-interruption-2026-10-24/README.md)
+adds SIGKILL before writing and after synchronization, using an external test
+interposer and the unchanged product binaries. Reopening with the original
+synthetic admission configuration preserves history and later authored edits.
+Missing applied evidence remains UNKNOWN. This observes recovery without an
+application handle; it does not add a production command to resume application
+or qualify a crash midway through a write.

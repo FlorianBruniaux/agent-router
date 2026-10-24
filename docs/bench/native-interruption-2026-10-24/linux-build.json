@@ -1,0 +1,74 @@
+{
+  "result": {
+    "driver_digest": "970337d73870c151dd399cdbc4e8a795240db94effe131522874d7bf560cd73e",
+    "checks": [
+      {
+        "name": "reopen",
+        "exit_code": 0
+      },
+      {
+        "name": "process-tests",
+        "exit_code": 0
+      }
+    ],
+    "interposer_controls": 4,
+    "status": "passed",
+    "models_started": 0
+  },
+  "programs": {
+    "finite-reopen": "4cc4840eef1da922621295b1f0d45f1424db72d6b7035e622e572ff9451801e4",
+    "cut.so": "386a46ca7d78b047a8fd4393f517ab7ae273e2ac7db0e035982bc00e111237f1"
+  },
+  "prior_programs": {
+    "agent-router": {
+      "sha256": "7d8c256e156d3ddbfca865ba56fee5ad4bb7bb86ab575fc846b3d2e6a706e8ce",
+      "bytes": 26459544
+    },
+    "client": {
+      "sha256": "71b58136ba87e6f9d41328736da5e863e573ee599d43280e30aa6cbfa9d001b8",
+      "bytes": 2207928
+    },
+    "helper": {
+      "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "bytes": 626968
+    },
+    "guard": {
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "bytes": 72920
+    }
+  },
+  "source_tree": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db",
+  "cell": {
+    "id": "ec6b31939efc6e276712fb6e740ea89fe02247b012f8e897ed35e09ac6c2f54a",
+    "running": false,
+    "oom_killed": false,
+    "exit_code": 143,
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "network": "none",
+    "user": "65534:65534",
+    "readonly_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "binds": null,
+    "tmpfs": {
+      "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+      "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+    },
+    "pids_limit": 256
+  },
+  "logs": {
+    "interposer-tests.log": "50123f26e6d30940556cc448291d77c1880d497121f6c91559a6a7bdb8620941",
+    "reopen.log": "6ec62ac55c91ed8517d221bd26756e2c7fec5e0cb77d1d2ddea8b88ed790e1a9",
+    "process-tests.log": "89ee1ee0043f08f240c623716e330ca1625fc19dc0e8a73e19e5639ef53d0459"
+  },
+  "application_top_level_tests": 9,
+  "nested_completed_helper": 1,
+  "interposer_test_methods": 1,
+  "interposer_cases": 4
+}

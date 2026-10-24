@@ -1,0 +1,209 @@
+{
+  "driver-build-review.json": {
+    "original_sha256": "cadb2c405ac1cfcab82e42e5fcb92929f5800126aed11d6fd9ed940e1c2ec53c",
+    "review": {
+      "status": "APPROVE_OFFLINE_BUILD_ONLY",
+      "driver_digest": "970337d73870c151dd399cdbc4e8a795240db94effe131522874d7bf560cd73e",
+      "source_tree": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db",
+      "source_archive_sha256": "ae99136967590c1a0751edd76822ac1c72b2d4ac825ec5d8027bedafd4d44cc6",
+      "source_paths_reviewed": [
+        "crates/router-runtime/examples/finite_reopen.rs",
+        "crates/router-runtime/examples/native-interruption/cut.c",
+        "crates/router-runtime/examples/native-interruption/qualify.py",
+        "crates/router-runtime/examples/native-interruption/test_cut.py",
+        "crates/router-runtime/src/finite_client/application/tests.rs",
+        "crates/router-runtime/src/finite_client/application/tests/process.rs"
+      ],
+      "driver_paths_reviewed": [
+        "assets.json",
+        "controller.py",
+        "cut.c",
+        "identity.json",
+        "input-pins.json",
+        "native-qualification-plan.json",
+        "parent.py",
+        "prior/orchestrate.py",
+        "qualify.py",
+        "run.py",
+        "source.json",
+        "test_cut.py"
+      ],
+      "actual_imported_prior_orchestrator_checked": true,
+      "python_syntax": "parsed_inertly_not_imported",
+      "native_execution_approved": false,
+      "models_started": 0,
+      "private_access_expanded": false,
+      "findings_resolved": [
+        "Reopen now preserves original synthetic admission configuration.",
+        "Actual prior orchestrator hash checked before import and in check()."
+      ],
+      "limits": [
+        "Tree-bound review; no new source commit yet.",
+        "Build approval does not qualify compiled binaries or native results.",
+        "No actual model/provider/registry/account calls permitted.",
+        "Existing seccomp/systempaths configuration retained, no new confinement relaxation."
+      ]
+    }
+  },
+  "build-native-gate-review.json": {
+    "original_sha256": "aa9cf6a2083ea7d4cade4f09a0a6a90992c6a62a68f5f17895557527b41dfade",
+    "review": {
+      "status": "PASS_BUILD_AND_DRIVER_FOR_INSTRUMENTED_NATIVE_PILOT",
+      "native_driver_digest": "0d3fd9c9c78d24d153a81014904e4c8bb994568217f02db52fa5e531b7f5a495",
+      "build_driver_digest": "970337d73870c151dd399cdbc4e8a795240db94effe131522874d7bf560cd73e",
+      "build_source_tree": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db",
+      "new_source_commit": "a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+      "new_source_tree": "54846279d6a33d7e7781200d50575270e9adbdab",
+      "compiled_rust_and_c_unchanged": true,
+      "only_new_commit_deltas": [
+        "crates/router-runtime/examples/native-interruption/README.md",
+        "crates/router-runtime/examples/native-interruption/qualify.py"
+      ],
+      "binaries": {
+        "finite-reopen": {
+          "source_kind": "new",
+          "sha256": "4cc4840eef1da922621295b1f0d45f1424db72d6b7035e622e572ff9451801e4",
+          "bytes": 3503688,
+          "format": "ELF64 AArch64"
+        },
+        "cut.so": {
+          "source_kind": "new",
+          "sha256": "386a46ca7d78b047a8fd4393f517ab7ae273e2ac7db0e035982bc00e111237f1",
+          "bytes": 70600,
+          "format": "ELF64 AArch64"
+        },
+        "agent-router": {
+          "source_kind": "qualified_prior",
+          "sha256": "7d8c256e156d3ddbfca865ba56fee5ad4bb7bb86ab575fc846b3d2e6a706e8ce",
+          "bytes": 26459544,
+          "format": "ELF64 AArch64"
+        },
+        "client": {
+          "source_kind": "qualified_prior",
+          "sha256": "71b58136ba87e6f9d41328736da5e863e573ee599d43280e30aa6cbfa9d001b8",
+          "bytes": 2207928,
+          "format": "ELF64 AArch64"
+        },
+        "helper": {
+          "source_kind": "qualified_prior",
+          "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+          "bytes": 626968,
+          "format": "ELF64 AArch64"
+        },
+        "guard": {
+          "source_kind": "qualified_prior",
+          "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+          "bytes": 72920,
+          "format": "ELF64 AArch64"
+        }
+      },
+      "build_cell": {
+        "id": "ec6b31939efc6e276712fb6e740ea89fe02247b012f8e897ed35e09ac6c2f54a",
+        "stopped": true,
+        "oom": false
+      },
+      "interposer_controls": "One unittest with four checked subcases; saved build log OK",
+      "reviewer_native_executions": 0,
+      "models_started": 0,
+      "private_access_expanded": false,
+      "scope": [
+        "Exactly kill_before, kill_after, positive within existing reviewed cell restrictions.",
+        "New observer opens same synthetic admission configuration.",
+        "No production resume API, partial-write/machine-crash or paid provider claim."
+      ]
+    }
+  },
+  "code-review-a352f550/review.json": {
+    "original_sha256": "c37fd0c04f22cab67e0953881e027559b7cb0a3b15684e67406f0fcc128af756",
+    "review": {
+      "schema_version": 1,
+      "subject": {
+        "base_sha": "4a581faf4d96291292e1fb99432d9643bfab93d4",
+        "diff_sha256": "7020b8951e5819f870b11fcf0b8bfd1e95e5958f04046c80e56e9f8a67b28ecb",
+        "head_sha": "a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+        "number": null,
+        "provider": "local",
+        "repository": "FlorianBruniaux/agent-router"
+      },
+      "recommendation": "APPROVE",
+      "body": "Reviewed all seven frozen paths. No remaining concrete finding. Fixture-only interposition stops the exact owner and target descriptor without changing product binaries; the observer reopens the same synthetic admission configuration without application authority. Separate process tests attempt stale approval and preserve later edits. This approves the scoped code, not native results, production continuation, merge, real provider execution or benchmark readiness. Earlier draft admission and evidence-export gaps were corrected before native execution. GitHub verified the exact source commit signature; retained local gates are separate from billing-blocked remote CI.",
+      "coverage": {
+        "complete": true,
+        "reviewed_paths": [
+          "crates/router-runtime/examples/finite_reopen.rs",
+          "crates/router-runtime/examples/native-interruption/README.md",
+          "crates/router-runtime/examples/native-interruption/cut.c",
+          "crates/router-runtime/examples/native-interruption/qualify.py",
+          "crates/router-runtime/examples/native-interruption/test_cut.py",
+          "crates/router-runtime/src/finite_client/application/tests.rs",
+          "crates/router-runtime/src/finite_client/application/tests/process.rs"
+        ],
+        "unread_paths": [],
+        "unknowns": []
+      },
+      "findings": []
+    }
+  },
+  "native-evidence-review.json": {
+    "original_sha256": "580f36bc0d93a16ca58c55c0ffb09810bdde481f0e4cc09a12cb7fa10e1bfffe",
+    "review": {
+      "reviewed_at": "2026-10-24T09:25:21.067628+00:00",
+      "status": "PASS_EXACT_INSTRUMENTED_NATIVE_INTERRUPTION_AND_REOPEN",
+      "source_commit": "a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+      "native_driver_digest": "0d3fd9c9c78d24d153a81014904e4c8bb994568217f02db52fa5e531b7f5a495",
+      "retained_files_rehashed": 133,
+      "input_programs_rehashed": 9,
+      "cases": {
+        "kill_before": {
+          "status": "PASS",
+          "application": "unknown",
+          "owner_exit": -9,
+          "runtime_reopens": 2,
+          "technical_cases": "18 candidate / 6 original",
+          "journal_and_later_edit_preserved": true,
+          "native_replay_attempted": false
+        },
+        "kill_after": {
+          "status": "PASS",
+          "application": "unknown",
+          "owner_exit": -9,
+          "runtime_reopens": 2,
+          "technical_cases": "18 candidate / 6 original",
+          "journal_and_later_edit_preserved": true,
+          "native_replay_attempted": false
+        },
+        "positive": {
+          "status": "PASS",
+          "application": "applied",
+          "owner_exit": 0,
+          "runtime_reopens": 2,
+          "technical_cases": "18 candidate / 6 original",
+          "journal_and_later_edit_preserved": true,
+          "native_replay_attempted": false
+        }
+      },
+      "native_cell": {
+        "id": "c08dd8e737abfd5e586bd07775734831d00b47975631d3cb3dfb2f999c5f70e8",
+        "stopped": true,
+        "oom": false,
+        "memory_bytes": 8589934592,
+        "swap_bytes": 0,
+        "peak_bytes": 821370880,
+        "host_mounts": 0,
+        "network": "none",
+        "configuration_matches_prior": true
+      },
+      "models_started": 0,
+      "reviewer_native_executions": 0,
+      "private_access_expanded": false,
+      "limits": [
+        "Review of retained public artifacts, not a second execution or live database inspection.",
+        "Actual SIGKILL at instrumented boundaries after worker cleanup; no machine crash or partial-write coverage.",
+        "Read-only native observation after Runtime recovery; explicit stale-approval refusal is proven separately by process tests.",
+        "No production resume API, global host qualification, human acceptance, publication or benchmark result.",
+        "Candidate acceptance stays passed while interrupted application remains UNKNOWN.",
+        "Remote CI is separate from local Linux and macOS results."
+      ]
+    }
+  }
+}

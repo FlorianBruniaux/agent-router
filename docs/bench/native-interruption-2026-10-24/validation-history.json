@@ -1,0 +1,17 @@
+[
+  {
+    "scope": "first authored local application process test attempt",
+    "outcome": "6 passed, 3 failed",
+    "failure": "new process.rs assertion called source_state after an authored source edit; SourceChanged was correct",
+    "correction": "check actual Git HEAD via rev-parse rather than requiring a clean source",
+    "product_code_changed": false,
+    "subsequent_targeted": "9 passed, 0 failed; process-tests.log"
+  },
+  {
+    "scope": "first ancillary packaging invocation",
+    "outcome": "not executed",
+    "error": "system Python lacked tomllib",
+    "correction": "used installed Homebrew Python; 34 tests passed",
+    "initial_log_sha256": "12d1056fe0af33fbeb3127cfe378420d641c72ace824cbe9242ba0f887bc7225"
+  }
+]
