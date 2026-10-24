@@ -3,6 +3,7 @@ mod input;
 mod output;
 #[cfg(feature = "qualification-fresh-t02")]
 mod qualification;
+pub(crate) mod resume;
 mod routing;
 mod session;
 mod transport;

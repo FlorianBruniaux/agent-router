@@ -323,6 +323,22 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
                 Err(CliError::Product("finite_entry.unavailable"))
             }
         }
+        Commands::FiniteResume {
+            config,
+            run_id,
+            approve,
+            json,
+        } => {
+            #[cfg(all(unix, feature = "codex"))]
+            {
+                finite_entry::resume::run(&config, &run_id, approve, json)
+            }
+            #[cfg(not(all(unix, feature = "codex")))]
+            {
+                let _ = (config, run_id, approve, json);
+                Err(CliError::Product("finite_resume.unavailable"))
+            }
+        }
         Commands::Capability { command } => attestations::run(command),
         Commands::Schema { name, list, .. } => schema::run(name.as_deref(), list),
         Commands::Version { .. } => version_info::run(),

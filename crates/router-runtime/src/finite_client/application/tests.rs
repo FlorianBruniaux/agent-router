@@ -1,5 +1,6 @@
 use super::*;
 mod process;
+mod resume;
 use std::{
     fs,
     os::unix::fs::{DirBuilderExt, PermissionsExt},

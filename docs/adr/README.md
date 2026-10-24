@@ -66,6 +66,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0045](0045-fresh-finite-entry.md) | Fresh entry through the existing finite Runtime | accepted | 2026-10-22 | 2026-10-22 | - |
 | [0046](0046-finite-controller-application.md) | Explicit controller acceptance and private candidate application | proposed | 2026-10-23 | 2026-10-23 | - |
+| [0047](0047-explicit-finite-application-resume.md) | Explicit finite application resume on an intact preimage | proposed | 2026-10-24 | 2026-10-24 | - |
 
 ## Frontmatter fields
 

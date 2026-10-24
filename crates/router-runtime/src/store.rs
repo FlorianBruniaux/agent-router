@@ -17,6 +17,7 @@ use std::{
 
 mod admission;
 mod escalation;
+mod finite_resume;
 mod observation;
 pub use observation::{observe_run, observe_run_v2, observe_run_v3};
 mod preparation;
@@ -1339,6 +1340,7 @@ fn append(tx: &Transaction<'_>, run: &RunSummary, kind: &str, detail: &str) -> R
             | "escalation.claim.v1"
             | "preparation.cycle.v1"
             | "admission.intent.v1"
+            | "integration.context.v1"
     ) {
         16_384
     } else {

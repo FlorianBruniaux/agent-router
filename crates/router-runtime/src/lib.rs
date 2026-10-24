@@ -21,9 +21,9 @@ pub use finite_client::{
     ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteApplicationReview,
     FiniteClientApplication, FiniteClientInvocation, FiniteClientLaunchPlan, FiniteClientReview,
     FiniteClientValidation, FiniteClientVerifier, FiniteClientWorkspace, FiniteCodexState,
-    FiniteOutputMode, LINUX_FINITE_PROFILE_V2, LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker,
-    OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
-    SubscriptionControllerPeer,
+    FiniteOutputMode, FiniteResume, FiniteResumeReview, FiniteResumeState, LINUX_FINITE_PROFILE_V2,
+    LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker, OwnedSubscriptionController,
+    PendingFiniteClientRun, SubscriptionControllerBinding, SubscriptionControllerPeer,
 };
 mod host_state;
 mod leases;

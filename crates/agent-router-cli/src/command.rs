@@ -85,6 +85,18 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Inspect an interrupted private application; --approve asks for a fresh
+    /// JSON approval on stdin in this same process. No worker is launched.
+    FiniteResume {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        run_id: String,
+        #[arg(long)]
+        approve: bool,
+        #[arg(long)]
+        json: bool,
+    },
     /// Manage authenticated operator declarations, without invoking a native host.
     Capability {
         #[command(subcommand)]
@@ -1202,7 +1214,10 @@ impl Commands {
                 | CatalogCommand::Refresh { json, .. } => (json, "Catalog"),
             },
             Self::Version { json } => (json, "Version"),
-            Self::Schema { .. } | Self::Completions { .. } | Self::FiniteEntry { .. } => {
+            Self::Schema { .. }
+            | Self::Completions { .. }
+            | Self::FiniteEntry { .. }
+            | Self::FiniteResume { .. } => {
                 return None;
             }
             Self::Route { .. } | Self::Explain { .. } | Self::Observe { .. } => return None,
