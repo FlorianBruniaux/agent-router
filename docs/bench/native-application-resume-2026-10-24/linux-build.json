@@ -1,0 +1,40 @@
+{
+  "result": {
+    "driver_digest": "e9f1678cfe49ba1c4243ad443b89badf1912969cda56a8e7126259fb1b092ee9",
+    "checks": [
+      {
+        "name": "programs",
+        "exit_code": 0
+      },
+      {
+        "name": "application-tests",
+        "exit_code": 0
+      },
+      {
+        "name": "resume-cli-tests",
+        "exit_code": 0
+      }
+    ],
+    "status": "passed",
+    "models_started": 0
+  },
+  "programs": {
+    "agent-router": "3b1e03b53314dc4fde3ba76f12f1fc2330fc34d2026c9120627c363845b7ff7d",
+    "client": "9510bfea5a9790e8222c9fcb6479c2d38e53ce86e97a8254f254c0a26d57c8fb",
+    "helper": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+    "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+    "cut.so": "5624d85dbbbbf136679e50885c77e10ce5b62b98ef20f78bd4d9450d671a5085"
+  },
+  "memory": {
+    "memory.max": "8589934592\n",
+    "memory.swap.max": "0\n",
+    "memory.peak": "1823424512\n",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\n"
+  },
+  "stopped": true,
+  "logs": {
+    "application-tests.log": "91db354b0d755977b89d49d25b0020aad98cc2fc650c152f012ebb4cb868867b",
+    "programs.log": "8ce34c467533e3353f6d47f514c2845d8f8a9cd568f9eab524578b4462d1fd5c",
+    "resume-cli-tests.log": "1e240da3eaf0e332ed0deaa6583e1ccc21fd7c209c84d780f578aec46e293862"
+  }
+}

@@ -383,3 +383,11 @@ synchronization with the combined rules and reached connection errors. The
 shared-memory rule alone also reached turn startup; the domain rule alone did
 not. This does not establish that both rules are independently necessary.
 Authenticated provider execution remains unverified.
+
+## Resume a private finite application
+
+Use [`finite-resume`](reference/finite-application-resume.md) to inspect a new
+context-bound application intent after controller interruption. It reopens the
+original admission and requires fresh approval in the same process before a
+single bounded write. Partial files, later edits and already consumed resumes
+remain preserved. This command starts no worker and grants no new host access.

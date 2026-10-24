@@ -133,3 +133,12 @@ adds a real 227-byte short write followed by SIGKILL, with exact mixed bytes
 retained and two actual reopenings preserving uncertainty and later edits.
 This uses a deliberate fixture cut before synchronization, not an arbitrary
 interruption inside a kernel syscall or proof of power-loss durability.
+
+The [explicit application resume qualification](bench/native-application-resume-2026-10-24/README.md)
+adds the product `finite-resume` command for new, context-bound intents. A fresh
+same-process approval can apply only an intact original preimage. Five native
+cases distinguish successful resume, observed candidate, partial write, a second
+interruption and later edits. The original history is preserved; legacy or
+ambiguous states are never repaired automatically. See the
+[command protocol](reference/finite-application-resume.md) for admission and
+approval requirements.
