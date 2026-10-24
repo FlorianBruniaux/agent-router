@@ -1,0 +1,22 @@
+{
+  "source-review-da9fd438/review.json": {
+    "sha256": "bc5bc10fd12e803c14471c38e027586a163bd0f09b21045c08556498d4229512",
+    "verdict": "APPROVE"
+  },
+  "fixture-review-f2f0ce43/review.json": {
+    "sha256": "1912ad819749ba4f3e3f0f0fc353cc27465026b18e86328dcf8521f32591668e",
+    "verdict": "APPROVE"
+  },
+  "driver-build-review.json": {
+    "sha256": "df99001de2bfc14bc545329308180fa51949159c13b0132674d9c205531e7f66",
+    "verdict": "APPROVE_OFFLINE_BUILD_ONLY"
+  },
+  "build-native-gate-review.json": {
+    "sha256": "6bf07545360300f68e008318a08ea16a2b97f8a87d9fa4dddaef72a39d239378",
+    "verdict": "PASS_BUILD_AND_APPROVE_FIVE_NATIVE_FIXTURE_CASES_ONLY"
+  },
+  "native-evidence-review.json": {
+    "sha256": "3a3c50f0e054ead20ca1bcf375a9887ca93b41de7da1467aa665e881f8eed561",
+    "verdict": "PASS_FIVE_NATIVE_PRODUCT_RESUME_CASES"
+  }
+}

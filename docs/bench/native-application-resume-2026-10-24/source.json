@@ -1,0 +1,9 @@
+{
+  "head": "da9fd4383055715e333f3393dbcc0766631d8261",
+  "tree": "2f37f84c553b2c07706266b14865370b3c508f76",
+  "archive_sha256": "971d0ae90bb6b9a5b6fb0b3dbadf03ed40d702f5f30fbbc3ca4f0b36c39acdbc",
+  "fixture_head": "f2f0ce43b0fbcd5f219181e8b87bd61282151ce2",
+  "base": "6049d6694efa8f8aa482d5dc2fdfe60680ce777c",
+  "build_driver_sha256": "e9f1678cfe49ba1c4243ad443b89badf1912969cda56a8e7126259fb1b092ee9",
+  "native_driver_sha256": "0f3290353aa9ba9da97d29bbb7b00ff7663df39b876213a37c4ba2ccf513f93a"
+}

@@ -3,7 +3,8 @@
 use super::{ApprovedFiniteClientRun, FileIdentity, PinnedIdentity, directory};
 use crate::{Result, Runtime, RuntimeError, content_digest, source_state, workspace};
 use router_types::{ProcessCleanupEvidence, RunState, VerificationOutcome, VerificationRecord};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+pub(super) mod resume;
 use std::{
     fs::File,
     io::{Read, Seek, SeekFrom, Write},
@@ -11,7 +12,8 @@ use std::{
     path::PathBuf,
 };
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FiniteApplicationReview {
     pub run_id: String,
     pub source_revision: String,
@@ -286,6 +288,7 @@ impl FiniteClientApplication<'_> {
         {
             return Err(RuntimeError::Verification);
         }
+        let context = resume::Context::capture(self, &current)?;
         self.runtime.store.record_verification_if_current(
             &self.run_id,
             &VerificationRecord {
@@ -298,9 +301,11 @@ impl FiniteClientApplication<'_> {
             Some((RunState::Verified, None)),
             Some(&technical),
         )?;
-        self.runtime
-            .store
-            .claim_integration(&self.run_id, &serde_json::to_string(&current)?)?;
+        self.runtime.store.claim_finite_integration(
+            &self.run_id,
+            &serde_json::to_string(&current)?,
+            &serde_json::to_string(&context)?,
+        )?;
         if let Some(observer) = observer {
             observer.before_capture()?;
         }

@@ -1,0 +1,90 @@
+{
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "reported_tests_including_nested_helpers": {
+    "passed": 2004,
+    "failed": 0,
+    "ignored": 43
+  },
+  "logs": {
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "clippy.log": "20a94452bf799e6a6b5828149dfb116cf5bbe4db95030d86cc537519a59cf343",
+    "workspace.log": "3a92fd9b63a15172a244920f93b55897f8dd65868c6d4df6088c3e88b03576ff",
+    "gitleaks.log": "f1295c9e4211a6759f1dad361c412e4667da7adc0830645725b93c304154798d",
+    "harness.log": "a916be6e1b3e06c3190995a62b9fdb51f28dd7f69c2c16d5d7711eeb091ce8ea"
+  }
+}

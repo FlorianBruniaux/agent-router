@@ -744,3 +744,11 @@ only the retained helper's `--probe` with the reviewed resource arguments,
 checks ownership and pins before/after, and returns no launch handle or proof.
 This cannot be reconstructed from the launch-preview JSON. An applied-limit
 probe is separate from OS enforcement, native admission and task containment.
+
+## Explicit private application resume
+
+The versioned finite application resume review and context live with their
+validating runtime library. [The command protocol](finite-application-resume.md)
+requires the original admission binding and a new same-process approval on an
+intact preimage. Context, original intent, resume intent and completion remain
+separate append-only evidence; candidate bytes alone never imply completion.
