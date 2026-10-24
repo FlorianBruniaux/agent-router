@@ -1,0 +1,9 @@
+{
+  "crates/router-runtime/examples/finite_reopen.rs": "8ee14262d538b53ab68c323413b496b5855ac99639266c1ed6eee8439d63651d",
+  "crates/router-runtime/examples/native-interruption/README.md": "47e1bc46121af2b06634fd3c3e0d7a330db4644721f1815f7c9ebcba9457dc70",
+  "crates/router-runtime/examples/native-interruption/cut.c": "d7d0ee836649c0dc2ecec632f60eb773e257be49dd21661bc00f6178e26ffa68",
+  "crates/router-runtime/examples/native-interruption/qualify.py": "0cbd10b3425542e7273132f36ee80c587e2a2122f9a04a07c6182481372e3b19",
+  "crates/router-runtime/examples/native-interruption/test_cut.py": "dfb66e3c1daed4c7758f01f5e4aff291e8b1b1f860ee74304d22c294f0b98b62",
+  "crates/router-runtime/src/finite_client/application/tests.rs": "e33756a5ecc3053238658dbff76009f6a5d699c7c3e8b892b76fd879df8c0717",
+  "crates/router-runtime/src/finite_client/application/tests/process.rs": "d27795c5909d3531b36ed9f57678fd010f10a74737d25709ef37511ab7944d7f"
+}

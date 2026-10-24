@@ -1,0 +1,140 @@
+{
+  "cases": {
+    "kill_before": {
+      "parent": {
+        "case": "kill_before",
+        "status": "passed",
+        "error": null,
+        "error_traceback": null,
+        "exit_code": -9,
+        "child_exit_code_after_stop": -9,
+        "session_id": "50c6d8d9e52659a9acb50a4cba6c8150420001fb0d3d5d40a516afeda05acba9",
+        "phases": [
+          "diagnostic",
+          "runtime",
+          "accept_apply"
+        ],
+        "worker_requests": 6,
+        "observed_tool_results": 4,
+        "distinct_permission_denials_observed": 1,
+        "permission_denial_history_appearances": 5,
+        "model_calls": 0,
+        "provider": "authored_local_sse",
+        "not_a_benchmark_trial": true
+      },
+      "recovery": {
+        "status": "passed",
+        "application": "unknown",
+        "candidate_accepted": true,
+        "production_resume_api": false,
+        "native_replay_attempted": false,
+        "runtime_reopened": 2,
+        "later_authored_edit_preserved": true,
+        "model_calls": 0
+      }
+    },
+    "kill_after": {
+      "parent": {
+        "case": "kill_after",
+        "status": "passed",
+        "error": null,
+        "error_traceback": null,
+        "exit_code": -9,
+        "child_exit_code_after_stop": -9,
+        "session_id": "8e33f584f12dd54d180e04b2123e6134e8ebb877641ff074df3942ac25c1e324",
+        "phases": [
+          "diagnostic",
+          "runtime",
+          "accept_apply"
+        ],
+        "worker_requests": 6,
+        "observed_tool_results": 4,
+        "distinct_permission_denials_observed": 1,
+        "permission_denial_history_appearances": 5,
+        "model_calls": 0,
+        "provider": "authored_local_sse",
+        "not_a_benchmark_trial": true
+      },
+      "recovery": {
+        "status": "passed",
+        "application": "unknown",
+        "candidate_accepted": true,
+        "production_resume_api": false,
+        "native_replay_attempted": false,
+        "runtime_reopened": 2,
+        "later_authored_edit_preserved": true,
+        "model_calls": 0
+      }
+    },
+    "positive": {
+      "parent": {
+        "case": "positive",
+        "status": "passed",
+        "error": null,
+        "error_traceback": null,
+        "exit_code": 0,
+        "child_exit_code_after_stop": 0,
+        "session_id": "309a73174afbd348e2fb831cee0115016d3ef7a3aa2c73c79489d23f6ae2d8d8",
+        "phases": [
+          "diagnostic",
+          "runtime",
+          "accept_apply"
+        ],
+        "worker_requests": 6,
+        "observed_tool_results": 4,
+        "distinct_permission_denials_observed": 1,
+        "permission_denial_history_appearances": 5,
+        "model_calls": 0,
+        "provider": "authored_local_sse",
+        "not_a_benchmark_trial": true
+      },
+      "recovery": {
+        "status": "passed",
+        "application": "applied",
+        "candidate_accepted": true,
+        "production_resume_api": false,
+        "native_replay_attempted": false,
+        "runtime_reopened": 2,
+        "later_authored_edit_preserved": true,
+        "model_calls": 0
+      }
+    }
+  },
+  "cell": {
+    "id": "c08dd8e737abfd5e586bd07775734831d00b47975631d3cb3dfb2f999c5f70e8",
+    "running": false,
+    "oom_killed": false,
+    "exit_code": 143,
+    "memory_bytes": 8589934592,
+    "memory_and_swap_bytes": 8589934592,
+    "network": "none",
+    "user": "65534:65534",
+    "readonly_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "binds": null,
+    "tmpfs": {
+      "/task": "rw,exec,nosuid,nodev,size=2147483648,mode=1777",
+      "/tmp": "rw,exec,nosuid,nodev,size=536870912,mode=1777"
+    },
+    "pids_limit": 256
+  },
+  "memory": {
+    "memory.max": "8589934592",
+    "memory.swap.max": "0",
+    "memory.peak": "821370880",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+  },
+  "retained_files": 133,
+  "driver_digest": "0d3fd9c9c78d24d153a81014904e4c8bb994568217f02db52fa5e531b7f5a495",
+  "models_started": 0,
+  "human_acceptance": null,
+  "real_registry": false,
+  "source_publication": false,
+  "production_resume_api": false
+}

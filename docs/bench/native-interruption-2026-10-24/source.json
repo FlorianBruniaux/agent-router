@@ -1,0 +1,27 @@
+{
+  "base": "4a581faf4d96291292e1fb99432d9643bfab93d4",
+  "tree": "82fce7b4359cd6e7c397fbf605ad9afb4a44e8db",
+  "archive_sha256": "ae99136967590c1a0751edd76822ac1c72b2d4ac825ec5d8027bedafd4d44cc6",
+  "changed_paths": {
+    "crates/router-runtime/examples/finite_reopen.rs": "8ee14262d538b53ab68c323413b496b5855ac99639266c1ed6eee8439d63651d",
+    "crates/router-runtime/examples/native-interruption/cut.c": "d7d0ee836649c0dc2ecec632f60eb773e257be49dd21661bc00f6178e26ffa68",
+    "crates/router-runtime/examples/native-interruption/qualify.py": "47be53f6e0b1b1b19de986182bfca49ffa9e3adccc04cbb10dec854a077ffdb2",
+    "crates/router-runtime/examples/native-interruption/test_cut.py": "dfb66e3c1daed4c7758f01f5e4aff291e8b1b1f860ee74304d22c294f0b98b62",
+    "crates/router-runtime/src/finite_client/application/tests.rs": "e33756a5ecc3053238658dbff76009f6a5d699c7c3e8b892b76fd879df8c0717",
+    "crates/router-runtime/src/finite_client/application/tests/process.rs": "d27795c5909d3531b36ed9f57678fd010f10a74737d25709ef37511ab7944d7f"
+  },
+  "unchanged_product_binary_source": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+  "signed_source_commit": "a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+  "signed_tree": "54846279d6a33d7e7781200d50575270e9adbdab",
+  "driver_revisions": {
+    "source_commit": "a352f5504050f74f25692d95f8d2be8bcc7a4e8e",
+    "tree": "54846279d6a33d7e7781200d50575270e9adbdab",
+    "build_driver_digest": "970337d73870c151dd399cdbc4e8a795240db94effe131522874d7bf560cd73e",
+    "native_driver_digest": "0d3fd9c9c78d24d153a81014904e4c8bb994568217f02db52fa5e531b7f5a495",
+    "changes": [
+      "qualify.py retains technical receipt and report for interrupted cases",
+      "source commit also adds fixture README"
+    ],
+    "compiled_rust_c_unchanged": true
+  }
+}
