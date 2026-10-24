@@ -9,7 +9,7 @@ import unittest
 
 class Interposer(unittest.TestCase):
     def test_boundaries_and_controls(self):
-        for stage in ('before','after','unarmed','wrong-target'):
+        for stage in ('before','after','partial','unarmed','wrong-target'):
             with self.subTest(stage=stage), tempfile.TemporaryDirectory(dir='/task') as directory:
                 root = Path(directory)
                 target, arm = root/'target', root/'armed'
@@ -20,7 +20,7 @@ class Interposer(unittest.TestCase):
                     AR_CUT_TARGET=str(target if stage != 'wrong-target' else root/'different'), AR_CUT_ARM=str(arm))
                 child = subprocess.Popen(['/task/programs/agent-router', str(target)], env=env)
                 try:
-                    if stage in ('before','after'):
+                    if stage in ('before','after','partial'):
                         deadline=time.monotonic()+5
                         while True:
                             pid,status=os.waitpid(child.pid,os.WNOHANG|os.WUNTRACED)
@@ -30,7 +30,7 @@ class Interposer(unittest.TestCase):
                                 break
                             self.assertLess(time.monotonic(),deadline)
                             time.sleep(.01)
-                        self.assertEqual(target.read_bytes(),b'before' if stage=='before' else b'after!')
+                        self.assertEqual(target.read_bytes(),{'before':b'before','after':b'after!','partial':b'aftore'}[stage])
                         child.kill()
                         self.assertEqual(child.wait(timeout=5),-signal.SIGKILL)
                     else:

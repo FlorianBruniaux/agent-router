@@ -75,7 +75,7 @@ def assert_journal(root, evidence, state, complete):
 
 class InterruptedSession(p.QualifiedSession):
     def __init__(self, argv, env, evidence, deadline=120):
-        self.cut = evidence.name in ('kill_before','kill_after')
+        self.cut = evidence.name in ('kill_before','kill_after','kill_partial')
         self.armed = False
         self.killed = False
         self.root = Path(b.loads((evidence/'config.json').read_bytes())['root'])
@@ -107,6 +107,24 @@ class InterruptedSession(p.QualifiedSession):
                 review = b.loads((self.evidence/'candidate-review.json').read_bytes())['review']
                 before = b.loads((self.evidence/'pre-application-source.json').read_bytes())
                 expected = review['preimage_sha256'] if self.evidence.name == 'kill_before' else review['candidate_sha256']
+                if self.evidence.name == 'kill_partial':
+                    task = b.loads((self.evidence/'submission.jsonl').read_bytes())
+                    original = task['public_files']['lib.rs']['content'].encode()
+                    report = b.loads(p.read_owned(self.root/'fresh-t02-verification/report.json', 1048576))
+                    candidate = report['output']['content'].encode()
+                    part = len(candidate) // 2
+                    mixed = candidate[:part] + original[part:]
+                    actual = p.read_owned(self.root/'candidate/lib.rs', 32768)
+                    assert 0 < part < len(candidate) and actual == mixed
+                    assert actual != original and actual != candidate
+                    assert sha(original) == review['preimage_sha256'] and sha(candidate) == review['candidate_sha256']
+                    expected = sha(mixed)
+                    b.write_new(self.evidence/'partial-source.bin', actual)
+                    b.save(self.evidence/'partial-write.json', {'written_bytes':part,
+                        'original_bytes':len(original),'candidate_bytes':len(candidate),
+                        'observed_bytes':len(actual),'original_sha256':sha(original),
+                        'candidate_sha256':sha(candidate),'mixed_sha256':expected,
+                        'different_from_both':True,'induced_short_write':True,'fsync_completed':False})
                 assert observed['files']['lib.rs'] == expected and observed['modes']['lib.rs'] == '0o600'
                 assert all(observed['files'][n] == digest for n,digest in before['files'].items() if n != 'lib.rs')
                 assert observed['head'] == before['head'] and not observed['refs']
@@ -175,7 +193,7 @@ def completed(report, raw, evidence):
 
 
 if __name__ == '__main__':
-    assert sys.argv[1] in ('kill_before','kill_after','positive')
+    assert sys.argv[1] in ('kill_before','kill_after','kill_partial','positive')
     b.Session = InterruptedSession
     b.interruption_acceptance = interrupted
     b.acceptance = completed
