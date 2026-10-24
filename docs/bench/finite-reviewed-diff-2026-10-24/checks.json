@@ -1,0 +1,231 @@
+{
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "snapshot": "v1",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "snapshot": "v1",
+      "log_sha256": "a5f1728a74e00f9e35615d00c22c72df157d7d690d1bb0123ad823600153e1e4",
+      "log_bytes": 483
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "snapshot": "v1",
+      "log_sha256": "fb1614877396c065eedb5a0fcb7c4855e946cfe3ec922fa04925da3542775fc6",
+      "log_bytes": 200445
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "a916be6e1b3e06c3190995a62b9fdb51f28dd7f69c2c16d5d7711eeb091ce8ea",
+      "log_bytes": 171
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "7d0434cc7fd2847d7972de91c9ac86ad3c285a2961883f1eaeae67a9fc733fdb",
+      "log_bytes": 78
+    },
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0
+    },
+    {
+      "name": "clippy-default",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "-p",
+        "agent-router-cli",
+        "--all-targets",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "c7ea594cfe23d096a8879ee9cab970338077918b6d57a6dacbcfcfee728b0b3e",
+      "log_bytes": 3011
+    },
+    {
+      "name": "clippy-all",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "a2daf0f228e60ec8c534531d712e68688fc0f4a81bbf332fc1a095566408e153",
+      "log_bytes": 209
+    },
+    {
+      "name": "cli-output",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--all-features",
+        "--bin",
+        "agent-router",
+        "--locked",
+        "--offline",
+        "--",
+        "finite_entry::output::tests::",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "f7435ef8eb5a8c2dbf989e177f4ab10fc855d2a7af1e38999233e48bfc433d69",
+      "log_bytes": 861
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "snapshot": "v2",
+      "log_sha256": "a6aff022076150fb1ec13da131120d066cf272a2d51d7254ac9a960fd65d41fc",
+      "log_bytes": 81
+    }
+  ],
+  "workspace_reported": {
+    "passed": 2010,
+    "failed": 0,
+    "ignored": 43,
+    "summaries": 199,
+    "includes_nested_helper_results": true
+  },
+  "final_output_tests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "native_pilot": "not_run_for_changed_binary",
+  "remote_ci": "not_used_as_acceptance_evidence",
+  "models_started": 0,
+  "real_registry_used": false,
+  "private_access_changed": false,
+  "memory_contract_changed": false,
+  "merges": [
+    {
+      "pr": 208,
+      "reviewed_head": "6cb5a9f9476c743fc6b06363292a15afddc39e7c",
+      "merge_commit": "ae7882099b884ff910318ae1d3d890e9955c30f5",
+      "tree": "cd90110af7d2fbe1a843f7fa94e6640239e2e407",
+      "trees_equal": true,
+      "basis": "existing independent review and local gates; remote CI not treated as passed"
+    },
+    {
+      "pr": 209,
+      "reviewed_head": "6049d6694efa8f8aa482d5dc2fdfe60680ce777c",
+      "merge_commit": "6a084a70bf524fab387e1459bbc0a9dcffdd6d09",
+      "tree": "a071dcec1f255f6c2bc1d311019b0641d3d35fb5",
+      "trees_equal": true,
+      "basis": "existing independent review and local gates; remote CI not treated as passed"
+    },
+    {
+      "pr": 210,
+      "reviewed_head": "a4e735d88fe6ae2f64afa605b97c5f4d0e96dcc0",
+      "merge_commit": "9863f71efe8816361f9d5c6679c533bd4be3a437",
+      "tree": "2b557ee7b2d686df7e358492e728dedfbe2eda8a",
+      "trees_equal": true,
+      "basis": "existing independent review and local gates; remote CI not treated as passed"
+    }
+  ]
+}

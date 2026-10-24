@@ -1,0 +1,42 @@
+{
+  "head": "71fcf6f12b5da49ffffb392c9e51a870228a0b28",
+  "base": "9863f71efe8816361f9d5c6679c533bd4be3a437",
+  "tree": "ff12a7292335cbb47e64557eef47502722d965cb",
+  "signature": "GitHub VALID",
+  "tested_snapshot_v1": {
+    "crates/agent-router-cli/src/finite_entry/output.rs": "c45d90812b7672fe397182c360ff31bd4e4cc2d35f189975a5334c374cd05df4",
+    "crates/agent-router-cli/src/finite_entry/resume.rs": "b55728509226cbc6894f1c159d058ab0f503594ce99bc42ada45e30a3ac26c38",
+    "crates/agent-router-cli/src/finite_entry/session.rs": "f4bd39abe5eea0f5185acfdf0bc4dfe487e26eb767138b41f8ec8d8af03aaf3c",
+    "crates/router-runtime/src/finite_client.rs": "0116f53d95bd20e977f91085cad725be79f4c1ff6ec1933f563aeda0b8a2eeab",
+    "crates/router-runtime/src/finite_client/application.rs": "b4029143c9df5b48d166d2909244962e4988caab6a88258ce88b07132a779c8a",
+    "crates/router-runtime/src/finite_client/application/presentation.rs": "f674aa0dcd87739914faa53263b280cd9caff42165e5d8c19b3b077c4ecd5a66",
+    "crates/router-runtime/src/finite_client/application/resume.rs": "06aa758ff4fcc274c0ce2ae5782ac0b26d4c7382edc3787f84577c0218452946",
+    "crates/router-runtime/src/finite_client/application/tests.rs": "cdcdd7f14c53dccbbc22258c1ca01d91d6473acc98df3eafe4bea6e060fc1d1d",
+    "crates/router-runtime/src/finite_client/application/tests/presentation.rs": "604f3f7ae058e4201a943e3f64b0a32c6c7fbf3b47431e41be14212b87a85246",
+    "crates/router-runtime/src/finite_client/application/tests/resume.rs": "3b5e2c8fd1c596c0d34646215339308d73815d64e367de139d53eb9820398dff",
+    "crates/router-runtime/src/lib.rs": "435719b4fd6377e8a4f10721fdead51e83c0cf6203f5d7d03ac29771376a4d79",
+    "docs/cli-execution.md": "0bb1267d9f7a96f72cfe052f5682d617f9e5d8834a17637e5a2dc0c3beeaa245",
+    "docs/reference/finite-application-resume.md": "d5289e2c0bb148e8b4bffb9393b374a21c8833b2dfeb28bc7b5aee0a1b562c60",
+    "docs/reference/json-contracts.md": "16ac138a25028d1d591348968497704012229ebe065dddd97935beef24a9c6f0"
+  },
+  "final_snapshot_v2": {
+    "crates/agent-router-cli/src/finite_entry/output.rs": "a5bd9f0c706ad12e6f4be81b1117ca1a414b2021ec24b64c78bda8582806be94",
+    "crates/agent-router-cli/src/finite_entry/resume.rs": "b55728509226cbc6894f1c159d058ab0f503594ce99bc42ada45e30a3ac26c38",
+    "crates/agent-router-cli/src/finite_entry/session.rs": "f4bd39abe5eea0f5185acfdf0bc4dfe487e26eb767138b41f8ec8d8af03aaf3c",
+    "crates/router-runtime/src/finite_client.rs": "0116f53d95bd20e977f91085cad725be79f4c1ff6ec1933f563aeda0b8a2eeab",
+    "crates/router-runtime/src/finite_client/application.rs": "b4029143c9df5b48d166d2909244962e4988caab6a88258ce88b07132a779c8a",
+    "crates/router-runtime/src/finite_client/application/presentation.rs": "f674aa0dcd87739914faa53263b280cd9caff42165e5d8c19b3b077c4ecd5a66",
+    "crates/router-runtime/src/finite_client/application/resume.rs": "06aa758ff4fcc274c0ce2ae5782ac0b26d4c7382edc3787f84577c0218452946",
+    "crates/router-runtime/src/finite_client/application/tests.rs": "cdcdd7f14c53dccbbc22258c1ca01d91d6473acc98df3eafe4bea6e060fc1d1d",
+    "crates/router-runtime/src/finite_client/application/tests/presentation.rs": "604f3f7ae058e4201a943e3f64b0a32c6c7fbf3b47431e41be14212b87a85246",
+    "crates/router-runtime/src/finite_client/application/tests/resume.rs": "3b5e2c8fd1c596c0d34646215339308d73815d64e367de139d53eb9820398dff",
+    "crates/router-runtime/src/lib.rs": "435719b4fd6377e8a4f10721fdead51e83c0cf6203f5d7d03ac29771376a4d79",
+    "docs/cli-execution.md": "0bb1267d9f7a96f72cfe052f5682d617f9e5d8834a17637e5a2dc0c3beeaa245",
+    "docs/reference/finite-application-resume.md": "6cc2a57d50cfe743c114398ba5f17151d3c1814e42a5d62004552bdb024c3335",
+    "docs/reference/json-contracts.md": "16ac138a25028d1d591348968497704012229ebe065dddd97935beef24a9c6f0"
+  },
+  "post_workspace_delta": [
+    "output.rs: cfg guard for normal builds and test name correction",
+    "finite-application-resume.md: original candidate diff clarification"
+  ]
+}
