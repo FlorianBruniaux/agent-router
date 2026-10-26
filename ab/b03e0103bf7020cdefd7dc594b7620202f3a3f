@@ -1,0 +1,235 @@
+CHANGELOG.md
+  s_13482db90a49c5::t_ec682d9a15a75f 19-20,37-38
+crates/agent-router-cli/Cargo.toml
+  s_13482db90a49c5::t_83b182bc186ae5 14-15,67
+crates/agent-router-cli/src/command.rs
+  s_13482db90a49c5::t_12a08fb3a41c5f 80-99,1217-1222
+crates/agent-router-cli/src/finite_entry.rs
+  s_13482db90a49c5::t_60c723f1af3b09 1-261
+crates/agent-router-cli/src/finite_entry/input.rs
+  s_13482db90a49c5::t_862c61a10f7dc5 1-134
+crates/agent-router-cli/src/finite_entry/output.rs
+  s_13482db90a49c5::t_cec6bd77264060 1-267
+crates/agent-router-cli/src/finite_entry/qualification.rs
+  s_13482db90a49c5::t_8b724891a972d7 1-428
+crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py
+  s_13482db90a49c5::t_27759161e20bdb 1-159
+crates/agent-router-cli/src/finite_entry/qualification/process.rs
+  s_13482db90a49c5::t_b227cd6e962cd1 1-232
+crates/agent-router-cli/src/finite_entry/resume.rs
+  s_13482db90a49c5::t_6cc6d9d2576eda 1-98
+crates/agent-router-cli/src/finite_entry/routing.rs
+  s_13482db90a49c5::t_f94e25b2c01a44 1-235
+crates/agent-router-cli/src/finite_entry/session.rs
+  s_13482db90a49c5::t_92d723342fa694 1-549
+crates/agent-router-cli/src/finite_entry/transport.rs
+  s_13482db90a49c5::t_38211cab1d4b59 1-357
+crates/agent-router-cli/src/main.rs
+  s_13482db90a49c5::t_f9c3dd2e69a6b7 22-23,227,231,315-341
+crates/agent-router-cli/src/version_info.rs
+  s_13482db90a49c5::t_fb8ec4299c0eaf 15,22-25
+crates/agent-router-cli/tests/finite_entry.rs
+  s_13482db90a49c5::t_1809255972258f 1-206
+crates/agent-router-cli/tests/finite_resume.rs
+  s_13482db90a49c5::t_e583517506c498 1-33
+crates/agent-router-cli/tests/fresh_t02_qualification.py
+  s_13482db90a49c5::t_12d35ce0eef3ce 1-116
+crates/router-local-api/src/server.rs
+  s_13482db90a49c5::t_20bf80d581eee7 892-923
+crates/router-runtime/examples/finite_reopen.rs
+  s_13482db90a49c5::t_5a7aabbbc6bd9e 1-62
+crates/router-runtime/examples/native-interruption/README.md
+  s_13482db90a49c5::t_703a488d4ae51f 1-19
+crates/router-runtime/examples/native-interruption/cut.c
+  s_13482db90a49c5::t_e9a1901311077f 1-71
+crates/router-runtime/examples/native-interruption/qualify.py
+  s_13482db90a49c5::t_00967027ada7bf 1-200
+crates/router-runtime/examples/native-interruption/test_cut.py
+  s_13482db90a49c5::t_3dbac5aae85792 1-45
+crates/router-runtime/examples/native-resume/qualify.py
+  s_13482db90a49c5::t_1501c9c1e19791 1-166
+crates/router-runtime/src/application.rs
+  s_13482db90a49c5::t_ea81ca69246d95 1-65
+crates/router-runtime/src/application/tests.rs
+  s_13482db90a49c5::t_bb5003f9e6cfbf 1-423
+crates/router-runtime/src/finite_client.rs
+  s_13482db90a49c5::t_4fc4a96463fe01 99-100,1292,1295-1296
+crates/router-runtime/src/finite_client/application.rs
+  s_13482db90a49c5::t_1e450845445295 1-351
+crates/router-runtime/src/finite_client/application/resume.rs
+  s_13482db90a49c5::t_81a6717d1d2f5b 1-472
+crates/router-runtime/src/finite_client/application/tests.rs
+  s_13482db90a49c5::t_3e255c3be6a6f2 1-346
+crates/router-runtime/src/finite_client/application/tests/process.rs
+  s_13482db90a49c5::t_3bad42ab44640e 1-196
+crates/router-runtime/src/finite_client/application/tests/resume.rs
+  s_13482db90a49c5::t_7d60758dda6139 1-234
+crates/router-runtime/src/finite_client/verification.rs
+  s_13482db90a49c5::t_3ad13fd8b64d01 93,102-105
+crates/router-runtime/src/integration.rs
+  s_13482db90a49c5::t_675b1fc99a08cc 640-641,685-695
+crates/router-runtime/src/integration/tests/crash_tests.rs
+  s_13482db90a49c5::t_43bb2242aa7339 1-259
+crates/router-runtime/src/store.rs
+  s_13482db90a49c5::t_38202ca9341578 20,24-25,707-715,718,738-746,752-771,777-784,1343
+crates/router-runtime/src/store/finite_resume.rs
+  s_13482db90a49c5::t_3944ba8143315c 1-55
+crates/router-runtime/src/store/verification_history_tests.rs
+  s_13482db90a49c5::t_1f251053cfeb96 1-200
+crates/router-runtime/tests/runtime.rs
+  s_13482db90a49c5::t_d3a49e9db50ece 21-23,3141-3144,3146-3158,4415-4417
+crates/router-runtime/tests/runtime/application_recovery.rs
+  s_13482db90a49c5::t_048b5a27fcbec2 1-366
+docs/adr/0027-verified-patch-publication.md
+  s_13482db90a49c5::t_80472babfa2430 6,100-119
+docs/adr/0043-finite-artifact-verification.md
+  s_13482db90a49c5::t_9cddcbf74bcb87 6,72-90
+docs/adr/0045-fresh-finite-entry.md
+  s_13482db90a49c5::t_3f4580df91fe48 1-123
+docs/adr/0046-finite-controller-application.md
+  s_13482db90a49c5::t_cce073adb5185f 1-84
+docs/adr/0047-explicit-finite-application-resume.md
+  s_13482db90a49c5::t_a4d4fb645e138f 1-78
+docs/adr/README.md
+  s_13482db90a49c5::t_d0ebf07f0e33a7 39,64-65,68-71
+docs/bench/application-recovery-2026-10-23/README.md
+  s_13482db90a49c5::t_06fbf231bf2692 1-47
+docs/bench/application-recovery-2026-10-23/source-pins.json
+  s_13482db90a49c5::t_141bca2a43a0a2 1-20
+docs/bench/application-recovery-2026-10-23/validation.json
+  s_13482db90a49c5::t_e69483b07d46a1 1-221
+docs/bench/fresh-finite-entry-2026-10-22/README.md
+  s_13482db90a49c5::t_6412f863961e20 1-126
+docs/bench/fresh-finite-entry-2026-10-22/controller.py
+  s_13482db90a49c5::t_3b28b1ee81684d 1-487
+docs/bench/fresh-finite-entry-2026-10-22/evaluate_cell.py
+  s_13482db90a49c5::t_6a7ad1f12fad1a 1-95
+docs/bench/fresh-finite-entry-2026-10-22/evidence.json
+  s_13482db90a49c5::t_de775218ce3611 1-318
+docs/bench/fresh-finite-entry-2026-10-22/input-pins.json
+  s_13482db90a49c5::t_0c576f290bde72 1-46
+docs/bench/fresh-finite-entry-2026-10-22/source-pins.json
+  s_13482db90a49c5::t_7443a47e770616 1-17
+docs/bench/fresh-finite-entry-2026-10-22/test_controller.py
+  s_13482db90a49c5::t_86003ca818dd9e 1-101
+docs/bench/fresh-runtime-verification-2026-10-23/README.md
+  s_13482db90a49c5::t_dcb50b98bb901c 1-76
+docs/bench/fresh-runtime-verification-2026-10-23/qualification.json
+  s_13482db90a49c5::t_c4d79c598e9f80 1-350
+docs/bench/fresh-runtime-verification-2026-10-23/source-pins.json
+  s_13482db90a49c5::t_2374613d99ee05 1-16
+docs/bench/fresh-runtime-verification-2026-10-23/validation.json
+  s_13482db90a49c5::t_c24590ac8c5d63 1-170
+docs/bench/native-application-resume-2026-10-24/README.md
+  s_13482db90a49c5::t_5c91268300dbfe 1-70
+docs/bench/native-application-resume-2026-10-24/independent-reviews.json
+  s_13482db90a49c5::t_7006f3edcba8e6 1-22
+docs/bench/native-application-resume-2026-10-24/linux-build.json
+  s_13482db90a49c5::t_ac8297032bd9d1 1-40
+docs/bench/native-application-resume-2026-10-24/local-checks.json
+  s_13482db90a49c5::t_470e2b906fc062 1-90
+docs/bench/native-application-resume-2026-10-24/native-evidence.json
+  s_13482db90a49c5::t_05e708f1af858f 1-409
+docs/bench/native-application-resume-2026-10-24/native-results.json
+  s_13482db90a49c5::t_2d5e2229e6e19c 1-127
+docs/bench/native-application-resume-2026-10-24/retained-manifests.json
+  s_13482db90a49c5::t_51250d160722ec 1-1296
+docs/bench/native-application-resume-2026-10-24/source.json
+  s_13482db90a49c5::t_52a1a5afee10dc 1-9
+docs/bench/native-candidate-application-2026-10-23/README.md
+  s_13482db90a49c5::t_a168d8e02898b7 1-89
+docs/bench/native-candidate-application-2026-10-23/independent-reviews.json
+  s_13482db90a49c5::t_07ea95adb20d1f 1-50
+docs/bench/native-candidate-application-2026-10-23/linux-build.json
+  s_13482db90a49c5::t_af04f492db8fca 1-90
+docs/bench/native-candidate-application-2026-10-23/local-checks.json
+  s_13482db90a49c5::t_e750cc6bc8b27c 1-110
+docs/bench/native-candidate-application-2026-10-23/native-evidence.json
+  s_13482db90a49c5::t_1777a2a469393a 1-392
+docs/bench/native-candidate-application-2026-10-23/native-results.json
+  s_13482db90a49c5::t_73da4ba98bfe0b 1-40
+docs/bench/native-candidate-application-2026-10-23/retained-manifest.json
+  s_13482db90a49c5::t_5ed66e2539fa21 1-266
+docs/bench/native-candidate-application-2026-10-23/source-pins.json
+  s_13482db90a49c5::t_8f0e6f7827a39e 1-15
+docs/bench/native-candidate-application-2026-10-23/source.json
+  s_13482db90a49c5::t_07b8f4a2ca1468 1-11
+docs/bench/native-candidate-application-2026-10-23/validation-history.json
+  s_13482db90a49c5::t_c2951aaabf4b40 1-38
+docs/bench/native-interruption-2026-10-24/README.md
+  s_13482db90a49c5::t_12deb938074080 1-40
+docs/bench/native-interruption-2026-10-24/driver-pins.json
+  s_13482db90a49c5::t_f87cbb3623b58c 1-30
+docs/bench/native-interruption-2026-10-24/independent-reviews.json
+  s_13482db90a49c5::t_5e1348725da755 1-231
+docs/bench/native-interruption-2026-10-24/linux-build.json
+  s_13482db90a49c5::t_5782332e2d5ee4 1-74
+docs/bench/native-interruption-2026-10-24/local-checks.json
+  s_13482db90a49c5::t_d9e96a7f68d72f 1-99
+docs/bench/native-interruption-2026-10-24/native-evidence.json
+  s_13482db90a49c5::t_61d270b6436f6d 1-5004
+docs/bench/native-interruption-2026-10-24/native-results.json
+  s_13482db90a49c5::t_f8865250de49d3 1-140
+docs/bench/native-interruption-2026-10-24/retained-manifest.json
+  s_13482db90a49c5::t_a17650110c8c75 1-542
+docs/bench/native-interruption-2026-10-24/source-pins.json
+  s_13482db90a49c5::t_4d743a8cd558a0 1-9
+docs/bench/native-interruption-2026-10-24/source.json
+  s_13482db90a49c5::t_2c1a9f23d94155 1-27
+docs/bench/native-interruption-2026-10-24/validation-history.json
+  s_13482db90a49c5::t_3dd4dea2e082fd 1-17
+docs/bench/native-midwrite-2026-10-24/README.md
+  s_13482db90a49c5::t_0d9e163d406f2f 1-33
+docs/bench/native-midwrite-2026-10-24/independent-reviews.json
+  s_13482db90a49c5::t_923beaa04f8a1f 1-198
+docs/bench/native-midwrite-2026-10-24/linux-build.json
+  s_13482db90a49c5::t_8a03aeb2a1f97e 1-60
+docs/bench/native-midwrite-2026-10-24/local-checks.json
+  s_13482db90a49c5::t_79330f92407c7e 1-92
+docs/bench/native-midwrite-2026-10-24/native-evidence.json
+  s_13482db90a49c5::t_f95e1db096d1bc 1-1911
+docs/bench/native-midwrite-2026-10-24/native-results.json
+  s_13482db90a49c5::t_f992adec8ee18a 1-75
+docs/bench/native-midwrite-2026-10-24/retained-manifest.json
+  s_13482db90a49c5::t_4c635436a11725 1-194
+docs/bench/native-midwrite-2026-10-24/source.json
+  s_13482db90a49c5::t_8071dae5c92cf1 1-34
+docs/bench/native-proof-link-2026-10-23/README.md
+  s_13482db90a49c5::t_d78e684aacaea9 1-116
+docs/bench/native-proof-link-2026-10-23/qualification.json
+  s_13482db90a49c5::t_c8102aaaf38f69 1-193
+docs/bench/native-proof-link-2026-10-23/source-pins.json
+  s_13482db90a49c5::t_384b67f920b467 1-7
+docs/bench/native-proof-link-2026-10-23/validation.json
+  s_13482db90a49c5::t_ce251124458ff1 1-131
+docs/cli-execution.md
+  s_13482db90a49c5::t_d271708daafeae 355-359,386-393
+docs/fresh-finite-qualification.md
+  s_13482db90a49c5::t_a9a67b7da8dd98 1-144
+docs/reference/finite-application-resume.md
+  s_13482db90a49c5::t_4b5371b516bb08 1-59
+docs/reference/json-contracts.md
+  s_13482db90a49c5::t_9f013836e817c2 696-730,762-769
+scripts/package-core.py
+  s_13482db90a49c5::t_cb895ad73259e7 28,30-34,221
+scripts/test-package-core.py
+  s_13482db90a49c5::t_b47eef644597ab 253-273
+tests/support/runtime_fixture.rs
+  s_13482db90a49c5::t_4d0de4671aba9b 1-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "abb03e0103bf7020cdefd7dc594b7620202f3a3f",
+  "prompts": {},
+  "sessions": {
+    "s_13482db90a49c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15dfd-e5fe-7943-98a1-67ea3d70ca04",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
