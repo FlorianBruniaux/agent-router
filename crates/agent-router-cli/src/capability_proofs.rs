@@ -48,9 +48,17 @@ pub(crate) fn fresh(
         // dispatch must independently observe the proof's version.
         if observation.evidence.iter().any(|e| {
             e.kind != router_adapter_api::EvidenceKind::HostRuntime
-                && e.observed_version
-                    .as_ref()
-                    .is_some_and(|v| v != &binding.observed_version)
+                && e.observed_version.as_ref().is_some_and(|version| {
+                    // Existing proofs can use opaque version labels. Preserve
+                    // their exact equality; only cross-form Codex discovery
+                    // compatibility needs SemVer projection.
+                    version != &binding.observed_version
+                        && (e.kind != router_adapter_api::EvidenceKind::CodexModelCache
+                            || !router_adapter_api::codex_cache_version_matches(
+                                version,
+                                &binding.observed_version,
+                            ))
+                })
         }) {
             continue;
         }
@@ -290,6 +298,40 @@ mod tests {
                 asset_authority: None,
                 now: Some(now),
                 snapshot_max_age_seconds: 300,
+            }
+        }
+    }
+
+    #[test]
+    fn whole_cache_version_loads_only_the_exact_full_native_proof_binding() {
+        use adapter_codex::{CodexProbe, CodexProbeConfig};
+        let fixture = Fixture::new();
+        let mut record = fixture.proof.record.clone();
+        record.sequence += 1;
+        record.proof_id = "synthetic-prerelease-proof".into();
+        record.binding.observed_version = "0.1.0-alpha.10.2".into();
+        let mut store = CapabilityProofStore::create(&fixture.store).unwrap();
+        let proof = CapabilityProofKey::derive(&fixture.key, store.store_id())
+            .unwrap()
+            .authenticate(record)
+            .unwrap();
+        store.append(&proof, &fixture.key).unwrap();
+        let config =
+            crate::execution::sandbox(&fixture.config).unwrap_or_else(|_| panic!("configuration"));
+        for (version, expected) in [("0.1.0-alpha.10.2", 1), ("0.1.0-alpha.11.1", 0)] {
+            let observation = CodexProbe::new(CodexProbeConfig {
+                model_cache_path: fixture.cache.clone(),
+                observed_version: Some(version.into()),
+            })
+            .probe(120)
+            .unwrap();
+            let verifier = fresh(&fixture.store, &config, &observation, None)
+                .unwrap_or_else(|_| panic!("verifier"));
+            let snapshot = verifier.snapshot().unwrap();
+            let deciding = snapshot.deciding_proofs(&observation.host, 120);
+            assert_eq!(deciding.len(), expected, "{version}");
+            if let Some((_, proof)) = deciding.first() {
+                assert_eq!(proof.binding.observed_version, "0.1.0-alpha.10.2");
             }
         }
     }

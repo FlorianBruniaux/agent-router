@@ -226,6 +226,13 @@ pub struct FiniteResumeReview {
     pub candidate_sha256: String,
     pub approval_digest: Option<String>,
 }
+/// Display-only envelope; the persisted original review format stays unchanged.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct FiniteResumePresentation {
+    pub review: FiniteResumeReview,
+    pub original: FiniteApplicationReview,
+    pub diff: String,
+}
 /// Lives only in this reopened controller. Neither original approval nor a
 /// review from a different handle can authorize a write. No worker is started.
 pub struct FiniteResume<'a> {
@@ -393,6 +400,34 @@ impl FiniteResume<'_> {
             )?);
         }
         Ok(review)
+    }
+    pub async fn presentation(&self) -> Result<FiniteResumePresentation> {
+        let review = self.review().await?;
+        let diff = self.h.captured_diff(&self.original)?;
+        Ok(FiniteResumePresentation {
+            review,
+            original: self.original.clone(),
+            diff,
+        })
+    }
+    pub async fn validate_presentation(&self, packet: &FiniteResumePresentation) -> Result<()> {
+        if packet.diff.len() > 131072
+            || content_digest(packet.diff.as_bytes()) != self.original.artifact_sha256
+            || &self.presentation().await? != packet
+        {
+            return Err(RuntimeError::Integrity(
+                "finite resume presentation changed",
+            ));
+        }
+        Ok(())
+    }
+    pub async fn apply_presented(
+        &self,
+        packet: &FiniteResumePresentation,
+        approved: &str,
+    ) -> Result<()> {
+        self.validate_presentation(packet).await?;
+        self.apply(&packet.review, approved).await
     }
     pub async fn apply(&self, review: &FiniteResumeReview, approved: &str) -> Result<()> {
         self.apply_observed(review, approved, None).await

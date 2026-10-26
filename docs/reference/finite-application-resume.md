@@ -18,7 +18,22 @@ paths are refused. Never substitute a new admission registry to reopen a store.
 Opening can perform ordinary store recovery; inspection does not change the
 source or append an application resume intent.
 
-The `resume.review` JSON line includes a `review` object:
+The `resume.review` JSON line includes `review`, `original` (the persisted
+application review), and `diff` (the exact captured UTF-8 patch). Hash the decoded
+UTF-8 bytes to compare with `original.artifact_sha256`; JSON escaping is transport
+encoding, not part of the hash. Render this untrusted text as data. The candidate
+hash and original approval bind the original review to the fresh resume review.
+This diff describes the original candidate, not a delta computed from the current
+possibly divergent file. A state without an approval digest permits no write.
+
+The display is limited to 131,072 bytes. Missing, changed, symlinked, non-UTF-8 or
+binary artifacts refuse presentation and interactive application. No external
+display-file path is accepted. This may refuse display even when the original
+state-only library review remains available. The CLI revalidates the whole
+presentation before using the existing application checks. Persisted context,
+original review and approval digest formats are unchanged.
+
+The `review.state` has these meanings:
 
 | state | Meaning | Approval |
 | --- | --- | --- |

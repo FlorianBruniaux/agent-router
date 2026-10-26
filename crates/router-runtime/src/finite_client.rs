@@ -1292,7 +1292,10 @@ pub(crate) use namespace_state::FiniteClientResources;
 mod application;
 mod runtime_binding;
 mod verification;
-pub use application::resume::{FiniteResume, FiniteResumeReview, FiniteResumeState};
+pub use application::presentation::FiniteApplicationPresentation;
+pub use application::resume::{
+    FiniteResume, FiniteResumePresentation, FiniteResumeReview, FiniteResumeState,
+};
 pub use application::{FiniteApplicationReview, FiniteClientApplication};
 pub(crate) use runtime_binding::bind_runtime_definition;
 pub use runtime_binding::{ApprovedFiniteClientRun, PendingFiniteClientRun};

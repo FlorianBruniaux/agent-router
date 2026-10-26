@@ -18,10 +18,11 @@ mod finite_client;
 pub mod finite_tools;
 mod generated;
 pub use finite_client::{
-    ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteApplicationReview,
-    FiniteClientApplication, FiniteClientInvocation, FiniteClientLaunchPlan, FiniteClientReview,
-    FiniteClientValidation, FiniteClientVerifier, FiniteClientWorkspace, FiniteCodexState,
-    FiniteOutputMode, FiniteResume, FiniteResumeReview, FiniteResumeState, LINUX_FINITE_PROFILE_V2,
+    ApprovedFiniteClient, ApprovedFiniteClientRun, FiniteApplicationPresentation,
+    FiniteApplicationReview, FiniteClientApplication, FiniteClientInvocation,
+    FiniteClientLaunchPlan, FiniteClientReview, FiniteClientValidation, FiniteClientVerifier,
+    FiniteClientWorkspace, FiniteCodexState, FiniteOutputMode, FiniteResume,
+    FiniteResumePresentation, FiniteResumeReview, FiniteResumeState, LINUX_FINITE_PROFILE_V2,
     LINUX_FINITE_TOOLS_CONTEXT_PROFILE_V4, LINUX_FINITE_TOOLS_PROFILE_V3, OwnedBroker,
     OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
     SubscriptionControllerPeer,

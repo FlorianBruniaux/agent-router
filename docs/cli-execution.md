@@ -391,3 +391,23 @@ context-bound application intent after controller interruption. It reopens the
 original admission and requires fresh approval in the same process before a
 single bounded write. Partial files, later edits and already consumed resumes
 remain preserved. This command starts no worker and grants no new host access.
+
+### Finite candidate presentation before application
+
+Before the `accept_apply` prompt, `entry.candidate_review` now carries `diff`
+alongside its existing `review`. The runtime reconstructs the candidate from the
+captured artifact and rereads the exact bounded patch. The decoded UTF-8 bytes
+hash to `review.artifact_sha256`; that hash is already bound into the approval.
+The CLI revalidates the displayed payload after approval and before application.
+Changed text, artifact, candidate, evidence or source refuses the write.
+
+The display accepts text up to 131,072 bytes, without lossy conversion or binary
+patches. JSON escaping preserves bytes; clients must render patch text as data.
+The existing 1 MiB output-line bound and output deadline still apply. A failed
+review write prevents the approval prompt and application. This exposes the same
+private captured artifact already present in the final result, earlier in the
+same controller stream; it grants no new filesystem access.
+
+`finite-resume` provides the same inline text with the original review and a
+fresh resume review; see [the resume protocol](reference/finite-application-resume.md).
+Local protocol tests do not replace Linux qualification of the changed binary.

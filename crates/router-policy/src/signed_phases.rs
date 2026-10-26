@@ -84,7 +84,12 @@ impl PhaseRouter {
             .observation()
             .evidence
             .iter()
-            .filter(|e| e.kind != EvidenceKind::CodexModelCache)
+            .filter(|e| {
+                matches!(
+                    e.kind,
+                    EvidenceKind::ClaudeNativeStream | EvidenceKind::HostRuntime
+                )
+            })
             .filter_map(|e| e.observed_version.as_ref())
             .collect();
         let version = versions

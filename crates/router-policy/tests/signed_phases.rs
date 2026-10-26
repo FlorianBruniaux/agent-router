@@ -51,6 +51,26 @@ fn signed_projection_routes_without_loading_any_asset_body() {
     // The signed body references have no filesystem roots and do not exist.
     assert!(!f.temp.path().join("agents/fixture.md").exists());
 }
+
+#[test]
+fn caller_supplied_codex_version_cannot_establish_a_signed_native_host() {
+    let mut f = Fixture::new();
+    for source in &mut f.observation.evidence {
+        source.kind = router_adapter_api::EvidenceKind::CodexCliVersion;
+    }
+    f.observation.host.capabilities.clear();
+    for value in f.observation.capabilities.values_mut() {
+        value.support = CapabilitySupport::Unknown;
+        value.source_ids.clear();
+    }
+    f.activate(100);
+    assert!(matches!(
+        f.context(100),
+        Err(router_policy::PhaseRouteError::Invalid(
+            "signed host version unknown or conflicting"
+        ))
+    ));
+}
 #[test]
 fn better_candidate_is_excluded_before_scoring_by_signed_mutation_ceiling() {
     let mut f = Fixture::new();

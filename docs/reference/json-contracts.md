@@ -72,6 +72,21 @@ Without one, a handwritten `supported` or `unsupported` claim fails with
 `capability.evidence.unauthenticated`. Model discovery and capability validation
 remain separate. A model cache or native stream never proves tools or writes.
 
+Codex model discovery compares the cache's whole `major.minor.patch` version
+with the selected CLI version. A valid prerelease or build suffix can match
+that whole version for discovery; a different release cannot. Supplying
+`inspect --observed-version` also retains the exact caller-provided version in
+an evidence source of kind `codex_cli_version`. That source is provenance only:
+it cannot establish a signed native host, native asset availability or a
+capability. Proof loading compares this full version exactly, and native
+dispatch still checks the full version and executable digest independently.
+Omitting the flag retains the existing cache-only observation shape. Reading
+a shared cache does not prove which process, account or client surface wrote it.
+
+For the October model pool, use `assets/catalogs/codex-core-v2.json` as the
+explicit policy prior; its schema remains 1. See
+[catalog policy and unrated entries](../../assets/catalogs/README.md).
+
 The v1 authenticated proof contract lives in `router-adapter-api`. It contains a
 random store identity, increasing sequence, proof identity, capability, tier,
 attempt outcome, model identity, nonce/effect digests and start/end/lifetime
@@ -767,3 +782,17 @@ validating runtime library. [The command protocol](finite-application-resume.md)
 requires the original admission binding and a new same-process approval on an
 intact preimage. Context, original intent, resume intent and completion remain
 separate append-only evidence; candidate bytes alone never imply completion.
+
+### Finite application display envelopes
+
+`FiniteApplicationPresentation` contains the existing `FiniteApplicationReview`
+and an inline `diff`. `FiniteResumePresentation` contains the fresh resume
+`review`, the persisted `original` review and that same artifact text. These are
+display envelopes, not persisted intent formats. Their validation rereads the
+captured artifact and checks the complete payload against current runtime state.
+The existing artifact hash binds the exact displayed bytes into approval; no
+second display digest or authority is introduced.
+
+The finite CLI emits these fields before approval. JSON consumers hash decoded
+UTF-8 bytes and render untrusted patch text as data. Limits and refusal behavior
+are documented in [the resume protocol](finite-application-resume.md).

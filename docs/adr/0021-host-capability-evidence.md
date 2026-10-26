@@ -3,7 +3,7 @@ adr: "0021"
 title: Host capability evidence from supervised canaries
 status: amended
 created: 2026-09-30
-last_modified: 2026-10-01
+last_modified: 2026-10-25
 scope: "Batches 1 to 3, 5 and 6 are implemented (Claude model identity, typed `prepare` errors, `assets seal`, private entry copies and authenticated proof consumers). Batch 4 blocks native activation: Codex cannot reach its provider under `network: false`; Claude Code is inconclusive at startup. ADR 0022 permits independent synthetic infrastructure work on batches 5, 6 and 9 without native activation. Every real host capability stays UNKNOWN."
 amended_by: ["0022"]
 supersedes: []
@@ -12,6 +12,29 @@ related: ["0002", "0003", "0014", "0016"]
 ---
 
 # ADR 0021: Host capability evidence from supervised canaries
+
+## Codex discovery version amendment, 2026-10-25
+
+Codex's [model manager projects its client version to major.minor.patch](https://github.com/openai/codex/blob/970111f6cb62cc02fe36a82ea7d71b37a2889c97/codex-rs/models-manager/src/lib.rs#L20-L28)
+for model discovery. Comparing that cache metadata to a full native prerelease
+version as literal strings rejects a compatible discovery source.
+
+The adapter accepts an exact version match or a valid full SemVer whose whole
+version equals a plain cache version. It preserves the cache version and digest.
+When an independently observed CLI version is supplied, a separate source of
+kind `codex_cli_version` retains its exact bytes and the observation clock.
+Different prereleases therefore produce different snapshot identities even
+when they share the same cache. Reusing a shared cache still does not establish
+its originating binary, account, provider or client surface.
+
+This compatibility rule applies only to discovery. The proof consumer checks
+the complete explicit CLI version against the proof binding. Native dispatch
+continues to check the complete version and exact executable independently.
+The new source kind is never accepted as native signed-host identity or native
+asset availability, and never changes capability support. A genuinely different
+release, stale cache, malformed version or changed execution pin remains a
+refusal. No attestation, canary issuer, provider admission or native authority
+is added by this amendment.
 
 ## Context
 
