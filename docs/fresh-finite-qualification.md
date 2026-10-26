@@ -142,3 +142,9 @@ interruption and later edits. The original history is preserved; legacy or
 ambiguous states are never repaired automatically. See the
 [command protocol](reference/finite-application-resume.md) for admission and
 approval requirements.
+
+The [inline finite review follow-up](bench/finite-reviewed-diff-2026-10-24/README.md)
+adds the exact captured patch to the initial and resumed approval presentation,
+with local substitution/refusal and output tests. The changed binary has not
+received a new composed Linux qualification; the native results above remain
+bound to their recorded executables.
