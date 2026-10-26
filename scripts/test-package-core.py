@@ -248,6 +248,10 @@ serde = "1"
         cases = {
             "crates/agent-router-cli/src/generation_proof_tests.rs": ("tests/support/capability_store.rs",),
             "crates/agent-router-cli/tests/support/native_fixture.rs": ("tests/support/capability_store.rs",),
+            "crates/router-runtime/src/application/tests.rs": (
+                "tests/support/runtime_fixture.rs", "tests/support/capability_verifier.rs"),
+            "crates/router-runtime/tests/runtime.rs": (
+                "tests/support/runtime_fixture.rs", "tests/support/capability_verifier.rs"),
             "crates/router-runtime/src/finite_tools/linux_tests.rs": (
                 "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py",),
             "crates/router-adapter-api/tests/registry.rs": (

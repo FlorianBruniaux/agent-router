@@ -64,6 +64,14 @@ PUBLIC_SOURCE_INPUTS = {
 # Explicit external inputs of distributed tests, including Linux-only modules.
 # Selecting a consumer requires its inputs; neighboring files remain excluded.
 PUBLIC_TEST_INPUTS = {
+    "crates/router-runtime/src/application/tests.rs": (
+        "tests/support/runtime_fixture.rs",
+        "tests/support/capability_verifier.rs",
+    ),
+    "crates/router-runtime/tests/runtime.rs": (
+        "tests/support/runtime_fixture.rs",
+        "tests/support/capability_verifier.rs",
+    ),
     "crates/agent-router-cli/src/generation_proof_tests.rs": (
         "tests/support/capability_store.rs",
     ),
