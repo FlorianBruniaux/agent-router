@@ -1,0 +1,76 @@
+crates/router-asset-contracts/src/documents.rs
+  s_64104967e715dd::t_2b775ba364fb5a 208
+  s_64104967e715dd::t_4f8171a8e2e634 209-212
+docs/adr/0021-host-capability-evidence.md
+  s_64104967e715dd::t_424e6e07226fc3 6,16-37
+  s_64104967e715dd::t_6fb9f17c44bfb5 38
+crates/adapter-codex/tests/probe.rs
+  s_64104967e715dd::t_3571f9c73c8cfc 101-113,123,128,135-146,155-157,215-218
+  s_64104967e715dd::t_dd946598ee95d4 114-122,124-127,129-134,147-154,158-174,194-195,197-203,209
+  s_64104967e715dd::t_2839e748575ce9 175-193,196,204-208,210-214,220-221
+  s_64104967e715dd::t_5f4bd87f46e966 219,222-225
+crates/router-adapter-api/Cargo.toml
+  s_64104967e715dd::t_daf265e77bbf70 14
+crates/router-policy/tests/signed_phases.rs
+  s_64104967e715dd::t_8cf8b99792dc6e 54-69,71
+  s_64104967e715dd::t_ac50df05eae765 70,72-73
+crates/router-policy/src/signed_phases.rs
+  s_64104967e715dd::t_2b775ba364fb5a 87
+  s_64104967e715dd::t_8802bfd16bcc74 88-92
+crates/router-runtime/src/finite_client/application/tests/process.rs
+  s_64104967e715dd::t_9e96ab204a89c5 20,25,28-30
+docs/reference/json-contracts.md
+  s_64104967e715dd::t_424e6e07226fc3 75-89
+crates/router-asset-contracts/tests/contracts.rs
+  s_64104967e715dd::t_8cf8b99792dc6e 391-409,411
+  s_64104967e715dd::t_24e1deb181528c 410,412-415
+crates/adapter-codex/src/lib.rs
+  s_64104967e715dd::t_daf265e77bbf70 12-13,102,129-136,138-143
+  s_64104967e715dd::t_dd67c4c68cbefd 137
+  s_64104967e715dd::t_dcfe2d5d652cc1 144,168
+crates/router-adapter-api/src/lib.rs
+  s_64104967e715dd::t_daf265e77bbf70 44-46,51-54,59-60
+  s_64104967e715dd::t_55c33e6f8fe6bd 55-58,61-65
+  s_64104967e715dd::t_68e572da51c6f1 66-74
+assets/catalogs/README.md
+  s_64104967e715dd::t_424e6e07226fc3 1-33
+crates/agent-router-cli/tests/codex_catalog.rs
+  s_64104967e715dd::t_dd946598ee95d4 9-11,40-55,60-65,67-71,76-78,80-81,87-108,120-123,125-146
+  s_64104967e715dd::t_3571f9c73c8cfc 1-8,12-39,56-59,66,72-75,79,82-86,109-119,124,147
+  s_64104967e715dd::t_c5e0a06b5022aa 148-159
+crates/agent-router-cli/src/capability_proofs.rs
+  s_64104967e715dd::t_0daa2a96fe92f3 306-312,314,318,321-324,328-338
+  s_64104967e715dd::t_08210b855c8a88 51,61,313,315-317,319-320,325-327
+  s_64104967e715dd::t_d0c5b424cba013 52-60
+  s_f14159e3bfdc3d::t_cc305b81563a0c 305
+Cargo.toml
+  s_64104967e715dd::t_daf265e77bbf70 49
+Cargo.lock
+  s_64104967e715dd::t_5bd861fc3e639b 841
+assets/catalogs/codex-core-v2.json
+  s_64104967e715dd::t_84eaf8c585f295 1-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cecc000c0139d4cc42716607cde6694c9d9344a1",
+  "prompts": {},
+  "sessions": {
+    "s_64104967e715dd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a13f31-c9b6-7f52-adc8-1ffb8966e03b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_f14159e3bfdc3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1261f-7516-70e1-b57c-5d4d56724919",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
