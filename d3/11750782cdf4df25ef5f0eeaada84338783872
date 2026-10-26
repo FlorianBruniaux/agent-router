@@ -1,0 +1,23 @@
+docs/distribution.md
+  s_f4002798f34b27::t_537d1ce5c7b294 45-65,108-117
+scripts/package-core.py
+  s_f4002798f34b27::t_feb0d5b4f7cf1d 60-79,227,278-280,617-620
+scripts/test-package-core.py
+  s_f4002798f34b27::t_8111e294fdba5c 28,233-287,610-619
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d311750782cdf4df25ef5f0eeaada84338783872",
+  "prompts": {},
+  "sessions": {
+    "s_f4002798f34b27": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1772f-e156-7d71-afb0-138bd3c33486",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
