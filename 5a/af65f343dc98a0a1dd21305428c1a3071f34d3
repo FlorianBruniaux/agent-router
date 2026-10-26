@@ -1,0 +1,31 @@
+docs/distribution.md
+  s_ec27ff3a7ae4e7::t_4d1f5bf9c1d6d1 114-116
+scripts/package-core.py
+  s_ec27ff3a7ae4e7::t_2c16cbe6b96fcc 28-30,34-37,245
+scripts/test-package-core.py
+  s_bae867a1455c18::t_9a2367d5016a82 330-376
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5aaf65f343dc98a0a1dd21305428c1a3071f34d3",
+  "prompts": {},
+  "sessions": {
+    "s_bae867a1455c18": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158ef-9f42-7481-99b4-13ccb6501402",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_ec27ff3a7ae4e7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158a4-1852-7f53-a868-0ae1b16c0089",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
