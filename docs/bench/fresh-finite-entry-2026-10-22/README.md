@@ -115,7 +115,8 @@ transport at `Verifying`, and separate acceptance of that exact captured patch:
 all 18 public cases pass for the candidate while the original source fails. Two
 modified artifact bindings refuse before evaluation. The
 [artifact-only checker](evaluate_cell.py) opens no Runtime and starts no worker.
-The corrected full parent flow was not replayed; this is composed evidence,
+For that historical v3/v4 attempt, the corrected full parent flow was not
+replayed; that record is composed evidence,
 not a passing historical parent run. Both isolated cells are stopped.
 
 Local checks report 1,957 workspace passes (including nested helper reports),
@@ -124,3 +125,37 @@ tests, formatting, warnings-denied Clippy, harness parity, ADR checks and secret
 scan pass. The isolated Linux build and nine CLI integration tests also pass.
 CI is not claimed. The 8 GiB limit, zero swap and private access boundaries stay
 unchanged. Observed cost/tokens and human acceptance remain unavailable.
+
+## Follow-up: one complete fresh parent flow
+
+A subsequent qualification runs the corrected parent in one new session through
+both approvals, the native transport and the external public checker. The
+[separate full-parent receipt](full-parent-evidence.json) records a passing
+parent, one native attempt, six authored local requests and one actual
+permission refusal. The candidate passes all 18 public cases; the initial
+source fails as expected. The report, SQLite summary, captured patch and tested
+candidate match. Admission is released and the namespace is terminated.
+
+The product commit is `9c8ee4fa06eade652b1fdae3bbbd20a900baa29f`. All 469
+inventoried files (466 under `crates/`, plus root `Cargo.toml`, `Cargo.lock` and
+`rust-toolchain.toml`) and the 12 core source pins match the previously
+qualified Linux build. The four
+binaries and corrected parent are reused byte-for-byte. Ten portable parent
+and evidence-collection tests pass. Earlier preparation-order and local sandbox
+process-cleanup test failures are retained with their successful rerun; they
+are not product or native failures. No Rust change or full workspace rerun was
+needed for this two-file evidence follow-up.
+
+All 25 retained evidence files were hash- and size-checked independently. The
+cell is stopped, with 8 GiB, zero swap, no OOM event, no network or host mounts
+and a read-only root. There is no model, provider account or real registry.
+The original source is unchanged. The earlier failed parent and its separate
+artifact evaluation remain in the unchanged `evidence.json`; the nine refusal
+controls were not replayed. This new session is not another benchmark trial.
+
+This closes the missing complete positive parent qualification only. Runtime
+still reports `Verifying`, its objective remains UNKNOWN, and external tests
+do not record a Runtime verdict, human acceptance or source publication.
+Automatic host integration without a per-task command and remaining lifecycle
+and recovery cases still belong to #132. #120/#133 retain their separate gates
+for any future real-provider trial. The blocked remote CI is not a passing check.
