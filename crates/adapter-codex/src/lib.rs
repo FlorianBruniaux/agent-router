@@ -9,7 +9,8 @@ use std::{
 
 use router_adapter_api::{
     ALL_CAPABILITIES, CapabilityEvidence, EvidenceKind, EvidenceSource, HostObservation, HostProbe,
-    MAX_SNAPSHOT_MODELS, ProbeError, SNAPSHOT_SCHEMA_VERSION, strict_json,
+    MAX_SNAPSHOT_MODELS, ProbeError, SNAPSHOT_SCHEMA_VERSION, codex_cache_version_matches,
+    strict_json,
 };
 use router_types::{CapabilitySupport, EffortLevel, HarnessId, HostSnapshot, ModelId};
 use serde::Deserialize;
@@ -98,7 +99,7 @@ impl HostProbe for CodexProbe {
             .config
             .observed_version
             .as_ref()
-            .is_some_and(|version| version != &cache.client_version)
+            .is_some_and(|version| !codex_cache_version_matches(&cache.client_version, version))
         {
             return Err(ProbeError::VersionMismatch);
         }
@@ -125,6 +126,22 @@ impl HostProbe for CodexProbe {
             supported_efforts.insert(id, efforts);
         }
         let source_ids = BTreeSet::from([SOURCE_ID.to_owned()]);
+        let mut evidence = vec![EvidenceSource {
+            id: SOURCE_ID.into(),
+            kind: EvidenceKind::CodexModelCache,
+            observed_version: Some(cache.client_version),
+            observed_at_unix_seconds: source_timestamp,
+            content_sha256: hex::encode(Sha256::digest(&bytes)),
+        }];
+        if let Some(version) = &self.config.observed_version {
+            evidence.push(EvidenceSource {
+                id: "codex-observed-version".into(),
+                kind: EvidenceKind::CodexCliVersion,
+                observed_version: Some(version.clone()),
+                observed_at_unix_seconds,
+                content_sha256: hex::encode(Sha256::digest(version.as_bytes())),
+            });
+        }
         let observation = HostObservation {
             attestations: None,
             schema_version: SNAPSHOT_SCHEMA_VERSION,
@@ -148,13 +165,7 @@ impl HostProbe for CodexProbe {
                     )
                 })
                 .collect(),
-            evidence: vec![EvidenceSource {
-                id: SOURCE_ID.into(),
-                kind: EvidenceKind::CodexModelCache,
-                observed_version: Some(cache.client_version),
-                observed_at_unix_seconds: source_timestamp,
-                content_sha256: hex::encode(Sha256::digest(&bytes)),
-            }],
+            evidence,
             observed_at_unix_seconds,
             snapshot_hash: String::new(),
         };

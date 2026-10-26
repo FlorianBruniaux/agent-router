@@ -41,8 +41,35 @@ pub trait HostProbe {
 #[serde(rename_all = "snake_case")]
 pub enum EvidenceKind {
     CodexModelCache,
+    /// Caller-supplied, independently observed CLI version. Not native-effect
+    /// evidence and never an authenticated capability or asset authority.
+    CodexCliVersion,
     ClaudeNativeStream,
     HostRuntime,
+}
+
+/// Codex's model discovery cache uses major.minor.patch, including for
+/// prerelease builds. This checks discovery compatibility only. Native process
+/// and capability-proof pins must retain and compare the full CLI version.
+pub fn codex_cache_version_matches(cache: &str, native: &str) -> bool {
+    let (Ok(cache_version), Ok(native_version)) = (
+        semver::Version::parse(cache),
+        semver::Version::parse(native),
+    ) else {
+        return false;
+    };
+    cache == native
+        || (cache_version.pre.is_empty()
+            && cache_version.build.is_empty()
+            && (
+                cache_version.major,
+                cache_version.minor,
+                cache_version.patch,
+            ) == (
+                native_version.major,
+                native_version.minor,
+                native_version.patch,
+            ))
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

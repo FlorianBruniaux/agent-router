@@ -99,6 +99,131 @@ fn mismatched_host_version_is_not_hidden_by_cache_version() {
 }
 
 #[test]
+fn whole_cache_version_accepts_prerelease_discovery_but_preserves_the_full_cli_version() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("cache.json");
+    fs::write(&path, FIXTURE).unwrap();
+    let mut hashes = Vec::new();
+    for version in ["0.1.0", "0.1.0-alpha.10.2", "0.1.0-alpha.11.1+desktop"] {
+        let observed = CodexProbe::new(CodexProbeConfig {
+            model_cache_path: path.clone(),
+            observed_version: Some(version.into()),
+        })
+        .probe(NOW)
+        .unwrap();
+        assert_eq!(
+            observed.evidence[0].observed_version.as_deref(),
+            Some("0.1.0")
+        );
+        let source = observed
+            .evidence
+            .iter()
+            .find(|source| source.id == "codex-observed-version")
+            .unwrap();
+        assert_eq!(source.observed_version.as_deref(), Some(version));
+        assert_eq!(
+            serde_json::to_value(source.kind).unwrap(),
+            "codex_cli_version"
+        );
+        assert!(observed.host.capabilities.is_empty());
+        assert!(
+            observed
+                .capabilities
+                .values()
+                .all(|value| value.support == CapabilitySupport::Unknown)
+        );
+        hashes.push(observed.snapshot_hash);
+    }
+    assert_ne!(hashes[0], hashes[1]);
+    assert_ne!(hashes[1], hashes[2]);
+    assert_eq!(fs::read(path).unwrap(), FIXTURE);
+}
+
+#[test]
+fn whole_cache_version_rejects_other_releases_and_malformed_prereleases() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("cache.json");
+    fs::write(&path, FIXTURE).unwrap();
+    for version in [
+        "0.1.1-alpha.1",
+        "0.2.0",
+        "1.1.0",
+        "0.1.0-alpha..1",
+        "0.1.0-01",
+        "0.1.0 trailing",
+    ] {
+        let result = CodexProbe::new(CodexProbeConfig {
+            model_cache_path: path.clone(),
+            observed_version: Some(version.into()),
+        })
+        .probe(NOW);
+        assert!(
+            matches!(result, Err(ProbeError::VersionMismatch)),
+            "{version}"
+        );
+    }
+}
+
+#[test]
+fn an_explicit_prerelease_cache_is_not_equivalent_to_another_prerelease() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("cache.json");
+    let mut cache: serde_json::Value = serde_json::from_slice(FIXTURE).unwrap();
+    cache["client_version"] = "0.1.0-alpha.1".into();
+    fs::write(&path, serde_json::to_vec(&cache).unwrap()).unwrap();
+    for version in ["0.1.0", "0.1.0-alpha.2"] {
+        assert!(matches!(
+            CodexProbe::new(CodexProbeConfig {
+                model_cache_path: path.clone(),
+                observed_version: Some(version.into()),
+            })
+            .probe(NOW),
+            Err(ProbeError::VersionMismatch)
+        ));
+    }
+}
+
+#[test]
+fn identical_malformed_versions_are_not_a_compatible_discovery_source() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("cache.json");
+    for version in ["0.1.0-alpha..1", "0.1.0-01", "01.1.0"] {
+        let mut cache: serde_json::Value = serde_json::from_slice(FIXTURE).unwrap();
+        cache["client_version"] = version.into();
+        fs::write(&path, serde_json::to_vec(&cache).unwrap()).unwrap();
+        assert!(
+            matches!(
+                CodexProbe::new(CodexProbeConfig {
+                    model_cache_path: path.clone(),
+                    observed_version: Some(version.into()),
+                })
+                .probe(NOW),
+                Err(ProbeError::VersionMismatch)
+            ),
+            "{version}"
+        );
+    }
+}
+
+#[test]
+fn native_version_pins_still_require_the_exact_prerelease() {
+    use router_adapter_api::HarnessAdapter;
+    let adapter = adapter_codex::CodexAdapter;
+    assert!(
+        adapter
+            .validate_native_version_pin(b"codex-cli 0.163.0-alpha.10.2\n", "0.163.0-alpha.10.2")
+            .is_ok()
+    );
+    for version in ["0.163.0", "0.163.0-alpha.11.1", "0.159.2"] {
+        assert!(
+            adapter
+                .validate_native_version_pin(b"codex-cli 0.163.0-alpha.10.2\n", version)
+                .is_err()
+        );
+    }
+}
+
+#[test]
 fn missing_malformed_duplicate_and_oversized_cache_are_typed_errors() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("cache.json");

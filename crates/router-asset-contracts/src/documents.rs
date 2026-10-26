@@ -205,8 +205,11 @@ pub fn seal_availability(
             item.kind,
             AssetEvidenceKind::NativeRuntime | AssetEvidenceKind::NativeStatus
         ) && !snapshot.observation().evidence.iter().any(|source| {
-            source.kind != router_adapter_api::EvidenceKind::CodexModelCache
-                && source.content_sha256 == item.source_sha256
+            matches!(
+                source.kind,
+                router_adapter_api::EvidenceKind::ClaudeNativeStream
+                    | router_adapter_api::EvidenceKind::HostRuntime
+            ) && source.content_sha256 == item.source_sha256
                 && source.observed_at_unix_seconds == item.observed_at_unix_seconds
         }) {
             return Err(ContractError::Binding);
