@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "base_commit": "eeab311fc1eaf50e98f8801a9f7e56d08ac1165a",
+  "source_overlay": {
+    "crates/router-runtime/src/finite_client/linux_e2e.rs": "5df0b885f95b97932493215b57cd647243fee8dfaf73b61fa0a28ec9210e0095"
+  },
+  "source_archive_sha256": "125783ff73a0fb2b0557ebcda484a972a4c863989bb101d20d459a52b9f68406",
+  "source_manifest_sha256": "41b3963e2c7395aa0b403e364e460e76c4d245144d970ed41e7f62bd33e7fa57",
+  "cargo_lock_sha256": "a5f69ca9c55675ceafe1bdc2344367c3b77b88898d226d780d7ab6af607b2155",
+  "rust_version": "1.85.1",
+  "target": "aarch64-unknown-linux-gnu",
+  "image": "sha256:a808cb44a27ee036c8f0d7bd8aeb6150ecc3fe83f8dac3cfbfcf4df19a88f71b",
+  "built_programs": {
+    "test-binary": {
+      "sha256": "95068cd35d3bab0316aa5773289f6f1d6a769df00b9698a7b52a3792dfedc3de",
+      "bytes": 11844208
+    },
+    "client": {
+      "sha256": "dc469f061db39c50c914efd8cdfb6fe1981a3b3d05e5b81dfa28e5a65c37d7de",
+      "bytes": 2210744
+    },
+    "helper": {
+      "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "bytes": 626968
+    },
+    "guard": {
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "bytes": 72920
+    }
+  },
+  "native_programs": {
+    "test-binary": "95068cd35d3bab0316aa5773289f6f1d6a769df00b9698a7b52a3792dfedc3de",
+    "client": "dc469f061db39c50c914efd8cdfb6fe1981a3b3d05e5b81dfa28e5a65c37d7de",
+    "helper": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+    "guard": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+    "native": "113aa5d5952a6fd3950a88323219747d0c91978ebee948509a540c8a460e59a3",
+    "namespace": "ff5add553bea12a45c18ebe6c67d3ed637052b869a1ca2fc5d74a6a2e8c5cce6",
+    "profile": "d2d03a506583119254862bdab6a47437634a4af42deed81c9e1c4282c25d3f0e"
+  },
+  "profile_kind": "linux-isolated-broker-v2",
+  "builds": [
+    {
+      "name": "linux-programs",
+      "exit_code": 0,
+      "elapsed_seconds": 214.78980612500163
+    },
+    {
+      "name": "linux-tests-build",
+      "exit_code": 0,
+      "elapsed_seconds": 161.27393437499995
+    }
+  ],
+  "native_driver_sha256": "d48fbf0ac566c971b7d4d001dabd276e3ff943ad552a27f869a68bfd61a1dbe7"
+}
