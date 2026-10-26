@@ -1,0 +1,29 @@
+scripts/package-core.py
+  s_f14159e3bfdc3d::t_7b3df9159ea9ce 67-74
+scripts/test-package-core.py
+  s_ec27ff3a7ae4e7::t_908299306f658d 251-254
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c54eda541ff237edbc8bea9598b87285e8f90552",
+  "prompts": {},
+  "sessions": {
+    "s_ec27ff3a7ae4e7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a158a4-1852-7f53-a868-0ae1b16c0089",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_f14159e3bfdc3d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1261f-7516-70e1-b57c-5d4d56724919",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
