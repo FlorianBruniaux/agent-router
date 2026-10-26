@@ -637,6 +637,8 @@ async fn blobs(
 
 #[cfg(test)]
 mod tests {
+    mod crash_tests;
+
     use super::*;
     use crate::{RuntimeLimits, store::tests::summary};
     use std::{
@@ -680,6 +682,17 @@ mod tests {
     }
     fn git(root: &Path, args: &[&str]) -> String {
         let output = Command::new("/usr/bin/git")
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_TERMINAL_PROMPT", "0")
+            .args([
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "core.fsmonitor=false",
+            ])
             .arg("-C")
             .arg(root)
             .args(args)

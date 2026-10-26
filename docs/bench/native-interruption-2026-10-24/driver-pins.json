@@ -1,0 +1,30 @@
+{
+  "build_v1": {
+    "assets.json": "4ee5dfb9070ef91c0b2b9de071dae5941761de13e4cf7a2fffd9db65ee3d12b1",
+    "controller.py": "0bc8fc47106e257afd41c42574c6c4b7545eddef4aeaba1d44add6c2d1e9868a",
+    "cut.c": "d7d0ee836649c0dc2ecec632f60eb773e257be49dd21661bc00f6178e26ffa68",
+    "identity.json": "11fa51fcfdcdbe6960facab5e79b397f83fce64e2440ae414007498fa7603f0c",
+    "input-pins.json": "1ecc6fc217a07dc26e5af1ed7bc6b0f33e5fb0e48df3011c6d1f1008c3d6b5d4",
+    "native-qualification-plan.json": "3e5d25855d65e050683cfcc3f518ffd2a716eb1d42cf5295b2747e46bf1ecca1",
+    "parent.py": "59213aa0d33590e0604afd9e7021d635db63a3a84f5d33a35b77bc9960f1224f",
+    "prior/orchestrate.py": "38196d280c7ca259e7bf97821c34e859520a1a6cddb8d1200a951d2b1dad2b23",
+    "qualify.py": "47be53f6e0b1b1b19de986182bfca49ffa9e3adccc04cbb10dec854a077ffdb2",
+    "run.py": "7c029e3984ad13ada20d592029fadcdda0658d5014b2cbf60c233a7535b779b4",
+    "source.json": "62bd3eef04188552c6bc4c7a9d60c77b02935e87d068103789878a4dd00a7bc5",
+    "test_cut.py": "dfb66e3c1daed4c7758f01f5e4aff291e8b1b1f860ee74304d22c294f0b98b62"
+  },
+  "native_v2": {
+    "assets.json": "4ee5dfb9070ef91c0b2b9de071dae5941761de13e4cf7a2fffd9db65ee3d12b1",
+    "controller.py": "0bc8fc47106e257afd41c42574c6c4b7545eddef4aeaba1d44add6c2d1e9868a",
+    "cut.c": "d7d0ee836649c0dc2ecec632f60eb773e257be49dd21661bc00f6178e26ffa68",
+    "identity.json": "11fa51fcfdcdbe6960facab5e79b397f83fce64e2440ae414007498fa7603f0c",
+    "input-pins.json": "1ecc6fc217a07dc26e5af1ed7bc6b0f33e5fb0e48df3011c6d1f1008c3d6b5d4",
+    "native-qualification-plan.json": "3e5d25855d65e050683cfcc3f518ffd2a716eb1d42cf5295b2747e46bf1ecca1",
+    "parent.py": "59213aa0d33590e0604afd9e7021d635db63a3a84f5d33a35b77bc9960f1224f",
+    "prior/orchestrate.py": "38196d280c7ca259e7bf97821c34e859520a1a6cddb8d1200a951d2b1dad2b23",
+    "qualify.py": "0cbd10b3425542e7273132f36ee80c587e2a2122f9a04a07c6182481372e3b19",
+    "run.py": "7c029e3984ad13ada20d592029fadcdda0658d5014b2cbf60c233a7535b779b4",
+    "source.json": "62bd3eef04188552c6bc4c7a9d60c77b02935e87d068103789878a4dd00a7bc5",
+    "test_cut.py": "dfb66e3c1daed4c7758f01f5e4aff291e8b1b1f860ee74304d22c294f0b98b62"
+  }
+}

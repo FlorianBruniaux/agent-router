@@ -12,13 +12,17 @@ use crate::{
 
 /// Every Cargo feature of this crate except `default`, with whether it is on.
 /// A unit test keeps this list equal to the `[features]` table.
-const FEATURES: [(&str, bool); 7] = [
+const FEATURES: [(&str, bool); 8] = [
     ("claude", cfg!(feature = "claude")),
     ("codex", cfg!(feature = "codex")),
     ("copilot", cfg!(feature = "copilot")),
     ("local-api", cfg!(feature = "local-api")),
     ("local-sidecar", cfg!(feature = "local-sidecar")),
     ("opencode", cfg!(feature = "opencode")),
+    (
+        "qualification-fresh-t02",
+        cfg!(feature = "qualification-fresh-t02"),
+    ),
     ("semantic-retrieval", cfg!(feature = "semantic-retrieval")),
 ];
 

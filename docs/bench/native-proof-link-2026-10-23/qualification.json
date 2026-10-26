@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "scope": "One authored fresh native t02 fixture; technical validation only",
+  "product_code_commit": "f6d4b5961d83ff73289e68e65831bcafbf10b6f0",
+  "product_code_tree": "7940ad7a3558fc4aea65ccf8c8663010726093b8",
+  "task_revision_binding": {
+    "source_revision": "d674cbfdc683bc1a4e190934f594f925bf8ef143",
+    "source_tree": "ef46b6f37e9fb1dbb3f608cc6886a2ca5deac180",
+    "candidate_tree": "c3344fa47fb691e990ddc376357376e06be3ad91",
+    "revision_binding": "complete_public_tree_v1",
+    "git_mode": "100644"
+  },
+  "linux_build": {
+    "status": "passed",
+    "driver_digest": "10784f5a3fb12396474fb7b1602df915f0eb183d2069ed65178301061974e5a2",
+    "source_archive_sha256": "14d5fd902ae61c0ddec0a30bda1268aef9f867fa860cdcff9cbb5cdd2d47ea22",
+    "checks": [
+      {
+        "name": "programs",
+        "exit_code": 0,
+        "seconds": 341.95500704200003
+      },
+      {
+        "name": "entry-tests",
+        "exit_code": 0,
+        "seconds": 23.72898216699997
+      },
+      {
+        "name": "runner-and-contract-tests",
+        "exit_code": 0,
+        "seconds": 49.93431770799998
+      },
+      {
+        "name": "python-bindings",
+        "exit_code": 0,
+        "seconds": 0.20303745900002923
+      },
+      {
+        "name": "packaging",
+        "exit_code": 0,
+        "seconds": 0.24445066699996687
+      },
+      {
+        "name": "ordinary-refusal",
+        "exit_code": 0
+      }
+    ],
+    "native_clients_started": 0,
+    "real_models_started": 0,
+    "qualified_assets_present": true,
+    "ordinary_assets_absent": true,
+    "logs": {
+      "packaging.log": "1d2d6152fede7cd3e959f704def1ff2834c9fcea2edc5c6a54802c92c3cfb92b",
+      "ordinary-refusal.log": "68fc961ddd3b5d66a77b346e37fb869396a9047daf794ec12f0bfa5f5636a334",
+      "python-bindings.log": "c6a2ab0390d670babdd6a68b373e01149704c25246292c46ca045763125d66a6",
+      "programs.log": "2efd26359d24f7eced28f672bf5bb87df15d7d86f656384a2aa56b2d73218c98",
+      "runner-and-contract-tests.log": "55920a09c39e05e65232e952819248258bfcae3a9a599b6d33e4c9249d0b33f5",
+      "entry-tests.log": "a30a195c32945e9e3b693674724dd15d34ca08e12e960aceba461f0ab3956957"
+    },
+    "build_digest": "cf8254bb0572831978168f087b7ac45cd11afdf4b8d83e79c68f5be397963dbf"
+  },
+  "programs": {
+    "agent-router": {
+      "sha256": "35d67f8785adfc82d61a6adfdc859a30ed18bc87dfc1f4da9b8b909a83869ef1",
+      "bytes": 26394416
+    },
+    "client": {
+      "sha256": "63fa198ff784ecc7d9e7f2da432eb9251dfaef5682a6ff103bde74637fd3bfc4",
+      "bytes": 2211872
+    },
+    "helper": {
+      "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "bytes": 626968
+    },
+    "guard": {
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "bytes": 72920
+    }
+  },
+  "cells": {
+    "build": {
+      "stopped": true,
+      "oom_killed": false,
+      "memory_bytes": 8589934592,
+      "swap_bytes": 0,
+      "network": "none",
+      "host_mounts": 0,
+      "user": "65534:65534",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_options": [
+        "no-new-privileges",
+        "seccomp=unconfined"
+      ],
+      "after_stop_sha256": "081a27023076c43ca5d89f8bd52e32b3842b41807c9fc532d743027c7ace1aff"
+    },
+    "native": {
+      "stopped": true,
+      "oom_killed": false,
+      "memory_bytes": 8589934592,
+      "swap_bytes": 0,
+      "network": "none",
+      "host_mounts": 0,
+      "user": "65534:65534",
+      "readonly_rootfs": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_options": [
+        "no-new-privileges",
+        "seccomp=unconfined"
+      ],
+      "after_stop_sha256": "17fb734efea1680d4ae167d070e5360091fbfaa92d33419453430218d80c1298"
+    }
+  },
+  "native": {
+    "status": "passed",
+    "native_attempts": 1,
+    "worker_requests": 6,
+    "distinct_permission_denials": 1,
+    "model_calls": 0,
+    "real_registry_used": false,
+    "transport": "local_scripted",
+    "candidate_cases_passed": 18,
+    "candidate_cases_total": 18,
+    "source_cases_passed": 6,
+    "source_cases_total": 18,
+    "technical_validation": "passed",
+    "objective": "unknown",
+    "state": "verifying",
+    "human_acceptance": null,
+    "source_publication": false,
+    "source_unchanged": true,
+    "cleanup": "namespace_terminated",
+    "admission_released": 1,
+    "memory_peak_bytes": 1140826112,
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "exit_code": 3,
+    "both_approval_challenges_bind_complete_trees": true,
+    "receipt_projection_and_attestation_match": true,
+    "verification_recorded_by_entry": true,
+    "parent_modified_runtime_verdict": false,
+    "retained_files_verified": 30
+  },
+  "verification": {
+    "artifact_sha256": "9371af9ffc9f7a79e3bbd24d6787505fdf2353f21587b272005faf950440bb9c",
+    "evidence_sha256": "a8da5a4609e59bda53c504bc6d9423a250e2f6182640ad8b5ed102e9c21dd416",
+    "objective": "unknown",
+    "validation": "passed",
+    "verifier": "fresh-t02-v1"
+  },
+  "evidence_sha256": {
+    "frames.json": "5993013fbcb1fc434ba62c39d266da3b5e1a583f7339e7c91bb773e8380f1cbf",
+    "parent-result.json": "89cf87477c4e1a4e0f4da5eb0459a983bf57b75fb53fc30f560104360f8a2ed1",
+    "fresh-t02-receipt.json": "a8da5a4609e59bda53c504bc6d9423a250e2f6182640ad8b5ed102e9c21dd416",
+    "pre-verification-report.json": "7e1299d7f5aaa437e38520e81632764f4817483774c6f91864922bc211214715",
+    "qualification-readback.json": "af0e46d6aaee1066e1f7ac23975e4dff6131e82a9d76400ff6e73084216db24c",
+    "public-acceptance.json": "3bb7cce6a6319bf590f8a768e85533c1def38faa915f8157f3d210b11204356c"
+  },
+  "review": {
+    "source": "Independent reviews approve ee122ba (4 paths) and f6d4b596 (Linux test-only path)",
+    "driver": "Independent review of 10784f5a; build-only technical verdict",
+    "compiled_build_and_native_evidence": "Primary readback followed by independent review of existing artifacts; no execution replayed.",
+    "review_limit": "Independent review occurred after build and native execution; it is not retroactive prior approval. Ordinary binary was not retained; its asset exclusion is supported by the pinned build script and log.",
+    "independent_readback": {
+      "verdict": "PASS_FOR_EXACT_EXISTING_OFFLINE_NATIVE_FIXTURE",
+      "reviewed_at_utc": "2026-10-23T14:32:55.098032+00:00",
+      "report_sha256": "fff6d9f924275085de7349e0a123b4ce48f79cff61a40c50f6de329502116bd1",
+      "reviewed_pr_head": "8e435df2609ed1cadab638b02feb378415e3e812",
+      "source_archive_files_rehashed": 1779,
+      "compiled_binaries_rehashed": 4,
+      "native_input_programs_rehashed": 7,
+      "retained_evidence_files_rehashed": 30,
+      "public_trees_independently_reconstructed": true,
+      "new_executions": 0,
+      "additional_limits": [
+        "No independent rerun of tests.",
+        "Live Git/SQLite state not retained; emitted readbacks, bindings and pinned logic reviewed."
+      ]
+    }
+  },
+  "not_qualified": [
+    "human acceptance",
+    "native application or interrupted integration recovery",
+    "arbitrary candidates or tasks",
+    "global automatic host integration",
+    "wider host/OS matrix",
+    "nine prior refusal controls not replayed in this run",
+    "real model use, measured provider costs or benchmarks"
+  ]
+}

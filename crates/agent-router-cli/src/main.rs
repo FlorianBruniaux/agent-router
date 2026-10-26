@@ -19,6 +19,8 @@ mod execution;
 mod execution_backend;
 mod execution_feedback;
 mod feedback;
+#[cfg(all(unix, feature = "codex"))]
+mod finite_entry;
 mod generation;
 mod human;
 mod inspect;
@@ -222,10 +224,11 @@ enum ExitClass {
 }
 
 /// Codes whose effect may already have happened; retrying blindly could repeat it.
-const OUTCOME_UNKNOWN_CODES: [&str; 3] = [
+const OUTCOME_UNKNOWN_CODES: [&str; 4] = [
     "backend_store.published_durability_unknown",
     "runtime.approval_key.published_durability_unknown",
     "runtime.cleanup.unknown",
+    "finite_entry.outcome_unknown",
 ];
 
 /// Integrity codes without the `integrity` suffix: a stored record, a hash
@@ -309,6 +312,33 @@ fn run(mut command: Commands) -> Result<Outcome, CliError> {
 
 fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     match command {
+        Commands::FiniteEntry { config, json } => {
+            #[cfg(all(unix, feature = "codex"))]
+            {
+                finite_entry::run(&config, json)
+            }
+            #[cfg(not(all(unix, feature = "codex")))]
+            {
+                let _ = (config, json);
+                Err(CliError::Product("finite_entry.unavailable"))
+            }
+        }
+        Commands::FiniteResume {
+            config,
+            run_id,
+            approve,
+            json,
+        } => {
+            #[cfg(all(unix, feature = "codex"))]
+            {
+                finite_entry::resume::run(&config, &run_id, approve, json)
+            }
+            #[cfg(not(all(unix, feature = "codex")))]
+            {
+                let _ = (config, run_id, approve, json);
+                Err(CliError::Product("finite_resume.unavailable"))
+            }
+        }
         Commands::Capability { command } => attestations::run(command),
         Commands::Schema { name, list, .. } => schema::run(name.as_deref(), list),
         Commands::Version { .. } => version_info::run(),

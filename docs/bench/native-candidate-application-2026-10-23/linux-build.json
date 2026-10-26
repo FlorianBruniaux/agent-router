@@ -1,0 +1,90 @@
+{
+  "status": "passed",
+  "driver_digest": "575629368bff7b8b587ba9ebd6a7172d88b24d8cd7fa5812455a205108a199d5",
+  "source_archive_sha256": "9e9d53c6a13b56ca6ee93412c976dd1381bdcbe794780e458d32daf32e1db555",
+  "checks": [
+    {
+      "name": "programs",
+      "exit_code": 0,
+      "seconds": 726.137605625
+    },
+    {
+      "name": "entry-tests",
+      "exit_code": 0,
+      "seconds": 53.542712791999975
+    },
+    {
+      "name": "runner-and-contract-tests",
+      "exit_code": 0,
+      "seconds": 86.29935887499994
+    },
+    {
+      "name": "application-tests",
+      "exit_code": 0,
+      "seconds": 296.81628420799996
+    },
+    {
+      "name": "python-bindings",
+      "exit_code": 0,
+      "seconds": 0.24465283400013504
+    },
+    {
+      "name": "packaging",
+      "exit_code": 0,
+      "seconds": 0.24841645800006518
+    },
+    {
+      "name": "ordinary-refusal",
+      "exit_code": 0
+    }
+  ],
+  "native_clients_started": 0,
+  "real_models_started": 0,
+  "qualified_assets_present": true,
+  "ordinary_assets_absent": true,
+  "code_head": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+  "build_digest": "7695483cccc523576e77994bc8e38cc14ee1f797b68f5d4e2c64bf21ed73f169",
+  "programs": {
+    "agent-router": {
+      "sha256": "7d8c256e156d3ddbfca865ba56fee5ad4bb7bb86ab575fc846b3d2e6a706e8ce",
+      "bytes": 26459544
+    },
+    "client": {
+      "sha256": "71b58136ba87e6f9d41328736da5e863e573ee599d43280e30aa6cbfa9d001b8",
+      "bytes": 2207928
+    },
+    "helper": {
+      "sha256": "9b99b08583c435baf78f8db8099fd83413b578762622dc816a0105608f44d6e8",
+      "bytes": 626968
+    },
+    "guard": {
+      "sha256": "6bca13fb93d5781d71082fd5cbbfdd8a3239af1be97e71b530f43406799add3b",
+      "bytes": 72920
+    }
+  },
+  "cell_stopped": true,
+  "oom_killed": false,
+  "memory_bytes": 8589934592,
+  "swap_bytes": 0,
+  "network": "none",
+  "host_mounts": 0,
+  "reported_tests": {
+    "entry": 10,
+    "runner_and_contracts": 25,
+    "application": 5,
+    "python": 7,
+    "packaging_pass": 33,
+    "packaging_skip": 1,
+    "ordinary_refusal": 1
+  },
+  "log_sha256": {
+    "packaging.log": "84d415ba99645aef0eda57845aefa897500f61544f240d4300c7c8f30e1e44dd",
+    "application-tests.log": "bf9af2abb459fb803086064c3b354ba82c58067adf3a0ed7ad3036d8ac7d748e",
+    "ordinary-refusal.log": "7bacbe5a2bf4b6951567bd0c418a46a176c4e5bf4fbffe65c871f6cc7bdb4514",
+    "python-bindings.log": "e645665e0938cefc206a362f82747b6a72a1b0dd244f0da0e619948727ecb0d8",
+    "programs.log": "2db6c9d22172ae8cc239c581b42304e18de0a6039b37940852a4862683b53330",
+    "runner-and-contract-tests.log": "fc0d764a7496b8a34c4efbf1bf09d91f67ec05f2be7b9b283579857c50c1c1fb",
+    "entry-tests.log": "3dbb320cbc0cc0413128cb6d7012c0c8fae43b58418e635675eecec2c92cb0f4"
+  },
+  "ordinary_binary_retained": false
+}

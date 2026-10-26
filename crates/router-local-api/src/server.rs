@@ -889,16 +889,38 @@ mod tests {
     }
 
     fn health(harness: &Harness, stream: &mut UnixStream) -> Reply {
-        stream
-            .write_all(&raw(
-                "GET",
-                "/v1/health",
-                Some(&harness.bearer()),
-                None,
-                b"",
-            ))
-            .expect("write");
-        read_reply(stream)
+        let sent = stream.write_all(&raw(
+            "GET",
+            "/v1/health",
+            Some(&harness.bearer()),
+            None,
+            b"",
+        ));
+        let reply = read_reply(stream);
+        if let Err(error) = sent {
+            // Admission can send 503 and close before the client writes.
+            // Still require the complete busy response; no transport error
+            // or missing response is treated as a successful health check.
+            assert!(matches!(
+                error.kind(),
+                ErrorKind::BrokenPipe | ErrorKind::ConnectionReset
+            ));
+            assert_eq!(reply.status, 503);
+        }
+        reply
+    }
+
+    #[test]
+    fn health_probe_reads_busy_response_sent_before_request() {
+        let harness = Harness::new(Limits::default());
+        let (mut client, server) = UnixStream::pair().expect("pair");
+        client
+            .set_read_timeout(Some(Duration::from_secs(1)))
+            .expect("timeout");
+        reject_busy(server);
+        let reply = health(&harness, &mut client);
+        assert_eq!(reply.status, 503);
+        assert!(reply.body.contains("local_api.busy"));
     }
 
     /// A finished connection frees its slot when its thread notices the close,

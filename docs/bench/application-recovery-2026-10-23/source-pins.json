@@ -1,0 +1,20 @@
+{
+  "base_commit": "a57200e4bb2c3b5639cfb60a2c0137a8428d87b9",
+  "initial_workspace": {
+    "crates/router-runtime/src/lib.rs": "4e2a3941a09cad6a18cbb57f36f002c39bac3bf29dc982c02103d907463267be",
+    "crates/router-runtime/src/application.rs": "a65d8cc8cae24db071b3fb114ef7a060aa7b9661b12a9feda277cfa60934a845",
+    "crates/router-runtime/src/application/tests.rs": "009f2157bef7ff6c38e207a093bb63628ebd863aec4fa355cda4071be275e92b",
+    "crates/router-runtime/tests/runtime.rs": "2766503503266f7cbcd7033c57a793ce4dec4e9378c3a5add844778732758f34",
+    "crates/router-runtime/tests/runtime/application_recovery.rs": "234eca57a86ff9cfe7e3555f140352be8a86ed42b4fd677f0d7abdcaa54772f5",
+    "tests/support/runtime_fixture.rs": "b3d20ba7046225fb6d79ca5076092f553f6873edc5d8722acc2f6675be6868ac"
+  },
+  "final_runtime": {
+    "crates/router-runtime/src/lib.rs": "4e2a3941a09cad6a18cbb57f36f002c39bac3bf29dc982c02103d907463267be",
+    "crates/router-runtime/src/application.rs": "a65d8cc8cae24db071b3fb114ef7a060aa7b9661b12a9feda277cfa60934a845",
+    "crates/router-runtime/src/application/tests.rs": "009f2157bef7ff6c38e207a093bb63628ebd863aec4fa355cda4071be275e92b",
+    "crates/router-runtime/tests/runtime.rs": "2766503503266f7cbcd7033c57a793ce4dec4e9378c3a5add844778732758f34",
+    "crates/router-runtime/tests/runtime/application_recovery.rs": "d7a79fa9bd1c2054f1515c13adba7aad29b1d73c1b1e7a12c0753163f272e58c",
+    "tests/support/runtime_fixture.rs": "b3d20ba7046225fb6d79ca5076092f553f6873edc5d8722acc2f6675be6868ac"
+  },
+  "delta": "Only the eighth public API clamp test was added after the full-workspace gate."
+}

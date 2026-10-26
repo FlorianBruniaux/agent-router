@@ -693,6 +693,41 @@ executes its embedded checker and records validation Passed with objective
 UNKNOWN. Its local evidence files are not a new product JSON-import contract.
 
 
+## Durable verification attestations
+
+Each accepted Runtime verification now appends `verification.attested.v1` to
+its existing private event chain. `detail` is a serialized `VerificationRecord`:
+verifier, evidence digest, optional artifact digest, validation and objective.
+The event envelope binds the run, sequence, state and preceding event hash. Its
+2 KiB detail limit is unchanged. The current `verifications` projection,
+attestation event, existing digest-only `verification.recorded` event and any
+resulting state transition commit in one SQLite transaction. An append or
+transition failure leaves no partial verdict or history.
+
+A later permitted inconclusive-to-conclusive update retains every new full
+attestation; refused updates append none. A valid chain tail is required before
+the write. The existing full integrity check and reopening verify the retained
+chain; incremental checks retain the trust limits of ADR 0018. Hash chaining
+is local integrity evidence, not authenticated evaluator or human identity.
+
+Older builds emitted only `verification.recorded` with an evidence digest.
+When the current record differs from the latest retained full record (or none
+is retained), a
+`verification.legacy_snapshot.v1` event preserves the observed current
+`VerificationRecord` before it is overwritten. That snapshot is recorded now;
+it is not the original event or a reconstruction of lost historical verdicts.
+No events are backfilled merely by reading or opening the store. Missing earlier
+record contents remain UNKNOWN. Consumers must keep the snapshot distinct from
+new attestations and must not infer a complete pre-upgrade history. This also
+covers a legacy writer used between two new writers: the complete record is
+compared, since the same evidence digest can accompany different outcomes.
+
+Existing `Runtime::events` and run-event readers expose these additive events;
+`verification_record` still returns the current projection. There is no new
+store, schema migration, verifier-import path, human verdict or execution/
+publication permission. The finite fixture's objective remains UNKNOWN until
+an explicitly authorized verifier establishes it.
+
 ## Qualified local capture observation
 
 `observe --schema-version 3` adds bounded local capture timing rows while v1 stays
@@ -724,3 +759,11 @@ An explicit `FiniteContextPolicy` has schema 1, `read_windows` and at most eight
 A nonempty terminal allowlist advertises `read_output` and requires it in the Runtime request allowlist. Only listed complete `exec` results may receive `view` metadata for `terminal_sgr_v1`. Non-SGR ESC returns the exact result. The complete raw result remains session-scoped, at most eight entries and 32768 content bytes. Recall consumes an invocation and its full content bytes, without another process invocation or partial recovery. Content, JSON and escaped MCP-text bounds are checked before advertising a handle.
 
 Optional journal `context` counters measure admitted raw, shown and recalled content plus full ToolResult JSON bytes, excluding the MCP envelope. They do not authenticate a process, a price or a model outcome. The Runtime still requires opaque producer state, matching approvals, fresh OS evidence and exact stopped-namespace ownership before observing or promoting output.
+
+## Explicit private application resume
+
+The versioned finite application resume review and context live with their
+validating runtime library. [The command protocol](finite-application-resume.md)
+requires the original admission binding and a new same-process approval on an
+intact preimage. Context, original intent, resume intent and completion remain
+separate append-only evidence; candidate bytes alone never imply completion.

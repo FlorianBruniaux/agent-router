@@ -250,6 +250,27 @@ serde = "1"
         with self.assertRaisesRegex(CORE.PackageError, "source.missing_or_oversized"):
             CORE.collect_sources(self.root, [package])
 
+    def test_fresh_qualification_exports_only_its_two_public_python_inputs(self):
+        self.public_score_fixture()
+        package = {"relative": "crates/agent-router-cli"}
+        self.write("crates/agent-router-cli/Cargo.toml", '[package]\nname="agent-router-cli"\nversion="0.1.0"\n')
+        names = ("crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py",
+                 "crates/agent-router-cli/tests/fresh_t02_qualification.py")
+        for name in names: self.write(name, "# fixed public fixture")
+        files = CORE.collect_sources(self.root, [package])
+        for name in names: self.assertEqual(files[name], b"# fixed public fixture")
+        extra = self.write("crates/agent-router-cli/src/finite_entry/qualification/unrelated.py", "# excluded")
+        with self.assertRaisesRegex(CORE.PackageError, "source.unclassified_file"):
+            CORE.collect_sources(self.root, [package])
+        extra.unlink()
+        self.write(names[0], "# /Users/private-account/secret")
+        with self.assertRaisesRegex(CORE.PackageError, "content.private_home_path"):
+            CORE.collect_sources(self.root, [package])
+        Path(self.root / names[0]).unlink()
+        (self.root / names[0]).symlink_to(self.write("safe.txt", "public"))
+        with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
+            CORE.collect_sources(self.root, [package])
+
     def test_versioned_t02_engine_is_the_only_python_example_exception(self):
         package, _ = self.public_score_fixture()
         known = "crates/router-runtime/examples/campaign/t02-v2/verify.py"

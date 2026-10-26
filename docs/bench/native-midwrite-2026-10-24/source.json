@@ -1,0 +1,34 @@
+{
+  "base": "6cb5a9f9476c743fc6b06363292a15afddc39e7c",
+  "tree": "26443246c1293ef680572a9cd0aa2273e864744b",
+  "archive_sha256": "04e93a15006cd70dc4b1552b152c3ee569a58b5e826f09c140c0eebdaf3c1bce",
+  "archive_scope": "three changed fixture files only",
+  "changed_paths": {
+    "crates/router-runtime/examples/native-interruption/cut.c": "8a4dcca291c1a86daa55f219eb0200cb755db7a75506362edb3ff10117065026",
+    "crates/router-runtime/examples/native-interruption/qualify.py": "5733e64caa48ba822ea7f73633e238906fae7c17003ed109601e1d1044337904",
+    "crates/router-runtime/examples/native-interruption/test_cut.py": "6bff14ead5f552280a3bc820f7988d53cf6c009aea548163f73d82839f5c7775"
+  },
+  "signed_source_commit": "f355551cf7a5fc76415f4c21d1368ef86190f539",
+  "signed_tree": "ba2495208d9b304a09d739c0237b7975c2144959",
+  "delta_from_build_tree": "README only; three fixture source files byte-identical",
+  "signed_source_pins": {
+    "crates/router-runtime/examples/native-interruption/README.md": "be9398d2264271df79a98f6fb2db9036cb57acca88160ed856f9aa51ff2e34ba",
+    "crates/router-runtime/examples/native-interruption/cut.c": "8a4dcca291c1a86daa55f219eb0200cb755db7a75506362edb3ff10117065026",
+    "crates/router-runtime/examples/native-interruption/qualify.py": "5733e64caa48ba822ea7f73633e238906fae7c17003ed109601e1d1044337904",
+    "crates/router-runtime/examples/native-interruption/test_cut.py": "6bff14ead5f552280a3bc820f7988d53cf6c009aea548163f73d82839f5c7775"
+  },
+  "driver_pins": {
+    "assets.json": "87a9eddd1530ea927b2977f8ba3f7ba594a7b314e8abe341592e1db5ac67abed",
+    "controller.py": "e22e63d54483ddbc22fb5ab72f3b5a570c8a16cb708a6e42b62d3e614477853d",
+    "cut.c": "8a4dcca291c1a86daa55f219eb0200cb755db7a75506362edb3ff10117065026",
+    "identity.json": "11fa51fcfdcdbe6960facab5e79b397f83fce64e2440ae414007498fa7603f0c",
+    "input-pins.json": "1ecc6fc217a07dc26e5af1ed7bc6b0f33e5fb0e48df3011c6d1f1008c3d6b5d4",
+    "native-qualification-plan.json": "cce887b7f116a8bb7e8bb46e3c544085191634283f18bbd9c0b5f0640188505c",
+    "parent.py": "59213aa0d33590e0604afd9e7021d635db63a3a84f5d33a35b77bc9960f1224f",
+    "prior/orchestrate.py": "38196d280c7ca259e7bf97821c34e859520a1a6cddb8d1200a951d2b1dad2b23",
+    "qualify.py": "5733e64caa48ba822ea7f73633e238906fae7c17003ed109601e1d1044337904",
+    "run.py": "ecbdb3a33d910be65269de9cf9fa697dce27f9be4fa97b272a9f3209676b7960",
+    "source.json": "6a4eb59dab6705cc7e4313688f289f60d47d4ea7c9fcad57623195baa4aef4b0",
+    "test_cut.py": "6bff14ead5f552280a3bc820f7988d53cf6c009aea548163f73d82839f5c7775"
+  }
+}

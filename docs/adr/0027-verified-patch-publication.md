@@ -3,7 +3,7 @@ adr: "0027"
 title: Publish verified patches through a dedicated Git revision
 status: implemented
 created: 2026-10-08
-last_modified: 2026-10-08
+last_modified: 2026-10-22
 scope: "F02a simulated runtime patch publication; no working-copy rewrite or native admission."
 amended_by: []
 supersedes: []
@@ -96,6 +96,26 @@ do not certify adversarial replacement of Git metadata during a Git subprocess,
 power-loss persistence on every filesystem, or the selected native client/OS
 composition. Those remain qualification work. F02b, F12a, financial admission and
 real-provider trials stay open. No model saving or accepted real task is inferred.
+
+## Process-crash fixture, 2026-10-22
+
+An additional Unix subprocess fixture exercises the publication tail with a
+prepared intent and receipt. It synchronizes through the existing capture
+observer, then the parent SIGKILLs only its owned child before ref creation or
+after Git succeeds but before `integration.published` is recorded. The parent
+waits for actual termination before reopening the Runtime. Both interrupted
+cases remain UNKNOWN with the expected absent or present result ref. Observation
+and a refused repeated intent leave the journal unchanged. Staged, unstaged and
+untracked user edits, index bytes, HEAD and the source revision stay intact.
+A completed-publication child is the positive control: reopening observes
+Published and the complete result revision, without replaying the intent.
+
+The marker, bounded waits and owned-child cleanup are fixture code only. The Git
+helper used by these fixtures ignores personal/system configuration and hooks. No production
+failpoint, API, permission or resource limit changes. This checks process-crash
+recovery of the publication tail, not the full authorization/worker pipeline,
+machine power loss, native sandbox composition, human acceptance or provider
+accounting. The earlier timed-out candidate-write test keeps its own scope.
 
 ## References
 

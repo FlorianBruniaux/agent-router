@@ -96,7 +96,8 @@ impl OwnedBroker {
 }
 mod isolated_network;
 
-#[derive(Eq, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 struct FileIdentity {
     device: u64,
     inode: u64,
@@ -1288,8 +1289,11 @@ mod ownership_tests;
 mod namespace_state;
 pub(crate) use namespace_state::FiniteClientResources;
 
+mod application;
 mod runtime_binding;
 mod verification;
+pub use application::resume::{FiniteResume, FiniteResumeReview, FiniteResumeState};
+pub use application::{FiniteApplicationReview, FiniteClientApplication};
 pub(crate) use runtime_binding::bind_runtime_definition;
 pub use runtime_binding::{ApprovedFiniteClientRun, PendingFiniteClientRun};
 pub use verification::FiniteClientVerifier;

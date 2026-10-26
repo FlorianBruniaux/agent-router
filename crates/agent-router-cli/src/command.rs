@@ -77,6 +77,26 @@ pub struct PhaseArgs {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// One fresh, explicitly approved finite session over a local scripted parent.
+    FiniteEntry {
+        #[arg(long)]
+        config: PathBuf,
+        /// Required: this command exchanges versioned JSON lines with its parent.
+        #[arg(long)]
+        json: bool,
+    },
+    /// Inspect an interrupted private application; --approve asks for a fresh
+    /// JSON approval on stdin in this same process. No worker is launched.
+    FiniteResume {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        run_id: String,
+        #[arg(long)]
+        approve: bool,
+        #[arg(long)]
+        json: bool,
+    },
     /// Manage authenticated operator declarations, without invoking a native host.
     Capability {
         #[command(subcommand)]
@@ -1194,7 +1214,12 @@ impl Commands {
                 | CatalogCommand::Refresh { json, .. } => (json, "Catalog"),
             },
             Self::Version { json } => (json, "Version"),
-            Self::Schema { .. } | Self::Completions { .. } => return None,
+            Self::Schema { .. }
+            | Self::Completions { .. }
+            | Self::FiniteEntry { .. }
+            | Self::FiniteResume { .. } => {
+                return None;
+            }
             Self::Route { .. } | Self::Explain { .. } | Self::Observe { .. } => return None,
             #[cfg(all(feature = "local-api", unix))]
             Self::Serve { .. } => return None,

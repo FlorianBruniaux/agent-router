@@ -1,0 +1,99 @@
+{
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "log_sha256": {
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "clippy.log": "c123d73047140da463a6cd20c63e653b244fccd713157cb2fd500c6b65a7de04",
+    "workspace.log": "5cc18ee96c49c080c2a91dbf37b82e7a667c9d499299cb56f46eef92eb08d1cd",
+    "gitleaks.log": "64a4c3c86c5899abea0a4e40757f20aeb8849b9d8cba02cf24b361fe2cf63925",
+    "harness.log": "0c1e9d1fa219030fae9d25d5d4e12406048c3eb60dd6ff6fb2c03601437e2c6c"
+  },
+  "workspace": {
+    "reported_passes": 1996,
+    "reported_failures": 0,
+    "reported_ignored": 43,
+    "includes_nested_helpers": true,
+    "test_threads": 2
+  },
+  "packaging": {
+    "interpreter": "Homebrew Python with tomllib",
+    "tests": 34,
+    "failures": 0,
+    "skips": 0,
+    "log_sha256": "c2d7cbbfda5a7cc52ba40eb6f6bab6cdc78828b05a277ca838d5a54a99eed937"
+  }
+}

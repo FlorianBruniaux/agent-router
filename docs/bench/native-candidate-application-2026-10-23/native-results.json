@@ -1,0 +1,40 @@
+{
+  "code_head": "261eeeb82f054644599afa6e45bfc4cd18deb3ae",
+  "source_tree": "85e553efb400bc273f087a47c224a55ac8e9c0b5",
+  "driver_digest": "575629368bff7b8b587ba9ebd6a7172d88b24d8cd7fa5812455a205108a199d5",
+  "compiled_build_digest": "7695483cccc523576e77994bc8e38cc14ee1f797b68f5d4e2c64bf21ed73f169",
+  "cases": [
+    {
+      "case": "positive",
+      "parent_exit_code": 0,
+      "entry_exit_code": 0,
+      "worker_requests": 6,
+      "model_calls": 0,
+      "fresh_acceptance_challenge_recomputed": true
+    },
+    {
+      "case": "reject_application",
+      "parent_exit_code": 0,
+      "entry_exit_code": 6,
+      "worker_requests": 6,
+      "model_calls": 0,
+      "fresh_acceptance_challenge_recomputed": true
+    }
+  ],
+  "retained_files_verified": 64,
+  "memory": {
+    "memory.max": "8589934592",
+    "memory.swap.max": "0",
+    "memory.peak": "834404352",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+  },
+  "cells_stopped": true,
+  "oom_killed": false,
+  "network": "none",
+  "host_mounts": 0,
+  "native_owner_interruption_recovery": "NOT_QUALIFIED",
+  "human_acceptance": null,
+  "source_publication": false,
+  "models_started": 0,
+  "real_registry_used": false
+}

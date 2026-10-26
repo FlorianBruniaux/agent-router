@@ -1,0 +1,16 @@
+{
+  "crates/agent-router-cli/Cargo.toml": "6e0408ad0057cc892330982b44d8d562bf52002683825ea5103c01e302166c1e",
+  "crates/agent-router-cli/src/finite_entry.rs": "cf6492678fc83d7d8c958a7e980580d3fea28df0443b4845a42bc2984a7d78b6",
+  "crates/agent-router-cli/src/finite_entry/output.rs": "b068aec9a7deb01219d0c7d1e82d453bec031d77f2b4167016fb02bb2c2fda8e",
+  "crates/agent-router-cli/src/finite_entry/session.rs": "a5458bf29115cb669aefc30ed67b751f984ace76e347ae4f87a704a1994ad598",
+  "crates/agent-router-cli/src/finite_entry/qualification.rs": "a54fd42968e912cf3f944f217b02ae97cbd98bfb43f48c9a95e8cbb349d944de",
+  "crates/agent-router-cli/src/finite_entry/qualification/process.rs": "082f431ac685cdf2b8881cdd1af6d5330b4d4defd259e30dee90103461ee2976",
+  "crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py": "3fee910dd549034cefb9d2e7fc6e81190b02c8e186a30298f4766d0a62ae29d3",
+  "crates/agent-router-cli/tests/finite_entry.rs": "0af88ec357bb6a2e96932df59d243ddbb0d86d4b91c3cb93929ce51db8b5cdc1",
+  "crates/agent-router-cli/tests/fresh_t02_qualification.py": "ce67fb70fb87533492d14afd307b7696a82568ded7489a9183be201b5c664919",
+  "docs/adr/0045-fresh-finite-entry.md": "1f14f9c78a8708b79ae7a27f7e737946de31461532c3563063e2c21a2ac9f655",
+  "docs/fresh-finite-qualification.md": "780382e476eea5eebd872ce8b90b1ec7ba38573820a7e5ff50c9fc48fed6cc63",
+  "crates/agent-router-cli/src/version_info.rs": "3b7ffa8b87ba347b50a1fe4829f4081e35a95e90e0b8a4bf6f1116916a34fd8d",
+  "scripts/package-core.py": "a78656c0e0eab0b61bd7994e401bb0899bae0abf191c3d329a5b412985cb7c77",
+  "scripts/test-package-core.py": "1c91f428b4e5da7cbeb86fefa60c34ae5d5e702d3a0f098f93ba984971200d45"
+}

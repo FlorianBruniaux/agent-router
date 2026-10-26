@@ -11,6 +11,8 @@ path = "src/main.rs"
 
 [features]
 default = ["codex", "claude"]
+# Workspace qualification only; absent from normal builds.
+qualification-fresh-t02 = ["codex"]
 codex = ["dep:adapter-codex"]
 claude = ["dep:adapter-claude"]
 opencode = ["dep:adapter-opencode"]
@@ -62,4 +64,4 @@ rusqlite = { version = "=0.39.0", features = ["bundled", "fallible_uint"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
-rustix = { version = "=1.1.4", features = ["process"] }
+rustix = { version = "=1.1.4", features = ["process", "net", "event", "fs"] }

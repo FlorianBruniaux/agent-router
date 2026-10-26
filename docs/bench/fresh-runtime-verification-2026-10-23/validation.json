@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "source_head": "313bb1fa9671c853cb33b98e0b55f95457b9ed0b",
+  "source_tree": "4960550dcca7461b270783387b79c04017c47588",
+  "platform": "macOS ARM64",
+  "checks": [
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0,
+      "log_sha256": "63a186413a6493dc498e26fb7245f43123a1580a8216d6a39907a31a141fc053"
+    },
+    {
+      "name": "targeted",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--bin",
+        "agent-router",
+        "finite_entry",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log_sha256": "9b2f77410946e4f43d4ee8be281358ade24e47bb5e72cfe3abc4e107fdf7156f"
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "ba0c7205db806881dd5f3aef9bb20569a1bfa63f1bbd87884b37f34f18500ed2"
+    },
+    {
+      "name": "adrs",
+      "command": [
+        "python3",
+        "-B",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d"
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log_sha256": "995e198af1af55e67dc2507741ff37dc97abaaff8dd7efd220cb97961f30ce68"
+    },
+    {
+      "name": "python",
+      "command": [
+        "python3",
+        "-B",
+        "crates/agent-router-cli/tests/fresh_t02_qualification.py"
+      ],
+      "exit_code": 0,
+      "log_sha256": "f96363f8d8dff4c4abed7197c63606ead0bd955ea4259bdcb5fb6f47dbe53992"
+    },
+    {
+      "name": "ordinary-cli",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "-p",
+        "agent-router-cli",
+        "--locked",
+        "--offline",
+        "--test",
+        "finite_entry",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0,
+      "log_sha256": "08a98821dadf01683c656ce19de8f2c848da6870240b62b565c6096bb09e9e4e"
+    },
+    {
+      "name": "secrets",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0,
+      "log_sha256": "ef8604c768b01e429bfa48280cfef80c525f386f668d4ff0ad9065657ac5115d"
+    }
+  ],
+  "workspace_results": {
+    "reported_passes": 1970,
+    "failed": 0,
+    "ignored": 43,
+    "summaries": 197,
+    "test_threads": 2,
+    "counting": "sum of summaries including nested helper output; not unique tests"
+  },
+  "independent_review": {
+    "base": "f442bbc9ddca493ea6451f33f2ac5a0144972915",
+    "head": "313bb1fa9671c853cb33b98e0b55f95457b9ed0b",
+    "diff_sha256": "56053af4c5532e8e28b4fe307831b05d48f3bc0a2656e4029289ded506c47f8d",
+    "recommendation": "APPROVE",
+    "reviewed_paths": 14,
+    "findings": 0,
+    "review_sha256": "fcfc4ffe196d98a66fa11b2c04668e19a3edd0bb7f2c536f22b1c50038fa9adf"
+  },
+  "prior_failures": [
+    "Feature inventory omission corrected before final source.",
+    "Default parallel workspace run: five Runtime Route failures; retained. Targeted and complete two-thread replays pass; exact original cause unknown.",
+    "Fixed 60-second checker allowance rejected in review and never executed under Linux. Final source derives the verify-node allowance and an absolute deadline before staging."
+  ],
+  "remote_ci": "unavailable; billing restriction, not a passing result"
+}

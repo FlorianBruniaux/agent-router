@@ -352,7 +352,11 @@ Legacy `preview` followed by `apply --approve DIGEST` still modifies the source
 working copy. Application authority is now one-shot even if a user restores the
 original source. Its multi-file working-copy writes do not share publication's
 single visibility point. See [ADR 0027](adr/0027-verified-patch-publication.md) for
-evidence limits, including Git-metadata races and native qualification.
+evidence limits, including Git-metadata races and native qualification. The
+[application and recovery qualification](bench/application-recovery-2026-10-23/README.md)
+checks exact revision bytes, a useful fixture correction and interrupted owners.
+An interrupted intent is not replayed or automatically rolled back; partial file
+writes remain possible.
 
 `keep` preserves the worktree; `discard --approve RUN_APPROVAL_DIGEST` removes only
 that owned worktree after a terminal state.
@@ -379,3 +383,11 @@ synchronization with the combined rules and reached connection errors. The
 shared-memory rule alone also reached turn startup; the domain rule alone did
 not. This does not establish that both rules are independently necessary.
 Authenticated provider execution remains unverified.
+
+## Resume a private finite application
+
+Use [`finite-resume`](reference/finite-application-resume.md) to inspect a new
+context-bound application intent after controller interruption. It reopens the
+original admission and requires fresh approval in the same process before a
+single bounded write. Partial files, later edits and already consumed resumes
+remain preserved. This command starts no worker and grants no new host access.

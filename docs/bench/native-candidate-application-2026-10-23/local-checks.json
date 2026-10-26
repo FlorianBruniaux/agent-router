@@ -1,0 +1,110 @@
+{
+  "suites": 197,
+  "reported_passes": 1991,
+  "reported_failures": 0,
+  "reported_ignored": 43,
+  "counts_include_nested_helpers": true,
+  "checks": [
+    {
+      "name": "python",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "crates/agent-router-cli/tests/fresh_t02_qualification.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "format",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "fmt",
+        "--all",
+        "--",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "clippy",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "clippy",
+        "--workspace",
+        "--all-targets",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "-D",
+        "warnings"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "workspace",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "test",
+        "--workspace",
+        "--all-features",
+        "--locked",
+        "--offline",
+        "--",
+        "--test-threads=2"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "harness",
+      "command": [
+        "rtk",
+        "proxy",
+        "cargo",
+        "run",
+        "-p",
+        "xtask",
+        "--locked",
+        "--offline",
+        "--",
+        "check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "adrs",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "-B",
+        "scripts/check-adrs.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "gitleaks",
+      "command": [
+        "gitleaks",
+        "dir",
+        ".",
+        "--redact",
+        "--no-banner"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "log_sha256": {
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "clippy.log": "68e7f95b6163452dba0cd94cd82be28e7c645eb56d34b039192bfe19d9cc5093",
+    "workspace.log": "3668268adfc7f7b40bf2eb90acea79ee38a78f8d7843dd0705e4cbecd09149c0",
+    "adrs.log": "f48a2a980606cf1ee0bcfe968f00cc24249a77c7f9e8f2dc09862ef0a903c09d",
+    "gitleaks.log": "d0f01508ae731ba6ead5684970f05cae916e316dd492f90ec06acf0aa8fe230a",
+    "harness.log": "e9ea90a85f4a96498425b4b9acff2fe517d97671e564a714a4f7d5a366a79585",
+    "python.log": "86932d94b8eeed5478515b821de8568d6851aef63bc1cc48c3e046fc7a3c71b3"
+  }
+}

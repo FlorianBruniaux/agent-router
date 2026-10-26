@@ -1,0 +1,7 @@
+{
+  "crates/agent-router-cli/src/finite_entry/qualification.rs": "4afa34ebe60d7f5ce8a3e11ad376bb4c3c0a17e42ca7a01a41f8ef317ef96ffd",
+  "crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py": "2e4052ec19a02d9cef81186cee90ea5aee70ef6304357961d55270988a9475d0",
+  "crates/agent-router-cli/src/finite_entry/session.rs": "14fb3cbd1624778fe40b2bb0443d4b7eb5582a3587a96d89eb7a1510d031efbc",
+  "crates/agent-router-cli/tests/fresh_t02_qualification.py": "b7a5dcc364f6ef8edad3b1199ba8218b0d1b51a6642eaf2f9987101a50e56bb5",
+  "crates/agent-router-cli/src/finite_entry/qualification/process.rs": "bb3d1b0637a22fe3caf29b3bae3b55fa61215b31696fe09eee580040716ef868"
+}

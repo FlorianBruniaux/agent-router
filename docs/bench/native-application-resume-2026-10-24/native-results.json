@@ -1,0 +1,127 @@
+{
+  "kill_before": {
+    "status": "passed",
+    "original_state": "preimage_intact",
+    "resume_applied": true,
+    "later_edit_preserved": true,
+    "models_started": 0,
+    "real_registry_access": false,
+    "configuration_sha256": "9976db340efab3dacc1d937301b4c21420dd05b4f5246d02f322876214329c7f",
+    "stopped_inspection_sha256": "352b27e5d33bbcd69325de8274ed6353df73e67c6e3a9a11e83eb1a2712a8a16",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "811249664",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stopped": true,
+    "retained_files": 67,
+    "owner_reaped": {
+      "pid": 35,
+      "returncode": -9,
+      "reaped": true
+    },
+    "new_events": [
+      "integration.resume_intent.v1",
+      "integration.resume_applied.v1"
+    ]
+  },
+  "kill_after": {
+    "status": "passed",
+    "original_state": "candidate_observed",
+    "resume_applied": false,
+    "later_edit_preserved": true,
+    "models_started": 0,
+    "real_registry_access": false,
+    "configuration_sha256": "e020d82461c252412a82497251919d28f2ea114503bb8fbd30527179e1237381",
+    "stopped_inspection_sha256": "fa255cfbc3f4204b95ba7ccc3c1b072d20eab66053ab76d8093b3838951fa2c3",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "803749888",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stopped": true,
+    "retained_files": 58,
+    "owner_reaped": {
+      "pid": 33,
+      "returncode": -9,
+      "reaped": true
+    },
+    "new_events": []
+  },
+  "kill_partial": {
+    "status": "passed",
+    "original_state": "divergent",
+    "resume_applied": false,
+    "later_edit_preserved": true,
+    "models_started": 0,
+    "real_registry_access": false,
+    "configuration_sha256": "0050606111ab127b188fda3cf7e4aafa8230943f87319b095f816a14eb42e1a4",
+    "stopped_inspection_sha256": "ccb96907bdcbf78195f5cae8c9f054a4f63fb37a5bc2c6e1c2aa65e9d158dd43",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "803745792",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stopped": true,
+    "retained_files": 60,
+    "owner_reaped": {
+      "pid": 34,
+      "returncode": -9,
+      "reaped": true
+    },
+    "new_events": []
+  },
+  "resume_interrupted": {
+    "status": "passed",
+    "original_state": "preimage_intact",
+    "resume_applied": false,
+    "later_edit_preserved": true,
+    "models_started": 0,
+    "real_registry_access": false,
+    "configuration_sha256": "1c79467feb26e7ce2f895e6821bfebe41b0167df89acec51035272c14885086f",
+    "stopped_inspection_sha256": "458b8c724591ec82f05e537651bdd812f7ad733489fc4fffa51ebb8b0df2c414",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "806584320",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stopped": true,
+    "retained_files": 68,
+    "owner_reaped": {
+      "pid": 34,
+      "returncode": -9,
+      "reaped": true
+    },
+    "new_events": [
+      "integration.resume_intent.v1"
+    ]
+  },
+  "later_edit": {
+    "status": "passed",
+    "original_state": "divergent",
+    "resume_applied": false,
+    "later_edit_preserved": true,
+    "models_started": 0,
+    "real_registry_access": false,
+    "configuration_sha256": "2c664bc5e9665262c0e31a220d025fec46938af534e91249bec243f1f5db6e10",
+    "stopped_inspection_sha256": "db9ebd1d489930c8c272cc2c4c4aa9be7239d920027c6e05241659cf35467efb",
+    "memory": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "804417536",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "stopped": true,
+    "retained_files": 58,
+    "owner_reaped": {
+      "pid": 34,
+      "returncode": -9,
+      "reaped": true
+    },
+    "new_events": []
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "initial_workspace": {
+    "tree": "2ddd320d7a78548650703316fee0aa8e44c2dc23",
+    "exit_code": 101,
+    "log_sha256": "90177658c86d10925ffd81d947d151cacea4428074a1f193488954ded1689f68",
+    "failure": "application::tests::real_git_partial_write_remains_uncertain_and_preserves_user_edits: child exited before partial",
+    "root_cause": "UNKNOWN; not reproduced by the isolated exact child or targeted application suite",
+    "action": "Test diagnostic now retains child exit status and stderr; no weakening of assertions."
+  },
+  "second_workspace": {
+    "tree": "d10becd789577233c8e1c02068aaa101789e91c4",
+    "exit_code": 101,
+    "log_sha256": "8ba1178cfdc6c929ceb686adc6f6f49bc3c6c27ff7a869a5f447d61de333fe1a",
+    "failure": "server::tests::a_panicking_handler_answers_500_and_costs_no_slot: helper request write BrokenPipe",
+    "root_cause": "Busy503 response and server close can precede health probe write; old helper panics before reading complete response.",
+    "action": "Test-only helper permits BrokenPipe/ConnectionReset only after complete503 response; deterministic red/green proves old/new ordering."
+  },
+  "targeted_application": {
+    "exit_code": 0,
+    "reported_passes": 10,
+    "log_sha256": "2d0f4354f891bd67debd032b785da6e1b4d71d82e0164b26d3b07ccc154fb8fc"
+  },
+  "local_api": {
+    "exit_code": 0,
+    "reported_passes": 37,
+    "log_sha256": "f4cd246f7e02dc6e58eb9c2adf89d76fb2e8f34d3f3aa4a6820c475645b36e40",
+    "red_log_sha256": "6fc397b33f7cdf18ab18ffddae0e6da9a7022b4bf31ce426b727e7ab8c52b315",
+    "green_log_sha256": "4e89a5d1550c257884e31e9764263d8e59b512b6b0d764a99498147d41704b5c"
+  },
+  "final_workspace": {
+    "reported_passes": 1991,
+    "reported_failures": 0,
+    "reported_ignored": 43,
+    "counts_include_nested_helpers": true,
+    "exit_code": 0,
+    "tree": "85e553efb400bc273f087a47c224a55ac8e9c0b5"
+  }
+}
