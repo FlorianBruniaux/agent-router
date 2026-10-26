@@ -47,6 +47,26 @@ PUBLIC_EXAMPLE_INPUTS = {
         "docs/bench/linux-finite-dispatch-2026-10-16/inputs/t02/controller/control-output.json",
     ),
 }
+# Explicit external inputs of distributed tests, including Linux-only modules.
+# Selecting a consumer requires its inputs; neighboring files remain excluded.
+PUBLIC_TEST_INPUTS = {
+    "crates/agent-router-cli/src/generation_proof_tests.rs": (
+        "tests/support/capability_store.rs",
+    ),
+    "crates/agent-router-cli/tests/support/native_fixture.rs": (
+        "tests/support/capability_store.rs",
+    ),
+    "crates/router-runtime/src/finite_tools/linux_tests.rs": (
+        "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py",
+    ),
+    "crates/router-adapter-api/tests/registry.rs": (
+        "integrations/codex/adapter.json",
+        "integrations/claude-code/adapter.json",
+    ),
+    "crates/router-workflow/tests/handoff.rs": (
+        "assets/prompts/autonomous-handoff.md",
+    ),
+}
 CONTENT_RULES = (
     ("private_home_path", re.compile(rb"(?:/Users/|/home/)[A-Za-z0-9_.-]+[/\\]")),
     ("private_windows_path", re.compile(rb"[A-Za-z]:[\\/]+Users[\\/]+[^\s\"']+")),
@@ -194,7 +214,7 @@ def projected_manifest(data: bytes, packages: list[dict]) -> bytes:
 
 
 def collect_sources(root: Path, packages: list[dict], distribution: str = "core", excluded: list[dict] | None = None) -> dict[str, bytes]:
-    names = {"Cargo.toml", "Cargo.lock", "LICENSE.md", "NOTICE"}
+    names = {"Cargo.toml", "Cargo.lock", "rust-toolchain.toml", "LICENSE.md", "NOTICE"}
     for package in packages:
         base = root / package["relative"]
         names.add(f"{package['relative']}/Cargo.toml")
@@ -243,6 +263,9 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                     raise PackageError(f"source.unclassified_file: {relative}")
                 names.add(relative)
     for anchor, inputs in PUBLIC_EXAMPLE_INPUTS.items():
+        if anchor in names:
+            names.update(inputs)
+    for anchor, inputs in PUBLIC_TEST_INPUTS.items():
         if anchor in names:
             names.update(inputs)
     files = {name: read_source(root, name) for name in sorted(names)}
@@ -581,9 +604,10 @@ def package(root: Path, output: Path, cargo_home: Path, strict_licenses: bool, r
         "```sh\ncargo build -p agent-router-cli --no-default-features --locked --offline\n"
         "cargo test -p agent-router-cli --no-default-features --locked --offline\n```\n\n"
         "Offline builds require the locked Rust dependencies in the local Cargo cache. "
-        "This source archive does not vendor them. Python is only used by repository release tooling, "
-        "not by the compiled Rust core. Optional Rust adapter packages remain separate workspace members; "
-        "host executables and integration configuration are not bundled.\n\n"
+        "This source archive does not vendor them. The Rust routing CLI does not require Python. "
+        "The public finite-campaign t02 verification example requires Python 3, as does repository release tooling. "
+        "Optional Rust adapter packages remain separate workspace members. Host executables and "
+        "activation configuration are not bundled; the two adapter descriptors included as test inputs are inert.\n\n"
         "DISTRIBUTION.json records the exact contents and evidence boundaries. "
         "LICENSE-INVENTORY.json, SBOM.spdx.json and THIRD_PARTY_NOTICES.md record dependency provenance. "
         "A verified archive is not evidence of host execution or authorization to publish.\n"

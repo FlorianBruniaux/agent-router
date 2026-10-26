@@ -42,6 +42,27 @@ headers are fixed. The SPDX creation date comes from the source commit.
 Source files are checked again before publication; a concurrent source change
 aborts the export. A verified temporary archive is linked into place atomically.
 
+## Qualify the extracted sources
+
+Archive integrity alone does not prove that its tests compile or pass. Extract
+into a fresh directory, then run the checks there with the pinned Rust toolchain
+and dependencies already installed locally:
+
+```sh
+tar -xzf /tmp/agent-router-core.tar.gz -C /tmp/empty-export-check
+cd /tmp/empty-export-check/agent-router-core
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets --all-features --locked --offline -- -D warnings
+cargo test --workspace --all-features --locked --offline
+```
+
+Create `/tmp/empty-export-check` first. Do not substitute the machine's default
+compiler or install a toolchain as part of this offline check. Record the archive
+hash, compiler version, commands and exit codes. Ignored platform or native tests
+remain unqualified; passing the portable suite grants no native host authority.
+The development harness is excluded, so its `xtask` check runs in the source
+repository separately.
+
 ## Continuous integration license evidence gate
 
 The Ubuntu quality job exports the actual repository with `--strict-licenses`
@@ -84,9 +105,16 @@ own export and conformance checks. `--distribution integrations` creates that
 separate source archive; the default remains `--distribution core`.
 
 The archive contains product manifests, Rust source/test/example/benchmark files,
-public catalogs and shared test fixtures. The root manifest is projected to the
-included members, retaining workspace dependency and package settings. Host
-configuration, the development harness, global instructions, integration assets,
+public catalogs and shared test fixtures. It preserves the exact root
+`rust-toolchain.toml`; a missing pin refuses the export. External inputs of
+selected tests are listed explicitly: synthetic capability support, two inert
+adapter descriptors, the handoff prompt and the Linux feedback fixture. This
+does not select neighboring integration, prompt or bench files. Missing inputs,
+symlinks and sensitive content fail the same source checks.
+
+The root manifest is projected to the included members, retaining workspace
+dependency and package settings. Host configuration, the development harness,
+global instructions, other integration assets,
 private policy packs, telemetry, databases and environment files are excluded.
 Unexpected file types, symlinks, known credential formats or machine home paths
 in selected inputs fail packaging. Only paths and rule identifiers appear in
