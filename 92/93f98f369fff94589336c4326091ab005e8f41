@@ -1,0 +1,93 @@
+Cargo.lock
+  s_13482db90a49c5::t_7255c107188318 841
+Cargo.toml
+  s_13482db90a49c5::t_8f8d06b0d75c7a 49
+assets/catalogs/README.md
+  s_13482db90a49c5::t_d53bee33df53f0 1-33
+assets/catalogs/codex-core-v2.json
+  s_13482db90a49c5::t_07963d081338d5 1-232
+crates/adapter-codex/src/lib.rs
+  s_13482db90a49c5::t_90d0e75093587e 12-13,102,129-144,168
+crates/adapter-codex/tests/probe.rs
+  s_13482db90a49c5::t_9672a238e91a74 101-225
+crates/agent-router-cli/src/capability_proofs.rs
+  s_13482db90a49c5::t_0d5cae35226220 51-61,305-338
+crates/agent-router-cli/src/finite_entry/output.rs
+  s_13482db90a49c5::t_c1de4937a6b8d1 108-130,191-264
+crates/agent-router-cli/src/finite_entry/resume.rs
+  s_13482db90a49c5::t_8ce3c98814ee5e 62-63,74,88
+crates/agent-router-cli/src/finite_entry/session.rs
+  s_13482db90a49c5::t_c2be31114c45e3 413-414,425,435
+crates/agent-router-cli/tests/codex_catalog.rs
+  s_13482db90a49c5::t_5d20fefe31fb2b 1-159
+crates/router-adapter-api/Cargo.toml
+  s_13482db90a49c5::t_2bc2d3c8f36982 14
+crates/router-adapter-api/src/lib.rs
+  s_13482db90a49c5::t_6fadabeca0d258 44-46,51-74
+crates/router-asset-contracts/src/documents.rs
+  s_13482db90a49c5::t_2907c34226a290 208-212
+crates/router-asset-contracts/tests/contracts.rs
+  s_13482db90a49c5::t_2f1904a1775f6d 391-415
+crates/router-policy/src/signed_phases.rs
+  s_13482db90a49c5::t_2ab9fb4fd392ae 87-92
+crates/router-policy/tests/signed_phases.rs
+  s_13482db90a49c5::t_cc244ef9137b08 54-73
+crates/router-runtime/src/finite_client.rs
+  s_13482db90a49c5::t_f0362a60cce235 1295-1298
+crates/router-runtime/src/finite_client/application.rs
+  s_13482db90a49c5::t_4da359d0751c45 7
+crates/router-runtime/src/finite_client/application/presentation.rs
+  s_13482db90a49c5::t_790f53412c29a3 1-88
+crates/router-runtime/src/finite_client/application/resume.rs
+  s_13482db90a49c5::t_738e6087558528 229-235,404-431
+crates/router-runtime/src/finite_client/application/tests.rs
+  s_13482db90a49c5::t_117287d81898f3 2
+crates/router-runtime/src/finite_client/application/tests/presentation.rs
+  s_13482db90a49c5::t_7ff8690cfba86b 1-87
+crates/router-runtime/src/finite_client/application/tests/process.rs
+  s_13482db90a49c5::t_8f88e00aa28902 20,25,28-30
+crates/router-runtime/src/finite_client/application/tests/resume.rs
+  s_13482db90a49c5::t_a274a4e2efa63f 235-285
+crates/router-runtime/src/lib.rs
+  s_9121ff73a7c874::t_29448f3fcf6dc3 21-25
+docs/adr/0021-host-capability-evidence.md
+  s_13482db90a49c5::t_db356bdf803753 6,16-38
+docs/bench/finite-reviewed-diff-2026-10-24/README.md
+  s_13482db90a49c5::t_1e3ba46451094c 1-45
+docs/bench/finite-reviewed-diff-2026-10-24/checks.json
+  s_13482db90a49c5::t_3cc2527ad8aa5c 1-231
+docs/bench/finite-reviewed-diff-2026-10-24/source.json
+  s_13482db90a49c5::t_6e062876de3bce 1-42
+docs/cli-execution.md
+  s_13482db90a49c5::t_2ccc75ed7f3007 394-413
+docs/fresh-finite-qualification.md
+  s_13482db90a49c5::t_8f9dc6645a6124 145-150
+docs/reference/finite-application-resume.md
+  s_13482db90a49c5::t_1a8b6d9044aeda 21-36
+docs/reference/json-contracts.md
+  s_13482db90a49c5::t_e7b76335242a41 75-89,785-798
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9293f98f369fff94589336c4326091ab005e8f41",
+  "prompts": {},
+  "sessions": {
+    "s_13482db90a49c5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15dfd-e5fe-7943-98a1-67ea3d70ca04",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_9121ff73a7c874": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a15fcb-99ab-75b0-b188-e22e2b014fd3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
