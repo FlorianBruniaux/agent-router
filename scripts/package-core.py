@@ -25,12 +25,16 @@ FORBIDDEN_PARTS = {
     "target", "node_modules", "private", "telemetry", "policy-packs", "credentials",
 }
 SUFFIXES = {".rs", ".toml", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"}
-# Only these fixed public Python inputs are classified crate sources.
-# Do not allow the .py suffix globally or include neighboring scripts.
-PUBLIC_PYTHON_INPUTS = {
+# Only these fixed public auxiliary inputs are classified crate sources.
+# Do not allow the .py or .c suffix globally or include neighboring scripts.
+PUBLIC_AUXILIARY_INPUTS = {
     "crates/router-runtime/examples/campaign/t02-v2/verify.py",
     "crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py",
     "crates/agent-router-cli/tests/fresh_t02_qualification.py",
+    "crates/router-runtime/examples/native-interruption/cut.c",
+    "crates/router-runtime/examples/native-interruption/qualify.py",
+    "crates/router-runtime/examples/native-interruption/test_cut.py",
+    "crates/router-runtime/examples/native-resume/qualify.py",
 }
 # Fixed compiler and authored replay inputs of selected public sources.
 # Keep this closure explicit: other bench data is not a distribution input.
@@ -238,7 +242,7 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                     raise PackageError(f"path.symlink: {path.relative_to(root).as_posix()}")
                 if path.is_file():
                     relative = path.relative_to(root).as_posix()
-                    if path.suffix not in SUFFIXES and relative not in PUBLIC_PYTHON_INPUTS:
+                    if path.suffix not in SUFFIXES and relative not in PUBLIC_AUXILIARY_INPUTS:
                         raise PackageError(f"source.unclassified_file: {relative}")
                     names.add(relative)
         for key in ("readme", "license_file"):

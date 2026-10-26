@@ -327,6 +327,53 @@ serde = "1"
         with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
             CORE.collect_sources(self.root, [package])
 
+    def test_native_qualification_sources_are_exact_exceptions(self):
+        package, _ = self.public_score_fixture()
+        names = (
+            "crates/router-runtime/examples/native-interruption/cut.c",
+            "crates/router-runtime/examples/native-interruption/qualify.py",
+            "crates/router-runtime/examples/native-interruption/test_cut.py",
+            "crates/router-runtime/examples/native-resume/qualify.py",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                target = self.write(name, "// public authored fixture\n")
+                try:
+                    try:
+                        files = CORE.collect_sources(self.root, [package])
+                    except CORE.PackageError as error:
+                        self.fail(f"reviewed public source refused: {error}")
+                    self.assertEqual(files[name], b"// public authored fixture\n")
+                    extra = self.write(str(Path(name).with_name("unrelated" + Path(name).suffix)), "unclassified")
+                    try:
+                        with self.assertRaisesRegex(CORE.PackageError, "source.unclassified_file"):
+                            CORE.collect_sources(self.root, [package])
+                    finally:
+                        extra.unlink()
+                finally:
+                    target.unlink()
+
+    def test_native_qualification_exceptions_keep_content_and_symlink_guards(self):
+        package, _ = self.public_score_fixture()
+        names = (
+            "crates/router-runtime/examples/native-interruption/cut.c",
+            "crates/router-runtime/examples/native-interruption/qualify.py",
+            "crates/router-runtime/examples/native-interruption/test_cut.py",
+            "crates/router-runtime/examples/native-resume/qualify.py",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                target = self.write(name, "// /Users/private-account/secret")
+                try:
+                    with self.assertRaisesRegex(CORE.PackageError, "content.private_home_path"):
+                        CORE.collect_sources(self.root, [package])
+                    target.unlink()
+                    target.symlink_to(self.write("public.txt", "public"))
+                    with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
+                        CORE.collect_sources(self.root, [package])
+                finally:
+                    target.unlink()
+
     def test_versioned_t02_engine_is_the_only_python_example_exception(self):
         package, _ = self.public_score_fixture()
         known = "crates/router-runtime/examples/campaign/t02-v2/verify.py"
