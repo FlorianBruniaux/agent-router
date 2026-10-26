@@ -1,0 +1,758 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-22",
+  "scope": "Pinned Linux ARM64 read-only finite-client q01; local authored responses; live Runtime owner",
+  "cases": [
+    {
+      "case": "positive",
+      "qualification": "q01",
+      "state": "verifying",
+      "worker_attempts": 1,
+      "local_posts": 1,
+      "source_unchanged": true,
+      "source_files": {
+        "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+      },
+      "captured_patch_count": 0,
+      "publication": false,
+      "model_calls_started": 0,
+      "human_acceptance": null,
+      "admission": {
+        "granted": 0,
+        "released": 1,
+        "waiting": 0
+      },
+      "journal": [
+        {
+          "sequence": 1,
+          "kind": "planned",
+          "state": "planned"
+        },
+        {
+          "sequence": 2,
+          "kind": "capability.evidence",
+          "state": "planned"
+        },
+        {
+          "sequence": 3,
+          "kind": "transition",
+          "state": "awaiting_approval"
+        },
+        {
+          "sequence": 4,
+          "kind": "finite_client.review.v1",
+          "state": "awaiting_approval"
+        },
+        {
+          "sequence": 5,
+          "kind": "transition",
+          "state": "queued"
+        },
+        {
+          "sequence": 6,
+          "kind": "admission.intent.v1",
+          "state": "queued"
+        },
+        {
+          "sequence": 7,
+          "kind": "transition",
+          "state": "preparing"
+        },
+        {
+          "sequence": 8,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 9,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 10,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 11,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 12,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 13,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 14,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 15,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 16,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 17,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 18,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 19,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 20,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 21,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 22,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 23,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 24,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 25,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 26,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 27,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 28,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 29,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 30,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 31,
+          "kind": "attempt.started",
+          "state": "preparing"
+        },
+        {
+          "sequence": 32,
+          "kind": "transition",
+          "state": "running"
+        },
+        {
+          "sequence": 33,
+          "kind": "process.cleanup_confirmed",
+          "state": "running"
+        },
+        {
+          "sequence": 34,
+          "kind": "attempt.finished",
+          "state": "running"
+        },
+        {
+          "sequence": 35,
+          "kind": "transition",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 36,
+          "kind": "attempt.evidence.v1",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 37,
+          "kind": "attempt.timing.v1",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 38,
+          "kind": "outputs.pending",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 39,
+          "kind": "outputs.file_owned",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 40,
+          "kind": "outputs.file_owned",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 41,
+          "kind": "outputs.retained",
+          "state": "succeeded_transport"
+        },
+        {
+          "sequence": 42,
+          "kind": "transition",
+          "state": "verifying"
+        },
+        {
+          "sequence": 43,
+          "kind": "protocol.observed",
+          "state": "verifying"
+        },
+        {
+          "sequence": 44,
+          "kind": "admission.intent.v1",
+          "state": "verifying"
+        }
+      ],
+      "receipt_matches_direct_sqlite_readback": true,
+      "native_test": {
+        "case": "positive",
+        "test": "q01_real_approved_local_report",
+        "exit_code": 0,
+        "elapsed_seconds": 57.24712441700103
+      },
+      "cleanup": "namespace_terminated",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "transport": {
+        "elapsed_ms": 970,
+        "exit_code": 0,
+        "termination": "exited"
+      },
+      "native_event_types": [
+        "thread.started",
+        "turn.started",
+        "item.completed",
+        "turn.completed"
+      ],
+      "protocol_observed": true,
+      "observed_tokens": null,
+      "observed_cost_microusd": null,
+      "requested_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "executed_model": null,
+      "executed_effort": null
+    },
+    {
+      "case": "refused",
+      "qualification": "q01-refused-approval-before-worker",
+      "state": "awaiting_approval",
+      "worker_attempts": 0,
+      "local_posts": 0,
+      "source_unchanged": true,
+      "source_files": {
+        "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+      },
+      "captured_patch_count": 0,
+      "publication": false,
+      "model_calls_started": 0,
+      "human_acceptance": null,
+      "admission": {
+        "granted": 0,
+        "released": 0,
+        "waiting": 0
+      },
+      "journal": [
+        {
+          "sequence": 1,
+          "kind": "planned",
+          "state": "planned"
+        },
+        {
+          "sequence": 2,
+          "kind": "capability.evidence",
+          "state": "planned"
+        },
+        {
+          "sequence": 3,
+          "kind": "transition",
+          "state": "awaiting_approval"
+        },
+        {
+          "sequence": 4,
+          "kind": "finite_client.review.v1",
+          "state": "awaiting_approval"
+        }
+      ],
+      "receipt_matches_direct_sqlite_readback": true,
+      "native_test": {
+        "case": "refused",
+        "test": "q01_refused_approval_never_submits_worker_request",
+        "exit_code": 0,
+        "elapsed_seconds": 40.65867229200376
+      },
+      "worker_cleanup": "not_started",
+      "preparation_canaries_performed": true,
+      "journal_unchanged_on_refusal": true
+    },
+    {
+      "case": "lost",
+      "qualification": "q01-response-lost-after-request",
+      "state": "failed",
+      "worker_attempts": 1,
+      "local_posts": 1,
+      "source_unchanged": true,
+      "source_files": {
+        "review.rs": "fffb14b9a431b05c30fc518f5af9b7ad15d63fe831a9c5514685acae871344b8"
+      },
+      "captured_patch_count": 0,
+      "publication": false,
+      "model_calls_started": 0,
+      "human_acceptance": null,
+      "admission": {
+        "granted": 0,
+        "released": 1,
+        "waiting": 0
+      },
+      "journal": [
+        {
+          "sequence": 1,
+          "kind": "planned",
+          "state": "planned"
+        },
+        {
+          "sequence": 2,
+          "kind": "capability.evidence",
+          "state": "planned"
+        },
+        {
+          "sequence": 3,
+          "kind": "transition",
+          "state": "awaiting_approval"
+        },
+        {
+          "sequence": 4,
+          "kind": "finite_client.review.v1",
+          "state": "awaiting_approval"
+        },
+        {
+          "sequence": 5,
+          "kind": "transition",
+          "state": "queued"
+        },
+        {
+          "sequence": 6,
+          "kind": "admission.intent.v1",
+          "state": "queued"
+        },
+        {
+          "sequence": 7,
+          "kind": "transition",
+          "state": "preparing"
+        },
+        {
+          "sequence": 8,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 9,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 10,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 11,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 12,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 13,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 14,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 15,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 16,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 17,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 18,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 19,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 20,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 21,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 22,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 23,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 24,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 25,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 26,
+          "kind": "preparation.git_returned",
+          "state": "preparing"
+        },
+        {
+          "sequence": 27,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 28,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 29,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 30,
+          "kind": "preparation.cycle.v1",
+          "state": "preparing"
+        },
+        {
+          "sequence": 31,
+          "kind": "attempt.started",
+          "state": "preparing"
+        },
+        {
+          "sequence": 32,
+          "kind": "transition",
+          "state": "running"
+        },
+        {
+          "sequence": 33,
+          "kind": "process.cleanup_confirmed",
+          "state": "running"
+        },
+        {
+          "sequence": 34,
+          "kind": "attempt.finished",
+          "state": "running"
+        },
+        {
+          "sequence": 35,
+          "kind": "transition",
+          "state": "failed"
+        },
+        {
+          "sequence": 36,
+          "kind": "attempt.evidence.v1",
+          "state": "failed"
+        },
+        {
+          "sequence": 37,
+          "kind": "attempt.timing.v1",
+          "state": "failed"
+        },
+        {
+          "sequence": 38,
+          "kind": "outputs.pending",
+          "state": "failed"
+        },
+        {
+          "sequence": 39,
+          "kind": "outputs.file_owned",
+          "state": "failed"
+        },
+        {
+          "sequence": 40,
+          "kind": "outputs.file_owned",
+          "state": "failed"
+        },
+        {
+          "sequence": 41,
+          "kind": "outputs.retained",
+          "state": "failed"
+        },
+        {
+          "sequence": 42,
+          "kind": "protocol.observed",
+          "state": "failed"
+        },
+        {
+          "sequence": 43,
+          "kind": "admission.intent.v1",
+          "state": "failed"
+        }
+      ],
+      "receipt_matches_direct_sqlite_readback": true,
+      "native_test": {
+        "case": "lost",
+        "test": "q01_lost_response_fails_without_retry_and_cleans_namespace",
+        "exit_code": 0,
+        "elapsed_seconds": 59.99886725000397
+      },
+      "cleanup": "namespace_terminated",
+      "memory_enforcement": "enforced",
+      "objective": "unknown",
+      "validation": "unknown",
+      "transport": {
+        "elapsed_ms": 766,
+        "exit_code": 1,
+        "termination": "exited"
+      },
+      "native_event_types": [
+        "thread.started",
+        "turn.started",
+        "error",
+        "turn.failed"
+      ],
+      "protocol_observed": true,
+      "observed_tokens": null,
+      "observed_cost_microusd": null,
+      "requested_model": "gpt-6-luna",
+      "requested_effort": "medium",
+      "executed_model": null,
+      "executed_effort": null,
+      "response_cut": {
+        "declared_body_bytes": 3196,
+        "listener_retained_until_worker_exit": true,
+        "sent_body_bytes": 204,
+        "sent_body_sha256": "efa0ed0b44d44aa9c9f16f08d84c8d6da71e8f11efbc90a272cd35cd623d3ead"
+      }
+    }
+  ],
+  "outer_sandbox": {
+    "memory_bytes": 8589934592,
+    "swap_bytes": 0,
+    "memory_observed": {
+      "memory.max": "8589934592",
+      "memory.swap.max": "0",
+      "memory.peak": "822300672",
+      "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0"
+    },
+    "network": "none",
+    "host_bind_mounts": 0,
+    "user": "65534:65534",
+    "read_only_root": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_options": [
+      "no-new-privileges",
+      "seccomp=unconfined"
+    ],
+    "cell_stopped": true
+  },
+  "private_raw_hashes": {
+    "positive/independent-readback.json": {
+      "sha256": "84b1eeee071d234e014c123ea13822f9b3af0e170cabecc313c5a0d29f1f3b9c",
+      "bytes": 4074
+    },
+    "positive/receipt.json": {
+      "sha256": "f028c1fd6b9685b88b4d231b99ff2110dae0d3e5986e59e3043212a61d82b1e1",
+      "bytes": 5394
+    },
+    "positive/result.json": {
+      "sha256": "a572aae53c5b5efd5fa0b0ea8c558a95e6da000f43813d38ea26c6d2aa6125d3",
+      "bytes": 28774
+    },
+    "positive/provider.json": {
+      "sha256": "de7b76eee5cfac3c84996edc8b5767f961e651719a8886783b7d164d1348bef5",
+      "bytes": 229
+    },
+    "positive/pins.json": {
+      "sha256": "fde76449530e349be6c49d62c4a037d0a9e1f42743477585eba338569dd8ffbd",
+      "bytes": 3458
+    },
+    "positive/stdout.jsonl": {
+      "sha256": "7327aa1918d57ab023028b68b42ad69c979b8485047a20a413d60a2d7932a8b1",
+      "bytes": 696
+    },
+    "positive/stderr.txt": {
+      "sha256": "45febd0513163cb17c259a71321fc1d44b51d8b7a13ffa7019a8c60e54b4e25c",
+      "bytes": 824
+    },
+    "positive/generic-reopen-refusal.txt": {
+      "sha256": "4db152259b857d4f71dc987e17b5e83aba868fc5390067565ba2550ba392de3a",
+      "bytes": 43
+    },
+    "positive/discovery/discovery.stdout": {
+      "sha256": "5a03dfafab5ec05948541e7d2738360004dc06d11f916ab2cb0330f17097ecfb",
+      "bytes": 236
+    },
+    "positive/discovery/discovery.stderr": {
+      "sha256": "3087f13b0d34323fbc05177ef68ae53dc523d9acaf6c0c63852825479db5af2a",
+      "bytes": 104
+    },
+    "refused/independent-readback.json": {
+      "sha256": "5f9052763db721ab4651a8e688678052147441f27be187162be969858ed2e870",
+      "bytes": 1081
+    },
+    "refused/receipt.json": {
+      "sha256": "2b97478883aa1ab87516a8743f87b5a2cd7c832212af78135507bbdfc3ba613b",
+      "bytes": 2745
+    },
+    "refused/pins.json": {
+      "sha256": "d9e448074735988a7eb2a6fb7a620713cd34f14baff3951cbf3417c35a6ad41e",
+      "bytes": 3456
+    },
+    "refused/discovery/discovery.stdout": {
+      "sha256": "5f44bd6749e9de5875472eaf6fd9fcd8831346018ba49be9f59a534e847a3014",
+      "bytes": 236
+    },
+    "refused/discovery/discovery.stderr": {
+      "sha256": "3087f13b0d34323fbc05177ef68ae53dc523d9acaf6c0c63852825479db5af2a",
+      "bytes": 104
+    },
+    "lost/independent-readback.json": {
+      "sha256": "5990579dda216b2a40fc980f561d56e7b32d332d0738878f65be7e4366c4a0a5",
+      "bytes": 3912
+    },
+    "lost/receipt.json": {
+      "sha256": "509eb88cf10cbaa50a9742a9d1435cf7cb45daefce4fd4e6433eb0600c1683fb",
+      "bytes": 4828
+    },
+    "lost/result.json": {
+      "sha256": "8e4118f504f16ff845a5ef7c7850aa41df599ed78ebf623a466ea198d2f64f8d",
+      "bytes": 27730
+    },
+    "lost/provider.json": {
+      "sha256": "77161c91348252ff9845f5cf1125592983869aabba7cc4690f35a6339f504a3a",
+      "bytes": 229
+    },
+    "lost/response-cut.json": {
+      "sha256": "3d9932c64db2d7e3955c55d867939b9aefd04a51ab7041915f990d7401768b69",
+      "bytes": 196
+    },
+    "lost/pins.json": {
+      "sha256": "4efac1a4fa08ca70f5f33b8b52079156fdc90ca9f4d8144747104033a2081843",
+      "bytes": 3438
+    },
+    "lost/stdout.jsonl": {
+      "sha256": "3c741028630dccb345694b8668689eed483a657a619d65909f5930e5c3bdfa70",
+      "bytes": 375
+    },
+    "lost/stderr.txt": {
+      "sha256": "6e71c9701e464b21c2f57484fcebbf074b6f0dc7954ea3ed2951fe24fd0496ee",
+      "bytes": 824
+    },
+    "lost/generic-reopen-refusal.txt": {
+      "sha256": "4db152259b857d4f71dc987e17b5e83aba868fc5390067565ba2550ba392de3a",
+      "bytes": 43
+    },
+    "lost/discovery/discovery.stdout": {
+      "sha256": "9f84370f5dfc4df901c4e2e8384f485ae889d2e4792889f1d04201f43711749d",
+      "bytes": 236
+    },
+    "lost/discovery/discovery.stderr": {
+      "sha256": "3087f13b0d34323fbc05177ef68ae53dc523d9acaf6c0c63852825479db5af2a",
+      "bytes": 104
+    }
+  },
+  "unsuccessful_attempts": [
+    {
+      "stage": "build_collection",
+      "compilation_exit_codes": [
+        0,
+        0
+      ],
+      "failure": "Docker archive API could not collect tmpfs binary",
+      "native_started": false,
+      "resolution": "Identical source rebuild; stream collection"
+    },
+    {
+      "stage": "native_preparation",
+      "test_exit_code": 101,
+      "failure": "MCP v3 profile refused for read-only q01 before diagnostic command execution",
+      "runtime_runs": 0,
+      "worker_attempts": 0,
+      "resolution": "Separate canonical v2 profile, same binaries and assertions"
+    }
+  ],
+  "not_qualified": [
+    "fresh automatic user-session entry",
+    "human useful-task acceptance",
+    "real provider or model quality",
+    "owner loss or restart retry",
+    "cleanup before admission release timing",
+    "all network failure points"
+  ]
+}
