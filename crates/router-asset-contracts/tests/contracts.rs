@@ -389,6 +389,31 @@ fn native_claims_cannot_use_cache_documentation_or_unrelated_source() {
 }
 
 #[test]
+fn caller_supplied_codex_version_is_not_native_asset_availability() {
+    let mut fixture = Fixture::new();
+    let mut observation = fixture.snapshot.observation().clone();
+    observation.evidence[0].kind = EvidenceKind::CodexCliVersion;
+    observation.host.capabilities.clear();
+    for value in observation.capabilities.values_mut() {
+        value.support = CapabilitySupport::Unknown;
+        value.source_ids.clear();
+    }
+    let snapshot = ValidatedHostObservation::from_observation(
+        observation.seal().unwrap(),
+        SnapshotValidation {
+            now_unix_seconds: NOW,
+            max_age_seconds: 60,
+        },
+    )
+    .unwrap();
+    fixture.availability.snapshot_hash = snapshot.hash().into();
+    assert_eq!(
+        seal_availability(fixture.availability, &snapshot).unwrap_err(),
+        ContractError::Binding
+    );
+}
+
+#[test]
 fn audio_schema_and_context_unknowns_fail_closed() {
     let mut fixture = Fixture::new();
     fixture

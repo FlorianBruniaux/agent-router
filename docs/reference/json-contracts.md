@@ -72,6 +72,21 @@ Without one, a handwritten `supported` or `unsupported` claim fails with
 `capability.evidence.unauthenticated`. Model discovery and capability validation
 remain separate. A model cache or native stream never proves tools or writes.
 
+Codex model discovery compares the cache's whole `major.minor.patch` version
+with the selected CLI version. A valid prerelease or build suffix can match
+that whole version for discovery; a different release cannot. Supplying
+`inspect --observed-version` also retains the exact caller-provided version in
+an evidence source of kind `codex_cli_version`. That source is provenance only:
+it cannot establish a signed native host, native asset availability or a
+capability. Proof loading compares this full version exactly, and native
+dispatch still checks the full version and executable digest independently.
+Omitting the flag retains the existing cache-only observation shape. Reading
+a shared cache does not prove which process, account or client surface wrote it.
+
+For the October model pool, use `assets/catalogs/codex-core-v2.json` as the
+explicit policy prior; its schema remains 1. See
+[catalog policy and unrated entries](../../assets/catalogs/README.md).
+
 The v1 authenticated proof contract lives in `router-adapter-api`. It contains a
 random store identity, increasing sequence, proof identity, capability, tier,
 attempt outcome, model identity, nonce/effect digests and start/end/lifetime

@@ -17,13 +17,17 @@ impl Cut {
     fn stop(&self, stage: &str) -> Result<()> {
         if self.stage == stage {
             use std::os::unix::fs::OpenOptionsExt;
+            let pending = self.marker.with_extension("pending");
             let mut marker = fs::OpenOptions::new()
                 .create_new(true)
                 .write(true)
                 .mode(0o600)
-                .open(&self.marker)?;
+                .open(&pending)?;
             marker.write_all(stage.as_bytes())?;
             marker.sync_all()?;
+            // Publish only complete bytes, without replacing an existing cut.
+            // The temporary fixture retains both links until owner cleanup.
+            fs::hard_link(&pending, &self.marker)?;
             loop {
                 std::thread::park();
             }
