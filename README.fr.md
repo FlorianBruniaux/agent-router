@@ -4,25 +4,45 @@
 
 Un routage expérimental, local et explicable pour Claude Code et Codex.
 
-État au 15 octobre 2026 : le routage hors ligne et le calcul des coûts par révision
-acceptée sont disponibles. L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; il ne démontre pas d’économie.
-La [qualification de l’évaluateur](docs/evaluator-qualification.md) contrôle les cas requis avant comparaison.
-Le [raccordement des usages fournis](docs/supplied-usage-pricing.md) relie des compteurs par appel
-au calculateur de coûts existant. Ces deux outils fonctionnent hors ligne sur des preuves fournies.
-Le [dossier M4 conservé](docs/bench/accepted-evidence-2026-10-15/README.md) garde les montants manquants inconnus.
-L’usage automatique quotidien attend la qualification native macOS, actuellement
-bloquée par la [limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
-Une [expérience bornée sur la mémoire physique](docs/bench/macos-memory-protection-2026-10-11/README.md)
-valide la détection et l’arrêt d’un enfant inerte ; elle ne constitue pas un
-plafond strict et ne protège pas tout l’arbre de processus du client natif.
-Le [plan de finalisation](docs/bench/finalization-plan-2026-10-07.md) sépare
-qualification native, mesures et publication.
+État au 27 octobre 2026 : **le routage hors ligne fonctionne ; l’usage
+quotidien automatique dans Claude/Codex reste non qualifié.** Les contrôles
+ci-dessous portent sur des périmètres de preuve distincts.
 
-L’[observation passive](docs/run-observation.md) (EN) propose une v2 explicite qui détaille le modèle demandé et le résultat du superviseur pour chaque tentative. La v3 ajoute la durée locale qualifiée de capture du superviseur ; les anciens journaux restent inconnus pour cette mesure, et la v1 reste le format par défaut. Les trois formats ont un schéma JSON publié. Le [diagnostic du client Codex dédié](docs/bench/owned-entry-qualification-2026-10-08/README.md) (EN) vérifie un envoi autorisé, un refus et une annulation contrôlée avec un fournisseur simulé. La [publication d’un patch vérifié](docs/cli-execution.md) (EN) construit maintenant une révision Git approuvée à partir d’une correction simulée utile, en préservant les fichiers de travail. La composition native, l’intégration quotidienne, l’admission d’un fournisseur réel et les économies mesurées restent à prouver.
+| Parcours | Ce qui est vérifié | Limite restante |
+| --- | --- | --- |
+| Routage hors ligne | Choix du modèle, de l’effort et des skills, filtrage des contraintes et explication reproductible sur les fixtures fournies. | Les déclarations des fixtures ne prouvent pas la disponibilité réelle des modèles. Voir le [test hors ligne](#router-une-tâche-et-lire-lexplication). |
+| Exécution native bornée | Parcours Linux ARM64 épinglés avec le vrai client Codex, des réponses écrites à l’avance, un refus effectif de permission et un patch qui passe 18 contrôles publics. | Aucun vrai modèle ni compte fournisseur dans ces essais. [Preuve du parcours parent complet](docs/bench/fresh-finite-entry-2026-10-22/README.md#follow-up-one-complete-fresh-parent-flow) (EN). |
+| Application privée et reprise | Application explicite du candidat et cinq cas natifs de reprise épinglés, dont le refus après une écriture partielle ou une modification ultérieure. | Les écritures ne sont pas atomiques face à un crash. Le changement ultérieur d’affichage du diff (#211) a des tests locaux, mais ses cinq cas Linux composés n’ont pas été rejoués. [Preuves de reprise](docs/bench/native-application-resume-2026-10-24/README.md) (EN). |
+| Outils de contexte bornés, T1–T4 | Plages exactes de lignes, présentation terminal SGR explicite, récupération intégrale du brut, politique explicite et corpus hors ligne. | Qualification native Linux ARM64 du profil context-v4 **NOT RUN** ; empreinte du catalogue normalisé par le SDK **UNKNOWN**. Le corpus livre **415 octets JSON de plus**, relectures comprises. [Résultats de contexte](docs/bench/rtk-context-offline/README.md) (EN). |
+| Résultats et coûts | L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; les usages fournis peuvent alimenter le coût par révision acceptée. | Les montants manquants restent inconnus. Aucun gain général de coût ou de qualité n’est établi. [Preuves M4 conservées](docs/bench/accepted-evidence-2026-10-15/README.md) (EN). |
+
+Les contrôles de qualité des sources et l’archive de sources extraite passent
+localement pour le code fusionné dans #195 (`492c956`). Les contrôles distants
+de ce merge n’ont pas démarré à cause du blocage facturation/plafond GitHub ;
+la CI n’est pas verte. Les preuves natives ci-dessus lient leurs propres
+sources et binaires, pas chaque changement ultérieur. Les qualifications Linux
+conservent 8 Gio, zéro swap et leurs restrictions d’accès privé. L’admission
+native macOS reste bloquée par la
+[limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
+
+La commande `finite-entry` utilise un parent local scripté explicite ; ce n’est
+pas un hook automatique pour la conversation en cours. `finite-resume` peut
+terminer une application interrompue éligible sans lancer un autre worker.
+Ces commandes demandent leur configuration et leurs autorisations documentées ;
+le test rapide ci-dessous effectue seulement le routage. Voir le
+[protocole d’entrée fraîche](docs/bench/fresh-finite-entry-2026-10-22/README.md)
+et le [protocole de reprise](docs/reference/finite-application-resume.md) (EN).
+
+L’[observation passive](docs/run-observation.md), la
+[qualification de l’évaluateur](docs/evaluator-qualification.md) et le
+[raccordement des usages fournis](docs/supplied-usage-pricing.md) restent
+disponibles dans leurs périmètres de preuve respectifs. Les commandes de
+compilation de ce dépôt n’installent aucun hook ni configuration globale des hosts.
 
 Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
-conversion future vers Apache 2.0. Le [guide d'essai expérimental](docs/experimental-release.md)
-(EN) fournit l'exemple hors ligne reproductible et les limites de l'intégration aux hosts.
+conversion future vers Apache 2.0. Commencez par le [test rapide](#démarrage-rapide).
+Le [guide d’essai expérimental](docs/experimental-release.md) (EN) conserve les
+preuves historiques d’installation ; l’état daté ci-dessus décrit les intégrations suivantes.
 
 <table>
   <tr>
@@ -143,7 +163,7 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 | Déterministe et rejouable : les mêmes entrées donnent la même décision, le même reçu et la même explication. | Une boîte noire entraînée. Les propositions sémantiques restent optionnelles, consultatives et cantonnées au pool admissible. |
 | Revue avant exécution : un lancement exige un digest approuvé, des preuves de capacités récentes et un sandbox OS vérifié. | Un runner autonome. Il ne contourne jamais le système de permissions d'un host et ne tourne jamais avec les approbations désactivées. |
 | Explicite sur l'incertitude : les capacités, coûts et identités de host inconnus restent `UNKNOWN`. | Une source d'affirmations qu'il ne peut pas prouver. Il n'annonce ni gain, ni niveau de support, ni identité de modèle sans preuve. |
-| Local et hors ligne pour le routage : router ne demande aucun appel à un provider, aucun daemon ni aucun accès réseau. | Une gateway hébergée, un proxy de modèles ou un broker d'identifiants. Aucun transport vers un provider n'est branché sur l'exécution aujourd'hui. |
+| Local et hors ligne pour le routage : router ne demande aucun appel à un provider, aucun daemon ni aucun accès réseau. | Une gateway hébergée, un proxy de modèles ou un broker d'identifiants. L’accès au provider dépend du host ou du parent explicite ; le routage hors ligne n’appelle aucun provider. |
 | Un ensemble de bibliothèques Rust bornées, plus une CLI, avec des contrats JSON versionnés. | Un paquet qui installe des hooks, des skills ou une configuration globale sur votre machine. |
 
 </details>
@@ -221,27 +241,33 @@ revue de release et ne vaut pas validation pour la production.
 
 ## Démarrage rapide
 
-Utilisez [Cargo depuis une révision Git épinglée](docs/install.fr.md#cargo-depuis-une-révision-git-épinglée)
-ou une [formule Homebrew locale vérifiée](docs/install.fr.md#homebrew-formule-locale).
-Tous deux installent `agent-router` avec les adaptateurs Claude/Codex par défaut
-et `router-sandbox-helper` ; configuration du helper et approbations restent
-explicites. Le dépôt est privé, sans annonce de tap public, paquet crates.io ni
-asset de release public. La [qualification actuelle](docs/bench/distribution-qualification-2026-10-07.md)
-sépare les contrôles de cycle de vie locaux de l'acquisition distante et de l'exécution native.
+Partez d’un checkout autorisé de ce dépôt de développement. Le
+[snapshot public du cœur](https://github.com/FlorianBruniaux/agent-router-core)
+a été publié séparément le 22 octobre 2026 ; son README et `DISTRIBUTION.json`
+décrivent ce snapshot, qui n’est pas automatiquement synchronisé avec cet arbre.
+Aucun tap public, paquet crates.io ni asset de release signé n’est annoncé ici.
+
+Le test ci-dessous compile seulement la CLI de routage, puis choisit et explique
+un plan. Il ne demande ni modèle, ni connexion à un host, ni daemon, ni helper,
+ni configuration globale.
 
 ### Compiler depuis les sources
 
 Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
 la release locale vérifiable et la désinstallation. Il faut Rust 1.85 ou plus récent. Le dépôt épingle la toolchain de développement dans
-[`rust-toolchain.toml`](rust-toolchain.toml). Tant que le dépôt est privé, il faut un accès
-pour le cloner ; ces instructions n'annoncent pas sa publication.
+[`rust-toolchain.toml`](rust-toolchain.toml). Ce dépôt de développement reste privé
+et demande un accès pour le cloner ; le snapshot public du cœur est une distribution séparée.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
-cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
-./target/release/agent-router --help
+cargo build --locked -p agent-router-cli
+./target/debug/agent-router version --json
 ```
+
+`version --json` décrit ce build ; cette commande n’inspecte ni ne lance de host.
+Cargo peut télécharger les dépendances verrouillées pendant la compilation.
+Si le cache est complet, ajoutez `--offline` à la commande de compilation.
 
 <details>
 <summary>Options de build et limites</summary>
@@ -263,16 +289,17 @@ Les noms de modèles et les capacités déclarées dans ces fixtures synthétiqu
 ne prouvent ni disponibilité actuelle des modèles, ni authentification, ni support natif du host.
 
 ```sh
-./target/release/agent-router route \
+example_dir=$(mktemp -d)
+./target/debug/agent-router route \
   --request tests/fixtures/requests/codex-implementation.json \
   --catalog assets/catalogs/codex-core-v1.json \
-  --json > /tmp/agent-router-decision.json
+  --json > "$example_dir/decision.json"
 
-./target/release/agent-router explain \
-  --decision /tmp/agent-router-decision.json
+./target/debug/agent-router explain \
+  --decision "$example_dir/decision.json"
 ```
 
-Pour cette fixture, l'explication contient :
+Les deux commandes doivent sortir avec le code `0`. Pour cette fixture, l’explication contient :
 
 ```text
 Preset: plan-execute-verify
@@ -281,20 +308,35 @@ Excluded candidates: 13
 Missing evidence: 0
 ```
 
+`Missing evidence: 0` concerne les données fournies par la fixture. Ce test
+ne réalise aucune correction et ne prouve pas le support actuel des modèles.
+Conservez `example_dir` pour inspecter la décision, ou supprimez seulement ce
+fichier et ce répertoire une fois le test terminé.
+
+### Décrire votre propre tâche
+
+```sh
+./target/debug/agent-router task-guide \
+  --text 'Corriger un parseur Rust et vérifier ses tests' --json
+```
+
+Résultat attendu : `status: needs_clarification`, code de sortie `3`. C’est une
+demande de précisions, pas un échec d’appel à un modèle. Ajoutez `--interactive`
+pour répondre aux questions sur le type de tâche, la portée, le risque, les
+permissions, les critères d’acceptation et le budget. La
+[saisie guidée](docs/task-guide.md) (EN) prépare les faits de la tâche ; elle
+n’accorde aucune autorisation d’exécution et n’appelle aucun modèle.
+
 <details>
 <summary>Routage par phase et codes de sortie</summary>
 
-Pour router phase par phase, essayez la fixture synthétique de host observé :
+`route-phase` valide les preuves de capacités du host. L’ancien fichier
+`fixtures/examples/phase-snapshot.json` n’authentifie pas les capacités déclarées
+pour le contrat actuel et est refusé avec `capability.evidence.unauthenticated` ;
+`--now 100` ne l’authentifie pas. Voir le
+[contrat de preuve des capacités](docs/adr/0021-host-capability-evidence.md) (EN).
+Utilisez la fixture `route` ci-dessus pour le test hors ligne autonome.
 
-```sh
-./target/release/agent-router route-phase \
-  --context fixtures/examples/phase-request.json \
-  --host-snapshot fixtures/examples/phase-snapshot.json \
-  --catalog fixtures/examples/phase-catalog.json \
-  --now 100 --json
-```
-
-`--now 100` ne sert qu'à fixer l'horloge de la fixture. Les vraies preuves de host doivent être récentes.
 La plupart des commandes du produit fournissent une sortie machine stable via `--json` ; lancez
 `agent-router <command> --help` pour voir les entrées requises. `route` sort avec `0` pour une
 sélection, `3` pour un résultat valide sans route, `2` pour une entrée invalide, `4` pour une erreur
@@ -304,6 +346,12 @@ interne et `7` pour une erreur d'intégrité ; voir
 </details>
 
 ### Lancer un workflow approuvé
+
+Ce parcours est distinct du test hors ligne. Compilez `router-sandbox-helper`
+séparément et configurez son chemin et son empreinte exacts pour l’exécution
+supervisée. [Cargo épinglé](docs/install.fr.md#cargo-depuis-une-révision-git-épinglée)
+et la [formule Homebrew locale](docs/install.fr.md#homebrew-formule-locale)
+couvrent la distribution à deux binaires.
 
 Suivez le [guide de préparation](docs/preparation.md), puis le
 [guide d'une exécution unique](docs/cli-execution.md) ou le [guide des workflows](docs/coordinator.md).
@@ -440,7 +488,7 @@ Codex et Claude Code ont des adaptateurs CLI ; OpenCode et Copilot ont des adapt
 | **Autres hosts** | Des descripteurs d'intégration et des fixtures de conformité synthétiques sont disponibles. [État des intégrations](integrations/additional-hosts.md) recense les preuves natives qui manquent encore. |
 | **Omnigent** | Traduction de routage hors ligne, avec contrôles stricts des paires proposées et de l'éligibilité locale. Pas encore d'endpoint HTTP ni d'intégration native aux sessions. [Contrat et limites](integrations/omnigent.md). |
 | **macOS** | Superviseur Seatbelt et vrais tests canary locaux de sandbox et de reprise. Le nettoyage par groupe de processus n'établit pas le confinement des descendants détachés. |
-| **Linux** | Superviseur Bubblewrap avec nettoyage par namespace PID, exercé par la [CI du runtime natif](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
+| **Linux** | Superviseur Bubblewrap avec nettoyage par namespace PID ; les parcours Codex bornés ARM64 épinglés et les preuves d’application/reprise privée sont liés dans l’état daté ci-dessus. Ces preuves historiques sont distinctes de la CI distante actuelle, qui n’a pas démarré pour `492c956`. |
 | **Windows** | L'exécution native n'est pas implémentée. |
 
 </details>
@@ -494,8 +542,18 @@ livré de ce qui attend encore son acceptation.
 ```sh
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-cargo test --workspace --locked
+cargo test --workspace --all-features --locked
 cargo run -p xtask --locked -- check
+```
+
+Le [corpus de contexte écrit à l’avance](tests/fixtures/finite-context/README.md)
+vérifie les plages exactes, les vues terminal et la récupération intégrale du brut
+sans modèle. Sa [comparaison hors ligne](docs/bench/rtk-context-offline/README.md)
+mesure le JSON complet et conserve les coûts et le succès du modèle inconnus.
+Pour exécuter seulement ce corpus sans modèle :
+
+```sh
+cargo test -p router-runtime --test finite_context_corpus --locked --offline
 ```
 
 Les tests canary du sandbox natif sont séparés de la suite de tests habituelle et demandent

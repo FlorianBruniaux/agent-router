@@ -4,25 +4,42 @@
 
 Experimental, local and explainable routing for Claude Code and Codex.
 
-Current status, 2026-10-15: offline routing and accepted-revision cost calculation
-are available. The [assisted M4 trial produced an accepted correction](docs/bench/m4-fix-integration-2026-10-11.md); it does not establish savings.
-[Evaluator qualification](docs/evaluator-qualification.md) checks required cases before comparison;
-[supplied usage pricing](docs/supplied-usage-pricing.md) joins explicit per-call usage
-to the existing cost calculator. Both operate offline on supplied evidence.
-The [retained M4 dossier](docs/bench/accepted-evidence-2026-10-15/README.md) keeps missing monetary totals unknown.
-Automatic daily use still depends on native macOS qualification, currently blocked
-by the [8 GiB address-space limit](docs/bench/macos-memory-followup-2026-10-11/README.md).
-A [bounded physical-memory experiment](docs/bench/macos-memory-protection-2026-10-11/README.md)
-validates detection and termination for one inert child; it does not establish a
-hard cap or protect the native client’s whole process tree.
-The [finalization plan](docs/bench/finalization-plan-2026-10-07.md) (FR) separates
-native qualification, measurement and publication.
+Status, 2026-10-27: **offline routing works; automatic daily Claude/Codex use
+remains unqualified.** The checks below describe different evidence scopes.
 
-[Passive observation](docs/run-observation.md) offers opt-in v2 requested selections and supervisor outcomes for each durable attempt. Opt-in v3 adds qualified local supervisor capture duration; legacy records remain unknown, and v1 remains the default. All three formats have a published JSON Schema. The [dedicated Codex client diagnostic](docs/bench/owned-entry-qualification-2026-10-08/README.md) verifies an allowed local send, refusal and controlled cancellation against a simulated provider. [Verified patch publication](docs/cli-execution.md) now builds an approved Git revision from a useful simulated correction while preserving user working files. Native composition, daily-use integration, real-provider admission and measured savings remain open.
+| Surface | What is verified | Remaining limit |
+| --- | --- | --- |
+| Offline routing | Model, effort and skill selection, constraint filtering and repeatable explanations on bundled fixtures. | Fixture declarations do not prove live model availability. Try the [offline test](#route-a-task-and-read-the-explanation). |
+| Finite native execution | Pinned Linux ARM64 runs with the real Codex client, scripted responses, an actual permission refusal and a captured patch passing 18 public checks. | No real model or provider account in these runs. [Complete parent evidence](docs/bench/fresh-finite-entry-2026-10-22/README.md#follow-up-one-complete-fresh-parent-flow). |
+| Private application and resume | Explicit candidate application and five pinned native resume cases, including refusal after partial writes or later edits. | Writes are not crash-atomic. The later inline-diff presentation change (#211) has local tests but no replay of its five composed Linux cases. [Resume evidence](docs/bench/native-application-resume-2026-10-24/README.md). |
+| Finite context tools, T1–T4 | Exact line windows, opt-in terminal SGR views, complete raw recall, explicit policy and an authored offline corpus. | Context-v4 native Linux ARM64 qualification is **NOT RUN**; the SDK-normalized catalogue hash is **UNKNOWN**. The corpus delivers **415 more JSON bytes**, rereads included. [Context results](docs/bench/rtk-context-offline/README.md). |
+| Outcomes and costs | The [assisted M4 trial produced an accepted correction](docs/bench/m4-fix-integration-2026-10-11.md); supplied usage can feed accepted-revision cost calculation. | Missing monetary totals remain unknown. No general savings or quality gain is established. [Retained M4 evidence](docs/bench/accepted-evidence-2026-10-15/README.md). |
+
+Source quality checks and the extracted source archive passed locally for the
+code merged in #195 (`492c956`). Hosted checks on that merge did not start
+because of GitHub billing/spending restrictions; they are not passing CI.
+Native records above bind their own source and binary hashes, not every later
+change. Linux qualifications retain 8 GiB, zero swap and their private-access
+boundaries. Native macOS admission remains blocked by the
+[8 GiB address-space limit](docs/bench/macos-memory-followup-2026-10-11/README.md).
+
+The `finite-entry` command uses an explicit local scripted parent; it is not an
+automatic hook for your current conversation. `finite-resume` can finish an
+eligible interrupted application without starting another worker. These
+commands require their documented configuration and authority; the quick test
+below only routes. [Fresh entry protocol](docs/bench/fresh-finite-entry-2026-10-22/README.md)
+and [resume protocol](docs/reference/finite-application-resume.md).
+
+[Passive observation](docs/run-observation.md),
+[evaluator qualification](docs/evaluator-qualification.md) and
+[supplied usage pricing](docs/supplied-usage-pricing.md) remain available with
+their stated evidence limits. No hook or global host configuration is installed
+by this repository's build commands.
 
 This source-available candidate uses [FSL-1.1-ALv2](LICENSE.md), with future
-Apache 2.0 conversion. Start with the [experimental onboarding](docs/experimental-release.md)
-for the reproducible offline example and the limits of host integration.
+Apache 2.0 conversion. Start with the [quick test](#quick-start).
+The [experimental onboarding](docs/experimental-release.md) retains historical
+installation evidence; the dated status above records subsequent integration.
 
 <table>
   <tr>
@@ -141,7 +158,7 @@ Agent Router is a local, deterministic decision layer: it picks the model, effor
 | Deterministic and replayable: the same inputs give the same decision, receipt and explanation. | A learned black box. Semantic proposals stay optional, advisory and inside the admissible pool. |
 | Review before execution: a run needs an approved digest, fresh capability evidence and a verified OS sandbox. | An autonomous runner. It never bypasses a host's own permission system or runs with approvals turned off. |
 | Explicit about uncertainty: unknown host capabilities, costs and identities stay `UNKNOWN`. | A source of claims it cannot prove. It does not report a gain, a support level or a model identity without evidence. |
-| Local and offline for routing: no provider call, daemon or network access is needed to route. | A hosted gateway, a model proxy or a credential broker. No provider transport is wired into execution today. |
+| Local and offline for routing: no provider call, daemon or network access is needed to route. | A hosted gateway, a model proxy or a credential broker. Host or explicit parent configuration owns provider access; offline routing makes no provider call. |
 | A set of bounded Rust libraries plus one CLI, with versioned JSON contracts. | A package that installs hooks, skills or global configuration on your machine. |
 
 </details>
@@ -219,27 +236,32 @@ still requires the release review and does not imply production readiness.
 
 ## Quick start
 
-Use [Cargo from a pinned Git revision](docs/install.md#cargo-from-a-pinned-git-revision)
-or a [verified local Homebrew formula](docs/install.md#homebrew-local-formula).
-Both install `agent-router` with default Claude/Codex adapters and
-`router-sandbox-helper`; helper configuration and approvals remain explicit.
-The repository is private, and no public tap, crates.io package or release asset
-is announced. [Current qualification](docs/bench/distribution-qualification-2026-10-07.md)
-separates local lifecycle checks from remote acquisition and native host execution.
+Start from an authorized checkout of this development repository. The
+[public core snapshot](https://github.com/FlorianBruniaux/agent-router-core)
+was published separately on 2026-10-22; its README and `DISTRIBUTION.json`
+describe that snapshot, which is not automatically synchronized with this tree.
+No public tap, crates.io package or signed release asset is announced here.
+
+The test below builds only the routing CLI, then selects and explains a plan.
+It needs no model, host login, daemon, helper or global configuration.
 
 ### Build from source
 
 The [installation guide](docs/install.md) covers prerequisites, optional build
 features, the verifiable local release and uninstalling. Use Rust 1.85 or newer. The repository pins the development toolchain in
 [`rust-toolchain.toml`](rust-toolchain.toml). Clone access is required while the
-repository is private; these instructions do not announce publication.
+development repository is private; the public core snapshot is a separate distribution.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/agent-router.git
 cd agent-router
-cargo build --release --locked -p agent-router-cli -p router-sandbox-helper
-./target/release/agent-router --help
+cargo build --locked -p agent-router-cli
+./target/debug/agent-router version --json
 ```
+
+`version --json` reports this build; it does not inspect or launch a host.
+Cargo may fetch locked dependencies during compilation. With a populated
+cache, add `--offline` to the build command.
 
 <details>
 <summary>Build options and limits</summary>
@@ -261,16 +283,17 @@ Model names and capability declarations in these synthetic fixtures are not
 evidence of current model availability, authentication or native host support.
 
 ```sh
-./target/release/agent-router route \
+example_dir=$(mktemp -d)
+./target/debug/agent-router route \
   --request tests/fixtures/requests/codex-implementation.json \
   --catalog assets/catalogs/codex-core-v1.json \
-  --json > /tmp/agent-router-decision.json
+  --json > "$example_dir/decision.json"
 
-./target/release/agent-router explain \
-  --decision /tmp/agent-router-decision.json
+./target/debug/agent-router explain \
+  --decision "$example_dir/decision.json"
 ```
 
-For that fixture, the explanation includes:
+Both commands should exit `0`. For that fixture, the explanation includes:
 
 ```text
 Preset: plan-execute-verify
@@ -279,20 +302,33 @@ Excluded candidates: 13
 Missing evidence: 0
 ```
 
+`Missing evidence: 0` refers to supplied fixture data. This test does not
+implement a task or prove current model support. Keep `example_dir` to inspect
+the decision, or remove only that file and directory when finished.
+
+### Describe your own task
+
+```sh
+./target/debug/agent-router task-guide \
+  --text 'Fix a Rust parser and verify its tests' --json
+```
+
+Expected result: `status: needs_clarification`, exit `3`. This is a request for
+missing facts, not a failed model call. Add `--interactive` to answer the
+questions about task kind, scope, risk, permissions, acceptance and budget.
+The [guided intake](docs/task-guide.md) prepares task facts; it grants no
+execution authority and calls no model.
+
 <details>
 <summary>Phase-specific routing and exit codes</summary>
 
-For phase-specific routing, try the synthetic observed-host fixture:
+`route-phase` validates host capability evidence. The historical
+`fixtures/examples/phase-snapshot.json` is not authenticated for current
+capability claims and is refused with `capability.evidence.unauthenticated`;
+setting `--now 100` does not authenticate it. For the current proof contract,
+see [host capability evidence](docs/adr/0021-host-capability-evidence.md).
+Use the `route` fixture above for the self-contained offline test.
 
-```sh
-./target/release/agent-router route-phase \
-  --context fixtures/examples/phase-request.json \
-  --host-snapshot fixtures/examples/phase-snapshot.json \
-  --catalog fixtures/examples/phase-catalog.json \
-  --now 100 --json
-```
-
-`--now 100` is only for the fixture's clock. Real host evidence must be fresh.
 Most product commands expose stable machine output through `--json`; run
 `agent-router <command> --help` for the required inputs. `route` exits `0` for a
 selection, `3` for a valid no-route result, `2` for invalid input, `4` for an
@@ -302,6 +338,12 @@ internal error and `7` for an integrity error; see
 </details>
 
 ### Run an approved workflow
+
+This is a separate path from the offline test. Build `router-sandbox-helper`
+separately and configure its exact path/hash for supervised execution.
+[Pinned Cargo installation](docs/install.md#cargo-from-a-pinned-git-revision)
+and the [local Homebrew formula](docs/install.md#homebrew-local-formula) cover
+the two-binary distribution.
 
 Follow the [preparation guide](docs/preparation.md), then the
 [single-run guide](docs/cli-execution.md) or [workflow guide](docs/coordinator.md).
@@ -437,7 +479,7 @@ Codex and Claude Code have CLI adapters; OpenCode and Copilot are optional adapt
 | **Other hosts** | Integration descriptors and synthetic conformance fixtures are available. [Integration status](integrations/additional-hosts.md) records remaining native proof. |
 | **Omnigent** | Offline routing translation with strict offered-pair and local eligibility checks. No HTTP endpoint or native session integration yet. [Contract and limits](integrations/omnigent.md). |
 | **macOS** | Seatbelt supervisor and real local sandbox/recovery canaries. Process-group cleanup does not establish containment of detached descendants. |
-| **Linux** | Bubblewrap supervisor with PID namespace cleanup, exercised by [native runtime CI](https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml). |
+| **Linux** | Bubblewrap supervisor with PID namespace cleanup; pinned ARM64 finite Codex runs and private application/resume evidence are linked in the dated status above. Historical native evidence is separate from current hosted CI, which did not start for `492c956`. |
 | **Windows** | Native execution is not implemented. |
 
 </details>
@@ -491,7 +533,7 @@ behavior from outstanding acceptance.
 ```sh
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
-cargo test --workspace --locked
+cargo test --workspace --all-features --locked
 cargo run -p xtask --locked -- check
 ```
 
@@ -499,6 +541,11 @@ The [authored finite-context corpus](tests/fixtures/finite-context/README.md)
 checks exact windows, terminal views and full raw recovery without models.
 Its [offline comparison](docs/bench/rtk-context-offline/README.md) reports
 complete authored JSON sizes and preserves unknown cost and model success.
+Run only this corpus without a model:
+
+```sh
+cargo test -p router-runtime --test finite_context_corpus --locked --offline
+```
 
 Native sandbox canaries are separate from the ordinary test suite and require
 their platform prerequisites. See [runtime verification](docs/runtime.md).

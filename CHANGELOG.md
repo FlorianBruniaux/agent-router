@@ -14,11 +14,34 @@ reasons); every change was verified locally on macOS.
 
 ## [Unreleased]
 
+Status reconciliation, 2026-10-27: the source below is integrated through
+merge #195 (`492c956`). Local source and extracted-archive checks passed;
+GitHub jobs on that merge did not start because of billing/spending restrictions.
+Pinned native records qualify their own source/binary combinations, not every
+subsequent edit. Context-v4 and the five composed Linux inline-diff cases remain
+unexecuted. No general cost/quality gain or automatic daily host integration is
+established. The separately published `agent-router-core` snapshot is not an
+automatically synchronized release of this development tree.
+
 ### Added
+
+- 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
+
+- 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.
+
+- 2026-10-26: retain the [complete fresh parent flow](docs/bench/fresh-finite-entry-2026-10-22/README.md#follow-up-one-complete-fresh-parent-flow) (#203) and response-loss/approval-refusal evidence (#201). These pinned scripted results preserve historical failures and distinguish transport, task verification and human acceptance.
+
+- 2026-10-24: add explicit `finite-resume` for an eligible interrupted private application (#210), with fresh process-bound approval, a consumed intent before writing and refusal after partial writes or later edits. [Five pinned native cases](docs/bench/native-application-resume-2026-10-24/README.md) pass without a model; later diff-display changes have separate qualification limits.
+
+- 2026-10-24: retain native owner-interruption and authored short-write observations (#208/#209). Reopening preserves history and later edits without automatic replay. Missing application completion remains UNKNOWN; in-place writes are not crash-atomic.
+
+- 2026-10-23: add `finite-entry` with task normalization, observed capabilities, phase routing and explicit diagnostic/runtime approvals over `local_scripted` transport (#202). Add fixed public t02 verification, proof binding, private candidate acceptance/application and recovery contracts (#204–#207). The application mode requires the non-default `qualification-fresh-t02` feature and exact public fixture; it is not a general coding-task adapter. [Native application evidence](docs/bench/native-candidate-application-2026-10-23/README.md) covers exact acceptance and wrong-digest refusal without a model.
 
 - 2026-10-22: exercise actual SIGKILL of a publication fixture before and after Git ref creation (#132). Restart preserves UNKNOWN for incomplete journal evidence, refuses replay and retains staged/unstaged user edits; a completed publication is the positive control. No production authority or native qualification changes.
 
 - 2026-10-22: add a separately versioned [t02 v2 evaluator](docs/bench/t02-oracle-v2-2026-10-22/README.md) that detects unsigned sum overflow across multiple implementations (#174). Its explicit finite-fixture runtime mode preserves objective UNKNOWN, absent human acceptance, historical evidence and 8 GiB limits.
+
+- 2026-10-21: add exact UTF-8 line windows and opt-in terminal SGR presentation with full session-local raw recall (#195, T1/T2). Preserve source bytes and existing quotas, bind presentation to approved commands and charge rereads without re-execution. Unknown control sequences return raw. These tools require explicit context policy, not automatic activation.
 
 - 2026-10-21: probe the frozen t02 oracle with independently labelled controls in offline Linux at unchanged 8 GiB (#174). The [probe](docs/bench/t02-oracle-qualification-2026-10-21/README.md) exposes an accepted overflow defect, so the oracle remains unqualified; historical verdicts and runtime admission are unchanged.
 
@@ -33,6 +56,10 @@ reasons); every change was verified locally on macOS.
 - 2026-10-15: reconstruct [retained M4 acceptance evidence](docs/bench/accepted-evidence-2026-10-15/README.md) using the existing calculator: three attempts, one subsequently accepted Router revision, unknown monetary totals. No trial is rerun and no savings are inferred.
 
 ### Fixed
+
+- 2026-10-27: close public source-package dependencies for test support and the exact native C/Python fixture inputs (#199/#195), retaining path allowlists and Rust 1.85. The final extracted archive passes formatting, warnings-denied Clippy and all-feature workspace tests. This local export does not update the public repository or qualify native execution.
+
+- 2026-10-26: accept supported Codex version output forms without weakening native binary pins (#213). Missing tool capability evidence remains UNKNOWN.
 
 - 2026-10-22: retain complete Runtime attestations in the existing private event journal when a new verdict supersedes an inconclusive one (#132/#174). Commit history, current verdict and transition atomically; preserve legacy current records as observations at update time without inventing lost history.
 
@@ -51,6 +78,8 @@ reasons); every change was verified locally on macOS.
 - 2026-10-11: integrate the accepted M4 report-cost correction. Invalid attempts retain their list/product costs in totals and cost-per-accepted-change ratios; unknown costs remain unknown. Add four regressions and record [the subsequent acceptance](docs/bench/m4-fix-integration-2026-10-11.md), preserving frozen trial evidence and its measurement limits.
 
 ### Documentation
+
+- 2026-10-27: reconcile both READMEs with offline, pinned native, application/resume and finite-context evidence. Add a CLI-only build, an isolated temporary decision file, expected route output and guided-task clarification exit codes. Replace the obsolete unauthenticated `route-phase` smoke example with its current proof prerequisite. Separate the public core snapshot, current CI billing block, macOS 8 GiB admission refusal and unexecuted native cases from passing local checks. No model or native replay is launched by this documentation update.
 
 - 2026-10-15: add a [shared autonomous handoff template](assets/prompts/autonomous-handoff.md) and extend the development handoff skill with resume revalidation of revisions, concurrent edits, evidence and current authority. Cover bounded rendering and changed-material recovery refusal; no provider trial or host activation is implied.
 
