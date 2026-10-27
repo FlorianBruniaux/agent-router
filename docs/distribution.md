@@ -111,6 +111,9 @@ selected tests are listed explicitly: synthetic capability support, two inert
 adapter descriptors, the handoff prompt and the Linux feedback fixture. This
 does not select neighboring integration, prompt or bench files. Missing inputs,
 symlinks and sensitive content fail the same source checks.
+The public native interruption/resume drivers and interposer are exact source
+exceptions, without allowing Python or C suffixes globally. They remain inert
+archive inputs; their inclusion does not qualify a native replay.
 
 The root manifest is projected to the included members, retaining workspace
 dependency and package settings. Host configuration, the development harness,

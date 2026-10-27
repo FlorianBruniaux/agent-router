@@ -28,7 +28,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0018](0018-incremental-event-chain-verification.md) | Incremental event chain verification by the store owner | implemented | 2026-09-29 | 2026-09-29 | - |
 | [0019](0019-outcome-measurement.md) | Outcome measurement | implemented | 2026-09-30 | 2026-09-30 | - |
 | [0020](0020-cross-host-routing.md) | Cross-host phase routing | proposed | 2026-09-30 | 2026-09-30 | - |
-| [0021](0021-host-capability-evidence.md) | Host capability evidence from supervised canaries | amended | 2026-09-30 | 2026-10-01 | [0022](0022-provider-egress.md) |
+| [0021](0021-host-capability-evidence.md) | Host capability evidence from supervised canaries | amended | 2026-09-30 | 2026-10-25 | [0022](0022-provider-egress.md) |
 | [0022](0022-provider-egress.md) | Provider egress requires an external tool boundary | accepted | 2026-10-01 | 2026-10-01 | - |
 
 | [0023](0023-owned-task-entry.md) | Owned task entry stops before native activation | amended | 2026-10-07 | 2026-10-08 | [0026](0026-owned-client-simulated-entry.md) |
@@ -64,9 +64,11 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 
 | [0043](0043-finite-artifact-verification.md) | Explicit verification of a finite private artifact | accepted | 2026-10-21 | 2026-10-22 | - |
 
+| [0044](0044-finite-context-profile.md) | Bind finite context policy to a distinct native profile | proposed | 2026-10-21 | 2026-10-21 | - |
 | [0045](0045-fresh-finite-entry.md) | Fresh entry through the existing finite Runtime | accepted | 2026-10-22 | 2026-10-22 | - |
 | [0046](0046-finite-controller-application.md) | Explicit controller acceptance and private candidate application | proposed | 2026-10-23 | 2026-10-23 | - |
 | [0047](0047-explicit-finite-application-resume.md) | Explicit finite application resume on an intact preimage | proposed | 2026-10-24 | 2026-10-24 | - |
+
 
 ## Frontmatter fields
 

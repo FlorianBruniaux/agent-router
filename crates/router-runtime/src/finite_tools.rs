@@ -5,16 +5,64 @@ mod exec;
 #[cfg(all(test, target_os = "linux"))]
 mod linux_tests;
 mod mcp_stdio;
-mod owner;
+pub(crate) mod owner;
 pub use owner::{ToolOwnerBoot, ToolOwnerProbe, run_owner};
 mod policy;
+mod presentation;
+mod recall;
+pub use presentation::{
+    OutputViewInfo, PresentedOutput, exec_presentation_key, present_terminal, strip_terminal_sgr,
+};
+pub use recall::RecallStore;
 mod session;
 mod transport;
+mod window;
 pub use exec::ExecSandbox;
 pub use session::ToolSession;
 pub use transport::bridge_stdio;
+pub use window::{ContextViewError, LineWindow, SelectedWindow, select_line_window};
 
-pub use policy::{JournalEntry, Limits, ToolResult};
+pub use policy::{ContextOutputMetrics, JournalEntry, Limits, ToolResult};
+
+/// Inert context options. This policy grants no native execution authority.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FiniteContextPolicy {
+    pub schema_version: u32,
+    pub read_windows: bool,
+    pub terminal_argument_sha256: std::collections::BTreeSet<String>,
+}
+impl FiniteContextPolicy {
+    pub(crate) fn validate(&self) -> Result<(), &'static str> {
+        if self.schema_version != 1
+            || self.terminal_argument_sha256.len() > 8
+            || self
+                .terminal_argument_sha256
+                .iter()
+                .any(|hash| !router_adapter_api::is_digest(hash))
+        {
+            return Err("policy.context_policy");
+        }
+        Ok(())
+    }
+    /// Validated deterministic policy identity, never execution authority.
+    pub fn digest(&self) -> Result<String, FiniteToolError> {
+        self.validate().map_err(FiniteToolError::Refused)?;
+        let bytes = serde_json::to_vec(&("router:finite-context-policy:v1", self))
+            .map_err(|_| FiniteToolError::Refused("policy.context_digest"))?;
+        Ok(router_adapter_api::content_digest(&bytes))
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReadWindowInfo {
+    pub source_sha256: String,
+    pub first_line: u32,
+    pub returned_lines: u32,
+    pub total_lines: u32,
+    pub has_more: bool,
+}
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,7 +83,73 @@ pub struct ToolTerminal {
     pub halted: bool,
     pub output: Option<ToolOutput>,
     pub journal: Vec<JournalEntry>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_policy_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_sha256: Option<String>,
 }
+impl ToolTerminal {
+    pub(crate) fn validate_context(
+        &self,
+        expected: Option<&FiniteContextPolicy>,
+    ) -> Result<(), FiniteToolError> {
+        let (schema, policy_hash, catalog_hash) = context_identity(expected)?;
+        if self.schema_version != schema
+            || self.context_policy_sha256 != policy_hash
+            || self.catalog_sha256 != catalog_hash
+            || self.journal.iter().any(|entry| {
+                entry.tool == "read_output"
+                    && expected.is_none_or(|p| p.terminal_argument_sha256.is_empty())
+                    || expected.is_none() && entry.context.is_some()
+            })
+        {
+            return Err(FiniteToolError::Refused("terminal.context_binding"));
+        }
+        Ok(())
+    }
+}
+
+pub(crate) fn context_identity(
+    policy: Option<&FiniteContextPolicy>,
+) -> Result<(u32, Option<String>, Option<String>), FiniteToolError> {
+    match policy {
+        Some(policy) => Ok((
+            2,
+            Some(policy.digest()?),
+            Some(mcp_catalog_digest(Some(policy))?),
+        )),
+        None => Ok((1, None, None)),
+    }
+}
+
+/// SHA-256 of the actual deterministic MCP tools array, not native SDK metadata.
+pub fn mcp_catalog_digest(policy: Option<&FiniteContextPolicy>) -> Result<String, FiniteToolError> {
+    mcp_stdio::catalog_digest(policy).map_err(FiniteToolError::Refused)
+}
+
+pub(crate) fn open_file_policy(
+    root: &Path,
+    scratch: &Path,
+    public: BTreeMap<String, String>,
+    output: &str,
+    preimage: Option<String>,
+    limits: Limits,
+    policy: Option<&FiniteContextPolicy>,
+) -> Result<FilePolicy, FiniteToolError> {
+    match policy {
+        Some(policy) => FilePolicy::open_with_context(
+            root,
+            scratch,
+            public,
+            output,
+            preimage,
+            limits,
+            policy.clone(),
+        ),
+        None => FilePolicy::open(root, scratch, public, output, preimage, limits),
+    }
+}
+
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
@@ -69,6 +183,28 @@ impl FilePolicy {
         policy::Engine::open(root, scratch, public, output, preimage, limits)
             .map(|inner| Self { inner })
             .map_err(FiniteToolError::Refused)
+    }
+    /// Opens an explicitly opted-in, inert file policy. Native tools stay legacy.
+    pub fn open_with_context(
+        root: &Path,
+        scratch: &Path,
+        public: BTreeMap<String, String>,
+        output: &str,
+        preimage: Option<String>,
+        limits: Limits,
+        context_policy: FiniteContextPolicy,
+    ) -> Result<Self, FiniteToolError> {
+        policy::Engine::open_with_context(
+            root,
+            scratch,
+            public,
+            output,
+            preimage,
+            limits,
+            context_policy,
+        )
+        .map(|inner| Self { inner })
+        .map_err(FiniteToolError::Refused)
     }
     pub fn dispatch(
         &mut self,
@@ -270,6 +406,8 @@ mod tests {
                 termination: "exited".into(),
                 truncated: false,
                 elapsed_ms: 0,
+                window: None,
+                view: None,
             })
         };
         serve_mcp(Cursor::new(input), &mut output, |name, args| {
@@ -310,3 +448,6 @@ mod tests {
         assert!(!policy.halted());
     }
 }
+
+#[cfg(test)]
+mod context_tests;

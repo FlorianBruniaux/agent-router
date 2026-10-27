@@ -210,6 +210,8 @@ impl ExecSandbox {
             exit_code: captured.outcome.exit_code.ok_or(RuntimeError::Process)?,
             termination: "exited".into(),
             truncated: false,
+            window: None,
+            view: None,
             elapsed_ms: started
                 .elapsed()
                 .as_millis()

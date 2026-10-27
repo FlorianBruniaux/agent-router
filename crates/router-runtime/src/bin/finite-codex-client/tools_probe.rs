@@ -55,6 +55,29 @@ fn call(
     }
     Ok(result)
 }
+fn validate_catalog(value: &serde_json::Value, expected: Option<&str>) -> Result<(), &'static str> {
+    let tools = value["tools"].as_array().ok_or("probe.catalog")?;
+    let names: std::collections::BTreeSet<_> = tools
+        .iter()
+        .map(|v| v["name"].as_str().unwrap_or(""))
+        .collect();
+    let base = std::collections::BTreeSet::from(["exec", "read_file", "write_file"]);
+    if let Some(expected) = expected {
+        let mut allowed = base.clone();
+        allowed.insert("read_output");
+        if !is_digest(expected)
+            || !base.is_subset(&names)
+            || !names.is_subset(&allowed)
+            || names.len() != tools.len()
+            || content_digest(&serde_json::to_vec(tools).map_err(|_| "probe.catalog")?) != expected
+        {
+            return Err("probe.catalog");
+        }
+    } else if names != base || tools.len() != 3 {
+        return Err("probe.catalog");
+    }
+    Ok(())
+}
 pub(super) fn execute() -> Result<i32, &'static str> {
     let nonce = std::env::var("ROUTER_FINITE_PROBE_NONCE").map_err(|_| "probe.nonce")?;
     if !is_digest(&nonce) {
@@ -122,17 +145,10 @@ pub(super) fn execute() -> Result<i32, &'static str> {
         serde_json::json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}),
     )?;
     let tools = reply(&mut reader, 2)?;
-    let names: std::collections::BTreeSet<_> = tools["tools"]
-        .as_array()
-        .ok_or("probe.catalog")?
-        .iter()
-        .map(|v| v["name"].as_str().unwrap_or(""))
-        .collect();
-    if names != std::collections::BTreeSet::from(["exec", "read_file", "write_file"])
-        || tools["tools"].as_array().ok_or("probe.catalog")?.len() != 3
-    {
-        return Err("probe.catalog");
-    }
+    // This is an expected diagnostic checksum supplied by the sealed owner,
+    // never a policy or an additional execution capability.
+    let expected_catalog = std::env::var("ROUTER_FINITE_PROBE_CATALOG_SHA256").ok();
+    validate_catalog(&tools, expected_catalog.as_deref())?;
     let result = call(
         &mut stream,
         &mut reader,
@@ -202,4 +218,25 @@ pub(super) fn execute() -> Result<i32, &'static str> {
         serde_json::json!({"finite_tools_probe":"v1","nonce":nonce,"direct_write_refused":true,"calls":6})
     );
     Ok(0)
+}
+
+#[cfg(test)]
+mod context_catalog_tests {
+    use super::*;
+    #[test]
+    fn context_probe_requires_the_parent_catalog_digest() {
+        let base = serde_json::json!({"tools":[{"name":"exec"},{"name":"read_file"},{"name":"write_file"}]});
+        validate_catalog(&base, None).unwrap();
+        let mut context = base.clone();
+        context["tools"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({"name":"read_output"}));
+        assert!(validate_catalog(&context, None).is_err());
+        let hash = content_digest(&serde_json::to_vec(&context["tools"]).unwrap());
+        validate_catalog(&context, Some(&hash)).unwrap();
+        context["tools"][0]["description"] = "changed".into();
+        assert!(validate_catalog(&context, Some(&hash)).is_err());
+        assert!(validate_catalog(&context, Some("invalid")).is_err());
+    }
 }

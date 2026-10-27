@@ -248,6 +248,10 @@ serde = "1"
         cases = {
             "crates/agent-router-cli/src/generation_proof_tests.rs": ("tests/support/capability_store.rs",),
             "crates/agent-router-cli/tests/support/native_fixture.rs": ("tests/support/capability_store.rs",),
+            "crates/router-runtime/src/application/tests.rs": (
+                "tests/support/runtime_fixture.rs", "tests/support/capability_verifier.rs"),
+            "crates/router-runtime/tests/runtime.rs": (
+                "tests/support/runtime_fixture.rs", "tests/support/capability_verifier.rs"),
             "crates/router-runtime/src/finite_tools/linux_tests.rs": (
                 "docs/bench/linux-finite-tools-guard-2026-10-16/feedback.py",),
             "crates/router-adapter-api/tests/registry.rs": (
@@ -327,6 +331,53 @@ serde = "1"
         with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
             CORE.collect_sources(self.root, [package])
 
+    def test_native_qualification_sources_are_exact_exceptions(self):
+        package, _ = self.public_score_fixture()
+        names = (
+            "crates/router-runtime/examples/native-interruption/cut.c",
+            "crates/router-runtime/examples/native-interruption/qualify.py",
+            "crates/router-runtime/examples/native-interruption/test_cut.py",
+            "crates/router-runtime/examples/native-resume/qualify.py",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                target = self.write(name, "// public authored fixture\n")
+                try:
+                    try:
+                        files = CORE.collect_sources(self.root, [package])
+                    except CORE.PackageError as error:
+                        self.fail(f"reviewed public source refused: {error}")
+                    self.assertEqual(files[name], b"// public authored fixture\n")
+                    extra = self.write(str(Path(name).with_name("unrelated" + Path(name).suffix)), "unclassified")
+                    try:
+                        with self.assertRaisesRegex(CORE.PackageError, "source.unclassified_file"):
+                            CORE.collect_sources(self.root, [package])
+                    finally:
+                        extra.unlink()
+                finally:
+                    target.unlink()
+
+    def test_native_qualification_exceptions_keep_content_and_symlink_guards(self):
+        package, _ = self.public_score_fixture()
+        names = (
+            "crates/router-runtime/examples/native-interruption/cut.c",
+            "crates/router-runtime/examples/native-interruption/qualify.py",
+            "crates/router-runtime/examples/native-interruption/test_cut.py",
+            "crates/router-runtime/examples/native-resume/qualify.py",
+        )
+        for name in names:
+            with self.subTest(name=name):
+                target = self.write(name, "// /Users/private-account/secret")
+                try:
+                    with self.assertRaisesRegex(CORE.PackageError, "content.private_home_path"):
+                        CORE.collect_sources(self.root, [package])
+                    target.unlink()
+                    target.symlink_to(self.write("public.txt", "public"))
+                    with self.assertRaisesRegex(CORE.PackageError, "path.symlink"):
+                        CORE.collect_sources(self.root, [package])
+                finally:
+                    target.unlink()
+
     def test_versioned_t02_engine_is_the_only_python_example_exception(self):
         package, _ = self.public_score_fixture()
         known = "crates/router-runtime/examples/campaign/t02-v2/verify.py"
@@ -356,6 +407,46 @@ serde = "1"
         files = CORE.collect_sources(self.root, [package])
         self.assertEqual(files.get(support), b"// synthetic capability verifier")
         self.assertNotIn("docs/bench/private/unrelated.json", files)
+
+    def context_fixture(self, selected=True):
+        package, _ = self.public_score_fixture()
+        if selected:
+            self.write("crates/router-runtime/src/finite_client/native_context_tests.rs", "// authored native replay")
+            self.write("crates/router-runtime/tests/finite_context_corpus.rs", "// authored offline corpus")
+        assets = {
+            "docs/bench/rtk-context-offline/report.json": b'{"fixture":"authored report"}',
+            "docs/bench/rtk-context-native-qualification/fixtures.json": b'{"files":[]}',
+            "docs/bench/rtk-context-native-qualification/context_responses.py": b"# authored controller\n",
+            "docs/bench/rtk-context-native-qualification/feedback.py": b"# authored feedback\n",
+            "docs/bench/rtk-context-native-qualification/script.json": b'{"steps":[]}',
+            "docs/bench/rtk-context-native-qualification/source.txt": b"alpha\r\nomega",
+        }
+        for name, data in assets.items():
+            self.write(name, data)
+        return package, assets
+
+    def test_context_sources_carry_exact_compile_and_replay_inputs(self):
+        package, assets = self.context_fixture()
+        files = CORE.collect_sources(self.root, [package])
+        for name, data in assets.items():
+            self.assertEqual(files.get(name), data, name)
+        self.assertNotIn("docs/bench/private/unrelated.json", files)
+
+    def test_missing_context_input_refuses_incomplete_distribution(self):
+        package, assets = self.context_fixture()
+        for name, data in assets.items():
+            with self.subTest(name=name):
+                (self.root / name).unlink()
+                try:
+                    with self.assertRaisesRegex(CORE.PackageError, "source.missing_or_oversized"):
+                        CORE.collect_sources(self.root, [package])
+                finally:
+                    self.write(name, data)
+
+    def test_unselected_context_sources_do_not_export_bench_data(self):
+        package, assets = self.context_fixture(selected=False)
+        files = CORE.collect_sources(self.root, [package])
+        self.assertFalse(set(assets) & set(files))
 
     @unittest.skipUnless(shutil.which("gitleaks"), "gitleaks is not installed")
     def test_distribution_scan_applies_existing_policy_and_still_rejects_secrets(self):

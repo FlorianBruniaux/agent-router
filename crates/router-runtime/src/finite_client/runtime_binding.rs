@@ -74,18 +74,26 @@ impl Runtime {
             .is_some_and(|state| state.startup.tools);
         let selected_tools = match &request.tools {
             router_types::ToolSelection::AllowList(names) if tools => {
-                names.len() == 3
-                    && names.iter().map(String::as_str).collect::<BTreeSet<_>>()
-                        == BTreeSet::from([
-                            "mcp__finite__read_file",
-                            "mcp__finite__write_file",
-                            "mcp__finite__exec",
-                        ])
+                super::context_startup::request_matches(
+                    names,
+                    client
+                        .owned_tools
+                        .as_ref()
+                        .and_then(|t| t.boot.context_policy.as_ref()),
+                )
             }
             router_types::ToolSelection::Disabled => !tools,
             _ => false,
         };
-        if startup_tools != tools
+        if client
+            .owned_state
+            .as_ref()
+            .and_then(|s| s.startup.context_policy.as_ref())
+            != client
+                .owned_tools
+                .as_ref()
+                .and_then(|t| t.boot.context_policy.as_ref())
+            || startup_tools != tools
             || !selected_tools
             || request.agent.is_some()
             || !request.skills.is_empty()

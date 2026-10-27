@@ -1,4 +1,8 @@
 //! Inert file/budget policy candidate. The caller owns all process isolation.
+use super::{
+    FiniteContextPolicy, LineWindow, OutputViewInfo, ReadWindowInfo, RecallStore,
+    exec_presentation_key, present_terminal, select_line_window, strip_terminal_sgr,
+};
 use router_adapter_api::content_digest;
 use rustix::fs::{AtFlags, Mode, OFlags, open, openat, statat};
 use serde::{Deserialize, Serialize};
@@ -33,6 +37,10 @@ pub struct ToolResult {
     pub termination: String,
     pub truncated: bool,
     pub elapsed_ms: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub window: Option<ReadWindowInfo>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view: Option<OutputViewInfo>,
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 struct Pin {
@@ -49,6 +57,17 @@ struct Scratch {
     bytes: u64,
     entries: usize,
 }
+/// Local byte accounting only; no billed tokens or model-success inference.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContextOutputMetrics {
+    /// Newly admitted raw content; zero for a recall.
+    pub raw_content_bytes: usize,
+    pub shown_content_bytes: usize,
+    pub recalled_content_bytes: usize,
+    /// Complete ToolResult JSON bytes, excluding the MCP envelope.
+    pub serialized_bytes: usize,
+}
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct JournalEntry {
@@ -61,6 +80,8 @@ pub struct JournalEntry {
     pub elapsed_ms: u64,
     pub truncated: bool,
     pub file_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context: Option<ContextOutputMetrics>,
 }
 struct Directory {
     path: PathBuf,
@@ -262,6 +283,8 @@ pub struct Engine {
     target: Option<Pin>,
     scratch_state: Scratch,
     limits: Limits,
+    context_policy: Option<FiniteContextPolicy>,
+    recall: Option<RecallStore>,
     calls: u32,
     total_output: usize,
     exec_ms: u64,
@@ -319,7 +342,9 @@ impl Engine {
     fn record(&self, name: &str, digest: Option<String>) -> JournalEntry {
         JournalEntry {
             index: self.calls + 1,
-            tool: if matches!(name, "read_file" | "write_file" | "exec") {
+            tool: if matches!(name, "read_file" | "write_file" | "exec")
+                || name == "read_output" && self.recall.is_some()
+            {
                 name.into()
             } else {
                 "unknown".into()
@@ -331,6 +356,7 @@ impl Engine {
             elapsed_ms: 0,
             truncated: false,
             file_sha256: None,
+            context: None,
         }
     }
     fn append(&mut self, record: JournalEntry) {
@@ -423,6 +449,8 @@ impl Engine {
             target,
             scratch_state: Scratch::default(),
             limits,
+            context_policy: None,
+            recall: None,
             calls: 0,
             total_output: 0,
             exec_ms: 0,
@@ -431,6 +459,36 @@ impl Engine {
             journal: vec![],
         };
         engine.verify()?;
+        Ok(engine)
+    }
+    pub fn open_with_context(
+        root: &Path,
+        scratch: &Path,
+        public: BTreeMap<String, String>,
+        output: &str,
+        preimage: Option<String>,
+        limits: Limits,
+        context_policy: FiniteContextPolicy,
+    ) -> Result<Self, &'static str> {
+        context_policy.validate()?;
+        let mut engine = Self::open(root, scratch, public, output, preimage, limits)?;
+        let presentation = !context_policy.terminal_argument_sha256.is_empty();
+        engine.context_policy = Some(context_policy);
+        if presentation {
+            let mut nonce = [0; 32];
+            File::open("/dev/urandom")
+                .and_then(|mut file| file.read_exact(&mut nonce))
+                .map_err(|_| "policy.session_binding")?;
+            let bytes = serde_json::to_vec(&(
+                "finite-context-session-v1",
+                engine.preparation_binding()?,
+                nonce,
+            ))
+            .map_err(|_| "policy.session_binding")?;
+            engine.recall = Some(
+                RecallStore::new(content_digest(&bytes)).map_err(|_| "policy.session_binding")?,
+            );
+        }
         Ok(engine)
     }
     fn verify(&self) -> Result<(), &'static str> {
@@ -479,11 +537,25 @@ impl Engine {
         Err("policy.scope")
     }
     fn read(&mut self, args: &Value) -> Result<ToolResult, &'static str> {
-        key_args(args, &["path"], &[])?;
+        let enabled = self
+            .context_policy
+            .as_ref()
+            .is_some_and(|policy| policy.read_windows);
+        key_args(
+            args,
+            &["path"],
+            if enabled {
+                &["start_line", "max_lines"]
+            } else {
+                &[]
+            },
+        )?;
+        let requested =
+            LineWindow::from_arguments(args, enabled).map_err(|_| "policy.window_arguments")?;
         let name = args["path"].as_str().ok_or("policy.arguments")?;
         let (dir, relative, _) = self.location(name)?;
         let mut file = file_at(&dir.file, &relative, false)?;
-        snapshot(&mut file, self.limits.max_file_bytes as u64)?;
+        let source = snapshot(&mut file, self.limits.max_file_bytes as u64)?;
         file.seek(SeekFrom::Start(0)).map_err(|_| "policy.seek")?;
         let mut text = String::new();
         if file
@@ -494,6 +566,25 @@ impl Engine {
             self.halted = true;
             return Err("policy.read_utf8");
         }
+        let window = if let Some(requested) = requested {
+            if content_digest(text.as_bytes()) != source.hash {
+                self.halted = true;
+                return Err("policy.read_changed");
+            }
+            let selected =
+                select_line_window(&text, requested).map_err(|_| "policy.window_range")?;
+            let info = ReadWindowInfo {
+                source_sha256: source.hash,
+                first_line: selected.first_line,
+                returned_lines: selected.returned_lines,
+                total_lines: selected.total_lines,
+                has_more: selected.has_more,
+            };
+            text = selected.text.to_owned();
+            Some(info)
+        } else {
+            None
+        };
         Ok(ToolResult {
             stdout: text,
             stderr: String::new(),
@@ -501,6 +592,8 @@ impl Engine {
             termination: "exited".into(),
             truncated: false,
             elapsed_ms: 0,
+            window,
+            view: None,
         })
     }
     fn write(&mut self, args: &Value) -> Result<ToolResult, &'static str> {
@@ -600,6 +693,8 @@ impl Engine {
             termination: "exited".into(),
             truncated: false,
             elapsed_ms: 0,
+            window: None,
+            view: None,
         })
     }
     fn execute(
@@ -662,6 +757,9 @@ impl Engine {
                 return Err("policy.exec");
             }
         };
+        // View provenance is owned here, never supplied by the exec callback.
+        result.window = None;
+        result.view = None;
         result.elapsed_ms = result.elapsed_ms.max(wall);
         self.exec_ms = match self.exec_ms.checked_add(result.elapsed_ms) {
             Some(value) => value,
@@ -688,6 +786,52 @@ impl Engine {
             }
         };
         Ok(result)
+    }
+    fn read_output(&self, args: &Value) -> Result<ToolResult, &'static str> {
+        key_args(args, &["handle"], &[])?;
+        let store = self.recall.as_ref().ok_or("policy.tool")?;
+        let handle = args["handle"].as_str().ok_or("policy.recall_handle")?;
+        store.get(handle).map_err(|_| "policy.recall_handle")
+    }
+    fn present(&mut self, args: &Value, raw: &ToolResult) -> Option<ToolResult> {
+        if self.halted || self.calls >= self.limits.max_calls {
+            return None;
+        }
+        let bytes = raw.stdout.len().checked_add(raw.stderr.len())?;
+        if bytes > self.limits.max_output_bytes
+            || bytes > self.limits.max_total_output_bytes - self.total_output
+        {
+            return None;
+        }
+        let policy = self.context_policy.as_ref()?;
+        let argv = args["argv"]
+            .as_array()?
+            .iter()
+            .map(|v| v.as_str().map(str::to_owned))
+            .collect::<Option<Vec<_>>>()?;
+        let timeout = match args.get("timeout_ms") {
+            Some(value) => Some(value.as_u64()?),
+            None => None,
+        };
+        let key = exec_presentation_key(&argv, timeout).ok()?;
+        if !policy.terminal_argument_sha256.contains(&key) {
+            return None;
+        }
+        let policy_hash =
+            content_digest(&serde_json::to_vec(&("router:finite-context-policy:v1", policy)).ok()?);
+        let store = self.recall.as_mut()?;
+        let handle = store.preview(self.calls, &policy_hash, raw).ok()?;
+        let shown = strip_terminal_sgr(&raw.stdout).ok()?.len()
+            + strip_terminal_sgr(&raw.stderr).ok()?.len();
+        let info = OutputViewInfo {
+            method: "terminal_sgr_v1".into(),
+            raw_handle: handle.clone(),
+            raw_content_bytes: bytes,
+            shown_content_bytes: shown,
+        };
+        let candidate = present_terminal(raw, info).ok()?;
+        store.insert(self.calls, &policy_hash, raw).ok()?;
+        Some(candidate.result)
     }
     pub fn dispatch(
         &mut self,
@@ -730,6 +874,7 @@ impl Engine {
             "read_file" => self.read(args),
             "write_file" => self.write(args),
             "exec" => self.execute(args, exec),
+            "read_output" => self.read_output(args),
             _ => Err("policy.tool"),
         };
         if let Err(error) = self.verify() {
@@ -747,13 +892,37 @@ impl Engine {
                 return Err(error);
             }
         };
-        result.elapsed_ms = result
-            .elapsed_ms
-            .max(started.elapsed().as_millis().try_into().unwrap_or(u64::MAX));
-        if self.elapsed() >= self.limits.max_session_ms {
-            result.termination = "time_budget_exhausted".into();
-            self.halted = true;
+        if name == "read_output" {
+            // Recall is exact, including the original timing and termination.
+            if self.elapsed() >= self.limits.max_session_ms
+                || result.stdout.len() + result.stderr.len()
+                    > self
+                        .limits
+                        .max_output_bytes
+                        .min(self.limits.max_total_output_bytes - self.total_output)
+            {
+                self.halted = true;
+                record.status = "budget_exhausted".into();
+                self.append(record);
+                return Err("policy.recall_budget");
+            }
+        } else {
+            result.elapsed_ms = result
+                .elapsed_ms
+                .max(started.elapsed().as_millis().try_into().unwrap_or(u64::MAX));
+            if self.elapsed() >= self.limits.max_session_ms {
+                result.termination = "time_budget_exhausted".into();
+                self.halted = true;
+            }
         }
+        let read_hash = if name == "read_file" {
+            result
+                .window
+                .as_ref()
+                .map(|info| info.source_sha256.clone())
+        } else {
+            None
+        };
         let cap = self
             .limits
             .max_output_bytes
@@ -769,6 +938,8 @@ impl Engine {
             trim(&mut result.stdout, cap);
             trim(&mut result.stderr, cap - result.stdout.len());
             result.truncated = true;
+            result.window = None;
+            result.view = None;
             self.halted = true;
         }
         self.total_output += result.stdout.len() + result.stderr.len();
@@ -780,14 +951,40 @@ impl Engine {
         record.exit_code = Some(result.exit_code);
         record.elapsed_ms = result.elapsed_ms;
         record.truncated = result.truncated;
+        record.file_sha256 = read_hash;
         if name == "write_file" {
             record.file_sha256 = args
                 .get("content")
                 .and_then(Value::as_str)
                 .map(|s| content_digest(s.as_bytes()));
         }
+        let admitted_bytes = result.stdout.len() + result.stderr.len();
+        if name == "exec" {
+            if let Some(presented) = self.present(args, &result) {
+                result = presented;
+            }
+        }
+        let value = serde_json::to_value(&result).map_err(|_| "policy.result")?;
+        if self.context_policy.is_some() {
+            record.context = Some(ContextOutputMetrics {
+                raw_content_bytes: if name == "read_output" {
+                    0
+                } else {
+                    admitted_bytes
+                },
+                shown_content_bytes: result.stdout.len() + result.stderr.len(),
+                recalled_content_bytes: if name == "read_output" {
+                    admitted_bytes
+                } else {
+                    0
+                },
+                serialized_bytes: serde_json::to_vec(&value)
+                    .map_err(|_| "policy.result")?
+                    .len(),
+            });
+        }
         self.append(record);
-        serde_json::to_value(result).map_err(|_| "policy.result")
+        Ok(value)
     }
     pub fn preparation_binding(&self) -> Result<String, &'static str> {
         self.verify()?;
@@ -801,6 +998,16 @@ impl Engine {
             &self.limits,
         ))
         .map_err(|_| "policy.binding")?;
+        let bytes = if let Some(policy) = &self.context_policy {
+            serde_json::to_vec(&(
+                "finite-file-policy-context-preparation-v1",
+                content_digest(&bytes),
+                policy,
+            ))
+            .map_err(|_| "policy.binding")?
+        } else {
+            bytes
+        };
         if bytes.len() > 32768 {
             return Err("policy.binding_bound");
         }
@@ -919,6 +1126,8 @@ mod tests {
             termination: "exited".into(),
             truncated: false,
             elapsed_ms: 1,
+            window: None,
+            view: None,
         }
     }
 
@@ -1365,5 +1574,36 @@ mod tests {
         );
         assert!(engine.halted());
         assert!(!root.path().join("scratch/large").exists());
+    }
+    #[test]
+    fn full_cache_falls_back_to_raw() {
+        let (_root, mut engine) = fixture(false);
+        let argv = vec!["python3".to_owned()];
+        engine.context_policy = Some(super::super::FiniteContextPolicy {
+            schema_version: 1,
+            read_windows: false,
+            terminal_argument_sha256: std::collections::BTreeSet::from([
+                super::super::exec_presentation_key(&argv, None).unwrap(),
+            ]),
+        });
+        let mut store = super::super::RecallStore::new("a".repeat(64)).unwrap();
+        for sequence in 1..=8 {
+            store
+                .insert(sequence, &"b".repeat(64), &result(0, ""))
+                .unwrap();
+        }
+        engine.recall = Some(store);
+        let original = result(1, &format!("{}error\x1b[0m", "\x1b[31m".repeat(80)));
+        let mut calls = 0;
+        let got = engine
+            .dispatch("exec", &json!({"argv":argv}), &mut |_, _, _| {
+                calls += 1;
+                Ok(original.clone())
+            })
+            .unwrap();
+        assert_eq!(got["stdout"], original.stdout);
+        assert_eq!(got["exit_code"], 1);
+        assert!(got.get("view").is_none());
+        assert_eq!(calls, 1);
     }
 }

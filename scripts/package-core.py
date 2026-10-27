@@ -25,16 +25,30 @@ FORBIDDEN_PARTS = {
     "target", "node_modules", "private", "telemetry", "policy-packs", "credentials",
 }
 SUFFIXES = {".rs", ".toml", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"}
-# Only these fixed public Python inputs are classified crate sources.
-# Do not allow the .py suffix globally or include neighboring scripts.
-PUBLIC_PYTHON_INPUTS = {
+# Only these fixed public auxiliary inputs are classified crate sources.
+# Do not allow the .py or .c suffix globally or include neighboring scripts.
+PUBLIC_AUXILIARY_INPUTS = {
     "crates/router-runtime/examples/campaign/t02-v2/verify.py",
     "crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py",
     "crates/agent-router-cli/tests/fresh_t02_qualification.py",
+    "crates/router-runtime/examples/native-interruption/cut.c",
+    "crates/router-runtime/examples/native-interruption/qualify.py",
+    "crates/router-runtime/examples/native-interruption/test_cut.py",
+    "crates/router-runtime/examples/native-resume/qualify.py",
 }
-# Fixed compiler inputs of the public example, including its unit-test fixtures.
+# Fixed compiler and authored replay inputs of selected public sources.
 # Keep this closure explicit: other bench data is not a distribution input.
-PUBLIC_EXAMPLE_INPUTS = {
+PUBLIC_SOURCE_INPUTS = {
+    "crates/router-runtime/tests/finite_context_corpus.rs": (
+        "docs/bench/rtk-context-offline/report.json",
+    ),
+    "crates/router-runtime/src/finite_client/native_context_tests.rs": (
+        "docs/bench/rtk-context-native-qualification/fixtures.json",
+        "docs/bench/rtk-context-native-qualification/context_responses.py",
+        "docs/bench/rtk-context-native-qualification/feedback.py",
+        "docs/bench/rtk-context-native-qualification/script.json",
+        "docs/bench/rtk-context-native-qualification/source.txt",
+    ),
     "crates/router-runtime/examples/finite-campaign.rs": (
         "tests/support/capability_verifier.rs",
     ),
@@ -50,6 +64,14 @@ PUBLIC_EXAMPLE_INPUTS = {
 # Explicit external inputs of distributed tests, including Linux-only modules.
 # Selecting a consumer requires its inputs; neighboring files remain excluded.
 PUBLIC_TEST_INPUTS = {
+    "crates/router-runtime/src/application/tests.rs": (
+        "tests/support/runtime_fixture.rs",
+        "tests/support/capability_verifier.rs",
+    ),
+    "crates/router-runtime/tests/runtime.rs": (
+        "tests/support/runtime_fixture.rs",
+        "tests/support/capability_verifier.rs",
+    ),
     "crates/agent-router-cli/src/generation_proof_tests.rs": (
         "tests/support/capability_store.rs",
     ),
@@ -228,7 +250,7 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                     raise PackageError(f"path.symlink: {path.relative_to(root).as_posix()}")
                 if path.is_file():
                     relative = path.relative_to(root).as_posix()
-                    if path.suffix not in SUFFIXES and relative not in PUBLIC_PYTHON_INPUTS:
+                    if path.suffix not in SUFFIXES and relative not in PUBLIC_AUXILIARY_INPUTS:
                         raise PackageError(f"source.unclassified_file: {relative}")
                     names.add(relative)
         for key in ("readme", "license_file"):
@@ -262,7 +284,7 @@ def collect_sources(root: Path, packages: list[dict], distribution: str = "core"
                 if path.suffix not in SUFFIXES:
                     raise PackageError(f"source.unclassified_file: {relative}")
                 names.add(relative)
-    for anchor, inputs in PUBLIC_EXAMPLE_INPUTS.items():
+    for anchor, inputs in PUBLIC_SOURCE_INPUTS.items():
         if anchor in names:
             names.update(inputs)
     for anchor, inputs in PUBLIC_TEST_INPUTS.items():

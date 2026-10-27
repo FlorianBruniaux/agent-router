@@ -1,5 +1,5 @@
 //! One policy and budget owner across MCP connections.
-use super::{ExecSandbox, FilePolicy, FiniteToolError, Limits};
+use super::{ExecSandbox, FilePolicy, FiniteContextPolicy, FiniteToolError, Limits};
 use std::{
     io::{BufReader, Read, Write},
     os::unix::net::UnixStream,
@@ -7,6 +7,7 @@ use std::{
 };
 pub struct ToolSession {
     policy: FilePolicy,
+    context_policy: Option<FiniteContextPolicy>,
     sandbox: ExecSandbox,
     failed: bool,
     sequence: u32,
@@ -20,19 +21,37 @@ impl ToolSession {
         preimage: Option<String>,
         limits: Limits,
     ) -> Result<Self, FiniteToolError> {
+        Self::open_mode(sandbox, preimage, limits, None)
+    }
+    pub fn open_with_context(
+        sandbox: ExecSandbox,
+        preimage: Option<String>,
+        limits: Limits,
+        policy: FiniteContextPolicy,
+    ) -> Result<Self, FiniteToolError> {
+        Self::open_mode(sandbox, preimage, limits, Some(policy))
+    }
+    fn open_mode(
+        sandbox: ExecSandbox,
+        preimage: Option<String>,
+        limits: Limits,
+        context_policy: Option<FiniteContextPolicy>,
+    ) -> Result<Self, FiniteToolError> {
         let deadline = Instant::now()
             .checked_add(Duration::from_millis(limits.max_session_ms))
             .ok_or(FiniteToolError::Execution)?;
-        let policy = FilePolicy::open(
+        let policy = super::open_file_policy(
             &sandbox.root,
             &sandbox.scratch,
             sandbox.public.clone(),
             &sandbox.output,
             preimage,
             limits,
+            context_policy.as_ref(),
         )?;
         Ok(Self {
             policy,
+            context_policy,
             sandbox,
             failed: false,
             sequence: 0,
@@ -65,25 +84,37 @@ impl ToolSession {
                         .enable_all()
                         .build()
                         .map_err(|_| FiniteToolError::Execution)?;
-                    super::serve_mcp(input, output, |name, args| {
-                        let value = self
-                            .policy
-                            .dispatch(name, &args, &mut |argv, timeout, cap| {
-                                self.sequence += 1;
-                                runtime
-                                    .block_on(self.sandbox.execute(
-                                        argv,
-                                        timeout,
-                                        cap,
-                                        self.sequence,
-                                    ))
-                                    .map_err(|_| FiniteToolError::Execution)
-                            });
-                        if self.policy.halted() {
-                            self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
-                        }
-                        value
-                    })
+                    super::mcp_stdio::serve_with_context(
+                        input,
+                        output,
+                        self.context_policy.as_ref(),
+                        |name, args| {
+                            if self.context_policy.is_some()
+                                && self.stop.load(std::sync::atomic::Ordering::SeqCst)
+                            {
+                                self.failed = true;
+                                return Err("session.cancelled");
+                            }
+                            let value =
+                                self.policy
+                                    .dispatch(name, &args, &mut |argv, timeout, cap| {
+                                        self.sequence += 1;
+                                        runtime
+                                            .block_on(self.sandbox.execute(
+                                                argv,
+                                                timeout,
+                                                cap,
+                                                self.sequence,
+                                            ))
+                                            .map_err(|_| FiniteToolError::Execution)
+                                    });
+                            if self.policy.halted() {
+                                self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
+                            }
+                            value.map_err(|_| "mcp.dispatch_refused")
+                        },
+                    )
+                    .map_err(FiniteToolError::Refused)
                 })
                 .join()
                 .map_err(|_| FiniteToolError::Execution)
@@ -107,17 +138,23 @@ impl ToolSession {
             return Err(FiniteToolError::Refused("terminal.binding"));
         }
         let output = self.policy.terminal_output()?;
+        let (schema_version, context_policy_sha256, catalog_sha256) =
+            super::context_identity(self.context_policy.as_ref())?;
         Ok(super::ToolTerminal {
-            schema_version: 1,
+            schema_version,
             binding: binding.into(),
             complete: complete && !self.halted() && output.is_some(),
             halted: self.halted(),
             output,
             journal: self.journal().to_vec(),
+            context_policy_sha256,
+            catalog_sha256,
         })
     }
     pub fn halted(&self) -> bool {
-        self.failed || self.policy.halted()
+        self.failed
+            || self.policy.halted()
+            || self.context_policy.is_some() && self.stop.load(std::sync::atomic::Ordering::SeqCst)
     }
     /// Unauthenticated telemetry, never runtime cleanup or capability evidence.
     pub fn journal(&self) -> &[super::JournalEntry] {

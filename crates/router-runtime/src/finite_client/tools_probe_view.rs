@@ -1,6 +1,6 @@
 //! Fresh public-only diagnostic view. No worker-provided path grants authority.
 use super::*;
-use crate::finite_tools::{FilePolicy, ToolOwnerProbe, ToolTerminal};
+use crate::finite_tools::{ToolOwnerProbe, ToolTerminal};
 use std::io::{Seek, SeekFrom};
 impl ToolsProbeView {
     pub(super) fn prepare(state: &HostState, probe: &ProbeView) -> Result<Self> {
@@ -35,13 +35,14 @@ impl ToolsProbeView {
         }
         let scratch = probe.temporary.join("probe-observation-scratch");
         fs::DirBuilder::new().mode(0o700).create(&scratch)?;
-        let policy = FilePolicy::open(
+        let policy = crate::finite_tools::open_file_policy(
             &staging,
             &scratch,
             tools.boot.sandbox.public.clone(),
             &tools.boot.sandbox.output,
             tools.boot.preimage.clone(),
             tools.boot.limits.clone(),
+            tools.boot.context_policy.as_ref(),
         )
         .map_err(|_| RuntimeError::Integrity("finite probe inventory"))?;
         let terminal = probe.temporary.join("probe-terminal.json");
@@ -99,6 +100,7 @@ impl ToolsProbeView {
             terminal_identity,
             policy,
             binding,
+            context_policy: tools.boot.context_policy.clone(),
         })
     }
     /// The caller must retain the exact namespace-stop proof through this read.
@@ -128,8 +130,10 @@ impl ToolsProbeView {
             "exec",
             "exec",
         ];
-        if terminal.schema_version != 1
-            || terminal.binding != self.binding
+        terminal
+            .validate_context(self.context_policy.as_ref())
+            .map_err(|_| RuntimeError::Integrity("finite probe context binding"))?;
+        if terminal.binding != self.binding
             || !terminal.complete
             || terminal.halted
             || terminal.journal.len() != names.len()

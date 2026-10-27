@@ -1,6 +1,6 @@
 //! Fixed trusted controller, called only inside the reviewed outer namespace.
 //! These worker bytes cannot construct a Runtime approval or live Tools proof.
-use super::{ExecSandbox, Limits, ToolSession, ToolTerminal};
+use super::{ExecSandbox, FiniteContextPolicy, Limits, ToolSession, ToolTerminal};
 use router_types::FiniteClientFile;
 use std::{
     fs::OpenOptions,
@@ -30,6 +30,12 @@ pub struct ToolOwnerBoot {
     pub reads: Vec<String>,
     pub context: String,
     pub probe: Option<ToolOwnerProbe>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_policy: Option<FiniteContextPolicy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub context_policy_sha256: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog_sha256: Option<String>,
 }
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -40,12 +46,38 @@ pub struct ToolOwnerProbe {
     pub nonce: String,
 }
 
+impl ToolOwnerBoot {
+    pub(crate) fn validate_context(&self) -> Result<(), &'static str> {
+        let (_, policy, catalog) = super::context_identity(self.context_policy.as_ref())
+            .map_err(|_| "owner.context_binding")?;
+        if self.context_policy_sha256 != policy || self.catalog_sha256 != catalog {
+            return Err("owner.context_binding");
+        }
+        Ok(())
+    }
+}
+
+pub(crate) fn validate_bootstrap_bytes(bytes: &[u8], expected: &str) -> Result<(), &'static str> {
+    if bytes.len() > 32768
+        || !router_adapter_api::is_digest(expected)
+        || router_adapter_api::content_digest(bytes) != expected
+    {
+        return Err("owner.bootstrap_binding");
+    }
+    let value = router_adapter_api::strict_json_limited(bytes, 32768)
+        .map_err(|_| "owner.bootstrap_json")?;
+    let boot: ToolOwnerBoot =
+        serde_json::from_value(value).map_err(|_| "owner.bootstrap_schema")?;
+    boot.validate_context()
+}
+
 /// No model call is made by constructing this data. Production dispatch must
 /// retain the opaque review and fresh OS evidence outside this worker process.
 pub fn run_owner(boot: ToolOwnerBoot) -> Result<i32, super::FiniteToolError> {
     run_owner_inner(boot).map_err(super::FiniteToolError::Refused)
 }
 fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
+    boot.validate_context()?;
     if !cfg!(target_os = "linux")
         || boot.context.len() > 8192
         || !router_adapter_api::is_digest(&boot.binding)
@@ -99,12 +131,23 @@ fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
         return Err("owner.terminal_identity");
     }
     std::fs::create_dir("/router-tools/control").map_err(|_| "owner.control")?;
-    let mut session = ToolSession::open(
-        boot.sandbox.clone(),
-        boot.preimage.clone(),
-        boot.limits.clone(),
-    )
+    let mut session = match &boot.context_policy {
+        Some(policy) => ToolSession::open_with_context(
+            boot.sandbox.clone(),
+            boot.preimage.clone(),
+            boot.limits.clone(),
+            policy.clone(),
+        ),
+        None => ToolSession::open(
+            boot.sandbox.clone(),
+            boot.preimage.clone(),
+            boot.limits.clone(),
+        ),
+    }
     .map_err(|_| "owner.policy")?;
+    let (schema_version, context_policy_sha256, catalog_sha256) =
+        super::context_identity(boot.context_policy.as_ref())
+            .map_err(|_| "owner.context_binding")?;
     let failed = session.stop_signal();
     let stop = Arc::new(AtomicBool::new(false));
     let current = Arc::new(Mutex::new(None::<UnixStream>));
@@ -153,8 +196,10 @@ fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
         let observed = session
             .terminal(&binding, result.is_ok())
             .unwrap_or_else(|_| ToolTerminal {
-                schema_version: 1,
+                schema_version,
                 binding,
+                context_policy_sha256,
+                catalog_sha256,
                 complete: false,
                 halted: true,
                 output: None,
@@ -217,6 +262,11 @@ fn run_owner_inner(boot: ToolOwnerBoot) -> Result<i32, &'static str> {
                 "ROUTER_FINITE_PROBE_EXEC_MS",
                 boot.limits.max_exec_ms.min(5000).to_string(),
             );
+    }
+    if boot.probe.is_some() {
+        if let Some(hash) = &boot.catalog_sha256 {
+            command.env("ROUTER_FINITE_PROBE_CATALOG_SHA256", hash);
+        }
     }
     let child = command.spawn();
     let result = (|| -> Result<i32, &'static str> {
