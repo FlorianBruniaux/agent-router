@@ -40,7 +40,7 @@ router-backend-policy = { path = "../router-backend-policy" }
 router-backend-store = { path = "../router-backend-store" }
 router-execution-decision = { path = "../router-execution-decision" }
 router-local-api = { path = "../router-local-api", optional = true }
-tokio = { version = "=1.45.1", features = ["rt-multi-thread", "time", "signal"] }
+tokio = { version = "=1.53.3", features = ["rt-multi-thread", "time", "signal"] }
 clap.workspace = true
 clap_complete.workspace = true
 router-catalog = { path = "../router-catalog" }

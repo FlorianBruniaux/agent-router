@@ -334,9 +334,9 @@ The local macOS run verified read/write/network isolation and a fake worker
 through the resource helper plus Seatbelt. No Linux execution is inferred from
 that macOS result.
 
-Dependencies are pinned to Tokio 1.45.1, rusqlite 0.32.1, nix 0.29.0 and rustix
-1.1.4. Their upstream manifests declare Rust 1.70 for
-[Tokio](https://raw.githubusercontent.com/tokio-rs/tokio/tokio-1.45.1/tokio/Cargo.toml),
+Dependencies are pinned to Tokio 1.53.3, rusqlite 0.32.1, nix 0.29.0 and rustix
+1.1.4. Their upstream manifests declare Rust 1.71 for
+[Tokio](https://raw.githubusercontent.com/tokio-rs/tokio/tokio-1.53.3/tokio/Cargo.toml),
 1.69 for [nix](https://raw.githubusercontent.com/nix-rust/nix/v0.29.0/Cargo.toml)
 and 1.63 for [rustix](https://raw.githubusercontent.com/bytecodealliance/rustix/v1.1.4/Cargo.toml).
 [rusqlite 0.32.1](https://raw.githubusercontent.com/rusqlite/rusqlite/v0.32.1/Cargo.toml)
