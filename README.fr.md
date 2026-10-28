@@ -4,46 +4,6 @@
 
 Un routage expérimental, local et explicable pour Claude Code et Codex.
 
-État au 27 octobre 2026 : **le routage hors ligne fonctionne ; l’usage
-quotidien automatique dans Claude/Codex reste non qualifié.** Les contrôles
-ci-dessous portent sur des périmètres de preuve distincts.
-
-| Parcours | Ce qui est vérifié | Limite restante |
-| --- | --- | --- |
-| Routage hors ligne | Choix du modèle, de l’effort et des skills, filtrage des contraintes et explication reproductible sur les fixtures fournies. | Les déclarations des fixtures ne prouvent pas la disponibilité réelle des modèles. Voir le [test hors ligne](#router-une-tâche-et-lire-lexplication). |
-| Exécution native bornée | Parcours Linux ARM64 épinglés avec le vrai client Codex, des réponses écrites à l’avance, un refus effectif de permission et un patch qui passe 18 contrôles publics. | Aucun vrai modèle ni compte fournisseur dans ces essais. [Preuve du parcours parent complet](docs/bench/fresh-finite-entry-2026-10-22/README.md#follow-up-one-complete-fresh-parent-flow) (EN). |
-| Application privée et reprise | Application explicite du candidat et cinq cas natifs de reprise épinglés, dont le refus après une écriture partielle ou une modification ultérieure. | Les écritures ne sont pas atomiques face à un crash. Le changement ultérieur d’affichage du diff (#211) a des tests locaux, mais ses cinq cas Linux composés n’ont pas été rejoués. [Preuves de reprise](docs/bench/native-application-resume-2026-10-24/README.md) (EN). |
-| Outils de contexte bornés, T1–T4 | Plages exactes de lignes, présentation terminal SGR explicite, récupération intégrale du brut, politique explicite et corpus hors ligne. | Qualification native Linux ARM64 du profil context-v4 **NOT RUN** ; empreinte du catalogue normalisé par le SDK **UNKNOWN**. Le corpus livre **415 octets JSON de plus**, relectures comprises. [Résultats de contexte](docs/bench/rtk-context-offline/README.md) (EN). |
-| Résultats et coûts | L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; les usages fournis peuvent alimenter le coût par révision acceptée. | Les montants manquants restent inconnus. Aucun gain général de coût ou de qualité n’est établi. [Preuves M4 conservées](docs/bench/accepted-evidence-2026-10-15/README.md) (EN). |
-
-Les contrôles de qualité des sources et l’archive de sources extraite passent
-localement pour le code fusionné dans #195 (`492c956`). Les contrôles distants
-de ce merge n’ont pas démarré à cause du blocage facturation/plafond GitHub ;
-la CI n’est pas verte. Les preuves natives ci-dessus lient leurs propres
-sources et binaires, pas chaque changement ultérieur. Les qualifications Linux
-conservent 8 Gio, zéro swap et leurs restrictions d’accès privé. L’admission
-native macOS reste bloquée par la
-[limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
-
-La commande `finite-entry` utilise un parent local scripté explicite ; ce n’est
-pas un hook automatique pour la conversation en cours. `finite-resume` peut
-terminer une application interrompue éligible sans lancer un autre worker.
-Ces commandes demandent leur configuration et leurs autorisations documentées ;
-le test rapide ci-dessous effectue seulement le routage. Voir le
-[protocole d’entrée fraîche](docs/bench/fresh-finite-entry-2026-10-22/README.md)
-et le [protocole de reprise](docs/reference/finite-application-resume.md) (EN).
-
-L’[observation passive](docs/run-observation.md), la
-[qualification de l’évaluateur](docs/evaluator-qualification.md) et le
-[raccordement des usages fournis](docs/supplied-usage-pricing.md) restent
-disponibles dans leurs périmètres de preuve respectifs. Les commandes de
-compilation de ce dépôt n’installent aucun hook ni configuration globale des hosts.
-
-Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
-conversion future vers Apache 2.0. Commencez par le [test rapide](#démarrage-rapide).
-Le [guide d’essai expérimental](docs/experimental-release.md) (EN) conserve les
-preuves historiques d’installation ; l’état daté ci-dessus décrit les intégrations suivantes.
-
 <table>
   <tr>
     <td width="64">
@@ -69,6 +29,7 @@ preuves historiques d’installation ; l’état daté ci-dessus décrit les int
 
 <p align="center">
   <a href="#pourquoi-ce-projet">Pourquoi</a> &middot;
+  <a href="#état-du-projet">État</a> &middot;
   <a href="#démarrage-rapide">Démarrage rapide</a> &middot;
   <a href="#fonctionnalités">Fonctionnalités</a> &middot;
   <a href="#fonctionnement">Fonctionnement</a> &middot;
@@ -85,6 +46,10 @@ Agent Router est une CLI Rust locale qui route le travail de code entre modèles
 agents, skills et outils. Elle vérifie les contraintes avant tout scoring, explique
 ses choix et sépare planification, exécution et vérification. Votre host (Claude
 Code, Codex…) garde la main sur ses interactions, ses identifiants et ses permissions natives.
+
+<!-- infographic:overview -->
+<p align="center"><img src="docs/media/readme-overview.fr.jpg" alt="Vue d'ensemble d'Agent Router : décrire la tâche, filtrer les contraintes d'abord, scorer les candidats admissibles, obtenir un reçu de décision par phase, puis décider. Ce qui fonctionne aujourd'hui et ce qui n'est pas encore établi." width="920"></p>
+<!-- /infographic:overview -->
 
 <p align="center">
   <img src="docs/media/routing-demo.gif" width="920" alt="Agent Router qui exécute des fixtures de routage locales et explique la décision obtenue." />
@@ -170,72 +135,47 @@ Agent Router est une couche de décision locale et déterministe : il choisit le
 
 ---
 
-## Fonctionnalités
+## État du projet
 
-- **Router et expliquer** : choisir un modèle et un effort pour plan, execute et verify, puis inspecter les exclusions et les preuves manquantes (`route`, `route-phase`, `explain`, `inspect`).
-- **Catalogues et recherche** : chercher dans cinq familles d'assets avec BM25, des signaux de contexte, une fusion de classements déterministe et des mises à jour incrémentales contrôlées (`catalog`, `index`, `search`, `refresh`). La préparation d'assets signés passe par la bibliothèque ; l'exécution signée depuis la CLI est encore en chantier.
-- **Planification et saisie de la tâche** : appliquer un plancher de risque, construire l'un des huit presets et classer des affectations globales bornées sous budgets cumulés ; compléter les faits manquants avec la saisie guidée (`normalize`, `plan`, `workflow`, `generate-plan`, `task-guide`).
-- **Revue avant exécution** : préparer une requête, lier les assets choisis et approuver le digest d'exécution exact (`assets`, `prepare`, `run`).
-- **Exécution durable et coordonnée** : suivre les exécutions, annuler, reprendre et isoler les écritures dans des worktrees Git ; lancer des vagues approuvées ; prévisualiser, appliquer ou écarter un patch vérifié ; réserver de la capacité partagée et des budgets de session.
-- **Évaluation et sémantique optionnelle** : rejouer des décisions, évaluer des cohortes explicites et conserver en local le feedback donné avec consentement ; comparer des propositions sémantiques optionnelles et les résultats du sidecar de classement local (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
-- **Sortie, configuration et diagnostic** : sortie lisible ou `--json`, configuration en couches, `doctor` et une trace d'audit expurgée (`audit`).
-- **Distribution et release** : CLI native et helper de sandbox, installation Cargo épinglée, formule Homebrew locale et liaisons de release vérifiables. Aucun paquet public n'est annoncé ; la [qualification](docs/bench/distribution-qualification-2026-10-07.md) consigne les preuves par canal.
+État au 27 octobre 2026 : **le routage hors ligne fonctionne ; l’usage
+quotidien automatique dans Claude/Codex reste non qualifié.** Les contrôles
+ci-dessous portent sur des périmètres de preuve distincts.
 
-<!-- infographic:features -->
-<p align="center"><img src="docs/media/readme-features.fr.jpg" alt="Les capacités d'Agent Router en un coup d'œil" width="820"></p>
-<!-- /infographic:features -->
-
-<details>
-<summary>Tableau complet des capacités</summary>
-
-| Capacité | Ce que vous pouvez faire | Interface / guide |
+| Parcours | Ce qui est vérifié | Limite restante |
 | --- | --- | --- |
-| **Routage explicable** | Choisir un modèle et un effort pour plan, execute et verify ; inspecter les exclusions et les preuves manquantes. | `route`, `route-phase`, `explain` |
-| **Preuves côté host** | Lire les preuves locales des hosts supportés et garder explicites les capacités inconnues. | `inspect`, [contrats](docs/reference/json-contracts.md) |
-| **Catalogues et recherche** | Chercher dans cinq familles d'assets avec BM25, des signaux de contexte, une fusion de classements déterministe et des mises à jour incrémentales contrôlées. | `catalog`, `index`, `search`, `refresh`, [recherche](docs/retrieval.md) |
-| **Préparation d'assets signés** | Revalider le catalogue courant et les grants des éditeurs autour de l'assemblage des assets choisis. Disponible via la bibliothèque ; l'exécution signée depuis la CLI est encore en chantier. | [Préparation signée](docs/signed-preparation.md) |
-| **Planification de workflow** | Appliquer un plancher de risque, clarifier les faits manquants et construire l'un des huit presets, puis classer des affectations globales bornées sous budgets cumulés. | `normalize`, `plan`, `workflow`, `generate-plan`, [génération de plans](docs/plan-generation.md) |
-| **Saisie guidée de la tâche** | Compléter explicitement les faits manquants et exporter une tâche complète sans accorder de permission implicite. | `task-guide`, [saisie guidée](docs/task-guide.md) |
-| **Sortie lisible et JSON** | Lire décisions et approbations dans le terminal, ou garder pour vos scripts les résultats complets et versionnés avec `--json`. | [Sortie de la CLI](docs/cli-output.md) |
-| **Configuration en couches** | Charger des couches de configuration JSON, TOML ou YAML strictes en conservant la précédence la plus restrictive. | `config --layers`, [formats](docs/configuration-formats.md) |
-| **Revue avant exécution** | Préparer une requête, lier les assets choisis et approuver le digest d'exécution exact. | `assets`, `prepare`, `run`, [exécution](docs/cli-execution.md) |
-| **Exécution durable** | Suivre les exécutions, annuler le travail, reprendre les tentatives interrompues et isoler les écritures dans des worktrees Git. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
-| **Capacité partagée et budgets de session** | Réserver de la capacité et des allocations prudentes de coût et de tokens entre racines de runtime ; confronter toute allocation supplémentaire au registre courant. | `admission`, `admission budget`, [budgets](docs/session-budgets.md) |
-| **Workflows coordonnés** | Lancer des vagues approuvées, transmettre des artefacts déclarés et exiger une vérification avant l'intégration. | `coordinate`, [coordination](docs/coordinator.md) |
-| **Intégration explicite** | Prévisualiser, appliquer ou écarter un patch vérifié ; gérer la rétention et la purge des sorties. | `artifacts`, [contrôles](docs/cli-execution.md) |
-| **Évaluation et feedback** | Rejouer des décisions, rendre compte du succès sous budget et de la calibration sur des cohortes explicites, et conserver en local le feedback donné avec consentement. | `replay`, `eval`, `feedback`, `policy` |
-| **Décisions sémantiques optionnelles** | Comparer des propositions en mode shadow, puis relire des preuves signées, activer explicitement et révoquer avant l'envoi. | `backend`, `backend-activation`, [liaison à l'exécution](docs/backend-execution.md) |
-| **Sidecar de classement local** | Comparer des propositions de classement bornées et envoyer explicitement les résultats ou le feedback choisis, dans le cadre du consentement en cours. | `sidecar`, [protocole et consentement](docs/standard-sidecar.md) |
-| **Diagnostic et audit** | Inspecter la configuration et le stockage runtime actif sans déclencher de reprise ; laisser inconnue l'autorité sur les processus et le nettoyage, et exporter une trace d'audit expurgée. | `doctor`, `audit`, [diagnostic](docs/doctor.md) |
-| **Appelants programmatiques** | Afficher le JSON Schema d'un contrat de sortie, indiquer en JSON la version du binaire et des contrats pris en charge, résumer les retours en un total global, et générer les complétions shell. | `schema`, `version --json`, `feedback summary`, `completions`, [sortie de la CLI](docs/cli-output.md#commands-for-programmatic-callers) |
-| **Distributions séparées** | Exporter des workspaces source ou construire la CLI Claude/Codex par défaut et le helper, avec inventaires de licence et contrôles de reproductibilité sur deux builds. | [Distribution](docs/distribution.md), [export binaire](docs/binary-distribution.md) |
-| **Contrôle des dépendances** | Vérifier les preuves de licence des sources et auditer en CI le lockfile commité contre une base RustSec à jour. | [Preuves de licence](docs/distribution.md#continuous-integration-license-evidence-gate), [audit de sécurité](docs/dependency-audit.md) |
-| **API locale limitée au routage** | Servir les décisions de routage sur un socket Unix privé, avec un token ; aucun endpoint d'exécution, de feedback ou d'activation. Feature de build à activer en opt-in. | `serve` (`--features local-api`), [API locale](docs/local-api.md) |
-| **Release locale vérifiable** | Lier les deux binaires à un manifeste v2, vérifier une signature Ed25519 externe et rendre une formule Homebrew locale ou HTTPS canonique. Le rendu ne signe, ne publie, n'installe rien et ne prouve pas la disponibilité distante de l'asset. | [Release locale](docs/release-local.md) |
+| Routage hors ligne | Choix du modèle, de l’effort et des skills, filtrage des contraintes et explication reproductible sur les fixtures fournies. | Les déclarations des fixtures ne prouvent pas la disponibilité réelle des modèles. Voir le [test hors ligne](#router-une-tâche-et-lire-lexplication). |
+| Exécution native bornée | Parcours Linux ARM64 épinglés avec le vrai client Codex, des réponses écrites à l’avance, un refus effectif de permission et un patch qui passe 18 contrôles publics. | Aucun vrai modèle ni compte fournisseur dans ces essais. [Preuve du parcours parent complet](docs/bench/fresh-finite-entry-2026-10-22/README.md#follow-up-one-complete-fresh-parent-flow) (EN). |
+| Application privée et reprise | Application explicite du candidat et cinq cas natifs de reprise épinglés, dont le refus après une écriture partielle ou une modification ultérieure. | Les écritures ne sont pas atomiques face à un crash. Le changement ultérieur d’affichage du diff (#211) a des tests locaux, mais ses cinq cas Linux composés n’ont pas été rejoués. [Preuves de reprise](docs/bench/native-application-resume-2026-10-24/README.md) (EN). |
+| Outils de contexte bornés, T1–T4 | Plages exactes de lignes, présentation terminal SGR explicite, récupération intégrale du brut, politique explicite et corpus hors ligne. | Qualification native Linux ARM64 du profil context-v4 **NOT RUN** ; empreinte du catalogue normalisé par le SDK **UNKNOWN**. Le corpus livre **415 octets JSON de plus**, relectures comprises. [Résultats de contexte](docs/bench/rtk-context-offline/README.md) (EN). |
+| Résultats et coûts | L’[essai assisté M4 a produit une correction acceptée](docs/bench/m4-fix-integration-2026-10-11.md) ; les usages fournis peuvent alimenter le coût par révision acceptée. | Les montants manquants restent inconnus. Aucun gain général de coût ou de qualité n’est établi. [Preuves M4 conservées](docs/bench/accepted-evidence-2026-10-15/README.md) (EN). |
 
-</details>
+Les contrôles de qualité des sources et l’archive de sources extraite passent
+localement pour le code fusionné dans #195 (`492c956`). Les contrôles distants
+tournent sur chaque push et pull request depuis que le dépôt est public
+(28 octobre 2026) ; les badges ci-dessus donnent leur résultat actuel. Les preuves natives ci-dessus lient leurs propres
+sources et binaires, pas chaque changement ultérieur. Les qualifications Linux
+conservent 8 Gio, zéro swap et leurs restrictions d’accès privé. L’admission
+native macOS reste bloquée par la
+[limite d’espace d’adressage de 8 Gio](docs/bench/macos-memory-followup-2026-10-11/README.md).
 
-<details>
-<summary>Briques de bibliothèque, pas encore branchées sur la CLI</summary>
+La commande `finite-entry` utilise un parent local scripté explicite ; ce n’est
+pas un hook automatique pour la conversation en cours. `finite-resume` peut
+terminer une application interrompue éligible sans lancer un autre worker.
+Ces commandes demandent leur configuration et leurs autorisations documentées ;
+le test rapide ci-dessous effectue seulement le routage. Voir le
+[protocole d’entrée fraîche](docs/bench/fresh-finite-entry-2026-10-22/README.md)
+et le [protocole de reprise](docs/reference/finite-application-resume.md) (EN).
 
-| Capacité | Ce qu'elle fait | Guide |
-| --- | --- | --- |
-| **Cache de décisions consultatif** | Stocke des propositions de backend authentifiées par HMAC ; une entrée en cache vaut avis, jamais autorité. | [ADR 0011](docs/adr/0011-advisory-decision-cache.md) |
-| **Importeur inerte** | Transforme un répertoire d'agents et de skills Markdown en catalogue candidat non signé, accompagné d'un rapport ; ne signe et n'active rien. | [Importeur](docs/importer.md) |
-| **Classement vectoriel local** | Classe les assets à partir de vecteurs en virgule fixe fournis par l'appelant, en arithmétique entière exacte, derrière la feature `semantic-ranking`. | [Recherche](docs/retrieval.md) |
-| **Propositions de plan** | Confronte un plan proposé par un modèle à la tâche et aux limites de l'appelant, et rapporte son écart avec la baseline ; ne l'approuve jamais. | [Propositions de plan](docs/plan-proposals.md) |
-| **Séparation des revues** | Impose que chaque lien producteur vers relecteur relie des providers déclarés distincts. | [Séparation des revues](docs/review-separation.md) |
-| **Validation structurée** | Évalue des contrats de validation typés sur une vue fournie par l'appelant et renvoie un rapport lié à un digest. | [Validation structurée](docs/structured-validation.md) |
-| **Descripteurs d'adaptateur** | Valide les descripteurs `adapter.json` de façon inerte : noms réservés, points d'entrée liés, aucune activation. | [Format des descripteurs](integrations/README.md) |
-| **Contrats multimodaux** | Type et borne les entrées image, audio et fichier ainsi que les sorties JSON ; rien n'est transporté. | [Contrats JSON](docs/reference/json-contracts.md) |
+L’[observation passive](docs/run-observation.md), la
+[qualification de l’évaluateur](docs/evaluator-qualification.md) et le
+[raccordement des usages fournis](docs/supplied-usage-pricing.md) restent
+disponibles dans leurs périmètres de preuve respectifs. Les commandes de
+compilation de ce dépôt n’installent aucun hook ni configuration globale des hosts.
 
-</details>
-
-Le projet est en développement actif. La validation humaine du corpus d'évaluation,
-l'objectif complet de temps de démarrage et des preuves natives supplémentaires côté host restent ouverts.
-Les critères d'acceptation sont dans le [registre d'avancement](docs/completion.md) et la [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11).
-Il s'agit d'un candidat source expérimental ; sa publication exige encore une
-revue de release et ne vaut pas validation pour la production.
+Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
+conversion future vers Apache 2.0. Commencez par le [test rapide](#démarrage-rapide).
+Le [guide d’essai expérimental](docs/experimental-release.md) (EN) conserve les
+preuves historiques d’installation ; l’état daté ci-dessus décrit les intégrations suivantes.
 
 ---
 
@@ -358,6 +298,75 @@ Suivez le [guide de préparation](docs/preparation.md), puis le
 L'exécution exige une autorité d'assets à jour, un digest relu, un stockage explicite
 et un sandbox natif fonctionnel. Un processus qui se termine avec succès ne vaut pas
 vérification du résultat de la tâche.
+
+---
+
+## Fonctionnalités
+
+- **Router et expliquer** : choisir un modèle et un effort pour plan, execute et verify, puis inspecter les exclusions et les preuves manquantes (`route`, `route-phase`, `explain`, `inspect`).
+- **Catalogues et recherche** : chercher dans cinq familles d'assets avec BM25, des signaux de contexte, une fusion de classements déterministe et des mises à jour incrémentales contrôlées (`catalog`, `index`, `search`, `refresh`). La préparation d'assets signés passe par la bibliothèque ; l'exécution signée depuis la CLI est encore en chantier.
+- **Planification et saisie de la tâche** : appliquer un plancher de risque, construire l'un des huit presets et classer des affectations globales bornées sous budgets cumulés ; compléter les faits manquants avec la saisie guidée (`normalize`, `plan`, `workflow`, `generate-plan`, `task-guide`).
+- **Revue avant exécution** : préparer une requête, lier les assets choisis et approuver le digest d'exécution exact (`assets`, `prepare`, `run`).
+- **Exécution durable et coordonnée** : suivre les exécutions, annuler, reprendre et isoler les écritures dans des worktrees Git ; lancer des vagues approuvées ; prévisualiser, appliquer ou écarter un patch vérifié ; réserver de la capacité partagée et des budgets de session.
+- **Évaluation et sémantique optionnelle** : rejouer des décisions, évaluer des cohortes explicites et conserver en local le feedback donné avec consentement ; comparer des propositions sémantiques optionnelles et les résultats du sidecar de classement local (`replay`, `eval`, `feedback`, `policy`, `backend`, `sidecar`).
+- **Sortie, configuration et diagnostic** : sortie lisible ou `--json`, configuration en couches, `doctor` et une trace d'audit expurgée (`audit`).
+- **Distribution et release** : CLI native et helper de sandbox, installation Cargo épinglée, formule Homebrew locale et liaisons de release vérifiables. Aucun paquet public n'est annoncé ; la [qualification](docs/bench/distribution-qualification-2026-10-07.md) consigne les preuves par canal.
+
+<!-- infographic:features -->
+<p align="center"><img src="docs/media/readme-features.fr.jpg" alt="Les capacités d'Agent Router en un coup d'œil" width="820"></p>
+<!-- /infographic:features -->
+
+<details>
+<summary>Tableau complet des capacités</summary>
+
+| Capacité | Ce que vous pouvez faire | Interface / guide |
+| --- | --- | --- |
+| **Routage explicable** | Choisir un modèle et un effort pour plan, execute et verify ; inspecter les exclusions et les preuves manquantes. | `route`, `route-phase`, `explain` |
+| **Preuves côté host** | Lire les preuves locales des hosts supportés et garder explicites les capacités inconnues. | `inspect`, [contrats](docs/reference/json-contracts.md) |
+| **Catalogues et recherche** | Chercher dans cinq familles d'assets avec BM25, des signaux de contexte, une fusion de classements déterministe et des mises à jour incrémentales contrôlées. | `catalog`, `index`, `search`, `refresh`, [recherche](docs/retrieval.md) |
+| **Préparation d'assets signés** | Revalider le catalogue courant et les grants des éditeurs autour de l'assemblage des assets choisis. Disponible via la bibliothèque ; l'exécution signée depuis la CLI est encore en chantier. | [Préparation signée](docs/signed-preparation.md) |
+| **Planification de workflow** | Appliquer un plancher de risque, clarifier les faits manquants et construire l'un des huit presets, puis classer des affectations globales bornées sous budgets cumulés. | `normalize`, `plan`, `workflow`, `generate-plan`, [génération de plans](docs/plan-generation.md) |
+| **Saisie guidée de la tâche** | Compléter explicitement les faits manquants et exporter une tâche complète sans accorder de permission implicite. | `task-guide`, [saisie guidée](docs/task-guide.md) |
+| **Sortie lisible et JSON** | Lire décisions et approbations dans le terminal, ou garder pour vos scripts les résultats complets et versionnés avec `--json`. | [Sortie de la CLI](docs/cli-output.md) |
+| **Configuration en couches** | Charger des couches de configuration JSON, TOML ou YAML strictes en conservant la précédence la plus restrictive. | `config --layers`, [formats](docs/configuration-formats.md) |
+| **Revue avant exécution** | Préparer une requête, lier les assets choisis et approuver le digest d'exécution exact. | `assets`, `prepare`, `run`, [exécution](docs/cli-execution.md) |
+| **Exécution durable** | Suivre les exécutions, annuler le travail, reprendre les tentatives interrompues et isoler les écritures dans des worktrees Git. | `status`, `cancel`, `events`, [runtime](docs/runtime.md) |
+| **Capacité partagée et budgets de session** | Réserver de la capacité et des allocations prudentes de coût et de tokens entre racines de runtime ; confronter toute allocation supplémentaire au registre courant. | `admission`, `admission budget`, [budgets](docs/session-budgets.md) |
+| **Workflows coordonnés** | Lancer des vagues approuvées, transmettre des artefacts déclarés et exiger une vérification avant l'intégration. | `coordinate`, [coordination](docs/coordinator.md) |
+| **Intégration explicite** | Prévisualiser, appliquer ou écarter un patch vérifié ; gérer la rétention et la purge des sorties. | `artifacts`, [contrôles](docs/cli-execution.md) |
+| **Évaluation et feedback** | Rejouer des décisions, rendre compte du succès sous budget et de la calibration sur des cohortes explicites, et conserver en local le feedback donné avec consentement. | `replay`, `eval`, `feedback`, `policy` |
+| **Décisions sémantiques optionnelles** | Comparer des propositions en mode shadow, puis relire des preuves signées, activer explicitement et révoquer avant l'envoi. | `backend`, `backend-activation`, [liaison à l'exécution](docs/backend-execution.md) |
+| **Sidecar de classement local** | Comparer des propositions de classement bornées et envoyer explicitement les résultats ou le feedback choisis, dans le cadre du consentement en cours. | `sidecar`, [protocole et consentement](docs/standard-sidecar.md) |
+| **Diagnostic et audit** | Inspecter la configuration et le stockage runtime actif sans déclencher de reprise ; laisser inconnue l'autorité sur les processus et le nettoyage, et exporter une trace d'audit expurgée. | `doctor`, `audit`, [diagnostic](docs/doctor.md) |
+| **Appelants programmatiques** | Afficher le JSON Schema d'un contrat de sortie, indiquer en JSON la version du binaire et des contrats pris en charge, résumer les retours en un total global, et générer les complétions shell. | `schema`, `version --json`, `feedback summary`, `completions`, [sortie de la CLI](docs/cli-output.md#commands-for-programmatic-callers) |
+| **Distributions séparées** | Exporter des workspaces source ou construire la CLI Claude/Codex par défaut et le helper, avec inventaires de licence et contrôles de reproductibilité sur deux builds. | [Distribution](docs/distribution.md), [export binaire](docs/binary-distribution.md) |
+| **Contrôle des dépendances** | Vérifier les preuves de licence des sources et auditer en CI le lockfile commité contre une base RustSec à jour. | [Preuves de licence](docs/distribution.md#continuous-integration-license-evidence-gate), [audit de sécurité](docs/dependency-audit.md) |
+| **API locale limitée au routage** | Servir les décisions de routage sur un socket Unix privé, avec un token ; aucun endpoint d'exécution, de feedback ou d'activation. Feature de build à activer en opt-in. | `serve` (`--features local-api`), [API locale](docs/local-api.md) |
+| **Release locale vérifiable** | Lier les deux binaires à un manifeste v2, vérifier une signature Ed25519 externe et rendre une formule Homebrew locale ou HTTPS canonique. Le rendu ne signe, ne publie, n'installe rien et ne prouve pas la disponibilité distante de l'asset. | [Release locale](docs/release-local.md) |
+
+</details>
+
+<details>
+<summary>Briques de bibliothèque, pas encore branchées sur la CLI</summary>
+
+| Capacité | Ce qu'elle fait | Guide |
+| --- | --- | --- |
+| **Cache de décisions consultatif** | Stocke des propositions de backend authentifiées par HMAC ; une entrée en cache vaut avis, jamais autorité. | [ADR 0011](docs/adr/0011-advisory-decision-cache.md) |
+| **Importeur inerte** | Transforme un répertoire d'agents et de skills Markdown en catalogue candidat non signé, accompagné d'un rapport ; ne signe et n'active rien. | [Importeur](docs/importer.md) |
+| **Classement vectoriel local** | Classe les assets à partir de vecteurs en virgule fixe fournis par l'appelant, en arithmétique entière exacte, derrière la feature `semantic-ranking`. | [Recherche](docs/retrieval.md) |
+| **Propositions de plan** | Confronte un plan proposé par un modèle à la tâche et aux limites de l'appelant, et rapporte son écart avec la baseline ; ne l'approuve jamais. | [Propositions de plan](docs/plan-proposals.md) |
+| **Séparation des revues** | Impose que chaque lien producteur vers relecteur relie des providers déclarés distincts. | [Séparation des revues](docs/review-separation.md) |
+| **Validation structurée** | Évalue des contrats de validation typés sur une vue fournie par l'appelant et renvoie un rapport lié à un digest. | [Validation structurée](docs/structured-validation.md) |
+| **Descripteurs d'adaptateur** | Valide les descripteurs `adapter.json` de façon inerte : noms réservés, points d'entrée liés, aucune activation. | [Format des descripteurs](integrations/README.md) |
+| **Contrats multimodaux** | Type et borne les entrées image, audio et fichier ainsi que les sorties JSON ; rien n'est transporté. | [Contrats JSON](docs/reference/json-contracts.md) |
+
+</details>
+
+Le projet est en développement actif. La validation humaine du corpus d'évaluation,
+l'objectif complet de temps de démarrage et des preuves natives supplémentaires côté host restent ouverts.
+Les critères d'acceptation sont dans le [registre d'avancement](docs/completion.md) et la [roadmap](https://github.com/FlorianBruniaux/agent-router/issues/11).
+Il s'agit d'un candidat source expérimental ; sa publication exige encore une
+revue de release et ne vaut pas validation pour la production.
 
 ---
 

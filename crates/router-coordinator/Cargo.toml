@@ -19,7 +19,7 @@ sha2.workspace = true
 hex.workspace = true
 thiserror.workspace = true
 rusqlite = { version = "=0.39.0", features = ["bundled", "fallible_uint"] }
-tokio = { version = "=1.45.1", features = ["time", "sync", "macros", "rt-multi-thread"] }
+tokio = { version = "=1.53.3", features = ["time", "sync", "macros", "rt-multi-thread"] }
 nix = { version = "=0.29.0", features = ["fs"] }
 
 [dev-dependencies]
