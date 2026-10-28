@@ -1,0 +1,21 @@
+crates/router-sandbox-helper/Cargo.toml
+  s_c3158f009d7319::t_8dea191e3ba668 12
+crates/router-sandbox-helper/tests/lifetime.rs
+  s_c3158f009d7319::t_852653e38766f5 51-52,54,56-61,204,206-215,220-229
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e177f4317e459722c06dec533fe92b85ba75889",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
