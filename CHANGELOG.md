@@ -25,6 +25,7 @@ automatically synchronized release of this development tree.
 
 ### Added
 
+- 2026-10-28: add the operator-declared `claude-core-v1` policy catalog with three unrated entries, route tests and a Claude Code quick-start example (#218). Entries declare no capability, rating or price; `tools` stays UNKNOWN. No passive discovery exists for Claude Code, and `catalog refresh` refuses a Claude native-stream snapshot because it carries no efforts. The identifiers are not proof that an account offers them.
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
 
 - 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.

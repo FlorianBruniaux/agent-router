@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "version": "claude-core-v1",
+  "models": [
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-unrated-prior"
+    },
+    {
+      "id": "claude-opus-5-5",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-unrated-prior"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-unrated-prior"
+    }
+  ],
+  "skills": [
+    {
+      "id": "tdd",
+      "description": "Guides a red-green-refactor implementation cycle.",
+      "task_kinds": [
+        "implement"
+      ],
+      "required_capabilities": [
+        "tools"
+      ],
+      "trust": "builtin"
+    },
+    {
+      "id": "critique-plan",
+      "description": "Challenges implementation plans for omissions and unsafe assumptions.",
+      "task_kinds": [
+        "architecture",
+        "migration",
+        "security"
+      ],
+      "required_capabilities": [],
+      "trust": "builtin"
+    },
+    {
+      "id": "security-guardian",
+      "description": "Reviews changes for security boundaries and unsafe behavior.",
+      "task_kinds": [
+        "security",
+        "review"
+      ],
+      "required_capabilities": [
+        "tools"
+      ],
+      "trust": "builtin"
+    }
+  ]
+}
