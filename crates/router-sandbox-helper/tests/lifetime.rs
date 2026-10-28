@@ -48,13 +48,17 @@ fn command(root: &Path, script: &str) -> Command {
         .stderr(Stdio::piped());
     command
 }
+fn frame_bytes(payload: &[u8]) -> Vec<u8> {
+    let mut bytes = b"ARLIFE01".to_vec();
+    for value in [payload.len() as u64, 30_000, 20] {
+        bytes.extend_from_slice(&value.to_be_bytes());
+    }
+    bytes.extend_from_slice(payload);
+    bytes
+}
 fn frame(child: &mut Child, payload: &[u8]) -> std::process::ChildStdin {
     let mut input = child.stdin.take().unwrap();
-    input.write_all(b"ARLIFE01").unwrap();
-    for value in [payload.len() as u64, 30_000, 20] {
-        input.write_all(&value.to_be_bytes()).unwrap();
-    }
-    input.write_all(payload).unwrap();
+    input.write_all(&frame_bytes(payload)).unwrap();
     input
 }
 fn await_file(path: &Path) {
@@ -197,17 +201,32 @@ fn eof_before_spawn_and_recovered_pending_never_launch_a_worker() {
         if recovered {
             fs::write(root.join("lease"), b"router-runtime-lease-v1:recovered\n").unwrap();
         }
-        let mut child = command(&root, "printf unsafe > worker-started")
-            .spawn()
-            .unwrap();
+        let mut command = command(&root, "printf unsafe > worker-started");
         if !recovered {
-            let input = frame(&mut child, b"");
-            drop(input);
-        } else {
+            // The complete frame and EOF exist before the helper starts, so the
+            // pre-spawn liveness check cannot run ahead of the parent's close.
+            let (read, write) = rustix::pipe::pipe().unwrap();
+            let mut write = File::from(write);
+            write.write_all(&frame_bytes(b"")).unwrap();
+            drop(write);
+            command.stdin(Stdio::from(read));
+        }
+        let mut child = command.spawn().unwrap();
+        if recovered {
             drop(child.stdin.take());
         }
         assert!(!bounded_wait(&mut child).success());
         assert!(!root.join("worker-started").exists());
+        // The helper writes the active state immediately before any spawn.
+        assert_eq!(
+            fs::read(root.join("lease")).unwrap(),
+            if recovered {
+                b"router-runtime-lease-v1:recovered\n".as_slice()
+            } else {
+                PENDING
+            },
+            "the helper reached the spawn path"
+        );
     }
 }
 
