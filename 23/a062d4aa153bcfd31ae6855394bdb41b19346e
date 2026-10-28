@@ -1,0 +1,21 @@
+README.fr.md
+  s_c3158f009d7319::t_be4f97b4fb5999 32,50-53,138,140-142,144,146-150,152-159,161-167,169-173,175-178,304-372
+README.md
+  s_c3158f009d7319::t_a0430ccef89f56 32,50-53,136,138-139,141,143-147,149-156,158-163,165-169,171-174,297-365
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "23a062d4aa153bcfd31ae6855394bdb41b19346e",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
