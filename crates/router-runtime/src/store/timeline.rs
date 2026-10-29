@@ -168,7 +168,7 @@ pub fn observe_run_v4(root: &Path, id: &str) -> Result<RunObservationV4> {
     Ok(report)
 }
 
-fn project_v4(db: &Connection, id: &str) -> Result<RunObservationV4> {
+pub(super) fn project_v4(db: &Connection, id: &str) -> Result<RunObservationV4> {
     // project_v3 admits every byte and verifies the whole chain first.
     let mut observation = project_v3(db, id)?;
     let mut query = db.prepare(&format!(
@@ -322,6 +322,12 @@ fn build(observation: &RunObservationV3, events: &[RuntimeEvent]) -> Result<RunT
                         .iter()
                         .position(|e| e.sequence == f.sequence)
                         .is_some_and(|index| pending[index].is_some())
+                }),
+                cancel_request_sequence: finished.and_then(|f| {
+                    events
+                        .iter()
+                        .position(|e| e.sequence == f.sequence)
+                        .and_then(|index| pending[index])
                 }),
             })
         })

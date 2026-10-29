@@ -316,6 +316,9 @@ pub struct TimelineAttempt {
     pub recorded_cleanup: Option<ProcessCleanupEvidence>,
     /// `None` when no finished marker is bound to this attempt.
     pub result_after_cancel_request: Option<bool>,
+    /// The cancel request in force at this attempt's finished marker, within its
+    /// own approval cycle. `None` when there is none or no marker is bound.
+    pub cancel_request_sequence: Option<u64>,
 }
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
