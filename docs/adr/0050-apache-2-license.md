@@ -1,5 +1,5 @@
 ---
-adr: "0048"
+adr: "0050"
 title: License the project under Apache-2.0
 status: proposed
 created: 2026-10-28
@@ -11,7 +11,7 @@ superseded_by: []
 related: []
 ---
 
-# ADR 0048: License the project under Apache-2.0
+# ADR 0050: License the project under Apache-2.0
 
 ## Context
 

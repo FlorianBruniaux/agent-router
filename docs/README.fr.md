@@ -105,7 +105,7 @@ sauf celles marquées (FR).
 | --- | --- |
 | [Doctor](doctor.md) | Diagnostic en lecture seule et audit expurgé |
 | [Diagnostic de supervision native](bench/owned-supervision-feasibility-2026-10-08/README.md) | 2026-10-08 : diagnostic explicite sans fournisseur ; composition NO_GO, limites du broker, de mémoire et de nettoyage conservées |
-| [Observation passive d’une exécution](run-observation.md) | 2026-10-11 : v3 pour la durée locale de capture du superviseur, v2 par tentative et v1 par défaut conservées ; durées natives/fournisseur et F04b/F05a complets restent ouverts |
+| [Observation passive d’une exécution](run-observation.md) | 2026-10-29 : v5 pour des constats consultatifs avec preuve, vérification et suppression nommée ; 2026-10-28 : v4 pour une timeline bornée sur l'état enregistré (sans horodatage) ; 2026-10-11 : v3 pour la durée locale de capture du superviseur, v2 par tentative et v1 par défaut conservées ; durées natives/fournisseur et F04b/F05a complets restent ouverts |
 | [Validation de l’observation](bench/verification-observation-2026-10-07.json) | 21 contrôles sélectionnés réussis : 1 633 résultats Rust workspace + 1 cœur, 290 Python ; sommes des lignes de résultats, 42 tests natifs opt-in ignorés ; sans équivalence avec toute la CI |
 | [Validation de l’observation v2](bench/verification-observation-v2-2026-10-08.json) | 24 contrôles locaux après corrections de l’index ADR et du faux positif sur un hash de fixture, revue indépendante et compatibilité du lecteur de mesure ; faits natifs inconnus |
 | [Validation des durées locales](bench/verification-local-capture-timing-2026-10-11.json) | V3 explicite : sept contrôles locaux réussis sur le code combiné, inconnues historiques conservées et revue indépendante ; durées natives/fournisseur et bout en bout encore non qualifiées |
@@ -144,5 +144,6 @@ sauf celles marquées (FR).
 | --- | --- |
 | [Harness de développement](harness.md) | Agents, skills et hooks du projet pour Claude Code et Codex |
 | [Validation locale](local-ci.md) | Contrôles reproductibles, preuves conservées et limites sans budget Actions |
+| [Cycle de vie des ressources Docker](docker-resource-lifecycle.md) | Labels, baux, nettoyage, reprise après crash et budget de cache partagé (page en anglais) |
 | [Preuves du harness](harness-evidence.md) | Preuves de validation du harness |
 | [Grille de revue](review-grid.md) | Checklist utilisée pour la revue de code |

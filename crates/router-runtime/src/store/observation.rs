@@ -407,7 +407,7 @@ pub fn observe_run_v3(root: &Path, id: &str) -> Result<RunObservationV3> {
     Ok(report)
 }
 
-fn project_v3(db: &Connection, id: &str) -> Result<RunObservationV3> {
+pub(super) fn project_v3(db: &Connection, id: &str) -> Result<RunObservationV3> {
     use crate::timing::{
         AttemptTimingObservation, AttemptTimingRecord, CaptureTiming, TimingUnknownReason,
     };

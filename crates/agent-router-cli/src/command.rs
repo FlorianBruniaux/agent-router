@@ -245,8 +245,8 @@ pub enum Commands {
         /// Run identifier (hashed in the observation output).
         #[arg(long)]
         run_id: String,
-        /// Observation contract version; v2 adds attempt facts, v3 local capture intervals.
-        #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u32).range(1..=3))]
+        /// Observation contract version; v2 adds attempt facts, v3 local capture intervals, v4 a bounded timeline, v5 advisory findings.
+        #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u32).range(1..=5))]
         schema_version: u32,
         /// Print the complete versioned JSON projection instead of the compact view.
         #[arg(long)]

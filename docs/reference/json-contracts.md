@@ -38,7 +38,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Feedback summary | v2 (`agent-router feedback summary`): one global total built from the same classification as `report`, with `attribution` always `not_established`; see `docs/feedback.md` |
 | Runtime-reconciled feedback | `feedback report --runtime-store` emits report v4; `summary --runtime-store` emits summary v3. Adds bounded `task_measurement` from the runtime journal and optional feedback, including missing-feedback attempts. Default report v3/summary v2 and older published schemas remain accepted; see `docs/feedback.md` |
 | Qualified report pricing | Pricing table v2 gives report v5/summary v4 and `pricing.contract_version: 2`, with optional runtime reconciliation. Explicit cache-write scope and reasoning mode preserve unknown totals and known subtotals. V1 shapes/hashes remain unchanged; detailed replay with pricing v2 is refused |
-| Passive run observation | v1 remains default and byte-compatible; explicit `observe --schema-version 2` adds bounded durable attempt identities, requested selections, supervisor outcomes and source hashes from the same passive snapshot. `schema run-observation` supports `[1, 2]`. Native model/effort, usage, timing, protocol and objective remain unknown; see [run observation](../run-observation.md) and [ADR 0025](../adr/0025-run-observation.md). |
+| Passive run observation | v1 remains default and byte-compatible; explicit `observe --schema-version 2` adds bounded durable attempt identities, requested selections, supervisor outcomes and source hashes from the same passive snapshot; `--schema-version 3` adds qualified local capture intervals and `--schema-version 4` a bounded, redacted timeline of at most 64 journal-ordered entries; `--schema-version 5` adds advisory run findings (five rules, each a finding or a named suppression, `automatic_action: none`). `schema run-observation` supports `[1, 2, 3, 4, 5]`. Native model/effort, usage, trusted timestamps, protocol, objective and acceptance of the exact revision remain unknown; see [run observation](../run-observation.md), [ADR 0025](../adr/0025-run-observation.md), [ADR 0030](../adr/0030-qualified-local-capture-timing.md) [ADR 0048](../adr/0048-run-timeline-projection.md) and [ADR 0049](../adr/0049-run-findings.md). |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
@@ -86,6 +86,10 @@ a shared cache does not prove which process, account or client surface wrote it.
 For the October model pool, use `assets/catalogs/codex-core-v2.json` as the
 explicit policy prior; its schema remains 1. See
 [catalog policy and unrated entries](../../assets/catalogs/README.md).
+
+For Claude Code, `assets/catalogs/claude-core-v1.json` is an operator-declared,
+fully unrated policy prior (schema 1). It is not refreshable from a Claude
+snapshot because that snapshot carries no efforts.
 
 The v1 authenticated proof contract lives in `router-adapter-api`. It contains a
 random store identity, increasing sequence, proof identity, capability, tier,

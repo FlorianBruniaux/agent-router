@@ -246,6 +246,30 @@ Missing evidence: 0
 implement a task or prove current model support. Keep `example_dir` to inspect
 the decision, or remove only that file and directory when finished.
 
+For Claude Code, use the operator-declared `claude-core-v1` catalog. It rates
+no model, so the plan below is a deterministic tie-break among unrated entries,
+not a quality judgement:
+
+```sh
+./target/debug/agent-router route \
+  --request tests/fixtures/requests/claude-implementation.json \
+  --catalog assets/catalogs/claude-core-v1.json \
+  --json > "$example_dir/claude-decision.json"
+
+./target/debug/agent-router explain \
+  --decision "$example_dir/claude-decision.json"
+```
+
+```text
+Preset: plan-execute-verify
+Plan: claude-opus-5-5/high -> claude-opus-5-5/high -> claude-opus-5-5/high
+Excluded candidates: 22
+Missing evidence: 0
+```
+
+See [the catalog notes](assets/catalogs/README.md) for what this catalog does
+not establish.
+
 ### Describe your own task
 
 ```sh

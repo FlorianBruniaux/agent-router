@@ -1,0 +1,20 @@
+{
+  "task": {
+    "objective": "Implement a bounded parser change",
+    "kind": "implement",
+    "risk": "low",
+    "required_capabilities": [],
+    "acceptance": ["workspace tests pass"]
+  },
+  "host": {
+    "id": "claude-local",
+    "harness": "claude",
+    "supported_models": ["claude-opus-5-5", "claude-sonnet-5-5"],
+    "supported_efforts": {
+      "claude-opus-5-5": ["high", "xhigh"],
+      "claude-sonnet-5-5": ["medium", "high"]
+    },
+    "capabilities": []
+  },
+  "skill_candidates": []
+}
