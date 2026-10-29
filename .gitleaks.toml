@@ -22,3 +22,7 @@ regexes = [
     '''^3dafcfaa6218343276ff42263fe100bab5e2b0475a8d98b96abc88c57bfd9992$''',
     '''^66708974e5efa736dfb98996c3e198c012e29dc210e1b4f47cd5d093bdd7561d$''',
 ]
+
+[[allowlists]]
+description = "Exact synthetic SHA-256 run key in the observation-v4 example of docs/run-observation.md"
+regexes = ['''^603d00cb0b1ed988498039940e5a0937c5360273f9d56b33df8acb4558250e72$''']

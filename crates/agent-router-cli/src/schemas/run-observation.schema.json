@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:agent-router:schema:run-observation:3",
+  "$id": "urn:agent-router:schema:run-observation:4",
   "title": "run-observation",
-  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown. Opt-in version 3 adds qualified local supervisor capture intervals; native and aggregate duration stay unknown.",
+  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown. Opt-in version 3 adds qualified local supervisor capture intervals; native and aggregate duration stay unknown. Opt-in version 4 adds a bounded, redacted chronological timeline (at most 64 entries, journal order, no timestamps) that separates plan, approval, attempt, transport, verification, cancellation and cleanup; acceptance of the exact revision, applied model and effort, notification delivery and physical cleanup stay unknown.",
   "oneOf": [
     {
       "$ref": "#/$defs/v1"
@@ -12,6 +12,9 @@
     },
     {
       "$ref": "#/$defs/v3"
+    },
+    {
+      "$ref": "#/$defs/v4"
     }
   ],
   "$defs": {
@@ -785,6 +788,588 @@
         },
         "measurement": {
           "$ref": "#/$defs/timing_measurement"
+        }
+      }
+    },
+    "timeline_phase": {
+      "type": "string",
+      "enum": [
+        "plan",
+        "approval",
+        "preparation",
+        "attempt",
+        "transport",
+        "verification",
+        "cancellation",
+        "cleanup",
+        "terminal",
+        "other"
+      ]
+    },
+    "timeline_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "event_sha256",
+        "state",
+        "phase",
+        "kind",
+        "attempt",
+        "after_cancel_request"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "event_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "state": {
+          "$ref": "#/$defs/state"
+        },
+        "phase": {
+          "$ref": "#/$defs/timeline_phase"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "admission_intent",
+            "admission_release_failed",
+            "artifact",
+            "artifact_declared",
+            "artifacts_readonly_view",
+            "assets_final_gate",
+            "attempt_bound",
+            "attempt_evidence",
+            "attempt_finished",
+            "attempt_started",
+            "attempt_timing",
+            "cancel_requested",
+            "cancelled_before_start",
+            "capability_evidence",
+            "cleanup_confirmed",
+            "cleanup_unknown",
+            "escalation_claim",
+            "failure_classification_error",
+            "failure_native_classified",
+            "finite_subscription_stopped",
+            "finite_tools_stopped",
+            "integration_applied",
+            "integration_context",
+            "integration_discarded",
+            "integration_intent",
+            "integration_published",
+            "integration_resume_intent",
+            "invalid_transition",
+            "native_version_validated",
+            "output_incomplete",
+            "planned",
+            "preparation_cleanup_unknown",
+            "preparation_cycle",
+            "preparation_git_returned",
+            "protocol_observed",
+            "queued",
+            "recovery_verification_required",
+            "retry_awaiting_fresh_approval",
+            "transition",
+            "unclassified",
+            "verification_attested",
+            "verification_legacy_snapshot",
+            "verification_recorded"
+          ]
+        },
+        "attempt": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after_cancel_request": {
+          "type": "boolean"
+        }
+      }
+    },
+    "timeline_phase_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "phase",
+        "events",
+        "first_sequence",
+        "last_sequence"
+      ],
+      "properties": {
+        "phase": {
+          "$ref": "#/$defs/timeline_phase"
+        },
+        "events": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "first_sequence": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_sequence": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "timeline_attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordinal",
+        "requested",
+        "applied",
+        "usage",
+        "recorded_cleanup",
+        "result_after_cancel_request"
+      ],
+      "properties": {
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "requested": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/requested"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "applied": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "model",
+            "effort"
+          ],
+          "properties": {
+            "model": {
+              "$ref": "#/$defs/unknown"
+            },
+            "effort": {
+              "$ref": "#/$defs/unknown"
+            }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "tokens",
+            "cost_microusd",
+            "status"
+          ],
+          "properties": {
+            "tokens": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "cost_microusd": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "partial",
+                "recorded_unattested"
+              ]
+            }
+          }
+        },
+        "recorded_cleanup": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "not_started",
+                "group_terminated",
+                "namespace_terminated"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "result_after_cancel_request": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordering",
+        "entry_limit",
+        "run_events",
+        "shown",
+        "omitted_earlier",
+        "later_global_events",
+        "entries",
+        "phases",
+        "approval",
+        "cancellation",
+        "cleanup",
+        "verification",
+        "attempts",
+        "unknown"
+      ],
+      "properties": {
+        "ordering": {
+          "const": "journal_sequence_ascending"
+        },
+        "entry_limit": {
+          "const": 64
+        },
+        "run_events": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "shown": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        },
+        "omitted_earlier": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "later_global_events": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100000
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "$ref": "#/$defs/timeline_entry"
+          }
+        },
+        "phases": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/timeline_phase_summary"
+          }
+        },
+        "approval": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "outcome",
+            "awaiting_sequence",
+            "granted_sequence"
+          ],
+          "properties": {
+            "outcome": {
+              "type": "string",
+              "enum": [
+                "granted",
+                "not_granted",
+                "pending",
+                "unknown"
+              ]
+            },
+            "awaiting_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "granted_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "cancellation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requested_sequence",
+            "before_start_sequence",
+            "terminal_cancelled",
+            "events_after_request"
+          ],
+          "properties": {
+            "requested_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "before_start_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "terminal_cancelled": {
+              "type": "boolean"
+            },
+            "events_after_request": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4096
+            }
+          }
+        },
+        "cleanup": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "recorded",
+            "confirmed_sequence",
+            "unknown_sequence"
+          ],
+          "properties": {
+            "recorded": {
+              "type": "string",
+              "enum": [
+                "unknown",
+                "not_started",
+                "group_terminated",
+                "namespace_terminated"
+              ]
+            },
+            "confirmed_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "unknown_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "state",
+            "record_sequence"
+          ],
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "not_reached",
+                "required",
+                "in_progress",
+                "verified",
+                "failed"
+              ]
+            },
+            "record_sequence": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/timeline_attempt"
+          }
+        },
+        "unknown": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "exact_revision_acceptance",
+            "notification_delivery",
+            "lost_notifications",
+            "event_timestamps",
+            "physical_cleanup",
+            "objective"
+          ],
+          "properties": {
+            "exact_revision_acceptance": {
+              "$ref": "#/$defs/unknown"
+            },
+            "notification_delivery": {
+              "$ref": "#/$defs/unknown"
+            },
+            "lost_notifications": {
+              "$ref": "#/$defs/unknown"
+            },
+            "event_timestamps": {
+              "$ref": "#/$defs/unknown"
+            },
+            "physical_cleanup": {
+              "$ref": "#/$defs/unknown"
+            },
+            "objective": {
+              "$ref": "#/$defs/unknown"
+            }
+          }
+        }
+      }
+    },
+    "v4": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "snapshot_sha256",
+        "identity",
+        "horizon",
+        "known",
+        "unknown",
+        "completeness",
+        "attempts",
+        "timings",
+        "timeline"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 4
+        },
+        "snapshot_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "horizon": {
+          "$ref": "#/$defs/horizon"
+        },
+        "known": {
+          "$ref": "#/$defs/known"
+        },
+        "unknown": {
+          "$ref": "#/$defs/unknowns"
+        },
+        "completeness": {
+          "$ref": "#/$defs/completeness"
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/attempt"
+          }
+        },
+        "timings": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/timing"
+          }
+        },
+        "timeline": {
+          "$ref": "#/$defs/timeline"
         }
       }
     }
