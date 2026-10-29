@@ -1,6 +1,6 @@
 # Observe an existing run without executing work
 
-`agent-router observe` reads one coherent, bounded projection of an existing runtime store. Default v1 remains unchanged; opt-in v2 adds requested selections and supervisor outcomes per attempt from validated durable evidence. Opt-in v3 adds qualified local supervisor capture intervals ([ADR 0030](adr/0030-qualified-local-capture-timing.md)). Opt-in v4 adds a bounded chronological timeline ([ADR 0048](adr/0048-run-timeline-projection.md)). It does not start or recover a run. F04b and a native, timestamped timeline remain open. The contract is recorded in [ADR 0025](adr/0025-run-observation.md).
+`agent-router observe` reads one coherent, bounded projection of an existing runtime store. Default v1 remains unchanged; opt-in v2 adds requested selections and supervisor outcomes per attempt from validated durable evidence. Opt-in v3 adds qualified local supervisor capture intervals ([ADR 0030](adr/0030-qualified-local-capture-timing.md)). Opt-in v4 adds a bounded chronological timeline ([ADR 0048](adr/0048-run-timeline-projection.md)). Opt-in v5 adds advisory findings ([ADR 0049](adr/0049-run-findings.md)). It does not start or recover a run. F04b and a native, timestamped timeline remain open. The contract is recorded in [ADR 0025](adr/0025-run-observation.md).
 
 ## Read an existing store
 
@@ -16,9 +16,11 @@ agent-router observe --store ROOT --run-id ID --schema-version 3
 agent-router observe --store ROOT --run-id ID --schema-version 3 --json
 agent-router observe --store ROOT --run-id ID --schema-version 4
 agent-router observe --store ROOT --run-id ID --schema-version 4 --json
+agent-router observe --store ROOT --run-id ID --schema-version 5
+agent-router observe --store ROOT --run-id ID --schema-version 5 --json
 ```
 
-Omitting `--schema-version` and selecting version 1 produce byte-identical v1 output for the same durable snapshot. Versions 2, 3 and 4 are explicit. All versions use one read transaction and the same store/journal bounds.
+Omitting `--schema-version` and selecting version 1 produce byte-identical v1 output for the same durable snapshot. Versions 2 to 5 are explicit. All versions use one read transaction and the same store/journal bounds.
 
 An absent directory, database or run is refused. The command does not create a store, migrate it, repair history, acquire supervision ownership, cancel work or release permits. SQLite may create or update WAL/SHM coordination files while reading; passive observation does not guarantee zero filesystem activity. Private artifacts and lease files are not opened.
 
@@ -87,7 +89,7 @@ V4 retains every v3 field (`schema_version: 4`, digest domain `run-observation-v
 | `cancellation` | The logical request of the current approval cycle and the cancelled state. A `retry.awaiting_fresh_approval` ends the cycle: an earlier request still marks its own events but no longer appears here. It does not prove that a process stopped |
 | `cleanup` | The recorded cleanup scope and the sequence of any cleanup marker. `physical_cleanup` stays `unknown` |
 | `verification` | A state derived from the run state and the sequence of the last verification record. The objective stays `unknown` |
-| `attempts` | Per attempt: requested model and effort from validated evidence, `applied` always `unknown`, usage, recorded cleanup and whether the finished marker follows the cancel request |
+| `attempts` | Per attempt: requested model and effort from validated evidence, `applied` always `unknown`, usage, recorded cleanup, whether the finished marker follows the cancel request of its own approval cycle, and that request's sequence (`cancel_request_sequence`) |
 
 Usage shows evidence token and cost values as `recorded_unattested` when both exist, `partial` when one exists and `unknown` otherwise. An absent value is never zero and native usage is not attested.
 
@@ -137,6 +139,50 @@ Unknown: exact revision acceptance, notification delivery, lost notifications, e
 
 Evidence limits for this sample: ordering is the journal sequence, not time; no duration is known (capture duration needs a v3 timing record); "cancelled" says a cancellation was recorded, not that the process exited; the model is the requested one; tokens come from evidence and are not provider-attested; nothing says the work was useful or accepted.
 
+### Read the v5 findings
+
+V5 retains every v4 field (`schema_version: 5`, digest domain `run-observation-v5`) and adds `findings`, derived by a pure function from the v4 report of the same read transaction ([ADR 0049](adr/0049-run-findings.md)). Findings are advisory text and references. Nothing reroutes, approves, retries, releases a reservation, changes a permission or calls a provider. `automatic_action` is always `none`.
+
+Each rule produces either one finding or one named suppression, so a missing finding is never silent. `rules_version` is 1.
+
+| Rule | Fires when | Severity | Suppressed with |
+| --- | --- | --- | --- |
+| `repeated_failed_attempts` | Two or more attempts with validated evidence ended with a non-zero recorded exit code, a timeout, a kill or a spawn failure. A cancelled attempt and an unrecorded exit code do not count | warning | `below_threshold`, or `attempt_evidence_incomplete` when an attempt has no evidence |
+| `cleanup_unconfirmed` | The run is terminal, at least one attempt started, the recorded cleanup is `unknown` and no cleanup-confirmed marker is newer than the last cleanup-unknown marker | warning | `run_not_terminal`, `no_attempt_started`, `cleanup_marker_confirmed`, `cleanup_recorded` |
+| `late_result_after_cancel` | An attempt's finished marker follows the cancel request of its own approval cycle and the supervisor did not report a `cancelled` termination. An ordinary honoured cancellation never fires it | info | `no_cancel_request`, `ordinary_cancellation`, `no_gap` |
+| `attempt_evidence_missing` | An attempt started without bound durable evidence and the run is no longer preparing or running | info | `run_in_progress`, `no_gap` |
+| `attempt_duration` | Never. Duration rules need qualified timing (#117); the rule is listed so the dependency is visible | n/a | `timing_not_qualified` |
+
+A finding carries `id`, `source_snapshot_sha256` (the v4 digest it was derived from), `basis` (`recorded_journal` is the only source), a fixed `fact`, `hypothesis`, the requirements to `preserve`, a discriminating `check`, `affected_attempts` and `evidence` (event sequence and hash from the same snapshot). The `id` digests the rule, the run key and the supporting event hashes. It does not depend on the journal horizon, so an unrelated run's append keeps it, while a new supporting event changes it. A finding from an older `source_snapshot_sha256` is not evidence about a later snapshot. To check that digest, take the v5 JSON without `findings`, set `schema_version` to 4, empty `snapshot_sha256` and hash the compact JSON (fields in the order emitted) with SHA-256 after the prefix `run-observation-v4` and a NUL byte; the result must equal `findings.source_snapshot_sha256`. A test performs this recomputation on the typed report.
+
+`attempt_evidence_missing` has no in-flight false positive on a committed journal: the finished marker, the transition, the attempt evidence and the timing record are written in one IMMEDIATE transaction (`crates/router-runtime/src/store/escalation.rs:21-67`), and a run still preparing or running is suppressed with `run_in_progress`.
+
+Rules that were considered and not delivered: tool-call loop and hung-process detection (the journal has no tool-call events and a missing event is not a hang), anything about Advisor results or skill load (no producer in this store), allocation status, and every elapsed-time rule. A corrupt, oversized or unreadable journal refuses the whole observation, so no finding is produced from it. The cleanup finding states uncertainty only: it cannot assert that a process stopped or release a reservation.
+
+The same fixture as the v4 sample, with two attempts that exited non-zero and timed out:
+
+```text
+Findings (rules v1, advisory only, no automatic action; source snapshot 460b59e55c62e36e5a49ba29619a227e7f576d481d42543b6a4ed03d50a2ba98):
+[warning] repeated_failed_attempts id 0ab5b508110ede53fa02999fa4c0eaf588012af57a90c5d2dddf723b6ccbb35a
+  Attempts 1, 2 | Basis: recorded_journal | Evidence: event 7, event 15
+  Fact: Two or more attempts of this run ended without a recorded clean exit.
+  Hypothesis: The same cause may repeat across retries; the journal does not show the cause.
+  Preserve: the original task requirements; a fresh approval before any retry
+  Check: Compare termination and exit code of the listed attempts, change one input, and observe the next approved attempt again.
+[warning] cleanup_unconfirmed id 94c9d4788bb1f377dc48ddc0893270c4bbb2dab59debd4d97156fcff81fda1a7
+  Attempts 1, 2 | Basis: recorded_journal | Evidence: event 17
+  Fact: The run is in a terminal state but its process cleanup is not confirmed in the journal.
+  Hypothesis: A supervised process or lease may remain; the absence of a marker proves neither outcome.
+  Preserve: no reuse of the worktree or lease until cleanup is confirmed; no release of any reservation on this evidence alone
+  Check: Inspect the store with the read-only `agent-router doctor --runtime-root` and confirm no supervised process remains.
+Suppressed rules (rule: reason):
+  late_result_after_cancel: no_cancel_request
+  attempt_evidence_missing: no_gap
+  attempt_duration: timing_not_qualified
+```
+
+Evidence limits: the sample comes from a synthetic store. "Failed" is the supervisor's recorded termination, not a judgement of the model or of the task; the hypothesis is not a diagnosis; the check is a suggestion for a person and is not executed.
+
 ## Refusal and bounded work
 
 The global journal is capped at **100,000 rows**, **64 MiB** of text and **65,536 bytes per row**; a selected run is capped at **4,096 event references** and its identifier at **1,024 bytes**. Summary and cleanup dependency tables have additional row/byte ceilings in [ADR 0025](adr/0025-run-observation.md#bounds-and-refusal). SQLite preflight checks counts and byte lengths before decoding private JSON.
@@ -157,7 +203,7 @@ The [v2 verification record](bench/verification-observation-v2-2026-10-08.json) 
 
 The historical F04a v1 delivery, [PR #139](https://github.com/FlorianBruniaux/agent-router/pull/139), was tested and independently reviewed locally. Twelve runtime and three CLI focused tests passed, and 19 independent probes found no confirmed blocker. The [source-bound verification record](bench/verification-observation-2026-10-07.json) records all 21 selected quality checks passed: 1,633 successful workspace Rust results plus one core check, and 290 Python tests. Rust counts sum result lines, including subprocess invocations, rather than unique test definitions; the focused tests are included in the workspace count. The 42 ignored opt-in native tests are not successes. These historical results do not verify v2, full CI equivalence, a live provider, useful patch, release or measured gain.
 
-`agent-router schema run-observation` publishes all four shapes; `schema --list` and `version --json` advertise versions `[1, 2, 3, 4]`. It rejects extra fields, unsupported known claims, malformed digests and values outside the documented bounds. Schema validation does not recompute hashes, verify event ordering or establish the authenticity of a supplied snapshot. F04b still owns qualified native fields and malformed/lost/truncated notification coverage. The F05a timeline is delivered by v4 over recorded state only; trusted timestamps, native notification coverage and the broader F05b/#117 timing scope remain open. See [CLI output](cli-output.md), [JSON contracts](reference/json-contracts.md), the [bench playbook](bench/playbook.md) and the [current finalization plan](bench/finalization-plan-2026-10-07.md).
+`agent-router schema run-observation` publishes all five shapes; `schema --list` and `version --json` advertise versions `[1, 2, 3, 4, 5]`. It rejects extra fields, unsupported known claims, malformed digests and values outside the documented bounds. Schema validation does not recompute hashes, verify event ordering or establish the authenticity of a supplied snapshot. F04b still owns qualified native fields and malformed/lost/truncated notification coverage. The F05a timeline is delivered by v4 over recorded state only; trusted timestamps, native notification coverage and the broader F05b/#117 timing scope remain open. See [CLI output](cli-output.md), [JSON contracts](reference/json-contracts.md), the [bench playbook](bench/playbook.md) and the [current finalization plan](bench/finalization-plan-2026-10-07.md).
 
 ## Correlate a supplied export
 

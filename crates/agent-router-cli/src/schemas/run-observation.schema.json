@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:agent-router:schema:run-observation:4",
+  "$id": "urn:agent-router:schema:run-observation:5",
   "title": "run-observation",
-  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown. Opt-in version 3 adds qualified local supervisor capture intervals; native and aggregate duration stay unknown. Opt-in version 4 adds a bounded, redacted chronological timeline (at most 64 entries, journal order, no timestamps) that separates plan, approval, attempt, transport, verification, cancellation and cleanup; acceptance of the exact revision, applied model and effort, notification delivery and physical cleanup stay unknown.",
+  "description": "Output of agent-router observe --json: a bounded, redacted projection of one coherent runtime-store read. Persisted states and cleanup are not native transport, process-liveness or objective evidence. Hashes do not establish journal authenticity or export consent. This schema checks shape, not digest validity against content, event ordering or store coherence. Version 1 remains the default. Opt-in version 2 adds bounded durable attempt facts; native evidence and aggregate unknowns remain unknown. Opt-in version 3 adds qualified local supervisor capture intervals; native and aggregate duration stay unknown. Opt-in version 4 adds a bounded, redacted chronological timeline (at most 64 entries, journal order, no timestamps) that separates plan, approval, attempt, transport, verification, cancellation and cleanup; acceptance of the exact revision, applied model and effort, notification delivery and physical cleanup stay unknown. Opt-in version 5 adds advisory findings derived from the version 4 report (at most four findings and one named suppression per rule); every finding states fact, hypothesis, requirements to preserve and a discriminating check, and no finding is an action.",
   "oneOf": [
     {
       "$ref": "#/$defs/v1"
@@ -15,6 +15,9 @@
     },
     {
       "$ref": "#/$defs/v4"
+    },
+    {
+      "$ref": "#/$defs/v5"
     }
   ],
   "$defs": {
@@ -951,7 +954,8 @@
         "applied",
         "usage",
         "recorded_cleanup",
-        "result_after_cancel_request"
+        "result_after_cancel_request",
+        "cancel_request_sequence"
       ],
       "properties": {
         "ordinal": {
@@ -1046,6 +1050,18 @@
           "type": [
             "boolean",
             "null"
+          ]
+        },
+        "cancel_request_sequence": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000
+            },
+            {
+              "type": "null"
+            }
           ]
         }
       }
@@ -1370,6 +1386,238 @@
         },
         "timeline": {
           "$ref": "#/$defs/timeline"
+        }
+      }
+    },
+    "finding_rule": {
+      "type": "string",
+      "enum": [
+        "repeated_failed_attempts",
+        "cleanup_unconfirmed",
+        "late_result_after_cancel",
+        "attempt_evidence_missing",
+        "attempt_duration"
+      ]
+    },
+    "finding_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence",
+        "event_sha256"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100000
+        },
+        "event_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "run_finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "rule",
+        "severity",
+        "basis",
+        "source_snapshot_sha256",
+        "fact",
+        "hypothesis",
+        "affected_attempts",
+        "evidence",
+        "preserve",
+        "check"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/digest"
+        },
+        "rule": {
+          "$ref": "#/$defs/finding_rule"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "info",
+            "warning"
+          ]
+        },
+        "basis": {
+          "const": "recorded_journal"
+        },
+        "source_snapshot_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "fact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "hypothesis": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "affected_attempts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "$ref": "#/$defs/finding_evidence"
+          }
+        },
+        "preserve": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "check": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        }
+      }
+    },
+    "suppressed_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "reason"
+      ],
+      "properties": {
+        "rule": {
+          "$ref": "#/$defs/finding_rule"
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "below_threshold",
+            "attempt_evidence_incomplete",
+            "cleanup_recorded",
+            "cleanup_marker_confirmed",
+            "run_not_terminal",
+            "run_in_progress",
+            "no_attempt_started",
+            "no_cancel_request",
+            "ordinary_cancellation",
+            "no_gap",
+            "timing_not_qualified"
+          ]
+        }
+      }
+    },
+    "findings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rules_version",
+        "source_snapshot_sha256",
+        "findings",
+        "suppressed",
+        "automatic_action"
+      ],
+      "properties": {
+        "rules_version": {
+          "const": 1
+        },
+        "source_snapshot_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "findings": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "$ref": "#/$defs/run_finding"
+          }
+        },
+        "suppressed": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/suppressed_rule"
+          }
+        },
+        "automatic_action": {
+          "const": "none"
+        }
+      }
+    },
+    "v5": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "snapshot_sha256",
+        "identity",
+        "horizon",
+        "known",
+        "unknown",
+        "completeness",
+        "attempts",
+        "timings",
+        "timeline",
+        "findings"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 5
+        },
+        "snapshot_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "horizon": {
+          "$ref": "#/$defs/horizon"
+        },
+        "known": {
+          "$ref": "#/$defs/known"
+        },
+        "unknown": {
+          "$ref": "#/$defs/unknowns"
+        },
+        "completeness": {
+          "$ref": "#/$defs/completeness"
+        },
+        "attempts": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/attempt"
+          }
+        },
+        "timings": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "$ref": "#/$defs/timing"
+          }
+        },
+        "timeline": {
+          "$ref": "#/$defs/timeline"
+        },
+        "findings": {
+          "$ref": "#/$defs/findings"
         }
       }
     }

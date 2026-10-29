@@ -726,6 +726,9 @@ fn a_cancel_request_does_not_leak_into_the_next_approval_cycle() {
     let t = f.timeline();
     assert_eq!(t["attempts"][0]["result_after_cancel_request"], true);
     assert_eq!(t["attempts"][1]["result_after_cancel_request"], false);
+    // The request in force at each attempt's finished marker stays attributable.
+    assert_eq!(t["attempts"][0]["cancel_request_sequence"], 7);
+    assert_eq!(t["attempts"][1]["cancel_request_sequence"], Value::Null);
     assert_eq!(t["cancellation"]["requested_sequence"], Value::Null);
     assert_eq!(t["cancellation"]["events_after_request"], 0);
     let flagged: Vec<u64> = t["entries"]
