@@ -1312,7 +1312,7 @@ fn observation_schema_version_is_explicit_and_default_stays_v1() {
     command()
         .args(["observe", "--store"])
         .arg(&f.store)
-        .args(["--run-id", "cli-run", "--schema-version", "5", "--json"])
+        .args(["--run-id", "cli-run", "--schema-version", "6", "--json"])
         .assert()
         .code(2);
 }
