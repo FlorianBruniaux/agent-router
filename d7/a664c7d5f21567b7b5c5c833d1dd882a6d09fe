@@ -1,0 +1,73 @@
+.gitleaks.toml
+  s_c3158f009d7319::t_bd596f1559b53c 25-28
+CHANGELOG.md
+  s_c3158f009d7319::t_c391f9447b7d4e 29-30
+README.fr.md
+  s_c3158f009d7319::t_6c7a02e34394d2 256-279
+README.md
+  s_c3158f009d7319::t_938b738935146a 250-273
+assets/catalogs/README.md
+  s_c3158f009d7319::t_2c605b83d3d54a 34-74
+assets/catalogs/claude-core-v1.json
+  s_c3158f009d7319::t_60a415403340c3 1-102
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_a303ab574dbcc7 246-247
+crates/agent-router-cli/src/contracts.rs
+  s_c3158f009d7319::t_58c52a92c403a5 67
+crates/agent-router-cli/src/run_observation.rs
+  s_c3158f009d7319::t_8acf4a00266dba 14,17-26,141-284
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_c3158f009d7319::t_508fd96e2318dd 3,5,15-17,793-1374
+crates/agent-router-cli/tests/claude_catalog.rs
+  s_c3158f009d7319::t_36552317676b60 1-232
+crates/agent-router-cli/tests/execution.rs
+  s_c3158f009d7319::t_9ad36d3c0b167a 1315
+crates/agent-router-cli/tests/run_timeline.rs
+  s_c3158f009d7319::t_9e42d1b4e579b5 1-438
+crates/agent-router-cli/tests/schema.rs
+  s_c3158f009d7319::t_becd41780f56ba 66,1160-1224
+crates/router-runtime/src/lib.rs
+  s_c3158f009d7319::t_fa79774e2263ac 42-46,78
+crates/router-runtime/src/observation.rs
+  s_c3158f009d7319::t_4cacc28f3bdc57 168-329
+crates/router-runtime/src/store.rs
+  s_c3158f009d7319::t_7eff0ed9bcfb7f 23-24
+crates/router-runtime/src/store/observation.rs
+  s_c3158f009d7319::t_2882379e6f6b84 408
+crates/router-runtime/src/store/timeline.rs
+  s_c3158f009d7319::t_7aefb4e630c0d0 1-383
+crates/router-runtime/tests/observation_v4_timeline.rs
+  s_c3158f009d7319::t_ce58e42f9633cb 1-740
+docs/README.fr.md
+  s_c3158f009d7319::t_babc7d6eaf5c5a 109
+docs/README.md
+  s_c3158f009d7319::t_31f00c5c4bdc70 122
+docs/adr/0048-run-timeline-projection.md
+  s_c3158f009d7319::t_774c63b339fab4 1-84
+docs/adr/README.md
+  s_c3158f009d7319::t_a7020520a04afe 71
+docs/cli-output.md
+  s_c3158f009d7319::t_423d5731ec632e 69
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_3351465a5e4580 41,90-93
+docs/run-observation.md
+  s_c3158f009d7319::t_4713e130cf360f 3,17-18,21,76-139,160
+tests/fixtures/requests/claude-implementation.json
+  s_c3158f009d7319::t_6b0bfb42111b83 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d7a664c7d5f21567b7b5c5c833d1dd882a6d09fe",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
