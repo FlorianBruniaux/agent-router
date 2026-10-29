@@ -1,0 +1,23 @@
+crates/router-runtime/src/store/timeline.rs
+  s_c3158f009d7319::t_1f14293631e947 204-219,223,232,320-325
+crates/router-runtime/tests/observation_v4_timeline.rs
+  s_c3158f009d7319::t_c30ff577f01107 687-740
+docs/run-observation.md
+  s_c3158f009d7319::t_7df4b05ac3ca64 87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ae01b933e647f77988b390f077cdf093e09dbcf",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
