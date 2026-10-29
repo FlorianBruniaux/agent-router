@@ -55,6 +55,8 @@ jobs:
         run: cargo run -p xtask --locked -- check
       - name: Parse native configuration syntax
         run: python3 scripts/check-host-syntax.py
+      - name: Check Docker resource lifecycle helper
+        run: python3 -B scripts/test-docker-lifecycle.py
       - name: Check source distribution boundaries and license evidence
         run: python3 scripts/test-package-core.py
       - name: Fetch all locked dependency archives for license evidence
