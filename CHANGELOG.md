@@ -25,6 +25,8 @@ automatically synchronized release of this development tree.
 
 ### Added
 
+- 2026-10-28: add opt-in `observe --schema-version 4` with a bounded, redacted, read-only run timeline (#118): at most 64 journal-ordered entries from a closed kind allowlist, a ten-phase summary, and separate approval, logical cancellation, recorded cleanup and verification facts. Applied model and effort, acceptance of the exact revision, notification loss, timestamps and physical cleanup stay `unknown`. The v1 to v3 code paths are not modified in the diff, and the frozen v1 output test passes; no golden file pins v2 or v3. The v4 JSON still carries the v3 `known.events` (up to 4,096 references); 64 bounds only `timeline.entries`. See [run observation](docs/run-observation.md) and [ADR 0048](docs/adr/0048-run-timeline-projection.md). Local tests only; no provider, native replay or trusted duration.
+
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
 
 - 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.
