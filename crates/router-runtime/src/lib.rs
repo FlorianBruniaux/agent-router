@@ -27,12 +27,18 @@ pub use finite_client::{
     OwnedSubscriptionController, PendingFiniteClientRun, SubscriptionControllerBinding,
     SubscriptionControllerPeer,
 };
+mod findings;
 mod host_state;
 mod leases;
 mod native_version;
 mod network_authority;
 mod observation;
 mod outputs;
+pub use findings::{
+    AutomaticAction, FINDINGS_RULES_VERSION, FindingBasis, FindingEvidence, FindingRule,
+    FindingSeverity, RunFinding, RunFindings, RunObservationV5, SuppressedRule, SuppressionReason,
+    derive_findings,
+};
 pub use observation::{
     AttemptObservationCapture, AttemptObservationEvidence, AttemptObservationNative,
     AttemptObservationRequested, AttemptObservationSources, AttemptObservationTransport,
@@ -75,7 +81,7 @@ pub use resources::{ResourceLimits, ResourceSupervisor};
 pub use sandbox::{DenySandbox, DnsEvidence, SandboxPolicy, SandboxSupervisor, SeatbeltSandbox};
 pub use store::{
     measurement_inventory, observe, observe_cleanup, observe_events, observe_run, observe_run_v2,
-    observe_run_v3, observe_run_v4, request_cancel, timeline_kind_labels,
+    observe_run_v3, observe_run_v4, observe_run_v5, request_cancel, timeline_kind_labels,
 };
 pub use workspace::source_state;
 

@@ -11,8 +11,20 @@ pub(crate) fn run(
     schema_version: u32,
     json: bool,
 ) -> Result<Outcome, CliError> {
-    if !(1..=4).contains(&schema_version) {
+    if !(1..=5).contains(&schema_version) {
         return Err(CliError::InvalidCommand);
+    }
+    if schema_version == 5 {
+        let report = router_runtime::observe_run_v5(store, id).map_err(execution::error)?;
+        if json {
+            return json_output(&report, ExitCode::SUCCESS);
+        }
+        let mut output = render_v4(&report.observation, "5")?;
+        output.push_str(&render_findings(&report.findings)?);
+        return Ok(Outcome {
+            output,
+            exit_code: ExitCode::SUCCESS,
+        });
     }
     if schema_version == 4 {
         let report = router_runtime::observe_run_v4(store, id).map_err(execution::error)?;
@@ -20,7 +32,7 @@ pub(crate) fn run(
             return json_output(&report, ExitCode::SUCCESS);
         }
         return Ok(Outcome {
-            output: render_v4(&report)?,
+            output: render_v4(&report, "4")?,
             exit_code: ExitCode::SUCCESS,
         });
     }
@@ -147,12 +159,13 @@ fn microusd(value: Option<u64>) -> String {
     value.map_or_else(|| "unknown".into(), |value| format!("{value} microusd"))
 }
 
-fn render_v4(report: &router_runtime::RunObservationV4) -> Result<String, CliError> {
+fn render_v4(report: &router_runtime::RunObservationV4, schema: &str) -> Result<String, CliError> {
     let v3 = &report.observation;
     let summary = &v3.observation.summary;
     let t = &report.timeline;
     let mut output = format!(
-        "Run timeline (schema 4)\nSnapshot: {}\nRun key: {}\nState: {} | Attempts: {}\n",
+        "Run timeline (schema {})\nSnapshot: {}\nRun key: {}\nState: {} | Attempts: {}\n",
+        schema,
         summary.snapshot_sha256,
         summary.identity.run_key_sha256,
         label(&summary.known.state)?,
@@ -248,6 +261,12 @@ fn render_v4(report: &router_runtime::RunObservationV4) -> Result<String, CliErr
             Some(false) => "no",
             None => "unknown",
         };
+        let after_cancel = match attempt.cancel_request_sequence {
+            Some(request) if attempt.result_after_cancel_request == Some(true) => {
+                format!("{after_cancel} (request {request})")
+            }
+            _ => after_cancel.to_owned(),
+        };
         let capture = v3
             .timings
             .iter()
@@ -280,5 +299,51 @@ fn render_v4(report: &router_runtime::RunObservationV4) -> Result<String, CliErr
     output.push_str(
         "Unknown: exact revision acceptance, notification delivery, lost notifications, event timestamps, physical cleanup, objective, applied model and effort\n",
     );
+    Ok(output)
+}
+
+fn render_findings(findings: &router_runtime::RunFindings) -> Result<String, CliError> {
+    let mut output = format!(
+        "Findings (rules v{}, advisory only, no automatic action; source snapshot {}):\n",
+        findings.rules_version, findings.source_snapshot_sha256,
+    );
+    if findings.findings.is_empty() {
+        output.push_str("Findings: none\n");
+    }
+    for finding in &findings.findings {
+        let attempts = finding
+            .affected_attempts
+            .iter()
+            .map(u32::to_string)
+            .collect::<Vec<_>>()
+            .join(", ");
+        let evidence = finding
+            .evidence
+            .iter()
+            .map(|e| format!("event {}", e.sequence))
+            .collect::<Vec<_>>()
+            .join(", ");
+        output.push_str(&format!(
+            "[{}] {} id {}\n  Attempts {} | Basis: {} | Evidence: {}\n  Fact: {}\n  Hypothesis: {}\n  Preserve: {}\n  Check: {}\n",
+            label(&finding.severity)?,
+            label(&finding.rule)?,
+            finding.id,
+            attempts,
+            label(&finding.basis)?,
+            evidence,
+            finding.fact,
+            finding.hypothesis,
+            finding.preserve.join("; "),
+            finding.check,
+        ));
+    }
+    output.push_str("Suppressed rules (rule: reason):\n");
+    for suppressed in &findings.suppressed {
+        output.push_str(&format!(
+            "  {}: {}\n",
+            label(&suppressed.rule)?,
+            label(&suppressed.reason)?,
+        ));
+    }
     Ok(output)
 }

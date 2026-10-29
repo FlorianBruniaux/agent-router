@@ -69,6 +69,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0046](0046-finite-controller-application.md) | Explicit controller acceptance and private candidate application | proposed | 2026-10-23 | 2026-10-23 | - |
 | [0047](0047-explicit-finite-application-resume.md) | Explicit finite application resume on an intact preimage | proposed | 2026-10-24 | 2026-10-24 | - |
 | [0048](0048-run-timeline-projection.md) | Bounded read-only run timeline projection | implemented | 2026-10-28 | 2026-10-28 | - |
+| [0049](0049-run-findings.md) | Advisory run findings from verified observation | implemented | 2026-10-29 | 2026-10-29 | - |
 
 
 ## Frontmatter fields
