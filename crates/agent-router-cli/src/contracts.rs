@@ -64,6 +64,7 @@ pub(crate) const CONTRACTS: [Contract; 6] = [
             SchemaVersion::Number(1),
             SchemaVersion::Number(2),
             SchemaVersion::Number(3),
+            SchemaVersion::Number(4),
         ],
         schema: include_str!("schemas/run-observation.schema.json"),
     },
