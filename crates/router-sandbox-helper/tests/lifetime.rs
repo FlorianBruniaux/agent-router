@@ -203,13 +203,13 @@ fn eof_before_spawn_and_recovered_pending_never_launch_a_worker() {
         }
         let mut command = command(&root, "printf unsafe > worker-started");
         if !recovered {
-            // The complete frame and EOF exist before the helper starts, so the
-            // pre-spawn liveness check cannot run ahead of the parent's close.
-            let (read, write) = rustix::pipe::pipe().unwrap();
-            let mut write = File::from(write);
-            write.write_all(&frame_bytes(b"")).unwrap();
-            drop(write);
-            command.stdin(Stdio::from(read));
+            // A regular file holds the complete frame before the helper starts and
+            // always polls readable, so the pre-spawn liveness check sees a lost
+            // parent. A pipe write end could leak into a concurrently spawned child
+            // and keep the helper from ever observing EOF.
+            let frame = root.join("frame");
+            fs::write(&frame, frame_bytes(b"")).unwrap();
+            command.stdin(Stdio::from(File::open(&frame).unwrap()));
         }
         let mut child = command.spawn().unwrap();
         if recovered {
