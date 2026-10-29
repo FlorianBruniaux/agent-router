@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Existing-runtime application only. No provider, dispatch, or registry creation.
 use super::{Input, config_bytes};
 use crate::{CliError, Outcome};

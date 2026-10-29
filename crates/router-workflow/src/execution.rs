@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{Result, WorkflowError, hash, validate_plan};
 use router_types::{
     DependencyRequirement, NodeMode, StageKind, WorkflowExecutionContract, WorkflowPlan,

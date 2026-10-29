@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Parent-owned asset authority and explicit selected-skill review. No activation.
 use crate::{
     CliError, Outcome, catalogs,

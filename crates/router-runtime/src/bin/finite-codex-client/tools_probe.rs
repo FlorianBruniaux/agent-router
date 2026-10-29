@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Fixed no-model live canary. Configuration alone never calls this entry.
 use super::*;
 use std::{

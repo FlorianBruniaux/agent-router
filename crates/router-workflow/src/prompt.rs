@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{Result, WorkflowError, hash, safe_path, text};
 use router_types::{ModelId, PromptTemplate, PromptValue, PromptVariableType};
 use std::collections::{BTreeMap, BTreeSet};

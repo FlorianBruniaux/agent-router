@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Exposes the compilation target to `version --json`. Cargo sets `TARGET`
 //! only for build scripts, so the value is forwarded as a compile-time variable.
 fn main() {

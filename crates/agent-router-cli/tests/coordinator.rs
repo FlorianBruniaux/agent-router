@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Public CLI lifecycle with synthetic authority. The ignored test additionally
 //! runs a real native sandbox; no live model identity or authentication is claimed.
 #![cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]

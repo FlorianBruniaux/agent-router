@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Supervised HTTP transport for a verified `PreparedProviderRequest`, limited
 //! to a loopback endpoint the caller approved. Enabled by the
 //! `loopback-transport` feature; nothing in the default build reaches a socket.

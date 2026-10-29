@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit local operator declarations. No host or provider is executed.
 use crate::{CliError, Outcome, approval_key, execution, inspect, phases, product};
 use router_adapter_api::*;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bound asset contracts and fail-closed gates. Hashes establish integrity;
 //! callers supply independently approved roots and own execution authority.
 #![forbid(unsafe_code)]

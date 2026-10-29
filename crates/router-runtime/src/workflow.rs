@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{Cancellation, PendingRun, Result, Runtime, RuntimeError};
 use router_policy::ValidatedPhaseContext;
 use router_types::*;

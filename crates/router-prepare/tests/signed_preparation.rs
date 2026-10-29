@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Live wall-clock tests use only synthetic local files and publisher roots.
 pub use router_prepare::{
     PreparationError, PublicSignedPreparationOptions, SignedPreparationInput,

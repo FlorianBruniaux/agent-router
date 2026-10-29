@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Authenticated capability evidence. Hashes alone establish no authority.
 use std::collections::BTreeSet;
 

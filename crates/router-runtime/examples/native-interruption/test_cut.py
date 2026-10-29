@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Exercise the interposer on disposable bytes, not the native product."""
 import os
 from pathlib import Path

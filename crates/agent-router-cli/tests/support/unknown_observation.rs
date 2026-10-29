@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Preserve model metadata while declining to assert unproved runtime capabilities.
 #![allow(dead_code)]
 

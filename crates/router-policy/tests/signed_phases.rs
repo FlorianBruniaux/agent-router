@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic signed roots and local evidence, never production authorization.
 #[path = "support/signed_fixture.rs"]
 mod signed_fixture;

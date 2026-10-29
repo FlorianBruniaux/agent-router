@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Standard sidecar v1. These messages convey claims, never execution authority.
 use crate::{
     BackendProposal, BackendRequest, EffortLevel, FeedbackFailure, FeedbackMeasurements,

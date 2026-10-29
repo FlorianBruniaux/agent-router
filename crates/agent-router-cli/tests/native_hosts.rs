@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Native CLI integration with synthetic OpenCode/Copilot executables only.
 //! The OS sandbox and resource helper are real; no model or authentication is.
 #![cfg(all(

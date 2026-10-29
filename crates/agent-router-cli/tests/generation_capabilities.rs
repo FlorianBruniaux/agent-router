@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Authenticated generation inputs, with local files only and no native dispatch.
 #[path = "support/native_fixture.rs"]
 mod native_fixture;

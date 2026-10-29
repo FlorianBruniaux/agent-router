@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Private workflow bundles and explicit wave execution. A queued control never
 //! supplies confidential step material or selects a sandbox on the owner's behalf.
 use crate::{

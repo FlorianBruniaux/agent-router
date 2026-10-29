@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Independent synthetic-store contracts. No providers, credentials or subprocesses.
 //! Mutation fixtures rebuild every journal hash and all evidence references, so
 //! semantic refusals cannot pass merely because the attacker broke the chain.

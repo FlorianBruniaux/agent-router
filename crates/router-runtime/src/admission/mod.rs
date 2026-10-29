@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! One explicitly pinned shared concurrency domain. No time-based reclamation.
 mod budget;
 mod budget_store;

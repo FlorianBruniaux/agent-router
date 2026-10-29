@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded replacement of one pre-existing approved file. No path comes from model text.
 use router_adapter_api::{content_digest, is_digest, strict_json_limited};
 use rustix::fs::{AtFlags, FileType, Mode, OFlags, Stat, fstat, openat, statat};

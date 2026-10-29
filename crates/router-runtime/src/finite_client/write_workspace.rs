@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! One producer-owned private write view. No process or publication authority.
 use super::*;
 use std::path::PathBuf;

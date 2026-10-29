@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 /// Setup failures. Each carries a stable code and never a path, token or
 /// request content.
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq)]

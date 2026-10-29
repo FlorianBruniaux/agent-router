@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit store-backed proof loading. No host execution and no proof issuer.
 use crate::{CliError, execution::SandboxConfig};
 use router_adapter_api::{CapabilityProofVerifier, HostObservation};

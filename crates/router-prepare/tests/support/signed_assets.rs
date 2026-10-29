@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic test authority only. These claims are never native host evidence.
 use router_adapter_api::{ValidatedHostObservation, content_digest};
 use router_asset_contracts::{

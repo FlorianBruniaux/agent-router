@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Qualified local capture intervals. No wall clock or serializable Instant.
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};

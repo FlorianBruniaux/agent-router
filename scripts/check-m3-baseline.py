@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Check current offline M3 harness tests against their sealed historical inputs.
 
 No pilot, host or provider launch. Current report behavior has its own campaign

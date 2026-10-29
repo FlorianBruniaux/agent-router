@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(feature = "loopback-transport")]
 //! Loopback transport tests. Each fake server carries one defect.
 #[path = "../../../tests/support/capability_verifier.rs"]

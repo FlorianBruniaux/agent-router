@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Additive asset contracts. Existing catalog, snapshot and phase wire versions
 //! remain unchanged; a caller must bind these documents into its new receipt.
 use crate::{

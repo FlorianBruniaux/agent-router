@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit local OS qualification. No fixture verifier and no model transport.
 //! The controller root is intentionally not a TempDir: a panic must never
 //! recursively delete resources whose namespace cleanup remains UNKNOWN.
@@ -786,7 +788,7 @@ async fn run_case_profile(case: Case, subscription: bool, unknown: bool) {
                 id: id.clone(),
                 content_sha256: content_digest(include_bytes!("../finite_tools/transport.rs")),
                 trust: SkillTrust::TrustedLocal,
-                license: "FSL-1.1-ALv2".into(),
+                license: "Apache-2.0".into(),
                 permission: CapabilitySupport::Supported,
                 required_capabilities: [Capability::Tools].into(),
                 required_mutations: BTreeSet::new(),

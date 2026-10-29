@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Parent-owned policy bytes only. No production publisher roots or secrets.
 #![cfg(unix)]
 

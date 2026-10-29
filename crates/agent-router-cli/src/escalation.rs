@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit parent accounting and durable, reconstructed escalation proposals.
 use crate::{CliError, Outcome, execution, phases, product::json_output};
 use clap::{Args, Subcommand};

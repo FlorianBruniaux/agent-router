@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit, externally authorized backend promotion. No network, process,
 //! model execution, file I/O, automatic activation or permission grants.
 #![forbid(unsafe_code)]

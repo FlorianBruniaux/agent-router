@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inspect an owned SQLite connection, never open auxiliary file descriptors.
 use crate::{DoctorError, MAX_FILE_BYTES, Result};
 use router_types::DeepDoctorCode;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit task intake. Answers are task facts, never execution authority.
 use crate::{CliError, Outcome, product::json_output};
 use clap::Args;

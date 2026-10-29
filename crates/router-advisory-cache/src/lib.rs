@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in advisory cache of backend proposals. A hit only nominates a candidate
 //! alias: the caller still resolves it through a fresh `BoundedDecisionContext`.
 //! No receipt, grant, permission, outcome, prompt, task text or body is stored,

@@ -23,6 +23,10 @@ unexecuted. No general cost/quality gain or automatic daily host integration is
 established. The separately published `agent-router-core` snapshot is not an
 automatically synchronized release of this development tree.
 
+### Changed
+
+- 2026-10-28: license the project under Apache-2.0 instead of FSL-1.1-ALv2, with SPDX headers on source files, a `REUSE.toml` and an SPDX header CI check ([ADR 0048](docs/adr/0048-apache-2-license.md)). `NOTICE` must be kept by redistributions. The change is irreversible for published code. Earlier entries describe the license at their date.
+
 ### Added
 
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).

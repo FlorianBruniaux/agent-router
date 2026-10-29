@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Host-declared usage decoding. Behavior is asserted on the serialized
 //! evidence so the tests hold independently of the Rust type.
 //!

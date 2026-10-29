@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Capture real offline CLI results and render a small, readable README demo.
 
 Requires Pillow and ffmpeg, already installed by the caller. Installs nothing.

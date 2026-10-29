@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(unix)]
 // All keys, observations and human claims below are synthetic test inputs.
 #[path = "support/unknown_observation.rs"]

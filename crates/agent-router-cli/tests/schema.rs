@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `schema`: every embedded output schema is structurally valid, and real
 //! outputs of its contract conform to it. The checker is a small local one (see
 //! `support/json_schema.rs`), not a full JSON Schema validator.

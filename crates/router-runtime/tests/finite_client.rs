@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic files, authenticated private proof store, real loopback listeners.
 //! No native binary, provider turn or global configuration is used.
 use router_adapter_api::{

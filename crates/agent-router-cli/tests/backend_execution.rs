@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! CLI selection/authority tests. Keys, reviewer labels, capability observations
 //! and model metadata are synthetic. No live provider or paid call is used.
 #![cfg(unix)]

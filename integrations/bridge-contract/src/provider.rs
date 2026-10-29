@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{BridgeError, descriptor};
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 use router_adapter_api::{

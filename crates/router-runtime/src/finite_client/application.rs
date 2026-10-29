@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Separate controller approval for a private, single-file candidate application.
 //! Worker approval and verifier handles never acquire this authority implicitly.
 use super::{ApprovedFiniteClientRun, FileIdentity, PinnedIdentity, directory};

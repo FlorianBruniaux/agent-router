@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Separates the immutable deterministic baseline from an approved effective
 //! selection. Backend authority must be reloaded under a dispatch-time lock.
 #![forbid(unsafe_code)]

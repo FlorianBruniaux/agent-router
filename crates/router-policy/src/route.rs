@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_catalog::Catalog;
 use router_types::{DecisionEnvelope, Exclusion, RouteDecision, RouteRequest};
 use sha2::{Digest, Sha256};

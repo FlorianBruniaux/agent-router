@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Durable, explicitly approved backend state. No private signing key, network,
 //! provider call, automatic activation, global configuration or model execution.
 #![forbid(unsafe_code)]

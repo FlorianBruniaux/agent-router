@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Review-bound finite-client preparation. Never OS or provider admission.
 use crate::private_program::PrivateProgram;
 use crate::{HostState, ResourceLimits, Result, RuntimeError, StoredCapabilityProofVerifier};

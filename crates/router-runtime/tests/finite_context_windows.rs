@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inert file windows: no model, provider, worker or process execution.
 use router_adapter_api::content_digest;
 use router_runtime::finite_tools::{

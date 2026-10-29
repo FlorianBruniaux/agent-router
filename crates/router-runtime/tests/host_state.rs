@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Native local canary, no provider process or credentials.
 use router_runtime::{NetworkAuthority, SandboxPolicy, SandboxSupervisor};
 use router_types::*;

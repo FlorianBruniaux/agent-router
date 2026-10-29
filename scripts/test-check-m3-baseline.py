@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Regression fixtures for sealed M3 inputs, without a historical host launch."""
 import hashlib
 import importlib.util

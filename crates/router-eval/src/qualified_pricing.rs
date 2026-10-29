@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit rate semantics for normalized HostUsage. V1 replay pricing stays
 //! unchanged: this v2 contract is only consumed where all token classes survive.
 use crate::{EvalError, Result};

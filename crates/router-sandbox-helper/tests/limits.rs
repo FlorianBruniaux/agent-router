@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use std::{process::Command, time::Instant};
 fn helper() -> Command {
     let mut c = Command::new(env!("CARGO_BIN_EXE_router-sandbox-helper"));

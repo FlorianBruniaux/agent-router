@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Apply a verified patch in place. Interrupted intents are never replayed.
 use crate::{PendingRun, Result, Runtime, RuntimeError, content_digest, workspace};
 use router_types::IntegrationPreview;

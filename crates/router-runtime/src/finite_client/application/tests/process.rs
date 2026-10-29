@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Real owner death and reopen; this unit fixture does not execute a native worker.
 use super::*;
 use std::{

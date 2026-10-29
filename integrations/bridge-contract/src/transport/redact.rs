@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Secret redaction by refusal. A response that carries a credential, in any
 //! form listed in `docs/provider-transport.md`, is refused instead of scrubbed.
 use super::TransportError;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Signed routing snapshots deliberately cannot enter the legacy runtime.
 #[path = "../../router-policy/tests/support/signed_fixture.rs"]
 mod signed_fixture;

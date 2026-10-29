@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `version --json`: what this binary is and which contract versions it speaks.
 //! Nothing here reads the environment at run time, so the output is fixed by the build.
 use std::{collections::BTreeMap, process::ExitCode};

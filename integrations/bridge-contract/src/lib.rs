@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Native host preparation and provider protocol translation. Runtime support
 //! remains evidence-driven; these libraries do not activate or contact a host.
 #![forbid(unsafe_code)]

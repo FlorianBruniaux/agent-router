@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic offline contexts and provenance; no human outcome or runtime proof.
 use assert_cmd::Command;
 use router_retrieval::*;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! F12a resource-stop diagnostic using producer-owned copies and state.
 //! Runs only a trusted helper --probe. Never submits native RPC or a model turn,
 //! stores a capability proof, or converts a launch preview to a command.

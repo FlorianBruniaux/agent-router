@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Reproducible local capacity measurements, never a blocking CI timing gate."""
 import argparse
 import datetime

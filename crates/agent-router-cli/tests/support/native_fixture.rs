@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit native canaries. The executable speaks a synthetic Claude protocol;
 //! no provider, model, credential or external network service is used.
 #![allow(dead_code)] // Shared fixture consumers intentionally exercise different methods.

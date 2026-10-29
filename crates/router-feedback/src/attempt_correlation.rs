@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Offline join of supplied runtime attempt keys and supplied physical observations.
 //! Digests bind content, not authenticity. Nothing here reads a store or a provider.
 use crate::{FeedbackError, Result, hash, identifier, valid_hash};

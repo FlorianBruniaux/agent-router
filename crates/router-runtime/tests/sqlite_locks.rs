@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(any(target_os = "macos", target_os = "linux"))]
 #![forbid(unsafe_code)]
 

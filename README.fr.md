@@ -23,7 +23,7 @@ Un routage expérimental, local et explicable pour Claude Code et Codex.
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Tests canary du runtime Linux" /></a>
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml/badge.svg?branch=main" alt="Audit RustSec des dépendances" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.85%2B-dc7336?logo=rust" alt="Rust 1.85 ou plus récent" /></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5" alt="Functional Source License 1.1, licence future Apache 2.0" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Apache--2.0-597ee5" alt="Apache License 2.0" /></a>
   <a href="#hosts-supportés"><img src="https://img.shields.io/badge/Runtime-macOS%20%7C%20Linux-597ee5" alt="Runtime : macOS et Linux" /></a>
 </p>
 
@@ -172,8 +172,7 @@ L’[observation passive](docs/run-observation.md), la
 disponibles dans leurs périmètres de preuve respectifs. Les commandes de
 compilation de ce dépôt n’installent aucun hook ni configuration globale des hosts.
 
-Ce candidat au code source disponible utilise [FSL-1.1-ALv2](LICENSE.md), avec
-conversion future vers Apache 2.0. Commencez par le [test rapide](#démarrage-rapide).
+Ce candidat open source utilise [Apache-2.0](LICENSE.md). Commencez par le [test rapide](#démarrage-rapide).
 Le [guide d’essai expérimental](docs/experimental-release.md) (EN) conserve les
 preuves historiques d’installation ; l’état daté ci-dessus décrit les intégrations suivantes.
 
@@ -181,7 +180,7 @@ preuves historiques d’installation ; l’état daté ci-dessus décrit les int
 
 ## Démarrage rapide
 
-Partez d’un checkout autorisé de ce dépôt de développement. Le
+Partez d’un checkout de ce dépôt public. Le
 [snapshot public du cœur](https://github.com/FlorianBruniaux/agent-router-core)
 a été publié séparément le 22 octobre 2026 ; son README et `DISTRIBUTION.json`
 décrivent ce snapshot, qui n’est pas automatiquement synchronisé avec cet arbre.
@@ -195,8 +194,8 @@ ni configuration globale.
 
 Le [guide d'installation](docs/install.fr.md) couvre les prérequis, les features de build optionnelles,
 la release locale vérifiable et la désinstallation. Il faut Rust 1.85 ou plus récent. Le dépôt épingle la toolchain de développement dans
-[`rust-toolchain.toml`](rust-toolchain.toml). Ce dépôt de développement reste privé
-et demande un accès pour le cloner ; le snapshot public du cœur est une distribution séparée.
+[`rust-toolchain.toml`](rust-toolchain.toml). Le dépôt est public
+depuis le 28 octobre 2026 ; le snapshot public du cœur est une distribution séparée.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/agent-router.git
@@ -588,7 +587,7 @@ un coût mesurés.
 
 | Projet | Unité de routage | Mode de choix | Où il tourne | Effort de raisonnement | Trace de la décision | Licence |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Agent Router** | Chaque phase (plan, exécution, vérification), avant l'exécution | Filtre de contraintes, puis score déterministe | CLI locale, hors ligne | Par phase | Reçu rejouable avec les exclusions | FSL-1.1-ALv2 |
+| **Agent Router** | Chaque phase (plan, exécution, vérification), avant l'exécution | Filtre de contraintes, puis score déterministe | CLI locale, hors ligne | Par phase | Reçu rejouable avec les exclusions | Apache-2.0 |
 | [claude-code-router](https://github.com/musistudio/claude-code-router) | Chaque requête | Règles utilisateur, scripts de route, fallbacks | Passerelle locale | Non documenté | Journaux de requêtes | MIT |
 | [Omnigent Smart Routing](https://omnigent.ai/docs/build/routing) | Session, dès le premier message | Juge LLM ou routeur externe | Serveur local | Non documenté | Raison en cas d'échec | Apache-2.0 |
 | [OpenRouter Auto Router](https://openrouter.ai/docs/guides/routing/routers/auto-router) | Chaque tour | Classifieur de tâche, classement par dépense de la communauté | Hébergé | Indisponible sur `openrouter/auto` | Modèle choisi, type de tâche sur option | Service hébergé |
@@ -599,8 +598,8 @@ un coût mesurés.
 
 Les autres sont plus forts sur la maturité et l'adoption, sur le reroutage de
 chaque requête d'une session en cours, sur l'étendue des fournisseurs et le
-basculement, sur le routage appris à partir de données, et sur des licences
-permissives. Agent Router est un candidat source expérimental dont la publication
+basculement, sur le routage appris à partir de données.
+Agent Router est un candidat source expérimental dont la publication
 exige une revue de release, sans exécution native sous Windows ni gain général
 de coût ou de qualité établi. La
 [comparaison complète](docs/comparison.md) (en anglais) ajoute Plano, RouteLLM
@@ -611,15 +610,10 @@ autre chose et les limites d'une revue fondée sur la seule documentation.
 
 ## Licence
 
-Le projet est sous
-[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
-(`FSL-1.1-ALv2`). Ce n'est pas une licence open source au sens de l'OSI. Le
-code source est lisible, et sont permis l'usage interne, l'enseignement et la
-recherche non commerciaux, ainsi que les prestations de services pour un
-licencié. Le proposer, ou un substitut, dans un produit ou un service
-commercial concurrent demande une permission. Chaque version passe sous
-Apache 2.0 deux ans après sa mise à disposition. Toute redistribution doit
-conserver les mentions de copyright, les termes de la licence et
-[NOTICE](NOTICE). La provenance des dépendances, l'inventaire des licences et
-les limites de la revue de release sont documentés dans le
+Le projet est sous [Apache License 2.0](LICENSE.md) (`Apache-2.0`), une licence
+open source approuvée par l'OSI. Elle inclut une concession expresse de brevets.
+Toute redistribution ou œuvre dérivée doit conserver les mentions de copyright,
+les termes de la licence et [NOTICE](NOTICE), comme l'exige la section 4(d) de
+la licence. La provenance des dépendances, l'inventaire des licences et les
+limites de la revue de release sont documentés dans le
 [guide de distribution](docs/distribution.md).

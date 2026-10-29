@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use assert_cmd::Command;
 use router_adapter_api::content_digest;
 use router_eval::ReplayRecord;

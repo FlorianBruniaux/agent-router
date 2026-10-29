@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Signed preparation is a point-in-time preview, never current dispatch authority.
 use crate::{
     PreparationError, PreparationInput, PreparationOptions, PreparationPreview, PreparedExecution,

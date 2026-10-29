@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Nested tool execution. This worker data is never Runtime approval or OS proof.
 use crate::{Cancellation, ResourceLimits, Result, RuntimeError};
 use router_types::{FiniteClientFile, ProcessCleanupEvidence, TransportTermination};

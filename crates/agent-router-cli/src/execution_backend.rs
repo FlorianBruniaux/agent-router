@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Reconstruct signed historical decisions, then use current authority at spawn.
 use crate::{CliError, inspect, phases};
 use router_backend_policy::{SignedBackendProposal, decide_active};

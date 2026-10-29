@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit signed backend lifecycle. Inputs are parent-owned documents; this
 //! module never generates a private signing key or activates from a status JSON.
 use crate::{CliError, Outcome, inspect, product::json_output, read_bounded};

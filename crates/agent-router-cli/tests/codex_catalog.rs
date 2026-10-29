@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Sanitized discovery-shape fixtures. No native process, provider or attestation.
 #![cfg(feature = "codex")]
 

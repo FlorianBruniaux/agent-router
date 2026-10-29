@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Metadata-only global planning. Serialized proposals carry no execution authority.
 use crate::{
     CliError, Outcome, command::PhaseArgs, execution, inspect, phases, product, read_bounded,

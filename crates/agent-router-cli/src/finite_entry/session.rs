@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use super::{
     Entry, EntryResult, config_bytes,
     routing::{self, HOST, RUN, TOOLS},

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_eval::{QualifiedPricingTable, price_host_usage};
 use router_types::{HostUsage, ModelId, UsageField};
 use serde_json::json;

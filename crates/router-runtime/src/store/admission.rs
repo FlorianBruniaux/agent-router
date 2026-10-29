@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Runtime half of the cross-database admission protocol. An intent is durable
 //! before enqueue; only this module can construct a release proof.
 use super::*;

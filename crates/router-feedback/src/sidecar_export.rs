@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! An explicit single-event export projection held under the current store lock.
 use crate::{
     FeedbackError, FeedbackStore, Result, hash, valid_hash, validate_input, validate_preferences,

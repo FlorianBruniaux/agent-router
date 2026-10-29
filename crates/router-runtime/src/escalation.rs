@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Durable attempt-based escalation. Audit JSON never grants execution rights.
 use crate::{PendingRun, Runtime, RuntimeError, digest, store::EscalationHistory};
 use router_policy::{PhaseRouter, ValidatedPhaseContext};

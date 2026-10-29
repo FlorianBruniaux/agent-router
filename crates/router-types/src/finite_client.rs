@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Private finite-client preparation contract. Data alone grants no launch authority.
 use serde::{Deserialize, Serialize};
 

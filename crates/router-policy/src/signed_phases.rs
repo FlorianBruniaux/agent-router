@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Current signed catalogs constrain routing; they do not authorize execution.
 use crate::{
     PhaseAssetInputs, PhaseExecutionScope, PhaseRouteError, PhaseRouter, ValidatedPhaseContext,

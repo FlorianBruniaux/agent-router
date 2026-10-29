@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Redacted local feedback. No prompt, output, path or free-text comment field.
 
 use std::collections::BTreeSet;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::CliError;
 use rustix::event::{PollFd, PollFlags, Timespec, poll};
 use std::{collections::VecDeque, fs::File, io::Read, time::Instant};

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit parent policy for synthetic fixture identities only.
 use router_types::*;
 use serde_json::{Value, json};

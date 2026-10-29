@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Behavior checks for the source exporter. No network or provider is used."""
 
 import hashlib
@@ -141,7 +143,7 @@ default-members = ["xtask"]
 resolver = "2"
 
 [workspace.package]
-license = "FSL-1.1-ALv2"
+license = "Apache-2.0"
 
 [workspace.dependencies]
 serde = "1"

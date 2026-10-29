@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inert importer: turns an explicitly named local directory of Markdown agent
 //! and skill definitions into an UNSIGNED candidate `SignedCatalogManifest`
 //! plus an import report. It signs nothing, grants nothing, activates nothing

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_doctor::{DoctorError, diagnose_database_snapshot};
 use router_types::DeepDoctorCode;
 use rusqlite::{Connection, TransactionBehavior};

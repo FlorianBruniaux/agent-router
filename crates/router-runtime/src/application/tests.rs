@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Real disposable owner processes; no provider or native-model execution.
 use super::*;
 use crate::*;

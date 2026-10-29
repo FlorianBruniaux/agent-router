@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `feedback replay-export` on a review-only run: the runtime store holds the run,
 //! the feedback store holds hand-recorded events and facts keyed by its run key.
 //! No host process runs and no live model or provider is involved.

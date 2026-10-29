@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use super::*;
 
 // Real durable store and producer-owned files; no native process or OS claim.

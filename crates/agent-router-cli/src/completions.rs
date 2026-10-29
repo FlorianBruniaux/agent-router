@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `completions <shell>`: a static completion script on stdout, generated from
 //! the command definition itself so it cannot drift from `--help`.
 use clap::{CommandFactory, ValueEnum};

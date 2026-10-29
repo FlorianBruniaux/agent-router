@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Passive projection of explicitly supplied native stream evidence. No files,
 //! credentials, network, executable discovery or provider invocation are read.
 

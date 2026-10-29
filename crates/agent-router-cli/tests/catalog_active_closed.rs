@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `catalog-active` stays closed (docs/catalog-active-cli.md). Never add or
 //! enable such a command without an explicit, separate approval.
 use std::process::Command;

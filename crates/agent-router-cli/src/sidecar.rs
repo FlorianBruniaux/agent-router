@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit standard-sidecar commands. No caller on the runtime completion path.
 use crate::{CliError, Outcome};
 use clap::{Args, Subcommand};

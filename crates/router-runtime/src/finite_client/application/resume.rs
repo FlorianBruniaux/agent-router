@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Reopen only persisted controller context; never infer authority from a path.
 use super::*;
 use std::{

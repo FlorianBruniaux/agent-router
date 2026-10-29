@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `feedback report`: descriptive outcome measurement per model, effort and
 //! task kind. Read-only and deterministic: every list is sorted and every
 //! figure is an integer or fixed-precision micros. It shows associations, not

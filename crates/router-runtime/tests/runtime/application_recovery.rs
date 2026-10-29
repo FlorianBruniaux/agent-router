@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Public disposable fixtures. No native model, provider or user source files.
 use super::*;
 use std::os::unix::fs::{PermissionsExt, symlink};

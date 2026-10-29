@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit local budget operations. No provider invocation or private key.
 use crate::{CliError, Outcome, execution, phases, product};
 use clap::Subcommand;

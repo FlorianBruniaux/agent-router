@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Structured validation contracts evaluated against a caller-supplied view.
 //!
 //! The evaluator performs no I/O and spawns no process. It only proves that the

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit inspection through an existing application-owned SQLite connection.
 //! No pathname is accepted or reopened and no snapshot file is written.
 use crate::{DoctorError, MAX_FILE_BYTES, Result, database};

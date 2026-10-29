@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use super::{EntryResult, input::Input, output::Output};
 use router_adapter_api::{content_digest, strict_json_limited};
 use rustix::event::{PollFd, PollFlags, Timespec, poll};

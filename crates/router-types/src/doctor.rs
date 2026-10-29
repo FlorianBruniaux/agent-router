@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Redacted diagnostics and audit exchange contracts.
 use serde::{Deserialize, Serialize};
 

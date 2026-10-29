@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Publish a verified patch through one Git ref CAS, without writing user files.
 use crate::{PendingRun, Result, Runtime, RuntimeError, digest, source_state, workspace};
 use router_types::*;

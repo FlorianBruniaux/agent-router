@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit local configuration formats. Parsing never follows references or
 //! expands environment variables, and error codes never include source text.
 use crate::{CliError, read_bounded};

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic integer cosine ranking over caller-supplied fixed-point vectors.
 //! No embedding model, provider, I/O or floating point is involved.
 use crate::{

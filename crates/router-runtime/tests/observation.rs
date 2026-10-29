@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic stores, never provider data. These tests catch incoherent snapshots,
 //! recovery-on-read, private field leaks and decoding before size admission.
 use router_runtime::{Runtime, RuntimeError, RuntimeLimits, observe_run};

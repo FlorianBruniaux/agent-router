@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Authored offline corpus. No model, provider or process is executed.
 #[path = "support/finite_context_corpus.rs"]
 mod corpus;

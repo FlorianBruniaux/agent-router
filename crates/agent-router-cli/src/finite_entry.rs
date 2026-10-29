@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Fresh, one-task local-scripted entry. No provider transport or resumable handle.
 mod input;
 mod output;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `feedback report`: classification, join by run key, cost from stored usage,
 //! determinism and consent. Every figure is checked against a hand computation.
 use std::collections::BTreeSet;

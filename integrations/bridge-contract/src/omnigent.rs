@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Offline translation of Omnigent's routing API, not execution authority.
 //!
 //! The parent must construct a locally authorized phase context for this exact

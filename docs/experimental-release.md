@@ -8,10 +8,8 @@ the offline CLI first. Supervised execution is a separate, approved workflow;
 automatic daily Claude/Codex integration and general productivity or cost gains
 are not established.
 
-The source is available under [FSL-1.1-ALv2](../LICENSE.md), which restricts
-competing commercial use. It is not an OSI open source license. Each version
-converts to Apache 2.0 two years after it is made available, under the license's
-terms. This guide does not change the license or announce repository publication.
+The source is open source under [Apache-2.0](../LICENSE.md). Redistributions
+must keep the [NOTICE](../NOTICE). This guide does not announce a release.
 
 ## Choose an installation channel
 

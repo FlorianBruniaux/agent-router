@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Real OS sandbox tests use only local fake version executables, never a model.
 use router_adapter_api::content_digest;
 use router_runtime::{

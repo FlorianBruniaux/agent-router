@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Offline pricing of explicitly supplied per-physical usage. No producer is authenticated.
 use crate::{
     AcceptedChangesInput, AcceptedChangesReport, AcceptedCostKind, EvidenceCoverage, FeedbackError,

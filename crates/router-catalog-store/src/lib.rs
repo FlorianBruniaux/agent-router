@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Local, explicitly approved current catalog authority. No execution authority,
 //! publisher roots, credentials or private keys are installed by this library.
 use router_adapter_api::{content_digest, is_digest};

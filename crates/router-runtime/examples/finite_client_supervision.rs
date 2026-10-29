@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit diagnostic candidate, never product admission or a task receipt.
 //! The trusted diagnostic profile variation does not enable the runtime's
 //! unsupported ControllerBrokerOnly authority. No model turn is submitted.

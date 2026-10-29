@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Parent-owned shared concurrency policy. These DTOs never prove cleanup.
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::PathBuf};

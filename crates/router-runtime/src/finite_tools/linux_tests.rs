@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in kernel qualification. Authored MCP caller only; no native/model process.
 use super::*;
 use router_adapter_api::content_digest;

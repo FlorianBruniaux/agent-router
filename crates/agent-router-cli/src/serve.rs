@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `serve`: route-only local API. Bodies are inline JSON; nothing here reads a
 //! caller-supplied path, executes, records feedback or opens a catalog store.
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic generated-plan decisions. Lives here because this crate already
 //! depends on the workflow builder; router-execution-decision does not.
 #[path = "../../../tests/support/capability_verifier.rs"]

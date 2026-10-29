@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in composition diagnostic, never a native task or capability grant.
 //! It uses the actual public runtime supervisors and never submits a model turn.
 

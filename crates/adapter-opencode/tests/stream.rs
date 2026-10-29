@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic examples of the pinned run-v1 envelope. No private provider data.
 use adapter_opencode::{OpenCodeAdapter, OpenCodeConfig, OpenCodeProtocol};
 use router_adapter_api::{AdapterError, HarnessAdapter, MAX_TRANSPORT_EVENTS};

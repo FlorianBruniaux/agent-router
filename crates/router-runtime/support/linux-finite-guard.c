@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 /* Fixed Linux finite-client guard. Applied only by the reviewed backend. ABI 6 required. */
 #define _GNU_SOURCE
 #include <errno.h>

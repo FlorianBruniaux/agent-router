@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic capacity measurement, not a recall evaluation or performance promise.
 use router_retrieval::{
     AssetKind, AssetMetadata, Bm25Index, MAX_ASSETS, MetadataDocument, SearchQuery,

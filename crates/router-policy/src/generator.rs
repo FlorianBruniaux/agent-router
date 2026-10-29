@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded planning over eligible compatibility rows. No candidate construction,
 //! provider call, body loading or execution authority is introduced here.
 use crate::{PhaseRouteError, PhaseRouter, ValidatedPhaseContext};

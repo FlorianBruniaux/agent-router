@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_feedback::attempt_correlation_report;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
