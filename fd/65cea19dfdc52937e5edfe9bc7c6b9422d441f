@@ -1,0 +1,60 @@
+crates/router-runtime/tests/observation_v4_timeline.rs
+  s_c3158f009d7319::t_95a5130a2587b9 1-578,580,582-586,589-590,594
+  s_c3158f009d7319::t_9233d4d72f050d 579,581,587-588,591-593,595-686
+CHANGELOG.md
+  s_c3158f009d7319::t_c16958529783a8 28-29
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_af6ae4519c1233 246-247
+crates/agent-router-cli/src/contracts.rs
+  s_c3158f009d7319::t_db9192708d3d2e 67
+crates/agent-router-cli/src/run_observation.rs
+  s_c3158f009d7319::t_ededea39dd5488 14,17-26,141-284
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_c3158f009d7319::t_7675a28bb66858 3,5,15-17,793-1374
+crates/agent-router-cli/tests/execution.rs
+  s_c3158f009d7319::t_cd37aa648d7c79 1315
+crates/agent-router-cli/tests/run_timeline.rs
+  s_c3158f009d7319::t_9399bfd8e0424a 1-438
+crates/agent-router-cli/tests/schema.rs
+  s_c3158f009d7319::t_a4a9ed76d4f0e5 66,1160-1224
+crates/router-runtime/src/lib.rs
+  s_c3158f009d7319::t_323d2b355476f9 42-46,78
+crates/router-runtime/src/observation.rs
+  s_c3158f009d7319::t_3770f834c3a520 168-329
+crates/router-runtime/src/store.rs
+  s_c3158f009d7319::t_0a3b99826bf50f 23-24
+crates/router-runtime/src/store/observation.rs
+  s_c3158f009d7319::t_1146af835f68d2 408
+crates/router-runtime/src/store/timeline.rs
+  s_c3158f009d7319::t_c21c25aa02fa9e 1-364
+docs/README.fr.md
+  s_c3158f009d7319::t_326f0f62f548df 108
+docs/README.md
+  s_c3158f009d7319::t_4dd5a50d9e4510 121
+docs/adr/0048-run-timeline-projection.md
+  s_c3158f009d7319::t_0130f39b7f1673 1-84
+docs/adr/README.md
+  s_c3158f009d7319::t_6bdb156dbc2f84 71
+docs/cli-output.md
+  s_c3158f009d7319::t_60cc8d995f1847 69
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_f0dc02c2bd0a02 41
+docs/run-observation.md
+  s_c3158f009d7319::t_698b36b23a1f8d 3,17-18,21,76-139,160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fd65cea19dfdc52937e5edfe9bc7c6b9422d441f",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
