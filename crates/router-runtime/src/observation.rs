@@ -165,3 +165,165 @@ pub struct RunObservationV3 {
     pub observation: RunObservationV2,
     pub timings: Vec<crate::AttemptTimingObservation>,
 }
+
+/// Maximum number of timeline entries in one projection; earlier ones are counted.
+pub const TIMELINE_ENTRY_LIMIT: usize = 64;
+
+/// Explicit version 4: the v3 facts plus a bounded, redacted chronological view
+/// of the selected run, read in the same passive snapshot.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct RunObservationV4 {
+    #[serde(flatten)]
+    pub observation: RunObservationV3,
+    pub timeline: RunTimeline,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimelineOrdering {
+    JournalSequenceAscending,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimelinePhase {
+    Plan,
+    Approval,
+    Preparation,
+    Attempt,
+    Transport,
+    Verification,
+    Cancellation,
+    Cleanup,
+    Terminal,
+    Other,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct RunTimeline {
+    pub ordering: TimelineOrdering,
+    pub entry_limit: u32,
+    /// Selected-run event references in this snapshot.
+    pub run_events: u32,
+    pub shown: u32,
+    /// Earliest references left out of `entries`; the phase summary still counts them.
+    pub omitted_earlier: u32,
+    /// Journal events committed after this run's last event (other runs).
+    pub later_global_events: u64,
+    pub entries: Vec<TimelineEntry>,
+    pub phases: Vec<TimelinePhaseSummary>,
+    pub approval: TimelineApproval,
+    pub cancellation: TimelineCancellation,
+    pub cleanup: TimelineCleanup,
+    pub verification: TimelineVerification,
+    pub attempts: Vec<TimelineAttempt>,
+    pub unknown: TimelineUnknowns,
+}
+/// `kind` comes from a closed allowlist; an unlisted kind is `unclassified`.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineEntry {
+    pub sequence: u64,
+    pub event_sha256: String,
+    pub state: RunState,
+    pub phase: TimelinePhase,
+    pub kind: &'static str,
+    /// Position-derived: the latest attempt start at or before this event.
+    pub attempt: Option<u32>,
+    pub after_cancel_request: bool,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelinePhaseSummary {
+    pub phase: TimelinePhase,
+    pub events: u32,
+    pub first_sequence: Option<u64>,
+    pub last_sequence: Option<u64>,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimelineApprovalOutcome {
+    Granted,
+    NotGranted,
+    Pending,
+    Unknown,
+}
+/// State transitions only; it does not authenticate the approval digest.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineApproval {
+    pub outcome: TimelineApprovalOutcome,
+    pub awaiting_sequence: Option<u64>,
+    pub granted_sequence: Option<u64>,
+}
+/// Logical cancellation only; physical shutdown is reported under cleanup.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineCancellation {
+    pub requested_sequence: Option<u64>,
+    pub before_start_sequence: Option<u64>,
+    pub terminal_cancelled: bool,
+    pub events_after_request: u32,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineCleanup {
+    pub recorded: ProcessCleanupEvidence,
+    pub confirmed_sequence: Option<u64>,
+    pub unknown_sequence: Option<u64>,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimelineVerificationState {
+    NotReached,
+    Required,
+    InProgress,
+    Verified,
+    Failed,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineVerification {
+    pub state: TimelineVerificationState,
+    pub record_sequence: Option<u64>,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineAppliedSelection {
+    pub model: ObservationUnknown,
+    pub effort: ObservationUnknown,
+}
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TimelineUsageStatus {
+    Unknown,
+    Partial,
+    RecordedUnattested,
+}
+/// Absent values are UNKNOWN, never zero. Native usage is not attested.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineUsage {
+    pub tokens: Option<u64>,
+    pub cost_microusd: Option<u64>,
+    pub status: TimelineUsageStatus,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineAttempt {
+    pub ordinal: u32,
+    pub requested: Option<AttemptObservationRequested>,
+    pub applied: TimelineAppliedSelection,
+    pub usage: TimelineUsage,
+    pub recorded_cleanup: Option<ProcessCleanupEvidence>,
+    /// `None` when no finished marker is bound to this attempt.
+    pub result_after_cancel_request: Option<bool>,
+}
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TimelineUnknowns {
+    pub exact_revision_acceptance: ObservationUnknown,
+    pub notification_delivery: ObservationUnknown,
+    pub lost_notifications: ObservationUnknown,
+    pub event_timestamps: ObservationUnknown,
+    pub physical_cleanup: ObservationUnknown,
+    pub objective: ObservationUnknown,
+}

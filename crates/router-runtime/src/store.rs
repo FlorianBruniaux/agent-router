@@ -20,6 +20,8 @@ mod escalation;
 mod finite_resume;
 mod observation;
 pub use observation::{observe_run, observe_run_v2, observe_run_v3};
+mod timeline;
+pub use timeline::{observe_run_v4, timeline_kind_labels};
 mod preparation;
 #[cfg(test)]
 mod verification_history_tests;
