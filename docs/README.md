@@ -160,5 +160,6 @@ written in French.
 | --- | --- |
 | [Development harness](harness.md) | Project agents, skills and hooks for Claude Code and Codex |
 | [Local verification](local-ci.md) | Repeatable local checks, retained evidence and gaps when Actions is unavailable |
+| [Docker resource lifecycle](docker-resource-lifecycle.md) | Labels, leases, teardown, crash reconciliation and shared-cache budget for qualification containers and volumes |
 | [Harness evidence](harness-evidence.md) | Validation evidence for the harness |
 | [Review grid](review-grid.md) | Checklist used for code review |
