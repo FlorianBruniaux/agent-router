@@ -684,3 +684,57 @@ fn redaction_holds_for_the_whole_serialized_report() {
         }
     }
 }
+
+#[test]
+fn a_cancel_request_does_not_leak_into_the_next_approval_cycle() {
+    let f = Fixture::new();
+    let mut db = f.db();
+    let tx = db.transaction().unwrap();
+    insert_run(&tx, RunState::SucceededTransport, 2);
+    approved_prefix(&tx);
+    // Attempt 1: cancelled while running, result recorded after the request.
+    let start = append(&tx, RunState::Preparing, "attempt.started", "");
+    append(&tx, RunState::Running, "transition", "prepared");
+    append(&tx, RunState::Running, "control.cancel_requested", "");
+    let finish = append(&tx, RunState::Running, "attempt.finished", "observed");
+    let transition = append(&tx, RunState::Failed, "transition", "transport_observed");
+    append(
+        &tx,
+        RunState::Failed,
+        "attempt.evidence.v1",
+        &evidence(
+            1,
+            RunState::Failed,
+            &start,
+            &finish,
+            &transition,
+            None,
+            None,
+        ),
+    );
+    // Retry clears the control request; attempt 2 runs normally.
+    append(
+        &tx,
+        RunState::AwaitingApproval,
+        "retry.awaiting_fresh_approval",
+        "",
+    );
+    append(&tx, RunState::Queued, "transition", "approved");
+    append(&tx, RunState::Preparing, "transition", "preparing");
+    attempt(&tx, 2, RunState::SucceededTransport, None, None);
+    tx.commit().unwrap();
+    let t = f.timeline();
+    assert_eq!(t["attempts"][0]["result_after_cancel_request"], true);
+    assert_eq!(t["attempts"][1]["result_after_cancel_request"], false);
+    assert_eq!(t["cancellation"]["requested_sequence"], Value::Null);
+    assert_eq!(t["cancellation"]["events_after_request"], 0);
+    let flagged: Vec<u64> = t["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["after_cancel_request"] == true)
+        .map(|e| e["sequence"].as_u64().unwrap())
+        .collect();
+    // Only attempt 1's own post-request events (finish, transition, evidence).
+    assert_eq!(flagged, [8, 9, 10]);
+}

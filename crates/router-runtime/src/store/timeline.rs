@@ -201,11 +201,26 @@ fn build(observation: &RunObservationV3, events: &[RuntimeEvent]) -> Result<RunT
             .find(|e| kinds.contains(&e.kind.as_str()))
             .map(|e| e.sequence)
     };
-    let cancel_requested = seq_of("control.cancel_requested");
+    // A retry clears the control request (`retry_expecting`), so a cancel request
+    // only describes events of its own approval cycle. `pending[i]` is the
+    // request in force just before event `i`; `cancel_requested` is the final
+    // cycle's request.
+    let mut pending = Vec::with_capacity(events.len());
+    let mut cancel_requested: Option<u64> = None;
+    for event in events {
+        // The retry marker opens the new cycle, so it is not "after" the old request.
+        if event.kind == "retry.awaiting_fresh_approval" {
+            cancel_requested = None;
+        }
+        pending.push(cancel_requested);
+        if event.kind == "control.cancel_requested" && cancel_requested.is_none() {
+            cancel_requested = Some(event.sequence);
+        }
+    }
 
     let mut started = 0u32;
     let mut entries = Vec::with_capacity(events.len());
-    for (event, (label, phase)) in events.iter().zip(&classified) {
+    for ((event, (label, phase)), in_force) in events.iter().zip(&classified).zip(&pending) {
         started += u32::from(event.kind == "attempt.started");
         entries.push(TimelineEntry {
             sequence: event.sequence,
@@ -214,7 +229,7 @@ fn build(observation: &RunObservationV3, events: &[RuntimeEvent]) -> Result<RunT
             phase: *phase,
             kind: label,
             attempt: (started > 0 && matches!(phase, Attempt | Transport)).then_some(started),
-            after_cancel_request: cancel_requested.is_some_and(|c| event.sequence > c),
+            after_cancel_request: in_force.is_some(),
         });
     }
     let run_events = entries.len();
@@ -302,8 +317,12 @@ fn build(observation: &RunObservationV3, events: &[RuntimeEvent]) -> Result<RunT
                     },
                 },
                 recorded_cleanup: evidence.as_ref().map(|e| e.cleanup),
-                result_after_cancel_request: finished
-                    .map(|f| cancel_requested.is_some_and(|c| f.sequence > c)),
+                result_after_cancel_request: finished.map(|f| {
+                    events
+                        .iter()
+                        .position(|e| e.sequence == f.sequence)
+                        .is_some_and(|index| pending[index].is_some())
+                }),
             })
         })
         .collect::<Result<Vec<_>>>()?;

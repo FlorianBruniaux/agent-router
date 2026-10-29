@@ -84,7 +84,7 @@ V4 retains every v3 field (`schema_version: 4`, digest domain `run-observation-v
 | `later_global_events` | Journal events committed after this run's last event (other runs). A non-zero value means the global horizon moved past the run |
 | `phases` | Ten fixed rows (plan, approval, preparation, attempt, transport, verification, cancellation, cleanup, terminal, other) with count, first and last sequence |
 | `approval` | `granted`, `not_granted`, `pending` or `unknown`, from state transitions only. A run cancelled while awaiting approval is `not_granted`; the store does not record who refused |
-| `cancellation` | The logical request and the cancelled state. It does not prove that a process stopped |
+| `cancellation` | The logical request of the current approval cycle and the cancelled state. A `retry.awaiting_fresh_approval` ends the cycle: an earlier request still marks its own events but no longer appears here. It does not prove that a process stopped |
 | `cleanup` | The recorded cleanup scope and the sequence of any cleanup marker. `physical_cleanup` stays `unknown` |
 | `verification` | A state derived from the run state and the sequence of the last verification record. The objective stays `unknown` |
 | `attempts` | Per attempt: requested model and effort from validated evidence, `applied` always `unknown`, usage, recorded cleanup and whether the finished marker follows the cancel request |
