@@ -144,5 +144,6 @@ sauf celles marquées (FR).
 | --- | --- |
 | [Harness de développement](harness.md) | Agents, skills et hooks du projet pour Claude Code et Codex |
 | [Validation locale](local-ci.md) | Contrôles reproductibles, preuves conservées et limites sans budget Actions |
+| [Cycle de vie des ressources Docker](docker-resource-lifecycle.md) | Labels, baux, nettoyage, reprise après crash et budget de cache partagé (page en anglais) |
 | [Preuves du harness](harness-evidence.md) | Preuves de validation du harness |
 | [Grille de revue](review-grid.md) | Checklist utilisée pour la revue de code |

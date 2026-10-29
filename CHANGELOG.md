@@ -25,6 +25,8 @@ automatically synchronized release of this development tree.
 
 ### Added
 
+- 2026-10-29: add `scripts/docker_lifecycle.py` (#212), a development-harness contract for Docker qualification resources: lifecycle labels, flock leases, evidence-first teardown, crash reconciliation, LRU shared-cache budget, read-only preview and JSON receipts. No global prune; no existing launcher or historical resource is changed or deleted. Unit tests pass without Docker; the real-daemon tests were not run in the authoring session. See [Docker resource lifecycle](docs/docker-resource-lifecycle.md).
+
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
 
 - 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.
