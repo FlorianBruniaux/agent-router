@@ -1,0 +1,69 @@
+CHANGELOG.md
+  s_c3158f009d7319::t_5cabe9d740fdb4 29-30
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_7979755377cc6e 246-247
+crates/agent-router-cli/src/contracts.rs
+  s_c3158f009d7319::t_8702558da55551 68
+crates/agent-router-cli/src/run_observation.rs
+  s_c3158f009d7319::t_1a529b7bae0cc4 14,17-28,35,162,167-168,264-269,304-349
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_c3158f009d7319::t_0e4e8e6c1ce65c 3,5,18-20,957-958,1054-1065,1391-1622
+crates/agent-router-cli/tests/execution.rs
+  s_c3158f009d7319::t_d22f045d83fdfe 1315
+crates/agent-router-cli/tests/run_findings.rs
+  s_c3158f009d7319::t_ff49598fbf6b32 1-222
+crates/agent-router-cli/tests/run_timeline.rs
+  s_c3158f009d7319::t_16863d30eb2e07 3-4,6-10,269
+crates/agent-router-cli/tests/schema.rs
+  s_c3158f009d7319::t_c1ded9b67cffd8 66,1225-1284
+crates/agent-router-cli/tests/support/run_store.rs
+  s_c3158f009d7319::t_0f7014c72c238f 1-189
+crates/router-runtime/src/findings.rs
+  s_c3158f009d7319::t_ef3bb17cb48842 1-387
+crates/router-runtime/src/lib.rs
+  s_c3158f009d7319::t_62c48cd24f6003 30,37-41,84
+crates/router-runtime/src/observation.rs
+  s_c3158f009d7319::t_92c8d77a820982 319-321
+crates/router-runtime/src/store.rs
+  s_c3158f009d7319::t_c476e397f86365 23,25-26
+crates/router-runtime/src/store/findings.rs
+  s_c3158f009d7319::t_18167a51a3d534 1-43
+crates/router-runtime/src/store/timeline.rs
+  s_c3158f009d7319::t_2e773507b9e34b 171,326-331
+crates/router-runtime/tests/observation_v4_timeline.rs
+  s_c3158f009d7319::t_9c2e871141d27b 729-731
+crates/router-runtime/tests/observation_v5_findings.rs
+  s_c3158f009d7319::t_b12f977692348d 1-744
+crates/router-sandbox-helper/tests/lifetime.rs
+  s_c3158f009d7319::t_6fcbd51cc3bf64 206-212
+docs/README.fr.md
+  s_c3158f009d7319::t_e85e0f80c6ced0 108
+docs/README.md
+  s_c3158f009d7319::t_06c0fd2719f55e 121
+docs/adr/0049-run-findings.md
+  s_c3158f009d7319::t_76ff2942f8dca1 1-74
+docs/adr/README.md
+  s_c3158f009d7319::t_7c69e6eaaf2e7b 72
+docs/cli-output.md
+  s_c3158f009d7319::t_e75f907ed0e220 69
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_8791581a2825f4 41
+docs/run-observation.md
+  s_c3158f009d7319::t_cf5eb89a9f695c 3,19-20,23,92,142-185,206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "73d3325d87999c06a29cc8db442877cda92e4ab9",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
