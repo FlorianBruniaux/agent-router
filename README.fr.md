@@ -253,6 +253,30 @@ ne réalise aucune correction et ne prouve pas le support actuel des modèles.
 Conservez `example_dir` pour inspecter la décision, ou supprimez seulement ce
 fichier et ce répertoire une fois le test terminé.
 
+Pour Claude Code, utilisez le catalogue `claude-core-v1`, déclaré par
+l'opérateur. Il ne note aucun modèle : le plan ci-dessous est un départage
+déterministe entre entrées non notées, pas un jugement de qualité :
+
+```sh
+./target/debug/agent-router route \
+  --request tests/fixtures/requests/claude-implementation.json \
+  --catalog assets/catalogs/claude-core-v1.json \
+  --json > "$example_dir/claude-decision.json"
+
+./target/debug/agent-router explain \
+  --decision "$example_dir/claude-decision.json"
+```
+
+```text
+Preset: plan-execute-verify
+Plan: claude-opus-5-5/high -> claude-opus-5-5/high -> claude-opus-5-5/high
+Excluded candidates: 22
+Missing evidence: 0
+```
+
+Voir [les notes du catalogue](assets/catalogs/README.md) pour ce que ce
+catalogue n'établit pas.
+
 ### Décrire votre propre tâche
 
 ```sh
