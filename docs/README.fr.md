@@ -88,6 +88,7 @@ sauf celles marquées (FR).
 | [Coûts de la révision acceptée](accepted-changes.md) | 2026-10-07 : calcul hors ligne, révocation et coûts incomplets ; données fournies, sans collecte native |
 | [Corrélation des tentatives](attempt-correlation.md) (EN) | 2026-10-10 : CLI hors ligne et projection v2 complète ; données fournies, sans collecte native |
 | [Évaluation](evaluation.md) | Replay, cohortes, compromis et revue indépendante |
+| [Matrice de régression claude-router](claude-router-regression-matrix.md) (EN) | 2026-10-28 : disposition et tests hors ligne pour T01 à T14 ; routage parent, cache, ajustement de contexte et hystérésis restent différés |
 | [Protocole de mesure de la valeur du router](bench/router-value-protocol.md) | Banc préenregistrable du router contre des bras fixes |
 | [Playbook du banc](bench/playbook.md) | Relancer et vérifier une campagne, journal des campagnes, résultats du pilote (en anglais) |
 | [Agent Router utilisé sur son propre code](bench/self-dogfood-b1b-2026-10-10/README.md) (EN) | 2026-10-10 : essai B1b guidé par le routage ; statut dans le rapport, aucun gain comparatif établi |

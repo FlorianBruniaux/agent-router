@@ -25,6 +25,8 @@ automatically synchronized release of this development tree.
 
 ### Added
 
+- 2026-10-28: add the [claude-router regression matrix](docs/claude-router-regression-matrix.md) for T01 to T14 (#143) with a disposition and test per row, plus 10 offline regression tests for decision-boundary mass, deadline, failure-code and no-echo cases and Claude stream model identity and tool-error cases. Parent routing, cache economics, context fit and hysteresis rows stay deferred; this does not close #143 and is not native qualification.
+
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
 
 - 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.
