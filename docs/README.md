@@ -99,6 +99,7 @@ written in French.
 | [Supplied usage pricing](supplied-usage-pricing.md) | Offline per-physical usage bridge, estimated prices and an allowlisted portable projection |
 | [Retained M4 acceptance evidence](bench/accepted-evidence-2026-10-15/README.md) | Three historical attempts, one accepted revision, unknown monetary totals; no new trial |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
+| [claude-router regression matrix](claude-router-regression-matrix.md) | 2026-10-28: T01 to T14 dispositions and offline tests; parent routing, cache, context fit and hysteresis stay deferred |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
