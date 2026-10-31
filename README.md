@@ -260,6 +260,14 @@ questions about task kind, scope, risk, permissions, acceptance and budget.
 The [guided intake](docs/task-guide.md) prepares task facts; it grants no
 execution authority and calls no model.
 
+### Get advice for that task
+
+Once the task is complete, `advise` maps it to a route request and returns a
+model, effort and skills recommendation per phase, or an explained refusal,
+ending with the next manual action for your host. It is Codex first, advisory
+only and executes nothing. Follow the [advisory route guide](docs/advisory-route.md),
+which also covers the case where unknown tool support blocks every model.
+
 <details>
 <summary>Phase-specific routing and exit codes</summary>
 

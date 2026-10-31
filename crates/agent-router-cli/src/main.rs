@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 
 mod admission;
+mod advisory;
 mod approval_key;
 mod assets;
 mod attestations;
@@ -26,6 +27,8 @@ mod human;
 mod inspect;
 mod phases;
 mod preparation;
+#[cfg(unix)]
+mod private_output;
 mod product;
 mod render;
 mod replay_export;
@@ -597,6 +600,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             json,
         }),
         Commands::TaskGuide { args, json } => task_guide::run(args, json),
+        Commands::Advise { args, json } => advisory::run(args, json),
         Commands::Normalize {
             task,
             risk_context,

@@ -302,16 +302,9 @@ pub(crate) fn run(args: GuideArgs, json: bool) -> Result<Outcome, CliError> {
     json_output(&report, exit)
 }
 
-/// All documents are computed before mkdir. Each complete file is published by
-/// an atomic no-clobber hard link. The normalization file is the last marker.
-/// Interrupted publication may leave a private partial directory; never replace
-/// or recursively remove it, since it may now contain someone else's files.
+/// Publishes the complete facts; `normalization.json` is the last marker.
 #[cfg(unix)]
 fn publish(path: &Path, report: &Report) -> Result<PathBuf, CliError> {
-    use std::{
-        fs::{self, OpenOptions},
-        os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
-    };
     let fail = || error("task_guide.output");
     let input = report.input.as_ref().ok_or_else(fail)?;
     let result = report.result.as_ref().ok_or_else(fail)?;
@@ -329,73 +322,7 @@ fn publish(path: &Path, report: &Report) -> Result<PathBuf, CliError> {
         "normalization.json",
         serde_json::to_vec_pretty(result).map_err(|_| fail())?,
     ));
-    if documents
-        .iter()
-        .any(|(_, bytes)| bytes.len() + 1 > MAX_DOCUMENT)
-    {
-        return Err(fail());
-    }
-    let filename = path.file_name().ok_or_else(fail)?;
-    let parent = path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let parent = fs::canonicalize(parent).map_err(|_| fail())?;
-    let parent_metadata = fs::metadata(&parent).map_err(|_| fail())?;
-    if !parent_metadata.is_dir() || parent_metadata.mode() & 0o022 != 0 {
-        return Err(fail());
-    }
-    let destination = parent.join(filename);
-    fs::DirBuilder::new()
-        .mode(0o700)
-        .create(&destination)
-        .map_err(|_| fail())?;
-    let directory = OpenOptions::new()
-        .read(true)
-        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
-        .open(&destination)
-        .map_err(|_| fail())?;
-    let identity = directory.metadata().map_err(|_| fail())?;
-    let check = || -> Result<(), CliError> {
-        let live = fs::symlink_metadata(&destination).map_err(|_| fail())?;
-        let current_parent = fs::metadata(&parent).map_err(|_| fail())?;
-        if !live.is_dir()
-            || live.dev() != identity.dev()
-            || live.ino() != identity.ino()
-            || live.mode() & 0o077 != 0
-            || live.uid() != identity.uid()
-            || current_parent.dev() != parent_metadata.dev()
-            || current_parent.ino() != parent_metadata.ino()
-            || current_parent.mode() & 0o022 != 0
-        {
-            return Err(fail());
-        }
-        Ok(())
-    };
-    for (name, mut bytes) in documents {
-        check()?;
-        bytes.push(b'\n');
-        let temporary = destination.join(format!(".{name}.pending"));
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .custom_flags(libc::O_NOFOLLOW)
-            .open(&temporary)
-            .map_err(|_| fail())?;
-        file.write_all(&bytes)
-            .and_then(|()| file.sync_all())
-            .map_err(|_| fail())?;
-        check()?;
-        fs::hard_link(&temporary, destination.join(name)).map_err(|_| fail())?;
-        fs::remove_file(&temporary).map_err(|_| fail())?;
-    }
-    directory.sync_all().map_err(|_| fail())?;
-    check()?;
-    fs::File::open(&parent)
-        .and_then(|file| file.sync_all())
-        .map_err(|_| fail())?;
-    Ok(destination)
+    crate::private_output::publish(path, documents, "task_guide.output")
 }
 
 #[cfg(not(unix))]

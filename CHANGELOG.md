@@ -25,6 +25,8 @@ automatically synchronized release of this development tree.
 
 ### Added
 
+- 2026-10-28: add `advise`, an advisory route for one complete task (#217). It maps a `task-guide` task to a route request, labels each fact `declared`, `discovered`, `verified` or `unknown`, reports scope, budget, mutations and sensitivity as not enforced, and ends with the next manual action. Codex first; nothing is executed. See the [advisory route guide](docs/advisory-route.md) and [ADR 0051](docs/adr/0051-advisory-task-route.md).
+
 - 2026-10-26: include the exact captured UTF-8 diff in fresh application and resume reviews, bound to the artifact hash with a 131,072-byte display limit (#211). Missing or changed artifacts refuse presentation. Local tests pass; the five composed Linux display/approval/resume cases were not run. See the [resume protocol](docs/reference/finite-application-resume.md).
 
 - 2026-10-26: extend the versioned Codex catalog to nine identifiers (#213). Six added profiles remain unrated with conservative penalties and no declared capabilities; this is not evidence of model availability or tool support.
