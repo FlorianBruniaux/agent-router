@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit opt-in runtime feedback. No prompt or raw output crosses this boundary.
 use crate::CliError;
 use router_adapter_api::content_digest;

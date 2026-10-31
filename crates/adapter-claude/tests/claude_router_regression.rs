@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
+
 //! Regression scenarios from the claude-router analysis (issue #143), applied to
 //! the Claude stream decoder. Rows: T06, T07, T11.
 //! See `docs/claude-router-regression-matrix.md`.

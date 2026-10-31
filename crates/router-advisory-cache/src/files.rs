@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Private, immutable entry files. Unix only; other platforms report Unsupported.
 use crate::{CacheError, MAX_ENTRIES, MAX_ENTRY_BYTES, Result};
 use std::{fs::File, path::Path};

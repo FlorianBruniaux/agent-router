@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in v4 timeline over synthetic stores. No provider, credential or subprocess.
 //! Every scenario rebuilds the journal hash chain, so refusals and projections
 //! come from semantics rather than from a broken chain.

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded YAML frontmatter reader. Only `name` and `description` are read;
 //! every other key is recorded by name and otherwise discarded, so fields such
 //! as `permissions`, `tools` or `model` can never create authority.

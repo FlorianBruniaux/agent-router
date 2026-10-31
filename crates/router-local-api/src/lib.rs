@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![forbid(unsafe_code)]
 //! Route-only HTTP/1 API on an owner-private Unix socket.
 //!

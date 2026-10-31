@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Operator declarations authenticated as declarations, never canary effects.
 use crate::{
     CapabilityProofBinding, CapabilityProofError, CapabilityProofTier, DEFAULT_MAX_AGE_SECONDS,

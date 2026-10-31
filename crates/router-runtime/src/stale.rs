@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Fixed-name probe scratch must neither accumulate nor block later probes. A
 //! private directory serves one probing runtime at a time: stale entries under
 //! the fixed names are removed, so two concurrent probes would discard each

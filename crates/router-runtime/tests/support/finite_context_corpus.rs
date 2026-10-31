@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Test-only authored comparison. No product authority or accounting API.
 use router_adapter_api::content_digest;
 use router_runtime::finite_tools::{

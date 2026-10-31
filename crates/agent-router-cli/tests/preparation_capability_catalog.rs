@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Preparation must preserve authenticated embedded-snapshot authority when
 //! exporting a generated catalog. No native host is launched by this fixture.
 #[path = "support/native_fixture.rs"]

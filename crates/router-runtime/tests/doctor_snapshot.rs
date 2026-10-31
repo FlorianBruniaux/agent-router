@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_runtime::{Runtime, RuntimeLimits};
 use router_types::DeepDoctorCode;
 use std::fs;

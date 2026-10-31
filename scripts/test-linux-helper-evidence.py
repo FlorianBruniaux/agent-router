@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Offline negative witnesses for the real-helper diagnostic's acceptance gate."""
 import copy
 import hashlib

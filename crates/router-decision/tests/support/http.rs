@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded synthetic HTTP peer shared by protocol and application tests.
 #![allow(dead_code)]
 use serde_json::{Value, json};

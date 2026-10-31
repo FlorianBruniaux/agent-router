@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Declared result payloads are distinct from opt-in diagnostic streams.
 use crate::{Result, RuntimeError, outputs::FileIdentity};
 use router_adapter_api::{content_digest, is_digest};

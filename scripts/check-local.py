@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Run selected local checks sequentially and retain their evidence outside Git.
 
 Python 3.11+, standard library only. No installation or real provider calls.

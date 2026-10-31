@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit artifact attestation without execution or publication authority.
 use super::ApprovedFiniteClientRun;
 use crate::{Result, Runtime, RuntimeError, workspace};

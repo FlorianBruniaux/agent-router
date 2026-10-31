@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in v5 advisory findings over synthetic stores. No provider, credential or
 //! subprocess. Each scenario rebuilds the journal chain, so a missing finding
 //! comes from a rule's evidence requirement and not from a broken store.

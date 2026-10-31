@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inert validation of adapter descriptors (`integrations/*/adapter.json`).
 //!
 //! This module parses caller-supplied bytes only. It never reads the file

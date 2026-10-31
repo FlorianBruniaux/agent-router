@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic planning evidence. These tests never invoke a model or a host CLI.
 #[path = "../../../tests/support/capability_verifier.rs"]
 #[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.

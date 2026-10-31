@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! CLI consumers accept only explicitly authenticated synthetic capability evidence.
 #![cfg(unix)]
 

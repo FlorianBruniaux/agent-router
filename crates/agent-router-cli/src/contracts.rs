@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! The output contracts a caller can validate: one table shared by
 //! `schema` and `version --json`, so the two can never disagree.
 use serde::Serialize;

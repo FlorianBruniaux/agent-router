@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Authenticated publisher declarations, not runtime observations or execution grants.
 //! Active projections require current external roots, clock and expected binding.
 use crate::{AssetKind, AssetRegistry, Catalog, GenerationConfig, RegistryAsset};

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic runtime stores shared by the observation CLI tests. No provider.
 #![allow(dead_code)]
 use assert_cmd::Command;

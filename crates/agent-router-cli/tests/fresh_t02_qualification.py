@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Inert binding tests: no native host, compiler, account or model."""
 import copy
 import hashlib

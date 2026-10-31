@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Producer-owned MCP preparation. Worker JSON alone grants no authority.
 use super::*;
 use crate::finite_tools::{

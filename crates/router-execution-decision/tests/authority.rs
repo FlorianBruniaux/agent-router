@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #[path = "support/synthetic.rs"]
 mod synthetic;
 use router_backend_policy::*;

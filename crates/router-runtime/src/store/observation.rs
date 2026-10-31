@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! One passive read transaction. Preflight all inputs before JSON/string decoding.
 use super::*;
 use crate::observation::*;

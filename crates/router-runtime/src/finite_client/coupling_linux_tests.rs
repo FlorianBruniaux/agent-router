@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use super::*;
 use crate::{finite_tools::Limits, leases::LeaseStorage};
 use router_types::*;

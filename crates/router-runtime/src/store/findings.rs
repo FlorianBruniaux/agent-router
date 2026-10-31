@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in v5 reader: the v4 projection and its advisory findings, derived from
 //! that one report inside the same passive read transaction.
 use super::timeline::project_v4;

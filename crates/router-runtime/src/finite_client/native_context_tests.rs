@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in Linux native context component canary. All responses are authored.
 use super::*;
 use crate::finite_tools::{FiniteContextPolicy, exec_presentation_key, mcp_catalog_digest};

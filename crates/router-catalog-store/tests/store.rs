@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic publisher keys only. No production roots or native execution.
 #![cfg(unix)]
 use ed25519_dalek::{Signer, SigningKey};

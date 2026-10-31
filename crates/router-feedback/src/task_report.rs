@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Reconcile persisted runtime attempts with optional feedback observations.
 //! Runtime inventory and feedback are independently captured snapshots, so a
 //! feedback run ahead of its inventory is refused rather than truncated.

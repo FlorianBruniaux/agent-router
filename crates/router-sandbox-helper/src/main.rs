@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![forbid(unsafe_code)]
 //! Dedicated child: resource limits never modify the router parent.
 mod watchdog;

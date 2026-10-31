@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Pure bounded MCP JSONL codec. No process, filesystem or socket access.
 use serde_json::{Value, json};
 use std::io::{BufRead, Read, Write};

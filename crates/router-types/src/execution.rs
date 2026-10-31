@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Host preparation and observed transport, separate from objective verification.
 
 use std::collections::BTreeSet;

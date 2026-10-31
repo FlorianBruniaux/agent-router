@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic attestation fixtures: local MAC authority without a provider call.
 use crate::native_fixture::{self, Fixture, checked, command, write};
 use router_adapter_api::{

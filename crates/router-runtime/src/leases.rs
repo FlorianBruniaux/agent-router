@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! A durable cleanup claim never follows from a PID or a process-group signal.
 use crate::{Result, RuntimeError, digest, outputs::FileIdentity};
 use nix::fcntl::{Flock, FlockArg};

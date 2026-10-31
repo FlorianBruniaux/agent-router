@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Redacted projection of one coherent, bounded runtime-store read.
 //! These are observation contracts, never executable authority.
 use router_types::{ProcessCleanupEvidence, RunFailure, RunState};

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Export of a real run as a sealed replay record. The label comes only from a
 //! recorded late fact or a human verdict, never from transport success alone.
 use crate::{CliError, Outcome, execution, product::json_output};

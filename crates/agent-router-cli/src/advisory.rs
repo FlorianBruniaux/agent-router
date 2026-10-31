@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Advisory routing of one normalized task (ADR 0051). It recommends a model,
 //! effort and skills per phase, or explains why none is recommended. Nothing is
 //! executed, no host or provider is contacted and no authority is granted.

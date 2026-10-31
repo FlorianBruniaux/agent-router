@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded event journal and projections inside the admission transaction.
 use super::*;
 use budget::{BudgetError, add, sub, within};

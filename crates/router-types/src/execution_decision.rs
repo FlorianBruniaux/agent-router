@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use serde::{Deserialize, Serialize};
 
 /// Audit data only. Deserializing this binding never authorizes execution.

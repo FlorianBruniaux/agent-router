@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Two real local worker attempts and durable accounting. No provider calls.
 #[path = "../../../tests/support/capability_verifier.rs"]
 #[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.

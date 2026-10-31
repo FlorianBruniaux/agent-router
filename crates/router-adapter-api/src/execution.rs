@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Shared preparation gates. The runtime must authenticate inputs, recompute the
 //! route receipt and establish approval before supplying an approval digest.
 

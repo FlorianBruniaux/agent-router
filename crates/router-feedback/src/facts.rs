@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Late facts: verification and integration outcomes learned after the automated
 //! verdict. Appended once per `(run key, kind)`; nothing is ever rewritten.
 use router_types::{FeedbackFact, FeedbackFactEvent, FeedbackFactKind, VerificationOutcome};

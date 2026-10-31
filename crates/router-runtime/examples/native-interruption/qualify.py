@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Instrumented native owner death; imports the frozen #207 public parent.
 
 No provider, registry or model call. The driver arms only after accept_apply

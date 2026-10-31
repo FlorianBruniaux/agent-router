@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Retained Linux composition. Preparation is not OS qualification or dispatch.
 use super::*;
 

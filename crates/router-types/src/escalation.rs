@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Audit data for escalation. Deserializing these records grants no authority.
 use crate::{
     EffortLevel, ExecutionSandbox, ModelId, PhaseSelection, ProcessCleanupEvidence, RunFailure,

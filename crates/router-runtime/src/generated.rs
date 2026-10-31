@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Global-plan authority remains immutable for the entire workflow instance.
 use crate::{PendingRun, Result, Runtime, RuntimeError, now};
 use router_execution_decision::ExecutionDecision;

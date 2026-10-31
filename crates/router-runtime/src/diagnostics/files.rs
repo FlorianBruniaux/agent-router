@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! The private operator-selected directory is pinned; SQLite retains its own FDs.
 use super::OwnerLockState;
 use nix::fcntl::{Flock, FlockArg};

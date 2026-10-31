@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Passive storage inspection. No Runtime::open, migrations or cleanup recovery.
 mod files;
 use crate::{

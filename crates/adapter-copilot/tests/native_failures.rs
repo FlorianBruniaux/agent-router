@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #[path = "../../router-adapter-api/tests/support/native_failures.rs"]
 mod fixture;
 use fixture::*;

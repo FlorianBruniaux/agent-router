@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in payload storage. File operations stay below pinned directory handles;
 //! API callers provide run/attempt identifiers, never paths to delete.
 use crate::{Result, RuntimeError};

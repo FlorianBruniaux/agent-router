@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use super::{Config, EntryResult, Submission};
 use router_adapter_api::content_digest;
 use router_catalog::Catalog;
@@ -63,7 +65,7 @@ pub(super) fn phase(
                 "../../../router-runtime/src/finite_tools/transport.rs"
             )),
             trust: SkillTrust::TrustedLocal,
-            license: "FSL-1.1-ALv2".into(),
+            license: "Apache-2.0".into(),
             permission: CapabilitySupport::Supported,
             required_capabilities: [Capability::Tools].into(),
             required_mutations: BTreeSet::new(),

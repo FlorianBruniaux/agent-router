@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Finite MCP workers backed by the runtime process supervisor.
 //! Native owner bootstrap remains worker data, never Runtime dispatch authority
 //! or a capability proof. Runtime admission stays disabled until qualification.

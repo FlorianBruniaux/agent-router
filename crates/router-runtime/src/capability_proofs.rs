@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Append-only authenticated capability records in the private runtime store.
 //! Opening an existing store for verification never creates a file or a key.
 use router_adapter_api::{

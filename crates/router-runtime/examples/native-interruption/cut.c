@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 /* Linux qualification fixture only, never linked into a product binary.
  * Arm externally after the native worker has terminated. Stop only the exact
  * owner's target FD, before write, after a short write, or after fsync. No constructor.

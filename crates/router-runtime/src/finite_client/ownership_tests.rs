@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inert ownership fixtures. Marker tests do not qualify an OS namespace.
 use super::*;
 use crate::leases::LeaseStorage;

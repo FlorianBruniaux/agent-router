@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #[path = "support/asset_fixture.rs"]
 mod asset_fixture;
 #[path = "../../../tests/support/capability_verifier.rs"]

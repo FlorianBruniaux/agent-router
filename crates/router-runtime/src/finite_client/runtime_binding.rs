@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Durable review binding only. No backend, process or provider authority.
 use super::*;
 use crate::{ApprovedRun, PendingRun, Runtime};

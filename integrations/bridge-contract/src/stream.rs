@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use router_adapter_api::{
     AdapterError, MAX_TRANSPORT_BYTES, MAX_TRANSPORT_EVENTS, content_digest, is_final_segment,
     safe_identifier, strict_json,

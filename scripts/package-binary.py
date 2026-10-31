@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Build and locally export the Agent Router CLI and sandbox helper."""
 
 from __future__ import annotations

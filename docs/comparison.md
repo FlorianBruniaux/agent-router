@@ -208,7 +208,7 @@ settings; Claude chooses which subagent to delegate to from the subagent's
 
 | Project | Routing unit | How the choice is made | Where it runs | Reasoning effort | What the decision leaves behind | Run gate before execution | License |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Agent Router** | Each phase of a task (plan, execute, verify), decided before the run | Constraints filter first, then deterministic scoring; optional semantic proposals stay advisory inside the admissible pool | Local CLI, offline for routing | Chosen per phase with the model | Receipt, explanation, exclusions, missing evidence; same inputs replay to the same receipt | Approved digest, fresh capability evidence, verified OS sandbox, Git worktree for writes | FSL-1.1-ALv2 (source-available, not OSI) |
+| **Agent Router** | Each phase of a task (plan, execute, verify), decided before the run | Constraints filter first, then deterministic scoring; optional semantic proposals stay advisory inside the admissible pool | Local CLI, offline for routing | Chosen per phase with the model | Receipt, explanation, exclusions, missing evidence; same inputs replay to the same receipt | Approved digest, fresh capability evidence, verified OS sandbox, Git worktree for writes | Apache-2.0 |
 | Kimchi Coding | Task delegation by role/phase during a session | LLM orchestrator selects from configured role pools | Local coding CLI; Kimchi Inference for model access | Per-role effort not documented in sources read | Session history; model/phase usage tags | Not established by sources read | Apache-2.0 (CLI); hosted service separate |
 | claude-code-router | Each request through the gateway | User rules on headers and body, route scripts, subagent tag, ordered fallbacks | Local gateway | Not documented | Request logs: resolved provider, model, status, latency, tokens, estimated cost | Not applicable (proxy); client keys with request and token limits | MIT |
 | Omnigent Smart Routing | Session, from the first message | LLM judge, or an external routing API | Omnigent server on the user's machine; the judge calls a configured LLM | Not documented | Error reason on router failure, then fallback to the default harness | Not documented on the routing page | Apache-2.0 |
@@ -292,9 +292,8 @@ These are design properties, not measured outcomes.
 - **Platforms.** Agent Router has no Windows native execution
   ([README.md:383](../README.md)); claude-code-router ships a desktop app for
   macOS, Windows and Linux.
-- **Licensing.** Most projects above are MIT or Apache-2.0. Agent Router's
-  FSL-1.1-ALv2 is not an OSI open source license and restricts competing
-  commercial use ([README.md:479](../README.md)).
+- **Licensing.** Most projects above are MIT or Apache-2.0. Agent Router is
+  Apache-2.0 ([LICENSE.md](../LICENSE.md)).
 - **Zero setup.** Claude Code subagents and Codex profiles need no extra tool.
 
 ## When to pick something else

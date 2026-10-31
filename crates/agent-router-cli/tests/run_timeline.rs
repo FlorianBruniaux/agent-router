@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `observe --schema-version 4` over synthetic stores: human and JSON agree,
 //! output is bounded and redacted, and observation never changes the store.
 #[path = "support/run_store.rs"]

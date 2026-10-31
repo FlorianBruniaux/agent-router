@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use assert_cmd::Command;
 use router_runtime::{Runtime, RuntimeLimits};
 use serde_json::Value;

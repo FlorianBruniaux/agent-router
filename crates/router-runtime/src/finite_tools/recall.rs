@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Complete, bounded raw results scoped to one caller-owned session binding.
 use super::{ContextViewError, ToolResult, presentation::complete_raw};
 use router_adapter_api::{content_digest, is_digest};

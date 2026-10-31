@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic publishers and keys only; no production roots or human approval.
 #![allow(dead_code)]
 #[path = "../../../../tests/support/capability_verifier.rs"]

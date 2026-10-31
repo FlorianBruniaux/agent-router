@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit one-cell campaign parent. Only an exact private-channel approval
 //! enables dispatch. No authentication, provider HTTP or campaign ledger here.
 #[path = "campaign/public_score.rs"]
@@ -279,7 +281,7 @@ fn phase(p: &Packet, d: &Descriptor) -> Result<PhaseRouteRequest> {
             id: id.clone(),
             content_sha256: content_digest(include_bytes!("../src/finite_tools/transport.rs")),
             trust: SkillTrust::TrustedLocal,
-            license: "FSL-1.1-ALv2".into(),
+            license: "Apache-2.0".into(),
             permission: CapabilitySupport::Supported,
             required_capabilities: [Capability::Tools].into(),
             required_mutations: BTreeSet::new(),

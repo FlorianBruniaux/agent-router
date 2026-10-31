@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded, symlink-refusing directory walk. Nothing here follows a link,
 //! executes a file or reads outside the explicit source directory.
 use crate::{RefusalReason, RefusedFile};

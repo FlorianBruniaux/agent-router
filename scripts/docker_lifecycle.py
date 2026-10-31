@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Docker resource lifecycle for qualification launchers (issue #212).
 
 Managed containers and volumes carry lifecycle labels. A launcher holds an

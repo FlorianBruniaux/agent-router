@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{CliError, Outcome, execution, human, product::json_output};
 use router_runtime::RunObservation;
 use serde::Serialize;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Append-only, one-shot application recovery. The store flock remains held.
 use super::*;
 impl Store {

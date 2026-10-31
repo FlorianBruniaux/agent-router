@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic metadata and attested counts only. No real human evaluation claim.
 use router_retrieval::*;
 use router_types::{CapabilitySupport, SkillTrust, TaskKind};

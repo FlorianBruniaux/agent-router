@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic MAC fixture provisioning. Tests only, never a production issuer.
 //! The caller must keep only capabilities used by its test. In particular a
 //! network=false fixture cannot mint a supported Network capability.

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `completions <shell>`: the script names every top-level subcommand of `--help`.
 use assert_cmd::Command;
 

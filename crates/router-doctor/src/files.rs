@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Descriptor-relative O_NOFOLLOW traversal prevents concurrent parent symlink
 //! replacement from redirecting reads. No directory is created or modified.
 

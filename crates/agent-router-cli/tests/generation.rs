@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic metadata only. No provider, credentials or executable skills.
 use assert_cmd::Command;
 #[cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]

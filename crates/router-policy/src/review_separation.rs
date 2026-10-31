@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Provider separation between a producing node and its review node.
 //!
 //! The provider string comes from the asset contracts document

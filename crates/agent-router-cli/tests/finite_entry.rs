@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(all(unix, feature = "codex"))]
 use assert_cmd::Command;
 use serde_json::{Value, json};

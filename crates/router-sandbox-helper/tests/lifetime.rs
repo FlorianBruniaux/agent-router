@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Real SIGKILL regression: the outer test kills a separate supervisor process.
 use rustix::fs::{FlockOperation, flock};
 use std::{

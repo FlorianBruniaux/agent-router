@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in copied-client OS diagnostic. Never stores a capability proof or admits a product run.
 use super::*;
 use router_types::*;

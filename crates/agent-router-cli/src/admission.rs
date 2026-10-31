@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit parent configuration for shared concurrency. No implicit registry.
 use crate::{CliError, Outcome, execution, phases, product};
 use clap::Subcommand;

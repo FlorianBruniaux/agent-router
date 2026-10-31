@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! New owner-private output directories for explicit exports. Unix only;
 //! callers report their own unsupported code elsewhere.
 use crate::CliError;

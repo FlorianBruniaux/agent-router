@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic observations only. These tests do not establish measured vendor
 //! usage, independent human labels, or authorization to promote a policy.
 use std::collections::BTreeMap;

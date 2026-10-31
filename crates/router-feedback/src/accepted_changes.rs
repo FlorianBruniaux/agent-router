@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Offline, supplied-evidence accounting. Digests bind content, not authenticity.
 use crate::{FeedbackError, Result, hash, identifier, valid_hash};
 use serde::{Deserialize, Serialize};

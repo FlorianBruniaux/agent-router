@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in v2 phase routing. v1 Router behavior and receipts are unchanged.
 use std::collections::{BTreeMap, BTreeSet};
 

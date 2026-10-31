@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![forbid(unsafe_code)]
 //! Durable per-step orchestration. Model results are untrusted proposals, and
 //! every step needs an approval bound to its final prompt and artifact inputs.

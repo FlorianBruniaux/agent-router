@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Qualification-only observer. Opening performs the real Store recovery.
 //! No application handle is reconstructed and no execution is requested.
 use router_runtime::{Runtime, RuntimeLimits};

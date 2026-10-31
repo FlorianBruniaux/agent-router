@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Measure every launch, including the first, before inspecting the executable.
 
 This is a local diagnostic, not a CI gate or an OS-cold-cache claim. A candidate

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Inert file/budget policy candidate. The caller owns all process isolation.
 use super::{
     FiniteContextPolicy, LineWindow, OutputViewInfo, ReadWindowInfo, RecallStore,

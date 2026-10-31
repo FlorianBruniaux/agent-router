@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! V3 extension: keep v2 wire records stable, bind independently validated asset
 //! contracts and recheck the exact prepared input before runtime dispatch.
 use crate::{PhaseRouteError, PhaseRouter, ValidatedPhaseContext, phases};

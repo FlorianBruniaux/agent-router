@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `observe --schema-version 5`: advisory findings agree between the human and
 //! JSON views, are stable, redacted and never change the store.
 #[path = "support/run_store.rs"]

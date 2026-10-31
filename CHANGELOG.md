@@ -23,6 +23,10 @@ unexecuted. No general cost/quality gain or automatic daily host integration is
 established. The separately published `agent-router-core` snapshot is not an
 automatically synchronized release of this development tree.
 
+### Changed
+
+- 2026-10-28: license the project under Apache-2.0 instead of FSL-1.1-ALv2, with SPDX headers on source files, a `REUSE.toml` and an SPDX header CI check ([ADR 0050](docs/adr/0050-apache-2-license.md)). `NOTICE` must be kept by redistributions. The change is irreversible for published code. Earlier entries describe the license at their date.
+
 ### Added
 
 - 2026-10-28: add `advise`, an advisory route for one complete task (#217). It maps a `task-guide` task to a route request, labels each fact `declared`, `discovered`, `verified` or `unknown`, reports scope, budget, mutations and sensitivity as not enforced, and ends with the next manual action. Works with the Codex catalogs and `claude-core-v1`; a selection among unrated models is reported as a tie-break. Nothing is executed. See the [advisory route guide](docs/advisory-route.md) and [ADR 0051](docs/adr/0051-advisory-task-route.md).

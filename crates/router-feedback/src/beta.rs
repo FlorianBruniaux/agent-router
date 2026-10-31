@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Regularized incomplete beta and its quantiles, for the Jeffreys interval of
 //! the accepted rate. Bounded work: a fixed number of continued-fraction
 //! iterations and of bisection steps. No dependency.

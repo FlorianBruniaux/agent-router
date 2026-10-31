@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Strict intake of externally proposed plans (`router.plan_proposal.v1`).
 //!
 //! A proposal is untrusted data. The task, its scope, budgets and mutation

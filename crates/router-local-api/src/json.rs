@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Strict envelope splitter. `serde_json::Value` keeps the last of two equal
 //! keys, so duplicates must be rejected before any typed parse. The scanner
 //! checks every object of the body and hands back the byte range of each

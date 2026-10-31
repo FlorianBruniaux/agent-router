@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Standard sidecar protocol v1, opt-in and advisory. No server is launched.
 use crate::{
     BackendError, DecisionBackend, MAX_BACKEND_CANDIDATES, MAX_REQUEST_BYTES, MAX_RESPONSE_BYTES,

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Fixed trusted controller, called only inside the reviewed outer namespace.
 //! These worker bytes cannot construct a Runtime approval or live Tools proof.
 use super::{ExecSandbox, FiniteContextPolicy, Limits, ToolSession, ToolTerminal};

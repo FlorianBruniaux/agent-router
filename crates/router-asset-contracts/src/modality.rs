@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Typed, bounded contracts for non-text modalities (image, audio, file) and
 //! for digest-checked JSON output. Validation is pure: the caller supplies the
 //! bytes or metadata, nothing here reads a disk, a network or a model.

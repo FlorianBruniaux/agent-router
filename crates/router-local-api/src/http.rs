@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Closed HTTP/1.1 request framing: one request per connection, identity
 //! bodies with an explicit `Content-Length`, no chunking, no pipelining.
 

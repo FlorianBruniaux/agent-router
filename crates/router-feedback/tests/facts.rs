@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Late facts: schema v2 migration, one immutable fact per `(run key, kind)`,
 //! consent, retention, purge and export.
 use std::{fs, os::unix::fs::PermissionsExt, path::Path};

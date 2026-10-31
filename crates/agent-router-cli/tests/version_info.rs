@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `version --json`: the build facts and the contract versions, tied to `schema --list`.
 use assert_cmd::Command;
 use serde_json::Value;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Minimal HTTP/1.1 client over one loopback TCP connection. Single thread,
 //! blocking sockets with short timeouts, so a deadline or a cancellation is
 //! observed between reads and nothing outlives the call.

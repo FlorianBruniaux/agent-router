@@ -1,10 +1,7 @@
 # Third-party license evidence
 
-The project license, `FSL-1.1-ALv2` (Functional Source License 1.1, Apache 2.0
-Future License), is in `LICENSE.md` at the repository root, with `NOTICE`. The
-text is the official template with only the copyright line filled in. It is
-not OSI approved, and each version converts to Apache 2.0 two years after
-publication.
+The project license, `Apache-2.0`, is in `LICENSE.md` at the repository root,
+with `NOTICE`. The text is the unmodified Apache License 2.0.
 
 The source exporter preserves dependency license and notice texts separately
 under `licenses/dependencies/` inside each generated archive. Their declarations

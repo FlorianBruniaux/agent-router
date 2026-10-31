@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Local synthetic capacity measurement; no model invocation or quality claim.
 #[path = "../../../tests/support/capability_verifier.rs"]
 #[allow(clippy::duplicate_mod)] // Shared fixtures can coexist in one integration test.

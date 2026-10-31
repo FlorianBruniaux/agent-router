@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Source-derived synthetic native envelopes, never provider observations.
 #![allow(dead_code)]
 use router_types::{TransportOutcome, TransportTermination};

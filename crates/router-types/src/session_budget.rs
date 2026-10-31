@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Parent allocations. Serialized amounts never prove provider usage.
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;

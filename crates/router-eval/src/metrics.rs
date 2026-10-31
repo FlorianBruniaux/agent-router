@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Descriptive metrics over an exhaustive cohort of supplied, sealed records.
 //! Hashes bind content; they do not authenticate labels, consent or usage.
 use std::collections::BTreeMap;

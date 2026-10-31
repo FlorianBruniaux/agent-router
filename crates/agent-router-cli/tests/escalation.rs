@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic attempts and private local journals. No provider or real model.
 #![cfg(all(unix, feature = "claude"))]
 #[path = "support/native_fixture.rs"]

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! A small JSON Schema checker for the embedded output schemas. It implements
 //! only the keywords those schemas use, and `check_schema` fails on any other
 //! keyword, so a schema can never silently rely on a rule this file ignores.

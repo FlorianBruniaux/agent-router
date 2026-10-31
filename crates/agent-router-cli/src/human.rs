@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Human projections of the exact structured result. Rendering never changes
 //! authority, dispatch, exit status or the independently usable JSON contract.
 //!

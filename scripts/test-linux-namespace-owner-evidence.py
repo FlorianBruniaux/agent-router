@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Negative receipt witnesses only; these tests do not qualify an OS sandbox."""
 import copy
 import hashlib

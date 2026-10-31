@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]
 #[path = "support/admission_fixture.rs"]
 mod admission_fixture;

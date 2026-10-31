@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 #![cfg(unix)]
 include!("support/fixture.rs");
 use router_backend_store::{AuthorityKey, BackendStore, StoreConfig, StoreError};

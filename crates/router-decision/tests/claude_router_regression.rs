@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
+
 //! Regression scenarios from the claude-router analysis (issue #143), applied to
 //! the Agent Router decision boundary. Rows: T04, T05, T10, T13.
 //! See `docs/claude-router-regression-matrix.md`.

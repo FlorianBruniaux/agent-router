@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Descriptive regret and quality/cost frontier over fixed, exhaustive replays.
 use std::collections::{BTreeMap, BTreeSet};
 

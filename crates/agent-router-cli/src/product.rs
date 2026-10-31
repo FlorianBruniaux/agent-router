@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{CliError, Outcome, read_bounded};
 use router_retrieval::{
     Bm25Index, ContextSearchQuery, RetrievalError, SearchQuery, SemanticRanking,

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Native OS sandbox canaries with a synthetic Claude protocol and v3 assets.
 //! No live provider authentication, model or external service is claimed.
 #![cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]

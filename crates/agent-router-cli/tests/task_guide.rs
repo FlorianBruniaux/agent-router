@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Guided task input supplies explicit parent facts, never runtime permissions.
 use assert_cmd::Command;
 use serde_json::{Value, json};

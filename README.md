@@ -23,7 +23,7 @@ Experimental, local and explainable routing for Claude Code and Codex.
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/runtime-linux.yml/badge.svg?branch=main" alt="Linux runtime canaries" /></a>
   <a href="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml"><img src="https://github.com/FlorianBruniaux/agent-router/actions/workflows/dependency-audit.yml/badge.svg?branch=main" alt="RustSec dependency audit" /></a>
   <a href="rust-toolchain.toml"><img src="https://img.shields.io/badge/Rust-1.85%2B-dc7336?logo=rust" alt="Rust 1.85 or newer" /></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-FSL--1.1--ALv2-597ee5" alt="Functional Source License 1.1, Apache 2.0 future license" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Apache--2.0-597ee5" alt="Apache License 2.0" /></a>
   <a href="#host-support"><img src="https://img.shields.io/badge/Runtime-macOS%20%7C%20Linux-597ee5" alt="Runtime: macOS and Linux" /></a>
 </p>
 
@@ -168,8 +168,7 @@ and [resume protocol](docs/reference/finite-application-resume.md).
 their stated evidence limits. No hook or global host configuration is installed
 by this repository's build commands.
 
-This source-available candidate uses [FSL-1.1-ALv2](LICENSE.md), with future
-Apache 2.0 conversion. Start with the [quick test](#quick-start).
+This open source candidate uses [Apache-2.0](LICENSE.md). Start with the [quick test](#quick-start).
 The [experimental onboarding](docs/experimental-release.md) retains historical
 installation evidence; the dated status above records subsequent integration.
 
@@ -177,7 +176,7 @@ installation evidence; the dated status above records subsequent integration.
 
 ## Quick start
 
-Start from an authorized checkout of this development repository. The
+Start from a checkout of this public repository. The
 [public core snapshot](https://github.com/FlorianBruniaux/agent-router-core)
 was published separately on 2026-10-22; its README and `DISTRIBUTION.json`
 describe that snapshot, which is not automatically synchronized with this tree.
@@ -190,8 +189,8 @@ It needs no model, host login, daemon, helper or global configuration.
 
 The [installation guide](docs/install.md) covers prerequisites, optional build
 features, the verifiable local release and uninstalling. Use Rust 1.85 or newer. The repository pins the development toolchain in
-[`rust-toolchain.toml`](rust-toolchain.toml). Clone access is required while the
-development repository is private; the public core snapshot is a separate distribution.
+[`rust-toolchain.toml`](rust-toolchain.toml). The repository
+is public since 2026-10-28; the public core snapshot is a separate distribution.
 
 ```sh
 git clone https://github.com/FlorianBruniaux/agent-router.git
@@ -612,7 +611,7 @@ agent. The table compares documented design properties, read on 2026-09-30
 
 | Project | Routing unit | How the choice is made | Where it runs | Reasoning effort | Decision record | License |
 | --- | --- | --- | --- | --- | --- | --- |
-| **Agent Router** | Each phase (plan, execute, verify), before the run | Constraints filter, then deterministic scoring | Local CLI, offline | Per phase | Replayable receipt with exclusions | FSL-1.1-ALv2 |
+| **Agent Router** | Each phase (plan, execute, verify), before the run | Constraints filter, then deterministic scoring | Local CLI, offline | Per phase | Replayable receipt with exclusions | Apache-2.0 |
 | [Kimchi Coding](https://github.com/getkimchi/kimchi) | Task delegation by role/phase during a session | LLM orchestrator selects from configured role pools | Local coding CLI, Kimchi Inference for model access | Per-role effort not documented in sources read | Session history; model/phase usage tags | Apache-2.0 (CLI) |
 | [claude-code-router](https://github.com/musistudio/claude-code-router) | Each request | User rules, route scripts, fallbacks | Local gateway | Not documented | Request logs | MIT |
 | [Omnigent Smart Routing](https://omnigent.ai/docs/build/routing) | Session, from the first message | LLM judge or external router | Local server | Not documented | Reason on failure | Apache-2.0 |
@@ -623,8 +622,8 @@ agent. The table compares documented design properties, read on 2026-09-30
 | [Claude Code subagents](https://code.claude.com/docs/en/sub-agents) / [Codex profiles](https://learn.chatgpt.com/docs/config-file/config-advanced) | Per subagent or profile | User configuration | Inside the host | Per subagent or profile | Configuration | Anthropic Commercial Terms / Apache-2.0 |
 
 Others are stronger on maturity and adoption, on re-routing every request of
-a live session, on provider breadth and failover, on learned routing from data,
-and on permissive licenses. Agent Router is an experimental source candidate
+a live session, on provider breadth and failover, on learned routing from data.
+Agent Router is an experimental source candidate
 whose publication requires release review, has no Windows native execution and
 has no established general cost or quality gain. The [full comparison](docs/comparison.md)
 adds Plano, RouteLLM and Not Diamond, cites a source for every cell, and covers
@@ -634,14 +633,9 @@ when to pick something else and the limits of a documentation-only review.
 
 ## License
 
-The project is licensed under the
-[Functional Source License 1.1, Apache 2.0 Future License](LICENSE.md)
-(`FSL-1.1-ALv2`). This is not an open source license as defined by the OSI.
-The source is readable, and internal use, non-commercial education and
-research, and professional services for a licensee are allowed. Offering it,
-or a substitute for it, in a competing commercial product or service requires
-permission. Each version becomes available under Apache 2.0 two years after it
-is made available. Redistributions must keep the copyright notices, the
-license terms and [NOTICE](NOTICE). Dependency provenance, license inventory
-and release review boundaries are documented in the
-[distribution guide](docs/distribution.md).
+The project is licensed under the [Apache License 2.0](LICENSE.md)
+(`Apache-2.0`), an OSI-approved open source license. It includes an express
+patent grant. Redistributions and derivative works must keep the copyright
+notices, the license terms and [NOTICE](NOTICE), as section 4(d) of the license
+requires. Dependency provenance, license inventory and release review
+boundaries are documented in the [distribution guide](docs/distribution.md).

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Adversarial checks for the ADR validator. Fixtures only, no git, no network."""
 
 from __future__ import annotations

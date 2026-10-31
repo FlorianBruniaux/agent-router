@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! All reviewers, labels, keys and model observations here are synthetic.
 //! Positive tests exercise proof mechanics, never authorize a production backend.
 #![allow(dead_code)]

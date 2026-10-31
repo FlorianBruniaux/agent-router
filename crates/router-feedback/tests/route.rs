@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Route facts in automated feedback: optional, textless and readable from v1 stores.
 use std::collections::BTreeSet;
 

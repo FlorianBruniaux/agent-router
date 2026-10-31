@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic advisory findings derived from one verified v4 observation.
 //! A pure function of its input: no store access, clock, network or action.
 //! Every rule either emits one finding or one named suppression, so an absent

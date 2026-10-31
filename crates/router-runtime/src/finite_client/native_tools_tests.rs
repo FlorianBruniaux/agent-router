@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in real SDK protocol qualification against authored local Responses.
 //! This is component evidence, never a Runtime approval or Tools capability.
 use super::FiniteCodexState;

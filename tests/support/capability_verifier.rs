@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic verifier for unrelated policy/adapter test fixtures only.
 //! Imported by tests/examples via an explicit path, never by production libraries.
 #![allow(dead_code)]

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit context preparation. No environment, telemetry or worker data opts in.
 use super::*;
 use crate::finite_tools::{FiniteContextPolicy, mcp_catalog_digest};

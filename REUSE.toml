@@ -1,0 +1,51 @@
+version = 1
+
+# Files that cannot carry a header (data, lockfiles, images, Markdown), frozen
+# evidence under docs/bench, files whose bytes are hashed or embedded by a test
+# or by xtask, and generated harness projections. Source files outside this
+# list must carry their own SPDX header, so reuse lint fails on a new bare one.
+[[annotations]]
+path = [
+  "docs/bench/**",
+  ".claude/**",
+  ".codex/**",
+  ".agents/**",
+  "crates/router-runtime/examples/campaign/**",
+  "crates/adapter-claude/src/execution.rs",
+  "crates/adapter-codex/src/execution.rs",
+  "crates/adapter-copilot/src/lib.rs",
+  "crates/adapter-opencode/src/lib.rs",
+  "crates/agent-router-cli/src/finite_entry/qualification/fresh_t02.py",
+  "crates/router-runtime/src/bubblewrap.rs",
+  "crates/router-runtime/src/finite_tools/transport.rs",
+  "crates/router-runtime/src/host_state.rs",
+  "crates/router-runtime/src/private_program.rs",
+  "crates/router-runtime/src/sandbox.rs",
+  "crates/router-sandbox-helper/src/watchdog.rs",
+  "xtask/src/hook.rs",
+  "xtask/src/lib.rs",
+  "xtask/src/main.rs",
+  "xtask/src/projection.rs",
+  "xtask/src/transaction.rs",
+  "harness/session-start.sh",
+  "**/*.json",
+  "**/*.md",
+  "**/*.toml",
+  "**/*.sse",
+  "**/*.jpg",
+  "**/*.png",
+  "**/*.jsonl",
+  "**/*.txt",
+  "**/*.lock",
+  "**/*.yml",
+  "**/*.mp4",
+  "**/*.gif",
+  "**/*.in",
+  ".gitignore",
+  "fuzz/.gitignore",
+  "NOTICE",
+  ".harness-generated.json",
+]
+precedence = "closest"
+SPDX-FileCopyrightText = "2026 Florian Bruniaux"
+SPDX-License-Identifier = "Apache-2.0"

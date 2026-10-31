@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic fixtures only. The signing key exists solely in this test file.
 use ed25519_dalek::{Signer, SigningKey};
 use router_catalog::*;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Regression fingerprints captured at the unchanged f2d4107 v2/v3 implementation.
 #[path = "support/asset_fixture.rs"]
 mod asset_fixture;

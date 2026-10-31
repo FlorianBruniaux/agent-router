@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Private parent-owned subscription channel. No credentials or network egress.
 use super::*;
 use crate::Cancellation;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! `schema`: prints the JSON Schema of a named output contract. The documents
 //! are embedded files, so the output is fixed by the binary and needs no I/O.
 use std::process::ExitCode;

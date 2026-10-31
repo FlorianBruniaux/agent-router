@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Native product resume protocol after actual owner SIGKILL, public fixtures only.
 
 Assembled beside the frozen interruption.py, parent.py and controller.py.

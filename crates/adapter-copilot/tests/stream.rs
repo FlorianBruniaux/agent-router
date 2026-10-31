@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Synthetic CLI JSONL from the distributed app.js, not a native canary.
 use adapter_copilot::{CopilotAdapter, CopilotConfig, CopilotProtocol};
 use router_adapter_api::{AdapterError, HarnessAdapter, MAX_TRANSPORT_EVENTS};

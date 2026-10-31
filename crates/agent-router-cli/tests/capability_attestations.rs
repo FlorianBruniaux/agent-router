@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Lot-9 CLI boundary: a local declaration is authenticated but never a host
 //! observation. The executable is synthetic; these tests never call a provider.
 #![cfg(all(feature = "claude", any(target_os = "macos", target_os = "linux")))]

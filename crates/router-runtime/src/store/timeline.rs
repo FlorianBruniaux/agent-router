@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in v4: a bounded chronological view built from the same passive read
 //! transaction as v3. Only a closed allowlist of kinds and numeric facts is
 //! published; event detail, identifiers and paths never leave the store.

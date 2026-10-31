@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 use crate::{
     CliError, Outcome, command::AuditCommand, inspect, phases::read_json, product::json_output,
     read_bounded,

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Validate ADR frontmatter, headings, cross references and the ADR index.
 
 Stdlib only. Does not read git: commit dates cannot be verified on a shallow

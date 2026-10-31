@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Florian Bruniaux
+// SPDX-License-Identifier: Apache-2.0
 //! Per-store secret keying the approval binding of secret environment values.
 //! The approval digest is displayed and pasted, and its other inputs are known,
 //! so a bare hash of an API key would let its reader confirm a guess offline.

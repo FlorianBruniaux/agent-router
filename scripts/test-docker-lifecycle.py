@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Florian Bruniaux
+# SPDX-License-Identifier: Apache-2.0
 """Tests for docker_lifecycle. Unit tests use an in-memory Docker and need no daemon.
 The integration test at the bottom creates only resources labelled with a fresh
 session id and skips when Docker is unavailable."""
