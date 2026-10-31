@@ -4,6 +4,7 @@
 
 mod admission;
 mod advisory;
+mod advisory_outcome;
 mod approval_key;
 mod assets;
 mod attestations;
