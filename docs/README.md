@@ -99,6 +99,7 @@ written in French.
 | [Supplied usage pricing](supplied-usage-pricing.md) | Offline per-physical usage bridge, estimated prices and an allowlisted portable projection |
 | [Retained M4 acceptance evidence](bench/accepted-evidence-2026-10-15/README.md) | Three historical attempts, one accepted revision, unknown monetary totals; no new trial |
 | [Evaluation](evaluation.md) | Replay, cohorts, trade-offs and independent review |
+| [claude-router regression matrix](claude-router-regression-matrix.md) | 2026-10-28: T01 to T14 dispositions and offline tests; parent routing, cache, context fit and hysteresis stay deferred |
 | [Router value protocol](bench/router-value-protocol.md) | Pre-registrable bench of the router against fixed arms |
 | [Bench playbook](bench/playbook.md) | Rerunning and checking a bench campaign, campaign log and pilot results |
 | [Agent Router self-dogfood](bench/self-dogfood-b1b-2026-10-10/README.md) | 2026-10-10: routed B1b implementation trial; see report status, no comparative savings claim |
@@ -118,7 +119,7 @@ written in French.
 | --- | --- |
 | [Doctor](doctor.md) | Read-only diagnostics and redacted audit |
 | [Native supervision diagnostic](bench/owned-supervision-feasibility-2026-10-08/README.md) | 2026-10-08: explicit no-provider diagnostic; current composition remains NO_GO, with broker identity, memory and cleanup limits |
-| [Passive run observation](run-observation.md) | 2026-10-11: opt-in v3 local supervisor capture intervals, v2 durable attempt facts and v1 default preserved; native/provider durations and full F04b/F05a remain open |
+| [Passive run observation](run-observation.md) | 2026-10-29: opt-in v5 advisory findings, each with evidence, a check and a named suppression otherwise; 2026-10-28: opt-in v4 bounded timeline over recorded state (no timestamps); 2026-10-11: opt-in v3 local supervisor capture intervals, v2 durable attempt facts and v1 default preserved; native/provider durations and full F04b/F05a remain open |
 | [Observation verification](bench/verification-observation-2026-10-07.json) | 21 selected checks passed: 1,633 workspace Rust results + 1 core, 290 Python; result-line counts, 42 native opt-in tests ignored; not full CI equivalence |
 | [Observation v2 verification](bench/verification-observation-v2-2026-10-08.json) | 24 local checks across the full run and ADR-index/fixture-hash repairs, independent review and measurement compatibility; native facts remain unknown |
 | [Local capture timing verification](bench/verification-local-capture-timing-2026-10-11.json) | Opt-in v3: seven local gates passed on combined source, explicit legacy unknowns and independent review; native/provider and end-to-end durations remain unqualified |
@@ -159,5 +160,6 @@ written in French.
 | --- | --- |
 | [Development harness](harness.md) | Project agents, skills and hooks for Claude Code and Codex |
 | [Local verification](local-ci.md) | Repeatable local checks, retained evidence and gaps when Actions is unavailable |
+| [Docker resource lifecycle](docker-resource-lifecycle.md) | Labels, leases, teardown, crash reconciliation and shared-cache budget for qualification containers and volumes |
 | [Harness evidence](harness-evidence.md) | Validation evidence for the harness |
 | [Review grid](review-grid.md) | Checklist used for code review |

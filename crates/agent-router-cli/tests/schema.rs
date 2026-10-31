@@ -63,7 +63,7 @@ fn list_names_every_contract_with_its_supported_versions() {
         |name: &str| entries.iter().find(|e| e["name"] == name).unwrap()["schema_versions"].clone();
     assert_eq!(versions("route-decision"), json!(["1"]));
     assert_eq!(versions("feedback-report"), json!([1, 2, 3, 4, 5]));
-    assert_eq!(versions("run-observation"), json!([1, 2, 3]));
+    assert_eq!(versions("run-observation"), json!([1, 2, 3, 4, 5]));
     assert_eq!(
         entries
             .iter()
@@ -1156,4 +1156,129 @@ fn run_observation_v3_schema_qualifies_only_local_intervals() {
             "accepted missing {key}"
         );
     }
+}
+
+#[test]
+fn run_observation_v4_schema_bounds_the_timeline_and_keeps_unknowns_unknown() {
+    let document = schema("run-observation");
+    let output =
+        observation_json_version(RunState::Failed, Some(RunFailure::Crash), None, Some("4"));
+    assert_eq!(output["schema_version"], 4);
+    assert_eq!(
+        output["timeline"]["attempts"][0]["applied"]["model"],
+        "unknown"
+    );
+    assert_conforms("run-observation", &output);
+    // The published kind enum is exactly the runtime allowlist.
+    let published: BTreeSet<String> =
+        document["$defs"]["timeline_entry"]["properties"]["kind"]["enum"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap().to_owned())
+            .collect();
+    let allowlist: BTreeSet<String> = router_runtime::timeline_kind_labels()
+        .into_iter()
+        .map(str::to_owned)
+        .collect();
+    assert_eq!(published, allowlist);
+    for (pointer, value) in [
+        ("/timeline/entry_limit", json!(65)),
+        ("/timeline/ordering", json!("wall_clock")),
+        ("/timeline/entries/0/kind", json!("PRIVATE_KIND")),
+        ("/timeline/entries/0/phase", json!("execution")),
+        ("/timeline/approval/outcome", json!("denied")),
+        (
+            "/timeline/unknown/exact_revision_acceptance",
+            json!("accepted"),
+        ),
+        ("/timeline/unknown/lost_notifications", json!(0)),
+        ("/timeline/attempts/0/applied/model", json!("gpt")),
+        ("/timeline/attempts/0/usage/status", json!("attested")),
+        ("/timeline/attempts/0/usage/tokens", json!(-1)),
+        ("/timeline/cleanup/recorded", json!("cleaned")),
+        ("/timeline/verification/state", json!("accepted")),
+    ] {
+        let mut invalid = output.clone();
+        *invalid.pointer_mut(pointer).unwrap() = value;
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted {pointer}"
+        );
+    }
+    let mut too_many = output.clone();
+    let entry = too_many["timeline"]["entries"][0].clone();
+    too_many["timeline"]["entries"] = Value::Array(vec![entry; 65]);
+    assert!(!json_schema::violations(&document, &too_many).is_empty());
+    for key in output["timeline"].as_object().unwrap().keys() {
+        let mut invalid = output.clone();
+        invalid["timeline"].as_object_mut().unwrap().remove(key);
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted missing {key}"
+        );
+    }
+    let mut extra = output.clone();
+    extra["timeline"]["prompt"] = json!("leak");
+    assert!(!json_schema::violations(&document, &extra).is_empty());
+}
+
+#[test]
+fn run_observation_v5_schema_requires_complete_passive_findings() {
+    let document = schema("run-observation");
+    let output =
+        observation_json_version(RunState::Failed, Some(RunFailure::Crash), None, Some("5"));
+    assert_eq!(output["schema_version"], 5);
+    assert_eq!(output["findings"]["automatic_action"], "none");
+    // Every rule appears exactly once, either as a finding or as a suppression.
+    assert_eq!(
+        output["findings"]["findings"].as_array().unwrap().len()
+            + output["findings"]["suppressed"].as_array().unwrap().len(),
+        5
+    );
+    assert_conforms("run-observation", &output);
+    // A schema-valid finding of each shape is accepted, and each strict field is enforced.
+    let mut valid = output.clone();
+    valid["findings"]["findings"] = json!([{
+        "id": "a".repeat(64), "rule": "repeated_failed_attempts", "severity": "warning",
+        "basis": "recorded_journal", "source_snapshot_sha256": "b".repeat(64),
+        "fact": "f", "hypothesis": "h", "affected_attempts": [1, 2],
+        "evidence": [{"sequence": 3, "event_sha256": "c".repeat(64)}],
+        "preserve": ["p"], "check": "c"
+    }]);
+    assert!(json_schema::violations(&document, &valid).is_empty());
+    for (pointer, value) in [
+        ("/findings/automatic_action", json!("reroute")),
+        ("/findings/rules_version", json!(2)),
+        ("/findings/findings/0/rule", json!("tool_call_loop")),
+        ("/findings/findings/0/severity", json!("critical")),
+        ("/findings/findings/0/basis", json!("model_report")),
+        ("/findings/findings/0/id", json!("short")),
+        ("/findings/findings/0/preserve", json!([])),
+        ("/findings/findings/0/evidence/0/sequence", json!(0)),
+        ("/findings/suppressed/0/reason", json!("because")),
+    ] {
+        let mut invalid = valid.clone();
+        let mut target = invalid.clone();
+        *target.pointer_mut(pointer).unwrap() = value.clone();
+        invalid = target;
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted {pointer}"
+        );
+    }
+    for key in valid["findings"]["findings"][0].as_object().unwrap().keys() {
+        let mut invalid = valid.clone();
+        invalid["findings"]["findings"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove(key);
+        assert!(
+            !json_schema::violations(&document, &invalid).is_empty(),
+            "accepted missing {key}"
+        );
+    }
+    let mut extra = valid.clone();
+    extra["findings"]["findings"][0]["command"] = json!("rm -rf");
+    assert!(!json_schema::violations(&document, &extra).is_empty());
 }
