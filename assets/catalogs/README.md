@@ -36,14 +36,16 @@ permissions, establishes provider access or authorizes model execution.
 
 `claude-core-v1.json` is an operator-declared catalog for advisory routing in
 Claude Code. Its JSON schema is 1. Every entry uses `operator-declared-unrated-prior`:
-quality 0, cost and latency 1,000,000, no declared capabilities, efforts `low`
-through `max`, and all three stages. Nothing is rated, priced or timed. The
+quality 0, cost and latency 1,000,000, the declared capability `tools`, efforts
+`low` through `max`, and all three stages. Nothing is rated, priced or timed. The
 router therefore never prefers one entry for quality, and with equal scores it
 picks by identifier order, which is a tie-break and not a recommendation.
 
 | Entry | Basis for the identifier |
 | --- | --- |
+| `claude-fable-5-1` | Current Claude model id list given to the coding agent by its runtime environment on 2026-10-31 (Fable 5.1). Operator-declared, not observed in a stream. |
 | `claude-haiku-4-5-20251001` | Dated id observed in a Claude stream (`crates/adapter-claude/tests/conformance.rs:648`, `docs/adr/0021-host-capability-evidence.md`). |
+| `claude-haiku-5-5` | Same runtime list, 2026-10-31 (Haiku 5.5). Operator-declared, not observed in a stream. |
 | `claude-opus-5-5` | Pilot pool (`docs/bench/campaign-next/pilot/catalogs/claude-pool.json:6`). |
 | `claude-sonnet-5-5` | Pilot pool (`docs/bench/campaign-next/pilot/catalogs/claude-pool.json:25`). |
 
@@ -56,8 +58,21 @@ adapter can pass to `--effort` (`crates/adapter-claude/src/execution.rs:52-58`);
 established here, so the request's host snapshot must name the efforts it
 supports.
 
-`tools` and every other capability stay UNKNOWN: entries declare none, and a task
-that requires `tools` gets no route without separate host evidence.
+Every entry declares `tools`. That is a model-side prior only. In
+`CapabilitiesSatisfied` (`crates/router-policy/src/constraint.rs:172-217`) a
+required capability is satisfied only when the request's capability knowledge
+says `Supported`, the host snapshot lists it (`constraint.rs:192`) and the model
+lists it (`constraint.rs:202`). Without explicit knowledge, the capability counts
+as supported only if the host snapshot itself lists it
+(`crates/router-policy/src/preset.rs:161-168`).
+
+The declaration therefore establishes only that the catalog does not exclude
+these models for `tools`. It does NOT establish that a host supports tools, that
+the account's Claude Code session has tools enabled, or that any model accepts
+them in a given configuration. A host snapshot that does not list `tools` still
+gets `host.capability.missing`, and `unknown` knowledge still yields an unknown
+verdict, so such a task gets no route. The host snapshot must declare or
+discover `tools` itself. Other capabilities stay UNKNOWN: no entry declares them.
 
 ## Discovery
 

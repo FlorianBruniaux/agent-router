@@ -709,39 +709,36 @@ fn unrated_claude_catalog_selection_is_reported_as_a_tie_break() {
 }
 
 #[test]
-fn claude_catalog_declares_no_tools_so_a_declaration_cannot_create_a_route() {
+fn claude_catalog_tools_need_the_host_declaration_to_create_a_route() {
     let dir = tempfile::tempdir().unwrap();
     let task = write(&dir.path().join("task.json"), &task(json!(["tools"])));
-    let output = command()
-        .args(["advise", "--task"])
-        .arg(&task)
-        .arg("--risk-context")
-        .arg(risk_context(dir.path()))
-        .arg("--catalog")
-        .arg(root("assets/catalogs/claude-core-v1.json"))
-        .arg("--host")
-        .arg(claude_host(dir.path()))
-        .args(["--declare-capability", "tools", "--now", NOW, "--json"])
-        .assert()
-        .code(3)
-        .get_output()
-        .clone();
-    let report = parsed(&output);
-    assert_eq!(report["status"], "no_recommendation");
+    let run = |extra: &[&str]| {
+        command()
+            .args(["advise", "--task"])
+            .arg(&task)
+            .arg("--risk-context")
+            .arg(risk_context(dir.path()))
+            .arg("--catalog")
+            .arg(root("assets/catalogs/claude-core-v1.json"))
+            .arg("--host")
+            .arg(claude_host(dir.path()))
+            .args(extra)
+            .args(["--now", NOW, "--json"])
+            .output()
+            .unwrap()
+    };
+    let declared = run(&["--declare-capability", "tools"]);
+    assert_eq!(declared.status.code(), Some(0));
+    let report = parsed(&declared);
+    assert_eq!(report["status"], "recommended");
     assert_eq!(
         fact(&report, "host.capability.tools")["provenance"],
         "declared"
     );
-    let changes = report["next_manual_action"]["would_change"]
-        .as_array()
-        .unwrap();
-    assert!(
-        changes
-            .iter()
-            .any(|change| change["code"] == "model.capability.unsupported"
-                && change["capability"] == "tools"),
-        "{changes:#?}"
-    );
+    // Without the host declaration the catalog's `tools` does not create a route.
+    let undeclared = run(&[]);
+    assert_eq!(undeclared.status.code(), Some(3));
+    assert_eq!(parsed(&undeclared)["status"], "no_recommendation");
 }
 
 /// Runs `advise` with the shared risk context and the given extra arguments.
@@ -899,8 +896,8 @@ fn untrusted_and_unattached_skills_are_not_suggested() {
     .clone();
     let report = parsed(&output);
     assert_eq!(report["skills"][0]["status"], "untrusted");
-    // Compatible and supported, but no route attaches it: no Claude entry
-    // declares tools, so nothing is selected.
+    // Without a host declaration of tools the capability stays unsupported for
+    // the skill: the catalog declaration alone attaches nothing.
     let tools_task = write(
         &dir.path().join("tools-task.json"),
         &task_value(json!(["tools"])),
@@ -910,21 +907,14 @@ fn untrusted_and_unattached_skills_are_not_suggested() {
         dir.path(),
         &tools_task,
         &root("assets/catalogs/claude-core-v1.json"),
-        &[
-            os("--host"),
-            claude.as_os_str(),
-            os("--declare-capability"),
-            os("tools"),
-            os("--skill"),
-            os("tdd"),
-        ],
+        &[os("--host"), claude.as_os_str(), os("--skill"), os("tdd")],
     )
     .assert()
     .code(3)
     .get_output()
     .clone();
     let report = parsed(&output);
-    assert_eq!(report["skills"][0]["status"], "not_attached");
+    assert_eq!(report["skills"][0]["status"], "capability_not_supported");
     assert_eq!(report["skills"][0]["stages"], json!([]));
 }
 fn task_value(required_capabilities: Value) -> Value {
