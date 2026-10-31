@@ -1,0 +1,101 @@
+.github/workflows/ci.yml
+  s_c3158f009d7319::t_b47d7d52c8dbd9 58-59
+.gitleaks.toml
+  s_c3158f009d7319::t_2fc6b417f69c57 25-28
+CHANGELOG.md
+  s_c3158f009d7319::t_3799cd357b2382 29-31,33-34
+README.fr.md
+  s_c3158f009d7319::t_fa2961a22a2f0c 256-279
+README.md
+  s_c3158f009d7319::t_a773e8be4b5138 250-273
+assets/catalogs/README.md
+  s_c3158f009d7319::t_4f71b79324cf55 34-74
+assets/catalogs/claude-core-v1.json
+  s_c3158f009d7319::t_6d8d0c7a143147 1-102
+crates/adapter-claude/tests/claude_router_regression.rs
+  s_c3158f009d7319::t_85520039629b88 1-198
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_8d47a775674590 246-247
+crates/agent-router-cli/src/contracts.rs
+  s_c3158f009d7319::t_c2c081c616bb4e 67-68
+crates/agent-router-cli/src/run_observation.rs
+  s_c3158f009d7319::t_c9825212722ef3 14,17-38,153-349
+crates/agent-router-cli/src/schemas/run-observation.schema.json
+  s_c3158f009d7319::t_27ab60e61ebcb4 3,5,15-20,796-1622
+crates/agent-router-cli/tests/claude_catalog.rs
+  s_c3158f009d7319::t_31150b3706c88f 1-232
+crates/agent-router-cli/tests/execution.rs
+  s_c3158f009d7319::t_9dae62eb4dfc8a 1315
+crates/agent-router-cli/tests/run_findings.rs
+  s_c3158f009d7319::t_ff5f318e0cdadb 1-222
+crates/agent-router-cli/tests/run_timeline.rs
+  s_c3158f009d7319::t_c32e6aebd4caa3 1-289
+crates/agent-router-cli/tests/schema.rs
+  s_c3158f009d7319::t_b5d6d1e65ca80e 66,1160-1284
+crates/agent-router-cli/tests/support/run_store.rs
+  s_c3158f009d7319::t_48edf84789d442 1-189
+crates/router-decision/tests/claude_router_regression.rs
+  s_c3158f009d7319::t_7d80d2f9f2a4bc 1-399
+crates/router-runtime/src/findings.rs
+  s_c3158f009d7319::t_b36f2af4ff65a0 1-387
+crates/router-runtime/src/lib.rs
+  s_c3158f009d7319::t_7d81cc5c1a51e5 30,37-41,48-52,84
+crates/router-runtime/src/observation.rs
+  s_c3158f009d7319::t_a7b7644f3f1a07 168-332
+crates/router-runtime/src/store.rs
+  s_c3158f009d7319::t_9a066e7c113056 23-27
+crates/router-runtime/src/store/findings.rs
+  s_c3158f009d7319::t_136ba6bfd4aa54 1-43
+crates/router-runtime/src/store/observation.rs
+  s_c3158f009d7319::t_4cc2f7c5684c47 408
+crates/router-runtime/src/store/timeline.rs
+  s_c3158f009d7319::t_684af83d19099a 1-389
+crates/router-runtime/tests/observation_v4_timeline.rs
+  s_c3158f009d7319::t_e5ef4133a28666 1-743
+crates/router-runtime/tests/observation_v5_findings.rs
+  s_c3158f009d7319::t_ce360c483f6ebd 1-744
+crates/router-sandbox-helper/tests/lifetime.rs
+  s_c3158f009d7319::t_5c7dc3ad4f7506 206-212
+docs/README.fr.md
+  s_c3158f009d7319::t_5880eb0ef70235 91,109,148
+docs/README.md
+  s_c3158f009d7319::t_3325046fb2d848 102,122,163
+docs/adr/0048-run-timeline-projection.md
+  s_c3158f009d7319::t_e51ca799c835be 1-84
+docs/adr/0049-run-findings.md
+  s_c3158f009d7319::t_354cd78aa14e27 1-74
+docs/adr/README.md
+  s_c3158f009d7319::t_069c405ce20c37 71-72
+docs/claude-router-regression-matrix.md
+  s_c3158f009d7319::t_4cedf33457d889 1-84
+docs/cli-output.md
+  s_c3158f009d7319::t_6e29cdffaf6bff 69
+docs/docker-resource-lifecycle.md
+  s_c3158f009d7319::t_bbcb3b1b6ee229 1-94
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_56d25940dfc315 41,90-93
+docs/run-observation.md
+  s_c3158f009d7319::t_3068a80e207c03 3,17-20,23,78-185,206
+scripts/docker_lifecycle.py
+  s_c3158f009d7319::t_0ac045f606dfc3 1-682
+scripts/test-docker-lifecycle.py
+  s_c3158f009d7319::t_e5e6a9210a38a8 1-640
+tests/fixtures/requests/claude-implementation.json
+  s_c3158f009d7319::t_cf9cf49d1da6ca 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3531dcbcf65c5f6ad0b4c4f0f8bbe547151c82c",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
