@@ -6,6 +6,19 @@ use std::path::{Path, PathBuf};
 /// Each exported document is limited to this size, newline included.
 const MAX_DOCUMENT: usize = 1024 * 1024;
 
+/// The directory `publish` would create for `path`: its canonical parent
+/// joined with its final component. Nothing is created.
+pub(crate) fn destination(path: &Path, code: &'static str) -> Result<PathBuf, CliError> {
+    let fail = || CliError::Product(code);
+    let filename = path.file_name().ok_or_else(fail)?;
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    let parent = std::fs::canonicalize(parent).map_err(|_| fail())?;
+    Ok(parent.join(filename))
+}
+
 /// All documents are computed before mkdir. Each complete file is published by
 /// an atomic no-clobber hard link, in the given order, so the last document is
 /// the completion marker. Interrupted publication may leave a private partial
@@ -28,17 +41,12 @@ pub(crate) fn publish(
     {
         return Err(fail());
     }
-    let filename = path.file_name().ok_or_else(fail)?;
-    let parent = path
-        .parent()
-        .filter(|p| !p.as_os_str().is_empty())
-        .unwrap_or(Path::new("."));
-    let parent = fs::canonicalize(parent).map_err(|_| fail())?;
+    let destination = destination(path, code)?;
+    let parent = destination.parent().ok_or_else(fail)?.to_owned();
     let parent_metadata = fs::metadata(&parent).map_err(|_| fail())?;
     if !parent_metadata.is_dir() || parent_metadata.mode() & 0o022 != 0 {
         return Err(fail());
     }
-    let destination = parent.join(filename);
     fs::DirBuilder::new()
         .mode(0o700)
         .create(&destination)

@@ -136,6 +136,9 @@ struct Change {
 #[derive(Serialize)]
 struct NextAction {
     kind: &'static str,
+    /// For a selection: whether catalog ratings or only the tie-break chose it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    selection_basis: Option<&'static str>,
     summary: String,
     phases: Vec<Phase>,
     would_change: Vec<Change>,
@@ -145,10 +148,11 @@ fn error(code: &'static str) -> CliError {
     CliError::Product(code)
 }
 
-fn label(value: &impl Serialize) -> String {
+/// Serialized name of a unit enum value; any other shape is an internal error.
+fn label(value: &impl Serialize) -> Result<String, CliError> {
     match serde_json::to_value(value) {
-        Ok(Value::String(text)) => text,
-        _ => String::new(),
+        Ok(Value::String(text)) => Ok(text),
+        _ => Err(CliError::Internal),
     }
 }
 
@@ -212,7 +216,28 @@ fn declared_host(path: &Path) -> Result<HostSnapshot, CliError> {
     {
         return Err(error("advisory.host.invalid"));
     }
+    // Same rule as --declare-capability: no egress boundary exists.
+    if host.capabilities.contains(&Capability::Network) {
+        return Err(error("advisory.declaration.network"));
+    }
     Ok(host)
+}
+
+/// Overlays operator declarations. A declaration never overrides evidence
+/// that the capability is unsupported.
+fn apply_declarations(
+    host: &mut HostSnapshot,
+    knowledge: &mut BTreeMap<Capability, CapabilitySupport>,
+    declared: &BTreeSet<Capability>,
+) -> Result<(), CliError> {
+    for capability in declared {
+        if knowledge.get(capability) == Some(&CapabilitySupport::Unsupported) {
+            return Err(error("advisory.declaration.contradicts_evidence"));
+        }
+        knowledge.insert(*capability, CapabilitySupport::Supported);
+        host.capabilities.insert(*capability);
+    }
+    Ok(())
 }
 
 fn mapping(input: &TaskInput, task: &NormalizedTask) -> Result<Vec<Mapping>, CliError> {
@@ -368,7 +393,7 @@ impl Facts<'_> {
                 }
             };
             facts.push(Fact {
-                subject: format!("host.capability.{}", label(&capability)),
+                subject: format!("host.capability.{}", label(&capability)?),
                 value: to_value(&support)?,
                 provenance,
                 source,
@@ -396,22 +421,23 @@ fn skill_rows(
     catalog: &Catalog,
     request: &RouteRequest,
     decision: &DecisionEnvelope,
-) -> Vec<SkillRow> {
+) -> Result<Vec<SkillRow>, CliError> {
     let supported = |capability: &Capability| {
         request.capability_knowledge.get(capability) == Some(&CapabilitySupport::Supported)
     };
     requested
         .iter()
         .map(|id| {
-            let stages: Vec<Value> = decision
+            let stages = decision
                 .selected_plan()
                 .map(|plan| {
                     plan.stages
                         .iter()
                         .filter(|stage| stage.skills.contains(id))
-                        .map(|stage| Value::String(label(&stage.kind)))
-                        .collect()
+                        .map(|stage| label(&stage.kind).map(Value::String))
+                        .collect::<Result<Vec<_>, _>>()
                 })
+                .transpose()?
                 .unwrap_or_default();
             let status = match catalog.skill(id) {
                 None => "absent_from_catalog",
@@ -434,17 +460,21 @@ fn skill_rows(
                 Some(_) if !stages.is_empty() => "suggested",
                 Some(_) => "not_attached",
             };
-            SkillRow {
+            Ok(SkillRow {
                 id: id.clone(),
                 status,
                 stages,
-            }
+            })
         })
         .collect()
 }
 
-fn capability_change(code: &str, capability: Capability, support: CapabilitySupport) -> Change {
-    let name = label(&capability);
+fn capability_change(
+    code: &str,
+    capability: Capability,
+    support: CapabilitySupport,
+) -> Result<Change, CliError> {
+    let name = label(&capability)?;
     let change = match support {
         CapabilitySupport::Unknown if capability == Capability::Network => {
             "Network support cannot be declared in advisory mode; it needs a provider egress boundary (ADR 0022).".to_owned()
@@ -459,12 +489,12 @@ fn capability_change(code: &str, capability: Capability, support: CapabilitySupp
             "No offered catalog model declares '{name}'; this needs a reviewed catalog revision or another model."
         ),
     };
-    Change {
+    Ok(Change {
         code: code.to_owned(),
         capability: Some(capability),
         models: vec![],
         change,
-    }
+    })
 }
 
 fn generic_change(code: &str, models: Vec<ModelId>) -> Change {
@@ -486,7 +516,10 @@ fn generic_change(code: &str, models: Vec<ModelId>) -> Change {
 /// (stage, model) pair counts once, under the reason that blocks it whatever
 /// the effort: an unoffered model, then a stage the catalog does not declare
 /// (a catalog fact, not an operator one), then a capability, then efforts.
-fn would_change(request: &RouteRequest, decision: &DecisionEnvelope) -> Vec<Change> {
+fn would_change(
+    request: &RouteRequest,
+    decision: &DecisionEnvelope,
+) -> Result<Vec<Change>, CliError> {
     let mut pairs = BTreeMap::<(StageKind, &ModelId), BTreeSet<&str>>::new();
     for exclusion in decision.exclusions() {
         pairs
@@ -545,7 +578,7 @@ fn would_change(request: &RouteRequest, decision: &DecisionEnvelope) -> Vec<Chan
             }
         };
         if let Some(code) = code {
-            changes.push(capability_change(code, *capability, support));
+            changes.push(capability_change(code, *capability, support)?);
         }
     }
     for (code, models) in generic {
@@ -559,7 +592,7 @@ fn would_change(request: &RouteRequest, decision: &DecisionEnvelope) -> Vec<Chan
             change: "No operator-supplied fact changes this result; the catalog declares no model for a required phase, or no plan passed the policy. See the decision exclusions.".into(),
         });
     }
-    changes
+    Ok(changes)
 }
 
 fn next_action(
@@ -575,7 +608,7 @@ fn next_action(
         caveat.push_str(" The task requires no capability, so no host capability was checked.");
     }
     if !declared.is_empty() {
-        let names: Vec<_> = declared.iter().map(label).collect();
+        let names = declared.iter().map(label).collect::<Result<Vec<_>, _>>()?;
         caveat.push_str(&format!(
             " Support for {} is declared by you, not verified.",
             names.join(", ")
@@ -599,9 +632,9 @@ fn next_action(
                 };
                 steps.push(format!(
                     "{}: model {} at effort {} with {}{fresh}",
-                    label(&stage.kind),
+                    label(&stage.kind)?,
                     stage.model,
-                    label(&stage.effort),
+                    label(&stage.effort)?,
                     skills
                 ));
                 phases.push(Phase {
@@ -612,10 +645,53 @@ fn next_action(
                     fresh_instance: stage.verification_independence.is_some(),
                 });
             }
+            // Quality 0 is the catalogs' unrated convention: the score cannot
+            // separate such models on quality, so cost, latency and then the
+            // identifier order decide.
+            let unrated: BTreeSet<&ModelId> = plan
+                .stages
+                .iter()
+                .filter(|stage| {
+                    catalog
+                        .model(&stage.model)
+                        .is_none_or(|model| model.quality_micros == 0)
+                })
+                .map(|stage| &stage.model)
+                .collect();
+            let (selection_basis, basis) = if plan
+                .stages
+                .iter()
+                .all(|stage| unrated.contains(&stage.model))
+            {
+                (
+                    "unrated_tie_break",
+                    "every selected model is unrated in the catalog, so this choice is a deterministic tie-break, not a quality recommendation.".to_owned(),
+                )
+            } else if unrated.is_empty() {
+                (
+                    "catalog_policy_prior",
+                    "ratings come from the catalog, a declared policy prior, not a measurement."
+                        .to_owned(),
+                )
+            } else {
+                let ids: Vec<_> = unrated.iter().map(|id| id.as_str()).collect();
+                (
+                    "partly_unrated",
+                    format!(
+                        "ratings come from the catalog, a declared policy prior, not a measurement; {} unrated, so its selection is not a quality recommendation.",
+                        if ids.len() == 1 {
+                            format!("{} is", ids[0])
+                        } else {
+                            format!("{} are", ids.join(", "))
+                        }
+                    ),
+                )
+            };
             Ok(NextAction {
                 kind: "select_per_phase",
+                selection_basis: Some(selection_basis),
                 summary: format!(
-                    "Nothing was executed. In your {harness} host, select per phase {}. Ratings come from catalog {}, a declared policy prior, not a measurement.{caveat}",
+                    "Nothing was executed. In your {harness} host, select per phase {}. Catalog {}: {basis}{caveat}",
                     steps.join("; "),
                     catalog.version()
                 ),
@@ -625,16 +701,17 @@ fn next_action(
         }
         RouteDecision::NoRoute { .. } => Ok(NextAction {
             kind: "no_recommendation",
+            selection_basis: None,
             summary: format!(
                 "Nothing was executed and no model is recommended for your {harness} host. Keep your current host choice, or supply one of the facts listed in would_change and run advise again.{caveat}"
             ),
             phases: vec![],
-            would_change: would_change(request, decision),
+            would_change: would_change(request, decision)?,
         }),
     }
 }
 
-fn clarification(questions: Vec<Clarification>) -> Report {
+fn clarification(questions: Vec<Clarification>, output_requested: bool) -> Report {
     let would_change = questions
         .iter()
         .map(|question| Change {
@@ -656,7 +733,15 @@ fn clarification(questions: Vec<Clarification>) -> Report {
         decision: None,
         next_manual_action: NextAction {
             kind: "answer_questions",
-            summary: "Nothing was executed. Answer the open questions with task-guide --task <this task> --interactive --output-directory <new directory> --json, then run advise on the exported input.json.".into(),
+            selection_basis: None,
+            summary: format!(
+                "Nothing was executed. Answer the open questions with task-guide --task <this task> --interactive --output-directory <new directory> --json, then run advise on the exported input.json.{}",
+                if output_requested {
+                    " The requested output directory was not created."
+                } else {
+                    ""
+                }
+            ),
             phases: vec![],
             would_change,
         },
@@ -667,7 +752,10 @@ fn clarification(questions: Vec<Clarification>) -> Report {
 pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
     let declared = declarations(&args.declare_capability)?;
     let requested = skill_ids(&args.skills)?;
-    let input: TaskInput = read_json(&args.task, MAX_TASK)?;
+    let input: TaskInput = read_json(&args.task, MAX_TASK).map_err(|failure| match failure {
+        CliError::RequestTooLarge => error("advisory.task.too_large"),
+        other => other,
+    })?;
     let risk_context: Option<TaskRiskContext> = args
         .risk_context
         .as_deref()
@@ -677,7 +765,10 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         .map_err(product::workflow_error)?;
     let Some(task) = normalized.normalization.task.clone() else {
         return output(
-            &clarification(normalized.normalization.questions),
+            &clarification(
+                normalized.normalization.questions,
+                args.output_directory.is_some(),
+            ),
             json,
             ExitCode::from(3),
         );
@@ -692,6 +783,11 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         .as_deref()
         .map(|path| inspect::read_snapshot(path, Some(now), max_age))
         .transpose()?;
+    // `route` always rebinds a catalog's embedded observation, so a declared
+    // overlay on it could never replay through `route`; refuse it instead.
+    if embedded.is_some() && !declared.is_empty() {
+        return Err(error("advisory.declaration.embedded_observation"));
+    }
     let declared_file = args.host.as_deref().map(declared_host).transpose()?;
     let (source, mut host, mut knowledge) = match (explicit, embedded, declared_file) {
         (Some(explicit), Some(embedded), _) if explicit.hash() != embedded.hash() => {
@@ -730,10 +826,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
     {
         return Err(error("advisory.model.unknown"));
     }
-    for capability in &declared {
-        knowledge.insert(*capability, CapabilitySupport::Supported);
-        host.capabilities.insert(*capability);
-    }
+    apply_declarations(&mut host, &mut knowledge, &declared)?;
 
     let request = RouteRequest {
         task: TaskContext {
@@ -793,19 +886,13 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         questions: vec![],
         mapping: mapping(&input, &task)?,
         facts,
-        skills: skill_rows(&requested, &catalog, &request, &decision),
+        skills: skill_rows(&requested, &catalog, &request, &decision)?,
         next_manual_action: next_action(&host, &catalog, &declared, &request, &decision)?,
         decision: Some(decision),
         output_directory: None,
     };
     if let Some(path) = &args.output_directory {
-        report.output_directory = Some(publish(
-            path,
-            &input,
-            risk_context.as_ref(),
-            &request,
-            &report,
-        )?);
+        publish(path, &input, risk_context.as_ref(), &request, &mut report)?;
     }
     output(&report, json, exit)
 }
@@ -815,13 +902,28 @@ fn output(report: &Report, json: bool, exit_code: ExitCode) -> Result<Outcome, C
         return product::json_output(report, exit_code);
     }
     Ok(Outcome {
-        output: human(report),
+        output: human(report)?,
         exit_code,
     })
 }
 
+/// Plain text for a fact value: lists joined by commas, maps as `key: value`.
+fn plain(value: &Value) -> String {
+    match value {
+        Value::String(text) => text.clone(),
+        Value::Array(items) if items.is_empty() => "none".into(),
+        Value::Array(items) => items.iter().map(plain).collect::<Vec<_>>().join(", "),
+        Value::Object(fields) => fields
+            .iter()
+            .map(|(key, value)| format!("{key}: {}", plain(value)))
+            .collect::<Vec<_>>()
+            .join("; "),
+        other => other.to_string(),
+    }
+}
+
 /// Short human view. The next manual action is always the last section.
-fn human(report: &Report) -> String {
+fn human(report: &Report) -> Result<String, CliError> {
     let mut lines = vec![
         "Advisory route: nothing was executed".to_owned(),
         format!("Status: {}", report.status),
@@ -836,14 +938,11 @@ fn human(report: &Report) -> String {
     if !report.facts.is_empty() {
         lines.push("Facts:".into());
         for fact in &report.facts {
-            let value = match &fact.value {
-                Value::String(text) => text.clone(),
-                other => other.to_string(),
-            };
+            let value = plain(&fact.value);
             lines.push(format!(
                 "  {} [{}]: {}",
                 escaped(&fact.subject),
-                label(&fact.provenance),
+                label(&fact.provenance)?,
                 escaped(&value)
             ));
         }
@@ -891,10 +990,10 @@ fn human(report: &Report) -> String {
     lines.push("Next manual action:".into());
     lines.push(format!("  {}", escaped(&action.summary)));
     for change in &action.would_change {
-        let subject = change
-            .capability
-            .map(|capability| format!(" {}", label(&capability)))
-            .unwrap_or_default();
+        let subject = match change.capability {
+            Some(capability) => format!(" {}", label(&capability)?),
+            None => String::new(),
+        };
         lines.push(format!(
             "  - {}{}: {}",
             escaped(&change.code),
@@ -910,19 +1009,22 @@ fn human(report: &Report) -> String {
             lines.push(format!("    models: {}", models.join(", ")));
         }
     }
-    format!("{}\n", lines.join("\n"))
+    Ok(format!("{}\n", lines.join("\n")))
 }
 
-/// `advice.json` is published last as the completion marker.
+/// `advice.json` is published last as the completion marker. It records the
+/// same `output_directory` as the printed report.
 #[cfg(unix)]
 fn publish(
     path: &Path,
     input: &TaskInput,
     risk_context: Option<&TaskRiskContext>,
     request: &RouteRequest,
-    report: &Report,
-) -> Result<PathBuf, CliError> {
+    report: &mut Report,
+) -> Result<(), CliError> {
     let fail = || error("advisory.output");
+    let destination = crate::private_output::destination(path, "advisory.output")?;
+    report.output_directory = Some(destination.clone());
     let decision = report.decision.as_ref().ok_or_else(fail)?;
     let mut documents = vec![(
         "task.json",
@@ -943,9 +1045,13 @@ fn publish(
     documents.push(("decision.json", decision.into_bytes()));
     documents.push((
         "advice.json",
-        serde_json::to_vec_pretty(report).map_err(|_| fail())?,
+        serde_json::to_vec_pretty(&*report).map_err(|_| fail())?,
     ));
-    crate::private_output::publish(path, documents, "advisory.output")
+    let published = crate::private_output::publish(path, documents, "advisory.output")?;
+    if published != destination {
+        return Err(fail());
+    }
+    Ok(())
 }
 
 #[cfg(not(unix))]
@@ -954,7 +1060,44 @@ fn publish(
     _: &TaskInput,
     _: Option<&TaskRiskContext>,
     _: &RouteRequest,
-    _: &Report,
-) -> Result<PathBuf, CliError> {
+    _: &mut Report,
+) -> Result<(), CliError> {
     Err(error("advisory.output.unsupported"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn host() -> HostSnapshot {
+        serde_json::from_value(json!({
+            "id": "host", "harness": "codex", "supported_models": [],
+            "supported_efforts": {}, "capabilities": []
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn a_declaration_never_overrides_unsupported_evidence() {
+        let mut host = host();
+        let mut knowledge = BTreeMap::from([(Capability::Tools, CapabilitySupport::Unsupported)]);
+        let declared = BTreeSet::from([Capability::Tools]);
+        let refused = apply_declarations(&mut host, &mut knowledge, &declared);
+        assert!(matches!(
+            refused,
+            Err(CliError::Product(
+                "advisory.declaration.contradicts_evidence"
+            ))
+        ));
+        assert_eq!(
+            knowledge[&Capability::Tools],
+            CapabilitySupport::Unsupported
+        );
+        assert!(host.capabilities.is_empty());
+        // Unknown support may be declared; the overlay is applied to both views.
+        let mut knowledge = BTreeMap::from([(Capability::Tools, CapabilitySupport::Unknown)]);
+        assert!(apply_declarations(&mut host, &mut knowledge, &declared).is_ok());
+        assert_eq!(knowledge[&Capability::Tools], CapabilitySupport::Supported);
+        assert!(host.capabilities.contains(&Capability::Tools));
+    }
 }

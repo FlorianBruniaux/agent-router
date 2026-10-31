@@ -6,9 +6,9 @@ English | [Français](advisory-route.fr.md)
 and skills recommendation per phase, or an explained refusal. It ends with the
 next manual action to take in your host. It is advisory only: it launches no
 host or model, contacts no provider, grants no permission and enforces no budget.
-This first delivery is Codex first: the bundled catalog covers Codex model
-identifiers. Any catalog and host description with the same contracts is read
-the same way; this path has not yet been run with the Claude Code catalog (#218).
+It works with the bundled Codex catalogs and with the operator-declared
+Claude Code catalog `claude-core-v1`; any catalog and host description with the
+same contracts is read the same way.
 
 The decision itself comes from the existing `route` policy. `advise` only maps
 the task to a route request, labels where every fact comes from and writes the
@@ -116,14 +116,61 @@ Status: recommended
 Skill tdd: suggested
 Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Ratings come from catalog codex-core-v2, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v2: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Select that model and effort in your host for each phase, load only the listed
 skills, and keep your host's own permission settings. When a phase is marked
 `fresh_instance`, run it in a new session. A declaration removes the snapshot
 hash from the decision, because the decision no longer depends on the
-observation alone. `network` cannot be declared (`advisory.declaration.network`).
+observation alone. `network` cannot be declared, neither with the flag nor in a
+host file (`advisory.declaration.network`). A declaration that contradicts
+evidence of `unsupported` is refused (`advisory.declaration.contradicts_evidence`),
+and so is any declaration with a generated catalog that embeds its own
+observation (`advisory.declaration.embedded_observation`): `route` always rebinds
+that observation, so the saved request could not replay.
+
+### Claude Code example
+
+[`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog) is
+operator-declared: every entry is unrated (quality 0) and declares no
+capability. No passive discovery of Claude models or efforts exists, so describe
+the host in a declared file with the identifiers and efforts your account
+actually offers:
+
+```json
+{
+  "id": "my-claude-code",
+  "harness": "claude",
+  "supported_models": ["claude-haiku-4-5-20251001", "claude-opus-5-5", "claude-sonnet-5-5"],
+  "supported_efforts": {
+    "claude-haiku-4-5-20251001": ["medium", "high"],
+    "claude-opus-5-5": ["medium", "high", "xhigh"],
+    "claude-sonnet-5-5": ["medium", "high"]
+  },
+  "capabilities": []
+}
+```
+
+```sh
+agent-router advise --task ~/agent-router-advice/backup-task/input.json \
+  --risk-context ~/agent-router-advice/backup-task/risk-context.json \
+  --catalog assets/catalogs/claude-core-v1.json --host ~/agent-router-advice/claude-host.json
+```
+
+For a task without required capabilities, the output ends with:
+
+```text
+Plan: claude-haiku-4-5-20251001/high -> claude-haiku-4-5-20251001/medium -> claude-haiku-4-5-20251001/high
+Next manual action:
+  Nothing was executed. In your claude host, select per phase plan: model claude-haiku-4-5-20251001 at effort high with no skill; execute: model claude-haiku-4-5-20251001 at effort medium with no skill; verify: model claude-haiku-4-5-20251001 at effort high with no skill. Catalog claude-core-v1: every selected model is unrated in the catalog, so this choice is a deterministic tie-break, not a quality recommendation. The task requires no capability, so no host capability was checked.
+```
+
+`selection_basis` is `unrated_tie_break`: with equal scores the router picks by
+identifier order, so the result names a model, not a better one. A task that
+requires `tools` gets no route with this catalog, even with
+`--declare-capability tools`, because no entry declares the capability
+(`model.capability.unsupported`).
 
 ## Provenance
 
@@ -157,7 +204,9 @@ Nothing is dropped silently: every field appears in `mapping` with its handling.
   suggested. A catalog skill is suggested only when its trust, task kinds and
   required capabilities fit and the router attaches it to a selected phase.
 - An incomplete task returns `needs_clarification` with the open questions and
-  writes nothing. Answer them with `task-guide --task <file> --interactive`.
+  writes nothing; if `--output-directory` was given, the summary says the
+  directory was not created. Answer them with `task-guide --task <file> --interactive`.
+- A task file over 1 MiB is refused with `advisory.task.too_large`.
 - `capability attest` records do not feed `advise`: an attestation keeps
   capability support `unknown` in the observation and is consumed only by
   phase routing with an explicit acceptance list.
@@ -175,8 +224,16 @@ no-clobber publication as `task-guide`. It never reuses an existing path.
 | `risk-context.json` | The explicit risk context, if supplied |
 | `route-request.json` | The exact request given to the router |
 | `decision.json` | The decision; `explain --decision` reads it |
-| `advice.json` | The complete report, published last as the completion marker |
+| `advice.json` | The complete report, published last as the completion marker. It is identical to the printed `--json` report, including `output_directory` |
 
-`route --request route-request.json --catalog <catalog> --json` replays the same
-decision. For an unmodified observation, also pass `--host-snapshot`. These
-files contain your task text; keep them out of public repositories.
+`route --request route-request.json --catalog <catalog> --json` prints the same
+bytes as `decision.json` (tested):
+
+| Host source | Replay |
+| --- | --- |
+| `--host` file | as above |
+| `--host-snapshot`, no declaration | add the same `--host-snapshot` |
+| `--host-snapshot` with `--declare-capability` | as above, without the snapshot: the request holds the overlay and the decision is unbound |
+| generated catalog with an embedded observation | as above; `route` rebinds the embedded observation, which is why declarations are refused there |
+
+These files contain your task text; keep them out of public repositories.

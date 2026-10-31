@@ -7,10 +7,10 @@ recommandation de modèle, d'effort et de skills par phase, soit un refus
 expliqué. Le résultat se termine par la prochaine action manuelle à faire dans
 votre host. C'est un conseil seulement : la commande ne lance aucun host ni
 modèle, ne contacte aucun fournisseur, n'accorde aucune permission et
-n'applique aucun budget. Cette première livraison est orientée Codex : le
-catalogue fourni couvre les identifiants de modèles Codex. Tout catalogue et
-toute description de host qui respectent les mêmes contrats sont lus de la même
-façon ; ce parcours n'a pas encore été exécuté avec le catalogue Claude Code (#218).
+n'applique aucun budget. La commande fonctionne avec les
+catalogues Codex fournis et avec le catalogue Claude Code `claude-core-v1`,
+déclaré par l'opérateur ; tout catalogue et toute description de host qui
+respectent les mêmes contrats sont lus de la même façon.
 
 La décision elle-même vient de la politique `route` existante. `advise` se
 contente de convertir la tâche en requête de routage, d'étiqueter l'origine de
@@ -123,15 +123,62 @@ Status: recommended
 Skill tdd: suggested
 Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Ratings come from catalog codex-core-v2, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v2: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Pour chaque phase, sélectionnez ce modèle et cet effort dans votre host,
 chargez seulement les skills listées et gardez les réglages de permission de
 votre host. Quand une phase porte `fresh_instance`, lancez-la dans une nouvelle
 session. Une déclaration retire le hash de l'observation de la décision, car la
-décision ne dépend plus de l'observation seule. `network` ne peut pas être
-déclaré (`advisory.declaration.network`).
+décision ne dépend plus de l'observation seule. `network` ne peut être déclaré
+ni par l'option ni dans un fichier de host (`advisory.declaration.network`). Une
+déclaration qui contredit une preuve de `unsupported` est refusée
+(`advisory.declaration.contradicts_evidence`), de même que toute déclaration avec
+un catalogue généré qui embarque sa propre observation
+(`advisory.declaration.embedded_observation`) : `route` relie toujours cette
+observation, la requête enregistrée ne pourrait donc pas être rejouée.
+
+### Exemple Claude Code
+
+[`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog) (EN)
+est déclaré par l'opérateur : chaque entrée est non notée (qualité 0) et ne
+déclare aucune capacité. Aucune découverte passive des modèles ou efforts
+Claude n'existe : décrivez le host dans un fichier déclaré, avec les
+identifiants et efforts que votre compte propose réellement :
+
+```json
+{
+  "id": "my-claude-code",
+  "harness": "claude",
+  "supported_models": ["claude-haiku-4-5-20251001", "claude-opus-5-5", "claude-sonnet-5-5"],
+  "supported_efforts": {
+    "claude-haiku-4-5-20251001": ["medium", "high"],
+    "claude-opus-5-5": ["medium", "high", "xhigh"],
+    "claude-sonnet-5-5": ["medium", "high"]
+  },
+  "capabilities": []
+}
+```
+
+```sh
+agent-router advise --task ~/agent-router-advice/backup-task/input.json \
+  --risk-context ~/agent-router-advice/backup-task/risk-context.json \
+  --catalog assets/catalogs/claude-core-v1.json --host ~/agent-router-advice/claude-host.json
+```
+
+Pour une tâche sans capacité requise, la sortie se termine par :
+
+```text
+Plan: claude-haiku-4-5-20251001/high -> claude-haiku-4-5-20251001/medium -> claude-haiku-4-5-20251001/high
+Next manual action:
+  Nothing was executed. In your claude host, select per phase plan: model claude-haiku-4-5-20251001 at effort high with no skill; execute: model claude-haiku-4-5-20251001 at effort medium with no skill; verify: model claude-haiku-4-5-20251001 at effort high with no skill. Catalog claude-core-v1: every selected model is unrated in the catalog, so this choice is a deterministic tie-break, not a quality recommendation. The task requires no capability, so no host capability was checked.
+```
+
+`selection_basis` vaut `unrated_tie_break` : à scores égaux, le routeur choisit
+selon l'ordre des identifiants. Le résultat nomme un modèle, pas un meilleur
+modèle. Une tâche qui exige `tools` n'obtient aucune route avec ce catalogue,
+même avec `--declare-capability tools`, car aucune entrée ne déclare cette
+capacité (`model.capability.unsupported`).
 
 ## Provenance
 
@@ -167,7 +214,10 @@ traitement.
   confiance, ses types de tâche et ses capacités requises conviennent et que le
   routeur l'attache à une phase retenue.
 - Une tâche incomplète renvoie `needs_clarification` avec les questions
-  ouvertes et n'écrit rien. Répondez-y avec `task-guide --task <fichier> --interactive`.
+  ouvertes et n'écrit rien ; si `--output-directory` est fourni, le résumé
+  indique que le répertoire n'a pas été créé. Répondez-y avec
+  `task-guide --task <fichier> --interactive`.
+- Un fichier de tâche de plus de 1 Mio est refusé avec `advisory.task.too_large`.
 - Les enregistrements de `capability attest` n'alimentent pas `advise` : une
   attestation laisse le support de la capacité à `unknown` dans l'observation
   et n'est consommée que par le routage par phase avec une liste d'acceptation
@@ -188,9 +238,17 @@ chemin existant.
 | `risk-context.json` | Le contexte de risque explicite, s'il est fourni |
 | `route-request.json` | La requête exacte transmise au routeur |
 | `decision.json` | La décision ; `explain --decision` la lit |
-| `advice.json` | Le rapport complet, publié en dernier comme marqueur de fin |
+| `advice.json` | Le rapport complet, publié en dernier comme marqueur de fin. Il est identique au rapport `--json` imprimé, `output_directory` compris |
 
-`route --request route-request.json --catalog <catalogue> --json` rejoue la
-même décision. Pour une observation non modifiée, passez aussi
-`--host-snapshot`. Ces fichiers contiennent le texte de votre tâche : gardez-les
-hors des dépôts publics.
+`route --request route-request.json --catalog <catalogue> --json` imprime les
+mêmes octets que `decision.json` (testé) :
+
+| Source du host | Rejeu |
+| --- | --- |
+| fichier `--host` | tel quel |
+| `--host-snapshot`, sans déclaration | ajoutez le même `--host-snapshot` |
+| `--host-snapshot` avec `--declare-capability` | tel quel, sans l'observation : la requête porte la surcouche et la décision n'est pas liée |
+| catalogue généré avec observation embarquée | tel quel ; `route` relie l'observation embarquée, c'est pourquoi les déclarations y sont refusées |
+
+Ces fichiers contiennent le texte de votre tâche : gardez-les hors des dépôts
+publics.

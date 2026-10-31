@@ -3,7 +3,7 @@ adr: "0051"
 title: Advisory route for one normalized task
 status: implemented
 created: 2026-10-28
-last_modified: 2026-10-28
+last_modified: 2026-10-31
 scope: "The `advise` command and its version 1 report. Advisory only: no execution, permission, budget admission or capability proof."
 amended_by: []
 supersedes: []
@@ -44,7 +44,10 @@ with `Router::stable_v1` and returns a version 1 report with `status`,
   stays `unknown`.
 - `--declare-capability` overlays one capability as supported and labels it
   `declared`. With an overlay, the decision is not bound to the snapshot hash.
-  `network` cannot be declared.
+  `network` cannot be declared, by the flag or in a host file. A declaration
+  never overrides evidence of `unsupported`, and is refused with a catalog
+  that embeds its own observation, because `route` rebinds that observation
+  and the saved request could not replay.
 - A host model absent from the catalog is refused (`advisory.model.unknown`).
 - `--skill` adds operator candidates with source `operator-declared` and score
   0. Each requested skill is reported with its status; an absent skill is never
@@ -52,18 +55,24 @@ with `Router::stable_v1` and returns a version 1 report with `status`,
 - Scope, budget, mutations, sensitivity, deliverables, constraints and
   dependencies are reported as `not_enforced_by_advisory_routing` with their
   values. The routed risk is the normalizer's effective risk.
+- A selection reports `selection_basis`: `catalog_policy_prior`,
+  `partly_unrated` or `unrated_tie_break`. Quality 0 is the catalogs' unrated
+  convention; when every selected model has it, the summary says the choice is
+  a deterministic tie-break, not a quality recommendation.
 - `--output-directory` publishes `task.json`, optional `risk-context.json`,
   `route-request.json`, `decision.json` and `advice.json` through the same
-  no-clobber private publication as `task-guide`.
+  no-clobber private publication as `task-guide`. `advice.json` equals the
+  printed report, `output_directory` included, and `decision.json` equals the
+  bytes `route` prints for the saved request.
 
 ## Consequences
 
 The owner can route a personal task offline and replay the saved request with
 `route`. The decision contract and the router are unchanged. A declared
 capability can produce a recommendation that a verified one would not; the
-report and summary say so. The command has no Codex-specific code path: any catalog
-using the existing contracts is read the same way. It was not run against the
-Claude Code catalog from #218, which is absent from this branch. Retrieval indexes,
+report and summary say so. The command has no host-specific code path: tests run it
+with the Codex catalogs and the operator-declared `claude-core-v1` catalog. With
+an unrated catalog, the selection is reported as a tie-break. Retrieval indexes,
 proof stores and budget admission stay out of this command.
 
 ## Rejected options

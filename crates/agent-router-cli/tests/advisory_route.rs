@@ -100,6 +100,11 @@ fn fact<'a>(report: &'a Value, subject: &str) -> &'a Value {
 
 #[cfg(feature = "codex")]
 fn discovered_snapshot(dir: &Path) -> PathBuf {
+    discovered_snapshot_at(dir, "observation.json", NOW)
+}
+
+#[cfg(feature = "codex")]
+fn discovered_snapshot_at(dir: &Path, name: &str, now: &str) -> PathBuf {
     let standard = ["low", "medium", "high", "xhigh", "max"];
     let extended = ["low", "medium", "high", "xhigh", "max", "ultra"];
     let models: Vec<_> = [
@@ -126,13 +131,13 @@ fn discovered_snapshot(dir: &Path) -> PathBuf {
     let observed = command()
         .args(["inspect", "--host", "codex", "--model-cache"])
         .arg(&cache)
-        .args(["--observed-version", "0.163.0", "--now", NOW, "--json"])
+        .args(["--observed-version", "0.163.0", "--now", now, "--json"])
         .assert()
         .success()
         .get_output()
         .stdout
         .clone();
-    let path = dir.join("observation.json");
+    let path = dir.join(name);
     fs::write(&path, observed).unwrap();
     path
 }
@@ -563,8 +568,12 @@ fn writes_only_the_explicit_private_directory_and_never_the_target_repository() 
     }
     let saved: Value =
         serde_json::from_slice(&fs::read(advice.join("advice.json")).unwrap()).unwrap();
-    assert_eq!(saved["status"], report["status"]);
-    assert_eq!(saved["decision"], report["decision"]);
+    // The saved report is the printed report, output directory included.
+    assert_eq!(saved, report);
+    assert_eq!(
+        Path::new(saved["output_directory"].as_str().unwrap()),
+        fs::canonicalize(&advice).unwrap()
+    );
     let request: Value =
         serde_json::from_slice(&fs::read(advice.join("route-request.json")).unwrap()).unwrap();
     // The saved request replays through the existing `route` command.
@@ -628,4 +637,462 @@ fn identical_inputs_give_identical_reports() {
             .clone()
     };
     assert_eq!(run(), run());
+}
+
+const CLAUDE_MODELS: [&str; 3] = [
+    "claude-haiku-4-5-20251001",
+    "claude-opus-5-5",
+    "claude-sonnet-5-5",
+];
+
+fn claude_host(dir: &Path) -> PathBuf {
+    let mut host = declared_host(&CLAUDE_MODELS, json!([]));
+    host["id"] = "owner-claude-code".into();
+    host["harness"] = "claude".into();
+    write(&dir.join("claude-host.json"), &host)
+}
+
+#[test]
+fn unrated_claude_catalog_selection_is_reported_as_a_tie_break() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    let output = command()
+        .args(["advise", "--task"])
+        .arg(&task)
+        .arg("--risk-context")
+        .arg(risk_context(dir.path()))
+        .arg("--catalog")
+        .arg(root("assets/catalogs/claude-core-v1.json"))
+        .arg("--host")
+        .arg(claude_host(dir.path()))
+        .args(["--now", NOW, "--json"])
+        .assert()
+        .code(0)
+        .get_output()
+        .clone();
+    let report = parsed(&output);
+    assert_eq!(report["status"], "recommended");
+    assert_eq!(fact(&report, "host.models")["provenance"], "declared");
+    let action = &report["next_manual_action"];
+    assert_eq!(action["selection_basis"], "unrated_tie_break");
+    let summary = action["summary"].as_str().unwrap();
+    assert!(summary.contains("In your claude host"), "{summary}");
+    assert!(summary.contains("tie-break"), "{summary}");
+    assert!(
+        summary.contains("not a quality recommendation"),
+        "{summary}"
+    );
+    // The rated Codex prior is not described as a tie-break.
+    let rated = write(
+        &dir.path().join("codex-host.json"),
+        &declared_host(&["gpt-5.6-sol", "gpt-5.6-terra"], json!([])),
+    );
+    let output = command()
+        .args(["advise", "--task"])
+        .arg(&task)
+        .arg("--risk-context")
+        .arg(risk_context(dir.path()))
+        .arg("--catalog")
+        .arg(catalog())
+        .arg("--host")
+        .arg(&rated)
+        .args(["--now", NOW, "--json"])
+        .assert()
+        .code(0)
+        .get_output()
+        .clone();
+    let action = parsed(&output)["next_manual_action"].clone();
+    assert_eq!(action["selection_basis"], "catalog_policy_prior");
+    assert!(!action["summary"].as_str().unwrap().contains("tie-break"));
+}
+
+#[test]
+fn claude_catalog_declares_no_tools_so_a_declaration_cannot_create_a_route() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!(["tools"])));
+    let output = command()
+        .args(["advise", "--task"])
+        .arg(&task)
+        .arg("--risk-context")
+        .arg(risk_context(dir.path()))
+        .arg("--catalog")
+        .arg(root("assets/catalogs/claude-core-v1.json"))
+        .arg("--host")
+        .arg(claude_host(dir.path()))
+        .args(["--declare-capability", "tools", "--now", NOW, "--json"])
+        .assert()
+        .code(3)
+        .get_output()
+        .clone();
+    let report = parsed(&output);
+    assert_eq!(report["status"], "no_recommendation");
+    assert_eq!(
+        fact(&report, "host.capability.tools")["provenance"],
+        "declared"
+    );
+    let changes = report["next_manual_action"]["would_change"]
+        .as_array()
+        .unwrap();
+    assert!(
+        changes
+            .iter()
+            .any(|change| change["code"] == "model.capability.unsupported"
+                && change["capability"] == "tools"),
+        "{changes:#?}"
+    );
+}
+
+/// Runs `advise` with the shared risk context and the given extra arguments.
+fn advise(dir: &Path, task: &Path, catalog: &Path, extra: &[&std::ffi::OsStr]) -> Command {
+    let mut command = command();
+    command
+        .args(["advise", "--task"])
+        .arg(task)
+        .arg("--risk-context")
+        .arg(risk_context(dir))
+        .arg("--catalog")
+        .arg(catalog)
+        .args(extra)
+        .args(["--now", NOW, "--json"]);
+    command
+}
+fn os(value: &str) -> &std::ffi::OsStr {
+    std::ffi::OsStr::new(value)
+}
+fn error_line(code: &str) -> String {
+    format!("{{\"schema_version\":1,\"error\":\"{code}\"}}\n")
+}
+
+#[test]
+fn declared_host_cannot_list_network() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(
+            &["gpt-5.6-sol", "gpt-5.6-terra"],
+            json!(["tools", "network"]),
+        ),
+    );
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[os("--host"), host.as_os_str()],
+    )
+    .assert()
+    .code(2)
+    .stdout("")
+    .stderr(error_line("advisory.declaration.network"));
+}
+
+#[test]
+fn incomplete_task_says_the_requested_directory_was_not_created() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut incomplete = task(json!([]));
+    incomplete["budget"] = Value::Null;
+    let task = write(&dir.path().join("task.json"), &incomplete);
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol"], json!([])),
+    );
+    let advice = dir.path().join("advice");
+    let output = advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[
+            os("--host"),
+            host.as_os_str(),
+            os("--output-directory"),
+            advice.as_os_str(),
+        ],
+    )
+    .assert()
+    .code(3)
+    .get_output()
+    .clone();
+    let report = parsed(&output);
+    assert!(report["output_directory"].is_null());
+    assert!(
+        report["next_manual_action"]["summary"]
+            .as_str()
+            .unwrap()
+            .contains("The requested output directory was not created"),
+        "{report:#}"
+    );
+    assert!(!advice.exists());
+}
+
+#[test]
+fn oversized_task_is_refused_with_an_explicit_code() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = dir.path().join("task.json");
+    fs::write(&task, vec![b' '; 1024 * 1024 + 1]).unwrap();
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol"], json!([])),
+    );
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[os("--host"), host.as_os_str()],
+    )
+    .assert()
+    .code(2)
+    .stderr(error_line("advisory.task.too_large"));
+}
+
+#[test]
+fn host_source_and_skill_bounds_are_explicit_errors() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    advise(dir.path(), &task, &catalog(), &[])
+        .assert()
+        .code(2)
+        .stderr(error_line("advisory.host.required"));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol"], json!([])),
+    );
+    let mut extra = vec![os("--host"), host.as_os_str()];
+    for _ in 0..65 {
+        extra.extend([os("--skill"), os("tdd")]);
+    }
+    advise(dir.path(), &task, &catalog(), &extra)
+        .assert()
+        .code(2)
+        .stderr(error_line("advisory.skills.too_many"));
+}
+
+#[test]
+fn untrusted_and_unattached_skills_are_not_suggested() {
+    let dir = tempfile::tempdir().unwrap();
+    let mut prior: Value = serde_json::from_slice(&fs::read(catalog()).unwrap()).unwrap();
+    prior["skills"].as_array_mut().unwrap().push(json!({
+        "id": "fixture-untrusted", "description": "Untrusted negative control.",
+        "task_kinds": ["implement"], "required_capabilities": [], "trust": "untrusted"
+    }));
+    let edited = write(&dir.path().join("catalog.json"), &prior);
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol", "gpt-5.6-terra"], json!([])),
+    );
+    let output = advise(
+        dir.path(),
+        &task,
+        &edited,
+        &[
+            os("--host"),
+            host.as_os_str(),
+            os("--skill"),
+            os("fixture-untrusted"),
+        ],
+    )
+    .assert()
+    .code(0)
+    .get_output()
+    .clone();
+    let report = parsed(&output);
+    assert_eq!(report["skills"][0]["status"], "untrusted");
+    // Compatible and supported, but no route attaches it: no Claude entry
+    // declares tools, so nothing is selected.
+    let tools_task = write(
+        &dir.path().join("tools-task.json"),
+        &task_value(json!(["tools"])),
+    );
+    let claude = claude_host(dir.path());
+    let output = advise(
+        dir.path(),
+        &tools_task,
+        &root("assets/catalogs/claude-core-v1.json"),
+        &[
+            os("--host"),
+            claude.as_os_str(),
+            os("--declare-capability"),
+            os("tools"),
+            os("--skill"),
+            os("tdd"),
+        ],
+    )
+    .assert()
+    .code(3)
+    .get_output()
+    .clone();
+    let report = parsed(&output);
+    assert_eq!(report["skills"][0]["status"], "not_attached");
+    assert_eq!(report["skills"][0]["stages"], json!([]));
+}
+fn task_value(required_capabilities: Value) -> Value {
+    task(required_capabilities)
+}
+
+/// Saved decision bytes and the bytes `route` prints for the saved request.
+fn replay_bytes(
+    dir: &Path,
+    advice: &Path,
+    catalog: &Path,
+    snapshot: Option<&Path>,
+) -> (Vec<u8>, Vec<u8>) {
+    let _ = dir;
+    let mut replay = command();
+    replay
+        .arg("route")
+        .arg("--request")
+        .arg(advice.join("route-request.json"))
+        .arg("--catalog")
+        .arg(catalog);
+    if let Some(snapshot) = snapshot {
+        replay.arg("--host-snapshot").arg(snapshot);
+    }
+    let output = replay.args(["--now", NOW, "--json"]).output().unwrap();
+    (
+        fs::read(advice.join("decision.json")).unwrap(),
+        output.stdout,
+    )
+}
+
+#[test]
+fn saved_decision_bytes_replay_through_route_for_a_declared_host() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!(["tools"])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol", "gpt-5.6-terra"], json!(["tools"])),
+    );
+    let advice = dir.path().join("advice");
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[
+            os("--host"),
+            host.as_os_str(),
+            os("--output-directory"),
+            advice.as_os_str(),
+        ],
+    )
+    .assert()
+    .code(0);
+    let (saved, replayed) = replay_bytes(dir.path(), &advice, &catalog(), None);
+    assert_eq!(saved, replayed);
+}
+
+#[cfg(feature = "codex")]
+#[test]
+fn saved_decision_bytes_replay_through_route_for_an_observation() {
+    let dir = tempfile::tempdir().unwrap();
+    let snapshot = discovered_snapshot(dir.path());
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    // Unmodified observation: replay with the same snapshot.
+    let bound = dir.path().join("bound");
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[
+            os("--host-snapshot"),
+            snapshot.as_os_str(),
+            os("--output-directory"),
+            bound.as_os_str(),
+        ],
+    )
+    .assert()
+    .code(0);
+    let (saved, replayed) = replay_bytes(dir.path(), &bound, &catalog(), Some(&snapshot));
+    assert_eq!(saved, replayed);
+    // Declared overlay: the request holds the overlay and is not bound.
+    let overlay = dir.path().join("overlay");
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[
+            os("--host-snapshot"),
+            snapshot.as_os_str(),
+            os("--declare-capability"),
+            os("tools"),
+            os("--output-directory"),
+            overlay.as_os_str(),
+        ],
+    )
+    .assert()
+    .code(0);
+    let (saved, replayed) = replay_bytes(dir.path(), &overlay, &catalog(), None);
+    assert_eq!(saved, replayed);
+}
+
+#[cfg(feature = "codex")]
+fn generated_catalog(dir: &Path, snapshot: &Path) -> PathBuf {
+    let generated = command()
+        .args(["catalog", "refresh", "--host-snapshot"])
+        .arg(snapshot)
+        .arg("--prior")
+        .arg(catalog())
+        .args(["--now", NOW, "--json"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+    let path = dir.join("generated.json");
+    fs::write(&path, generated).unwrap();
+    path
+}
+
+#[cfg(feature = "codex")]
+#[test]
+fn embedded_observation_catalog_refuses_conflicting_host_sources_and_declarations() {
+    let dir = tempfile::tempdir().unwrap();
+    let snapshot = discovered_snapshot(dir.path());
+    let generated = generated_catalog(dir.path(), &snapshot);
+    let task = write(&dir.path().join("task.json"), &task(json!([])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol"], json!([])),
+    );
+    advise(
+        dir.path(),
+        &task,
+        &generated,
+        &[os("--host"), host.as_os_str()],
+    )
+    .assert()
+    .code(2)
+    .stderr(error_line("advisory.host.conflict"));
+    let other = discovered_snapshot_at(dir.path(), "other.json", "9");
+    advise(
+        dir.path(),
+        &task,
+        &generated,
+        &[os("--host-snapshot"), other.as_os_str()],
+    )
+    .assert()
+    .code(2)
+    .stderr(error_line("catalog.snapshot.mismatch"));
+    // `route` always rebinds the embedded observation, so a declaration
+    // overlay could not replay; it is refused instead.
+    advise(
+        dir.path(),
+        &task,
+        &generated,
+        &[os("--declare-capability"), os("tools")],
+    )
+    .assert()
+    .code(2)
+    .stderr(error_line("advisory.declaration.embedded_observation"));
+    // Without a declaration, the embedded observation replays byte for byte.
+    let advice = dir.path().join("advice");
+    advise(
+        dir.path(),
+        &task,
+        &generated,
+        &[os("--output-directory"), advice.as_os_str()],
+    )
+    .assert()
+    .code(0);
+    let (saved, replayed) = replay_bytes(dir.path(), &advice, &generated, None);
+    assert_eq!(saved, replayed);
 }

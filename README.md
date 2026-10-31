@@ -288,8 +288,8 @@ execution authority and calls no model.
 
 Once the task is complete, `advise` maps it to a route request and returns a
 model, effort and skills recommendation per phase, or an explained refusal,
-ending with the next manual action for your host. It is Codex first, advisory
-only and executes nothing. Follow the [advisory route guide](docs/advisory-route.md),
+ending with the next manual action for your host. It works with the Codex and
+Claude Code catalogs, is advisory only and executes nothing. Follow the [advisory route guide](docs/advisory-route.md),
 which also covers the case where unknown tool support blocks every model.
 
 <details>

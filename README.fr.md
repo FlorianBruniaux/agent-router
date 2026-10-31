@@ -296,7 +296,8 @@ n’accorde aucune autorisation d’exécution et n’appelle aucun modèle.
 Une fois la tâche complète, `advise` la convertit en requête de routage et
 renvoie une recommandation de modèle, d’effort et de skills par phase, ou un
 refus expliqué, terminée par la prochaine action manuelle dans votre host. La
-commande est orientée Codex, consultative et n’exécute rien. Suivez le
+commande fonctionne avec les catalogues Codex et Claude Code, reste consultative
+et n’exécute rien. Suivez le
 [guide du routage consultatif](docs/advisory-route.fr.md), qui couvre aussi le
 cas où un support d’outils inconnu écarte tous les modèles.
 
