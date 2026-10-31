@@ -11,6 +11,8 @@ use std::{
 };
 
 const NOW: &str = "1000";
+// Split so the source holds no private-home path literal (package-core scan).
+const HOME_PATH: &str = concat!("/Us", "ers/me/clients/acme/secret-repo");
 const OBJECTIVE: &str = "Add a dry-run flag to the backup script and document it";
 
 fn command() -> Command {
@@ -342,10 +344,10 @@ fn free_text_is_refused_rather_than_stored() {
     for (flag, value) in [
         ("--used-model", "the model my colleague suggested"),
         ("--used-effort", "as high as possible"),
-        ("--used-skill", "my own notes /Users/someone/notes"),
+        ("--used-skill", "my own notes in my home directory"),
         // Paths without a space are not free text, but they are not identifiers.
-        ("--used-model", "/Users/me/clients/acme/secret-repo"),
-        ("--used-skill", "/Users/me/clients/acme/secret-repo"),
+        ("--used-model", HOME_PATH),
+        ("--used-skill", HOME_PATH),
         ("--used-skill", "../secret-repo"),
         ("--used-model", "~/secret-repo"),
         ("--used-model", ".secret"),

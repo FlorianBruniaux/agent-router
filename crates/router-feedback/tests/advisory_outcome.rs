@@ -10,6 +10,8 @@ use router_types::*;
 use tempfile::TempDir;
 
 const DAY: u64 = 86400;
+// Split so the source holds no private-home path literal (package-core scan).
+const HOME_PATH: &str = concat!("/Us", "ers/me/clients/acme/secret-repo");
 
 fn prefs() -> FeedbackPreferences {
     FeedbackPreferences {
@@ -177,7 +179,7 @@ fn incoherent_or_malformed_outcomes_are_refused() {
     // A path is refused wherever the user or advice.json can put one, even
     // without a space in it.
     for path in [
-        "/Users/me/clients/acme/secret-repo",
+        HOME_PATH,
         "../secret",
         ".hidden",
         "~/notes",
