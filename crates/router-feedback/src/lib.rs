@@ -10,6 +10,7 @@ pub use accepted_changes::*;
 mod attempt_correlation;
 pub use attempt_correlation::*;
 
+mod advisory_outcome;
 mod beta;
 mod facts;
 mod learning;
@@ -21,6 +22,10 @@ mod task_report;
 pub use sidecar_export::{SidecarExportGuard, SidecarExportProjection};
 pub use task_report::{TaskMeasurementReport, TaskOccurrenceReport};
 
+pub use advisory_outcome::{
+    AdvisoryAdherencePair, AdvisoryAdherenceStats, AdvisoryBasisCounts, AdvisoryOutcomeReport,
+    AdvisoryRate, AdvisoryTaskKindReport, AdvisoryUnknownCounts,
+};
 pub use learning::*;
 pub use policy::*;
 pub use report::*;

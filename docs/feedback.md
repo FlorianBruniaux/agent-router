@@ -273,6 +273,60 @@ learned asset selection enters production through this crate. No improvement
 is claimed by the synthetic tests. Their reviewers, prices and signatures are
 test data only.
 
+## Advisory outcomes
+
+`agent-router feedback advisory-record` stores what you report after doing a task
+by hand against a saved [`advise`](advisory-route.md) recommendation
+([ADR 0052](adr/0052-advisory-outcome-record.md)). It is a separate record, not a
+`FeedbackInput`: a manual task has no supervised run, receipt or approval, so no
+such hash is invented. The record binds to the saved decision by the
+`decision_id` of `advice.json`.
+
+It holds the catalog and policy versions, the task kind, the effective risk, the
+`selection_basis`, the recommended phases, your `adherence` (`followed` or
+`overridden`), your `result` (`accepted_as_is`, `accepted_after_rework` or
+`abandoned`) and optional host-reported `cost_microusd` and `tokens`. An override
+names at least one of `--used-model`, `--used-effort` and `--used-skill` (or
+`--used-no-skill`). There is no field for a prompt, objective, path or comment,
+and every string is an enum value, a hash or an identifier. The identifier check
+is syntax, not catalog membership: letters, digits and `._:-`, at most 96
+characters, with no `/`, no `\` and no leading `.` or `~`, so free text and
+paths (with or without spaces) are refused with `feedback.invalid`. The task
+kind, risk, `selection_basis` and recommended phases are copied from the
+`advice.json` you pass, a file you can edit; only `decision_id` is a digest of
+the request, so the per-kind grouping rests on your own file. An `overridden`
+record that states a model, effort and skills all equal to every recommended
+phase is refused as incoherent. A value you do not state is `null`, which is
+UNKNOWN: a missing cost is never zero, and an omitted skills list is not "no
+skill".
+
+Collection consent, the clock rules and retention apply as for other feedback.
+Advising the same task again gives the same `decision_id`. Repeating the latest
+record is idempotent; a different outcome for that decision (a retry or a
+correction) is stored as its next attempt, and nothing is rewritten. The report
+counts each decision once, with its latest attempt, and shows `records` beside
+`decisions`. The store migrates from version 2 to 3 when
+opened, in one transaction that only adds the outcome table. A version 3 store
+is refused by binaries that predate it (`future schema`); there is no downgrade. `feedback export`
+lists the outcomes under `advisory_outcomes`, omitted when empty so an earlier
+export keeps its hash. Disabling collection, expiry and `feedback purge` delete
+them; the purge count includes them. `report`, `summary`, statistics, drift and
+policy learning do not read them.
+
+`feedback advisory-report` groups the outcomes by task kind and compares
+followed with overridden. Next to every rate it prints the numerator, the
+denominator and the sample size (decisions, with their record count), and it prints the UNKNOWN counts for cost, for
+tokens and, for overridden outcomes, for the model, effort and skills used. The
+result is a required field, so it has no UNKNOWN count. A group with no outcome
+has a null rate, not zero. The report counts `selection_basis` values, so a
+tie-break among unrated models is visible. It does not sum or compare costs, and
+`attribution` is always `not_established`.
+
+A personal report is not evidence of a general gain. The records are
+self-reported and unverified, the sample is yours and self-selected, and the
+tasks differ. Comparative evaluation is tracked in
+[issue #5](https://github.com/FlorianBruniaux/agent-router/issues/5).
+
 ## Export, retention and deletion
 
 `export(now)` returns a deterministic, versioned feedback snapshot including

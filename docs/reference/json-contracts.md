@@ -41,6 +41,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Passive run observation | v1 remains default and byte-compatible; explicit `observe --schema-version 2` adds bounded durable attempt identities, requested selections, supervisor outcomes and source hashes from the same passive snapshot; `--schema-version 3` adds qualified local capture intervals and `--schema-version 4` a bounded, redacted timeline of at most 64 journal-ordered entries; `--schema-version 5` adds advisory run findings (five rules, each a finding or a named suppression, `automatic_action: none`). `schema run-observation` supports `[1, 2, 3, 4, 5]`. Native model/effort, usage, trusted timestamps, protocol, objective and acceptance of the exact revision remain unknown; see [run observation](../run-observation.md), [ADR 0025](../adr/0025-run-observation.md), [ADR 0030](../adr/0030-qualified-local-capture-timing.md) [ADR 0048](../adr/0048-run-timeline-projection.md) and [ADR 0049](../adr/0049-run-findings.md). |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Advisory route report | v1 (`agent-router advise --json`, exit 0 recommended, 3 `no_recommendation` or `needs_clarification`): `mode: "advisory"`, `executed: false`, `status`, `questions`, `mapping` (each task field `routed` or `not_enforced_by_advisory_routing`, with its value), `facts` (`provenance` `declared`, `discovered`, `verified` or `unknown`), `skills` (per requested id status), `decision` (the unchanged route decision envelope or null), `next_manual_action` (`kind`, optional `selection_basis`, `summary`, `phases`, `would_change`) and `output_directory`. The saved `route-request.json` replays through `route`. See [advisory route](../advisory-route.md) and [ADR 0051](../adr/0051-advisory-task-route.md) |
+| Advisory outcome | v1 (`agent-router feedback advisory-record`, `advisory-report`; store `user_version` 3): a manual outcome bound to the `decision_id` of a saved advice report, with no run, receipt or approval hash. See [feedback](../feedback.md#advisory-outcomes) and [ADR 0052](../adr/0052-advisory-outcome-record.md) |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
 `agent-router schema --list` names the contracts that have a published JSON
@@ -158,6 +159,51 @@ records. Without the store, replay reports `capability_evidence: unverified`,
 downgrades capability claims to UNKNOWN for evaluation and records a hard
 violation. This result is never execution authority. Historical proof validity
 also never authorizes a new dispatch.
+
+## Advisory outcome
+
+`AdvisoryOutcomeInput` (schema 1) has `schema_version`, `observed_at_unix_seconds`,
+`binding`, `adherence`, `used`, `result` and `measurements`; unknown keys are
+rejected. `binding` has `decision_id` (64 lowercase hex characters, copied from
+`advice.json`), `catalog_version`, `policy_version`, `task_kind`, `risk`,
+`selection_basis` (`catalog_policy_prior`, `partly_unrated` or
+`unrated_tie_break`) and `recommended`, one `{stage, model, effort, skills}` per
+phase (1 to 16 phases, at most 64 skills each). `adherence` is `followed` or
+`overridden`. `used` is `null` exactly when `adherence` is `followed`; otherwise
+it has `model`, `effort` and `skills`, each `null` for UNKNOWN, and at least one
+is not null. `result` is `accepted_as_is`, `accepted_after_rework` or
+`abandoned`. `measurements` has `cost_microusd` and `tokens`, each `null` for
+UNKNOWN, never zero, at most 10^12. Model, skill and version strings follow the
+feedback identifier rule (at most 96 characters of `A-Za-z0-9._:/-`).
+
+The stored `AdvisoryOutcomeEvent` adds `sequence`, `consent_revision`,
+`recorded_at_unix_seconds` and `outcome_hash` (domain `advisory-outcome-v1`).
+A record also has `attempt`, one-based per `decision_id`. Repeating the latest
+record (`observed_at_unix_seconds` ignored) returns it; a different outcome for
+the same `decision_id` is stored as the next attempt. `task_kind`, `risk`,
+`selection_basis` and `recommended` are copied from the user's `advice.json` and
+are not bound to `decision_id`. Strings that come from the user or that file
+follow the identifier rule without `/`, `\`, or a leading `.` or `~`. An
+`overridden` record whose `used` states a model, effort and skills equal to every
+recommended phase is refused. Product errors: `advisory.outcome.advice_invalid`
+(not a version 1 advice report, or a field missing) and
+`advisory.outcome.not_recommended` (`status` is not `recommended`); the other
+refusals use `feedback.invalid`, `feedback.consent_required` and the usual
+request errors (`request.too_large` above 1 MiB). `FeedbackExport` lists them in `advisory_outcomes`,
+omitted when empty so an export without outcomes keeps its `content_hash`.
+
+`feedback advisory-report` prints a report (`schema_version` 1, hash domain
+`advisory-outcome-report-v1`) with `generated_at_unix_seconds`,
+`outcome_set_hash`, `decisions` (one per `decision_id`, its latest attempt), `records` (all retained attempts), `overall` and `task_kinds`. `overall` and each
+`task_kinds` entry (which adds `task_kind`) hold `followed` and `overridden`,
+each with `sample_size` (decisions), `records`, three rates (`accepted_as_is`, `accepted_after_rework`,
+`abandoned`, each `{numerator, denominator, rate_micros}` with `rate_micros`
+`null` for an empty sample), `unknown` (`cost`, `tokens` and, for `overridden`
+only, `used_model`, `used_effort` and `used_skills`; `null` where not
+applicable) and `selection_basis` counts. `attribution` is `not_established` and
+`interpretation` is
+`personal_self_selected_sample_not_evidence_of_a_general_gain`. No published JSON
+schema file covers this report yet.
 
 ## Feedback late facts
 
