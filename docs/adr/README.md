@@ -71,6 +71,7 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0048](0048-run-timeline-projection.md) | Bounded read-only run timeline projection | implemented | 2026-10-28 | 2026-10-28 | - |
 | [0049](0049-run-findings.md) | Advisory run findings from verified observation | implemented | 2026-10-29 | 2026-10-29 | - |
 | [0050](0050-apache-2-license.md) | License the project under Apache-2.0 | proposed | 2026-10-28 | 2026-10-28 | - |
+| [0051](0051-advisory-task-route.md) | Advisory route for one normalized task | implemented | 2026-10-28 | 2026-10-31 | - |
 
 
 ## Frontmatter fields
