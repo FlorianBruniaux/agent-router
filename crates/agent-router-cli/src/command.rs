@@ -602,6 +602,17 @@ pub enum Commands {
         #[arg(long)]
         json: bool,
     },
+    /// Recommend model, effort and skills for one complete task; executes nothing.
+    ///
+    /// Advisory only: no host, model or provider is contacted and no permission,
+    /// budget or scope is enforced. Exit 0 recommends, 3 recommends nothing.
+    Advise {
+        #[command(flatten)]
+        args: crate::advisory::AdviseArgs,
+        /// Print the complete versioned JSON result instead of the human view.
+        #[arg(long)]
+        json: bool,
+    },
     /// Normalize a task and classify its risk; plans and approves nothing.
     Normalize {
         /// Task input JSON.
@@ -1220,7 +1231,10 @@ impl Commands {
             | Self::FiniteResume { .. } => {
                 return None;
             }
-            Self::Route { .. } | Self::Explain { .. } | Self::Observe { .. } => return None,
+            Self::Route { .. }
+            | Self::Explain { .. }
+            | Self::Observe { .. }
+            | Self::Advise { .. } => return None,
             #[cfg(all(feature = "local-api", unix))]
             Self::Serve { .. } => return None,
         };

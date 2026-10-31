@@ -41,6 +41,7 @@ written in French.
 | [CLI output](cli-output.md) | Human and `--json` output, exit codes and error codes |
 | [Configuration formats](configuration-formats.md) | Strict JSON, TOML and YAML configuration layers |
 | [Guided task intake](task-guide.md) | Collect missing task facts without implied permissions |
+| [Advisory route](advisory-route.md) | Model, effort and skills advice or an explained refusal for one task; executes nothing |
 
 ## Route and plan
 

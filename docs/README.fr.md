@@ -36,6 +36,7 @@ sauf celles marquées (FR).
 | [Sortie de la CLI](cli-output.md) | Sortie lisible et `--json`, codes de sortie et codes d'erreur |
 | [Formats de configuration](configuration-formats.md) | Couches de configuration JSON, TOML et YAML strictes |
 | [Saisie guidée de la tâche](task-guide.md) | Compléter les faits manquants sans permission implicite |
+| [Routage consultatif](advisory-route.fr.md) | Conseil de modèle, d'effort et de skills ou refus expliqué pour une tâche ; n'exécute rien |
 
 ## Router et planifier
 
