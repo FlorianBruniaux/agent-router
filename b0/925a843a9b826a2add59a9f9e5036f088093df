@@ -1,0 +1,47 @@
+docs/advisory-route.md
+  s_c3158f009d7319::t_82ca9bfc3b2428 1-182
+docs/advisory-route.fr.md
+  s_c3158f009d7319::t_aa262e4c5a945c 1-196
+crates/agent-router-cli/src/advisory.rs
+  s_c3158f009d7319::t_936e49965f6c71 573-577,579,582-583
+  s_c3158f009d7319::t_75bbe710d64d28 1-4,6-11,14-121,124-130,133-235,237,241-365,368-464,466-469,472,474,482-484,489,522-530,540,549,553,557,560-572,578,580-581,584-593,597,599-600,602-611,613-642,644-678,680,682-694,697-699,704,706-717,719,724-806,808-912,914-960
+  s_c3158f009d7319::t_65cc766f5f5f6f 5,12-13,122-123,131-132,236,238-240,366-367,465,470-471,473,475-481,485-488,490-521,531-539,541-548,550-552,554-556,558-559,594-596,598,601,612,643,679,681,695-696,700-703,705,718,720-723,807,913
+crates/agent-router-cli/src/private_output.rs
+  s_c3158f009d7319::t_71c0df42227fc1 3-92
+  s_c3158f009d7319::t_ec8d0d737243fb 1-2
+crates/agent-router-cli/tests/advisory_route.rs
+  s_c3158f009d7319::t_8e6d2d6d198c1d 1-546
+  s_c3158f009d7319::t_cc07b3356b4195 547-631
+CHANGELOG.md
+  s_c3158f009d7319::t_0b9d04bcd0b78f 28-29
+README.fr.md
+  s_c3158f009d7319::t_4cc0831113627b 270-278
+README.md
+  s_c3158f009d7319::t_c8a008e8963582 263-270
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_a7a54f32e7cf8a 605-615,1234-1237
+crates/agent-router-cli/src/main.rs
+  s_c3158f009d7319::t_2a8c08ff9aede9 4,30-31,603
+crates/agent-router-cli/src/task_guide.rs
+  s_c3158f009d7319::t_e1ea97d07c368e 305,325
+docs/adr/0051-advisory-task-route.md
+  s_c3158f009d7319::t_c08feab75bdc0a 1-77
+docs/adr/README.md
+  s_c3158f009d7319::t_e0d190a7a806e4 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b0925a843a9b826a2add59a9f9e5036f088093df",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
