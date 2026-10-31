@@ -133,8 +133,9 @@ that observation, so the saved request could not replay.
 ### Claude Code example
 
 [`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog) is
-operator-declared: every entry is unrated (quality 0) and declares no
-capability. No passive discovery of Claude models or efforts exists, so describe
+operator-declared: every entry is unrated (quality 0) and declares only
+`tools`, a model-side prior that does not replace a host fact. No passive
+discovery of Claude models or efforts exists, so describe
 the host in a declared file with the identifiers and efforts your account
 actually offers:
 
@@ -168,9 +169,10 @@ Next manual action:
 
 `selection_basis` is `unrated_tie_break`: with equal scores the router picks by
 identifier order, so the result names a model, not a better one. A task that
-requires `tools` gets no route with this catalog, even with
-`--declare-capability tools`, because no entry declares the capability
-(`model.capability.unsupported`).
+requires `tools` gets a route only when the host snapshot lists the capability
+or you pass `--declare-capability tools`, which is labelled `declared`. The
+catalog's `tools` entry does not replace that host fact: without it the task gets
+no recommendation.
 
 ## Provenance
 
