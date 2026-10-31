@@ -7,8 +7,10 @@ use assert_cmd::Command;
 use serde_json::{Value, json};
 use std::{fs, path::Path};
 
-const IDS: [&str; 3] = [
+const IDS: [&str; 5] = [
+    "claude-fable-5-1",
     "claude-haiku-4-5-20251001",
+    "claude-haiku-5-5",
     "claude-opus-5-5",
     "claude-sonnet-5-5",
 ];
@@ -84,7 +86,7 @@ fn selected_models(decision: &Value) -> Vec<String> {
 }
 
 #[test]
-fn shipped_catalog_validates_and_declares_every_entry_unrated_without_capabilities() {
+fn shipped_catalog_validates_and_declares_every_entry_unrated_with_only_tools() {
     Command::cargo_bin("agent-router")
         .unwrap()
         .args(["catalog", "validate", "--catalog"])
@@ -104,7 +106,7 @@ fn shipped_catalog_validates_and_declares_every_entry_unrated_without_capabiliti
         assert_eq!(model["cost_micros"], 1_000_000);
         assert_eq!(model["latency_micros"], 1_000_000);
         assert_eq!(model["source"], "operator-declared-unrated-prior");
-        assert!(model["capabilities"].as_array().unwrap().is_empty());
+        assert_eq!(model["capabilities"], json!(["tools"]));
         assert!(
             !model["efforts"]
                 .as_array()
@@ -152,7 +154,7 @@ fn catalog_model_absent_from_the_host_is_never_selected() {
 fn unrated_model_is_never_preferred_over_a_rated_one() {
     // Test-only rating: the shipped catalog rates nothing.
     let mut rated = catalog();
-    let entry = &mut rated["models"][2];
+    let entry = &mut rated["models"][4];
     assert_eq!(entry["id"], "claude-sonnet-5-5");
     entry["quality_micros"] = json!(500_000);
     entry["cost_micros"] = json!(500_000);
@@ -176,17 +178,36 @@ fn unrated_model_is_never_preferred_over_a_rated_one() {
 }
 
 #[test]
-fn tools_stay_unknown_so_a_tools_task_does_not_route() {
+fn new_ids_route_when_the_host_lists_them() {
+    for id in ["claude-fable-5-1", "claude-haiku-5-5"] {
+        let (code, decision) = route(&catalog(), &request(&[id], &[], None));
+        assert_eq!(code, 0, "{id}");
+        assert_eq!(selected_models(&decision), [id; 3]);
+    }
+}
+
+#[test]
+fn tools_task_routes_only_when_the_host_snapshot_lists_tools() {
+    let host = ["claude-sonnet-5-5", "claude-fable-5-1"];
+    let mut declared = request(&host, &["tools"], None);
+    declared["host"]["capabilities"] = json!(["tools"]);
+    let (code, decision) = route(&catalog(), &declared);
+    assert_eq!(code, 0);
+    assert_eq!(selected_models(&decision).len(), 3);
+    // The catalog declares tools, but the host snapshot does not: refused.
+    let (code, decision) = route(&catalog(), &request(&host, &["tools"], None));
+    assert_eq!(code, 3);
+    assert!(decision["decision"].get("no_route").is_some());
+}
+
+#[test]
+fn unknown_tools_knowledge_does_not_route_despite_the_catalog_declaration() {
     let host = ["claude-sonnet-5-5"];
-    let unknown = request(&host, &["tools"], Some(json!({"tools": "unknown"})));
+    let mut unknown = request(&host, &["tools"], Some(json!({"tools": "unknown"})));
+    unknown["host"]["capabilities"] = json!(["tools"]);
     let (code, decision) = route(&catalog(), &unknown);
     assert_eq!(code, 3);
     assert!(decision["decision"].get("no_route").is_some());
-    // Declared host support alone does not promote the catalog's empty capabilities.
-    let mut declared = request(&host, &["tools"], None);
-    declared["host"]["capabilities"] = json!(["tools"]);
-    let (code, _) = route(&catalog(), &declared);
-    assert_eq!(code, 3);
 }
 
 #[test]

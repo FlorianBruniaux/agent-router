@@ -3,6 +3,28 @@
   "version": "claude-core-v1",
   "models": [
     {
+      "id": "claude-fable-5-1",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-unrated-prior"
+    },
+    {
       "id": "claude-haiku-4-5-20251001",
       "stages": [
         "plan",
@@ -16,7 +38,31 @@
         "xhigh",
         "max"
       ],
-      "capabilities": [],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-unrated-prior"
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
       "quality_micros": 0,
       "cost_micros": 1000000,
       "latency_micros": 1000000,
@@ -36,7 +82,9 @@
         "xhigh",
         "max"
       ],
-      "capabilities": [],
+      "capabilities": [
+        "tools"
+      ],
       "quality_micros": 0,
       "cost_micros": 1000000,
       "latency_micros": 1000000,
@@ -56,7 +104,9 @@
         "xhigh",
         "max"
       ],
-      "capabilities": [],
+      "capabilities": [
+        "tools"
+      ],
       "quality_micros": 0,
       "cost_micros": 1000000,
       "latency_micros": 1000000,

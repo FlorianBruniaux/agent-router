@@ -142,7 +142,8 @@ observation, la requête enregistrée ne pourrait donc pas être rejouée.
 
 [`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog) (EN)
 est déclaré par l'opérateur : chaque entrée est non notée (qualité 0) et ne
-déclare aucune capacité. Aucune découverte passive des modèles ou efforts
+déclare que `tools`, un prior côté modèle qui ne remplace pas un fait du host.
+Aucune découverte passive des modèles ou efforts
 Claude n'existe : décrivez le host dans un fichier déclaré, avec les
 identifiants et efforts que votre compte propose réellement :
 
@@ -176,9 +177,10 @@ Next manual action:
 
 `selection_basis` vaut `unrated_tie_break` : à scores égaux, le routeur choisit
 selon l'ordre des identifiants. Le résultat nomme un modèle, pas un meilleur
-modèle. Une tâche qui exige `tools` n'obtient aucune route avec ce catalogue,
-même avec `--declare-capability tools`, car aucune entrée ne déclare cette
-capacité (`model.capability.unsupported`).
+modèle. Une tâche qui exige `tools` n'obtient une route que si le snapshot du host
+liste cette capacité ou si vous passez `--declare-capability tools`
+(étiquetée `declared`). La déclaration `tools` du catalogue ne remplace pas ce
+fait du host : sans lui, aucune recommandation.
 
 ## Provenance
 

@@ -263,7 +263,7 @@ not a quality judgement:
 ```text
 Preset: plan-execute-verify
 Plan: claude-opus-5-5/high -> claude-opus-5-5/high -> claude-opus-5-5/high
-Excluded candidates: 22
+Excluded candidates: 64
 Missing evidence: 0
 ```
 
