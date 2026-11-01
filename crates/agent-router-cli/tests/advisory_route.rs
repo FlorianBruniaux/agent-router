@@ -118,6 +118,7 @@ fn discovered_snapshot_at(dir: &Path, name: &str, now: &str) -> PathBuf {
         ("gpt-6-luna", standard.as_slice()),
         ("gpt-6-sol", extended.as_slice()),
         ("gpt-6.1-sol", extended.as_slice()),
+        ("gpt-6.1-terra", extended.as_slice()),
         ("gpt-reserve", standard.as_slice()),
     ]
     .into_iter()
@@ -292,6 +293,110 @@ fn task_without_required_capability_says_that_no_capability_was_checked() {
     );
     // An unmodified observation is bound into the decision, as with `route`.
     assert!(report["decision"]["host_snapshot_hash"].is_string());
+}
+
+fn catalog_v3() -> PathBuf {
+    root("assets/catalogs/codex-core-v3.json")
+}
+fn advise_declared(catalog: &Path, models: &[&str]) -> Output {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!(["tools"])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(models, json!(["tools"])),
+    );
+    command()
+        .args(["advise", "--task"])
+        .arg(&task)
+        .arg("--risk-context")
+        .arg(risk_context(dir.path()))
+        .arg("--catalog")
+        .arg(catalog)
+        .arg("--host")
+        .arg(&host)
+        .args(["--now", NOW, "--json"])
+        .output()
+        .unwrap()
+}
+
+const OWNER_MODELS: [&str; 8] = [
+    "gpt-6.1-sol",
+    "gpt-6-astra",
+    "gpt-6.1-terra",
+    "gpt-6-sol",
+    "gpt-6-luna",
+    "gpt-5.6-sol",
+    "gpt-5.6-terra",
+    "gpt-5.6-luna",
+];
+
+#[test]
+fn v3_recommends_a_gpt_6_model_for_the_owner_pool_and_never_the_unrated_astra() {
+    let output = advise_declared(&catalog_v3(), &OWNER_MODELS);
+    assert_eq!(output.status.code(), Some(0));
+    let report = parsed(&output);
+    assert_eq!(report["status"], "recommended");
+    let stages = stage_models(&report);
+    assert!(!stages.is_empty());
+    // A plan scores its weakest stage, so the plan stage ties between the 5.6 and
+    // 6.1 sol and the lexical model key picks 5.6. Execute and verify use 6.1 terra.
+    assert!(
+        stages.iter().any(|(model, _)| model.starts_with("gpt-6")),
+        "{stages:?}"
+    );
+    assert_eq!(stages[1].0, "gpt-6.1-terra");
+    assert_eq!(stages[2].0, "gpt-6.1-terra");
+    assert!(stages.iter().all(|(model, _)| model != "gpt-6-astra"));
+    // Astra alone is accepted as an identifier, but declares no `tools`.
+    let alone = advise_declared(&catalog_v3(), &["gpt-6-astra"]);
+    assert_eq!(alone.status.code(), Some(3));
+    // Against a rated model it loses.
+    let pair = parsed(&advise_declared(
+        &catalog_v3(),
+        &["gpt-6-astra", "gpt-5.6-sol"],
+    ));
+    assert!(
+        stage_models(&pair)
+            .iter()
+            .all(|(model, _)| model == "gpt-5.6-sol")
+    );
+}
+
+#[test]
+fn v3_prefers_the_newer_sol_over_the_older_one_when_sol_runs_every_stage() {
+    let ordered = |models: &[&str]| {
+        let report = parsed(&advise_declared(&catalog_v3(), models));
+        stage_models(&report)
+            .into_iter()
+            .map(|(model, _)| model)
+            .collect::<Vec<_>>()
+    };
+    assert!(
+        ordered(&["gpt-6.1-sol", "gpt-6-sol", "gpt-5.6-sol"])
+            .iter()
+            .all(|m| m == "gpt-6.1-sol")
+    );
+    assert!(
+        ordered(&["gpt-6-sol", "gpt-5.6-sol"])
+            .iter()
+            .all(|m| m == "gpt-6-sol")
+    );
+}
+
+#[test]
+fn v2_accepts_gpt_6_1_terra_as_unrated_and_never_prefers_it() {
+    // Alone it is accepted (no tools declared by the model, so no route here).
+    let alone = advise_declared(&catalog(), &["gpt-6.1-terra"]);
+    assert_ne!(alone.status.code(), Some(2), "{:?}", alone.stderr);
+    let report = parsed(&advise_declared(
+        &catalog(),
+        &["gpt-6.1-sol", "gpt-6.1-terra", "gpt-5.6-sol"],
+    ));
+    assert!(
+        stage_models(&report)
+            .iter()
+            .all(|(model, _)| model == "gpt-5.6-sol")
+    );
 }
 
 #[test]
