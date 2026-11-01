@@ -1,14 +1,15 @@
 # Codex policy catalogs
 
 `codex-core-v2.json` covers the nine model identifiers and effort sets in the
-sanitized October 2026 discovery fixture. Its JSON schema is still 1; `v2` names
-this policy revision. Use it explicitly for current discovery:
+sanitized October 2026 discovery fixture, plus the unrated `gpt-6.1-terra`. Its JSON schema is still 1; `v2` names
+this policy revision. `codex-core-v3.json` (below) supersedes it for current
+use; the same commands work with either prior:
 
 ```sh
 agent-router inspect --host codex --model-cache /path/to/selected-models-cache.json \
   --observed-version 0.163.0-alpha.10.2 --json > observation.json
 agent-router catalog refresh --host-snapshot observation.json \
-  --prior assets/catalogs/codex-core-v2.json --json > catalog.json
+  --prior assets/catalogs/codex-core-v3.json --json > catalog.json
 ```
 
 The version above is an example. Supply the independently observed full version
@@ -16,7 +17,7 @@ of the selected native executable. These commands do not run that executable,
 contact a provider, initialize a proof store or issue an attestation.
 
 The three GPT-5.6 entries retain their existing policy scores and declared
-capabilities, with expanded effort sets. The six newly listed entries use
+capabilities, with expanded effort sets. The seven newly listed entries use
 `builtin-unrated-policy-prior`: quality 0, cost and latency 1,000,000, and no
 declared capabilities. These are conservative policy bounds, not measured
 quality, prices or timing. They add discovery coverage without preferring an
@@ -27,6 +28,37 @@ The generated catalog intersects prior capabilities with authenticated host
 support. A cache-only observation therefore produces empty model capabilities
 and keeps `tools` unknown. A newly observed identifier or effort outside the
 prior remains an error; the catalog never guesses an alias or new rating.
+
+## codex-core-v3
+
+`codex-core-v3.json` is the current Codex catalog for advisory routing. It is
+`codex-core-v2.json` (kept for existing fixtures, where all GPT-6 entries stay
+unrated) with an owner-declared rating of four GPT-6 entries. Its JSON schema is 1.
+
+| Entry | Quality | Cost | Latency | Capabilities | Source |
+| --- | --- | --- | --- | --- | --- |
+| `gpt-6.1-sol` | 990000 | 900000 | 900000 | tools, subagents | `operator-declared-policy-prior` |
+| `gpt-6-sol` | 970000 | 900000 | 900000 | tools, subagents | `operator-declared-policy-prior` |
+| `gpt-5.6-sol` | 950000 | 900000 | 900000 | tools, subagents | `builtin-policy-prior` (unchanged) |
+| `gpt-6.1-terra` | 860000 | 550000 | 550000 | tools, subagents | `operator-declared-policy-prior` |
+| `gpt-5.6-terra` | 820000 | 550000 | 550000 | tools, subagents | `builtin-policy-prior` (unchanged) |
+| `gpt-6-luna` | 690000 | 200000 | 200000 | tools | `operator-declared-policy-prior` |
+| `gpt-5.6-luna` | 650000 | 200000 | 200000 | tools | `builtin-policy-prior` (unchanged) |
+
+`gpt-6-astra`, `codex-auto-review` and `gpt-reserve` stay unrated
+(`builtin-unrated-policy-prior`). Each newly rated entry copies the cost, latency,
+capabilities and stages of its GPT-5.6 tier counterpart. The ordering (6.1 before
+6 before 5.6 within a tier; Sol, Terra, Luna by tier) and the quality numbers are
+the owner's declaration of 2026-11-01. They are not measured, and the cost and
+latency are mirrored, not priced or timed. See
+[ADR 0053](../../docs/adr/0053-codex-core-v3-owner-declared-ratings.md).
+
+`gpt-6.1-terra` comes from the owner's Codex model cache on 2026-11-01, which
+lists `gpt-6-astra`, `gpt-6-luna`, `gpt-6-sol`, `gpt-6.1-sol` and `gpt-6.1-terra`.
+Its efforts, `low` through `ultra`, are inferred from the tier pattern
+(`gpt-5.6-terra` and `gpt-5.6-sol` both list them), not observed in that cache.
+The superset is deliberate: a host snapshot listing an effort the catalog lacks
+makes `catalog refresh` fail, while a host listing fewer is accepted.
 
 `codex-core-v1.json` remains the three-model legacy prior for existing fixtures
 and historical examples. Neither catalog authenticates a host, grants native

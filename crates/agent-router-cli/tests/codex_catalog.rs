@@ -26,6 +26,7 @@ fn cache() -> Value {
         ("gpt-6-luna", standard.as_slice()),
         ("gpt-6-sol", extended.as_slice()),
         ("gpt-6.1-sol", extended.as_slice()),
+        ("gpt-6.1-terra", extended.as_slice()),
         ("gpt-reserve", standard.as_slice()),
     ].into_iter().map(|(id, efforts)| json!({"slug":id,
         "supported_reasoning_levels":efforts.iter().map(|effort| json!({"effort":effort})).collect::<Vec<_>>()
@@ -72,7 +73,7 @@ fn current_codex_discovery_refreshes_without_promoting_unknown_tools_or_scoring_
         .stdout
         .clone();
     let catalog: Value = serde_json::from_slice(&generated).unwrap();
-    assert_eq!(catalog["catalog"]["models"].as_array().unwrap().len(), 9);
+    assert_eq!(catalog["catalog"]["models"].as_array().unwrap().len(), 10);
     for model in catalog["catalog"]["models"].as_array().unwrap() {
         assert!(model["capabilities"].as_array().unwrap().is_empty());
         if model["id"].as_str().unwrap().starts_with("gpt-6")
@@ -158,4 +159,69 @@ fn extended_prior_does_not_guess_a_newly_discovered_model() {
         .assert()
         .code(2)
         .stderr("{\"schema_version\":1,\"error\":\"catalog.invalid\"}\n");
+}
+
+#[test]
+fn v3_validates_and_differs_from_v2_only_by_the_declared_ratings() {
+    Command::cargo_bin("agent-router")
+        .unwrap()
+        .args(["catalog", "validate", "--catalog"])
+        .arg(root("assets/catalogs/codex-core-v3.json"))
+        .args(["--now", "10", "--json"])
+        .assert()
+        .success();
+    let load = |name: &str| -> Value {
+        serde_json::from_slice(&fs::read(root(&format!("assets/catalogs/{name}"))).unwrap())
+            .unwrap()
+    };
+    let (v2, v3) = (load("codex-core-v2.json"), load("codex-core-v3.json"));
+    assert_eq!(v3["version"], "codex-core-v3");
+    assert_eq!(v3["skills"], v2["skills"]);
+    let models = |v: &Value| -> std::collections::BTreeMap<String, Value> {
+        v["models"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|m| (m["id"].as_str().unwrap().to_owned(), m.clone()))
+            .collect()
+    };
+    let (m2, m3) = (models(&v2), models(&v3));
+    assert_eq!(m3.len(), m2.len());
+    let rated = ["gpt-6.1-sol", "gpt-6-sol", "gpt-6.1-terra", "gpt-6-luna"];
+    for (id, model) in &m2 {
+        if !rated.contains(&id.as_str()) {
+            assert_eq!(&m3[id], model, "{id} must be unchanged");
+        }
+    }
+    // Declared ordering: newer before older within a tier, Sol > Terra > Luna.
+    let quality = |id: &str| m3[id]["quality_micros"].as_u64().unwrap();
+    let order = [
+        "gpt-6.1-sol",
+        "gpt-6-sol",
+        "gpt-5.6-sol",
+        "gpt-6.1-terra",
+        "gpt-5.6-terra",
+        "gpt-6-luna",
+        "gpt-5.6-luna",
+    ];
+    for pair in order.windows(2) {
+        assert!(quality(pair[0]) > quality(pair[1]), "{pair:?}");
+    }
+    for (new, old) in [
+        ("gpt-6.1-sol", "gpt-5.6-sol"),
+        ("gpt-6-sol", "gpt-5.6-sol"),
+        ("gpt-6.1-terra", "gpt-5.6-terra"),
+        ("gpt-6-luna", "gpt-5.6-luna"),
+    ] {
+        for field in ["cost_micros", "latency_micros", "capabilities"] {
+            assert_eq!(m3[new][field], m3[old][field], "{new} {field}");
+        }
+    }
+    for id in ["gpt-6-astra", "codex-auto-review", "gpt-reserve"] {
+        assert_eq!(m3[id]["quality_micros"], 0, "{id} stays unrated");
+    }
+    for id in rated.iter().chain(&["gpt-6.1-terra"]) {
+        assert_eq!(m3[*id]["source"], "operator-declared-policy-prior");
+        assert!(m3[*id]["quality_micros"].as_u64().unwrap() > 0);
+    }
 }

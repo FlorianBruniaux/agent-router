@@ -173,6 +173,27 @@
       "source": "builtin-unrated-policy-prior"
     },
     {
+      "id": "gpt-6.1-terra",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ],
+      "capabilities": [],
+      "quality_micros": 0,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "builtin-unrated-policy-prior"
+    },
+    {
       "id": "gpt-reserve",
       "stages": [
         "plan",

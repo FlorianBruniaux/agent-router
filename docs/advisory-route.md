@@ -77,7 +77,7 @@ not treated as absent.
 agent-router advise \
   --task ~/agent-router-advice/backup-task/input.json \
   --risk-context ~/agent-router-advice/backup-task/risk-context.json \
-  --catalog assets/catalogs/codex-core-v2.json \
+  --catalog assets/catalogs/codex-core-v3.json \
   --host-snapshot ~/agent-router-advice/observation.json \
   --skill tdd \
   --output-directory ~/agent-router-advice/backup-advice
@@ -116,7 +116,7 @@ Status: recommended
 Skill tdd: suggested
 Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v2: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Select that model and effort in your host for each phase, load only the listed

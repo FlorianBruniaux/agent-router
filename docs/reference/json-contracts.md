@@ -85,8 +85,9 @@ dispatch still checks the full version and executable digest independently.
 Omitting the flag retains the existing cache-only observation shape. Reading
 a shared cache does not prove which process, account or client surface wrote it.
 
-For the October model pool, use `assets/catalogs/codex-core-v2.json` as the
-explicit policy prior; its schema remains 1. See
+For the October model pool, use `assets/catalogs/codex-core-v3.json` as the
+explicit policy prior (`codex-core-v2.json` is kept for existing fixtures); its
+schema remains 1. See
 [catalog policy and unrated entries](../../assets/catalogs/README.md).
 
 For Claude Code, `assets/catalogs/claude-core-v1.json` is an operator-declared,
