@@ -881,6 +881,10 @@ pub enum FeedbackCommand {
         #[arg(long)]
         runtime_store: Option<PathBuf>,
     },
+    /// Record, after doing the task by hand, whether you followed a saved `advise` recommendation and how it went; requires collection consent.
+    AdvisoryRecord(crate::advisory_outcome::AdvisoryRecordArgs),
+    /// Report followed versus overridden advisory recommendations per task kind, with sample sizes and UNKNOWN counts; requires collection consent.
+    AdvisoryReport,
     /// Export a real run as a sealed replay record, labelled from recorded facts.
     ReplayExport {
         /// Run definition, as given to `run`.

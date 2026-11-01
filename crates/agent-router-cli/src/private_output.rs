@@ -6,7 +6,7 @@ use crate::CliError;
 use std::path::{Path, PathBuf};
 
 /// Each exported document is limited to this size, newline included.
-const MAX_DOCUMENT: usize = 1024 * 1024;
+pub(crate) const MAX_DOCUMENT: usize = 1024 * 1024;
 
 /// The directory `publish` would create for `path`: its canonical parent
 /// joined with its final component. Nothing is created.

@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    EffortLevel, HarnessId, HostUsage, ModelId, PhaseAbstention, RiskLevel, TaskKind,
+    EffortLevel, HarnessId, HostUsage, ModelId, PhaseAbstention, RiskLevel, StageKind, TaskKind,
     VerificationOutcome,
 };
 
@@ -258,6 +258,102 @@ pub struct FeedbackFactEvent {
     pub fact_hash: String,
 }
 
+/// One phase of the recommendation, as the advice report states it.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryPhase {
+    pub stage: StageKind,
+    pub model: ModelId,
+    pub effort: EffortLevel,
+    pub skills: BTreeSet<String>,
+}
+
+/// Why the advice picked this plan, as the advice report states it.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AdvisorySelectionBasis {
+    CatalogPolicyPrior,
+    PartlyUnrated,
+    UnratedTieBreak,
+}
+
+/// What the user declares about the work done by hand.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AdvisoryAdherence {
+    Followed,
+    Overridden,
+}
+
+/// Result of the manual work, as the user judges it.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AdvisoryResult {
+    AcceptedAsIs,
+    AcceptedAfterRework,
+    Abandoned,
+}
+
+/// What was used instead of the recommendation. A `None` field is UNKNOWN: the
+/// user did not state it, which is not the same as "no skill".
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryUsed {
+    pub model: Option<ModelId>,
+    pub effort: Option<EffortLevel>,
+    pub skills: Option<BTreeSet<String>>,
+}
+
+/// Cost the host reported for the work. `None` is UNKNOWN, never zero.
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryMeasurements {
+    pub cost_microusd: Option<u64>,
+    pub tokens: Option<u64>,
+}
+
+/// Immutable identities and discrete facts of one saved advice. No task text,
+/// path or objective: `decision_id` is the digest the advice report carries.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryBinding {
+    pub decision_id: String,
+    pub catalog_version: String,
+    pub policy_version: String,
+    pub task_kind: TaskKind,
+    pub risk: RiskLevel,
+    pub selection_basis: AdvisorySelectionBasis,
+    pub recommended: Vec<AdvisoryPhase>,
+}
+
+/// A manual outcome for an advisory recommendation. It is not a supervised run:
+/// it has no run, receipt or approval hash, and nothing here is verified.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryOutcomeInput {
+    pub schema_version: u32,
+    pub observed_at_unix_seconds: u64,
+    pub binding: AdvisoryBinding,
+    pub adherence: AdvisoryAdherence,
+    /// Present exactly when the recommendation was overridden.
+    pub used: Option<AdvisoryUsed>,
+    pub result: AdvisoryResult,
+    pub measurements: AdvisoryMeasurements,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvisoryOutcomeEvent {
+    pub sequence: u64,
+    /// One-based record number for this `decision_id`. A different outcome for
+    /// the same decision is a new attempt; the latest one counts in the report.
+    pub attempt: u64,
+    pub consent_revision: u64,
+    pub recorded_at_unix_seconds: u64,
+    pub input: AdvisoryOutcomeInput,
+    pub outcome_hash: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FeedbackExport {
@@ -269,6 +365,9 @@ pub struct FeedbackExport {
     /// its earlier bytes and hash.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub facts: Vec<FeedbackFactEvent>,
+    /// Manual advisory outcomes. Absent when there are none, for the same reason.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub advisory_outcomes: Vec<AdvisoryOutcomeEvent>,
     pub content_hash: String,
 }
 

@@ -99,6 +99,17 @@ pub(crate) fn feedback(
             let input = router_feedback::parse_feedback(&bytes).map_err(error)?;
             json_output(&store.record(input, now).map_err(error)?, ExitCode::SUCCESS)
         }
+        FeedbackCommand::AdvisoryRecord(args) => {
+            let input = crate::advisory_outcome::input(args, now)?;
+            json_output(
+                &store.record_advisory_outcome(input, now).map_err(error)?,
+                ExitCode::SUCCESS,
+            )
+        }
+        FeedbackCommand::AdvisoryReport => json_output(
+            &store.advisory_report(now).map_err(error)?,
+            ExitCode::SUCCESS,
+        ),
         FeedbackCommand::Export => {
             json_output(&store.export(now).map_err(error)?, ExitCode::SUCCESS)
         }

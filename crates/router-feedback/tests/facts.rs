@@ -109,7 +109,7 @@ fn version_1_database_migrates_and_keeps_its_events_byte_identical() {
     assert_eq!(user_version(&path), 1);
     let store = FeedbackStore::open(&path).unwrap();
     drop(store);
-    assert_eq!(user_version(&path), 2);
+    assert_eq!(user_version(&path), 3);
     let stored: String = db(&path)
         .query_row("SELECT event FROM feedback", [], |r| r.get(0))
         .unwrap();
@@ -131,18 +131,18 @@ fn version_1_database_migrates_and_keeps_its_events_byte_identical() {
 }
 
 #[test]
-fn a_fresh_database_reaches_version_2() {
+fn a_fresh_database_reaches_the_current_version() {
     let (temp, store) = setup();
     drop(store);
-    assert_eq!(user_version(&temp.path().join("feedback")), 2);
+    assert_eq!(user_version(&temp.path().join("feedback")), 3);
 }
 
 #[test]
-fn version_3_is_refused() {
+fn version_4_is_refused() {
     let (temp, store) = setup();
     drop(store);
     let path = temp.path().join("feedback");
-    db(&path).pragma_update(None, "user_version", 3).unwrap();
+    db(&path).pragma_update(None, "user_version", 4).unwrap();
     assert!(matches!(
         FeedbackStore::open(&path),
         Err(FeedbackError::Integrity("future schema"))

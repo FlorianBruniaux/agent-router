@@ -182,6 +182,91 @@ liste cette capacité ou si vous passez `--declare-capability tools`
 (étiquetée `declared`). La déclaration `tools` du catalogue ne remplace pas ce
 fait du host : sans lui, aucune recommandation.
 
+## 5. Enregistrer le résultat
+
+Une fois la tâche faite à la main, vous pouvez enregistrer si vous avez suivi la
+recommandation et comment elle s'est terminée, puis lire un rapport local. Il
+faut le `--output-directory` de l'étape 3, car l'enregistrement se lie au
+`decision_id` sauvegardé dans `advice.json`. Rien n'est exécuté et rien ne sort
+de votre machine.
+
+```sh
+echo '{"schema_version":1,"collection_enabled":true,"learning_enabled":false,"retention_seconds":2592000}' \
+  > ~/agent-router-advice/prefs.json
+agent-router feedback --store ~/agent-router-advice/store --json \
+  configure --preferences ~/agent-router-advice/prefs.json
+
+# Recommandation suivie, acceptée telle quelle, aucun coût rapporté par le host.
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-advice/advice.json \
+  --adherence followed --result accepted-as-is
+
+# Recommandation écartée : indiquez ce que vous avez utilisé, et le coût rapporté s'il existe.
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/other-advice/advice.json \
+  --adherence overridden --result accepted-after-rework \
+  --used-model gpt-5.6-terra --used-effort medium --used-no-skill \
+  --cost-microusd 4200
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-report
+```
+
+La première commande est le consentement explicite : rien n'est enregistré tant
+que `collection_enabled` n'est pas vrai, et `retention_seconds` borne la durée de
+conservation. Ensuite :
+
+- `--adherence` et `--result` sont obligatoires. `--result` vaut `accepted-as-is`,
+  `accepted-after-rework` ou `abandoned`.
+- Une recommandation écartée doit nommer au moins l'un de `--used-model`,
+  `--used-effort`, `--used-skill` (répétable) et `--used-no-skill`. Ce que vous
+  n'indiquez pas reste UNKNOWN. Une recommandation suivie n'en accepte aucun.
+- `--cost-microusd` et `--tokens` sont ce que votre host a rapporté. Omettez-les
+  s'il n'a rien rapporté : ils restent UNKNOWN et ne sont jamais stockés à zéro.
+- Seuls des énumérations, des identifiants, des nombres et le `decision_id` sont
+  stockés. Un identifiant est vérifié sur sa syntaxe, pas par rapport à un
+  catalogue : lettres, chiffres et `._:-`, sans `/`, sans `\` et sans `.` ou `~`
+  en tête. Le texte de la tâche, l'objectif, les chemins et tout commentaire ne
+  sont pas stockés, et un texte libre ou un chemin dans une option est refusé
+  avec `feedback.invalid`.
+- Le type de tâche, le risque et les phases recommandées sont copiés depuis
+  l'`advice.json` que vous passez, et vous pouvez le modifier. Seul le
+  `decision_id` est un condensat de la requête : le regroupement par type de
+  tâche repose donc sur votre propre fichier. Un écart qui indique un modèle, un
+  effort et des skills tous égaux à la recommandation est refusé.
+- Conseiller la même tâche une seconde fois donne le même `decision_id`. Répéter
+  le dernier enregistrement est sans effet ; un résultat différent (reprise ou
+  correction) est stocké comme tentative suivante, et le rapport compte une fois
+  la dernière tentative.
+- Un rapport `status: no_recommendation` n'a rien à suivre
+  (`advisory.outcome.not_recommended`), et un fichier qui n'est pas un rapport de
+  conseil de version 1 est refusé (`advisory.outcome.advice_invalid`).
+
+`advisory-report` compare suivi et écarté par type de tâche. Chaque taux affiche
+son numérateur et son dénominateur, la taille d'échantillon et les compteurs
+UNKNOWN (coût, tokens et, pour les écarts, le modèle, l'effort et les skills
+utilisés), ainsi que le nombre de recommandations issues d'un départage entre
+modèles non notés. Un groupe vide n'a pas de taux, et non un taux nul. `decisions` et
+`sample_size` comptent chaque décision une fois ; `records` indique le nombre de
+tentatives enregistrées. Les coûts
+sont comptés comme connus ou inconnus, jamais additionnés.
+
+Pour partager une copie expurgée ou tout supprimer :
+
+```sh
+agent-router feedback --store ~/agent-router-advice/store --json export > outcomes.json
+agent-router feedback --store ~/agent-router-advice/store --json purge
+```
+
+`export` liste les résultats sous `advisory_outcomes` ; ils ne contiennent aucun
+texte libre. `purge` les supprime avec le reste du store.
+
+**Un rapport personnel n'est pas une preuve de gain général.** Les
+enregistrements sont déclaratifs et non vérifiés, l'échantillon est le vôtre et
+auto-sélectionné, et les tâches diffèrent. L'évaluation comparative est suivie
+dans l'[issue #5](https://github.com/FlorianBruniaux/agent-router/issues/5).
+Voir [feedback](feedback.md#advisory-outcomes) et
+[ADR 0052](adr/0052-advisory-outcome-record.md).
+
 ## Provenance
 
 | Étiquette | Sens |

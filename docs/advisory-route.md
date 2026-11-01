@@ -174,6 +174,86 @@ or you pass `--declare-capability tools`, which is labelled `declared`. The
 catalog's `tools` entry does not replace that host fact: without it the task gets
 no recommendation.
 
+## 5. Record how it went
+
+After you do the task by hand, you can record whether you followed the
+recommendation and how it ended, then read a local report. This needs the
+`--output-directory` of step 3, because the record binds to the `decision_id`
+saved in `advice.json`. Nothing is executed and nothing leaves your machine.
+
+```sh
+echo '{"schema_version":1,"collection_enabled":true,"learning_enabled":false,"retention_seconds":2592000}' \
+  > ~/agent-router-advice/prefs.json
+agent-router feedback --store ~/agent-router-advice/store --json \
+  configure --preferences ~/agent-router-advice/prefs.json
+
+# Followed the recommendation, accepted as is, no cost reported by the host.
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-advice/advice.json \
+  --adherence followed --result accepted-as-is
+
+# Overrode it: say what you used instead, and the host-reported cost if any.
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/other-advice/advice.json \
+  --adherence overridden --result accepted-after-rework \
+  --used-model gpt-5.6-terra --used-effort medium --used-no-skill \
+  --cost-microusd 4200
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-report
+```
+
+The first command is the explicit consent: nothing is recorded until
+`collection_enabled` is true, and `retention_seconds` bounds how long records
+stay. Then:
+
+- `--adherence` and `--result` are required. `--result` is `accepted-as-is`,
+  `accepted-after-rework` or `abandoned`.
+- An override must name at least one of `--used-model`, `--used-effort`,
+  `--used-skill` (repeatable) and `--used-no-skill`. What you do not state is
+  UNKNOWN. A followed recommendation takes none of them.
+- `--cost-microusd` and `--tokens` are what your host reported. Omit them when it
+  reported nothing: they stay UNKNOWN and are never stored as zero.
+- Only enums, identifiers, numbers and the `decision_id` are stored. An
+  identifier is checked for syntax, not against a catalog: letters, digits and
+  `._:-`, with no `/`, no `\` and no leading `.` or `~`. The task text,
+  objective, paths and any comment are not stored, and free text or a path in a
+  flag is refused with `feedback.invalid`.
+- Task kind, risk and the recommended phases are copied from the `advice.json`
+  you pass, which you can edit. Only `decision_id` is a digest of the request, so
+  the grouping by task kind rests on your own file. An override that states a
+  model, effort and skills all equal to the recommendation is refused.
+- Advising the same task again gives the same `decision_id`. Repeating the
+  latest record is harmless; a different outcome (a retry or a correction) is
+  stored as the next attempt, and the report counts the latest attempt once.
+- A report with `status: no_recommendation` has nothing to follow
+  (`advisory.outcome.not_recommended`), and a file that is not a version 1
+  advice report is refused (`advisory.outcome.advice_invalid`).
+
+`advisory-report` compares followed with overridden per task kind. Every rate
+shows its numerator and denominator, the sample size and the UNKNOWN counts
+(cost, tokens and, for overrides, the model, effort and skills used), plus how
+many recommendations were a tie-break among unrated models. An empty group has
+no rate, not zero. `decisions` and `sample_size` count each decision once;
+`records` shows how many attempts were recorded. Costs are counted as known or
+unknown, never summed.
+
+To share a redacted copy or delete everything:
+
+```sh
+agent-router feedback --store ~/agent-router-advice/store --json export > outcomes.json
+agent-router feedback --store ~/agent-router-advice/store --json purge
+```
+
+`export` lists the outcomes under `advisory_outcomes`; they hold no free text.
+`purge` deletes them with the rest of the store.
+
+**A personal report is not evidence of a general gain.** The records are
+self-reported and unverified, the sample is yours and self-selected, and the
+tasks differ. Comparative evaluation is tracked in
+[issue #5](https://github.com/FlorianBruniaux/agent-router/issues/5). See
+[feedback](feedback.md#advisory-outcomes) and
+[ADR 0052](adr/0052-advisory-outcome-record.md).
+
 ## Provenance
 
 | Label | Meaning |

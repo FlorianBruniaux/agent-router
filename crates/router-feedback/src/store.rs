@@ -16,7 +16,8 @@ use rusqlite::{Connection, OptionalExtension, Transaction, params};
 
 use crate::{
     DriftFinding, FeedbackError, FeedbackStatistics, LearningRules, MAX_EVENTS, Result,
-    facts::{expire_facts, latest_recorded_at, read_facts},
+    advisory_outcome::{self, expire_outcomes, read_outcomes},
+    facts::{self, expire_facts, read_facts},
     hash, validate_input, validate_preferences,
 };
 
@@ -69,7 +70,7 @@ impl FeedbackStore {
         db.pragma_update(None, "secure_delete", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if version > 2 {
+        if version > 3 {
             return Err(FeedbackError::Integrity("future schema"));
         }
         if version == 0 {
@@ -100,6 +101,15 @@ impl FeedbackStore {
             tx.execute_batch("CREATE TABLE facts(sequence INTEGER PRIMARY KEY AUTOINCREMENT, run_key TEXT NOT NULL, kind TEXT NOT NULL, observed_at INTEGER NOT NULL, fact TEXT NOT NULL, UNIQUE(run_key,kind));
                 CREATE TRIGGER facts_immutable BEFORE UPDATE ON facts BEGIN SELECT RAISE(ABORT,'immutable fact'); END;
                 PRAGMA user_version=2;")?;
+            tx.commit()?;
+        }
+        let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if version == 2 {
+            // Additive: neither events nor facts are read or rewritten.
+            let tx = db.transaction()?;
+            tx.execute_batch("CREATE TABLE advisory_outcomes(sequence INTEGER PRIMARY KEY AUTOINCREMENT, decision_id TEXT NOT NULL, attempt INTEGER NOT NULL, observed_at INTEGER NOT NULL, event TEXT NOT NULL, UNIQUE(decision_id,attempt));
+                CREATE TRIGGER advisory_outcomes_immutable BEFORE UPDATE ON advisory_outcomes BEGIN SELECT RAISE(ABORT,'immutable advisory outcome'); END;
+                PRAGMA user_version=3;")?;
             tx.commit()?;
         }
         for suffix in ["", "-wal", "-shm"] {
@@ -156,6 +166,7 @@ impl FeedbackStore {
         if !consent.preferences.collection_enabled {
             tx.execute("DELETE FROM feedback", [])?;
             tx.execute("DELETE FROM facts", [])?;
+            tx.execute("DELETE FROM advisory_outcomes", [])?;
         }
         if !consent.preferences.learning_enabled {
             // Opt-out discards learned artifacts and restores the explicitly registered deterministic baseline.
@@ -268,6 +279,7 @@ impl FeedbackStore {
         let tx = db.transaction()?;
         let (events, consent, removed) = snapshot_in(&tx, now, false)?;
         let facts = read_facts(&tx)?;
+        let advisory_outcomes = read_outcomes(&tx)?;
         tx.commit()?;
         if removed > 0 {
             scrub(&db)?;
@@ -278,6 +290,7 @@ impl FeedbackStore {
             consent,
             events,
             facts,
+            advisory_outcomes,
             content_hash: String::new(),
         };
         export.content_hash = hash("feedback-export-v1", &export)?;
@@ -285,14 +298,15 @@ impl FeedbackStore {
     }
     /// Deletes feedback, facts, policies, audit records and resets consent/settings.
     /// Only a non-personal clock watermark survives, preventing clock replay.
-    /// The count covers events and facts.
+    /// The count covers events, facts and advisory outcomes.
     pub fn purge_all(&self, now: u64) -> Result<usize> {
         timestamp(now)?;
         let mut db = self.lock()?;
         let tx = db.transaction()?;
         ensure_clock(&tx, now)?;
-        let removed =
-            tx.execute("DELETE FROM feedback", [])? + tx.execute("DELETE FROM facts", [])?;
+        let removed = tx.execute("DELETE FROM feedback", [])?
+            + tx.execute("DELETE FROM facts", [])?
+            + tx.execute("DELETE FROM advisory_outcomes", [])?;
         tx.execute("DELETE FROM policy_events", [])?;
         tx.execute("DELETE FROM policies", [])?;
         tx.execute("DELETE FROM settings", [])?;
@@ -347,6 +361,7 @@ impl FeedbackStore {
         validate_preferences(&consent.preferences)?;
         read_events(&db)?;
         read_facts(&db)?;
+        read_outcomes(&db)?;
         crate::policy::verify_policies(&db)?;
         Ok(())
     }
@@ -390,7 +405,8 @@ pub(crate) fn expire(tx: &Transaction<'_>, consent: &FeedbackConsent, now: u64) 
     let cutoff = now.saturating_sub(consent.preferences.retention_seconds);
     Ok(
         tx.execute("DELETE FROM feedback WHERE observed_at < ?1", [cutoff])?
-            + expire_facts(tx, cutoff)?,
+            + expire_facts(tx, cutoff)?
+            + expire_outcomes(tx, cutoff)?,
     )
 }
 pub(crate) fn ensure_clock(db: &Connection, now: u64) -> Result<()> {
@@ -422,7 +438,9 @@ pub(crate) fn ensure_clock(db: &Connection, now: u64) -> Result<()> {
             return Err(FeedbackError::Invalid("clock moved backwards"));
         }
     }
-    if latest_recorded_at(db)?.is_some_and(|recorded| now < recorded) {
+    if facts::latest_recorded_at(db)?.is_some_and(|recorded| now < recorded)
+        || advisory_outcome::latest_recorded_at(db)?.is_some_and(|recorded| now < recorded)
+    {
         return Err(FeedbackError::Invalid("clock moved backwards"));
     }
     db.execute(
