@@ -1,0 +1,51 @@
+CHANGELOG.md
+  s_c3158f009d7319::t_65f20c60b1294c 35
+crates/agent-router-cli/src/advisory.rs
+  s_a1468ab8feb38f::t_11062afccb736c 22,98-102,167,1098-1104,1108,1111-1200,1202-1301,1303,1305-1321,1324-1325,1327-1388,1541-1546,1550-1551,1573,1575-1590,1598-1643
+crates/agent-router-cli/src/advisory_outcome.rs
+  s_a1468ab8feb38f::t_cc1e1042ca2d6b 43,46-50,111-180,253,256-258
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_0987cc2fbd4893 39-49
+crates/agent-router-cli/src/private_output.rs
+  s_c3158f009d7319::t_7c4f3856593343 33-47,55-59,62,99-104,130-133
+crates/agent-router-cli/tests/advise_compare.rs
+  s_37b482d0db3306::t_2d60c2ddda1ed8 1-495
+docs/advisory-route.fr.md
+  s_c3158f009d7319::t_8fb7055253879b 323-356
+docs/advisory-route.md
+  s_c3158f009d7319::t_8f7b737bb7aa26 312-342
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_aa1041b844466a 196-210
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee5e1f47c9e145e8e34e382c79d8cf7b6f85e178",
+  "prompts": {},
+  "sessions": {
+    "s_37b482d0db3306": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "359f9fdc-0651-4944-aa56-5e2b885fb885",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_a1468ab8feb38f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e6174643-15d4-4798-8450-c5aea2b50775",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
