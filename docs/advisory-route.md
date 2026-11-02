@@ -309,6 +309,37 @@ agent-router feedback --store ~/agent-router-advice/store --json advisory-record
 [ADR 0052](adr/0052-advisory-outcome-record.md): consent first, no hidden state,
 no "latest advice" lookup. The store path must be absolute.
 
+### Compare the two policies on one task
+
+`advise --compare-policies` decides the same request under `stable-v1` and
+`stable-v2` and prints, per stage, each policy's model and effort and whether
+they differ. It does not combine with `--policy`, and it runs neither plan.
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk high --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --compare-policies --output-directory ~/agent-router-advice/backup-compare
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-compare --policy stable-v2 \
+  --followed --result accepted-as-is
+```
+
+With `--output-directory`, each decision is saved as a normal `advise` export in
+a subdirectory named after its policy (`stable-v1/`, `stable-v2/`), each with its
+own `decision_id`. `compare.json` is written last and lists the arms, the stage
+table and a `request_hash` that is the same for every arm. Exit codes follow
+`advise`: `0` when every policy recommends, `3` otherwise.
+
+`advisory-record` needs `--policy <name>` for a comparison directory (or its
+`compare.json`) and refuses it for a single advice. `--followed` records that you
+followed that policy's plan. `--overridden` with the `--used-*` fields records
+that you departed from it. To say you followed neither, run the command once per
+policy with `--overridden`. The record binds to that policy's `decision_id`.
+The store records no `request_hash`; the two outcomes are linked only by
+`compare.json`.
+
 Facts you do not state take these fixed values. They are not inferred from the
 text and each one appears in the report with provenance `defaulted`:
 

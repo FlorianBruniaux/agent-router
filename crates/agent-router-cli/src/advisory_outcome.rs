@@ -40,8 +40,14 @@ pub enum ResultArg {
 ))]
 pub struct AdvisoryRecordArgs {
     /// `advice.json` that `advise --output-directory` saved, or that directory.
+    /// For `advise --compare-policies`, the directory or its `compare.json`.
     #[arg(long)]
     pub advice: PathBuf,
+    /// Which saved decision of a comparison this outcome is about (`stable-v2`,
+    /// ...): the plan you followed, or the plan you departed from with
+    /// `--overridden`. Required for a comparison, refused for a single advice.
+    #[arg(long, value_name = "NAME")]
+    policy: Option<String>,
     /// Whether you followed the recommendation.
     #[arg(long, value_enum)]
     adherence: Option<AdherenceArg>,
@@ -100,6 +106,76 @@ struct SavedMapping {
 #[derive(Deserialize)]
 struct SavedAction {
     selection_basis: Option<AdvisorySelectionBasis>,
+}
+
+/// The part of a saved `compare.json` this command relies on.
+#[derive(Deserialize)]
+struct SavedComparison {
+    schema_version: u32,
+    mode: String,
+    executed: bool,
+    arms: Vec<SavedArm>,
+}
+
+#[derive(Deserialize)]
+struct SavedArm {
+    policy: String,
+    decision_id: String,
+    directory: Option<String>,
+}
+
+const COMPARISON_MARKER: &str = "compare.json";
+
+/// The `advice.json` to read and, for a comparison, the decision id its arm
+/// promises. A single advice has no arms, so naming one is refused.
+fn resolve(
+    advice: &std::path::Path,
+    policy: Option<&str>,
+) -> std::result::Result<(PathBuf, Option<String>), CliError> {
+    let comparison = if advice.is_dir() {
+        let marker = advice.join(COMPARISON_MARKER);
+        (!advice.join("advice.json").exists() && marker.exists()).then_some(marker)
+    } else {
+        (advice
+            .file_name()
+            .is_some_and(|name| name == COMPARISON_MARKER))
+        .then(|| advice.to_owned())
+    };
+    let Some(marker) = comparison else {
+        if policy.is_some() {
+            return Err(invalid("advisory.outcome.policy_unexpected"));
+        }
+        let path = if advice.is_dir() {
+            advice.join("advice.json")
+        } else {
+            advice.to_owned()
+        };
+        return Ok((path, None));
+    };
+    let saved: SavedComparison = read_json(&marker, MAX_ADVICE)?;
+    if saved.schema_version != 1 || saved.mode != "advisory_comparison" || saved.executed {
+        return Err(invalid("advisory.outcome.advice_invalid"));
+    }
+    let policy = policy.ok_or_else(|| invalid("advisory.outcome.policy_required"))?;
+    // The name is matched against the arms the comparison lists, never joined
+    // to a path as typed.
+    let arm = saved
+        .arms
+        .iter()
+        .find(|arm| arm.policy == policy)
+        .ok_or_else(|| invalid("advisory.outcome.policy_unknown"))?;
+    let directory = arm
+        .directory
+        .as_deref()
+        .filter(|name| !name.is_empty() && !name.contains(['/', '\\']) && !name.starts_with('.'))
+        .ok_or_else(|| invalid("advisory.outcome.advice_invalid"))?;
+    let root = marker
+        .parent()
+        .ok_or_else(|| invalid("advisory.outcome.advice_invalid"))?;
+    Ok((
+        root.join(directory).join("advice.json"),
+        Some(arm.decision_id.clone()),
+    ))
 }
 
 fn invalid(code: &'static str) -> CliError {
@@ -174,13 +250,12 @@ pub(crate) fn input(
 ) -> std::result::Result<AdvisoryOutcomeInput, CliError> {
     // The advice directory that `advise --output-directory` created is accepted
     // in place of its `advice.json` marker.
-    let advice_path = if args.advice.is_dir() {
-        args.advice.join("advice.json")
-    } else {
-        args.advice.clone()
-    };
+    let (advice_path, promised) = resolve(&args.advice, args.policy.as_deref())?;
     let advice: SavedAdvice = read_json(&advice_path, MAX_ADVICE)?;
     let binding = binding(&advice)?;
+    if promised.is_some_and(|id| id != binding.decision_id) {
+        return Err(invalid("advisory.outcome.advice_invalid"));
+    }
     let invalid_flag = || invalid("feedback.invalid");
     let adherence = match (args.adherence, args.followed, args.overridden) {
         (Some(value), false, false) => value,

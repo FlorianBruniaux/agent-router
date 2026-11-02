@@ -320,6 +320,40 @@ agent-router feedback --store ~/agent-router-advice/store --json advisory-record
   --advice ~/agent-router-advice/backup-advice --followed --result accepted-as-is
 ```
 
+### Comparer les deux politiques sur une tâche
+
+`advise --compare-policies` décide la même requête sous `stable-v1` et
+`stable-v2`, puis affiche pour chaque étape le modèle et l'effort de chaque
+politique et s'ils diffèrent. Elle ne se combine pas avec `--policy` et
+n'exécute aucun plan.
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk high --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --compare-policies --output-directory ~/agent-router-advice/backup-compare
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-compare --policy stable-v2 \
+  --followed --result accepted-as-is
+```
+
+Avec `--output-directory`, chaque décision est enregistrée comme un export
+`advise` ordinaire, dans un sous-répertoire nommé d'après sa politique
+(`stable-v1/`, `stable-v2/`), chacune avec son `decision_id`. `compare.json` est
+écrit en dernier : il liste les bras, le tableau par étape et un `request_hash`
+identique pour tous les bras. Les codes de sortie suivent `advise` : `0` si
+chaque politique recommande, `3` sinon.
+
+`advisory-record` exige `--policy <nom>` pour un répertoire de comparaison (ou
+son `compare.json`) et le refuse pour un conseil simple. `--followed` enregistre
+que vous avez suivi le plan de cette politique. `--overridden` avec les champs
+`--used-*` enregistre que vous vous en êtes écarté. Pour dire que vous n'avez
+suivi aucun des deux, lancez la commande une fois par politique avec
+`--overridden`. L'enregistrement est lié au `decision_id` de cette politique. Le
+magasin ne stocke pas le `request_hash` : seul `compare.json` relie les deux
+résultats.
+
 `advisory-record` accepte le répertoire du conseil à la place de `advice.json`,
 et `--followed` ou `--overridden` à la place de `--adherence`. Les règles de
 l'[ADR 0052](adr/0052-advisory-outcome-record.md) restent valables : consentement

@@ -36,6 +36,17 @@ pub enum ScoringPolicy {
 }
 
 impl ScoringPolicy {
+    /// Every compiled policy, in the order a comparison lists them.
+    pub(crate) const ALL: [Self; 2] = [Self::StableV1, Self::StableV2];
+
+    /// The name accepted by `--policy` and stored as the decision `policy_version`.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Self::StableV1 => "stable-v1",
+            Self::StableV2 => "stable-v2",
+        }
+    }
+
     pub(crate) fn router(self) -> router_policy::Router {
         match self {
             Self::StableV1 => router_policy::Router::stable_v1(),

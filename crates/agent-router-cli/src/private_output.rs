@@ -31,14 +31,35 @@ pub(crate) fn publish(
     documents: Vec<(&'static str, Vec<u8>)>,
     code: &'static str,
 ) -> Result<PathBuf, CliError> {
+    publish_with_children(path, Vec::new(), documents, code)
+}
+
+/// A named child directory and the documents it holds.
+pub(crate) type Child = (String, Vec<(&'static str, Vec<u8>)>);
+
+/// Like `publish`, with named child directories published first, each by
+/// `publish` itself, so the last root document is still the completion marker
+/// of the whole tree. A child name is one plain path component.
+pub(crate) fn publish_with_children(
+    path: &Path,
+    children: Vec<Child>,
+    documents: Vec<(&'static str, Vec<u8>)>,
+    code: &'static str,
+) -> Result<PathBuf, CliError> {
     use std::{
         fs::{self, OpenOptions},
         io::Write,
         os::unix::fs::{DirBuilderExt, MetadataExt, OpenOptionsExt},
     };
     let fail = || CliError::Product(code);
+    if children.iter().any(|(name, _)| {
+        name.is_empty() || name.starts_with('.') || !name.bytes().all(is_child_byte)
+    }) {
+        return Err(fail());
+    }
     if documents
         .iter()
+        .chain(children.iter().flat_map(|(_, documents)| documents))
         .any(|(_, bytes)| bytes.len() + 1 > MAX_DOCUMENT)
     {
         return Err(fail());
@@ -75,6 +96,12 @@ pub(crate) fn publish(
         }
         Ok(())
     };
+    for (name, child) in children {
+        check()?;
+        if publish(&destination.join(&name), child, code)? != destination.join(&name) {
+            return Err(fail());
+        }
+    }
     for (name, mut bytes) in documents {
         check()?;
         bytes.push(b'\n');
@@ -99,4 +126,8 @@ pub(crate) fn publish(
         .and_then(|file| file.sync_all())
         .map_err(|_| fail())?;
     Ok(destination)
+}
+
+fn is_child_byte(byte: u8) -> bool {
+    byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_' || byte == b'.'
 }
