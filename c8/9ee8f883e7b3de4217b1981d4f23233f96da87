@@ -1,0 +1,55 @@
+CHANGELOG.md
+  s_c3158f009d7319::t_3d986eca49ae1a 28
+crates/agent-router-cli/src/advisory.rs
+  s_c3158f009d7319::t_e3982ae7952f5d 7-8,13,94-96,131-133,964,1092,1095,1097,1099,1109,1137,1232-1249
+crates/agent-router-cli/src/command.rs
+  s_c3158f009d7319::t_d3c5c205654820 29-46,498-501
+crates/agent-router-cli/src/main.rs
+  s_c3158f009d7319::t_5bdf299cd15836 57,519,527-533,642-649,654,659-665,685,695,708
+crates/agent-router-cli/src/serve.rs
+  s_c3158f009d7319::t_1c01cf06ce0585 66-73,188-194
+crates/agent-router-cli/tests/advisory_matrix.rs
+  s_c3158f009d7319::t_4e0ed7ffaeb480 20,215-216,218-228,262-264,300,306,312,314,330-332,347,350,358,362-415,419-423,427-430,432,559
+crates/agent-router-cli/tests/advisory_route.rs
+  s_c3158f009d7319::t_8bbb7276b7ea02 687-690,695,1042-1044,1050,1057-1080,1082-1096
+crates/agent-router-cli/tests/golden/advise-matrix-v2.json
+  s_c3158f009d7319::t_ffe56929b072c3 1-590
+crates/agent-router-cli/tests/policy_flag.rs
+  s_c3158f009d7319::t_872a4104063be3 1-61
+crates/router-policy/src/lib.rs
+  s_c3158f009d7319::t_57b4cf5b9d8051 15,38,40
+crates/router-policy/src/route.rs
+  s_c3158f009d7319::t_c61d2bacbf20dd 8-12,21-27,35-44,49-56,73-76,82-91,103-113,133,147-163,188-197
+crates/router-policy/src/score.rs
+  s_c3158f009d7319::t_9d44f4219703d5 16-17,31,37,51-148,218-232,248-252,255
+crates/router-policy/src/stable_v2.rs
+  s_c3158f009d7319::t_be77be17494fc1 1-618
+crates/router-policy/tests/golden/stable-v1-fixtures.json
+  s_c3158f009d7319::t_1d3f777bf5e0e8 1-210
+crates/router-policy/tests/stable_v1_frozen.rs
+  s_c3158f009d7319::t_6dc5da22da797c 1-80
+crates/router-policy/tests/stable_v2.rs
+  s_c3158f009d7319::t_6af27d7231beca 1-296
+docs/advisory-route.fr.md
+  s_c3158f009d7319::t_d821ae835159ec 97-117,397-401
+docs/advisory-route.md
+  s_c3158f009d7319::t_d7f864f16fe9cf 91-109,373-377
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_d9add02a68adc1 43,450-459
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c89ee8f883e7b3de4217b1981d4f23233f96da87",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
