@@ -10,7 +10,7 @@ use crate::{
 use clap::Args;
 use router_adapter_api::{ALL_CAPABILITIES, MAX_SNAPSHOT_MODELS, ValidatedHostObservation};
 use router_catalog::Catalog;
-use router_policy::AdvisoryScoring;
+use router_policy::{AdvisoryScoring, EffortProvenance};
 use router_types::{
     Capability, CapabilitySupport, Clarification, DataSensitivity, DecisionEnvelope, HostSnapshot,
     ModelId, Mutation, NormalizedTask, RiskEnvironment, RiskLevel, RiskOperation,
@@ -1237,15 +1237,28 @@ fn human(report: &Report) -> Result<String, CliError> {
             } else {
                 format!(" [{}]", stage.reason_codes.join(", "))
             };
+            let effort = match stage.effort_provenance {
+                EffortProvenance::PolicyTable => format!("effort {}", label(&stage.effort)?),
+                EffortProvenance::Fallback => format!(
+                    "effort {} (fallback, table asked {})",
+                    label(&stage.effort)?,
+                    label(&stage.effort_target)?
+                ),
+            };
             lines.push(format!(
-                "  {} target {} chosen {} shortfall {}{}",
+                "  {} target {} chosen {} shortfall {} {}{}",
                 label(&stage.stage)?,
                 stage.target_micros,
                 stage.quality_micros,
                 stage.shortfall_micros,
+                effort,
                 codes
             ));
         }
+        lines.push(
+            "  Margins and efforts are declared priors, not measurements. Effort cost is not modelled."
+                .into(),
+        );
     }
     if let Some(path) = &report.output_directory {
         lines.push(format!(

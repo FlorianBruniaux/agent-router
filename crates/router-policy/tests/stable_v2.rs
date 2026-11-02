@@ -4,8 +4,8 @@
 use std::{fs, path::PathBuf};
 
 use router_catalog::Catalog;
-use router_policy::{Router, StageScoring};
-use router_types::{RiskLevel, RouteDecision, RouteRequest, StageKind, TaskKind};
+use router_policy::{EffortProvenance, Router, StageScoring};
+use router_types::{EffortLevel, RiskLevel, RouteDecision, RouteRequest, StageKind, TaskKind};
 use serde_json::Value;
 
 const CATALOGS: [&str; 4] = [
@@ -293,4 +293,97 @@ fn v2_low_risk_execute_uses_the_cheap_rated_model_and_critical_does_not() {
     };
     assert_eq!(execute_model(RiskLevel::Low), "gpt-5.6-luna");
     assert_ne!(execute_model(RiskLevel::Critical), "gpt-5.6-luna");
+}
+
+fn with_efforts(request: &RouteRequest, efforts: &[&str]) -> RouteRequest {
+    let mut value = serde_json::to_value(request).unwrap();
+    for supported in value["host"]["supported_efforts"]
+        .as_object_mut()
+        .unwrap()
+        .values_mut()
+    {
+        *supported = serde_json::json!(efforts);
+    }
+    serde_json::from_value(value).unwrap()
+}
+
+#[test]
+fn effort_falls_back_to_nearest_supported_level() {
+    let catalog = catalog_from(&catalog_json("codex-core-v3"));
+    let base = requests()
+        .into_iter()
+        .find(|(file, _)| file == "codex-exploration.json")
+        .unwrap()
+        .1;
+    // Low-risk implement prefers plan medium, execute low, verify medium. A host
+    // that offers only `low` and `xhigh` gets `low` where the table asks for
+    // medium (higher neighbour high is absent, then the lower neighbour).
+    let request = with_efforts(
+        &with_task(&base, TaskKind::Implement, RiskLevel::Low),
+        &["low", "xhigh"],
+    );
+    let scored = Router::stable_v2()
+        .route_scored(&request, &catalog)
+        .unwrap();
+    let plan = scored.decision.selected_plan().unwrap();
+    let scoring = scored.scoring.unwrap();
+    let efforts: Vec<_> = plan.stages.iter().map(|stage| stage.effort).collect();
+    assert_eq!(
+        efforts,
+        [EffortLevel::Low, EffortLevel::Low, EffortLevel::Low]
+    );
+    let rows: Vec<_> = scoring
+        .stages
+        .iter()
+        .map(|stage| (stage.effort_target, stage.effort_provenance))
+        .collect();
+    assert_eq!(
+        rows,
+        [
+            (EffortLevel::Medium, EffortProvenance::Fallback),
+            (EffortLevel::Low, EffortProvenance::PolicyTable),
+            (EffortLevel::Medium, EffortProvenance::Fallback),
+        ]
+    );
+    // The higher neighbour wins over the lower one when it exists.
+    let request = with_efforts(
+        &with_task(&base, TaskKind::Implement, RiskLevel::Medium),
+        &["low", "xhigh"],
+    );
+    let plan = Router::stable_v2()
+        .route(&request, &catalog)
+        .unwrap()
+        .selected_plan()
+        .unwrap()
+        .clone();
+    // Medium risk plan target is high: high is absent, xhigh is the higher neighbour.
+    assert_eq!(plan.stages[0].effort, EffortLevel::Xhigh);
+}
+
+#[test]
+fn scoring_declares_effort_as_a_prior_and_its_cost_as_not_modelled() {
+    let catalog = catalog_from(&catalog_json("codex-core-v3"));
+    let base = requests()
+        .into_iter()
+        .find(|(file, _)| file == "codex-exploration.json")
+        .unwrap()
+        .1;
+    // The fixture host offers a narrow effort set per model; widen it so the
+    // table target is always available.
+    let request = with_efforts(
+        &with_task(&base, TaskKind::Implement, RiskLevel::High),
+        &["low", "medium", "high", "xhigh", "max"],
+    );
+    let scoring = Router::stable_v2()
+        .route_scored(&request, &catalog)
+        .unwrap()
+        .scoring
+        .unwrap();
+    assert_eq!(scoring.effort_basis, "declared_policy_prior");
+    assert_eq!(scoring.effort_cost, "not_modelled");
+    assert_eq!(scoring.table_digest.len(), 64);
+    for stage in &scoring.stages {
+        assert_eq!(stage.effort_provenance, EffortProvenance::PolicyTable);
+        assert_eq!(stage.effort, stage.effort_target);
+    }
 }

@@ -37,4 +37,4 @@ pub use review_separation::{
 };
 pub use route::{PolicyConfig, RouteError, Router, ScoredDecision};
 pub use signed_phases::SignedPhaseInputs;
-pub use stable_v2::{AdvisoryScoring, StageScoring};
+pub use stable_v2::{AdvisoryScoring, EffortProvenance, StageScoring};

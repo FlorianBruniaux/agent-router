@@ -26,6 +26,8 @@ pub(crate) struct StageCandidate {
     pub(crate) kind: StageKind,
     pub(crate) model: ModelSpec,
     pub(crate) effort: EffortLevel,
+    /// Effort the policy asked for; `effort` differs when the host lacks it.
+    pub(crate) preferred_effort: EffortLevel,
     pub(crate) skills: Vec<AttachedSkill>,
 }
 
@@ -36,7 +38,15 @@ pub(crate) struct CandidateBuild {
     pub(crate) missing_evidence: Vec<String>,
 }
 
-pub(crate) fn build_candidates(request: &RouteRequest, catalog: &Catalog) -> CandidateBuild {
+/// `v1` preferred efforts, fixed for every task (`stable-v1` is frozen).
+pub(crate) const V1_EFFORTS: [EffortLevel; 3] =
+    [EffortLevel::High, EffortLevel::Medium, EffortLevel::High];
+
+pub(crate) fn build_candidates(
+    request: &RouteRequest,
+    catalog: &Catalog,
+    preferred_efforts: [EffortLevel; 3],
+) -> CandidateBuild {
     let engine = ConstraintEngine::default();
     let capabilities = capability_knowledge(request);
     let host = constraint_host(request);
@@ -44,11 +54,10 @@ pub(crate) fn build_candidates(request: &RouteRequest, catalog: &Catalog) -> Can
     let mut exclusions = Vec::new();
     let mut missing_evidence = Vec::new();
 
-    for (stage, preferred) in [
-        (StageKind::Plan, EffortLevel::High),
-        (StageKind::Execute, EffortLevel::Medium),
-        (StageKind::Verify, EffortLevel::High),
-    ] {
+    for (stage, preferred) in [StageKind::Plan, StageKind::Execute, StageKind::Verify]
+        .into_iter()
+        .zip(preferred_efforts)
+    {
         let mut stage_candidates = Vec::new();
         for (_, model) in catalog.models() {
             for effort in effort_preference(preferred) {
@@ -66,6 +75,7 @@ pub(crate) fn build_candidates(request: &RouteRequest, catalog: &Catalog) -> Can
                         kind: stage,
                         model: model.clone(),
                         effort,
+                        preferred_effort: preferred,
                         skills: compatible_skills(request, catalog, model),
                     });
                     break;

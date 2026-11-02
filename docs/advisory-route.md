@@ -104,8 +104,21 @@ measurements. A reason code describes catalog data, not model quality:
 | `catalog.unrated` | Every eligible model has quality 0, so the pick is a tie-break |
 
 `critical` risk also requires the strongest eligible verifier
-(`verification.critical.not_max_quality` for the others). The effort per stage
-is not yet risk-aware: it is unchanged from `stable-v1`.
+(`verification.critical.not_max_quality` for the others).
+
+Effort per stage also follows risk and kind under `stable-v2`, from a table of
+declared priors (plan / execute / verify): low `medium / low / medium`, medium
+`high / medium / medium`, high `high / medium / high`, critical
+`xhigh / high / xhigh`. `architecture` and `migration` raise the plan effort by
+one level, `security` and `review` raise the verify effort by one, `explore`
+lowers the verify effort by one; never below `low`, never above `max`. If the
+host does not offer the level, the nearest supported level is used and the
+`scoring` entry says so: `effort_target` is what the table asked for, `effort` is
+what you get, and `effort_provenance` is `policy_table` or `fallback`.
+`table_digest` identifies the tables, `effort_basis` is
+`declared_policy_prior`, and `effort_cost` is `not_modelled`: effort does not
+enter cost or ranking. `stable-v1` keeps its fixed efforts (plan `high`, execute
+`medium`, verify `high`).
 
 ## 4. Read the result
 
@@ -133,9 +146,9 @@ The same task then gets a recommendation:
 Status: recommended
   host.capability.tools [declared]: supported
 Skill tdd: suggested
-Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
+Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/medium
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort medium with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Select that model and effort in your host for each phase, load only the listed

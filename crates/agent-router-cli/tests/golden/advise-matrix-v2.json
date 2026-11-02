@@ -18,7 +18,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "low",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -46,7 +46,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -74,7 +74,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -118,7 +118,7 @@
     "selection_basis": "catalog_policy_prior",
     "stages": [
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "plan"
@@ -158,7 +158,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "verify"
@@ -174,19 +174,19 @@
     "selection_basis": "catalog_policy_prior",
     "stages": [
       {
-        "effort": "high",
+        "effort": "max",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "plan"
       },
       {
-        "effort": "medium",
+        "effort": "high",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "verify"
@@ -214,7 +214,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "low",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -242,7 +242,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -270,7 +270,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "gpt-6.1-terra",
         "skills": [],
         "stage": "verify"
@@ -314,7 +314,7 @@
     "selection_basis": "catalog_policy_prior",
     "stages": [
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "plan"
@@ -354,7 +354,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "verify"
@@ -370,19 +370,19 @@
     "selection_basis": "catalog_policy_prior",
     "stages": [
       {
-        "effort": "high",
+        "effort": "max",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "plan"
       },
       {
-        "effort": "medium",
+        "effort": "high",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "gpt-6.1-sol",
         "skills": [],
         "stage": "verify"
@@ -410,7 +410,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "verify"
@@ -438,7 +438,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "verify"
@@ -466,7 +466,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "medium",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "verify"
@@ -510,7 +510,7 @@
     "selection_basis": "unrated_tie_break",
     "stages": [
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "plan"
@@ -550,7 +550,7 @@
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "verify"
@@ -566,19 +566,19 @@
     "selection_basis": "unrated_tie_break",
     "stages": [
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "plan"
       },
       {
-        "effort": "medium",
+        "effort": "high",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "execute"
       },
       {
-        "effort": "high",
+        "effort": "xhigh",
         "model": "claude-haiku-4-5-20251001",
         "skills": [],
         "stage": "verify"

@@ -1,14 +1,14 @@
 // SPDX-FileCopyrightText: 2026 Florian Bruniaux
 // SPDX-License-Identifier: Apache-2.0
 use router_catalog::Catalog;
-use router_types::{DecisionEnvelope, Exclusion, RouteDecision, RouteRequest};
+use router_types::{DecisionEnvelope, Exclusion, RouteDecision, RouteRequest, StageKind};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use crate::{
-    preset::build_candidates,
+    preset::{V1_EFFORTS, build_candidates},
     score::rank_plans,
-    stable_v2::{AdvisoryScoring, POLICY_VERSION as STABLE_V2, rank_plans_v2},
+    stable_v2::{AdvisoryScoring, POLICY_VERSION as STABLE_V2, preferred_effort, rank_plans_v2},
 };
 
 pub const MAX_ROUTE_SKILL_CANDIDATES: usize = 256;
@@ -143,7 +143,12 @@ impl Router {
             catalog.version(),
             &self.config.policy_version,
         );
-        let mut build = build_candidates(request, catalog);
+        let efforts = match self.config.scoring {
+            Scoring::V1 => V1_EFFORTS,
+            Scoring::V2 => [StageKind::Plan, StageKind::Execute, StageKind::Verify]
+                .map(|stage| preferred_effort(request.task.kind, request.task.risk, stage)),
+        };
+        let mut build = build_candidates(request, catalog, efforts);
         let (mut ranked, scoring) = match self.config.scoring {
             Scoring::V1 => (
                 rank_plans(

@@ -400,6 +400,31 @@ fn scoring_object_is_additive_and_only_present_under_v2() {
 }
 
 #[test]
+fn scoring_reports_a_missed_effort_target_instead_of_hiding_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let case = CASES
+        .iter()
+        .find(|c| c.name == "migration-critical")
+        .unwrap();
+    // The Claude host offers medium, high and xhigh only; the critical migration
+    // plan asks for `max`.
+    let report = advise(dir.path(), Variant::ClaudeFlat, case);
+    let scoring = &report["scoring"];
+    assert_eq!(scoring["effort_basis"], "declared_policy_prior");
+    assert_eq!(scoring["effort_cost"], "not_modelled");
+    assert_eq!(scoring["table_digest"].as_str().unwrap().len(), 64);
+    let plan = &scoring["stages"][0];
+    assert_eq!(plan["effort_target"], "max");
+    assert_eq!(plan["effort"], "xhigh");
+    assert_eq!(plan["effort_provenance"], "fallback");
+    let execute = &scoring["stages"][1];
+    assert_eq!(execute["effort_target"], "high");
+    assert_eq!(execute["effort_provenance"], "policy_table");
+    // The plan itself carries the fallback effort.
+    assert_eq!(stages(&report)[0]["effort"], "xhigh");
+}
+
+#[test]
 fn advise_matrix_matches_golden_v2() {
     let dir = tempfile::tempdir().unwrap();
     let actual = render(&golden_value(dir.path(), Some("stable-v2")));
@@ -424,10 +449,11 @@ fn advise_matrix_is_byte_deterministic() {
 }
 
 const EXPECTED_DISTINCT_STAGE_TUPLES: usize = 5;
-// v2 pins one plan model (`gpt-6.1-sol`, `catalog.stage.dominated`) instead of
-// v1's lexical `gpt-5.6-sol`, so it has fewer stage tuples but three distinct
-// plans over the seven cases (v1: two). The reviewed list is in the v2 golden.
-const EXPECTED_DISTINCT_STAGE_TUPLES_V2: usize = 4;
+// v2 pins one plan model (`gpt-6.1-sol`, `catalog.stage.dominated`) and varies
+// effort with risk and kind: six stage tuples and three distinct model plans over
+// the seven cases (v1: five tuples, two plans). The reviewed list is in the v2
+// golden.
+const EXPECTED_DISTINCT_STAGE_TUPLES_V2: usize = 6;
 
 // ---- Stable-v2 relations (ADR 0054). They run under the default policy. ----
 
@@ -556,7 +582,6 @@ fn matrix_critical_uses_strongest_eligible_verifier() {
 }
 
 #[test]
-#[ignore = "pending the effort table, see #236"]
 fn matrix_effort_never_decreases_with_risk() {
     let dir = tempfile::tempdir().unwrap();
     let rows = by_risk(dir.path());

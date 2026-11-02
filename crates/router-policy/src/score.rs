@@ -488,6 +488,7 @@ mod tests {
                                 source: "test-prior".into(),
                             },
                             effort,
+                            preferred_effort: effort,
                             skills: skills.clone(),
                         }
                     })

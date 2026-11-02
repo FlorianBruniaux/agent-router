@@ -6,8 +6,9 @@
 //! requires a new policy version and a golden update.
 use std::cmp::Reverse;
 
-use router_types::{RiskLevel, StageKind, TaskKind};
+use router_types::{EffortLevel, RiskLevel, StageKind, TaskKind};
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 use crate::{
     preset::StageCandidate,
@@ -21,6 +22,16 @@ const DOMINATED: &str = "catalog.stage.dominated";
 const COST_EQUAL: &str = "catalog.cost.equal";
 const UNRATED: &str = "catalog.unrated";
 
+/// Where the chosen effort came from.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EffortProvenance {
+    /// The host offers the level the policy table asks for.
+    PolicyTable,
+    /// The nearest level the host supports, because the target is unavailable.
+    Fallback,
+}
+
 /// Per-stage entry of the additive `scoring` object of the advise report.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct StageScoring {
@@ -29,6 +40,12 @@ pub struct StageScoring {
     /// Quality of the model chosen for this stage in the selected plan.
     pub quality_micros: i64,
     pub shortfall_micros: i64,
+    /// Effort chosen for this stage in the selected plan.
+    pub effort: EffortLevel,
+    /// Effort the policy table asks for, a declared prior.
+    pub effort_target: EffortLevel,
+    /// `fallback` names a missed target: the host did not offer `effort_target`.
+    pub effort_provenance: EffortProvenance,
     /// Catalog data that stops this stage from varying with risk or kind.
     pub reason_codes: Vec<String>,
 }
@@ -37,6 +54,12 @@ pub struct StageScoring {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct AdvisoryScoring {
     pub policy_version: String,
+    /// SHA-256 of the declared margins, tightening and effort tables.
+    pub table_digest: String,
+    /// Margins, tightening and efforts are declared priors, not measurements.
+    pub effort_basis: &'static str,
+    /// Effort does not enter cost or the rank key.
+    pub effort_cost: &'static str,
     pub stages: Vec<StageScoring>,
     /// Sorted union of the stage reason codes. These describe catalog data,
     /// not model quality.
@@ -95,6 +118,129 @@ pub(crate) fn target_micros(
     let capped = uncapped.min(i128::from(max_quality)).max(0);
     // `capped` lies in `0..=max_quality`, so it always fits.
     i64::try_from(capped).unwrap_or(max_quality)
+}
+
+const RISKS: [RiskLevel; 4] = [
+    RiskLevel::Low,
+    RiskLevel::Medium,
+    RiskLevel::High,
+    RiskLevel::Critical,
+];
+const TASK_KINDS: [TaskKind; 6] = [
+    TaskKind::Architecture,
+    TaskKind::Migration,
+    TaskKind::Security,
+    TaskKind::Review,
+    TaskKind::Explore,
+    TaskKind::Implement,
+];
+
+/// Efforts the table can name. Kind adjustments move along this ladder, never
+/// below `low` and never above `max`.
+const LADDER: [EffortLevel; 5] = [
+    EffortLevel::Low,
+    EffortLevel::Medium,
+    EffortLevel::High,
+    EffortLevel::Xhigh,
+    EffortLevel::Max,
+];
+
+/// Preferred effort by risk (rows: low, medium, high, critical) and stage
+/// (columns: plan, execute, verify). Declared priors, not measurements.
+const EFFORT_TABLE: [[EffortLevel; 3]; 4] = [
+    [EffortLevel::Medium, EffortLevel::Low, EffortLevel::Medium],
+    [EffortLevel::High, EffortLevel::Medium, EffortLevel::Medium],
+    [EffortLevel::High, EffortLevel::Medium, EffortLevel::High],
+    [EffortLevel::Xhigh, EffortLevel::High, EffortLevel::Xhigh],
+];
+
+/// Ladder steps by kind (rows in `TASK_KINDS` order) and stage (plan, execute,
+/// verify): architecture and migration plan +1, security and review verify +1,
+/// explore verify -1.
+const EFFORT_ADJUST: [[i8; 3]; 6] = [
+    [1, 0, 0],
+    [1, 0, 0],
+    [0, 0, 1],
+    [0, 0, 1],
+    [0, 0, -1],
+    [0, 0, 0],
+];
+
+fn risk_index(risk: RiskLevel) -> usize {
+    match risk {
+        RiskLevel::Low => 0,
+        RiskLevel::Medium => 1,
+        RiskLevel::High => 2,
+        RiskLevel::Critical => 3,
+    }
+}
+
+fn kind_index(kind: TaskKind) -> usize {
+    match kind {
+        TaskKind::Architecture => 0,
+        TaskKind::Migration => 1,
+        TaskKind::Security => 2,
+        TaskKind::Review => 3,
+        TaskKind::Explore => 4,
+        TaskKind::Implement => 5,
+    }
+}
+
+fn stage_index(stage: StageKind) -> usize {
+    match stage {
+        StageKind::Plan => 0,
+        StageKind::Execute => 1,
+        StageKind::Verify => 2,
+    }
+}
+
+/// Preferred effort for a stage, before the host's supported levels apply.
+pub(crate) fn preferred_effort(kind: TaskKind, risk: RiskLevel, stage: StageKind) -> EffortLevel {
+    let base = EFFORT_TABLE[risk_index(risk)][stage_index(stage)];
+    let step = EFFORT_ADJUST[kind_index(kind)][stage_index(stage)];
+    let position = LADDER
+        .iter()
+        .position(|level| *level == base)
+        .unwrap_or_default();
+    let moved = position
+        .saturating_add_signed(isize::from(step))
+        .min(LADDER.len() - 1);
+    LADDER[moved]
+}
+
+/// SHA-256 over a canonical text of every declared table, so a report names the
+/// exact priors it used.
+pub(crate) fn table_digest() -> String {
+    let mut text = String::from("stable-v2-tables-1\n");
+    for risk in RISKS {
+        for stage in STAGE_KINDS {
+            text.push_str(&format!(
+                "margin {risk:?} {stage:?} {}\n",
+                margin_micros(risk, stage)
+            ));
+        }
+    }
+    for kind in TASK_KINDS {
+        for stage in STAGE_KINDS {
+            text.push_str(&format!(
+                "tightening {kind:?} {stage:?} {}\n",
+                tightening_micros(kind, stage)
+            ));
+        }
+    }
+    for risk in RISKS {
+        for stage in STAGE_KINDS {
+            let level = EFFORT_TABLE[risk_index(risk)][stage_index(stage)];
+            text.push_str(&format!("effort {risk:?} {stage:?} {level:?}\n"));
+        }
+    }
+    for kind in TASK_KINDS {
+        for stage in STAGE_KINDS {
+            let step = EFFORT_ADJUST[kind_index(kind)][stage_index(stage)];
+            text.push_str(&format!("effort_adjust {kind:?} {stage:?} {step}\n"));
+        }
+    }
+    hex::encode(Sha256::digest(text.as_bytes()))
 }
 
 #[derive(Eq, Ord, PartialEq, PartialOrd)]
@@ -243,7 +389,8 @@ fn report(
         .into_iter()
         .enumerate()
         .map(|(index, stage)| {
-            let quality = stages[index][chosen[index]].model.quality_micros;
+            let selected = &stages[index][chosen[index]];
+            let quality = selected.model.quality_micros;
             let codes = reason_codes(&eligible[index], targets[index]);
             all_codes.extend(codes.iter().cloned());
             StageScoring {
@@ -251,6 +398,13 @@ fn report(
                 target_micros: targets[index],
                 quality_micros: quality,
                 shortfall_micros: (targets[index] - quality).max(0),
+                effort: selected.effort,
+                effort_target: selected.preferred_effort,
+                effort_provenance: if selected.effort == selected.preferred_effort {
+                    EffortProvenance::PolicyTable
+                } else {
+                    EffortProvenance::Fallback
+                },
                 reason_codes: codes,
             }
         })
@@ -259,6 +413,9 @@ fn report(
     all_codes.dedup();
     AdvisoryScoring {
         policy_version: POLICY_VERSION.into(),
+        table_digest: table_digest(),
+        effort_basis: "declared_policy_prior",
+        effort_cost: "not_modelled",
         stages: stage_rows,
         reason_codes: all_codes,
     }
@@ -306,7 +463,10 @@ mod tests {
         EffortLevel, Exclusion, ModelId, ModelSpec, RiskLevel, SkillId, StageKind, TaskKind,
     };
 
-    use super::{margin_micros, rank_plans_v2, target_micros, tightening_micros};
+    use super::{
+        margin_micros, preferred_effort, rank_plans_v2, table_digest, target_micros,
+        tightening_micros,
+    };
     use crate::{
         preset::{AttachedSkill, StageCandidate},
         score::rank_plans,
@@ -405,6 +565,7 @@ mod tests {
                             source: "test-prior".into(),
                         },
                         effort: EffortLevel::High,
+                        preferred_effort: EffortLevel::High,
                         skills: attached.clone(),
                     })
                     .collect()
@@ -614,5 +775,78 @@ mod tests {
         )
         .unwrap();
         assert_eq!(plans.len(), 3);
+    }
+
+    const LADDER: [EffortLevel; 5] = [
+        EffortLevel::Low,
+        EffortLevel::Medium,
+        EffortLevel::High,
+        EffortLevel::Xhigh,
+        EffortLevel::Max,
+    ];
+
+    #[test]
+    fn v2_policy_table_is_total() {
+        for kind in KINDS {
+            for risk in RISKS {
+                for stage in STAGES {
+                    let effort = preferred_effort(kind, risk, stage);
+                    assert!(LADDER.contains(&effort), "{kind:?} {risk:?} {stage:?}");
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn stage_policy_efforts_are_monotonic_in_risk() {
+        for kind in KINDS {
+            for stage in STAGES {
+                let efforts = RISKS.map(|risk| preferred_effort(kind, risk, stage));
+                assert!(
+                    efforts.windows(2).all(|pair| pair[0] <= pair[1]),
+                    "{kind:?} {stage:?}: {efforts:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn adr_effort_table_and_kind_adjustments_hold() {
+        use EffortLevel::{High, Low, Max, Medium, Xhigh};
+        let at = |kind, risk, stage| preferred_effort(kind, risk, stage);
+        let (p, e, v) = (StageKind::Plan, StageKind::Execute, StageKind::Verify);
+        // Base rows, with a kind (implement) that adjusts nothing.
+        let rows = [
+            (RiskLevel::Low, [Medium, Low, Medium]),
+            (RiskLevel::Medium, [High, Medium, Medium]),
+            (RiskLevel::High, [High, Medium, High]),
+            (RiskLevel::Critical, [Xhigh, High, Xhigh]),
+        ];
+        for (risk, [plan, execute, verify]) in rows {
+            assert_eq!(at(TaskKind::Implement, risk, p), plan);
+            assert_eq!(at(TaskKind::Implement, risk, e), execute);
+            assert_eq!(at(TaskKind::Implement, risk, v), verify);
+        }
+        // architecture and migration plan +1, security and review verify +1,
+        // explore verify -1, floor at low and cap at max.
+        assert_eq!(at(TaskKind::Architecture, RiskLevel::High, p), Xhigh);
+        assert_eq!(at(TaskKind::Migration, RiskLevel::Critical, p), Max);
+        assert_eq!(at(TaskKind::Security, RiskLevel::High, v), Xhigh);
+        assert_eq!(at(TaskKind::Review, RiskLevel::Low, v), High);
+        assert_eq!(at(TaskKind::Explore, RiskLevel::Low, v), Low);
+        assert_eq!(at(TaskKind::Explore, RiskLevel::Medium, v), Low);
+        assert_eq!(at(TaskKind::Explore, RiskLevel::Critical, e), High);
+    }
+
+    #[test]
+    fn table_digest_is_a_stable_sha256_of_the_declared_tables() {
+        let digest = table_digest();
+        assert_eq!(digest.len(), 64);
+        assert!(digest.bytes().all(|b| b.is_ascii_hexdigit()));
+        assert_eq!(digest, table_digest());
+        assert_eq!(
+            digest, "52c95c9a859e1b68f559cdfd1977cfcc5e8c3adab6166f265c909934a7fdf554",
+            "a table change must update this pin"
+        );
     }
 }

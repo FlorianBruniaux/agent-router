@@ -177,7 +177,9 @@ fn nominal_task_gets_a_recommendation_and_a_manual_action_per_phase() {
         [
             ("gpt-5.6-sol".into(), "high".into()),
             ("gpt-5.6-terra".into(), "medium".into()),
-            ("gpt-5.6-terra".into(), "high".into()),
+            // stable-v2 efforts: a medium-risk implement task verifies at medium
+            // (stable-v1 asked for high for every task).
+            ("gpt-5.6-terra".into(), "medium".into()),
         ]
     );
     let action = &report["next_manual_action"];
