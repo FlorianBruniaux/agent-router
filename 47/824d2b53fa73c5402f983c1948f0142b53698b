@@ -1,0 +1,21 @@
+docs/adr/0051-advisory-task-route.md
+  s_45db46590ef9ed::t_d8e34e3bda55d0 4,6,8
+docs/adr/README.md
+  s_45db46590ef9ed::t_42efc3a4d28d12 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "47824d2b53fa73c5402f983c1948f0142b53698b",
+  "prompts": {},
+  "sessions": {
+    "s_45db46590ef9ed": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1625b-9ee4-7241-bd38-fb2fa301b380",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
