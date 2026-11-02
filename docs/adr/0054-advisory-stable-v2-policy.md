@@ -1,7 +1,7 @@
 ---
 adr: "0054"
 title: Risk- and kind-aware advisory scoring as a compiled stable-v2 policy
-status: proposed
+status: accepted
 created: 2026-11-02
 last_modified: 2026-11-02
 scope: "The advisory scoring policy behind `advise` (stage targets, rank key, effort table, skill cap, report reason codes) and the audit of Codex catalog costs. `route` keeps `stable-v1` by default; phase routing and the `PhasePolicy` lifecycle are unchanged."
