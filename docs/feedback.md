@@ -11,7 +11,7 @@ experiment against production traffic.
 directory must be private (0700); database files must be private regular files
 (0600). Final symlinks, hard links and public directories are refused. SQLite
 uses WAL, foreign keys, FULL synchronization, monotone schema versions and
-transactions. A second writer is refused. Feedback rows and policy artifacts
+transactions. A second writer is refused. `FeedbackStore::open` requires an absolute path; the CLI resolves a relative `--store` against the working directory first. Feedback rows and policy artifacts
 cannot be updated through SQL; policy state transitions append an audit event.
 
 `configure(FeedbackPreferences, now)` explicitly enables collection and,
