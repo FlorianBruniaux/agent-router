@@ -285,6 +285,12 @@ modèles non notés. Un groupe vide n'a pas de taux, et non un taux nul. `decisi
 tentatives enregistrées. Les coûts
 sont comptés comme connus ou inconnus, jamais additionnés.
 
+`groups` répartit les mêmes comptes par `policy_version` et `risk`, pour lire
+`stable-v1` et `stable-v2` séparément. Un groupe de moins de 5 décisions
+(`minimum_sample`) est marqué `insufficient_sample` et n'affiche aucun taux. Le
+comptage apparié d'une tâche `--compare-policies` n'est pas encore disponible
+(`paired_trials`).
+
 Pour partager une copie expurgée ou tout supprimer :
 
 ```sh

@@ -23,8 +23,9 @@ pub use sidecar_export::{SidecarExportGuard, SidecarExportProjection};
 pub use task_report::{TaskMeasurementReport, TaskOccurrenceReport};
 
 pub use advisory_outcome::{
-    AdvisoryAdherencePair, AdvisoryAdherenceStats, AdvisoryBasisCounts, AdvisoryOutcomeReport,
-    AdvisoryRate, AdvisoryTaskKindReport, AdvisoryUnknownCounts,
+    ADVISORY_MINIMUM_SAMPLE, AdvisoryAdherencePair, AdvisoryAdherenceStats, AdvisoryBasisCounts,
+    AdvisoryOutcomeReport, AdvisoryPolicyRiskGroup, AdvisoryRate, AdvisoryTaskKindReport,
+    AdvisoryUnknownCounts,
 };
 pub use learning::*;
 pub use policy::*;
