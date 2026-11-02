@@ -74,6 +74,8 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0051](0051-advisory-task-route.md) | Advisory route for one normalized task | implemented | 2026-10-28 | 2026-10-31 | - |
 | [0052](0052-advisory-outcome-record.md) | Record the manual outcome of an advisory recommendation | implemented | 2026-10-31 | 2026-10-31 | - |
 | [0053](0053-codex-core-v3-owner-declared-ratings.md) | Owner-declared ratings for the GPT-6 Codex models in codex-core-v3 | implemented | 2026-11-01 | 2026-11-01 | - |
+| [0054](0054-advisory-stable-v2-policy.md) | Risk- and kind-aware advisory scoring as a compiled stable-v2 policy | proposed | 2026-11-02 | 2026-11-02 | - |
+| [0055](0055-declared-external-skill-candidates.md) | Declared external skill candidates for advise | proposed | 2026-11-02 | 2026-11-02 | - |
 
 
 ## Frontmatter fields
