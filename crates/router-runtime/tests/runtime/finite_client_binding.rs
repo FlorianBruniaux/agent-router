@@ -354,6 +354,19 @@ async fn runtime_finite_validation_reopens_live_proofs_and_keeps_the_listener_ow
         .unwrap()
         .to_owned();
     assert!(TcpListener::bind(&address).is_err());
+    // A queued connection is reset only once every handle to the listener is
+    // closed, so it proves release without rebinding a shareable ephemeral port.
+    let mut queued = std::net::TcpStream::connect(&address).unwrap();
+    queued
+        .set_read_timeout(Some(std::time::Duration::from_millis(50)))
+        .unwrap();
+    let mut byte = [0u8; 1];
+    assert!(matches!(
+        std::io::Read::read(&mut queued, &mut byte)
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+    ));
     let historical = StoredCapabilityProofVerifier::open_existing(
         &f.temp.path().canonicalize().unwrap().join("proofs"),
         [19; 32],
@@ -391,7 +404,19 @@ async fn runtime_finite_validation_reopens_live_proofs_and_keeps_the_listener_ow
     assert_eq!(runtime.summary("finite-1").unwrap().attempts, 0);
     assert!(!f.temp.path().join("runtime/worktrees").exists());
     drop(approved);
-    assert!(TcpListener::bind(&address).is_ok());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let released = loop {
+        match std::io::Read::read(&mut queued, &mut byte) {
+            Ok(0) => break true,
+            Ok(_) => break false,
+            Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => break true,
+            Err(_) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(_) => break false,
+        }
+    };
+    assert!(released);
 }
 
 #[tokio::test]
