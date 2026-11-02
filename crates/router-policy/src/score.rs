@@ -13,8 +13,8 @@ use crate::route::{MAX_PLAN_WORK_UNITS, RouteError};
 #[derive(Debug)]
 pub(crate) struct RankedPlan {
     pub(crate) plan: ExecutionPlan,
-    total_cost_micros: i128,
-    model_key: String,
+    pub(crate) total_cost_micros: i128,
+    pub(crate) model_key: String,
 }
 
 pub(crate) fn rank_plans(
@@ -28,74 +28,13 @@ pub(crate) fn rank_plans(
     }
     enforce_work_limit(stages)?;
 
-    let verifier_quality_policy = match task_kind {
-        TaskKind::Security => Some(("security", "verification.security.not_max_quality")),
-        TaskKind::Architecture => {
-            Some(("architecture", "verification.architecture.not_max_quality"))
-        }
-        _ => None,
-    };
-    let required_verify_quality = verifier_quality_policy.map(|_| {
-        stages[2]
-            .iter()
-            .map(|candidate| candidate.model.quality_micros)
-            .max()
-            .expect("the verify stage has candidates")
-    });
-    if let (Some((task_label, exclusion_code)), Some(required_quality)) =
-        (verifier_quality_policy, required_verify_quality)
-    {
-        for verify in &stages[2] {
-            if verify.model.quality_micros < required_quality {
-                exclusions.push(Exclusion {
-                    stage: StageKind::Verify,
-                    model: verify.model.id.clone(),
-                    code: exclusion_code.into(),
-                    evidence: format!(
-                        "{task_label} verify model '{}' quality {} is below eligible maximum {}",
-                        verify.model.id, verify.model.quality_micros, required_quality,
-                    ),
-                });
-            }
-        }
-    }
-
-    // The verify-below-execute exclusion depends only on the (execute, verify)
-    // pair; record it once instead of once per plan-stage model.
-    let below_execute = |execute: &StageCandidate, verify: &StageCandidate| {
-        matches!(risk, RiskLevel::High | RiskLevel::Critical)
-            && verify.model.quality_micros < execute.model.quality_micros
-    };
-    for execute in &stages[1] {
-        for verify in &stages[2] {
-            if required_verify_quality.is_some_and(|quality| verify.model.quality_micros < quality)
-                || !below_execute(execute, verify)
-            {
-                continue;
-            }
-            exclusions.push(Exclusion {
-                stage: StageKind::Verify,
-                model: verify.model.id.clone(),
-                code: "verification.quality.below_execute".into(),
-                evidence: format!(
-                    "verify model '{}' quality {} is below execute model '{}' quality {}",
-                    verify.model.id,
-                    verify.model.quality_micros,
-                    execute.model.id,
-                    execute.model.quality_micros
-                ),
-            });
-        }
-    }
+    let rules = HardRules::apply(stages, task_kind, risk, false, exclusions);
 
     let mut plans = Vec::with_capacity(4);
     for plan in &stages[0] {
         for execute in &stages[1] {
             for verify in &stages[2] {
-                if required_verify_quality
-                    .is_some_and(|quality| verify.model.quality_micros < quality)
-                    || below_execute(execute, verify)
-                {
+                if !rules.allows(execute, verify) {
                     continue;
                 }
                 plans.push(to_ranked_plan([plan, execute, verify], risk)?);
@@ -109,7 +48,104 @@ pub(crate) fn rank_plans(
     Ok(plans)
 }
 
-fn enforce_work_limit(stages: &[Vec<StageCandidate>]) -> Result<(), RouteError> {
+/// Hard verification rules shared by every policy version. They remove plans
+/// and record why; scoring only ever sees the plans that remain.
+pub(crate) struct HardRules {
+    risk: RiskLevel,
+    required_verify_quality: Option<i64>,
+}
+
+impl HardRules {
+    /// `critical_needs_max` adds the `stable-v2` rule: `critical` risk requires
+    /// the strongest eligible verifier for kinds without a kind-specific rule.
+    pub(crate) fn apply(
+        stages: &[Vec<StageCandidate>],
+        task_kind: TaskKind,
+        risk: RiskLevel,
+        critical_needs_max: bool,
+        exclusions: &mut Vec<Exclusion>,
+    ) -> Self {
+        let verifier_quality_policy = match task_kind {
+            TaskKind::Security => Some(("security", "verification.security.not_max_quality")),
+            TaskKind::Architecture => {
+                Some(("architecture", "verification.architecture.not_max_quality"))
+            }
+            _ if critical_needs_max && risk == RiskLevel::Critical => {
+                Some(("critical", "verification.critical.not_max_quality"))
+            }
+            _ => None,
+        };
+        let required_verify_quality = verifier_quality_policy.map(|_| {
+            stages[2]
+                .iter()
+                .map(|candidate| candidate.model.quality_micros)
+                .max()
+                .expect("the verify stage has candidates")
+        });
+        if let (Some((task_label, exclusion_code)), Some(required_quality)) =
+            (verifier_quality_policy, required_verify_quality)
+        {
+            for verify in &stages[2] {
+                if verify.model.quality_micros < required_quality {
+                    exclusions.push(Exclusion {
+                        stage: StageKind::Verify,
+                        model: verify.model.id.clone(),
+                        code: exclusion_code.into(),
+                        evidence: format!(
+                            "{task_label} verify model '{}' quality {} is below eligible maximum {}",
+                            verify.model.id, verify.model.quality_micros, required_quality,
+                        ),
+                    });
+                }
+            }
+        }
+        let rules = Self {
+            risk,
+            required_verify_quality,
+        };
+
+        // The verify-below-execute exclusion depends only on the (execute, verify)
+        // pair; record it once instead of once per plan-stage model.
+        for execute in &stages[1] {
+            for verify in &stages[2] {
+                if rules
+                    .required_verify_quality
+                    .is_some_and(|quality| verify.model.quality_micros < quality)
+                    || !rules.below_execute(execute, verify)
+                {
+                    continue;
+                }
+                exclusions.push(Exclusion {
+                    stage: StageKind::Verify,
+                    model: verify.model.id.clone(),
+                    code: "verification.quality.below_execute".into(),
+                    evidence: format!(
+                        "verify model '{}' quality {} is below execute model '{}' quality {}",
+                        verify.model.id,
+                        verify.model.quality_micros,
+                        execute.model.id,
+                        execute.model.quality_micros
+                    ),
+                });
+            }
+        }
+        rules
+    }
+
+    fn below_execute(&self, execute: &StageCandidate, verify: &StageCandidate) -> bool {
+        matches!(self.risk, RiskLevel::High | RiskLevel::Critical)
+            && verify.model.quality_micros < execute.model.quality_micros
+    }
+
+    /// Whether the (execute, verify) pair survives the hard rules.
+    pub(crate) fn allows(&self, execute: &StageCandidate, verify: &StageCandidate) -> bool {
+        self.required_verify_quality
+            .is_none_or(|quality| verify.model.quality_micros >= quality)
+            && !self.below_execute(execute, verify)
+    }
+}
+
+pub(crate) fn enforce_work_limit(stages: &[Vec<StageCandidate>]) -> Result<(), RouteError> {
     let combinations = stages
         .iter()
         .map(Vec::len)
@@ -179,7 +215,21 @@ fn to_ranked_plan(stages: [&StageCandidate; 3], risk: RiskLevel) -> Result<Ranke
         .map(|stage| stage.model.id.as_str())
         .collect::<Vec<_>>()
         .join("\u{0}");
-    let plan_stages = stages
+    Ok(RankedPlan {
+        plan: assemble_plan(stages, risk, utility_micros),
+        total_cost_micros,
+        model_key,
+    })
+}
+
+/// Builds the plan value for three selected stage candidates. The utility is
+/// policy-specific and supplied by the caller.
+pub(crate) fn assemble_plan(
+    stages: [&StageCandidate; 3],
+    risk: RiskLevel,
+    utility_micros: i64,
+) -> ExecutionPlan {
+    let stages = stages
         .into_iter()
         .map(|stage| PlanStage {
             kind: stage.kind,
@@ -195,19 +245,14 @@ fn to_ranked_plan(stages: [&StageCandidate; 3], risk: RiskLevel) -> Result<Ranke
             },
         })
         .collect();
-
-    Ok(RankedPlan {
-        plan: ExecutionPlan {
-            preset: PRESET_NAME.into(),
-            stages: plan_stages,
-            utility_micros,
-        },
-        total_cost_micros,
-        model_key,
-    })
+    ExecutionPlan {
+        preset: PRESET_NAME.into(),
+        stages,
+        utility_micros,
+    }
 }
 
-fn checked_sum(
+pub(crate) fn checked_sum(
     values: impl IntoIterator<Item = i128>,
     component: &'static str,
 ) -> Result<i128, RouteError> {

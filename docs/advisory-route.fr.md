@@ -94,6 +94,27 @@ déclaré. `--skill` désigne une skill candidate et peut être répété. Ajout
 recommandation, `3` aucune recommandation ou des questions ouvertes, `2` une
 entrée invalide.
 
+`--policy stable-v2` est la valeur par défaut. Elle fixe, pour chaque étape, une
+cible de qualité selon le risque et le type de tâche, puis classe les plans par
+écart total à ces cibles, puis par coût
+([ADR 0054](adr/0054-advisory-stable-v2-policy.md), en anglais).
+`--policy stable-v1` reproduit à l'octet près l'ancien score plat : c'est le
+retour arrière. Le rapport reste en version 1 et gagne, sous `stable-v2`, un
+objet `scoring` : par étape, `target_micros`, `quality_micros`,
+`shortfall_micros` et `reason_codes`. Les marges et les ajustements par type
+sont des a priori déclarés, pas des mesures. Un code de raison décrit les
+données du catalogue, pas la qualité d'un modèle :
+
+| Code | Sens |
+| --- | --- |
+| `catalog.stage.dominated` | Un modèle éligible est au moins aussi bon que tous les autres en qualité, coût et latence : aucune cible ne change le choix (étape plan de `codex-core-v3`) |
+| `catalog.cost.equal` | Tous les modèles qui atteignent la cible ont le même coût : le choix vient du départage par qualité |
+| `catalog.unrated` | Tous les modèles éligibles ont la qualité 0 : le choix est un départage |
+
+Le risque `critical` exige aussi le meilleur vérificateur éligible
+(`verification.critical.not_max_quality` pour les autres). L'effort par étape
+ne dépend pas encore du risque : il est inchangé par rapport à `stable-v1`.
+
 ## 4. Lire le résultat
 
 Avec le cache de fixture assaini utilisé par les tests et une tâche qui exige
@@ -373,8 +394,11 @@ chemin existant.
 | `decision.json` | La décision ; `explain --decision` la lit |
 | `advice.json` | Le rapport complet, publié en dernier comme marqueur de fin. Il est identique au rapport `--json` imprimé, `output_directory` compris |
 
-`route --request route-request.json --catalog <catalogue> --json` imprime les
-mêmes octets que `decision.json` (testé) :
+`route --request route-request.json --catalog <catalogue> --policy
+<policy_version> --json` imprime les mêmes octets que `decision.json` (testé),
+où `<policy_version>` est le `policy_version` de `decision.json` (`stable-v2`,
+sauf si `advise --policy stable-v1` a été utilisé). `route` prend `stable-v1` par
+défaut : une décision `stable-v2` sauvegardée demande le drapeau explicite :
 
 | Source du host | Rejeu |
 | --- | --- |

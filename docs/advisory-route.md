@@ -88,6 +88,25 @@ names a candidate skill and can be repeated. Add `--json` for the complete
 versioned report. Exit `0` means a recommendation, `3` means no recommendation
 or open questions, `2` means invalid input.
 
+`--policy stable-v2` is the default. It sets, for each stage, a quality target
+from the task risk and kind, then ranks plans by total shortfall against those
+targets, then by cost ([ADR 0054](adr/0054-advisory-stable-v2-policy.md)).
+`--policy stable-v1` reproduces the earlier flat scoring byte for byte, which is
+the rollback. The report is still version 1 and gains a `scoring` object under
+`stable-v2`: per stage, `target_micros`, `quality_micros`, `shortfall_micros` and
+`reason_codes`. The margins and kind adjustments are declared priors, not
+measurements. A reason code describes catalog data, not model quality:
+
+| Code | Meaning |
+| --- | --- |
+| `catalog.stage.dominated` | One eligible model is at least as good on quality, cost and latency as every other, so no target changes the pick (the plan stage of `codex-core-v3`) |
+| `catalog.cost.equal` | Every model meeting the target has the same cost, so the pick comes from the quality tie-break |
+| `catalog.unrated` | Every eligible model has quality 0, so the pick is a tie-break |
+
+`critical` risk also requires the strongest eligible verifier
+(`verification.critical.not_max_quality` for the others). The effort per stage
+is not yet risk-aware: it is unchanged from `stable-v1`.
+
 ## 4. Read the result
 
 With the sanitized fixture cache used in the tests and a task requiring
@@ -351,8 +370,11 @@ no-clobber publication as `task-guide`. It never reuses an existing path.
 | `decision.json` | The decision; `explain --decision` reads it |
 | `advice.json` | The complete report, published last as the completion marker. It is identical to the printed `--json` report, including `output_directory` |
 
-`route --request route-request.json --catalog <catalog> --json` prints the same
-bytes as `decision.json` (tested):
+`route --request route-request.json --catalog <catalog> --policy <policy_version>
+--json` prints the same bytes as `decision.json` (tested), where
+`<policy_version>` is the `policy_version` of `decision.json` (`stable-v2` unless
+`advise --policy stable-v1` was used). `route` defaults to `stable-v1`, so a
+saved `stable-v2` decision needs the explicit flag:
 
 | Host source | Replay |
 | --- | --- |

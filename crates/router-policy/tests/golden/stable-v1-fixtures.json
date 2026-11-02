@@ -1,0 +1,210 @@
+{
+  "claude-implementation.json@claude-core-v1": {
+    "sha256": "382579723a295f326afb4ca439e31d2d3ec62b315a5ee63efe1aad50ecef476c",
+    "status": "selected"
+  },
+  "claude-implementation.json@codex-core-v1": {
+    "sha256": "42bd8683f4b27b255ad89e688288b5b3c936252e86a604cacd34f42ba08a8758",
+    "status": "no_route"
+  },
+  "claude-implementation.json@codex-core-v2": {
+    "sha256": "b01ea232a37b64acfbe3c5c740348e8c3d8d9670fa7e11ef50c7f8855e3ba569",
+    "status": "no_route"
+  },
+  "claude-implementation.json@codex-core-v3": {
+    "sha256": "eb9952d72d873236a2392372adc080e217f4b80c2670908e70b299f11b59c939",
+    "status": "no_route"
+  },
+  "claude-unknown-host.json@claude-core-v1": {
+    "sha256": "f4f057cf62799b210076e009a5e4db0537553e1256002db76e0e5fa5f0294bff",
+    "status": "no_route"
+  },
+  "claude-unknown-host.json@codex-core-v1": {
+    "sha256": "09c61afd8f79485c72ad283f28b64f0d8d31de4b9f58b0dc72e1ba21218949d9",
+    "status": "no_route"
+  },
+  "claude-unknown-host.json@codex-core-v2": {
+    "sha256": "7e0777e313ca80ab560e35fa2696e734f59bd8198b390192c7ee6c8ddc7abb2a",
+    "status": "no_route"
+  },
+  "claude-unknown-host.json@codex-core-v3": {
+    "sha256": "4e0be3b48cd50282ee3bccb87c44df507e0360d2b21070698d6c3e8938f94634",
+    "status": "no_route"
+  },
+  "codex-architecture.json@claude-core-v1": {
+    "sha256": "0f0ff6f849b25f5c93348fbd74eefceeccad4628566c3a2aa544f4a24863084a",
+    "status": "no_route"
+  },
+  "codex-architecture.json@codex-core-v1": {
+    "sha256": "9a9c48d1db608906d17652f55dd72fde519a8e8df3ab45775c016639c72378d0",
+    "status": "selected"
+  },
+  "codex-architecture.json@codex-core-v2": {
+    "sha256": "8287625b6809a527c0b77f7a553edaf79f501b2c5b8de65de9e9ec9c430be021",
+    "status": "selected"
+  },
+  "codex-architecture.json@codex-core-v3": {
+    "sha256": "5ba04308011fe0ed20f607c706f25a0303216cfd9af23b104745d0a67863688c",
+    "status": "selected"
+  },
+  "codex-exploration.json@claude-core-v1": {
+    "sha256": "40f29d924d7033f230bf878cff39cdb7e4049a51ebddbaa5ce88d612958a4363",
+    "status": "no_route"
+  },
+  "codex-exploration.json@codex-core-v1": {
+    "sha256": "a25ae730479aec40aed87a0f9091f2621e1a50b4fe26de6c281d0b4cd9c89d4a",
+    "status": "selected"
+  },
+  "codex-exploration.json@codex-core-v2": {
+    "sha256": "99921b3ef2d9785024514d698a170704ec7edd8bac79e52f3cacc764707a5f01",
+    "status": "selected"
+  },
+  "codex-exploration.json@codex-core-v3": {
+    "sha256": "82ce9be1c8ecc361bcb758a6587977083f9a02d71bce95a4f5a001cccc6b39e6",
+    "status": "selected"
+  },
+  "codex-implementation.json@claude-core-v1": {
+    "sha256": "dc806e46b6b00a722ec49a62be107c61cdb072f407ade77a81964dca82e256dd",
+    "status": "no_route"
+  },
+  "codex-implementation.json@codex-core-v1": {
+    "sha256": "58d5b0206c6f7c8366f585a467351ea51ea71f80a52e2f93ee0a49ce71293abe",
+    "status": "selected"
+  },
+  "codex-implementation.json@codex-core-v2": {
+    "sha256": "20ce1eb9d8f0f8eb1a8e3224485000665b99c778c510b1432abd8545a9f8260b",
+    "status": "selected"
+  },
+  "codex-implementation.json@codex-core-v3": {
+    "sha256": "f3ad07a839fd4ebc024f43fa33d5e1d761621ead74461e85781ad6a0c2d5e5d2",
+    "status": "selected"
+  },
+  "codex-migration.json@claude-core-v1": {
+    "sha256": "522372de17e88f8a8daa3ff554a25139a3149be7a2ac8f67d6f538f270e6e6a9",
+    "status": "no_route"
+  },
+  "codex-migration.json@codex-core-v1": {
+    "sha256": "29838d7d4e2a7b2679ae8e480bbeed405e1c2571f749608b6ce9c6714e808794",
+    "status": "no_route"
+  },
+  "codex-migration.json@codex-core-v2": {
+    "sha256": "ca08d11cf276b6c49f2c1d5fb4b7a26f323611c58c7d7e073b32e03416ed4c8a",
+    "status": "no_route"
+  },
+  "codex-migration.json@codex-core-v3": {
+    "sha256": "8ec90944bbd1c6898fc53bba375e811f549f6ac264f657015f8de7ea11c7f1af",
+    "status": "no_route"
+  },
+  "codex-security.json@claude-core-v1": {
+    "sha256": "e83fdf57fa91a4327e3793bf68de8e290bdab47102878ffcde14e2ead5b661cd",
+    "status": "no_route"
+  },
+  "codex-security.json@codex-core-v1": {
+    "sha256": "cfc673b7f5fddbbbf5a84220d94fb7977611bf094086c9e199261bcee041d538",
+    "status": "selected"
+  },
+  "codex-security.json@codex-core-v2": {
+    "sha256": "0bef465f8db800a237288cca7a071374ed457332d1ce4de5ca12a05eb38cfe20",
+    "status": "selected"
+  },
+  "codex-security.json@codex-core-v3": {
+    "sha256": "ff9b1db893015a8f7a8de118ac9775091ff95279aaed986678d4c9b8c9344b79",
+    "status": "selected"
+  },
+  "empty-skill-candidates.json@claude-core-v1": {
+    "sha256": "8be9eb87db8cd8bd0c00f15431e7fff207c8483f7e330ade895257aee6192823",
+    "status": "no_route"
+  },
+  "empty-skill-candidates.json@codex-core-v1": {
+    "sha256": "557e0ab630a65428b1436bcaeb6974a715cb3bc34e6ca2a12b50ea9b26e3155e",
+    "status": "selected"
+  },
+  "empty-skill-candidates.json@codex-core-v2": {
+    "sha256": "bee0d8862c1c3d455b8a37b021403c5a650ece530a9dda2f5b8fe9fd4d10d066",
+    "status": "selected"
+  },
+  "empty-skill-candidates.json@codex-core-v3": {
+    "sha256": "b8974f0b1d975330f6cd7b7777a7197677b812bd65b0c883d0760fb348bf95f4",
+    "status": "selected"
+  },
+  "explicit-skill.json@claude-core-v1": {
+    "sha256": "9b4181fd91c6925f74a39650130e7b24ad538e719ef61c8c5d0330f301b6fddc",
+    "status": "no_route"
+  },
+  "explicit-skill.json@codex-core-v1": {
+    "sha256": "286dde025c6da246a906b826fc41986b1d4d04ef8fad5efd991d5ea607cbe50c",
+    "status": "selected"
+  },
+  "explicit-skill.json@codex-core-v2": {
+    "sha256": "68b60946ee2cf0f136e0bd3a0586219d45e61cc13f12995e1985f01706fa8328",
+    "status": "selected"
+  },
+  "explicit-skill.json@codex-core-v3": {
+    "sha256": "741ce1dec92069d1afa273a7362977438c9637bf7804a8419d44350be0e1b6c4",
+    "status": "selected"
+  },
+  "high-risk-unknown-capability.json@claude-core-v1": {
+    "sha256": "b153b9ab60c19326d76ae41e45669efe8fbc762b24d2ee0760d210ec7b575ee8",
+    "status": "no_route"
+  },
+  "high-risk-unknown-capability.json@codex-core-v1": {
+    "sha256": "940e6a488b1cbfa0c0d5ad6e3083fcfebc7632f9803d38f5dc42de0716e36d71",
+    "status": "no_route"
+  },
+  "high-risk-unknown-capability.json@codex-core-v2": {
+    "sha256": "4f8815a9e2d9660b90a0920e672e51e44ccb35852d0ecd8ddcad74eea3be23bd",
+    "status": "no_route"
+  },
+  "high-risk-unknown-capability.json@codex-core-v3": {
+    "sha256": "f56cbd8272bdc8dc72e9f0874cc111240d2882caece31c01ba85ebde4af30f99",
+    "status": "no_route"
+  },
+  "missing-tools.json@claude-core-v1": {
+    "sha256": "8c7d7c26a8df31e347f83b4e37ada60e81c6b77526f5d109335e8f939f6f1768",
+    "status": "no_route"
+  },
+  "missing-tools.json@codex-core-v1": {
+    "sha256": "b44649562398e66d97edbdc24daf1d99b36ffe81d9a5c79443bf34d3fd00f23b",
+    "status": "no_route"
+  },
+  "missing-tools.json@codex-core-v2": {
+    "sha256": "33ec09cb4225193669ed9ff421a477ec414d018074e10158fadfa87c12aa969f",
+    "status": "no_route"
+  },
+  "missing-tools.json@codex-core-v3": {
+    "sha256": "92767c47bf0d6a39ab7dbefc5709778e0020e8a5adaa73b105a807aed78215fb",
+    "status": "no_route"
+  },
+  "no-compatible-plan.json@claude-core-v1": {
+    "sha256": "ac3738bea62ec9b805297dac66c3557a0a35e54a296fe34065f7aaf7d7e8dc15",
+    "status": "no_route"
+  },
+  "no-compatible-plan.json@codex-core-v1": {
+    "sha256": "b4587401725213a448d09eda8a430408deda60aec34400525e30c73414740cb6",
+    "status": "no_route"
+  },
+  "no-compatible-plan.json@codex-core-v2": {
+    "sha256": "10977bc48380f5e25d8e3ab16a51c2ca84a8e98dc7bd75d365626d203083df54",
+    "status": "no_route"
+  },
+  "no-compatible-plan.json@codex-core-v3": {
+    "sha256": "7be76fca109720879af8aee03e3faf77503f16e60de4f17d291c515002155ab6",
+    "status": "no_route"
+  },
+  "unsupported-effort.json@claude-core-v1": {
+    "sha256": "fca36642b418768a8b776c15db3a17ed29c2b251dceac00b568ceee06dfbb169",
+    "status": "no_route"
+  },
+  "unsupported-effort.json@codex-core-v1": {
+    "sha256": "37cc55076676a193f51e0fd5e7d208dee7e4e97c4177717c7a1747ba203daa51",
+    "status": "selected"
+  },
+  "unsupported-effort.json@codex-core-v2": {
+    "sha256": "b6fa778431fc48c6ac8d8c712dc18d56e09d37e28ddec872e0d3acc3883ed6ae",
+    "status": "selected"
+  },
+  "unsupported-effort.json@codex-core-v3": {
+    "sha256": "36066dddfe8f0ee9a70c662a613893b21e5cc1fd7a85408bb6e4b16d0d80abfb",
+    "status": "selected"
+  }
+}

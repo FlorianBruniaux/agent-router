@@ -4,12 +4,13 @@
 //! effort and skills per phase, or explains why none is recommended. Nothing is
 //! executed, no host or provider is contacted and no authority is granted.
 use crate::{
-    CliError, Outcome, catalogs, human::escaped, inspect, phases::read_json, product, render,
+    CliError, Outcome, catalogs, command::ScoringPolicy, human::escaped, inspect,
+    phases::read_json, product, render,
 };
 use clap::Args;
 use router_adapter_api::{ALL_CAPABILITIES, MAX_SNAPSHOT_MODELS, ValidatedHostObservation};
 use router_catalog::Catalog;
-use router_policy::Router;
+use router_policy::AdvisoryScoring;
 use router_types::{
     Capability, CapabilitySupport, Clarification, DataSensitivity, DecisionEnvelope, HostSnapshot,
     ModelId, Mutation, NormalizedTask, RiskEnvironment, RiskLevel, RiskOperation,
@@ -90,6 +91,9 @@ pub(crate) struct AdviseArgs {
     /// Catalog JSON (schema 1, or a generated schema 2 catalog).
     #[arg(long)]
     catalog: PathBuf,
+    /// Scoring policy: stable-v2 (default, risk- and kind-aware) or stable-v1 (frozen).
+    #[arg(long, value_enum, default_value = "stable-v2")]
+    policy: ScoringPolicy,
     /// Host observation from `inspect`; its models and efforts are discovered.
     #[arg(long, conflicts_with = "host")]
     host_snapshot: Option<PathBuf>,
@@ -124,6 +128,9 @@ struct Report {
     facts: Vec<Fact>,
     skills: Vec<SkillRow>,
     decision: Option<DecisionEnvelope>,
+    /// Additive: how `stable-v2` read the catalog. Absent under `stable-v1`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scoring: Option<AdvisoryScoring>,
     next_manual_action: NextAction,
     output_directory: Option<PathBuf>,
 }
@@ -954,6 +961,7 @@ fn clarification(questions: Vec<Clarification>, output_requested: bool) -> Repor
         facts: vec![],
         skills: vec![],
         decision: None,
+        scoring: None,
         next_manual_action: NextAction {
             kind: "answer_questions",
             selection_basis: None,
@@ -1081,14 +1089,14 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
             .collect(),
         capability_knowledge: knowledge.clone(),
     };
-    let router = Router::stable_v1();
+    let router = args.policy.router();
     // A declaration is not snapshot evidence: only an unmodified observation
     // binds its hash into the decision identity, exactly as `route` does.
-    let decision = match &source {
+    let scored = match &source {
         HostSource::Observed(snapshot) if declared.is_empty() => {
-            router.route_with_snapshot_hash(&request, &catalog, snapshot.hash())
+            router.route_scored_with_snapshot_hash(&request, &catalog, snapshot.hash())
         }
-        _ => router.route(&request, &catalog),
+        _ => router.route_scored(&request, &catalog),
     }
     .map_err(|error| {
         if error.is_invalid_request() {
@@ -1098,6 +1106,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         }
     })?;
 
+    let (decision, scoring) = (scored.decision, scored.scoring);
     let (status, exit) = match decision.decision {
         RouteDecision::Selected { .. } => ("recommended", ExitCode::SUCCESS),
         RouteDecision::NoRoute { .. } => ("no_recommendation", ExitCode::from(3)),
@@ -1125,6 +1134,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         skills: skill_rows(&requested, &catalog, &request, &decision)?,
         next_manual_action: next_action(&host, &catalog, &declared, &request, &decision)?,
         decision: Some(decision),
+        scoring,
         output_directory: None,
     };
     if let Some(path) = &args.output_directory {
@@ -1216,6 +1226,24 @@ fn human(report: &Report) -> Result<String, CliError> {
             lines.push(format!(
                 "Excluded candidates: {}",
                 decision.exclusions().len()
+            ));
+        }
+    }
+    if let Some(scoring) = &report.scoring {
+        lines.push(format!("Scoring ({}):", escaped(&scoring.policy_version)));
+        for stage in &scoring.stages {
+            let codes = if stage.reason_codes.is_empty() {
+                String::new()
+            } else {
+                format!(" [{}]", stage.reason_codes.join(", "))
+            };
+            lines.push(format!(
+                "  {} target {} chosen {} shortfall {}{}",
+                label(&stage.stage)?,
+                stage.target_micros,
+                stage.quality_micros,
+                stage.shortfall_micros,
+                codes
             ));
         }
     }

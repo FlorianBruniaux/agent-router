@@ -26,6 +26,24 @@ Example:
   agent-router doctor --request manifest.json
   agent-router doctor --runtime-root /absolute/private/runtime --json";
 
+/// Compiled scoring policy (ADR 0054). `stable-v1` is frozen.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+pub enum ScoringPolicy {
+    #[value(name = "stable-v1")]
+    StableV1,
+    #[value(name = "stable-v2")]
+    StableV2,
+}
+
+impl ScoringPolicy {
+    pub(crate) fn router(self) -> router_policy::Router {
+        match self {
+            Self::StableV1 => router_policy::Router::stable_v1(),
+            Self::StableV2 => router_policy::Router::stable_v2(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, ValueEnum)]
 pub enum HostChoice {
     Auto,
@@ -477,6 +495,10 @@ pub enum Commands {
         /// Host snapshot JSON; replaces the request's host and capabilities.
         #[arg(long)]
         host_snapshot: Option<PathBuf>,
+        /// Scoring policy: stable-v1 (default, frozen) or stable-v2. Replaying a saved
+        /// decision needs the policy named in its `policy_version`.
+        #[arg(long, value_enum, default_value = "stable-v1")]
+        policy: ScoringPolicy,
         /// Metadata index whose matches become the request's skill candidates.
         #[arg(long)]
         retrieval: Option<PathBuf>,

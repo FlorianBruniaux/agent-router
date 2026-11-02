@@ -63,7 +63,14 @@ fn route_inline(input: &RouteInput<'_>, now: Option<u64>) -> Result<Outcome, Cli
         })
         .transpose()?;
     let (catalog, embedded) = catalogs::load_bytes(input.catalog, now, SNAPSHOT_MAX_AGE_SECONDS)?;
-    decide(request, &catalog, snapshot, embedded)
+    // The local route API stays on stable-v1 (ADR 0054, ADR 0012).
+    decide(
+        request,
+        &catalog,
+        snapshot,
+        embedded,
+        crate::command::ScoringPolicy::StableV1,
+    )
 }
 
 pub(crate) fn run(
@@ -178,10 +185,13 @@ mod tests {
             &root(request),
             &root(catalog),
             true,
-            snapshot.map(root).as_deref(),
-            SNAPSHOT_MAX_AGE_SECONDS,
-            now,
-            None,
+            crate::RouteOptions {
+                snapshot_path: snapshot.map(root).as_deref(),
+                snapshot_max_age: SNAPSHOT_MAX_AGE_SECONDS,
+                now,
+                retrieval: None,
+                policy: crate::command::ScoringPolicy::StableV1,
+            },
         )
         .map_err(CliError::code)
         .expect("cli route");

@@ -5,7 +5,11 @@ use router_types::{DecisionEnvelope, Exclusion, RouteDecision, RouteRequest};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::{preset::build_candidates, score::rank_plans};
+use crate::{
+    preset::build_candidates,
+    score::rank_plans,
+    stable_v2::{AdvisoryScoring, POLICY_VERSION as STABLE_V2, rank_plans_v2},
+};
 
 pub const MAX_ROUTE_SKILL_CANDIDATES: usize = 256;
 pub(crate) const MAX_PLAN_WORK_UNITS: usize = 1_000_000;
@@ -14,6 +18,13 @@ pub(crate) const MAX_PLAN_WORK_UNITS: usize = 1_000_000;
 pub struct PolicyConfig {
     schema_version: String,
     policy_version: String,
+    scoring: Scoring,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum Scoring {
+    V1,
+    V2,
 }
 
 impl PolicyConfig {
@@ -21,8 +32,26 @@ impl PolicyConfig {
         Self {
             schema_version: "1".into(),
             policy_version: "stable-v1".into(),
+            scoring: Scoring::V1,
         }
     }
+
+    /// Risk- and kind-aware advisory scoring (ADR 0054). `stable-v1` is unchanged.
+    pub fn stable_v2() -> Self {
+        Self {
+            schema_version: "1".into(),
+            policy_version: STABLE_V2.into(),
+            scoring: Scoring::V2,
+        }
+    }
+}
+
+/// A decision with the `scoring` explanation of the policy that produced it.
+/// `scoring` is `None` under `stable-v1` and when no plan is selected.
+#[derive(Clone, Debug)]
+pub struct ScoredDecision {
+    pub decision: DecisionEnvelope,
+    pub scoring: Option<AdvisoryScoring>,
 }
 
 #[derive(Clone, Debug)]
@@ -41,11 +70,25 @@ impl Router {
         Self::new(PolicyConfig::stable_v1())
     }
 
+    pub fn stable_v2() -> Self {
+        Self::new(PolicyConfig::stable_v2())
+    }
+
     pub fn route(
         &self,
         request: &RouteRequest,
         catalog: &Catalog,
     ) -> Result<DecisionEnvelope, RouteError> {
+        self.route_internal(request, catalog, None)
+            .map(|scored| scored.decision)
+    }
+
+    /// Like [`Router::route`], also returning the policy's scoring explanation.
+    pub fn route_scored(
+        &self,
+        request: &RouteRequest,
+        catalog: &Catalog,
+    ) -> Result<ScoredDecision, RouteError> {
         self.route_internal(request, catalog, None)
     }
 
@@ -57,6 +100,17 @@ impl Router {
         catalog: &Catalog,
         snapshot_hash: &str,
     ) -> Result<DecisionEnvelope, RouteError> {
+        self.route_scored_with_snapshot_hash(request, catalog, snapshot_hash)
+            .map(|scored| scored.decision)
+    }
+
+    /// Like [`Router::route_with_snapshot_hash`], also returning the scoring.
+    pub fn route_scored_with_snapshot_hash(
+        &self,
+        request: &RouteRequest,
+        catalog: &Catalog,
+        snapshot_hash: &str,
+    ) -> Result<ScoredDecision, RouteError> {
         if snapshot_hash.len() != 64
             || !snapshot_hash
                 .bytes()
@@ -76,7 +130,7 @@ impl Router {
         request: &RouteRequest,
         catalog: &Catalog,
         snapshot_hash: Option<&str>,
-    ) -> Result<DecisionEnvelope, RouteError> {
+    ) -> Result<ScoredDecision, RouteError> {
         validate_request(request)?;
         let canonical_request = match snapshot_hash {
             Some(hash) => serde_json::to_vec(&("host-observation-v1", request, hash)),
@@ -90,12 +144,23 @@ impl Router {
             &self.config.policy_version,
         );
         let mut build = build_candidates(request, catalog);
-        let mut ranked = rank_plans(
-            &build.stages,
-            request.task.kind,
-            request.task.risk,
-            &mut build.exclusions,
-        )?;
+        let (mut ranked, scoring) = match self.config.scoring {
+            Scoring::V1 => (
+                rank_plans(
+                    &build.stages,
+                    request.task.kind,
+                    request.task.risk,
+                    &mut build.exclusions,
+                )?,
+                None,
+            ),
+            Scoring::V2 => rank_plans_v2(
+                &build.stages,
+                request.task.kind,
+                request.task.risk,
+                &mut build.exclusions,
+            )?,
+        };
         normalize_exclusions(&mut build.exclusions);
         build.missing_evidence.sort();
         build.missing_evidence.dedup();
@@ -120,13 +185,16 @@ impl Router {
             }
         };
 
-        Ok(DecisionEnvelope {
-            schema_version: self.config.schema_version.clone(),
-            decision_id,
-            host_snapshot_hash: snapshot_hash.map(str::to_owned),
-            catalog_version: catalog.version().into(),
-            policy_version: self.config.policy_version.clone(),
-            decision,
+        Ok(ScoredDecision {
+            decision: DecisionEnvelope {
+                schema_version: self.config.schema_version.clone(),
+                decision_id,
+                host_snapshot_hash: snapshot_hash.map(str::to_owned),
+                catalog_version: catalog.version().into(),
+                policy_version: self.config.policy_version.clone(),
+                decision,
+            },
+            scoring,
         })
     }
 }
