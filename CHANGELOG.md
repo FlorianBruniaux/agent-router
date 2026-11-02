@@ -25,6 +25,7 @@ automatically synchronized release of this development tree.
 
 ### Changed
 
+- 2026-11-02: `advise` reports a skill blocked only by a host capability that was not observed as `capability_unknown` instead of `capability_not_supported`, with a hint naming the fact that would settle it (`--declare-capability tools`, declared, never verified) (#244). `capability_not_supported` now means the host is known to lack the capability. On a Codex host every capability is unknown, so `tdd` and `security-guardian` were mislabelled before. Policy eligibility is unchanged.
 - 2026-10-28: license the project under Apache-2.0 instead of FSL-1.1-ALv2, with SPDX headers on source files, a `REUSE.toml` and an SPDX header CI check ([ADR 0050](docs/adr/0050-apache-2-license.md)). `NOTICE` must be kept by redistributions. The change is irreversible for published code. Earlier entries describe the license at their date.
 
 ### Added

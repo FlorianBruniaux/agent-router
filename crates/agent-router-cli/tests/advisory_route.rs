@@ -283,8 +283,9 @@ fn task_without_required_capability_says_that_no_capability_was_checked() {
         fact(&report, "host.capability.tools")["provenance"],
         "unknown"
     );
-    // Without verified or declared tools, the tools-only skill is not suggested.
-    assert_eq!(report["skills"][0]["status"], "capability_not_supported");
+    // Without verified or declared tools, the tools-only skill is not suggested and
+    // is reported as unknown, not unsupported.
+    assert_eq!(report["skills"][0]["status"], "capability_unknown");
     assert!(
         report["next_manual_action"]["summary"]
             .as_str()
@@ -1001,7 +1002,7 @@ fn untrusted_and_unattached_skills_are_not_suggested() {
     .clone();
     let report = parsed(&output);
     assert_eq!(report["skills"][0]["status"], "untrusted");
-    // Without a host declaration of tools the capability stays unsupported for
+    // Without a host declaration of tools the capability stays unknown for
     // the skill: the catalog declaration alone attaches nothing.
     let tools_task = write(
         &dir.path().join("tools-task.json"),
@@ -1019,7 +1020,7 @@ fn untrusted_and_unattached_skills_are_not_suggested() {
     .get_output()
     .clone();
     let report = parsed(&output);
-    assert_eq!(report["skills"][0]["status"], "capability_not_supported");
+    assert_eq!(report["skills"][0]["status"], "capability_unknown");
     assert_eq!(report["skills"][0]["stages"], json!([]));
 }
 fn task_value(required_capabilities: Value) -> Value {
@@ -1192,4 +1193,72 @@ fn embedded_observation_catalog_refuses_conflicting_host_sources_and_declaration
     .code(0);
     let (saved, replayed) = replay_bytes(dir.path(), &advice, &generated, None);
     assert_eq!(saved, replayed);
+}
+
+/// Runs `advise` for the tools-only skill `tdd` on a host observation with a
+/// task that requires no capability, so the route itself is recommended.
+#[cfg(feature = "codex")]
+fn advise_tdd(dir: &Path, snapshot: &Path, extra: &[&std::ffi::OsStr], json: bool) -> Output {
+    let task = write(&dir.join("skill-task.json"), &task(json!([])));
+    let mut args = vec![os("--host-snapshot"), snapshot.as_os_str()];
+    args.extend_from_slice(&[os("--skill"), os("tdd")]);
+    args.extend_from_slice(extra);
+    let mut command = advise(dir, &task, &catalog(), &args);
+    if !json {
+        // `advise` always appends `--json`; rebuild without it for the human view.
+        command = command_without_json(dir, &task, &args);
+    }
+    command.assert().code(0).get_output().clone()
+}
+
+#[cfg(feature = "codex")]
+fn command_without_json(dir: &Path, task: &Path, extra: &[&std::ffi::OsStr]) -> Command {
+    let mut command = command();
+    command
+        .args(["advise", "--task"])
+        .arg(task)
+        .arg("--risk-context")
+        .arg(risk_context(dir))
+        .arg("--catalog")
+        .arg(catalog())
+        .args(extra)
+        .args(["--now", NOW]);
+    command
+}
+
+#[cfg(feature = "codex")]
+#[test]
+fn advise_without_tools_declaration_reports_capability_unknown_not_unsupported() {
+    let dir = tempfile::tempdir().unwrap();
+    let snapshot = discovered_snapshot(dir.path());
+    let report = parsed(&advise_tdd(dir.path(), &snapshot, &[], true));
+    let skill = &report["skills"][0];
+    assert_eq!(skill["id"], "tdd");
+    assert_eq!(skill["status"], "capability_unknown", "{skill:#}");
+    assert_eq!(skill["stages"], json!([]));
+    // The hint names the capability and the way to supply it.
+    let hints = skill["would_change"].as_array().unwrap();
+    assert_eq!(hints.len(), 1, "{skill:#}");
+    assert_eq!(hints[0]["capability"], "tools");
+    assert!(
+        hints[0]["change"]
+            .as_str()
+            .unwrap()
+            .contains("--declare-capability tools")
+    );
+    // The human view distinguishes the status and shows the hint.
+    let human = advise_tdd(dir.path(), &snapshot, &[], false);
+    let text = String::from_utf8(human.stdout).unwrap();
+    assert!(text.contains("Skill tdd: capability_unknown"), "{text}");
+    assert!(text.contains("--declare-capability tools"), "{text}");
+    assert!(!text.contains("capability_not_supported"), "{text}");
+    // A declaration turns the label into a suggestion.
+    let declared = parsed(&advise_tdd(
+        dir.path(),
+        &snapshot,
+        &[os("--declare-capability"), os("tools")],
+        true,
+    ));
+    assert_eq!(declared["skills"][0]["status"], "suggested");
+    assert!(declared["skills"][0].get("would_change").is_none());
 }
