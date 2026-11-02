@@ -208,17 +208,26 @@ whose `decision_id` differs from the `advice.json` it names. Product errors adde
 `advisory.outcome.policy_unexpected` (`--policy` on a single advice). The record
 shape and the store schema are unchanged: no `request_hash` is stored.
 
-`feedback advisory-report` prints a report (`schema_version` 1, hash domain
-`advisory-outcome-report-v1`) with `generated_at_unix_seconds`,
+`feedback advisory-report` prints a report (`schema_version` 2, hash domain
+`advisory-outcome-report-v2`) with `generated_at_unix_seconds`,
 `outcome_set_hash`, `decisions` (one per `decision_id`, its latest attempt), `records` (all retained attempts), `overall` and `task_kinds`. `overall` and each
 `task_kinds` entry (which adds `task_kind`) hold `followed` and `overridden`,
 each with `sample_size` (decisions), `records`, three rates (`accepted_as_is`, `accepted_after_rework`,
 `abandoned`, each `{numerator, denominator, rate_micros}` with `rate_micros`
 `null` for an empty sample), `unknown` (`cost`, `tokens` and, for `overridden`
 only, `used_model`, `used_effort` and `used_skills`; `null` where not
-applicable) and `selection_basis` counts. `attribution` is `not_established` and
-`interpretation` is
-`personal_self_selected_sample_not_evidence_of_a_general_gain`. No published JSON
+applicable) and `selection_basis` counts. `groups` holds one entry per
+(`policy_version`, `risk`), sorted by version then risk, from the latest attempt
+of each decision: `policy_version`, `risk`, `decisions`, `insufficient_sample`
+(`decisions` below `minimum_sample`) and the same `followed` and `overridden`
+objects, whose rates are `null` when their `sample_size` is below
+`minimum_sample` (constant 5; numerator and denominator stay printed).
+`paired_trials` is `not_available` (no pairing key is stored, issue #255).
+`attribution` is `not_established`, `interpretation` is
+`personal_self_selected_sample_not_evidence_of_a_general_gain` and
+`interpretation_notes` lists three limits: self-selected sample, overrides on
+harder tasks, user-editable `advice.json`. Version 2 added `minimum_sample`,
+`groups`, `paired_trials` and `interpretation_notes` to version 1. No published JSON
 schema file covers this report yet.
 
 ## Feedback late facts

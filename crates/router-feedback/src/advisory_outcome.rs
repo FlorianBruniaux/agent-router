@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use router_types::{
     AdvisoryAdherence, AdvisoryOutcomeEvent, AdvisoryOutcomeInput, AdvisoryResult,
-    AdvisorySelectionBasis, TaskKind,
+    AdvisorySelectionBasis, RiskLevel, TaskKind,
 };
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::Serialize;
@@ -386,6 +386,30 @@ pub struct AdvisoryTaskKindReport {
     pub adherence: AdvisoryAdherencePair,
 }
 
+/// Latest outcomes of one policy version at one risk level. Never mixed with
+/// another version: a rate over both would measure neither.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct AdvisoryPolicyRiskGroup {
+    pub policy_version: String,
+    pub risk: RiskLevel,
+    /// Decisions in the group, each counted once with its latest record.
+    pub decisions: u64,
+    /// True below `ADVISORY_MINIMUM_SAMPLE` decisions.
+    pub insufficient_sample: bool,
+    #[serde(flatten)]
+    pub adherence: AdvisoryAdherencePair,
+}
+
+/// Fewest decisions a followed or overridden side needs before a group prints a
+/// rate. Counts and denominators are always printed.
+pub const ADVISORY_MINIMUM_SAMPLE: u64 = 5;
+
+const INTERPRETATION_NOTES: [&str; 3] = [
+    "personal self-selected sample: not a general gain",
+    "overrides often happen on harder tasks, so followed and overridden are not comparable",
+    "advice.json is user-editable: policy_version and risk are as recorded, not verified",
+];
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct AdvisoryOutcomeReport {
     pub schema_version: u32,
@@ -397,8 +421,14 @@ pub struct AdvisoryOutcomeReport {
     pub records: u64,
     pub overall: AdvisoryAdherencePair,
     pub task_kinds: Vec<AdvisoryTaskKindReport>,
+    /// Sorted by policy version, then risk. A rate is null below `minimum_sample`.
+    pub minimum_sample: u64,
+    pub groups: Vec<AdvisoryPolicyRiskGroup>,
+    /// Paired trials need a pairing key the store does not hold (issue #255).
+    pub paired_trials: &'static str,
     pub attribution: &'static str,
     pub interpretation: &'static str,
+    pub interpretation_notes: [&'static str; 3],
     pub content_hash: String,
 }
 
@@ -464,6 +494,20 @@ fn pair(outcomes: &[&AdvisoryOutcomeEvent], retained: &Retained<'_>) -> Advisory
     }
 }
 
+impl AdvisoryAdherenceStats {
+    fn hide_rates_below(&mut self, minimum: u64) {
+        if self.sample_size < minimum {
+            for rate in [
+                &mut self.accepted_as_is,
+                &mut self.accepted_after_rework,
+                &mut self.abandoned,
+            ] {
+                rate.rate_micros = None;
+            }
+        }
+    }
+}
+
 fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryOutcomeReport> {
     // Records are in sequence order, so the last one of a decision is its latest.
     let mut latest = BTreeMap::<&str, &AdvisoryOutcomeEvent>::new();
@@ -483,9 +527,17 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
             .or_default()
             .push(event);
     }
+    let mut by_group = BTreeMap::<(&str, RiskLevel), Vec<&AdvisoryOutcomeEvent>>::new();
+    for event in latest.iter().copied() {
+        let binding = &event.input.binding;
+        by_group
+            .entry((binding.policy_version.as_str(), binding.risk))
+            .or_default()
+            .push(event);
+    }
     let all = latest.clone();
     let mut report = AdvisoryOutcomeReport {
-        schema_version: 1,
+        schema_version: 2,
         generated_at_unix_seconds: now,
         outcome_set_hash: hash(
             "advisory-outcome-set-v1",
@@ -501,10 +553,30 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
                 adherence: pair(&events, &retained),
             })
             .collect(),
+        minimum_sample: ADVISORY_MINIMUM_SAMPLE,
+        groups: by_group
+            .into_iter()
+            .map(|((policy_version, risk), events)| {
+                let mut adherence = pair(&events, &retained);
+                adherence.followed.hide_rates_below(ADVISORY_MINIMUM_SAMPLE);
+                adherence
+                    .overridden
+                    .hide_rates_below(ADVISORY_MINIMUM_SAMPLE);
+                AdvisoryPolicyRiskGroup {
+                    policy_version: policy_version.to_owned(),
+                    risk,
+                    decisions: events.len() as u64,
+                    insufficient_sample: (events.len() as u64) < ADVISORY_MINIMUM_SAMPLE,
+                    adherence,
+                }
+            })
+            .collect(),
+        paired_trials: "not_available",
         attribution: "not_established",
         interpretation: "personal_self_selected_sample_not_evidence_of_a_general_gain",
+        interpretation_notes: INTERPRETATION_NOTES,
         content_hash: String::new(),
     };
-    report.content_hash = hash("advisory-outcome-report-v1", &report)?;
+    report.content_hash = hash("advisory-outcome-report-v2", &report)?;
     Ok(report)
 }

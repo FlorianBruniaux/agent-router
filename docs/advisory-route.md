@@ -269,6 +269,11 @@ no rate, not zero. `decisions` and `sample_size` count each decision once;
 `records` shows how many attempts were recorded. Costs are counted as known or
 unknown, never summed.
 
+`groups` splits the same counts by `policy_version` and `risk`, so you can read
+`stable-v1` and `stable-v2` apart. A group under 5 decisions
+(`minimum_sample`) is marked `insufficient_sample` and prints no rate. Paired
+counting of a `--compare-policies` task is not available yet (`paired_trials`).
+
 To share a redacted copy or delete everything:
 
 ```sh

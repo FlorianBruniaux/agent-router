@@ -322,6 +322,16 @@ has a null rate, not zero. The report counts `selection_basis` values, so a
 tie-break among unrated models is visible. It does not sum or compare costs, and
 `attribution` is always `not_established`.
 
+The report also has a `groups` array: the latest outcome of each decision,
+grouped by `policy_version` and `risk`, so outcomes of `stable-v1` and
+`stable-v2` are never mixed. Below `minimum_sample` decisions (5) a group is
+flagged `insufficient_sample` and its rates are null; the counts stay visible.
+`paired_trials` is `not_available`: counting both arms of one task as a pair
+needs a pairing key the store does not hold yet (issue #255), and none is
+inferred from other fields. `policy_version` and `risk` come from the
+user-editable `advice.json`, and overrides often happen on harder tasks, so
+followed and overridden are not comparable.
+
 A personal report is not evidence of a general gain. The records are
 self-reported and unverified, the sample is yours and self-selected, and the
 tasks differ. Comparative evaluation is tracked in
