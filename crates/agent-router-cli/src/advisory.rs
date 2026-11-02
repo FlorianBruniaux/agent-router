@@ -113,6 +113,8 @@ struct SkillRow {
     id: SkillId,
     status: &'static str,
     stages: Vec<Value>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    would_change: Vec<Change>,
 }
 
 #[derive(Serialize)]
@@ -424,9 +426,6 @@ fn skill_rows(
     request: &RouteRequest,
     decision: &DecisionEnvelope,
 ) -> Result<Vec<SkillRow>, CliError> {
-    let supported = |capability: &Capability| {
-        request.capability_knowledge.get(capability) == Some(&CapabilitySupport::Supported)
-    };
     requested
         .iter()
         .map(|id| {
@@ -441,6 +440,9 @@ fn skill_rows(
                 })
                 .transpose()?
                 .unwrap_or_default();
+            let blocked = catalog
+                .skill(id)
+                .and_then(|skill| blocking_capability(&skill.required_capabilities, request));
             let status = match catalog.skill(id) {
                 None => "absent_from_catalog",
                 Some(skill)
@@ -456,19 +458,52 @@ fn skill_rows(
                 Some(skill) if !skill.task_kinds.contains(&request.task.kind) => {
                     "incompatible_task_kind"
                 }
-                Some(skill) if !skill.required_capabilities.iter().all(supported) => {
-                    "capability_not_supported"
+                Some(_) if blocked.is_some() => {
+                    blocked.map_or("not_attached", |(status, _)| status)
                 }
                 Some(_) if !stages.is_empty() => "suggested",
                 Some(_) => "not_attached",
+            };
+            // Unknown is not a refusal: name the fact that would settle it.
+            let would_change = match (status, blocked) {
+                ("capability_unknown", Some((_, capability))) => vec![capability_change(
+                    "host.capability.unknown",
+                    capability,
+                    CapabilitySupport::Unknown,
+                )?],
+                _ => vec![],
             };
             Ok(SkillRow {
                 id: id.clone(),
                 status,
                 stages,
+                would_change,
             })
         })
         .collect()
+}
+
+/// The status and capability that keep a skill out of the plan, if any. A
+/// capability the host is known to lack, or that is absent from the host
+/// knowledge, is `capability_not_supported` and outranks `capability_unknown`,
+/// which names a capability the host has not been observed either way.
+fn blocking_capability(
+    required: &BTreeSet<Capability>,
+    request: &RouteRequest,
+) -> Option<(&'static str, Capability)> {
+    let mut unknown = None;
+    for capability in required {
+        match request.capability_knowledge.get(capability) {
+            Some(CapabilitySupport::Supported) => {}
+            Some(CapabilitySupport::Unknown) => {
+                unknown.get_or_insert(("capability_unknown", *capability));
+            }
+            Some(CapabilitySupport::Unsupported) | None => {
+                return Some(("capability_not_supported", *capability));
+            }
+        }
+    }
+    unknown
 }
 
 fn capability_change(
@@ -967,6 +1002,9 @@ fn human(report: &Report) -> Result<String, CliError> {
             escaped(skill.id.as_str()),
             skill.status
         ));
+        for change in &skill.would_change {
+            lines.push(format!("  - {}", escaped(&change.change)));
+        }
     }
     if let Some(decision) = &report.decision {
         lines.extend(
@@ -1101,5 +1139,54 @@ mod tests {
         assert!(apply_declarations(&mut host, &mut knowledge, &declared).is_ok());
         assert_eq!(knowledge[&Capability::Tools], CapabilitySupport::Supported);
         assert!(host.capabilities.contains(&Capability::Tools));
+    }
+
+    #[test]
+    fn capability_unsupported_still_reports_not_supported() {
+        // The advisory CLI cannot reach explicit Unsupported without an
+        // authenticated runtime proof, so the classification is tested directly.
+        let request = |knowledge: &[(Capability, CapabilitySupport)]| RouteRequest {
+            task: TaskContext {
+                objective: "x".into(),
+                kind: router_types::TaskKind::Implement,
+                risk: router_types::RiskLevel::Low,
+                required_capabilities: BTreeSet::new(),
+                acceptance: vec![],
+            },
+            host: host(),
+            skill_candidates: vec![],
+            capability_knowledge: knowledge.iter().copied().collect(),
+        };
+        let required = BTreeSet::from([Capability::Tools]);
+        let status = |support: Option<CapabilitySupport>| {
+            let knowledge: Vec<_> = support
+                .map(|s| (Capability::Tools, s))
+                .into_iter()
+                .collect();
+            blocking_capability(&required, &request(&knowledge))
+        };
+        assert_eq!(
+            status(Some(CapabilitySupport::Unsupported)),
+            Some(("capability_not_supported", Capability::Tools))
+        );
+        assert_eq!(
+            status(None),
+            Some(("capability_not_supported", Capability::Tools))
+        );
+        assert_eq!(
+            status(Some(CapabilitySupport::Unknown)),
+            Some(("capability_unknown", Capability::Tools))
+        );
+        assert_eq!(status(Some(CapabilitySupport::Supported)), None);
+        // Unsupported outranks Unknown when a skill needs both.
+        let both = BTreeSet::from([Capability::Tools, Capability::Vision]);
+        let mixed = request(&[
+            (Capability::Tools, CapabilitySupport::Unknown),
+            (Capability::Vision, CapabilitySupport::Unsupported),
+        ]);
+        assert_eq!(
+            blocking_capability(&both, &mixed),
+            Some(("capability_not_supported", Capability::Vision))
+        );
     }
 }
