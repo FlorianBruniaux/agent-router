@@ -206,7 +206,7 @@ The first command is the explicit consent: nothing is recorded until
 `collection_enabled` is true, and `retention_seconds` bounds how long records
 stay. Then:
 
-- `--adherence` and `--result` are required. `--result` is `accepted-as-is`,
+- `--adherence` (or `--followed`, `--overridden`) and `--result` are required. `--result` is `accepted-as-is`,
   `accepted-after-rework` or `abandoned`.
 - An override must name at least one of `--used-model`, `--used-effort`,
   `--used-skill` (repeatable) and `--used-no-skill`. What you do not state is
@@ -254,6 +254,48 @@ tasks differ. Comparative evaluation is tracked in
 [feedback](feedback.md#advisory-outcomes) and
 [ADR 0052](adr/0052-advisory-outcome-record.md).
 
+## Quick entry: one command to advise, one to record
+
+For a task you can state in a line, skip `task-guide` and the JSON files.
+`--text`, `--kind` and `--risk` describe the task. `--budget`
+(`MICROUSD:MILLISECONDS:TOKENS`) and `--scope` (repeatable) have no default:
+omit one and the command exits `3` and asks for it, as `task-guide` does.
+`--task` and `--risk-context` cannot be combined with `--text`.
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk medium --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --output-directory ~/agent-router-advice/backup-advice
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-advice --followed --result accepted-as-is
+```
+
+`advisory-record` accepts the advice directory in place of `advice.json`, and
+`--followed` or `--overridden` in place of `--adherence`. It keeps the rules of
+[ADR 0052](adr/0052-advisory-outcome-record.md): consent first, no hidden state,
+no "latest advice" lookup. The store path must be absolute.
+
+Facts you do not state take these fixed values. They are not inferred from the
+text and each one appears in the report with provenance `defaulted`:
+
+| Fact | Flag | Default |
+| --- | --- | --- |
+| Sensitivity | `--sensitivity` | `internal` |
+| Environment | `--environment` | `local`; none for `migration`, which is asked |
+| Reversibility | `--reversibility` | `reversible`; none for `migration`, which is asked |
+| Operations | `--operation` | `workspace_change` for `implement` and `migration`, else `read_only` |
+| Allowed mutations | `--mutation` (`none` for an empty set) | `workspace_write` for `implement` and `migration`, else none |
+| Acceptance | `--acceptance` | `The operator judges the result by hand.` |
+
+`critical` risk and `irreversible` effects are never defaulted: they exist only
+when you pass `--risk critical` or `--reversibility irreversible`. A fact you
+state is not marked `defaulted`. With every flag equal to its default the report
+is byte-identical to the file-based path; without them the decision and the
+task mapping are the same and only the `defaulted` fact rows are added.
+`--require-capability` names required host capabilities; none by default.
+
 ## Provenance
 
 | Label | Meaning |
@@ -262,6 +304,7 @@ tasks differ. Comparative evaluation is tracked in
 | `discovered` | Read from a host observation whose digest and age were checked. Not authenticated. |
 | `verified` | Checked by this command, such as the observation digest, or backed by authenticated evidence. |
 | `unknown` | No evidence was supplied. |
+| `defaulted` | A fixed quick-entry default used because you stated nothing. Not a statement by you. |
 
 Catalog ratings are always `declared`: `builtin-policy-prior` and
 `builtin-unrated-policy-prior` are policy bounds, not measured quality, price or

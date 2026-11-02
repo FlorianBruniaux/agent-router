@@ -215,7 +215,7 @@ La première commande est le consentement explicite : rien n'est enregistré tan
 que `collection_enabled` n'est pas vrai, et `retention_seconds` borne la durée de
 conservation. Ensuite :
 
-- `--adherence` et `--result` sont obligatoires. `--result` vaut `accepted-as-is`,
+- `--adherence` (ou `--followed`, `--overridden`) et `--result` sont obligatoires. `--result` vaut `accepted-as-is`,
   `accepted-after-rework` ou `abandoned`.
 - Une recommandation écartée doit nommer au moins l'un de `--used-model`,
   `--used-effort`, `--used-skill` (répétable) et `--used-no-skill`. Ce que vous
@@ -267,6 +267,51 @@ dans l'[issue #5](https://github.com/FlorianBruniaux/agent-router/issues/5).
 Voir [feedback](feedback.md#advisory-outcomes) et
 [ADR 0052](adr/0052-advisory-outcome-record.md).
 
+## Entrée rapide : une commande pour conseiller, une pour enregistrer
+
+Pour une tâche qui tient en une ligne, on peut se passer de `task-guide` et des
+fichiers JSON. `--text`, `--kind` et `--risk` décrivent la tâche. `--budget`
+(`MICROUSD:MILLISECONDES:TOKENS`) et `--scope` (répétable) n'ont aucune valeur
+par défaut : si l'un manque, la commande sort en `3` et le demande, comme
+`task-guide`. `--task` et `--risk-context` ne se combinent pas avec `--text`.
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk medium --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --output-directory ~/agent-router-advice/backup-advice
+
+agent-router feedback --store ~/agent-router-advice/store --json advisory-record \
+  --advice ~/agent-router-advice/backup-advice --followed --result accepted-as-is
+```
+
+`advisory-record` accepte le répertoire du conseil à la place de `advice.json`,
+et `--followed` ou `--overridden` à la place de `--adherence`. Les règles de
+l'[ADR 0052](adr/0052-advisory-outcome-record.md) restent valables : consentement
+d'abord, aucun état caché, aucune recherche du « dernier conseil ». Le chemin du
+store doit être absolu.
+
+Les faits non précisés prennent ces valeurs fixes. Elles ne sont pas déduites du
+texte et chacune apparaît dans le rapport avec la provenance `defaulted` :
+
+| Fait | Option | Valeur par défaut |
+| --- | --- | --- |
+| Sensibilité | `--sensitivity` | `internal` |
+| Environnement | `--environment` | `local` ; aucune pour `migration`, la question est posée |
+| Réversibilité | `--reversibility` | `reversible` ; aucune pour `migration`, la question est posée |
+| Opérations | `--operation` | `workspace_change` pour `implement` et `migration`, sinon `read_only` |
+| Mutations autorisées | `--mutation` (`none` pour un ensemble vide) | `workspace_write` pour `implement` et `migration`, sinon aucune |
+| Critères d'acceptation | `--acceptance` | `The operator judges the result by hand.` |
+
+Un risque `critical` et un effet `irreversible` ne sont jamais déduits par
+défaut : ils n'existent que si vous passez `--risk critical` ou
+`--reversibility irreversible`. Un fait que vous précisez n'est pas marqué
+`defaulted`. Avec toutes les options égales à leur défaut, le rapport est
+identique octet pour octet à celui du chemin par fichiers ; sinon la décision et
+la correspondance des champs sont les mêmes et seules les lignes `defaulted`
+s'ajoutent. `--require-capability` nomme les capacités de host requises ; aucune
+par défaut.
+
 ## Provenance
 
 | Étiquette | Sens |
@@ -275,6 +320,7 @@ Voir [feedback](feedback.md#advisory-outcomes) et
 | `discovered` | Lu dans une observation de host dont l'empreinte et l'âge ont été contrôlés. Non authentifié. |
 | `verified` | Contrôlé par cette commande, comme l'empreinte de l'observation, ou appuyé sur une preuve authentifiée. |
 | `unknown` | Aucune preuve fournie. |
+| `defaulted` | Valeur fixe de l'entrée rapide, utilisée parce que vous n'avez rien précisé. Pas une affirmation de votre part. |
 
 Les notes du catalogue sont toujours `declared` : `builtin-policy-prior` et
 `builtin-unrated-policy-prior` sont des bornes de politique, pas des mesures de

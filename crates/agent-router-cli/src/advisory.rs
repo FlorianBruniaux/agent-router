@@ -11,9 +11,10 @@ use router_adapter_api::{ALL_CAPABILITIES, MAX_SNAPSHOT_MODELS, ValidatedHostObs
 use router_catalog::Catalog;
 use router_policy::Router;
 use router_types::{
-    Capability, CapabilitySupport, Clarification, DecisionEnvelope, HostSnapshot, ModelId,
-    NormalizedTask, RouteDecision, RouteRequest, SkillCandidate, SkillId, SkillTrust, StageKind,
-    TaskContext, TaskInput, TaskRiskContext,
+    Capability, CapabilitySupport, Clarification, DataSensitivity, DecisionEnvelope, HostSnapshot,
+    ModelId, Mutation, NormalizedTask, RiskEnvironment, RiskLevel, RiskOperation,
+    RiskReversibility, RouteDecision, RouteRequest, SkillCandidate, SkillId, SkillTrust, StageKind,
+    TaskBudget, TaskContext, TaskInput, TaskKind, TaskRiskContext,
 };
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -34,11 +35,58 @@ const NOT_ENFORCED: &str = "not_enforced_by_advisory_routing";
 #[derive(Args)]
 pub(crate) struct AdviseArgs {
     /// Complete strict TaskInput JSON, such as `input.json` from `task-guide`.
-    #[arg(long)]
-    task: PathBuf,
+    #[arg(long, conflicts_with = "text", required_unless_present = "text")]
+    task: Option<PathBuf>,
     /// Explicit TaskRiskContext JSON, such as `risk-context.json` from `task-guide`.
-    #[arg(long)]
+    #[arg(long, conflicts_with = "text")]
     risk_context: Option<PathBuf>,
+    /// Inline task objective. Needs `--kind`; replaces `--task`. Stated facts are
+    /// `--risk`, `--budget` and `--scope`: omit one and the command asks for it.
+    /// Other omitted facts take the fixed defaults listed in docs/advisory-route.md
+    /// and are reported with provenance `defaulted`.
+    #[arg(long, requires = "kind")]
+    text: Option<String>,
+    /// Task kind: explore, implement, review, architecture, security or migration.
+    #[arg(long, requires = "text")]
+    kind: Option<String>,
+    /// Task risk: low, medium, high or critical. Never defaulted.
+    #[arg(long, requires = "text")]
+    risk: Option<String>,
+    /// Authorized limits as `MICROUSD:MILLISECONDS:TOKENS`, such as `0:600000:200000`.
+    /// Never defaulted; advice enforces none of them.
+    #[arg(long, requires = "text")]
+    budget: Option<String>,
+    /// Relative workspace path in scope; repeatable. Never defaulted.
+    #[arg(long = "scope", value_name = "PATH", requires = "text")]
+    scopes: Vec<String>,
+    /// Data sensitivity: public, internal or secret. Default: internal.
+    #[arg(long, requires = "text")]
+    sensitivity: Option<String>,
+    /// Target environment: local, test, staging, production or unknown. Default: local.
+    #[arg(long, requires = "text")]
+    environment: Option<String>,
+    /// Effect reversibility: reversible, irreversible or unknown. Default: reversible.
+    #[arg(long, requires = "text")]
+    reversibility: Option<String>,
+    /// Intended operation such as `workspace_change` or `deployment`; repeatable.
+    /// Default: `workspace_change` for implement and migration, else `read_only`.
+    #[arg(long = "operation", value_name = "OPERATION", requires = "text")]
+    operations: Vec<String>,
+    /// Authorized mutation (`workspace_write`, `network`, `execute_skills`,
+    /// `integrate`, or `none`); repeatable. Default: `workspace_write` for
+    /// implement and migration, else `none`.
+    #[arg(long = "mutation", value_name = "MUTATION", requires = "text")]
+    mutations: Vec<String>,
+    /// Observable acceptance criterion; repeatable. Default: a fixed manual-review line.
+    #[arg(long = "acceptance", value_name = "TEXT", requires = "text")]
+    acceptances: Vec<String>,
+    /// Host capability the task requires, such as `tools`; repeatable.
+    #[arg(
+        long = "require-capability",
+        value_name = "CAPABILITY",
+        requires = "text"
+    )]
+    required_capabilities: Vec<String>,
     /// Catalog JSON (schema 1, or a generated schema 2 catalog).
     #[arg(long)]
     catalog: PathBuf,
@@ -98,6 +146,9 @@ enum Provenance {
     /// Checked by this command or by authenticated evidence.
     Verified,
     Unknown,
+    /// A fixed documented value of the inline entry, used because the operator
+    /// stated nothing. It is not a statement by the operator.
+    Defaulted,
 }
 
 #[derive(Serialize)]
@@ -144,6 +195,141 @@ struct NextAction {
     summary: String,
     phases: Vec<Phase>,
     would_change: Vec<Change>,
+}
+
+const DEFAULT_ACCEPTANCE: &str = "The operator judges the result by hand.";
+
+fn parsed<T: serde::de::DeserializeOwned>(value: &str) -> Result<T, CliError> {
+    serde_json::from_value(Value::String(value.to_owned()))
+        .map_err(|_| error("advisory.task.invalid"))
+}
+
+fn parsed_set<T: serde::de::DeserializeOwned + Ord>(
+    values: &[String],
+) -> Result<BTreeSet<T>, CliError> {
+    values.iter().map(|value| parsed(value)).collect()
+}
+
+fn parse_budget(value: &str) -> Result<TaskBudget, CliError> {
+    let invalid = || error("advisory.budget.invalid");
+    let parts: Vec<_> = value.split(':').collect();
+    let [cost, elapsed, tokens] = parts.as_slice() else {
+        return Err(invalid());
+    };
+    let number = |part: &str| part.parse::<u64>().map_err(|_| invalid());
+    Ok(TaskBudget {
+        max_cost_microusd: number(cost)?,
+        max_elapsed_ms: number(elapsed)?,
+        max_tokens: number(tokens)?,
+    })
+}
+
+/// The inline task and its explicit risk context. A fact the operator did not
+/// state takes a fixed default only when the task contract has no UNKNOWN for
+/// it; each such value is returned as a `defaulted` fact. Nothing is inferred
+/// from the text. Risk, budget and scope are never defaulted: when absent the
+/// normalizer asks for them, as for the environment and reversibility of a
+/// migration. `critical` and `irreversible` exist only when stated.
+fn quick_task(args: &AdviseArgs) -> Result<(TaskInput, TaskRiskContext, Vec<Fact>), CliError> {
+    let objective = args
+        .text
+        .clone()
+        .ok_or_else(|| error("advisory.task.invalid"))?;
+    let kind: TaskKind = parsed(
+        args.kind
+            .as_deref()
+            .ok_or_else(|| error("advisory.task.invalid"))?,
+    )?;
+    let effect_kind = matches!(kind, TaskKind::Implement | TaskKind::Migration);
+    let mut defaulted = Vec::new();
+    let mut default = |subject: &str, value: Value, flag: &str| {
+        defaulted.push(Fact {
+            subject: format!("task.{subject}"),
+            value,
+            provenance: Provenance::Defaulted,
+            source: format!("fixed quick-entry default; state it with {flag}"),
+        });
+    };
+    let sensitivity = match args.sensitivity.as_deref() {
+        Some(value) => parsed(value)?,
+        None => {
+            default("sensitivity", json!("internal"), "--sensitivity");
+            DataSensitivity::Internal
+        }
+    };
+    // A migration is where an unstated environment or reversibility would hide
+    // the risk: it stays UNKNOWN and the normalizer asks for it.
+    let migration = kind == TaskKind::Migration;
+    let environment = match args.environment.as_deref() {
+        Some(value) => parsed(value)?,
+        None if migration => RiskEnvironment::Unknown,
+        None => {
+            default("environment", json!("local"), "--environment");
+            RiskEnvironment::Local
+        }
+    };
+    let reversibility = match args.reversibility.as_deref() {
+        Some(value) => parsed(value)?,
+        None if migration => RiskReversibility::Unknown,
+        None => {
+            default("reversibility", json!("reversible"), "--reversibility");
+            RiskReversibility::Reversible
+        }
+    };
+    let operations: BTreeSet<RiskOperation> = if args.operations.is_empty() {
+        let operation = if effect_kind {
+            RiskOperation::WorkspaceChange
+        } else {
+            RiskOperation::ReadOnly
+        };
+        default("operations", to_value(&[operation])?, "--operation");
+        BTreeSet::from([operation])
+    } else {
+        parsed_set(&args.operations)?
+    };
+    let allowed_mutations: BTreeSet<Mutation> = if args.mutations.is_empty() {
+        let mutations: BTreeSet<Mutation> = if effect_kind {
+            BTreeSet::from([Mutation::WorkspaceWrite])
+        } else {
+            BTreeSet::new()
+        };
+        default("allowed_mutations", to_value(&mutations)?, "--mutation");
+        mutations
+    } else if args.mutations.iter().any(|value| value == "none") {
+        if args.mutations.len() != 1 {
+            return Err(error("advisory.task.invalid"));
+        }
+        BTreeSet::new()
+    } else {
+        parsed_set(&args.mutations)?
+    };
+    let acceptance = if args.acceptances.is_empty() {
+        default("acceptance", json!([DEFAULT_ACCEPTANCE]), "--acceptance");
+        vec![DEFAULT_ACCEPTANCE.to_owned()]
+    } else {
+        args.acceptances.clone()
+    };
+    let input = TaskInput {
+        objective,
+        kind,
+        deliverables: vec![],
+        constraints: vec![],
+        scope: args.scopes.clone(),
+        risk: args.risk.as_deref().map(parsed::<RiskLevel>).transpose()?,
+        sensitivity: Some(sensitivity),
+        budget: args.budget.as_deref().map(parse_budget).transpose()?,
+        allowed_mutations: Some(allowed_mutations),
+        dependencies: vec![],
+        acceptance,
+        required_capabilities: parsed_set(&args.required_capabilities)?,
+    };
+    let context = TaskRiskContext {
+        schema_version: 1,
+        environment,
+        reversibility,
+        operations,
+    };
+    Ok((input, context, defaulted))
 }
 
 fn error(code: &'static str) -> CliError {
@@ -754,15 +940,26 @@ fn clarification(questions: Vec<Clarification>, output_requested: bool) -> Repor
 pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
     let declared = declarations(&args.declare_capability)?;
     let requested = skill_ids(&args.skills)?;
-    let input: TaskInput = read_json(&args.task, MAX_TASK).map_err(|failure| match failure {
-        CliError::RequestTooLarge => error("advisory.task.too_large"),
-        other => other,
-    })?;
-    let risk_context: Option<TaskRiskContext> = args
-        .risk_context
-        .as_deref()
-        .map(|path| read_json(path, MAX_CONTEXT))
-        .transpose()?;
+    let (input, risk_context, defaulted_facts): (TaskInput, Option<TaskRiskContext>, Vec<Fact>) =
+        if args.text.is_some() {
+            let (input, context, defaulted) = quick_task(&args)?;
+            (input, Some(context), defaulted)
+        } else {
+            let path = args
+                .task
+                .as_deref()
+                .ok_or_else(|| error("advisory.task.required"))?;
+            let input = read_json(path, MAX_TASK).map_err(|failure| match failure {
+                CliError::RequestTooLarge => error("advisory.task.too_large"),
+                other => other,
+            })?;
+            let context = args
+                .risk_context
+                .as_deref()
+                .map(|path| read_json(path, MAX_CONTEXT))
+                .transpose()?;
+            (input, context, vec![])
+        };
     let normalized = router_workflow::normalize_with_risk(input.clone(), risk_context.as_ref())
         .map_err(product::workflow_error)?;
     let Some(task) = normalized.normalization.task.clone() else {
@@ -870,7 +1067,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         RouteDecision::Selected { .. } => ("recommended", ExitCode::SUCCESS),
         RouteDecision::NoRoute { .. } => ("no_recommendation", ExitCode::from(3)),
     };
-    let facts = Facts {
+    let mut facts = Facts {
         host: &host,
         source: &source,
         knowledge: &knowledge,
@@ -880,6 +1077,8 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         max_age,
     }
     .build()?;
+    // Defaulted task facts follow the task row, before any host fact.
+    facts.splice(1..1, defaulted_facts);
     let mut report = Report {
         schema_version: 1,
         mode: "advisory",
