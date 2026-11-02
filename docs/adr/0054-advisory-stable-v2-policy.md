@@ -222,6 +222,11 @@ Hard rules stay, with their exclusion codes: verify not below execute for
 the strongest eligible verifier, under the existing max-quality rule with a
 `verification.critical.not_max_quality` exclusion code.
 
+A model consulted inside the executor's session, such as a Claude Code
+advisor, reads the executor's full transcript. It never satisfies
+`fresh_instance` and never replaces a `verify` stage. Recommending an advisor
+pairing is deferred to #251.
+
 ### Effort table
 
 Preferred effort per stage, declared priors, not measurements:
@@ -356,6 +361,14 @@ would change the plan-stage result, each through a reviewed catalog revision:
   `PhasePolicy`.
 - Changing `stable-v1` in place: breaks replay of saved requests and every
   existing `route` fixture.
+- Mid-run escalation, handing the task to a stronger model after a failure:
+  rejected. "The Handoff Tax" (arXiv 2608.24358, 2026-08-25) reports that
+  escalation with full trajectory transfer recovers less than half of the
+  quality gap between the cheaper and the stronger model, at a substantial
+  cost premium, while downshifting gives a better trade-off. This is external
+  evidence on full handoffs between Claude and GPT family pairs, not measured
+  on this repository's tasks; it supports a strong plan stage followed by a
+  cheaper execute stage, which `stable-v2` already encodes.
 - A scalar `E[Q] - lambda(risk) x C`: needs a calibrated `lambda` that does not
   exist. An earlier in-memory exploration (not committed) converged to all-Sol
   plans for every `lambda` tried, so it would not offer cheaper models.
