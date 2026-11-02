@@ -54,10 +54,9 @@ use std::{
 
 use clap::{CommandFactory, Parser, error::ErrorKind};
 use cli::Cli;
-use command::Commands;
+use command::{Commands, ScoringPolicy};
 use router_adapter_api::ValidatedHostObservation;
 use router_catalog::Catalog;
-use router_policy::Router;
 use router_types::{DecisionEnvelope, RouteDecision, RouteRequest};
 
 const MAX_REQUEST_BYTES: usize = 1024 * 1024;
@@ -517,6 +516,7 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             catalog,
             json,
             host_snapshot,
+            policy,
             retrieval,
             snapshot_max_age_seconds,
             now,
@@ -524,10 +524,13 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
             &request,
             &catalog,
             json,
-            host_snapshot.as_deref(),
-            snapshot_max_age_seconds,
-            now,
-            retrieval.as_deref(),
+            RouteOptions {
+                snapshot_path: host_snapshot.as_deref(),
+                snapshot_max_age: snapshot_max_age_seconds,
+                now,
+                retrieval: retrieval.as_deref(),
+                policy,
+            },
         ),
         Commands::Inspect {
             store,
@@ -636,18 +639,30 @@ fn run_structured(command: Commands) -> Result<Outcome, CliError> {
     }
 }
 
+struct RouteOptions<'a> {
+    snapshot_path: Option<&'a Path>,
+    snapshot_max_age: u64,
+    now: Option<u64>,
+    retrieval: Option<&'a Path>,
+    policy: ScoringPolicy,
+}
+
 fn route(
     request_path: &Path,
     catalog_path: &Path,
     json: bool,
-    snapshot_path: Option<&Path>,
-    snapshot_max_age: u64,
-    now: Option<u64>,
-    retrieval: Option<&Path>,
+    options: RouteOptions<'_>,
 ) -> Result<Outcome, CliError> {
     if !json {
         return Err(CliError::JsonOutputRequired);
     }
+    let RouteOptions {
+        snapshot_path,
+        snapshot_max_age,
+        now,
+        retrieval,
+        policy,
+    } = options;
 
     let mut request = read_request(request_path)?;
     let snapshot = snapshot_path
@@ -667,7 +682,7 @@ fn route(
         }
         .map_err(product::retrieval_error)?;
     }
-    decide(request, &catalog, snapshot, embedded_snapshot)
+    decide(request, &catalog, snapshot, embedded_snapshot, policy)
 }
 
 /// Shared by `route` and the local API: merges the explicit and embedded host
@@ -677,6 +692,7 @@ pub(crate) fn decide(
     catalog: &Catalog,
     snapshot: Option<ValidatedHostObservation>,
     embedded_snapshot: Option<ValidatedHostObservation>,
+    policy: ScoringPolicy,
 ) -> Result<Outcome, CliError> {
     let snapshot = match (snapshot, embedded_snapshot) {
         (Some(explicit), Some(embedded)) if explicit.hash() != embedded.hash() => {
@@ -689,7 +705,7 @@ pub(crate) fn decide(
         request.host = snapshot.host().clone();
         request.capability_knowledge = snapshot.capabilities();
     }
-    let router = Router::stable_v1();
+    let router = policy.router();
     let decision = match &snapshot {
         Some(snapshot) => router.route_with_snapshot_hash(&request, catalog, snapshot.hash()),
         None => router.route(&request, catalog),

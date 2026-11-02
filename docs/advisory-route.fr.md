@@ -94,6 +94,41 @@ déclaré. `--skill` désigne une skill candidate et peut être répété. Ajout
 recommandation, `3` aucune recommandation ou des questions ouvertes, `2` une
 entrée invalide.
 
+`--policy stable-v2` est la valeur par défaut. Elle fixe, pour chaque étape, une
+cible de qualité selon le risque et le type de tâche, puis classe les plans par
+écart total à ces cibles, puis par coût
+([ADR 0054](adr/0054-advisory-stable-v2-policy.md), en anglais).
+`--policy stable-v1` reproduit à l'octet près l'ancien score plat : c'est le
+retour arrière. Le rapport reste en version 1 et gagne, sous `stable-v2`, un
+objet `scoring` : par étape, `target_micros`, `quality_micros`,
+`shortfall_micros` et `reason_codes`. Les marges et les ajustements par type
+sont des a priori déclarés, pas des mesures. Un code de raison décrit les
+données du catalogue, pas la qualité d'un modèle :
+
+| Code | Sens |
+| --- | --- |
+| `catalog.stage.dominated` | Un modèle éligible est au moins aussi bon que tous les autres en qualité, coût et latence : aucune cible ne change le choix (étape plan de `codex-core-v3`) |
+| `catalog.cost.equal` | Tous les modèles qui atteignent la cible ont le même coût : le choix vient du départage par qualité |
+| `catalog.unrated` | Tous les modèles éligibles ont la qualité 0 : le choix est un départage |
+
+Le risque `critical` exige aussi le meilleur vérificateur éligible
+(`verification.critical.not_max_quality` pour les autres).
+
+L'effort par étape suit aussi le risque et le type de tâche sous `stable-v2`, à
+partir d'une table d'a priori déclarés (plan / execute / verify) : low
+`medium / low / medium`, medium `high / medium / medium`, high
+`high / medium / high`, critical `xhigh / high / xhigh`. `architecture` et
+`migration` montent l'effort du plan d'un niveau, `security` et `review` celui de
+la vérification, `explore` baisse celui de la vérification d'un niveau ; jamais
+sous `low`, jamais au-dessus de `max`. Si le host n'offre pas le niveau, le niveau
+supporté le plus proche est utilisé et l'entrée `scoring` le dit :
+`effort_target` est ce que la table demandait, `effort` ce que vous obtenez,
+`effort_provenance` vaut `policy_table` ou `fallback`. `table_digest` identifie
+les tables, `effort_basis` vaut `declared_policy_prior` et `effort_cost` vaut
+`not_modelled` : l'effort n'entre ni dans le coût ni dans le classement.
+`stable-v1` garde ses efforts fixes (plan `high`, execute `medium`, verify
+`high`).
+
 ## 4. Lire le résultat
 
 Avec le cache de fixture assaini utilisé par les tests et une tâche qui exige
@@ -121,9 +156,9 @@ La même tâche obtient alors une recommandation :
 Status: recommended
   host.capability.tools [declared]: supported
 Skill tdd: suggested
-Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
+Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/medium
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort medium with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Pour chaque phase, sélectionnez ce modèle et cet effort dans votre host,
@@ -373,8 +408,11 @@ chemin existant.
 | `decision.json` | La décision ; `explain --decision` la lit |
 | `advice.json` | Le rapport complet, publié en dernier comme marqueur de fin. Il est identique au rapport `--json` imprimé, `output_directory` compris |
 
-`route --request route-request.json --catalog <catalogue> --json` imprime les
-mêmes octets que `decision.json` (testé) :
+`route --request route-request.json --catalog <catalogue> --policy
+<policy_version> --json` imprime les mêmes octets que `decision.json` (testé),
+où `<policy_version>` est le `policy_version` de `decision.json` (`stable-v2`,
+sauf si `advise --policy stable-v1` a été utilisé). `route` prend `stable-v1` par
+défaut : une décision `stable-v2` sauvegardée demande le drapeau explicite :
 
 | Source du host | Rejeu |
 | --- | --- |

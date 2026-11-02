@@ -88,6 +88,38 @@ names a candidate skill and can be repeated. Add `--json` for the complete
 versioned report. Exit `0` means a recommendation, `3` means no recommendation
 or open questions, `2` means invalid input.
 
+`--policy stable-v2` is the default. It sets, for each stage, a quality target
+from the task risk and kind, then ranks plans by total shortfall against those
+targets, then by cost ([ADR 0054](adr/0054-advisory-stable-v2-policy.md)).
+`--policy stable-v1` reproduces the earlier flat scoring byte for byte, which is
+the rollback. The report is still version 1 and gains a `scoring` object under
+`stable-v2`: per stage, `target_micros`, `quality_micros`, `shortfall_micros` and
+`reason_codes`. The margins and kind adjustments are declared priors, not
+measurements. A reason code describes catalog data, not model quality:
+
+| Code | Meaning |
+| --- | --- |
+| `catalog.stage.dominated` | One eligible model is at least as good on quality, cost and latency as every other, so no target changes the pick (the plan stage of `codex-core-v3`) |
+| `catalog.cost.equal` | Every model meeting the target has the same cost, so the pick comes from the quality tie-break |
+| `catalog.unrated` | Every eligible model has quality 0, so the pick is a tie-break |
+
+`critical` risk also requires the strongest eligible verifier
+(`verification.critical.not_max_quality` for the others).
+
+Effort per stage also follows risk and kind under `stable-v2`, from a table of
+declared priors (plan / execute / verify): low `medium / low / medium`, medium
+`high / medium / medium`, high `high / medium / high`, critical
+`xhigh / high / xhigh`. `architecture` and `migration` raise the plan effort by
+one level, `security` and `review` raise the verify effort by one, `explore`
+lowers the verify effort by one; never below `low`, never above `max`. If the
+host does not offer the level, the nearest supported level is used and the
+`scoring` entry says so: `effort_target` is what the table asked for, `effort` is
+what you get, and `effort_provenance` is `policy_table` or `fallback`.
+`table_digest` identifies the tables, `effort_basis` is
+`declared_policy_prior`, and `effort_cost` is `not_modelled`: effort does not
+enter cost or ranking. `stable-v1` keeps its fixed efforts (plan `high`, execute
+`medium`, verify `high`).
+
 ## 4. Read the result
 
 With the sanitized fixture cache used in the tests and a task requiring
@@ -114,9 +146,9 @@ The same task then gets a recommendation:
 Status: recommended
   host.capability.tools [declared]: supported
 Skill tdd: suggested
-Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/high
+Plan: gpt-5.6-sol/high -> gpt-5.6-terra/medium -> gpt-5.6-terra/medium
 Next manual action:
-  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort high with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
+  Nothing was executed. In your codex host, select per phase plan: model gpt-5.6-sol at effort high with skills tdd; execute: model gpt-5.6-terra at effort medium with skills tdd; verify: model gpt-5.6-terra at effort medium with skills tdd. Catalog codex-core-v3: ratings come from the catalog, a declared policy prior, not a measurement. Support for tools is declared by you, not verified.
 ```
 
 Select that model and effort in your host for each phase, load only the listed
@@ -351,8 +383,11 @@ no-clobber publication as `task-guide`. It never reuses an existing path.
 | `decision.json` | The decision; `explain --decision` reads it |
 | `advice.json` | The complete report, published last as the completion marker. It is identical to the printed `--json` report, including `output_directory` |
 
-`route --request route-request.json --catalog <catalog> --json` prints the same
-bytes as `decision.json` (tested):
+`route --request route-request.json --catalog <catalog> --policy <policy_version>
+--json` prints the same bytes as `decision.json` (tested), where
+`<policy_version>` is the `policy_version` of `decision.json` (`stable-v2` unless
+`advise --policy stable-v1` was used). `route` defaults to `stable-v1`, so a
+saved `stable-v2` decision needs the explicit flag:
 
 | Host source | Replay |
 | --- | --- |

@@ -17,6 +17,7 @@ use std::{
 
 const NOW: &str = "10";
 const GOLDEN: &str = "tests/golden/advise-matrix-v1.json";
+const GOLDEN_V2: &str = "tests/golden/advise-matrix-v2.json";
 
 fn command() -> Command {
     let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
@@ -211,9 +212,20 @@ fn task(case: &Case, required_capabilities: Value) -> Value {
     })
 }
 
-/// Runs one case and returns the full `advise` report.
+/// Runs one case under the default policy (`stable-v2`) and returns the full
+/// `advise` report.
 fn advise(dir: &Path, variant: Variant, case: &Case) -> Value {
-    let work = dir.join(format!("{}-{}", variant.name(), case.name));
+    advise_with(dir, variant, case, None)
+}
+
+/// Runs one case, optionally under an explicit `--policy`.
+fn advise_with(dir: &Path, variant: Variant, case: &Case, policy: Option<&str>) -> Value {
+    let work = dir.join(format!(
+        "{}-{}-{}",
+        variant.name(),
+        case.name,
+        policy.unwrap_or("default")
+    ));
     fs::create_dir_all(&work).unwrap();
     let required = match variant {
         Variant::CodexUnknown => json!([]),
@@ -246,6 +258,9 @@ fn advise(dir: &Path, variant: Variant, case: &Case) -> Value {
     }
     if variant != Variant::CodexUnknown {
         cmd.args(["--declare-capability", "tools"]);
+    }
+    if let Some(policy) = policy {
+        cmd.args(["--policy", policy]);
     }
     let output = cmd.args(["--now", NOW, "--json"]).output().unwrap();
     parsed(&output.stdout, &output.stderr)
@@ -282,21 +297,21 @@ fn record(variant: Variant, case: &Case, report: &Value) -> Value {
     })
 }
 
-fn matrix(dir: &Path) -> Vec<(Variant, &'static Case, Value)> {
+fn matrix(dir: &Path, policy: Option<&'static str>) -> Vec<(Variant, &'static Case, Value)> {
     Variant::ALL
         .into_iter()
         .flat_map(|variant| {
             CASES
                 .iter()
-                .map(move |case| (variant, case, advise(dir, variant, case)))
+                .map(move |case| (variant, case, advise_with(dir, variant, case, policy)))
                 .collect::<Vec<_>>()
         })
         .collect()
 }
 
-fn golden_value(dir: &Path) -> Value {
+fn golden_value(dir: &Path, policy: Option<&'static str>) -> Value {
     Value::Array(
-        matrix(dir)
+        matrix(dir, policy)
             .iter()
             .map(|(variant, case, report)| record(*variant, case, report))
             .collect(),
@@ -312,7 +327,9 @@ fn render(value: &Value) -> String {
 #[test]
 fn advise_matrix_matches_golden_v1() {
     let dir = tempfile::tempdir().unwrap();
-    let actual = render(&golden_value(dir.path()));
+    // Rollback path of ADR 0054: the explicit v1 policy reproduces the #234
+    // golden byte for byte.
+    let actual = render(&golden_value(dir.path(), Some("stable-v1")));
     let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(GOLDEN);
     // A missing golden compares as empty, so the failure prints the actual output.
     let golden = fs::read_to_string(&path).unwrap_or_default();
@@ -327,10 +344,10 @@ fn advise_matrix_matches_golden_v1() {
 
 /// Distinct (model, effort, skills) stage tuples among the seven Codex cases
 /// with capabilities unknown.
-fn distinct_stage_tuples(dir: &Path) -> BTreeSet<String> {
+fn distinct_stage_tuples(dir: &Path, policy: &str) -> BTreeSet<String> {
     CASES
         .iter()
-        .flat_map(|case| stages(&advise(dir, Variant::CodexUnknown, case)))
+        .flat_map(|case| stages(&advise_with(dir, Variant::CodexUnknown, case, Some(policy))))
         .map(|stage| format!("{}|{}|{}", stage["model"], stage["effort"], stage["skills"]))
         .collect()
 }
@@ -338,22 +355,107 @@ fn distinct_stage_tuples(dir: &Path) -> BTreeSet<String> {
 #[test]
 fn advise_matrix_reports_distinct_plan_count() {
     let dir = tempfile::tempdir().unwrap();
-    let tuples = distinct_stage_tuples(dir.path());
-    // Later routing PRs raise this number explicitly.
+    let tuples = distinct_stage_tuples(dir.path(), "stable-v1");
     assert_eq!(tuples.len(), EXPECTED_DISTINCT_STAGE_TUPLES, "{tuples:#?}");
+}
+
+#[test]
+fn advise_matrix_v2_reports_distinct_plan_count() {
+    let dir = tempfile::tempdir().unwrap();
+    let tuples = distinct_stage_tuples(dir.path(), "stable-v2");
+    assert_eq!(
+        tuples.len(),
+        EXPECTED_DISTINCT_STAGE_TUPLES_V2,
+        "{tuples:#?}"
+    );
+}
+
+#[test]
+fn scoring_object_is_additive_and_only_present_under_v2() {
+    let dir = tempfile::tempdir().unwrap();
+    let case = &CASES[0];
+    let v1 = advise_with(dir.path(), Variant::CodexUnknown, case, Some("stable-v1"));
+    assert!(v1.get("scoring").is_none(), "{v1:#}");
+    assert_eq!(v1["decision"]["policy_version"], "stable-v1");
+    let v2 = advise(dir.path(), Variant::CodexUnknown, case);
+    assert_eq!(v2["schema_version"], 1);
+    assert_eq!(v2["decision"]["schema_version"], "1");
+    assert_eq!(v2["decision"]["policy_version"], "stable-v2");
+    let scoring = &v2["scoring"];
+    assert_eq!(scoring["policy_version"], "stable-v2");
+    let rows = scoring["stages"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    for (row, stage) in rows.iter().zip(stages(&v2)) {
+        assert_eq!(row["stage"], stage["kind"]);
+        assert!(row["target_micros"].is_u64() && row["quality_micros"].is_u64());
+        assert!(row["shortfall_micros"].is_u64() && row["reason_codes"].is_array());
+    }
+    // The v3 plan stage is pinned by catalog data and the report says so.
+    assert!(
+        rows[0]["reason_codes"]
+            .as_array()
+            .unwrap()
+            .contains(&json!("catalog.stage.dominated"))
+    );
+}
+
+#[test]
+fn scoring_reports_a_missed_effort_target_instead_of_hiding_it() {
+    let dir = tempfile::tempdir().unwrap();
+    let case = CASES
+        .iter()
+        .find(|c| c.name == "migration-critical")
+        .unwrap();
+    // The Claude host offers medium, high and xhigh only; the critical migration
+    // plan asks for `max`.
+    let report = advise(dir.path(), Variant::ClaudeFlat, case);
+    let scoring = &report["scoring"];
+    assert_eq!(scoring["effort_basis"], "declared_policy_prior");
+    assert_eq!(scoring["effort_cost"], "not_modelled");
+    assert_eq!(scoring["table_digest"].as_str().unwrap().len(), 64);
+    let plan = &scoring["stages"][0];
+    assert_eq!(plan["effort_target"], "max");
+    assert_eq!(plan["effort"], "xhigh");
+    assert_eq!(plan["effort_provenance"], "fallback");
+    let execute = &scoring["stages"][1];
+    assert_eq!(execute["effort_target"], "high");
+    assert_eq!(execute["effort_provenance"], "policy_table");
+    // The plan itself carries the fallback effort.
+    assert_eq!(stages(&report)[0]["effort"], "xhigh");
+}
+
+#[test]
+fn advise_matrix_matches_golden_v2() {
+    let dir = tempfile::tempdir().unwrap();
+    let actual = render(&golden_value(dir.path(), Some("stable-v2")));
+    let default = render(&golden_value(dir.path(), None));
+    assert_eq!(actual, default, "stable-v2 must be the advise default");
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(GOLDEN_V2);
+    let golden = fs::read_to_string(&path).unwrap_or_default();
+    assert!(
+        actual == golden,
+        "advise matrix moved from {GOLDEN_V2}; if intended, replace the file with:\n{actual}"
+    );
 }
 
 #[test]
 fn advise_matrix_is_byte_deterministic() {
     let dir = tempfile::tempdir().unwrap();
-    let first = render(&golden_value(&dir.path().join("a")));
-    let second = render(&golden_value(&dir.path().join("b")));
-    assert_eq!(first, second);
+    for policy in [None, Some("stable-v1"), Some("stable-v2")] {
+        let first = render(&golden_value(&dir.path().join("a"), policy));
+        let second = render(&golden_value(&dir.path().join("b"), policy));
+        assert_eq!(first, second, "{policy:?}");
+    }
 }
 
 const EXPECTED_DISTINCT_STAGE_TUPLES: usize = 5;
+// v2 pins one plan model (`gpt-6.1-sol`, `catalog.stage.dominated`) and varies
+// effort with risk and kind: six stage tuples and three distinct model plans over
+// the seven cases (v1: five tuples, two plans). The reviewed list is in the v2
+// golden.
+const EXPECTED_DISTINCT_STAGE_TUPLES_V2: usize = 6;
 
-// ---- Stable-v2 relations, pending #235. They fail on current routing. ----
+// ---- Stable-v2 relations (ADR 0054). They run under the default policy. ----
 
 fn risk_rank(risk: &str) -> u8 {
     match risk {
@@ -402,7 +504,6 @@ fn stage_named(report: &Value, name: &str) -> Value {
 }
 
 #[test]
-#[ignore = "pending stable-v2, see #235"]
 fn matrix_each_stage_varies_with_risk_or_states_why() {
     let dir = tempfile::tempdir().unwrap();
     let rows = by_risk(dir.path());
@@ -426,7 +527,6 @@ fn matrix_each_stage_varies_with_risk_or_states_why() {
 }
 
 #[test]
-#[ignore = "pending stable-v2, see #235"]
 fn matrix_low_risk_execute_is_cheaper_than_critical() {
     let dir = tempfile::tempdir().unwrap();
     let rows = by_risk(dir.path());
@@ -447,7 +547,6 @@ fn matrix_low_risk_execute_is_cheaper_than_critical() {
 }
 
 #[test]
-#[ignore = "pending stable-v2, see #235"]
 fn matrix_critical_uses_strongest_eligible_verifier() {
     let dir = tempfile::tempdir().unwrap();
     let rows = by_risk(dir.path());
@@ -483,7 +582,6 @@ fn matrix_critical_uses_strongest_eligible_verifier() {
 }
 
 #[test]
-#[ignore = "pending stable-v2, see #235"]
 fn matrix_effort_never_decreases_with_risk() {
     let dir = tempfile::tempdir().unwrap();
     let rows = by_risk(dir.path());

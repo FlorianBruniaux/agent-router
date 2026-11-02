@@ -177,7 +177,9 @@ fn nominal_task_gets_a_recommendation_and_a_manual_action_per_phase() {
         [
             ("gpt-5.6-sol".into(), "high".into()),
             ("gpt-5.6-terra".into(), "medium".into()),
-            ("gpt-5.6-terra".into(), "high".into()),
+            // stable-v2 efforts: a medium-risk implement task verifies at medium
+            // (stable-v1 asked for high for every task).
+            ("gpt-5.6-terra".into(), "medium".into()),
         ]
     );
     let action = &report["next_manual_action"];
@@ -684,11 +686,15 @@ fn writes_only_the_explicit_private_directory_and_never_the_target_repository() 
     );
     let request: Value =
         serde_json::from_slice(&fs::read(advice.join("route-request.json")).unwrap()).unwrap();
-    // The saved request replays through the existing `route` command.
+    // The saved request replays through the existing `route` command, under the
+    // policy named by the saved decision (ADR 0054 amends ADR 0051 here).
+    let policy = report["decision"]["policy_version"].as_str().unwrap();
+    assert_eq!(policy, "stable-v2");
     let replay = command()
         .arg("route")
         .arg("--request")
         .arg(advice.join("route-request.json"))
+        .args(["--policy", policy])
         .arg("--catalog")
         .arg(catalog())
         .args(["--now", NOW, "--json"])
@@ -1035,21 +1041,61 @@ fn replay_bytes(
     snapshot: Option<&Path>,
 ) -> (Vec<u8>, Vec<u8>) {
     let _ = dir;
+    let saved = fs::read(advice.join("decision.json")).unwrap();
+    let decision: Value = serde_json::from_slice(&saved).unwrap();
+    let policy = decision["policy_version"].as_str().unwrap();
     let mut replay = command();
     replay
         .arg("route")
         .arg("--request")
         .arg(advice.join("route-request.json"))
+        .args(["--policy", policy])
         .arg("--catalog")
         .arg(catalog);
     if let Some(snapshot) = snapshot {
         replay.arg("--host-snapshot").arg(snapshot);
     }
     let output = replay.args(["--now", NOW, "--json"]).output().unwrap();
-    (
-        fs::read(advice.join("decision.json")).unwrap(),
-        output.stdout,
+    (saved, output.stdout)
+}
+
+#[test]
+fn saved_stable_v1_decision_replays_through_route_by_default() {
+    let dir = tempfile::tempdir().unwrap();
+    let task = write(&dir.path().join("task.json"), &task(json!(["tools"])));
+    let host = write(
+        &dir.path().join("host.json"),
+        &declared_host(&["gpt-5.6-sol", "gpt-5.6-terra"], json!(["tools"])),
+    );
+    let advice = dir.path().join("advice");
+    advise(
+        dir.path(),
+        &task,
+        &catalog(),
+        &[
+            os("--host"),
+            host.as_os_str(),
+            os("--policy"),
+            os("stable-v1"),
+            os("--output-directory"),
+            advice.as_os_str(),
+        ],
     )
+    .assert()
+    .code(0);
+    let saved = fs::read(advice.join("decision.json")).unwrap();
+    assert!(String::from_utf8_lossy(&saved).contains("\"policy_version\": \"stable-v1\""));
+    let replayed = command()
+        .arg("route")
+        .arg("--request")
+        .arg(advice.join("route-request.json"))
+        .arg("--catalog")
+        .arg(catalog())
+        .args(["--now", NOW, "--json"])
+        .output()
+        .unwrap()
+        .stdout;
+    assert_eq!(saved, replayed);
 }
 
 #[test]

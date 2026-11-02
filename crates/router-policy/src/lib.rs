@@ -12,6 +12,7 @@ mod review_separation;
 mod route;
 mod score;
 mod signed_phases;
+mod stable_v2;
 
 pub use asset_phases::{PhaseAssetInputs, PhaseExecutionScope, asset_authority_scope_digest};
 pub use constraint::{
@@ -34,5 +35,6 @@ pub use review_separation::{
     CandidateProviders, PairSeparation, ReviewSeparation, ReviewSeparationError,
     ReviewSeparationVerdict, candidate_providers, distinct_provider_pairs,
 };
-pub use route::{PolicyConfig, RouteError, Router};
+pub use route::{PolicyConfig, RouteError, Router, ScoredDecision};
 pub use signed_phases::SignedPhaseInputs;
+pub use stable_v2::{AdvisoryScoring, EffortProvenance, StageScoring};
