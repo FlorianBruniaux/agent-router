@@ -1,0 +1,21 @@
+crates/router-runtime/tests/finite_client.rs
+  s_c3158f009d7319::t_c1c549939a2f06 203-217,220-232
+crates/router-runtime/tests/runtime/finite_client_binding.rs
+  s_c3158f009d7319::t_02339d603d9058 357-369,407-419
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2286d61372f3501361c0f255743d4a9a4d514c16",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
