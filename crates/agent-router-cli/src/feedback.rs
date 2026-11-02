@@ -37,6 +37,18 @@ fn error(error: FeedbackError) -> CliError {
         FeedbackError::Evaluation(_) => "feedback.evaluation",
     })
 }
+/// The library requires an absolute store path; a relative one is resolved
+/// against the working directory here, at the CLI boundary only.
+fn open_store(path: &Path) -> Result<FeedbackStore, CliError> {
+    let path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|_| CliError::Product("feedback.storage_io"))?
+            .join(path)
+    };
+    FeedbackStore::open(&path).map_err(error)
+}
 pub(crate) enum ReportPricing {
     Legacy(router_eval::PricingTable),
     Qualified(router_eval::QualifiedPricingTable),
@@ -78,7 +90,7 @@ pub(crate) fn feedback(
         return Err(CliError::JsonOutputRequired);
     }
     let now = inspect::current_time(now)?;
-    let store = FeedbackStore::open(path).map_err(error)?;
+    let store = open_store(path)?;
     match command {
         FeedbackCommand::Consent => {
             json_output(&store.consent().map_err(error)?, ExitCode::SUCCESS)
@@ -212,7 +224,7 @@ pub(crate) fn policy(
             ExitCode::SUCCESS,
         );
     }
-    let store = FeedbackStore::open(path).map_err(error)?;
+    let store = open_store(path)?;
     match command {
         PolicyCommand::Baseline { policy } => json_output(
             &store
