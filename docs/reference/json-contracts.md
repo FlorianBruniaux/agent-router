@@ -193,6 +193,21 @@ refusals use `feedback.invalid`, `feedback.consent_required` and the usual
 request errors (`request.too_large` above 1 MiB). `FeedbackExport` lists them in `advisory_outcomes`,
 omitted when empty so an export without outcomes keeps its `content_hash`.
 
+`advise --compare-policies` prints and, with `--output-directory`, saves
+`compare.json` (version 1, `mode` `advisory_comparison`, `executed` false):
+`request_hash` (SHA-256, domain `agent-router.advise.request.v1`, over the route
+request and the observation hash that binds it, equal for every arm), `arms`
+(`policy`, `status`, `decision_id`, `directory`, in order `stable-v1`,
+`stable-v2`), `stages` (`stage`, per-arm `policy`, `model`, `effort`, and
+`differs`) and `output_directory`. Each `directory` holds a complete `advise`
+export. `feedback advisory-record --policy <arm>` reads `compare.json`, refuses
+a schema, `mode` or `executed` it does not know, takes only an arm name listed in
+the file, refuses a `directory` that is not one plain name, and refuses an arm
+whose `decision_id` differs from the `advice.json` it names. Product errors added:
+`advisory.outcome.policy_required`, `advisory.outcome.policy_unknown` and
+`advisory.outcome.policy_unexpected` (`--policy` on a single advice). The record
+shape and the store schema are unchanged: no `request_hash` is stored.
+
 `feedback advisory-report` prints a report (`schema_version` 1, hash domain
 `advisory-outcome-report-v1`) with `generated_at_unix_seconds`,
 `outcome_set_hash`, `decisions` (one per `decision_id`, its latest attempt), `records` (all retained attempts), `overall` and `task_kinds`. `overall` and each

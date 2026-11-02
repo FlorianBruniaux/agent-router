@@ -19,6 +19,7 @@ use router_types::{
 };
 use serde::Serialize;
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::{Path, PathBuf},
@@ -94,6 +95,11 @@ pub(crate) struct AdviseArgs {
     /// Scoring policy: stable-v2 (default, risk- and kind-aware) or stable-v1 (frozen).
     #[arg(long, value_enum, default_value = "stable-v2")]
     policy: ScoringPolicy,
+    /// Decide the same request under every compiled policy and print them side by
+    /// side. Each decision keeps its own id and, with `--output-directory`, its own
+    /// subdirectory. Nothing is run.
+    #[arg(long, conflicts_with = "policy")]
+    compare_policies: bool,
     /// Host observation from `inspect`; its models and efforts are discovered.
     #[arg(long, conflicts_with = "host")]
     host_snapshot: Option<PathBuf>,
@@ -158,7 +164,7 @@ enum Provenance {
     Defaulted,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 struct Fact {
     subject: String,
     value: Value,
@@ -1089,58 +1095,297 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
             .collect(),
         capability_knowledge: knowledge.clone(),
     };
-    let router = args.policy.router();
-    // A declaration is not snapshot evidence: only an unmodified observation
-    // binds its hash into the decision identity, exactly as `route` does.
-    let scored = match &source {
-        HostSource::Observed(snapshot) if declared.is_empty() => {
-            router.route_scored_with_snapshot_hash(&request, &catalog, snapshot.hash())
-        }
-        _ => router.route_scored(&request, &catalog),
-    }
-    .map_err(|error| {
-        if error.is_invalid_request() {
-            CliError::RequestInvalid
-        } else {
-            CliError::Internal
-        }
-    })?;
-
-    let (decision, scoring) = (scored.decision, scored.scoring);
-    let (status, exit) = match decision.decision {
-        RouteDecision::Selected { .. } => ("recommended", ExitCode::SUCCESS),
-        RouteDecision::NoRoute { .. } => ("no_recommendation", ExitCode::from(3)),
-    };
-    let mut facts = Facts {
+    let context = Decide {
+        input: &input,
+        task: &task,
+        defaulted: &defaulted_facts,
+        requested: &requested,
+        catalog: &catalog,
+        request: &request,
         host: &host,
-        source: &source,
         knowledge: &knowledge,
         declared: &declared,
-        catalog: &catalog,
+        source: &source,
         now,
         max_age,
-    }
-    .build()?;
-    // Defaulted task facts follow the task row, before any host fact.
-    facts.splice(1..1, defaulted_facts);
-    let mut report = Report {
-        schema_version: 1,
-        mode: "advisory",
-        executed: false,
-        status,
-        questions: vec![],
-        mapping: mapping(&input, &task)?,
-        facts,
-        skills: skill_rows(&requested, &catalog, &request, &decision)?,
-        next_manual_action: next_action(&host, &catalog, &declared, &request, &decision)?,
-        decision: Some(decision),
-        scoring,
-        output_directory: None,
     };
+    if args.compare_policies {
+        return compare(
+            &context,
+            args.output_directory.as_deref(),
+            risk_context.as_ref(),
+            json,
+        );
+    }
+    let (mut report, exit) = context.decide(args.policy)?;
     if let Some(path) = &args.output_directory {
         publish(path, &input, risk_context.as_ref(), &request, &mut report)?;
     }
     output(&report, json, exit)
+}
+
+/// Everything one policy needs to decide the request, shared by every policy of
+/// a comparison so that all of them read the same inputs.
+struct Decide<'a> {
+    input: &'a TaskInput,
+    task: &'a NormalizedTask,
+    defaulted: &'a [Fact],
+    requested: &'a BTreeSet<SkillId>,
+    catalog: &'a Catalog,
+    request: &'a RouteRequest,
+    host: &'a HostSnapshot,
+    knowledge: &'a BTreeMap<Capability, CapabilitySupport>,
+    declared: &'a BTreeSet<Capability>,
+    source: &'a HostSource,
+    now: u64,
+    max_age: u64,
+}
+
+impl Decide<'_> {
+    fn decide(&self, policy: ScoringPolicy) -> Result<(Report, ExitCode), CliError> {
+        let router = policy.router();
+        // A declaration is not snapshot evidence: only an unmodified observation
+        // binds its hash into the decision identity, exactly as `route` does.
+        let scored = match self.source {
+            HostSource::Observed(snapshot) if self.declared.is_empty() => {
+                router.route_scored_with_snapshot_hash(self.request, self.catalog, snapshot.hash())
+            }
+            _ => router.route_scored(self.request, self.catalog),
+        }
+        .map_err(|error| {
+            if error.is_invalid_request() {
+                CliError::RequestInvalid
+            } else {
+                CliError::Internal
+            }
+        })?;
+
+        let (decision, scoring) = (scored.decision, scored.scoring);
+        let (status, exit) = match decision.decision {
+            RouteDecision::Selected { .. } => ("recommended", ExitCode::SUCCESS),
+            RouteDecision::NoRoute { .. } => ("no_recommendation", ExitCode::from(3)),
+        };
+        let mut facts = Facts {
+            host: self.host,
+            source: self.source,
+            knowledge: self.knowledge,
+            declared: self.declared,
+            catalog: self.catalog,
+            now: self.now,
+            max_age: self.max_age,
+        }
+        .build()?;
+        // Defaulted task facts follow the task row, before any host fact.
+        facts.splice(1..1, self.defaulted.iter().cloned());
+        let report = Report {
+            schema_version: 1,
+            mode: "advisory",
+            executed: false,
+            status,
+            questions: vec![],
+            mapping: mapping(self.input, self.task)?,
+            facts,
+            skills: skill_rows(self.requested, self.catalog, self.request, &decision)?,
+            next_manual_action: next_action(
+                self.host,
+                self.catalog,
+                self.declared,
+                self.request,
+                &decision,
+            )?,
+            decision: Some(decision),
+            scoring,
+            output_directory: None,
+        };
+        Ok((report, exit))
+    }
+
+    /// SHA-256 over the route request and the observation hash that binds it,
+    /// shared by every decision of a comparison. Length-prefixed components.
+    fn request_hash(&self) -> Result<String, CliError> {
+        let request = serde_json::to_vec(self.request).map_err(|_| CliError::Internal)?;
+        let snapshot = match self.source {
+            HostSource::Observed(snapshot) if self.declared.is_empty() => snapshot.hash(),
+            _ => "",
+        };
+        let mut hasher = Sha256::new();
+        for component in [
+            b"agent-router.advise.request.v1".as_slice(),
+            &request,
+            snapshot.as_bytes(),
+        ] {
+            hasher.update((component.len() as u64).to_be_bytes());
+            hasher.update(component);
+        }
+        Ok(format!("{:x}", hasher.finalize()))
+    }
+}
+
+/// Completion marker of a saved comparison, published after every decision.
+const COMPARISON_MARKER: &str = "compare.json";
+
+#[derive(Serialize)]
+struct ComparisonArm {
+    policy: &'static str,
+    status: &'static str,
+    decision_id: String,
+    /// Subdirectory of the saved decision; absent when nothing was saved.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    directory: Option<&'static str>,
+}
+
+#[derive(Serialize)]
+struct ComparisonChoice {
+    policy: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    model: Option<ModelId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    effort: Option<Value>,
+}
+
+#[derive(Serialize)]
+struct ComparisonStage {
+    stage: Value,
+    arms: Vec<ComparisonChoice>,
+    differs: bool,
+}
+
+#[derive(Serialize)]
+struct Comparison {
+    schema_version: u32,
+    mode: &'static str,
+    executed: bool,
+    request_hash: String,
+    arms: Vec<ComparisonArm>,
+    stages: Vec<ComparisonStage>,
+    output_directory: Option<PathBuf>,
+}
+
+fn compare(
+    context: &Decide<'_>,
+    output_directory: Option<&Path>,
+    risk_context: Option<&TaskRiskContext>,
+    json: bool,
+) -> Result<Outcome, CliError> {
+    let mut reports = Vec::new();
+    let mut all_recommended = true;
+    for policy in ScoringPolicy::ALL {
+        let (report, exit) = context.decide(policy)?;
+        all_recommended &= exit == ExitCode::SUCCESS;
+        reports.push((policy, report));
+    }
+    let mut stages: Vec<ComparisonStage> = Vec::new();
+    for kind in [StageKind::Plan, StageKind::Execute, StageKind::Verify] {
+        let mut arms = Vec::new();
+        for (policy, report) in &reports {
+            let stage = report
+                .decision
+                .as_ref()
+                .and_then(DecisionEnvelope::selected_plan)
+                .and_then(|plan| plan.stages.iter().find(|stage| stage.kind == kind));
+            arms.push(ComparisonChoice {
+                policy: policy.name(),
+                model: stage.map(|stage| stage.model.clone()),
+                effort: stage.map(|stage| to_value(&stage.effort)).transpose()?,
+            });
+        }
+        let differs = arms
+            .windows(2)
+            .any(|pair| pair[0].model != pair[1].model || pair[0].effort != pair[1].effort);
+        stages.push(ComparisonStage {
+            stage: to_value(&kind)?,
+            arms,
+            differs,
+        });
+    }
+    let mut comparison = Comparison {
+        schema_version: 1,
+        mode: "advisory_comparison",
+        executed: false,
+        request_hash: context.request_hash()?,
+        arms: reports
+            .iter()
+            .map(|(policy, report)| {
+                Ok(ComparisonArm {
+                    policy: policy.name(),
+                    status: report.status,
+                    decision_id: report
+                        .decision
+                        .as_ref()
+                        .map(|decision| decision.decision_id.clone())
+                        .ok_or(CliError::Internal)?,
+                    directory: output_directory.map(|_| policy.name()),
+                })
+            })
+            .collect::<Result<_, CliError>>()?,
+        stages,
+        output_directory: None,
+    };
+    if let Some(path) = output_directory {
+        publish_comparison(path, context, risk_context, &mut reports, &mut comparison)?;
+    }
+    let exit = if all_recommended {
+        ExitCode::SUCCESS
+    } else {
+        ExitCode::from(3)
+    };
+    if json {
+        return product::json_output(&comparison, exit);
+    }
+    Ok(Outcome {
+        output: comparison_human(&comparison)?,
+        exit_code: exit,
+    })
+}
+
+/// One line per stage, then where each decision was saved. The next manual
+/// action is always the last section.
+fn comparison_human(comparison: &Comparison) -> Result<String, CliError> {
+    let mut lines = vec![
+        "Advisory route comparison: nothing was executed".to_owned(),
+        format!("Request hash: {}", comparison.request_hash),
+    ];
+    for arm in &comparison.arms {
+        lines.push(format!(
+            "Policy {} [{}]: decision {}",
+            arm.policy, arm.status, arm.decision_id
+        ));
+    }
+    lines.push("Stages:".into());
+    for stage in &comparison.stages {
+        let cells: Vec<_> = stage
+            .arms
+            .iter()
+            .map(|arm| match (&arm.model, &arm.effort) {
+                (Some(model), Some(effort)) => format!(
+                    "{} {} {}",
+                    arm.policy,
+                    escaped(model.as_str()),
+                    escaped(&plain(effort))
+                ),
+                _ => format!("{} none", arm.policy),
+            })
+            .collect();
+        lines.push(format!(
+            "  {}: {} | {}",
+            plain(&stage.stage),
+            cells.join(" | "),
+            if stage.differs { "differs" } else { "same" }
+        ));
+    }
+    if let Some(path) = &comparison.output_directory {
+        lines.push(format!(
+            "Saved to: {}",
+            escaped(&path.display().to_string())
+        ));
+    }
+    lines.push("Next manual action:".into());
+    lines.push(
+        "  Pick a plan and run it yourself. Then record which decision you followed with \
+         `feedback advisory-record --advice <saved directory> --policy <name>`."
+            .into(),
+    );
+    Ok(format!("{}\n", lines.join("\n")))
 }
 
 fn output(report: &Report, json: bool, exit_code: ExitCode) -> Result<Outcome, CliError> {
@@ -1292,19 +1537,19 @@ fn human(report: &Report) -> Result<String, CliError> {
     Ok(format!("{}\n", lines.join("\n")))
 }
 
-/// `advice.json` is published last as the completion marker. It records the
-/// same `output_directory` as the printed report.
 #[cfg(unix)]
-fn publish(
-    path: &Path,
+type Documents = Vec<(&'static str, Vec<u8>)>;
+
+/// The files of one saved decision. `advice.json` comes last as the completion
+/// marker and records the same `output_directory` as the printed report.
+#[cfg(unix)]
+fn documents(
     input: &TaskInput,
     risk_context: Option<&TaskRiskContext>,
     request: &RouteRequest,
-    report: &mut Report,
-) -> Result<(), CliError> {
+    report: &Report,
+) -> Result<Documents, CliError> {
     let fail = || error("advisory.output");
-    let destination = crate::private_output::destination(path, "advisory.output")?;
-    report.output_directory = Some(destination.clone());
     let decision = report.decision.as_ref().ok_or_else(fail)?;
     let mut documents = vec![(
         "task.json",
@@ -1325,13 +1570,75 @@ fn publish(
     documents.push(("decision.json", decision.into_bytes()));
     documents.push((
         "advice.json",
-        serde_json::to_vec_pretty(&*report).map_err(|_| fail())?,
+        serde_json::to_vec_pretty(report).map_err(|_| fail())?,
     ));
+    Ok(documents)
+}
+
+/// Publish one decision into a new private directory.
+#[cfg(unix)]
+fn publish(
+    path: &Path,
+    input: &TaskInput,
+    risk_context: Option<&TaskRiskContext>,
+    request: &RouteRequest,
+    report: &mut Report,
+) -> Result<(), CliError> {
+    let fail = || error("advisory.output");
+    let destination = crate::private_output::destination(path, "advisory.output")?;
+    report.output_directory = Some(destination.clone());
+    let documents = documents(input, risk_context, request, report)?;
     let published = crate::private_output::publish(path, documents, "advisory.output")?;
     if published != destination {
         return Err(fail());
     }
     Ok(())
+}
+
+/// Each decision is published like a single `advise` export, in its own
+/// subdirectory named after its policy. `compare.json` is published last as the
+/// completion marker of the whole tree.
+#[cfg(unix)]
+fn publish_comparison(
+    path: &Path,
+    context: &Decide<'_>,
+    risk_context: Option<&TaskRiskContext>,
+    reports: &mut [(ScoringPolicy, Report)],
+    comparison: &mut Comparison,
+) -> Result<(), CliError> {
+    let fail = || error("advisory.output");
+    let destination = crate::private_output::destination(path, "advisory.output")?;
+    comparison.output_directory = Some(destination.clone());
+    let mut children = Vec::new();
+    for (policy, report) in reports.iter_mut() {
+        let child = destination.join(policy.name());
+        report.output_directory = Some(child);
+        children.push((
+            policy.name().to_owned(),
+            documents(context.input, risk_context, context.request, report)?,
+        ));
+    }
+    let marker = vec![(
+        COMPARISON_MARKER,
+        serde_json::to_vec_pretty(&*comparison).map_err(|_| fail())?,
+    )];
+    let published =
+        crate::private_output::publish_with_children(path, children, marker, "advisory.output")?;
+    if published != destination {
+        return Err(fail());
+    }
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn publish_comparison(
+    _: &Path,
+    _: &Decide<'_>,
+    _: Option<&TaskRiskContext>,
+    _: &mut [(ScoringPolicy, Report)],
+    _: &mut Comparison,
+) -> Result<(), CliError> {
+    Err(error("advisory.output.unsupported"))
 }
 
 #[cfg(not(unix))]
