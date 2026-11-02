@@ -1,11 +1,11 @@
 ---
 adr: "0051"
 title: Advisory route for one normalized task
-status: implemented
+status: amended
 created: 2026-10-28
-last_modified: 2026-10-31
+last_modified: 2026-11-02
 scope: "The `advise` command and its version 1 report. Advisory only: no execution, permission, budget admission or capability proof."
-amended_by: []
+amended_by: ["0054"]
 supersedes: []
 superseded_by: []
 related: []
