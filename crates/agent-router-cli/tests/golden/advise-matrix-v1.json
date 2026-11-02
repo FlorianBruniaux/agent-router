@@ -1,0 +1,590 @@
+[
+  {
+    "case": "explore-low",
+    "kind": "explore",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "implement-low",
+    "kind": "implement",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "implement-medium",
+    "kind": "implement",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "review-medium",
+    "kind": "review",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "architecture-high",
+    "kind": "architecture",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "security-high",
+    "kind": "security",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "migration-critical",
+    "kind": "migration",
+    "risk": "critical",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-capabilities-unknown"
+  },
+  {
+    "case": "explore-low",
+    "kind": "explore",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "implement-low",
+    "kind": "implement",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "implement-medium",
+    "kind": "implement",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "review-medium",
+    "kind": "review",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "architecture-high",
+    "kind": "architecture",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "security-high",
+    "kind": "security",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-sol",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "migration-critical",
+    "kind": "migration",
+    "risk": "critical",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "gpt-6.1-terra",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "codex-v3-declared-tools"
+  },
+  {
+    "case": "explore-low",
+    "kind": "explore",
+    "risk": "low",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "implement-low",
+    "kind": "implement",
+    "risk": "low",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "implement-medium",
+    "kind": "implement",
+    "risk": "medium",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "review-medium",
+    "kind": "review",
+    "risk": "medium",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "architecture-high",
+    "kind": "architecture",
+    "risk": "high",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "security-high",
+    "kind": "security",
+    "risk": "high",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "migration-critical",
+    "kind": "migration",
+    "risk": "critical",
+    "selection_basis": "unrated_tie_break",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-haiku-4-5-20251001",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v1-flat-declared-tools"
+  }
+]
