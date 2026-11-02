@@ -2,32 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Inline `advise` entry and one-line `advisory-record`, through the binary.
 //! Nothing is executed and no provider is contacted.
+#[path = "support/advisory.rs"]
+mod advisory;
+use advisory::{command, root, write};
 use assert_cmd::Command;
 use serde_json::{Value, json};
 use std::{
     fs,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 const NOW: &str = "1000";
 const OBJECTIVE: &str = "Add a dry-run flag to the backup script";
 const ACCEPTANCE: &str = "The operator judges the result by hand.";
 
-fn command() -> Command {
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
-    command.timeout(Duration::from_secs(20));
-    command
-}
-fn root(path: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(path)
-}
-fn write(path: &Path, value: &Value) -> PathBuf {
-    fs::write(path, serde_json::to_vec_pretty(value).unwrap()).unwrap();
-    path.to_owned()
-}
 fn parsed(output: &[u8]) -> Value {
     serde_json::from_slice(output).unwrap_or_else(|error| panic!("one JSON result: {error}"))
 }

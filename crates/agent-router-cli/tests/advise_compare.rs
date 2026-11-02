@@ -3,30 +3,18 @@
 //! `advise --compare-policies`: both policies decide the same request, each
 //! decision is saved under its own name, and `feedback advisory-record` binds an
 //! outcome to the decision the operator followed. Nothing is executed.
+#[path = "support/advisory.rs"]
+mod advisory;
+use advisory::{command, error_line, os, root, write};
 use assert_cmd::Command;
 use serde_json::{Value, json};
 use std::{
     fs,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 const NOW: &str = "1000";
 
-fn command() -> Command {
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
-    command.timeout(Duration::from_secs(20));
-    command
-}
-fn root(path: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(path)
-}
-fn write(path: &Path, value: &Value) -> PathBuf {
-    fs::write(path, serde_json::to_vec_pretty(value).unwrap()).unwrap();
-    path.to_owned()
-}
 fn parsed(bytes: &[u8]) -> Value {
     serde_json::from_slice(bytes).unwrap_or_else(|error| panic!("expected one JSON: {error}"))
 }
@@ -90,9 +78,6 @@ fn advise(fixture: &Fixture, extra: &[&std::ffi::OsStr]) -> Command {
         .args(["--now", NOW])
         .args(extra);
     cmd
-}
-fn os(value: &str) -> &std::ffi::OsStr {
-    std::ffi::OsStr::new(value)
 }
 
 fn compare_to(dir: &Path, name: &str) -> (PathBuf, Value) {
@@ -301,9 +286,6 @@ fn consent(dir: &Path) {
         .args(["--now", "900", "--json"])
         .assert()
         .success();
-}
-fn error_line(code: &str) -> String {
-    format!("{{\"schema_version\":1,\"error\":\"{code}\"}}\n")
 }
 
 #[test]
