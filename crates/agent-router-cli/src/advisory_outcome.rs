@@ -5,7 +5,7 @@
 //! syntax-checked identifiers it names and the decision digest are stored; no task
 //! text, no path and no comment.
 use crate::{CliError, phases::read_json};
-use clap::{Args, ValueEnum};
+use clap::{ArgGroup, Args, ValueEnum};
 use router_types::{
     AdvisoryAdherence, AdvisoryBinding, AdvisoryMeasurements, AdvisoryOutcomeInput, AdvisoryPhase,
     AdvisoryResult, AdvisorySelectionBasis, AdvisoryUsed, DecisionEnvelope, EffortLevel, ModelId,
@@ -33,13 +33,24 @@ pub enum ResultArg {
 }
 
 #[derive(Args)]
+#[command(group(
+    ArgGroup::new("adherence_choice")
+        .required(true)
+        .args(["adherence", "followed", "overridden"])
+))]
 pub struct AdvisoryRecordArgs {
-    /// `advice.json` that `advise --output-directory` saved.
+    /// `advice.json` that `advise --output-directory` saved, or that directory.
     #[arg(long)]
     pub advice: PathBuf,
     /// Whether you followed the recommendation.
     #[arg(long, value_enum)]
-    adherence: AdherenceArg,
+    adherence: Option<AdherenceArg>,
+    /// Shorthand for `--adherence followed`.
+    #[arg(long)]
+    followed: bool,
+    /// Shorthand for `--adherence overridden`.
+    #[arg(long)]
+    overridden: bool,
     /// How the work ended, in your judgment.
     #[arg(long, value_enum)]
     result: ResultArg,
@@ -161,10 +172,23 @@ pub(crate) fn input(
     args: AdvisoryRecordArgs,
     now: u64,
 ) -> std::result::Result<AdvisoryOutcomeInput, CliError> {
-    let advice: SavedAdvice = read_json(&args.advice, MAX_ADVICE)?;
+    // The advice directory that `advise --output-directory` created is accepted
+    // in place of its `advice.json` marker.
+    let advice_path = if args.advice.is_dir() {
+        args.advice.join("advice.json")
+    } else {
+        args.advice.clone()
+    };
+    let advice: SavedAdvice = read_json(&advice_path, MAX_ADVICE)?;
     let binding = binding(&advice)?;
     let invalid_flag = || invalid("feedback.invalid");
-    let used = match args.adherence {
+    let adherence = match (args.adherence, args.followed, args.overridden) {
+        (Some(value), false, false) => value,
+        (None, true, false) => AdherenceArg::Followed,
+        (None, false, true) => AdherenceArg::Overridden,
+        _ => return Err(invalid_flag()),
+    };
+    let used = match adherence {
         AdherenceArg::Followed => {
             if args.used_model.is_some()
                 || args.used_effort.is_some()
@@ -195,7 +219,7 @@ pub(crate) fn input(
         schema_version: 1,
         observed_at_unix_seconds: now,
         binding,
-        adherence: match args.adherence {
+        adherence: match adherence {
             AdherenceArg::Followed => AdvisoryAdherence::Followed,
             AdherenceArg::Overridden => AdvisoryAdherence::Overridden,
         },
