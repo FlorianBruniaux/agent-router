@@ -200,10 +200,36 @@ fn validates_exact_preparation_without_launching_or_releasing_listener() {
     let (s, v, _) = f.proof(&a);
     let guard = a.validate(&f.run, &f.host, &s, &v, 101).unwrap();
     assert_eq!(guard.broker_endpoint(), endpoint);
-    assert!(TcpListener::bind(endpoint.strip_prefix("tcp://").unwrap()).is_err());
+    let address = endpoint.strip_prefix("tcp://").unwrap();
+    assert!(TcpListener::bind(address).is_err());
+    // A queued connection is reset only once every handle to the listener is
+    // closed, so it proves release without rebinding a shareable ephemeral port.
+    let mut queued = std::net::TcpStream::connect(address).unwrap();
+    queued
+        .set_read_timeout(Some(std::time::Duration::from_millis(50)))
+        .unwrap();
+    let mut byte = [0u8; 1];
+    assert!(matches!(
+        std::io::Read::read(&mut queued, &mut byte)
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut
+    ));
     let _ = guard;
     drop(a);
-    assert!(TcpListener::bind(endpoint.strip_prefix("tcp://").unwrap()).is_ok());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let released = loop {
+        match std::io::Read::read(&mut queued, &mut byte) {
+            Ok(0) => break true,
+            Ok(_) => break false,
+            Err(e) if e.kind() == std::io::ErrorKind::ConnectionReset => break true,
+            Err(_) if std::time::Instant::now() < deadline => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(_) => break false,
+        }
+    };
+    assert!(released);
 }
 #[test]
 fn changed_stdin_is_refused_even_when_serialized_prepared_preview_is_equal() {
