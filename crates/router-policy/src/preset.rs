@@ -15,6 +15,23 @@ use crate::{
 
 pub(crate) const PRESET_NAME: &str = "plan-execute-verify";
 
+/// Source of a skill candidate the operator named with `--skill`.
+pub const OPERATOR_DECLARED_SOURCE: &str = "operator-declared";
+/// `stable-v2` attaches at most this many skills to a stage (ADR 0054).
+pub const MAX_STAGE_SKILLS: usize = 2;
+/// `stable-v2` attaches a non-operator candidate only from this score (ADR 0054).
+pub const SKILL_FLOOR_MICROS: i64 = 300_000;
+
+/// How compatible skills become stage skills.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum SkillSelection {
+    /// `stable-v1`, frozen: every compatible candidate, ordered by id.
+    All,
+    /// `stable-v2`: operator rows first, then score descending, then id, above
+    /// the floor for non-operator rows, at most [`MAX_STAGE_SKILLS`].
+    Capped,
+}
+
 #[derive(Clone, Debug)]
 pub(crate) struct AttachedSkill {
     pub(crate) id: SkillId,
@@ -46,6 +63,7 @@ pub(crate) fn build_candidates(
     request: &RouteRequest,
     catalog: &Catalog,
     preferred_efforts: [EffortLevel; 3],
+    selection: SkillSelection,
 ) -> CandidateBuild {
     let engine = ConstraintEngine::default();
     let capabilities = capability_knowledge(request);
@@ -76,7 +94,7 @@ pub(crate) fn build_candidates(
                         model: model.clone(),
                         effort,
                         preferred_effort: preferred,
-                        skills: compatible_skills(request, catalog, model),
+                        skills: compatible_skills(request, catalog, model, selection),
                     });
                     break;
                 }
@@ -182,8 +200,10 @@ fn compatible_skills(
     request: &RouteRequest,
     catalog: &Catalog,
     model: &ModelSpec,
+    selection: SkillSelection,
 ) -> Vec<AttachedSkill> {
-    let mut compatible = BTreeMap::<SkillId, i64>::new();
+    // Per id: the best score and whether any row came from the operator.
+    let mut compatible = BTreeMap::<SkillId, (i64, bool)>::new();
     for candidate in &request.skill_candidates {
         let Some(skill) = catalog.skill(&candidate.skill) else {
             continue;
@@ -199,15 +219,34 @@ fn compatible_skills(
         {
             continue;
         }
+        let operator = candidate.source == OPERATOR_DECLARED_SOURCE;
         compatible
             .entry(candidate.skill.clone())
-            .and_modify(|score| *score = (*score).max(candidate.score_micros))
-            .or_insert(candidate.score_micros);
+            .and_modify(|(score, declared)| {
+                *score = (*score).max(candidate.score_micros);
+                *declared |= operator;
+            })
+            .or_insert((candidate.score_micros, operator));
     }
-    compatible
-        .into_iter()
-        .map(|(id, score_micros)| AttachedSkill { id, score_micros })
-        .collect()
+    match selection {
+        SkillSelection::All => compatible
+            .into_iter()
+            .map(|(id, (score_micros, _))| AttachedSkill { id, score_micros })
+            .collect(),
+        SkillSelection::Capped => {
+            let mut ranked = compatible
+                .into_iter()
+                .filter(|(_, (score, operator))| *operator || *score >= SKILL_FLOOR_MICROS)
+                .collect::<Vec<_>>();
+            // The map iterates by id, and the sort is stable: id breaks ties.
+            ranked.sort_by_key(|(_, (score, operator))| (!*operator, std::cmp::Reverse(*score)));
+            ranked
+                .into_iter()
+                .take(MAX_STAGE_SKILLS)
+                .map(|(id, (score_micros, _))| AttachedSkill { id, score_micros })
+                .collect()
+        }
+    }
 }
 
 fn preserve_non_eligible(

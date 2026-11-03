@@ -84,7 +84,8 @@ agent-router advise \
 ```
 
 Use `--host <file>` instead of `--host-snapshot` for a declared host. `--skill`
-names a candidate skill and can be repeated. Add `--json` for the complete
+names a candidate skill and can be repeated. `--skill-candidates <file>` reads
+skills named by an external router (see below). Add `--json` for the complete
 versioned report. Exit `0` means a recommendation, `3` means no recommendation
 or open questions, `2` means invalid input.
 
@@ -408,7 +409,50 @@ Nothing is dropped silently: every field appears in `mapping` with its handling.
 - `capability attest` records do not feed `advise`: an attestation keeps
   capability support `unknown` in the observation and is consumed only by
   phase routing with an explicit acceptance list.
-- There is no retrieval index option yet; skills come only from `--skill`.
+- Skills come from `--skill` and from `--skill-candidates`; there is no
+  retrieval index option in `advise`.
+
+## Skills declared by an external router
+
+`--skill-candidates <file>` takes a candidate document v1 (the BM25 candidate
+document in [JSON contracts](reference/json-contracts.md)), at most one file per
+run. It is declared input: the report labels every row `declared`, never
+verified, and records the SHA-256 of the file as a `declared` fact. The router
+executes nothing and reads no skill body ([ADR 0055](adr/0055-declared-external-skill-candidates.md)).
+
+Bounds, each refused with a named error and never truncated:
+
+- the document limits of the candidate document (1 MiB, unique ids, scores 0 to
+  1,000,000, unknown keys refused), with their `retrieval.*` codes;
+- at most 256 candidates, counting `--skill` ids (`advisory.skill_candidates.too_many`);
+- each skill id is 1 to 96 bytes of `[A-Za-z0-9._:-]` and starts with a letter or
+  digit (`advisory.skill_candidate.invalid_id`);
+- the document `source` is 1 to 64 bytes of `[a-z0-9._-]` and not
+  `operator-declared` (`advisory.skill_candidates.source_invalid`).
+
+In the saved `route-request.json` each file candidate has the source
+`external-declared:<source>`, and the candidates are ordered by skill id, so the
+file order does not change the `decision_id`. An id given by `--skill` keeps the
+`operator-declared` row; the file row is dropped from the request and reported
+as `operator_declared`. The saved request replays through `route` without the
+file.
+
+Under `stable-v2` a stage gets at most 2 skills, ranked `--skill` first, then
+score descending, then id, and a file candidate needs a score of at least
+300000. Skills are chosen after the plan, so they never change the models.
+Under `stable-v1` the frozen rules apply: no cap and no floor. Only trusted
+catalog skills attach. A candidate the catalog does not know is never attached:
+it is reported as `outside_catalog_suggested` (the two best at or above 300000,
+also named in the next manual action) or `outside_catalog`, and loading it is
+your decision, outside the router.
+
+Each file row has `id`, `status`, `source`, `score_micros`, `provenance`
+(`declared`) and `stages`. Statuses: `suggested`, `not_attached` (cut by the
+cap), `below_floor` (`stable-v2` only), `untrusted`, `incompatible_task_kind`,
+`capability_unknown`, `capability_not_supported`, `outside_catalog_suggested`,
+`outside_catalog` and `operator_declared`. A candidate that is not attached
+because of trust, task kind or capability keeps that status even when its score
+is under the floor.
 
 ## Saved files
 
