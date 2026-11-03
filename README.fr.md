@@ -300,6 +300,26 @@ et n’exécute rien. Suivez le
 [guide du routage consultatif](docs/advisory-route.fr.md), qui couvre aussi le
 cas où un support d’outils inconnu écarte tous les modèles.
 
+La politique par défaut, `stable-v2`, fixe la cible de qualité et l’effort de
+chaque phase selon le type de tâche et le risque ; `--policy stable-v1` garde
+l’ancien score. Une tâche peut se décrire en ligne, et son résultat
+s’enregistre en une commande de plus :
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk medium --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --output-directory advice
+agent-router feedback --store store --json advisory-record \
+  --advice advice --followed --result accepted-as-is
+```
+
+`--compare-policies` affiche côte à côte les plans `stable-v1` et `stable-v2`,
+`--skill-candidates` reprend les skills proposés par un routeur externe, et
+`feedback advisory-report` regroupe les résultats par version de politique et
+par risque, avec les essais appariés. L’enregistrement demande le consentement
+à la collecte (`feedback configure`).
+
 <details>
 <summary>Routage par phase et codes de sortie</summary>
 

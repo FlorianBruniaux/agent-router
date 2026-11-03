@@ -41,7 +41,7 @@ written in French.
 | [CLI output](cli-output.md) | Human and `--json` output, exit codes and error codes |
 | [Configuration formats](configuration-formats.md) | Strict JSON, TOML and YAML configuration layers |
 | [Guided task intake](task-guide.md) | Collect missing task facts without implied permissions |
-| [Advisory route](advisory-route.md) | Model, effort and skills advice or an explained refusal for one task; executes nothing |
+| [Advisory route](advisory-route.md) | Model, effort and skills advice or an explained refusal for one task; executes nothing. 2026-11-02: risk- and kind-aware `stable-v2` default, inline task entry, side-by-side policy comparison, declared skill candidates, outcome report by policy and risk with paired trials |
 
 ## Route and plan
 

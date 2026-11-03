@@ -291,6 +291,24 @@ ending with the next manual action for your host. It works with the Codex and
 Claude Code catalogs, is advisory only and executes nothing. Follow the [advisory route guide](docs/advisory-route.md),
 which also covers the case where unknown tool support blocks every model.
 
+The default `stable-v2` policy sets each phase's quality target and effort from
+task kind and risk; `--policy stable-v1` keeps the earlier scoring. A task can
+be stated inline, and the outcome recorded in one more command:
+
+```sh
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk medium --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/codex-core-v3.json --host-snapshot observation.json \
+  --output-directory advice
+agent-router feedback --store store --json advisory-record \
+  --advice advice --followed --result accepted-as-is
+```
+
+`--compare-policies` shows the `stable-v1` and `stable-v2` plans side by side,
+`--skill-candidates` takes skills named by an external router, and
+`feedback advisory-report` groups outcomes by policy version and risk, with
+paired trials. Recording needs collection consent (`feedback configure`).
+
 <details>
 <summary>Phase-specific routing and exit codes</summary>
 

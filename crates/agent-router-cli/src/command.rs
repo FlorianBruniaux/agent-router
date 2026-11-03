@@ -916,7 +916,7 @@ pub enum FeedbackCommand {
     },
     /// Record, after doing the task by hand, whether you followed a saved `advise` recommendation and how it went; requires collection consent.
     AdvisoryRecord(crate::advisory_outcome::AdvisoryRecordArgs),
-    /// Report followed versus overridden advisory recommendations per task kind, with sample sizes and UNKNOWN counts; requires collection consent.
+    /// Report followed versus overridden advisory recommendations per task kind, per policy version and risk, and per paired trial arm, with sample sizes and UNKNOWN counts; requires collection consent.
     AdvisoryReport,
     /// Export a real run as a sealed replay record, labelled from recorded facts.
     ReplayExport {
