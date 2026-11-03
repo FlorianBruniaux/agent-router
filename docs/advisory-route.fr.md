@@ -89,7 +89,9 @@ agent-router advise \
 ```
 
 Utilisez `--host <fichier>` à la place de `--host-snapshot` pour un host
-déclaré. `--skill` désigne une skill candidate et peut être répété. Ajoutez
+déclaré. `--skill` désigne une skill candidate et peut être répété.
+`--skill-candidates <fichier>` lit des skills nommées par un routeur externe
+(voir plus bas). Ajoutez
 `--json` pour le rapport versionné complet. Le code de sortie `0` signifie une
 recommandation, `3` aucune recommandation ou des questions ouvertes, `2` une
 entrée invalide.
@@ -435,8 +437,53 @@ traitement.
   attestation laisse le support de la capacité à `unknown` dans l'observation
   et n'est consommée que par le routage par phase avec une liste d'acceptation
   explicite.
-- Il n'existe pas encore d'option d'index de recherche ; les skills viennent
-  uniquement de `--skill`.
+- Les skills viennent de `--skill` et de `--skill-candidates` ; `advise` n'a
+  pas d'option d'index de recherche.
+
+## Skills déclarées par un routeur externe
+
+`--skill-candidates <fichier>` prend un document de candidats v1 (le « BM25
+candidate document » de [JSON contracts](reference/json-contracts.md)), un seul
+fichier par exécution. C'est une entrée déclarée : le rapport marque chaque ligne
+`declared`, jamais vérifiée, et consigne le SHA-256 du fichier comme fait
+`declared`. Le routeur n'exécute rien et ne lit aucun corps de skill
+([ADR 0055](adr/0055-declared-external-skill-candidates.md)).
+
+Bornes, chacune refusée avec une erreur nommée et jamais tronquée :
+
+- les limites du document de candidats (1 Mio, ids uniques, scores de 0 à
+  1 000 000, clés inconnues refusées), avec leurs codes `retrieval.*` ;
+- au plus 256 candidats, ids de `--skill` compris
+  (`advisory.skill_candidates.too_many`) ;
+- chaque id de skill fait 1 à 96 octets de `[A-Za-z0-9._:-]` et commence par une
+  lettre ou un chiffre (`advisory.skill_candidate.invalid_id`) ;
+- la `source` du document fait 1 à 64 octets de `[a-z0-9._-]` et n'est pas
+  `operator-declared` (`advisory.skill_candidates.source_invalid`).
+
+Dans `route-request.json`, chaque candidat du fichier a pour source
+`external-declared:<source>` et les candidats sont triés par id : l'ordre du
+fichier ne change pas le `decision_id`. Un id donné par `--skill` garde la ligne
+`operator-declared` ; la ligne du fichier sort de la requête et est rapportée
+`operator_declared`. La requête enregistrée se rejoue avec `route` sans le
+fichier.
+
+Sous `stable-v2`, une étape reçoit au plus 2 skills, classées `--skill` d'abord,
+puis score décroissant, puis id, et un candidat du fichier doit avoir un score
+d'au moins 300000. Les skills sont choisies après le plan : elles ne changent
+jamais les modèles. Sous `stable-v1`, les règles figées s'appliquent : ni
+plafond ni seuil. Seules les skills de confiance du catalogue s'attachent. Un
+candidat que le catalogue ne connaît pas n'est jamais attaché : il est rapporté
+`outside_catalog_suggested` (les deux meilleurs à 300000 ou plus, aussi nommés
+dans l'action manuelle suivante) ou `outside_catalog`, et le charger relève de
+vous, hors du routeur.
+
+Chaque ligne du fichier porte `id`, `status`, `source`, `score_micros`,
+`provenance` (`declared`) et `stages`. Statuts : `suggested`, `not_attached`
+(coupée par le plafond), `below_floor` (`stable-v2` seulement), `untrusted`,
+`incompatible_task_kind`, `capability_unknown`, `capability_not_supported`,
+`outside_catalog_suggested`, `outside_catalog` et `operator_declared`. Un
+candidat non attaché pour cause de confiance, de type de tâche ou de capacité
+garde ce statut même sous le seuil.
 
 ## Fichiers enregistrés
 

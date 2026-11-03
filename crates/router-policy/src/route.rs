@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 use crate::{
-    preset::{V1_EFFORTS, build_candidates},
+    preset::{SkillSelection, V1_EFFORTS, build_candidates},
     score::rank_plans,
     stable_v2::{AdvisoryScoring, POLICY_VERSION as STABLE_V2, preferred_effort, rank_plans_v2},
 };
@@ -148,7 +148,11 @@ impl Router {
             Scoring::V2 => [StageKind::Plan, StageKind::Execute, StageKind::Verify]
                 .map(|stage| preferred_effort(request.task.kind, request.task.risk, stage)),
         };
-        let mut build = build_candidates(request, catalog, efforts);
+        let selection = match self.config.scoring {
+            Scoring::V1 => SkillSelection::All,
+            Scoring::V2 => SkillSelection::Capped,
+        };
+        let mut build = build_candidates(request, catalog, efforts, selection);
         let (mut ranked, scoring) = match self.config.scoring {
             Scoring::V1 => (
                 rank_plans(

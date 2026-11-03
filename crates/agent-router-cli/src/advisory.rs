@@ -4,13 +4,15 @@
 //! effort and skills per phase, or explains why none is recommended. Nothing is
 //! executed, no host or provider is contacted and no authority is granted.
 use crate::{
-    CliError, Outcome, catalogs, command::ScoringPolicy, human::escaped, inspect,
-    phases::read_json, product, render,
+    CliError, Outcome, advisory_candidates::Declared as DeclaredCandidates, catalogs,
+    command::ScoringPolicy, human::escaped, inspect, phases::read_json, product, render,
 };
 use clap::Args;
 use router_adapter_api::{ALL_CAPABILITIES, MAX_SNAPSHOT_MODELS, ValidatedHostObservation};
 use router_catalog::Catalog;
-use router_policy::{AdvisoryScoring, EffortProvenance};
+use router_policy::{
+    AdvisoryScoring, EffortProvenance, OPERATOR_DECLARED_SOURCE, SKILL_FLOOR_MICROS,
+};
 use router_types::{
     Capability, CapabilitySupport, Clarification, DataSensitivity, DecisionEnvelope, HostSnapshot,
     ModelId, Mutation, NormalizedTask, RiskEnvironment, RiskLevel, RiskOperation,
@@ -31,7 +33,7 @@ const MAX_CONTEXT: usize = 64 * 1024;
 const MAX_HOST: usize = 256 * 1024;
 const MAX_SKILLS: usize = 64;
 /// Declared candidates carry no retrieval relevance; they only allow attachment.
-const SKILL_SOURCE: &str = "operator-declared";
+const SKILL_SOURCE: &str = OPERATOR_DECLARED_SOURCE;
 const NOT_ENFORCED: &str = "not_enforced_by_advisory_routing";
 
 #[derive(Args)]
@@ -112,6 +114,11 @@ pub(crate) struct AdviseArgs {
     /// Candidate skill identifier. Only compatible catalog skills are suggested.
     #[arg(long = "skill", value_name = "ID")]
     skills: Vec<String>,
+    /// Candidate skills declared by an external router, as a candidate document
+    /// v1 file. Declared, never verified: only trusted catalog skills attach and
+    /// the others are reported (ADR 0055).
+    #[arg(long = "skill-candidates", value_name = "FILE")]
+    skill_candidates: Option<PathBuf>,
     /// Maximum accepted host snapshot age, in seconds.
     #[arg(long, default_value_t = 86400)]
     snapshot_max_age_seconds: u64,
@@ -181,6 +188,14 @@ struct Fact {
 struct SkillRow {
     id: SkillId,
     status: &'static str,
+    /// Set on rows of `--skill-candidates` only: the request source, the
+    /// producer's score and `declared`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    source: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    score_micros: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provenance: Option<Provenance>,
     stages: Vec<Value>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     would_change: Vec<Change>,
@@ -412,6 +427,30 @@ fn skill_ids(values: &[String]) -> Result<BTreeSet<SkillId>, CliError> {
         .collect()
 }
 
+/// Operator rows and file rows, ordered by skill id then source so the same
+/// candidate set gives the same request bytes whatever the order in the file.
+fn merged_candidates(
+    requested: &BTreeSet<SkillId>,
+    declared: Option<&DeclaredCandidates>,
+) -> Vec<SkillCandidate> {
+    let mut candidates: Vec<_> = requested
+        .iter()
+        .map(|skill| SkillCandidate {
+            skill: skill.clone(),
+            source: SKILL_SOURCE.into(),
+            score_micros: 0,
+        })
+        .chain(
+            declared
+                .into_iter()
+                .flat_map(|declared| declared.request_candidates()),
+        )
+        .collect();
+    candidates
+        .sort_by(|left, right| (&left.skill, &left.source).cmp(&(&right.skill, &right.source)));
+    candidates
+}
+
 fn declared_host(path: &Path) -> Result<HostSnapshot, CliError> {
     let host: HostSnapshot = read_json(path, MAX_HOST)?;
     if !identifier(&host.id)
@@ -626,65 +665,133 @@ impl Facts<'_> {
 
 fn skill_rows(
     requested: &BTreeSet<SkillId>,
+    declared: Option<&DeclaredCandidates>,
+    policy: ScoringPolicy,
     catalog: &Catalog,
     request: &RouteRequest,
     decision: &DecisionEnvelope,
 ) -> Result<Vec<SkillRow>, CliError> {
-    requested
+    let attached = |id: &SkillId| -> Result<Vec<Value>, CliError> {
+        Ok(decision
+            .selected_plan()
+            .map(|plan| {
+                plan.stages
+                    .iter()
+                    .filter(|stage| stage.skills.contains(id))
+                    .map(|stage| label(&stage.kind).map(Value::String))
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .transpose()?
+            .unwrap_or_default())
+    };
+    let mut rows = requested
         .iter()
         .map(|id| {
-            let stages = decision
-                .selected_plan()
-                .map(|plan| {
-                    plan.stages
-                        .iter()
-                        .filter(|stage| stage.skills.contains(id))
-                        .map(|stage| label(&stage.kind).map(Value::String))
-                        .collect::<Result<Vec<_>, _>>()
-                })
-                .transpose()?
-                .unwrap_or_default();
-            let blocked = catalog
-                .skill(id)
-                .and_then(|skill| blocking_capability(&skill.required_capabilities, request));
-            let status = match catalog.skill(id) {
-                None => "absent_from_catalog",
-                Some(skill)
-                    if !matches!(
-                        skill.trust,
-                        SkillTrust::Builtin
-                            | SkillTrust::TrustedLocal
-                            | SkillTrust::VerifiedThirdParty
-                    ) =>
-                {
-                    "untrusted"
-                }
-                Some(skill) if !skill.task_kinds.contains(&request.task.kind) => {
-                    "incompatible_task_kind"
-                }
-                Some(_) if blocked.is_some() => {
-                    blocked.map_or("not_attached", |(status, _)| status)
-                }
-                Some(_) if !stages.is_empty() => "suggested",
-                Some(_) => "not_attached",
-            };
-            // Unknown is not a refusal: name the fact that would settle it.
-            let would_change = match (status, blocked) {
-                ("capability_unknown", Some((_, capability))) => vec![capability_change(
-                    "host.capability.unknown",
-                    capability,
-                    CapabilitySupport::Unknown,
-                )?],
-                _ => vec![],
-            };
-            Ok(SkillRow {
-                id: id.clone(),
-                status,
-                stages,
-                would_change,
-            })
+            let stages = attached(id)?;
+            let (status, blocked) = catalog_status(id, catalog, request, &stages);
+            catalog_row(id, status, blocked, stages, None)
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?;
+    let Some(declared) = declared else {
+        return Ok(rows);
+    };
+    let outside = declared.outside_suggested(catalog);
+    for candidate in &declared.candidates {
+        let id = &candidate.skill;
+        let stages = if candidate.operator_wins {
+            vec![]
+        } else {
+            attached(id)?
+        };
+        let (status, blocked) = if candidate.operator_wins {
+            ("operator_declared", None)
+        } else if catalog.skill(id).is_none() {
+            let status = if outside.contains(id) {
+                "outside_catalog_suggested"
+            } else {
+                "outside_catalog"
+            };
+            (status, None)
+        } else {
+            match catalog_status(id, catalog, request, &stages) {
+                ("not_attached", blocked)
+                    if policy == ScoringPolicy::StableV2
+                        && candidate.score_micros < SKILL_FLOOR_MICROS =>
+                {
+                    ("below_floor", blocked)
+                }
+                other => other,
+            }
+        };
+        rows.push(catalog_row(
+            id,
+            status,
+            blocked,
+            stages,
+            Some((declared.source(), candidate.score_micros)),
+        )?);
+    }
+    Ok(rows)
+}
+
+/// The report status of a skill the catalog may know, from what keeps it out of
+/// the plan, and the capability behind it if there is one.
+fn catalog_status(
+    id: &SkillId,
+    catalog: &Catalog,
+    request: &RouteRequest,
+    stages: &[Value],
+) -> (&'static str, Option<(&'static str, Capability)>) {
+    let blocked = catalog
+        .skill(id)
+        .and_then(|skill| blocking_capability(&skill.required_capabilities, request));
+    let status = match catalog.skill(id) {
+        None => "absent_from_catalog",
+        Some(skill)
+            if !matches!(
+                skill.trust,
+                SkillTrust::Builtin | SkillTrust::TrustedLocal | SkillTrust::VerifiedThirdParty
+            ) =>
+        {
+            "untrusted"
+        }
+        Some(skill) if !skill.task_kinds.contains(&request.task.kind) => "incompatible_task_kind",
+        Some(_) if blocked.is_some() => blocked.map_or("not_attached", |(status, _)| status),
+        Some(_) if !stages.is_empty() => "suggested",
+        Some(_) => "not_attached",
+    };
+    (status, blocked)
+}
+
+fn catalog_row(
+    id: &SkillId,
+    status: &'static str,
+    blocked: Option<(&'static str, Capability)>,
+    stages: Vec<Value>,
+    declared: Option<(String, i64)>,
+) -> Result<SkillRow, CliError> {
+    // Unknown is not a refusal: name the fact that would settle it.
+    let would_change = match (status, blocked) {
+        ("capability_unknown", Some((_, capability))) => vec![capability_change(
+            "host.capability.unknown",
+            capability,
+            CapabilitySupport::Unknown,
+        )?],
+        _ => vec![],
+    };
+    let (source, score_micros, provenance) = match declared {
+        Some((source, score)) => (Some(source), Some(score), Some(Provenance::Declared)),
+        None => (None, None, None),
+    };
+    Ok(SkillRow {
+        id: id.clone(),
+        status,
+        source,
+        score_micros,
+        provenance,
+        stages,
+        would_change,
+    })
 }
 
 /// The status and capability that keep a skill out of the plan, if any. A
@@ -842,9 +949,17 @@ fn next_action(
     declared: &BTreeSet<Capability>,
     request: &RouteRequest,
     decision: &DecisionEnvelope,
+    outside: &[SkillId],
 ) -> Result<NextAction, CliError> {
     let harness = host.harness.as_str();
     let mut caveat = String::new();
+    if !outside.is_empty() {
+        let ids: Vec<_> = outside.iter().map(SkillId::as_str).collect();
+        caveat.push_str(&format!(
+            " Your external router also named {}: not in the catalog, so nothing attached them. Their bodies were not read and nothing about them was verified; load them yourself in your host if you want them.",
+            ids.join(", ")
+        ));
+    }
     if request.task.required_capabilities.is_empty() {
         caveat.push_str(" The task requires no capability, so no host capability was checked.");
     }
@@ -995,6 +1110,11 @@ fn clarification(questions: Vec<Clarification>, output_requested: bool) -> Repor
 pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
     let declared = declarations(&args.declare_capability)?;
     let requested = skill_ids(&args.skills)?;
+    let declared_candidates = args
+        .skill_candidates
+        .as_deref()
+        .map(|path| crate::advisory_candidates::load(path, &requested))
+        .transpose()?;
     let (input, risk_context, defaulted_facts): (TaskInput, Option<TaskRiskContext>, Vec<Fact>) =
         if args.text.is_some() {
             let (input, context, defaulted) = quick_task(&args)?;
@@ -1091,14 +1211,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
             acceptance: task.acceptance.clone(),
         },
         host: host.clone(),
-        skill_candidates: requested
-            .iter()
-            .map(|skill| SkillCandidate {
-                skill: skill.clone(),
-                source: SKILL_SOURCE.into(),
-                score_micros: 0,
-            })
-            .collect(),
+        skill_candidates: merged_candidates(&requested, declared_candidates.as_ref()),
         capability_knowledge: knowledge.clone(),
     };
     let context = Decide {
@@ -1106,6 +1219,7 @@ pub(crate) fn run(args: AdviseArgs, json: bool) -> Result<Outcome, CliError> {
         task: &task,
         defaulted: &defaulted_facts,
         requested: &requested,
+        declared_candidates: declared_candidates.as_ref(),
         catalog: &catalog,
         request: &request,
         host: &host,
@@ -1137,6 +1251,7 @@ struct Decide<'a> {
     task: &'a NormalizedTask,
     defaulted: &'a [Fact],
     requested: &'a BTreeSet<SkillId>,
+    declared_candidates: Option<&'a DeclaredCandidates>,
     catalog: &'a Catalog,
     request: &'a RouteRequest,
     host: &'a HostSnapshot,
@@ -1183,6 +1298,20 @@ impl Decide<'_> {
         .build()?;
         // Defaulted task facts follow the task row, before any host fact.
         facts.splice(1..1, self.defaulted.iter().cloned());
+        if let Some(declared) = self.declared_candidates {
+            facts.push(Fact {
+                subject: "skill_candidates.document".into(),
+                value: json!({
+                    "sha256": declared.sha256,
+                    "source": declared.source(),
+                    "candidates": declared.candidates.len(),
+                }),
+                provenance: Provenance::Declared,
+                source:
+                    "--skill-candidates file from an external router; its contents are not verified"
+                        .into(),
+            });
+        }
         let report = Report {
             schema_version: 1,
             mode: "advisory",
@@ -1191,13 +1320,24 @@ impl Decide<'_> {
             questions: vec![],
             mapping: mapping(self.input, self.task)?,
             facts,
-            skills: skill_rows(self.requested, self.catalog, self.request, &decision)?,
+            skills: skill_rows(
+                self.requested,
+                self.declared_candidates,
+                policy,
+                self.catalog,
+                self.request,
+                &decision,
+            )?,
             next_manual_action: next_action(
                 self.host,
                 self.catalog,
                 self.declared,
                 self.request,
                 &decision,
+                &self
+                    .declared_candidates
+                    .map(|declared| declared.outside_suggested(self.catalog))
+                    .unwrap_or_default(),
             )?,
             decision: Some(decision),
             request_hash: Some(self.request_hash()?),

@@ -1,7 +1,7 @@
 ---
 adr: "0055"
 title: Declared external skill candidates for advise
-status: proposed
+status: implemented
 created: 2026-11-02
 last_modified: 2026-11-02
 scope: "Where `advise` gets candidate skills: an operator-supplied candidate document from an external router, its bounds, trust label, report statuses and replay rule. No change to catalog trust, skill attachment rules, preparation or execution."
