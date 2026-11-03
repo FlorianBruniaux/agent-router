@@ -3,36 +3,22 @@
 //! Golden matrix of `advise` over seven representative tasks. It pins today's
 //! plans so any later routing change is a reviewable diff and so a collapse of
 //! differentiation cannot happen silently. Nothing is executed and no provider
-//! is contacted. The helpers below are copied from `advisory_route.rs` on
-//! purpose, that file is edited by parallel changes.
+//! is contacted. Shared helpers live in `support/advisory.rs`.
 #![cfg(feature = "codex")]
-use assert_cmd::Command;
+#[path = "support/advisory.rs"]
+mod advisory;
+use advisory::{command, discovered_snapshot_at, root, write};
 use serde_json::{Value, json};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
     path::{Path, PathBuf},
-    time::Duration,
 };
 
 const NOW: &str = "10";
 const GOLDEN: &str = "tests/golden/advise-matrix-v1.json";
 const GOLDEN_V2: &str = "tests/golden/advise-matrix-v2.json";
 
-fn command() -> Command {
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
-    command.timeout(Duration::from_secs(20));
-    command
-}
-fn root(path: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(path)
-}
-fn write(path: &Path, value: &Value) -> PathBuf {
-    fs::write(path, serde_json::to_vec_pretty(value).unwrap()).unwrap();
-    path.to_owned()
-}
 fn parsed(stdout: &[u8], stderr: &[u8]) -> Value {
     serde_json::from_slice(stdout).unwrap_or_else(|error| {
         panic!(
@@ -42,45 +28,8 @@ fn parsed(stdout: &[u8], stderr: &[u8]) -> Value {
     })
 }
 
-/// Synthetic Codex host snapshot built like the Codex probe: models and efforts
-/// are discovered, capabilities stay UNKNOWN.
 fn discovered_snapshot(dir: &Path) -> PathBuf {
-    let standard = ["low", "medium", "high", "xhigh", "max"];
-    let extended = ["low", "medium", "high", "xhigh", "max", "ultra"];
-    let models: Vec<_> = [
-        ("codex-auto-review", standard.as_slice()),
-        ("gpt-5.6-luna", standard.as_slice()),
-        ("gpt-5.6-sol", extended.as_slice()),
-        ("gpt-5.6-terra", extended.as_slice()),
-        ("gpt-6-astra", extended.as_slice()),
-        ("gpt-6-luna", standard.as_slice()),
-        ("gpt-6-sol", extended.as_slice()),
-        ("gpt-6.1-sol", extended.as_slice()),
-        ("gpt-6.1-terra", extended.as_slice()),
-        ("gpt-reserve", standard.as_slice()),
-    ]
-    .into_iter()
-    .map(|(slug, efforts)| {
-        json!({"slug": slug, "supported_reasoning_levels":
-            efforts.iter().map(|effort| json!({"effort": effort})).collect::<Vec<_>>()})
-    })
-    .collect();
-    let cache = write(
-        &dir.join("cache.json"),
-        &json!({"fetched_at": "1970-01-01T00:00:00Z", "client_version": "0.163.0", "models": models}),
-    );
-    let observed = command()
-        .args(["inspect", "--host", "codex", "--model-cache"])
-        .arg(&cache)
-        .args(["--observed-version", "0.163.0", "--now", NOW, "--json"])
-        .assert()
-        .success()
-        .get_output()
-        .stdout
-        .clone();
-    let path = dir.join("observation.json");
-    fs::write(&path, observed).unwrap();
-    path
+    discovered_snapshot_at(dir, "observation.json", NOW)
 }
 
 /// Declared Claude host: a flat catalog with no capability evidence.

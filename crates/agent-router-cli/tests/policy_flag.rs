@@ -2,15 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `--policy` selection for `route` and `advise` (ADR 0054). Nothing is executed
 //! and no provider is contacted.
-use assert_cmd::Command;
+#[path = "support/advisory.rs"]
+mod advisory;
+use advisory::command;
 use serde_json::Value;
-use std::{path::Path, time::Duration};
+use std::path::Path;
 
-fn command() -> Command {
-    let mut command = Command::new(assert_cmd::cargo::cargo_bin!("agent-router"));
-    command.timeout(Duration::from_secs(20));
-    command
-}
 fn root(path: &str) -> String {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
