@@ -41,7 +41,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Passive run observation | v1 remains default and byte-compatible; explicit `observe --schema-version 2` adds bounded durable attempt identities, requested selections, supervisor outcomes and source hashes from the same passive snapshot; `--schema-version 3` adds qualified local capture intervals and `--schema-version 4` a bounded, redacted timeline of at most 64 journal-ordered entries; `--schema-version 5` adds advisory run findings (five rules, each a finding or a named suppression, `automatic_action: none`). `schema run-observation` supports `[1, 2, 3, 4, 5]`. Native model/effort, usage, trusted timestamps, protocol, objective and acceptance of the exact revision remain unknown; see [run observation](../run-observation.md), [ADR 0025](../adr/0025-run-observation.md), [ADR 0030](../adr/0030-qualified-local-capture-timing.md) [ADR 0048](../adr/0048-run-timeline-projection.md) and [ADR 0049](../adr/0049-run-findings.md). |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Advisory route report | v1 (`agent-router advise --json`, exit 0 recommended, 3 `no_recommendation` or `needs_clarification`): `mode: "advisory"`, `executed: false`, `status`, `questions`, `mapping` (each task field `routed` or `not_enforced_by_advisory_routing`, with its value), `facts` (`provenance` `declared`, `discovered`, `verified` or `unknown`), `skills` (per requested id: `id`, `status`, `stages`, and `would_change` only for `capability_unknown`; status is one of `suggested`, `not_attached`, `absent_from_catalog`, `untrusted`, `incompatible_task_kind`, `capability_not_supported` when a required capability is explicitly unsupported or absent from the host knowledge, or `capability_unknown` when every blocking capability is UNKNOWN, with a `would_change` hint naming the capability and `--declare-capability`; a declaration is reported as declared, never verified), `decision` (the unchanged route decision envelope or null), `scoring` (additive, present only under `stable-v2` when a plan is selected: `policy_version`, `table_digest` (SHA-256 of the declared tables), `effort_basis` (`declared_policy_prior`), `effort_cost` (`not_modelled`), `stages` with `stage`, `target_micros`, `quality_micros`, `shortfall_micros`, `effort`, `effort_target`, `effort_provenance` (`policy_table`, or `fallback` when the host lacks `effort_target`) and `reason_codes`, and the sorted union `reason_codes`; codes `catalog.stage.dominated`, `catalog.cost.equal`, `catalog.unrated` describe catalog data), `next_manual_action` (`kind`, optional `selection_basis`, `summary`, `phases`, `would_change`) and `output_directory`. The saved `route-request.json` replays through `route --policy <policy_version of decision.json>`. See [advisory route](../advisory-route.md) and [ADR 0051](../adr/0051-advisory-task-route.md) |
-| Advisory outcome | v1 (`agent-router feedback advisory-record`, `advisory-report`; store `user_version` 3): a manual outcome bound to the `decision_id` of a saved advice report, with no run, receipt or approval hash. See [feedback](../feedback.md#advisory-outcomes) and [ADR 0052](../adr/0052-advisory-outcome-record.md) |
+| Advisory outcome | v1 (`agent-router feedback advisory-record`, `advisory-report`; store `user_version` 4): a manual outcome bound to the `decision_id` of a saved advice report, with no run, receipt or approval hash, and an optional `request_hash` that pairs the arms of one request. See [feedback](../feedback.md#advisory-outcomes), [ADR 0052](../adr/0052-advisory-outcome-record.md) and [ADR 0056](../adr/0056-advisory-outcome-pairing-key.md) |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
 `agent-router schema --list` names the contracts that have a published JSON
@@ -166,7 +166,8 @@ also never authorizes a new dispatch.
 `AdvisoryOutcomeInput` (schema 1) has `schema_version`, `observed_at_unix_seconds`,
 `binding`, `adherence`, `used`, `result` and `measurements`; unknown keys are
 rejected. `binding` has `decision_id` (64 lowercase hex characters, copied from
-`advice.json`), `catalog_version`, `policy_version`, `task_kind`, `risk`,
+`advice.json`), an optional `request_hash` (64 lowercase hex characters, omitted
+when absent, which is UNKNOWN), `catalog_version`, `policy_version`, `task_kind`, `risk`,
 `selection_basis` (`catalog_policy_prior`, `partly_unrated` or
 `unrated_tie_break`) and `recommended`, one `{stage, model, effort, skills}` per
 phase (1 to 16 phases, at most 64 skills each). `adherence` is `followed` or
@@ -182,8 +183,12 @@ The stored `AdvisoryOutcomeEvent` adds `sequence`, `consent_revision`,
 A record also has `attempt`, one-based per `decision_id`. Repeating the latest
 record (`observed_at_unix_seconds` ignored) returns it; a different outcome for
 the same `decision_id` is stored as the next attempt. `task_kind`, `risk`,
-`selection_basis` and `recommended` are copied from the user's `advice.json` and
-are not bound to `decision_id`. Strings that come from the user or that file
+`selection_basis`, `recommended` and `request_hash` are copied from the user's `advice.json` and
+are not bound to `decision_id`. No attempt may state a `request_hash` other than
+one an earlier attempt of the same `decision_id` stated (`feedback.invalid`).
+The store keeps `request_hash` in a column checked against the event on every
+read; `user_version` 4 adds it to a version 3 store without reading or rewriting
+a row, so earlier outcomes read with an UNKNOWN hash ([ADR 0056](../adr/0056-advisory-outcome-pairing-key.md)). Strings that come from the user or that file
 follow the identifier rule without `/`, `\`, or a leading `.` or `~`. An
 `overridden` record whose `used` states a model, effort and skills equal to every
 recommended phase is refused. Product errors: `advisory.outcome.advice_invalid`
@@ -203,13 +208,20 @@ request and the observation hash that binds it, equal for every arm), `arms`
 export. `feedback advisory-record --policy <arm>` reads `compare.json`, refuses
 a schema, `mode` or `executed` it does not know, takes only an arm name listed in
 the file, refuses a `directory` that is not one plain name, and refuses an arm
-whose `decision_id` differs from the `advice.json` it names. Product errors added:
+whose `decision_id` differs from the `advice.json` it names. Every arm records
+the `request_hash` of `compare.json`; an arm whose `advice.json` states another
+one, or a `compare.json` hash that is not 64 lowercase hex characters, is
+refused with `advisory.outcome.advice_invalid`. Product errors added:
 `advisory.outcome.policy_required`, `advisory.outcome.policy_unknown` and
-`advisory.outcome.policy_unexpected` (`--policy` on a single advice). The record
-shape and the store schema are unchanged: no `request_hash` is stored.
+`advisory.outcome.policy_unexpected` (`--policy` on a single advice). The advice
+report (`advice.json` and the printed `advise --json` report) adds
+`request_hash` (same domain and value as `compare.json` for the same request)
+whenever a request was decided; it is absent for `needs_clarification`.
+`advisory-record` copies it from a single advice and records UNKNOWN when an
+older export lacks it; a malformed value is `advisory.outcome.advice_invalid`.
 
-`feedback advisory-report` prints a report (`schema_version` 2, hash domain
-`advisory-outcome-report-v2`) with `generated_at_unix_seconds`,
+`feedback advisory-report` prints a report (`schema_version` 3, hash domain
+`advisory-outcome-report-v3`) with `generated_at_unix_seconds`,
 `outcome_set_hash`, `decisions` (one per `decision_id`, its latest attempt), `records` (all retained attempts), `overall` and `task_kinds`. `overall` and each
 `task_kinds` entry (which adds `task_kind`) hold `followed` and `overridden`,
 each with `sample_size` (decisions), `records`, three rates (`accepted_as_is`, `accepted_after_rework`,
@@ -222,12 +234,21 @@ of each decision: `policy_version`, `risk`, `decisions`, `insufficient_sample`
 (`decisions` below `minimum_sample`) and the same `followed` and `overridden`
 objects, whose rates are `null` when their `sample_size` is below
 `minimum_sample` (constant 5; numerator and denominator stay printed).
-`paired_trials` is `not_available` (no pairing key is stored, issue #255).
+`paired_trials` groups the latest attempt of each decision by `request_hash`:
+`pairing_key` (`request_hash`), `trials` (request hashes with two or more
+configurations), `unpaired_decisions` (a known hash with one configuration),
+`unknown_request_hash` (no hash), `ambiguous_trials` (two decisions of one
+configuration under one hash, left out of `trials` and `arms`) and `arms`, one
+per configuration (`policy_version`, `catalog_version`), sorted by version then
+catalog, with `trials` (each trial counted once), `insufficient_sample` and the
+same `followed` and `overridden` objects, whose rates are `null` below
+`minimum_sample`. Arms are never merged.
 `attribution` is `not_established`, `interpretation` is
 `personal_self_selected_sample_not_evidence_of_a_general_gain` and
-`interpretation_notes` lists three limits: self-selected sample, overrides on
-harder tasks, user-editable `advice.json`. Version 2 added `minimum_sample`,
-`groups`, `paired_trials` and `interpretation_notes` to version 1. No published JSON
+`interpretation_notes` lists four limits: self-selected sample, overrides on
+harder tasks, user-editable `advice.json`, recorded `request_hash`. Version 2 added `minimum_sample`,
+`groups`, `paired_trials` (then the string `not_available`) and `interpretation_notes` to version 1.
+Version 3 replaced that string with the object above and added the fourth note. No published JSON
 schema file covers this report yet.
 
 ## Feedback late facts
@@ -254,7 +275,7 @@ The stored `FeedbackFactEvent` adds `sequence`, `consent_revision`,
 `recorded_at_unix_seconds` and `fact_hash` (domain `feedback-fact-v1`), with no
 free text. There is one fact per run key and kind. `FeedbackExport` (schema 1)
 lists them in `facts`, omitted when empty so an export without facts keeps its
-`content_hash`. The store `user_version` is 2; a newer version is refused.
+`content_hash`. Facts arrived with store `user_version` 2; the current version is 4 and a newer one is refused.
 
 `verify`, `artifacts apply`, `artifacts discard` and `coordinate artifacts`
 accept an optional `--config <sandbox.json>`, of which only `feedback_store` is

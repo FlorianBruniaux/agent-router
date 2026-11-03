@@ -271,8 +271,11 @@ unknown, never summed.
 
 `groups` splits the same counts by `policy_version` and `risk`, so you can read
 `stable-v1` and `stable-v2` apart. A group under 5 decisions
-(`minimum_sample`) is marked `insufficient_sample` and prints no rate. Paired
-counting of a `--compare-policies` task is not available yet (`paired_trials`).
+(`minimum_sample`) is marked `insufficient_sample` and prints no rate.
+`paired_trials` groups the decisions of one request by their `request_hash`:
+each configuration (`policy_version` and `catalog_version`) is an arm, counted
+once per trial, and two arms are never merged. Outcomes recorded before the
+hash existed appear under `unknown_request_hash`.
 
 To share a redacted copy or delete everything:
 
@@ -341,9 +344,11 @@ table and a `request_hash` that is the same for every arm. Exit codes follow
 `compare.json`) and refuses it for a single advice. `--followed` records that you
 followed that policy's plan. `--overridden` with the `--used-*` fields records
 that you departed from it. To say you followed neither, run the command once per
-policy with `--overridden`. The record binds to that policy's `decision_id`.
-The store records no `request_hash`; the two outcomes are linked only by
-`compare.json`.
+policy with `--overridden`. The record binds to that policy's `decision_id` and
+carries the `request_hash` of `compare.json`, the same for every arm; an arm
+whose `advice.json` states another one is refused
+(`advisory.outcome.advice_invalid`). A single advice records the `request_hash`
+of its `advice.json` too (ADR 0056).
 
 Facts you do not state take these fixed values. They are not inferred from the
 text and each one appears in the report with provenance `defaulted`:
