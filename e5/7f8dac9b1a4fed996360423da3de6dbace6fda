@@ -1,0 +1,47 @@
+crates/agent-router-cli/src/advisory_candidates.rs
+  s_c3158f009d7319::t_e2fc8839555a4e 1-166
+CHANGELOG.md
+  s_c3158f009d7319::t_99415739a0898d 36
+crates/agent-router-cli/src/advisory.rs
+  s_c3158f009d7319::t_c5476b70c8696b 7-8,13-15,36,117-121,186-193,425-448,663-664,669-682,685-714,716,718-789,947,951-957,1107-1111,1208,1216,1248,1295-1308,1317-1324,1331-1334
+crates/agent-router-cli/src/main.rs
+  s_c3158f009d7319::t_359c6b06b23a74 7
+crates/agent-router-cli/tests/advise_skill_candidates.rs
+  s_c3158f009d7319::t_1dccba33003b99 1-620
+crates/router-policy/src/lib.rs
+  s_c3158f009d7319::t_932a9138873b23 31,33-34
+crates/router-policy/src/preset.rs
+  s_c3158f009d7319::t_b13e894886e33c 18-34,66,97,203,205-206,222,225-248
+crates/router-policy/src/route.rs
+  s_c3158f009d7319::t_482e36f7ffd286 9,151-155
+crates/router-policy/tests/stable_v2_skills.rs
+  s_c3158f009d7319::t_65fb459ff3978e 1-261
+docs/adr/0054-advisory-stable-v2-policy.md
+  s_c3158f009d7319::t_ee2777605f7373 4
+docs/adr/0055-declared-external-skill-candidates.md
+  s_c3158f009d7319::t_8caaba9540fbe3 4
+docs/adr/README.md
+  s_c3158f009d7319::t_2915027ec664e1 77-78
+docs/advisory-route.fr.md
+  s_c3158f009d7319::t_acfe242110f8e2 92-94,435-481
+docs/advisory-route.md
+  s_c3158f009d7319::t_9a0bdcb544aa6f 87-88,407-450
+docs/reference/json-contracts.md
+  s_c3158f009d7319::t_8ce34fc16ee681 43,468-477
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e57f8dac9b1a4fed996360423da3de6dbace6fda",
+  "prompts": {},
+  "sessions": {
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
