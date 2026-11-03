@@ -44,6 +44,7 @@ fn outcome(
         observed_at_unix_seconds: 150,
         binding: AdvisoryBinding {
             decision_id: key.repeat(64),
+            request_hash: None,
             catalog_version: "catalog-1".into(),
             policy_version: "policy-1".into(),
             task_kind: kind,
@@ -582,7 +583,8 @@ fn a_version_2_store_migrates_keeping_its_events_and_facts() {
     assert_eq!(version(&file), 2);
 
     let store = FeedbackStore::open(&path).unwrap();
-    assert_eq!(version(&file), 3);
+    // Version 2 reaches the current version through 3.
+    assert_eq!(version(&file), 4);
     let events = store.events(250).unwrap();
     assert_eq!(serde_json::to_string(&events[0]).unwrap(), event_text);
     assert_eq!(store.facts(250).unwrap().len(), 1);

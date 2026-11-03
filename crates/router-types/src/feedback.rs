@@ -318,6 +318,12 @@ pub struct AdvisoryMeasurements {
 #[serde(deny_unknown_fields)]
 pub struct AdvisoryBinding {
     pub decision_id: String,
+    /// Digest of the route request and its observation binding, shared by every
+    /// decision `advise` made for one request (ADR 0056). `None` is UNKNOWN: a
+    /// record from before store schema 4 or from an export that does not carry
+    /// it. Omitted when absent, so such a record keeps its bytes and hash.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub request_hash: Option<String>,
     pub catalog_version: String,
     pub policy_version: String,
     pub task_kind: TaskKind,

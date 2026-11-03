@@ -36,6 +36,7 @@ fn outcome(
         observed_at_unix_seconds: 150,
         binding: AdvisoryBinding {
             decision_id: key.repeat(64),
+            request_hash: None,
             catalog_version: "catalog-1".into(),
             policy_version: policy.into(),
             task_kind: TaskKind::Implement,
@@ -270,13 +271,24 @@ fn override_stats_exclude_unknown_used_fields() {
 }
 
 #[test]
-fn report_states_selection_bias_and_that_paired_counting_is_unavailable() {
+fn report_states_selection_bias_and_an_empty_paired_section() {
     let (_t, store) = setup();
     let report = store.advisory_report(300).unwrap();
     let json = serde_json::to_value(&report).unwrap();
-    assert_eq!(json["paired_trials"], "not_available");
+    assert_eq!(
+        json["paired_trials"],
+        serde_json::json!({
+            "pairing_key": "request_hash", "trials": 0, "unpaired_decisions": 0,
+            "unknown_request_hash": 0, "ambiguous_trials": 0, "arms": []
+        })
+    );
     let text = json["interpretation_notes"].to_string();
-    for needle in ["self-selected", "harder tasks", "advice.json"] {
+    for needle in [
+        "self-selected",
+        "harder tasks",
+        "advice.json",
+        "request_hash",
+    ] {
         assert!(text.contains(needle), "missing {needle}: {text}");
     }
 }

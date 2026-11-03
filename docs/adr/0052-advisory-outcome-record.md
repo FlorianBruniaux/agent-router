@@ -1,11 +1,11 @@
 ---
 adr: "0052"
 title: Record the manual outcome of an advisory recommendation
-status: implemented
+status: amended
 created: 2026-10-31
-last_modified: 2026-10-31
+last_modified: 2026-11-02
 scope: "The `feedback advisory-record` and `feedback advisory-report` commands and the advisory outcome table of the feedback store. Personal, descriptive records: no execution, no learning, no savings claim."
-amended_by: []
+amended_by: ["0056"]
 supersedes: []
 superseded_by: []
 related: []

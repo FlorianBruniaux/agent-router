@@ -306,8 +306,11 @@ record is idempotent; a different outcome for that decision (a retry or a
 correction) is stored as its next attempt, and nothing is rewritten. The report
 counts each decision once, with its latest attempt, and shows `records` beside
 `decisions`. The store migrates from version 2 to 3 when
-opened, in one transaction that only adds the outcome table. A version 3 store
-is refused by binaries that predate it (`future schema`); there is no downgrade. `feedback export`
+opened, in one transaction that only adds the outcome table, then to version 4,
+which adds a `request_hash` column and leaves every earlier outcome as it was,
+with its hash UNKNOWN ([ADR 0056](adr/0056-advisory-outcome-pairing-key.md)). A
+store is refused by binaries that predate its version (`future schema`); there
+is no downgrade. `feedback export`
 lists the outcomes under `advisory_outcomes`, omitted when empty so an earlier
 export keeps its hash. Disabling collection, expiry and `feedback purge` delete
 them; the purge count includes them. `report`, `summary`, statistics, drift and
@@ -326,9 +329,17 @@ The report also has a `groups` array: the latest outcome of each decision,
 grouped by `policy_version` and `risk`, so outcomes of `stable-v1` and
 `stable-v2` are never mixed. Below `minimum_sample` decisions (5) a group is
 flagged `insufficient_sample` and its rates are null; the counts stay visible.
-`paired_trials` is `not_available`: counting both arms of one task as a pair
-needs a pairing key the store does not hold yet (issue #255), and none is
-inferred from other fields. `policy_version` and `risk` come from the
+`paired_trials` counts the arms of one task side by side. The record keeps the
+`request_hash` that `advise` saved in `advice.json` (and, for a comparison, in
+`compare.json`), so the latest outcome of each decision is grouped by that hash.
+An arm is one configuration, a `policy_version` with its `catalog_version`; a
+trial is a hash with two or more configurations, and each arm counts it once.
+Arms are never merged, so a trial with three configurations adds one to each of
+three arms. Decisions with one configuration are `unpaired_decisions`, outcomes
+recorded before the hash existed are `unknown_request_hash`, and a hash under
+which two decisions share a configuration is counted in `ambiguous_trials` and
+left out. Arm rates follow the `minimum_sample` rule. Nothing is paired from
+other fields, and the hash is copied from your file, not verified. `policy_version` and `risk` come from the
 user-editable `advice.json`, and overrides often happen on harder tasks, so
 followed and overridden are not comparable.
 

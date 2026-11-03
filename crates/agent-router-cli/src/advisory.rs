@@ -134,6 +134,11 @@ struct Report {
     facts: Vec<Fact>,
     skills: Vec<SkillRow>,
     decision: Option<DecisionEnvelope>,
+    /// Additive (ADR 0056): the `request_hash` of `compare.json`, so a single
+    /// advice and each arm of a comparison name the request they answer.
+    /// Absent when no request was decided.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request_hash: Option<String>,
     /// Additive: how `stable-v2` read the catalog. Absent under `stable-v1`.
     #[serde(skip_serializing_if = "Option::is_none")]
     scoring: Option<AdvisoryScoring>,
@@ -967,6 +972,7 @@ fn clarification(questions: Vec<Clarification>, output_requested: bool) -> Repor
         facts: vec![],
         skills: vec![],
         decision: None,
+        request_hash: None,
         scoring: None,
         next_manual_action: NextAction {
             kind: "answer_questions",
@@ -1194,6 +1200,7 @@ impl Decide<'_> {
                 &decision,
             )?,
             decision: Some(decision),
+            request_hash: Some(self.request_hash()?),
             scoring,
             output_directory: None,
         };

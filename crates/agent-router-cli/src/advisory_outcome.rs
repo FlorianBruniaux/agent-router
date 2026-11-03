@@ -94,6 +94,9 @@ struct SavedAdvice {
     status: String,
     mapping: Vec<SavedMapping>,
     decision: Option<DecisionEnvelope>,
+    /// Absent from exports that predate it (ADR 0056): recorded as UNKNOWN.
+    #[serde(default)]
+    request_hash: Option<String>,
     next_manual_action: SavedAction,
 }
 
@@ -114,6 +117,7 @@ struct SavedComparison {
     schema_version: u32,
     mode: String,
     executed: bool,
+    request_hash: String,
     arms: Vec<SavedArm>,
 }
 
@@ -126,12 +130,27 @@ struct SavedArm {
 
 const COMPARISON_MARKER: &str = "compare.json";
 
-/// The `advice.json` to read and, for a comparison, the decision id its arm
-/// promises. A single advice has no arms, so naming one is refused.
+/// What `compare.json` promises about the arm it names: its decision and the
+/// request every arm answers.
+struct Promised {
+    decision_id: String,
+    request_hash: String,
+}
+
+/// Lowercase SHA-256 hex, the form `advise` writes.
+fn digest(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
+}
+
+/// The `advice.json` to read and, for a comparison, what its arm promises. A
+/// single advice has no arms, so naming one is refused.
 fn resolve(
     advice: &std::path::Path,
     policy: Option<&str>,
-) -> std::result::Result<(PathBuf, Option<String>), CliError> {
+) -> std::result::Result<(PathBuf, Option<Promised>), CliError> {
     let comparison = if advice.is_dir() {
         let marker = advice.join(COMPARISON_MARKER);
         (!advice.join("advice.json").exists() && marker.exists()).then_some(marker)
@@ -153,7 +172,11 @@ fn resolve(
         return Ok((path, None));
     };
     let saved: SavedComparison = read_json(&marker, MAX_ADVICE)?;
-    if saved.schema_version != 1 || saved.mode != "advisory_comparison" || saved.executed {
+    if saved.schema_version != 1
+        || saved.mode != "advisory_comparison"
+        || saved.executed
+        || !digest(&saved.request_hash)
+    {
         return Err(invalid("advisory.outcome.advice_invalid"));
     }
     let policy = policy.ok_or_else(|| invalid("advisory.outcome.policy_required"))?;
@@ -174,7 +197,10 @@ fn resolve(
         .ok_or_else(|| invalid("advisory.outcome.advice_invalid"))?;
     Ok((
         root.join(directory).join("advice.json"),
-        Some(arm.decision_id.clone()),
+        Some(Promised {
+            decision_id: arm.decision_id.clone(),
+            request_hash: saved.request_hash,
+        }),
     ))
 }
 
@@ -222,6 +248,10 @@ fn binding(advice: &SavedAdvice) -> std::result::Result<AdvisoryBinding, CliErro
         .ok_or_else(|| invalid("advisory.outcome.advice_invalid"))?;
     Ok(AdvisoryBinding {
         decision_id: decision.decision_id.clone(),
+        request_hash: match &advice.request_hash {
+            Some(hash) if !digest(hash) => return Err(invalid("advisory.outcome.advice_invalid")),
+            hash => hash.clone(),
+        },
         catalog_version: decision.catalog_version.clone(),
         policy_version: decision.policy_version.clone(),
         task_kind,
@@ -252,9 +282,19 @@ pub(crate) fn input(
     // in place of its `advice.json` marker.
     let (advice_path, promised) = resolve(&args.advice, args.policy.as_deref())?;
     let advice: SavedAdvice = read_json(&advice_path, MAX_ADVICE)?;
-    let binding = binding(&advice)?;
-    if promised.is_some_and(|id| id != binding.decision_id) {
-        return Err(invalid("advisory.outcome.advice_invalid"));
+    let mut binding = binding(&advice)?;
+    if let Some(promised) = promised {
+        // Every arm takes the comparison's hash, so two arms of one request
+        // never disagree. An arm whose own file names another request is refused.
+        if promised.decision_id != binding.decision_id
+            || binding
+                .request_hash
+                .as_ref()
+                .is_some_and(|hash| *hash != promised.request_hash)
+        {
+            return Err(invalid("advisory.outcome.advice_invalid"));
+        }
+        binding.request_hash = Some(promised.request_hash);
     }
     let invalid_flag = || invalid("feedback.invalid");
     let adherence = match (args.adherence, args.followed, args.overridden) {

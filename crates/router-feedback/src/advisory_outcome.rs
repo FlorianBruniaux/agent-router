@@ -33,6 +33,7 @@ pub(crate) fn validate_outcome(input: &AdvisoryOutcomeInput) -> Result<()> {
     let b = &input.binding;
     if input.schema_version != 1
         || !valid_hash(&b.decision_id)
+        || b.request_hash.as_deref().is_some_and(|h| !valid_hash(h))
         || !path_free_identifier(&b.catalog_version)
         || !path_free_identifier(&b.policy_version)
         || b.recommended.is_empty()
@@ -156,6 +157,18 @@ impl FeedbackStore {
             if existing.outcome_hash != outcome_hash(existing)? {
                 return Err(FeedbackError::Integrity("advisory outcome"));
             }
+            // One decision answers one request: no attempt states another hash
+            // than an earlier one. An unstated one (an older export) is UNKNOWN.
+            if let Some(stated) = &input.binding.request_hash {
+                let conflicting: bool = tx.query_row(
+                    "SELECT EXISTS(SELECT 1 FROM advisory_outcomes WHERE decision_id=?1 AND request_hash IS NOT NULL AND request_hash<>?2)",
+                    params![input.binding.decision_id, stated],
+                    |r| r.get(0),
+                )?;
+                if conflicting {
+                    return Err(FeedbackError::Invalid("advisory request hash"));
+                }
+            }
             // An exact repeat of the latest record changes nothing.
             if same_outcome(&existing.input, &input) {
                 tx.commit()?;
@@ -192,13 +205,14 @@ impl FeedbackStore {
         };
         event.outcome_hash = outcome_hash(&event)?;
         tx.execute(
-            "INSERT INTO advisory_outcomes(sequence,decision_id,attempt,observed_at,event) VALUES(?1,?2,?3,?4,?5)",
+            "INSERT INTO advisory_outcomes(sequence,decision_id,attempt,observed_at,event,request_hash) VALUES(?1,?2,?3,?4,?5,?6)",
             params![
                 sequence,
                 event.input.binding.decision_id,
                 event.attempt,
                 event.input.observed_at_unix_seconds,
-                serde_json::to_string(&event)?
+                serde_json::to_string(&event)?,
+                event.input.binding.request_hash
             ],
         )?;
         tx.commit()?;
@@ -257,7 +271,7 @@ pub(crate) fn read_outcomes(db: &Connection) -> Result<Vec<AdvisoryOutcomeEvent>
         return Err(FeedbackError::Limit);
     }
     let mut query = db.prepare(
-        "SELECT sequence,decision_id,attempt,observed_at,event FROM advisory_outcomes ORDER BY sequence",
+        "SELECT sequence,decision_id,attempt,observed_at,event,request_hash FROM advisory_outcomes ORDER BY sequence",
     )?;
     let rows = query
         .query_map([], |r| {
@@ -267,11 +281,12 @@ pub(crate) fn read_outcomes(db: &Connection) -> Result<Vec<AdvisoryOutcomeEvent>
                 r.get::<_, u64>(2)?,
                 r.get::<_, u64>(3)?,
                 r.get::<_, String>(4)?,
+                r.get::<_, Option<String>>(5)?,
             ))
         })?
         .collect::<std::result::Result<Vec<_>, _>>()?;
     rows.into_iter()
-        .map(|(sequence, decision, attempt, observed, text)| {
+        .map(|(sequence, decision, attempt, observed, text, request)| {
             if text.len() > MAX_INPUT_BYTES + 1024 {
                 return Err(FeedbackError::Limit);
             }
@@ -282,6 +297,7 @@ pub(crate) fn read_outcomes(db: &Connection) -> Result<Vec<AdvisoryOutcomeEvent>
                 || e.attempt == 0
                 || attempt != e.attempt
                 || decision != e.input.binding.decision_id
+                || request != e.input.binding.request_hash
                 || observed != e.input.observed_at_unix_seconds
                 || e.recorded_at_unix_seconds < observed
             {
@@ -404,10 +420,45 @@ pub struct AdvisoryPolicyRiskGroup {
 /// rate. Counts and denominators are always printed.
 pub const ADVISORY_MINIMUM_SAMPLE: u64 = 5;
 
-const INTERPRETATION_NOTES: [&str; 3] = [
+/// Latest outcomes of one configuration (policy and catalog version) across the
+/// paired trials it took part in, each trial counted once. Never mixed with
+/// another configuration of the same trials.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct AdvisoryPairedArm {
+    pub policy_version: String,
+    pub catalog_version: String,
+    /// Paired trials with this arm, each counted once.
+    pub trials: u64,
+    /// True below `ADVISORY_MINIMUM_SAMPLE` trials; per side rates follow the
+    /// same rule as `groups`.
+    pub insufficient_sample: bool,
+    #[serde(flatten)]
+    pub adherence: AdvisoryAdherencePair,
+}
+
+/// Decisions that answer the same `request_hash`, one arm per configuration.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct AdvisoryPairedTrials {
+    pub pairing_key: &'static str,
+    /// Request hashes with two or more configurations, each counted once.
+    pub trials: u64,
+    /// Decisions with a known request hash and no other configuration.
+    pub unpaired_decisions: u64,
+    /// Decisions whose latest record states no request hash: recorded before
+    /// store schema 4 or from an export without it. UNKNOWN, never paired.
+    pub unknown_request_hash: u64,
+    /// Request hashes where two decisions share one configuration: no clean arm,
+    /// so they are counted here and left out of `arms` and `trials`.
+    pub ambiguous_trials: u64,
+    /// Sorted by policy version, then catalog version.
+    pub arms: Vec<AdvisoryPairedArm>,
+}
+
+const INTERPRETATION_NOTES: [&str; 4] = [
     "personal self-selected sample: not a general gain",
     "overrides often happen on harder tasks, so followed and overridden are not comparable",
     "advice.json is user-editable: policy_version and risk are as recorded, not verified",
+    "request_hash is copied from the saved export: a pairing is as recorded, not verified",
 ];
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -424,11 +475,11 @@ pub struct AdvisoryOutcomeReport {
     /// Sorted by policy version, then risk. A rate is null below `minimum_sample`.
     pub minimum_sample: u64,
     pub groups: Vec<AdvisoryPolicyRiskGroup>,
-    /// Paired trials need a pairing key the store does not hold (issue #255).
-    pub paired_trials: &'static str,
+    /// Latest outcomes grouped by `request_hash` (ADR 0056).
+    pub paired_trials: AdvisoryPairedTrials,
     pub attribution: &'static str,
     pub interpretation: &'static str,
-    pub interpretation_notes: [&'static str; 3],
+    pub interpretation_notes: [&'static str; 4],
     pub content_hash: String,
 }
 
@@ -494,6 +545,73 @@ fn pair(outcomes: &[&AdvisoryOutcomeEvent], retained: &Retained<'_>) -> Advisory
     }
 }
 
+fn paired_trials(
+    latest: &[&AdvisoryOutcomeEvent],
+    retained: &Retained<'_>,
+) -> AdvisoryPairedTrials {
+    let mut by_request = BTreeMap::<&str, Vec<&AdvisoryOutcomeEvent>>::new();
+    let mut unknown = 0;
+    for event in latest.iter().copied() {
+        match event.input.binding.request_hash.as_deref() {
+            Some(request) => by_request.entry(request).or_default().push(event),
+            None => unknown += 1,
+        }
+    }
+    let (mut trials, mut unpaired, mut ambiguous) = (0, 0, 0);
+    let mut by_arm = BTreeMap::<(&str, &str), Vec<&AdvisoryOutcomeEvent>>::new();
+    for events in by_request.into_values() {
+        if events.len() < 2 {
+            unpaired += events.len() as u64;
+            continue;
+        }
+        let mut arms = BTreeMap::<(&str, &str), &AdvisoryOutcomeEvent>::new();
+        let clean = events.iter().all(|event| {
+            let binding = &event.input.binding;
+            arms.insert(
+                (
+                    binding.policy_version.as_str(),
+                    binding.catalog_version.as_str(),
+                ),
+                event,
+            )
+            .is_none()
+        });
+        if !clean {
+            ambiguous += 1;
+            continue;
+        }
+        trials += 1;
+        for (arm, event) in arms {
+            by_arm.entry(arm).or_default().push(event);
+        }
+    }
+    AdvisoryPairedTrials {
+        pairing_key: "request_hash",
+        trials,
+        unpaired_decisions: unpaired,
+        unknown_request_hash: unknown,
+        ambiguous_trials: ambiguous,
+        arms: by_arm
+            .into_iter()
+            .map(|((policy_version, catalog_version), mut events)| {
+                events.sort_by_key(|event| event.sequence);
+                let mut adherence = pair(&events, retained);
+                adherence.followed.hide_rates_below(ADVISORY_MINIMUM_SAMPLE);
+                adherence
+                    .overridden
+                    .hide_rates_below(ADVISORY_MINIMUM_SAMPLE);
+                AdvisoryPairedArm {
+                    policy_version: policy_version.to_owned(),
+                    catalog_version: catalog_version.to_owned(),
+                    trials: events.len() as u64,
+                    insufficient_sample: (events.len() as u64) < ADVISORY_MINIMUM_SAMPLE,
+                    adherence,
+                }
+            })
+            .collect(),
+    }
+}
+
 impl AdvisoryAdherenceStats {
     fn hide_rates_below(&mut self, minimum: u64) {
         if self.sample_size < minimum {
@@ -537,7 +655,7 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
     }
     let all = latest.clone();
     let mut report = AdvisoryOutcomeReport {
-        schema_version: 2,
+        schema_version: 3,
         generated_at_unix_seconds: now,
         outcome_set_hash: hash(
             "advisory-outcome-set-v1",
@@ -571,12 +689,12 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
                 }
             })
             .collect(),
-        paired_trials: "not_available",
+        paired_trials: paired_trials(&all, &retained),
         attribution: "not_established",
         interpretation: "personal_self_selected_sample_not_evidence_of_a_general_gain",
         interpretation_notes: INTERPRETATION_NOTES,
         content_hash: String::new(),
     };
-    report.content_hash = hash("advisory-outcome-report-v2", &report)?;
+    report.content_hash = hash("advisory-outcome-report-v3", &report)?;
     Ok(report)
 }

@@ -70,7 +70,7 @@ impl FeedbackStore {
         db.pragma_update(None, "secure_delete", "ON")?;
         db.pragma_update(None, "synchronous", "FULL")?;
         let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
-        if version > 3 {
+        if version > 4 {
             return Err(FeedbackError::Integrity("future schema"));
         }
         if version == 0 {
@@ -110,6 +110,17 @@ impl FeedbackStore {
             tx.execute_batch("CREATE TABLE advisory_outcomes(sequence INTEGER PRIMARY KEY AUTOINCREMENT, decision_id TEXT NOT NULL, attempt INTEGER NOT NULL, observed_at INTEGER NOT NULL, event TEXT NOT NULL, UNIQUE(decision_id,attempt));
                 CREATE TRIGGER advisory_outcomes_immutable BEFORE UPDATE ON advisory_outcomes BEGIN SELECT RAISE(ABORT,'immutable advisory outcome'); END;
                 PRAGMA user_version=3;")?;
+            tx.commit()?;
+        }
+        let version: u32 = db.pragma_query_value(None, "user_version", |r| r.get(0))?;
+        if version == 3 {
+            // Additive: existing outcomes keep their bytes and a NULL request
+            // hash, which reads as UNKNOWN. Nothing is backfilled or inferred.
+            let tx = db.transaction()?;
+            tx.execute_batch(
+                "ALTER TABLE advisory_outcomes ADD COLUMN request_hash TEXT;
+                PRAGMA user_version=4;",
+            )?;
             tx.commit()?;
         }
         for suffix in ["", "-wal", "-shm"] {

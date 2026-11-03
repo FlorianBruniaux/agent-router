@@ -287,9 +287,12 @@ sont comptés comme connus ou inconnus, jamais additionnés.
 
 `groups` répartit les mêmes comptes par `policy_version` et `risk`, pour lire
 `stable-v1` et `stable-v2` séparément. Un groupe de moins de 5 décisions
-(`minimum_sample`) est marqué `insufficient_sample` et n'affiche aucun taux. Le
-comptage apparié d'une tâche `--compare-policies` n'est pas encore disponible
-(`paired_trials`).
+(`minimum_sample`) est marqué `insufficient_sample` et n'affiche aucun taux.
+`paired_trials` regroupe les décisions d'une même requête par leur
+`request_hash` : chaque configuration (`policy_version` et `catalog_version`)
+est un bras, compté une fois par essai, sans jamais fusionner deux bras. Les
+résultats enregistrés avant l'ajout du hash apparaissent dans
+`unknown_request_hash`.
 
 Pour partager une copie expurgée ou tout supprimer :
 
@@ -356,9 +359,11 @@ son `compare.json`) et le refuse pour un conseil simple. `--followed` enregistre
 que vous avez suivi le plan de cette politique. `--overridden` avec les champs
 `--used-*` enregistre que vous vous en êtes écarté. Pour dire que vous n'avez
 suivi aucun des deux, lancez la commande une fois par politique avec
-`--overridden`. L'enregistrement est lié au `decision_id` de cette politique. Le
-magasin ne stocke pas le `request_hash` : seul `compare.json` relie les deux
-résultats.
+`--overridden`. L'enregistrement est lié au `decision_id` de cette politique et
+porte le `request_hash` de `compare.json`, le même pour chaque bras ; un
+`advice.json` de bras qui en indique un autre est refusé
+(`advisory.outcome.advice_invalid`). Un conseil simple enregistre aussi le
+`request_hash` de son `advice.json` (ADR 0056).
 
 `advisory-record` accepte le répertoire du conseil à la place de `advice.json`,
 et `--followed` ou `--overridden` à la place de `--adherence`. Les règles de
