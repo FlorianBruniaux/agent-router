@@ -157,6 +157,13 @@ class Env:
             return []
         return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
+    def plan_of(self, stdout, stage):
+        """(model, effort) of a stage in the starred (chosen) plan line."""
+        line = [l for l in stdout.splitlines() if l.startswith("* ")][0]
+        word = line.split(f"{stage} ", 1)[1].split(" ")[0]
+        model, effort = word.split("/")
+        return model, effort
+
     def cleanup(self):
         shutil.rmtree(self.dir, ignore_errors=True)
 
@@ -215,7 +222,12 @@ class DailyWrapper(unittest.TestCase):
         self.assertEqual(sorted(agents), ["ar-planner", "ar-verifier"])
         for agent in agents.values():
             self.assertTrue(agent["model"].startswith("claude-"))
+            self.assertIn(agent["effort"], ("low", "medium", "high", "xhigh", "max"))
             self.assertTrue(agent["description"] and agent["prompt"])
+        plan = self.t.plan_of(out.stdout, "plan")
+        verify = self.t.plan_of(out.stdout, "verify")
+        self.assertEqual((agents["ar-planner"]["model"], agents["ar-planner"]["effort"]), plan)
+        self.assertEqual((agents["ar-verifier"]["model"], agents["ar-verifier"]["effort"]), verify)
         prompt = argv[argv.index("--append-system-prompt") + 1]
         self.assertIn("ar-planner", prompt)
         self.assertIn("ar-verifier", prompt)

@@ -145,10 +145,10 @@ def plan_line(phases):
 def claude_argv(args, phases, arm, extra, session_id):
     plan, execute, verify = phases["plan"], phases["execute"], phases["verify"]
     agents = {
-        "ar-planner": {"description": "Plans the task before any edit is made.", "model": plan["model"],
+        "ar-planner": {"description": "Plans the task before any edit is made.", "model": plan["model"], "effort": plan["effort"],
                        "prompt": "You plan the task. Return a short ordered plan, its risks and the checks that will "
                                  "prove it is done. Do not edit files."},
-        "ar-verifier": {"description": "Verifies the finished work against the task.", "model": verify["model"],
+        "ar-verifier": {"description": "Verifies the finished work against the task.", "model": verify["model"], "effort": verify["effort"],
                         "prompt": "You verify the work. Check it against the task and its acceptance criteria, run the "
                                   "relevant checks, and report what passes, what fails and what you could not check."},
     }
