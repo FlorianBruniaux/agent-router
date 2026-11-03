@@ -192,7 +192,7 @@ fn every_arm_of_a_comparison_records_the_same_request_hash() {
             .get_output()
             .stdout,
     );
-    assert_eq!(report["schema_version"], 3);
+    assert_eq!(report["schema_version"], 4);
     let paired = &report["paired_trials"];
     assert_eq!(paired["trials"], 1);
     assert_eq!(paired["unknown_request_hash"], 0);

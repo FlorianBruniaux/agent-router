@@ -24,8 +24,8 @@ pub use task_report::{TaskMeasurementReport, TaskOccurrenceReport};
 
 pub use advisory_outcome::{
     ADVISORY_MINIMUM_SAMPLE, AdvisoryAdherencePair, AdvisoryAdherenceStats, AdvisoryBasisCounts,
-    AdvisoryOutcomeReport, AdvisoryPairedArm, AdvisoryPairedTrials, AdvisoryPolicyRiskGroup,
-    AdvisoryRate, AdvisoryTaskKindReport, AdvisoryUnknownCounts,
+    AdvisoryKnownMeasure, AdvisoryOutcomeReport, AdvisoryPairedArm, AdvisoryPairedTrials,
+    AdvisoryPolicyRiskGroup, AdvisoryRate, AdvisoryTaskKindReport, AdvisoryUnknownCounts,
 };
 pub use learning::*;
 pub use policy::*;

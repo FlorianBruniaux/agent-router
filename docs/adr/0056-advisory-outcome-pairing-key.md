@@ -1,11 +1,11 @@
 ---
 adr: "0056"
 title: Store the request hash of an advisory outcome as its pairing key
-status: implemented
+status: amended
 created: 2026-11-02
-last_modified: 2026-11-02
+last_modified: 2026-11-03
 scope: "The `request_hash` of the advisory outcome record, the feedback store schema 4 migration, the `request_hash` field `advise` saves in `advice.json`, and the `paired_trials` section of `feedback advisory-report`. Amends ADR 0052."
-amended_by: []
+amended_by: ["0057"]
 supersedes: []
 superseded_by: []
 related: ["0051", "0052", "0054"]

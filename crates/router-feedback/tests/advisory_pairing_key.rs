@@ -342,7 +342,7 @@ fn report_counts_paired_trials() {
     assert_eq!(v1.adherence.followed.accepted_as_is.denominator, 2);
     assert_eq!(v1.adherence.followed.accepted_as_is.rate_micros, None);
     let json = serde_json::to_value(&report).unwrap();
-    assert_eq!(json["schema_version"], 3);
+    assert_eq!(json["schema_version"], 4);
     assert_eq!(
         json["paired_trials"]["arms"][0]["policy_version"],
         "stable-v1"
