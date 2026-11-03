@@ -90,9 +90,11 @@ explicit policy prior (`codex-core-v2.json` is kept for existing fixtures); its
 schema remains 1. See
 [catalog policy and unrated entries](../../assets/catalogs/README.md).
 
-For Claude Code, `assets/catalogs/claude-core-v1.json` is an operator-declared,
-fully unrated policy prior (schema 1). It is not refreshable from a Claude
-snapshot because that snapshot carries no efforts.
+For Claude Code, `assets/catalogs/claude-core-v2.json` (schema 1) rates the
+same five entries with price-ratio costs and proposed declared qualities
+(ADR 0057); `assets/catalogs/claude-core-v1.json` is the fully unrated
+operator-declared prior. Neither is refreshable from a Claude snapshot because
+that snapshot carries no efforts.
 
 The v1 authenticated proof contract lives in `router-adapter-api`. It contains a
 random store identity, increasing sequence, proof identity, capability, tier,

@@ -252,14 +252,16 @@ ne réalise aucune correction et ne prouve pas le support actuel des modèles.
 Conservez `example_dir` pour inspecter la décision, ou supprimez seulement ce
 fichier et ce répertoire une fois le test terminé.
 
-Pour Claude Code, utilisez le catalogue `claude-core-v1`, déclaré par
-l'opérateur. Il ne note aucun modèle : le plan ci-dessous est un départage
-déterministe entre entrées non notées, pas un jugement de qualité :
+Pour Claude Code, utilisez le catalogue `claude-core-v2`. Ses coûts sont les
+prix de sortie publiés rapportés à celui de Fable 5.1 et ses qualités une
+déclaration proposée ([ADR 0057](docs/adr/0057-claude-core-v2-declared-ratings.md),
+EN), pas des mesures. `route` applique `stable-v1` ; `advise` applique
+`stable-v2`, qui fait varier le modèle selon l'étape et le risque :
 
 ```sh
 ./target/debug/agent-router route \
   --request tests/fixtures/requests/claude-implementation.json \
-  --catalog assets/catalogs/claude-core-v1.json \
+  --catalog assets/catalogs/claude-core-v2.json \
   --json > "$example_dir/claude-decision.json"
 
 ./target/debug/agent-router explain \
