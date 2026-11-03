@@ -1,5 +1,5 @@
 ---
-adr: "0057"
+adr: "0058"
 title: Report known cost and token totals per advisory policy
 status: implemented
 created: 2026-11-03
@@ -11,7 +11,7 @@ superseded_by: []
 related: ["0052", "0056"]
 ---
 
-# ADR 0057: Report known cost and token totals per advisory policy
+# ADR 0058: Report known cost and token totals per advisory policy
 
 ## Context
 

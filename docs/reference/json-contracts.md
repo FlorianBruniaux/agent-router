@@ -248,7 +248,7 @@ same `followed` and `overridden` objects, whose rates are `null` below
 `interpretation_notes` lists five limits: self-selected sample, overrides on
 harder tasks, user-editable `advice.json`, recorded `request_hash`, and self-reported cost and token totals that are not comparable across task mixes. Version 2 added `minimum_sample`,
 `groups`, `paired_trials` (then the string `not_available`) and `interpretation_notes` to version 1.
-Version 3 replaced that string with the object above and added the fourth note. Version 4 added `cost_microusd` and `tokens` to every `followed` and `overridden` object and the fifth note ([ADR 0057](../adr/0057-advisory-report-cost-aggregates.md)). No published JSON
+Version 3 replaced that string with the object above and added the fourth note. Version 4 added `cost_microusd` and `tokens` to every `followed` and `overridden` object and the fifth note ([ADR 0058](../adr/0058-advisory-report-cost-aggregates.md)). No published JSON
 schema file covers this report yet.
 
 ## Feedback late facts
