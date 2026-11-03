@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "version": "claude-core-v2",
+  "models": [
+    {
+      "id": "claude-fable-5-1",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 990000,
+      "cost_micros": 1000000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-policy-prior"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "stages": [
+        "execute"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 650000,
+      "cost_micros": 100000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-policy-prior"
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "stages": [
+        "execute"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 690000,
+      "cost_micros": 10000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-policy-prior"
+    },
+    {
+      "id": "claude-opus-5-5",
+      "stages": [
+        "plan",
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 970000,
+      "cost_micros": 400000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-policy-prior"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "stages": [
+        "execute",
+        "verify"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ],
+      "capabilities": [
+        "tools"
+      ],
+      "quality_micros": 860000,
+      "cost_micros": 200000,
+      "latency_micros": 1000000,
+      "source": "operator-declared-policy-prior"
+    }
+  ],
+  "skills": [
+    {
+      "id": "tdd",
+      "description": "Guides a red-green-refactor implementation cycle.",
+      "task_kinds": [
+        "implement"
+      ],
+      "required_capabilities": [
+        "tools"
+      ],
+      "trust": "builtin"
+    },
+    {
+      "id": "critique-plan",
+      "description": "Challenges implementation plans for omissions and unsafe assumptions.",
+      "task_kinds": [
+        "architecture",
+        "migration",
+        "security"
+      ],
+      "required_capabilities": [],
+      "trust": "builtin"
+    },
+    {
+      "id": "security-guardian",
+      "description": "Reviews changes for security boundaries and unsafe behavior.",
+      "task_kinds": [
+        "security",
+        "review"
+      ],
+      "required_capabilities": [
+        "tools"
+      ],
+      "trust": "builtin"
+    }
+  ]
+}

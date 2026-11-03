@@ -586,5 +586,201 @@
     ],
     "status": "recommended",
     "variant": "claude-v1-flat-declared-tools"
+  },
+  {
+    "case": "explore-low",
+    "kind": "explore",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "implement-low",
+    "kind": "implement",
+    "risk": "low",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "implement-medium",
+    "kind": "implement",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "review-medium",
+    "kind": "review",
+    "risk": "medium",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "architecture-high",
+    "kind": "architecture",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-fable-5-1",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "security-high",
+    "kind": "security",
+    "risk": "high",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-fable-5-1",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
+  },
+  {
+    "case": "migration-critical",
+    "kind": "migration",
+    "risk": "critical",
+    "selection_basis": "catalog_policy_prior",
+    "stages": [
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "plan"
+      },
+      {
+        "effort": "medium",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "execute"
+      },
+      {
+        "effort": "high",
+        "model": "claude-opus-5-5",
+        "skills": [],
+        "stage": "verify"
+      }
+    ],
+    "status": "recommended",
+    "variant": "claude-v2-rated-declared-tools"
   }
 ]

@@ -246,14 +246,16 @@ Missing evidence: 0
 implement a task or prove current model support. Keep `example_dir` to inspect
 the decision, or remove only that file and directory when finished.
 
-For Claude Code, use the operator-declared `claude-core-v1` catalog. It rates
-no model, so the plan below is a deterministic tie-break among unrated entries,
-not a quality judgement:
+For Claude Code, use the `claude-core-v2` catalog. Its costs are published
+output prices relative to Fable 5.1 and its qualities a proposed declaration
+([ADR 0057](docs/adr/0057-claude-core-v2-declared-ratings.md)), not
+measurements. `route` applies `stable-v1`; `advise` applies `stable-v2`, which
+varies the model by stage and risk:
 
 ```sh
 ./target/debug/agent-router route \
   --request tests/fixtures/requests/claude-implementation.json \
-  --catalog assets/catalogs/claude-core-v1.json \
+  --catalog assets/catalogs/claude-core-v2.json \
   --json > "$example_dir/claude-decision.json"
 
 ./target/debug/agent-router explain \

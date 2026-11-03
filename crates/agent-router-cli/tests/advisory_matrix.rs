@@ -51,6 +51,26 @@ fn claude_host(dir: &Path) -> PathBuf {
     )
 }
 
+/// Declared Claude host for the rated catalog: the current models, every effort.
+fn claude_rated_host(dir: &Path) -> PathBuf {
+    let models = [
+        "claude-fable-5-1",
+        "claude-haiku-5-5",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+    ];
+    let efforts: BTreeMap<_, _> = models
+        .iter()
+        .map(|model| (*model, json!(["low", "medium", "high", "xhigh", "max"])))
+        .collect();
+    write(
+        &dir.join("claude-host.json"),
+        &json!({"id": "owner-claude-code", "harness": "claude",
+            "supported_models": models, "supported_efforts": efforts,
+            "capabilities": []}),
+    )
+}
+
 struct Case {
     name: &'static str,
     objective: &'static str,
@@ -132,14 +152,21 @@ enum Variant {
     CodexUnknown,
     CodexTools,
     ClaudeFlat,
+    ClaudeRated,
 }
 impl Variant {
-    const ALL: [Variant; 3] = [Self::CodexUnknown, Self::CodexTools, Self::ClaudeFlat];
+    const ALL: [Variant; 4] = [
+        Self::CodexUnknown,
+        Self::CodexTools,
+        Self::ClaudeFlat,
+        Self::ClaudeRated,
+    ];
     fn name(self) -> &'static str {
         match self {
             Self::CodexUnknown => "codex-v3-capabilities-unknown",
             Self::CodexTools => "codex-v3-declared-tools",
             Self::ClaudeFlat => "claude-v1-flat-declared-tools",
+            Self::ClaudeRated => "claude-v2-rated-declared-tools",
         }
     }
 }
@@ -203,6 +230,12 @@ fn advise_with(dir: &Path, variant: Variant, case: &Case, policy: Option<&str>) 
                 .arg(root("assets/catalogs/claude-core-v1.json"))
                 .arg("--host")
                 .arg(claude_host(&work));
+        }
+        Variant::ClaudeRated => {
+            cmd.arg("--catalog")
+                .arg(root("assets/catalogs/claude-core-v2.json"))
+                .arg("--host")
+                .arg(claude_rated_host(&work));
         }
     }
     if variant != Variant::CodexUnknown {

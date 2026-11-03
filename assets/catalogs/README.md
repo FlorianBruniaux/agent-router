@@ -66,6 +66,7 @@ permissions, establishes provider access or authorizes model execution.
 
 # Claude Code policy catalog
 
+`claude-core-v2.json` ([below](#claude-core-v2)) supersedes v1 for current use.
 `claude-core-v1.json` is an operator-declared catalog for advisory routing in
 Claude Code. Its JSON schema is 1. Every entry uses `operator-declared-unrated-prior`:
 quality 0, cost and latency 1,000,000, the declared capability `tools`, efforts
@@ -105,6 +106,32 @@ them in a given configuration. A host snapshot that does not list `tools` still
 gets `host.capability.missing`, and `unknown` knowledge still yields an unknown
 verdict, so such a task gets no route. The host snapshot must declare or
 discover `tools` itself. Other capabilities stay UNKNOWN: no entry declares them.
+
+## claude-core-v2
+
+`claude-core-v2.json` is the current Claude Code catalog for advisory routing.
+It is `claude-core-v1` with a proposed rating of all five entries: quality,
+cost, stages and source change; ids, efforts, capabilities, latency and skills
+do not. Its JSON schema is 1. See
+[ADR 0057](../../docs/adr/0057-claude-core-v2-declared-ratings.md).
+
+| Entry | Quality | Cost | Latency | Stages | Source |
+| --- | --- | --- | --- | --- | --- |
+| `claude-fable-5-1` | 990000 | 1000000 | 1000000 | plan, execute, verify | `operator-declared-policy-prior` |
+| `claude-opus-5-5` | 970000 | 400000 | 1000000 | plan, execute, verify | `operator-declared-policy-prior` |
+| `claude-sonnet-5-5` | 860000 | 200000 | 1000000 | execute, verify | `operator-declared-policy-prior` |
+| `claude-haiku-5-5` | 690000 | 10000 | 1000000 | execute | `operator-declared-policy-prior` |
+| `claude-haiku-4-5-20251001` | 650000 | 100000 | 1000000 | execute | `operator-declared-policy-prior` |
+
+Cost is the published first-party output price relative to the highest one
+(Fable 5.1 at 50 USD per million output tokens = 1,000,000): Opus 5.5 20, Sonnet
+5.5 10, Haiku 4.5 5, Haiku 5.5 0.50. It is a price ratio, not the cost of a
+task. Quality and stages mirror the `codex-core-v3` tiers and are a proposed
+declaration, not a measurement. Latency is not timed and keeps the unrated bound.
+The identifiers and the `tools` rules of v1 above apply unchanged.
+
+`claude-haiku-4-5-20251001` is dominated by `claude-haiku-5-5` (lower quality,
+higher cost), so a host listing both never gets it.
 
 ## Discovery
 

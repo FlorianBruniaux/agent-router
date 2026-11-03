@@ -8,8 +8,9 @@ use router_policy::{EffortProvenance, Router, StageScoring};
 use router_types::{EffortLevel, RiskLevel, RouteDecision, RouteRequest, StageKind, TaskKind};
 use serde_json::Value;
 
-const CATALOGS: [&str; 4] = [
+const CATALOGS: [&str; 5] = [
     "claude-core-v1",
+    "claude-core-v2",
     "codex-core-v1",
     "codex-core-v2",
     "codex-core-v3",

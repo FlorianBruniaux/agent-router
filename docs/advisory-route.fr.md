@@ -8,8 +8,8 @@ expliqué. Le résultat se termine par la prochaine action manuelle à faire dan
 votre host. C'est un conseil seulement : la commande ne lance aucun host ni
 modèle, ne contacte aucun fournisseur, n'accorde aucune permission et
 n'applique aucun budget. La commande fonctionne avec les
-catalogues Codex fournis et avec le catalogue Claude Code `claude-core-v1`,
-déclaré par l'opérateur ; tout catalogue et toute description de host qui
+catalogues Codex fournis et avec les catalogues Claude Code `claude-core-v2`
+(noté) et `claude-core-v1` (non noté) ; tout catalogue et toute description de host qui
 respectent les mêmes contrats sont lus de la même façon.
 
 La décision elle-même vient de la politique `route` existante. `advise` se
@@ -177,47 +177,54 @@ observation, la requête enregistrée ne pourrait donc pas être rejouée.
 
 ### Exemple Claude Code
 
-[`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog) (EN)
-est déclaré par l'opérateur : chaque entrée est non notée (qualité 0) et ne
-déclare que `tools`, un prior côté modèle qui ne remplace pas un fait du host.
-Aucune découverte passive des modèles ou efforts
-Claude n'existe : décrivez le host dans un fichier déclaré, avec les
-identifiants et efforts que votre compte propose réellement :
+[`claude-core-v2`](../assets/catalogs/README.md#claude-core-v2) (EN) note les
+cinq entrées Claude : les coûts sont les prix de sortie publiés rapportés à
+celui de Fable 5.1, les qualités et étapes sont une déclaration proposée qui
+reprend les paliers Codex ([ADR 0057](adr/0057-claude-core-v2-declared-ratings.md), EN).
+Chaque entrée ne déclare que `tools`, un prior côté modèle qui ne remplace pas
+un fait du host. Aucune découverte passive des modèles ou efforts Claude
+n'existe : décrivez le host dans un fichier déclaré, avec les identifiants et
+efforts que votre compte propose réellement :
 
 ```json
 {
   "id": "my-claude-code",
   "harness": "claude",
-  "supported_models": ["claude-haiku-4-5-20251001", "claude-opus-5-5", "claude-sonnet-5-5"],
+  "supported_models": ["claude-fable-5-1", "claude-haiku-5-5", "claude-opus-5-5", "claude-sonnet-5-5"],
   "supported_efforts": {
-    "claude-haiku-4-5-20251001": ["medium", "high"],
-    "claude-opus-5-5": ["medium", "high", "xhigh"],
-    "claude-sonnet-5-5": ["medium", "high"]
+    "claude-fable-5-1": ["low", "medium", "high", "xhigh", "max"],
+    "claude-haiku-5-5": ["low", "medium", "high", "xhigh", "max"],
+    "claude-opus-5-5": ["low", "medium", "high", "xhigh", "max"],
+    "claude-sonnet-5-5": ["low", "medium", "high", "xhigh", "max"]
   },
   "capabilities": []
 }
 ```
 
 ```sh
-agent-router advise --task ~/agent-router-advice/backup-task/input.json \
-  --risk-context ~/agent-router-advice/backup-task/risk-context.json \
-  --catalog assets/catalogs/claude-core-v1.json --host ~/agent-router-advice/claude-host.json
+agent-router advise --text 'Add a --dry-run flag to scripts/backup.sh' \
+  --kind implement --risk medium --scope scripts --budget 0:600000:200000 \
+  --catalog assets/catalogs/claude-core-v2.json --host ~/agent-router-advice/claude-host.json
 ```
 
-Pour une tâche sans capacité requise, la sortie se termine par :
+Pour une tâche sans capacité requise, la sortie contient :
 
 ```text
-Plan: claude-haiku-4-5-20251001/high -> claude-haiku-4-5-20251001/medium -> claude-haiku-4-5-20251001/high
+Plan: claude-opus-5-5/high -> claude-sonnet-5-5/medium -> claude-sonnet-5-5/medium
+...
 Next manual action:
-  Nothing was executed. In your claude host, select per phase plan: model claude-haiku-4-5-20251001 at effort high with no skill; execute: model claude-haiku-4-5-20251001 at effort medium with no skill; verify: model claude-haiku-4-5-20251001 at effort high with no skill. Catalog claude-core-v1: every selected model is unrated in the catalog, so this choice is a deterministic tie-break, not a quality recommendation. The task requires no capability, so no host capability was checked.
+  Nothing was executed. In your claude host, select per phase plan: model claude-opus-5-5 at effort high with no skill; execute: model claude-sonnet-5-5 at effort medium with no skill; verify: model claude-sonnet-5-5 at effort medium with no skill. Catalog claude-core-v2: ratings come from the catalog, a declared policy prior, not a measurement. The task requires no capability, so no host capability was checked.
 ```
 
-`selection_basis` vaut `unrated_tie_break` : à scores égaux, le routeur choisit
-selon l'ordre des identifiants. Le résultat nomme un modèle, pas un meilleur
-modèle. Une tâche qui exige `tools` n'obtient une route que si le snapshot du host
-liste cette capacité ou si vous passez `--declare-capability tools`
-(étiquetée `declared`). La déclaration `tools` du catalogue ne remplace pas ce
-fait du host : sans lui, aucune recommandation.
+`selection_basis` vaut `catalog_policy_prior`. Sous `stable-v2`, le plan suit le
+risque et le type de tâche : une migration critique obtient
+`claude-fable-5-1/max -> claude-opus-5-5/high -> claude-fable-5-1/xhigh`.
+L'ancien [`claude-core-v1`](../assets/catalogs/README.md#claude-code-policy-catalog)
+ne note rien et donne un départage déterministe (`unrated_tie_break`). Une tâche
+qui exige `tools` n'obtient une route que si le snapshot du host liste cette
+capacité ou si vous passez `--declare-capability tools` (étiquetée `declared`).
+La déclaration `tools` du catalogue ne remplace pas ce fait du host : sans lui,
+aucune recommandation.
 
 ## 5. Enregistrer le résultat
 
