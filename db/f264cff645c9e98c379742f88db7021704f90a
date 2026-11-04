@@ -1,0 +1,49 @@
+CHANGELOG.md
+  s_c3158f009d7319::t_8d8d51a513609c 38-45
+crates/agent-router-cli/tests/advisory_outcome.rs
+  s_6b17850b3f6104::t_57e54a379df294 265-273
+crates/agent-router-cli/tests/advisory_pairing_key.rs
+  s_6b17850b3f6104::t_3145ed7185818e 195
+crates/router-feedback/src/advisory_outcome.rs
+  s_6b17850b3f6104::t_a6cc742961bb59 371-399,417-420,490,495,516,560-563,696,736
+crates/router-feedback/src/lib.rs
+  s_6b17850b3f6104::t_e70e1a5b48feba 27-28
+crates/router-feedback/tests/advisory_pairing_key.rs
+  s_6b17850b3f6104::t_7672fedd1328bb 345
+crates/router-feedback/tests/advisory_report_cost.rs
+  s_6b17850b3f6104::t_1826c6a5002bc7 1-299
+docs/adr/0056-advisory-outcome-pairing-key.md
+  s_6b17850b3f6104::t_2302ce18762d1f 4,6,8
+docs/adr/0058-advisory-report-cost-aggregates.md
+  s_6b17850b3f6104::t_33fbda9b90a7c3 1-47
+docs/adr/README.md
+  s_c3158f009d7319::t_07a55f8e690ddb 79,81
+docs/feedback.md
+  s_6b17850b3f6104::t_b46934c8bcafda 325-334,349
+docs/reference/json-contracts.md
+  s_6b17850b3f6104::t_0c2cc03d075fea 44,225-226,233,250-251,253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dbf264cff645c9e98c379742f88db7021704f90a",
+  "prompts": {},
+  "sessions": {
+    "s_6b17850b3f6104": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9f0dea9c-9d4a-4ed2-911c-46a4ee01bf3c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    },
+    "s_c3158f009d7319": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "151e40ac-87e1-4d66-bd23-57defb26a2cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Florian BRUNIAUX <florian@bruniaux.com>"
+    }
+  }
+}
