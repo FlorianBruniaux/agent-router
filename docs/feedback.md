@@ -322,8 +322,16 @@ denominator and the sample size (decisions, with their record count), and it pri
 tokens and, for overridden outcomes, for the model, effort and skills used. The
 result is a required field, so it has no UNKNOWN count. A group with no outcome
 has a null rate, not zero. The report counts `selection_basis` values, so a
-tie-break among unrated models is visible. It does not sum or compare costs, and
-`attribution` is always `not_established`.
+tie-break among unrated models is visible. For each side it also prints the known
+measurements, `cost_microusd` and `tokens`, each as `{records, total, mean}`:
+`records` is how many outcomes state the value, `total` their sum, and `mean`
+their mean rounded half up, null below `minimum_sample` (5) known values, so it
+can be null while the rates are printed. An outcome without the value is in the
+`unknown` count and is never added as a zero, so `records` and `unknown` add up
+to `sample_size`. Totals cover the latest record of each decision, not the
+superseded attempts. They are host-reported or wrapper-estimated, entered by you
+with `--cost-microusd` and `--tokens`, and cost per decision is not comparable
+across task mixes. `attribution` is always `not_established`.
 
 The report also has a `groups` array: the latest outcome of each decision,
 grouped by `policy_version` and `risk`, so outcomes of `stable-v1` and
@@ -338,7 +346,7 @@ Arms are never merged, so a trial with three configurations adds one to each of
 three arms. Decisions with one configuration are `unpaired_decisions`, outcomes
 recorded before the hash existed are `unknown_request_hash`, and a hash under
 which two decisions share a configuration is counted in `ambiguous_trials` and
-left out. Arm rates follow the `minimum_sample` rule. Nothing is paired from
+left out. Arm rates and means follow the `minimum_sample` rule, and every arm side has the same `cost_microusd` and `tokens` objects, which makes the spending of two policies readable side by side. Nothing is paired from
 other fields, and the hash is copied from your file, not verified. `policy_version` and `risk` come from the
 user-editable `advice.json`, and overrides often happen on harder tasks, so
 followed and overridden are not comparable.

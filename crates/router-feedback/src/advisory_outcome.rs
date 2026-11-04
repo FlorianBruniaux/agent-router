@@ -368,6 +368,35 @@ pub struct AdvisoryUnknownCounts {
     pub used_skills: Option<u64>,
 }
 
+/// The known values of one measurement over a sample. `records` counts the
+/// outcomes that state it; the others are not in `total` and are not zeros
+/// (see `AdvisoryUnknownCounts`). `mean` is None below `ADVISORY_MINIMUM_SAMPLE`
+/// known values, whatever the sample size: a mean of few values hides the spread.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+pub struct AdvisoryKnownMeasure {
+    pub records: u64,
+    pub total: u64,
+    /// Round half up, like the rates.
+    pub mean: Option<u64>,
+}
+
+impl AdvisoryKnownMeasure {
+    fn new(values: impl Iterator<Item = Option<u64>>) -> Self {
+        // Each value is at most `MAX_VALUE` and at most `MAX_EVENTS` outcomes
+        // exist, so the total stays far below `u64::MAX`; saturation only guards
+        // a store edited outside these bounds.
+        let (records, total) = values.flatten().fold((0u64, 0u64), |(n, sum), v| {
+            (n.saturating_add(1), sum.saturating_add(v))
+        });
+        Self {
+            records,
+            total,
+            mean: (records >= ADVISORY_MINIMUM_SAMPLE)
+                .then(|| total.saturating_add(records / 2) / records),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct AdvisoryBasisCounts {
     pub catalog_policy_prior: u64,
@@ -385,6 +414,10 @@ pub struct AdvisoryAdherenceStats {
     pub accepted_after_rework: AdvisoryRate,
     pub abandoned: AdvisoryRate,
     pub unknown: AdvisoryUnknownCounts,
+    /// Known cost of those decisions (latest record), self-reported.
+    pub cost_microusd: AdvisoryKnownMeasure,
+    /// Known tokens of those decisions (latest record), self-reported.
+    pub tokens: AdvisoryKnownMeasure,
     /// How the advice chose, for the recommendations in this sample.
     pub selection_basis: AdvisoryBasisCounts,
 }
@@ -454,11 +487,12 @@ pub struct AdvisoryPairedTrials {
     pub arms: Vec<AdvisoryPairedArm>,
 }
 
-const INTERPRETATION_NOTES: [&str; 4] = [
+const INTERPRETATION_NOTES: [&str; 5] = [
     "personal self-selected sample: not a general gain",
     "overrides often happen on harder tasks, so followed and overridden are not comparable",
     "advice.json is user-editable: policy_version and risk are as recorded, not verified",
     "request_hash is copied from the saved export: a pairing is as recorded, not verified",
+    "cost and token totals are host-reported or wrapper-estimated and self-reported, so unverified; cost per decision is not comparable across task mixes",
 ];
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -479,7 +513,7 @@ pub struct AdvisoryOutcomeReport {
     pub paired_trials: AdvisoryPairedTrials,
     pub attribution: &'static str,
     pub interpretation: &'static str,
-    pub interpretation_notes: [&'static str; 4],
+    pub interpretation_notes: [&'static str; 5],
     pub content_hash: String,
 }
 
@@ -523,6 +557,10 @@ fn stats(
             used_effort: unknown(|e| e.input.used.as_ref().is_none_or(|u| u.effort.is_none())),
             used_skills: unknown(|e| e.input.used.as_ref().is_none_or(|u| u.skills.is_none())),
         },
+        cost_microusd: AdvisoryKnownMeasure::new(
+            outcomes.iter().map(|e| e.input.measurements.cost_microusd),
+        ),
+        tokens: AdvisoryKnownMeasure::new(outcomes.iter().map(|e| e.input.measurements.tokens)),
         selection_basis: AdvisoryBasisCounts {
             catalog_policy_prior: basis(AdvisorySelectionBasis::CatalogPolicyPrior),
             partly_unrated: basis(AdvisorySelectionBasis::PartlyUnrated),
@@ -655,7 +693,7 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
     }
     let all = latest.clone();
     let mut report = AdvisoryOutcomeReport {
-        schema_version: 3,
+        schema_version: 4,
         generated_at_unix_seconds: now,
         outcome_set_hash: hash(
             "advisory-outcome-set-v1",
@@ -695,6 +733,6 @@ fn build_report(outcomes: &[AdvisoryOutcomeEvent], now: u64) -> Result<AdvisoryO
         interpretation_notes: INTERPRETATION_NOTES,
         content_hash: String::new(),
     };
-    report.content_hash = hash("advisory-outcome-report-v3", &report)?;
+    report.content_hash = hash("advisory-outcome-report-v4", &report)?;
     Ok(report)
 }
