@@ -76,8 +76,9 @@ Start from [TEMPLATE.md](TEMPLATE.md), take the next free number and name the fi
 | [0053](0053-codex-core-v3-owner-declared-ratings.md) | Owner-declared ratings for the GPT-6 Codex models in codex-core-v3 | implemented | 2026-11-01 | 2026-11-01 | - |
 | [0054](0054-advisory-stable-v2-policy.md) | Risk- and kind-aware advisory scoring as a compiled stable-v2 policy | implemented | 2026-11-02 | 2026-11-02 | - |
 | [0055](0055-declared-external-skill-candidates.md) | Declared external skill candidates for advise | implemented | 2026-11-02 | 2026-11-02 | - |
-| [0056](0056-advisory-outcome-pairing-key.md) | Store the request hash of an advisory outcome as its pairing key | implemented | 2026-11-02 | 2026-11-02 | - |
+| [0056](0056-advisory-outcome-pairing-key.md) | Store the request hash of an advisory outcome as its pairing key | amended | 2026-11-02 | 2026-11-03 | [0058](0058-advisory-report-cost-aggregates.md) |
 | [0057](0057-claude-core-v2-declared-ratings.md) | Declared ratings and price-based costs for the Claude models in claude-core-v2 | proposed | 2026-11-03 | 2026-11-03 | - |
+| [0058](0058-advisory-report-cost-aggregates.md) | Report known cost and token totals per advisory policy | implemented | 2026-11-03 | 2026-11-03 | - |
 
 
 ## Frontmatter fields

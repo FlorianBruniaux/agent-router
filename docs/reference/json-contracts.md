@@ -41,7 +41,7 @@ The v1 examples below remain supported. New commands use separate contracts:
 | Passive run observation | v1 remains default and byte-compatible; explicit `observe --schema-version 2` adds bounded durable attempt identities, requested selections, supervisor outcomes and source hashes from the same passive snapshot; `--schema-version 3` adds qualified local capture intervals and `--schema-version 4` a bounded, redacted timeline of at most 64 journal-ordered entries; `--schema-version 5` adds advisory run findings (five rules, each a finding or a named suppression, `automatic_action: none`). `schema run-observation` supports `[1, 2, 3, 4, 5]`. Native model/effort, usage, trusted timestamps, protocol, objective and acceptance of the exact revision remain unknown; see [run observation](../run-observation.md), [ADR 0025](../adr/0025-run-observation.md), [ADR 0030](../adr/0030-qualified-local-capture-timing.md) [ADR 0048](../adr/0048-run-timeline-projection.md) and [ADR 0049](../adr/0049-run-findings.md). |
 | Runtime doctor report | v2 (`agent-router doctor --runtime-root`): `database`, `storage_schema_version`, `counts` and `leases` nullable, `partial_reason` added, `schema_layout` may be `not_inspected`; a partial report has `overall` `unknown` and exit 3. See `docs/doctor.md` |
 | Advisory route report | v1 (`agent-router advise --json`, exit 0 recommended, 3 `no_recommendation` or `needs_clarification`): `mode: "advisory"`, `executed: false`, `status`, `questions`, `mapping` (each task field `routed` or `not_enforced_by_advisory_routing`, with its value), `facts` (`provenance` `declared`, `discovered`, `verified` or `unknown`), `skills` (per requested id: `id`, `status`, `stages`, and `would_change` only for `capability_unknown`; each row of `--skill-candidates` also has `source` (`external-declared:<label>`), `score_micros` and `provenance` (`declared`), and its status can also be `below_floor`, `outside_catalog_suggested`, `outside_catalog` or `operator_declared`, see [ADR 0055](../adr/0055-declared-external-skill-candidates.md); status is one of `suggested`, `not_attached`, `absent_from_catalog`, `untrusted`, `incompatible_task_kind`, `capability_not_supported` when a required capability is explicitly unsupported or absent from the host knowledge, or `capability_unknown` when every blocking capability is UNKNOWN, with a `would_change` hint naming the capability and `--declare-capability`; a declaration is reported as declared, never verified), `decision` (the unchanged route decision envelope or null), `scoring` (additive, present only under `stable-v2` when a plan is selected: `policy_version`, `table_digest` (SHA-256 of the declared tables), `effort_basis` (`declared_policy_prior`), `effort_cost` (`not_modelled`), `stages` with `stage`, `target_micros`, `quality_micros`, `shortfall_micros`, `effort`, `effort_target`, `effort_provenance` (`policy_table`, or `fallback` when the host lacks `effort_target`) and `reason_codes`, and the sorted union `reason_codes`; codes `catalog.stage.dominated`, `catalog.cost.equal`, `catalog.unrated` describe catalog data), `next_manual_action` (`kind`, optional `selection_basis`, `summary`, `phases`, `would_change`) and `output_directory`. The saved `route-request.json` replays through `route --policy <policy_version of decision.json>`. See [advisory route](../advisory-route.md) and [ADR 0051](../adr/0051-advisory-task-route.md) |
-| Advisory outcome | v1 (`agent-router feedback advisory-record`, `advisory-report`; store `user_version` 4): a manual outcome bound to the `decision_id` of a saved advice report, with no run, receipt or approval hash, and an optional `request_hash` that pairs the arms of one request. See [feedback](../feedback.md#advisory-outcomes), [ADR 0052](../adr/0052-advisory-outcome-record.md) and [ADR 0056](../adr/0056-advisory-outcome-pairing-key.md) |
+| Advisory outcome | v1 (`agent-router feedback advisory-record`, `advisory-report` schema 4; store `user_version` 4): a manual outcome bound to the `decision_id` of a saved advice report, with no run, receipt or approval hash, and an optional `request_hash` that pairs the arms of one request. See [feedback](../feedback.md#advisory-outcomes), [ADR 0052](../adr/0052-advisory-outcome-record.md) and [ADR 0056](../adr/0056-advisory-outcome-pairing-key.md) |
 | Modality input and JSON output | v1 `InputContract` (image, audio, file; canonical media-type allow-list, size bound, expected sha256) and `JsonOutputContract` (schema digest, size bound); unknown and duplicate keys rejected. Pure byte checks: the media type is declared, not read from content, digests come from the caller, output is not schema-validated, and nothing is transported. Execution stays refused while `ExecutionRequest` carries text only |
 
 `agent-router schema --list` names the contracts that have a published JSON
@@ -222,15 +222,15 @@ whenever a request was decided; it is absent for `needs_clarification`.
 `advisory-record` copies it from a single advice and records UNKNOWN when an
 older export lacks it; a malformed value is `advisory.outcome.advice_invalid`.
 
-`feedback advisory-report` prints a report (`schema_version` 3, hash domain
-`advisory-outcome-report-v3`) with `generated_at_unix_seconds`,
+`feedback advisory-report` prints a report (`schema_version` 4, hash domain
+`advisory-outcome-report-v4`) with `generated_at_unix_seconds`,
 `outcome_set_hash`, `decisions` (one per `decision_id`, its latest attempt), `records` (all retained attempts), `overall` and `task_kinds`. `overall` and each
 `task_kinds` entry (which adds `task_kind`) hold `followed` and `overridden`,
 each with `sample_size` (decisions), `records`, three rates (`accepted_as_is`, `accepted_after_rework`,
 `abandoned`, each `{numerator, denominator, rate_micros}` with `rate_micros`
 `null` for an empty sample), `unknown` (`cost`, `tokens` and, for `overridden`
 only, `used_model`, `used_effort` and `used_skills`; `null` where not
-applicable) and `selection_basis` counts. `groups` holds one entry per
+applicable), `cost_microusd` and `tokens` (each `{records, total, mean}` over the outcomes that state the value: `records` is that count, `total` the sum, `mean` the sum over `records` rounded half up and `null` below `minimum_sample` known values; an outcome without the value is only in `unknown` and never a zero) and `selection_basis` counts. `groups` holds one entry per
 (`policy_version`, `risk`), sorted by version then risk, from the latest attempt
 of each decision: `policy_version`, `risk`, `decisions`, `insufficient_sample`
 (`decisions` below `minimum_sample`) and the same `followed` and `overridden`
@@ -247,10 +247,10 @@ same `followed` and `overridden` objects, whose rates are `null` below
 `minimum_sample`. Arms are never merged.
 `attribution` is `not_established`, `interpretation` is
 `personal_self_selected_sample_not_evidence_of_a_general_gain` and
-`interpretation_notes` lists four limits: self-selected sample, overrides on
-harder tasks, user-editable `advice.json`, recorded `request_hash`. Version 2 added `minimum_sample`,
+`interpretation_notes` lists five limits: self-selected sample, overrides on
+harder tasks, user-editable `advice.json`, recorded `request_hash`, and self-reported cost and token totals that are not comparable across task mixes. Version 2 added `minimum_sample`,
 `groups`, `paired_trials` (then the string `not_available`) and `interpretation_notes` to version 1.
-Version 3 replaced that string with the object above and added the fourth note. No published JSON
+Version 3 replaced that string with the object above and added the fourth note. Version 4 added `cost_microusd` and `tokens` to every `followed` and `overridden` object and the fifth note ([ADR 0058](../adr/0058-advisory-report-cost-aggregates.md)). No published JSON
 schema file covers this report yet.
 
 ## Feedback late facts

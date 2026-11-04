@@ -262,6 +262,15 @@ fn recipe_records_reports_exports_and_purges_without_storing_task_text() {
     assert_eq!(kind["overridden"]["unknown"]["used_model"], 0);
     assert_eq!(kind["overridden"]["unknown"]["used_effort"], 1);
     assert_eq!(kind["overridden"]["unknown"]["used_skills"], 0);
+    // Known measurements: the missing cost of the followed side is not a zero.
+    assert_eq!(
+        kind["followed"]["cost_microusd"],
+        serde_json::json!({"records": 0, "total": 0, "mean": null})
+    );
+    assert_eq!(
+        kind["overridden"]["cost_microusd"],
+        serde_json::json!({"records": 1, "total": 12345, "mean": null})
+    );
 
     // The needles exist in the advice file, so their absence below is meaningful.
     let advice_text = fs::read_to_string(&first).unwrap();
