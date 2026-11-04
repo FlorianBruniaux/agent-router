@@ -383,14 +383,16 @@ pub struct AdvisoryKnownMeasure {
 impl AdvisoryKnownMeasure {
     fn new(values: impl Iterator<Item = Option<u64>>) -> Self {
         // Each value is at most `MAX_VALUE` and at most `MAX_EVENTS` outcomes
-        // exist, so the total stays far below `u64::MAX`.
-        let (records, total) = values
-            .flatten()
-            .fold((0u64, 0u64), |(n, sum), v| (n + 1, sum + v));
+        // exist, so the total stays far below `u64::MAX`; saturation only guards
+        // a store edited outside these bounds.
+        let (records, total) = values.flatten().fold((0u64, 0u64), |(n, sum), v| {
+            (n.saturating_add(1), sum.saturating_add(v))
+        });
         Self {
             records,
             total,
-            mean: (records >= ADVISORY_MINIMUM_SAMPLE).then(|| (total + records / 2) / records),
+            mean: (records >= ADVISORY_MINIMUM_SAMPLE)
+                .then(|| total.saturating_add(records / 2) / records),
         }
     }
 }
