@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source": "Copied from docs/bench/campaign-next/pilot/pricing.json (version pilot-2026-09-30-b; Claude rows: platform.claude.com/docs/en/about-claude/pricing, consulted 2026-09-30) and docs/bench/campaign-next/pilot/pricing-cache-writes.json (same page, consulted 2026-09-30). List prices in microusd per million tokens; no batch, regional or long-context surcharge is modelled.",
+  "consulted": "2026-09-30",
+  "unpriced": "claude-haiku-5-5 is in claude-core-v2 but the repo holds only its input/output pair (docs/adr/0057-claude-core-v2-declared-ratings.md, valid up to 100K prompt tokens) and no cache read or write price, so it is left out and its cost is UNKNOWN.",
+  "models": {
+    "claude-fable-5-1": {
+      "input_microusd_per_million": 10000000,
+      "cached_input_microusd_per_million": 250000,
+      "output_microusd_per_million": 50000000,
+      "cache_write_5m_microusd_per_million": 12500000,
+      "cache_write_1h_microusd_per_million": 20000000
+    },
+    "claude-opus-5-5": {
+      "input_microusd_per_million": 4000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 20000000,
+      "cache_write_5m_microusd_per_million": 5000000,
+      "cache_write_1h_microusd_per_million": 8000000
+    },
+    "claude-sonnet-5-5": {
+      "input_microusd_per_million": 2000000,
+      "cached_input_microusd_per_million": 200000,
+      "output_microusd_per_million": 10000000,
+      "cache_write_5m_microusd_per_million": 2500000,
+      "cache_write_1h_microusd_per_million": 4000000
+    },
+    "claude-haiku-4-5": {
+      "input_microusd_per_million": 1000000,
+      "cached_input_microusd_per_million": 100000,
+      "output_microusd_per_million": 5000000,
+      "cache_write_5m_microusd_per_million": 1250000,
+      "cache_write_1h_microusd_per_million": 2000000
+    },
+    "claude-haiku-4-5-20251001": {
+      "input_microusd_per_million": 1000000,
+      "cached_input_microusd_per_million": 100000,
+      "output_microusd_per_million": 5000000,
+      "cache_write_5m_microusd_per_million": 1250000,
+      "cache_write_1h_microusd_per_million": 2000000
+    }
+  }
+}

@@ -10,6 +10,10 @@ It works with the bundled Codex catalogs and with the Claude Code catalogs
 `claude-core-v2` (rated) and `claude-core-v1` (unrated); any catalog and host description with the
 same contracts is read the same way.
 
+To use `advise` on every real task and compare the two policies over a few weeks,
+see the [daily trial](daily-trial.md): a wrapper that runs your own host with
+one arm and records the outcome.
+
 The decision itself comes from the existing `route` policy. `advise` only maps
 the task to a route request, labels where every fact comes from and writes the
 next manual action. [ADR 0051](adr/0051-advisory-task-route.md) records the design.

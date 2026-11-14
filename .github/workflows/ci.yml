@@ -44,6 +44,8 @@ jobs:
           df -h .
           du -sh target
       - run: cargo test --workspace --all-features --locked
+      - name: Check the daily wrapper without a provider
+        run: python3 -B scripts/test-daily-ar.py
       - name: Measure disk after workspace tests
         if: ${{ always() && runner.os == 'Linux' }}
         run: |

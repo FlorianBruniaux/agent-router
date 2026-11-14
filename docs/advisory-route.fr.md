@@ -12,6 +12,10 @@ catalogues Codex fournis et avec les catalogues Claude Code `claude-core-v2`
 (noté) et `claude-core-v1` (non noté) ; tout catalogue et toute description de host qui
 respectent les mêmes contrats sont lus de la même façon.
 
+Pour utiliser `advise` sur chaque tâche réelle et comparer les deux politiques
+sur quelques semaines, voir l'[essai quotidien](daily-trial.fr.md) : un wrapper
+qui lance votre propre host avec un bras et enregistre le résultat.
+
 La décision elle-même vient de la politique `route` existante. `advise` se
 contente de convertir la tâche en requête de routage, d'étiqueter l'origine de
 chaque fait et d'écrire la prochaine action manuelle.

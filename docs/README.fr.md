@@ -36,6 +36,7 @@ sauf celles marquées (FR).
 | [Sortie de la CLI](cli-output.md) | Sortie lisible et `--json`, codes de sortie et codes d'erreur |
 | [Formats de configuration](configuration-formats.md) | Couches de configuration JSON, TOML et YAML strictes |
 | [Saisie guidée de la tâche](task-guide.md) | Compléter les faits manquants sans permission implicite |
+| [Essai quotidien](daily-trial.fr.md), [English](daily-trial.md) | 2026-11-03 : `ar`, un wrapper qui lance votre propre Claude Code ou Codex avec un bras `advise` (`stable-v1` ou `stable-v2`), estime le coût Claude depuis les transcripts et enregistre le résultat ; installation, lecture du rapport, limites |
 | [Routage consultatif](advisory-route.fr.md) | Conseil de modèle, d'effort et de skills ou refus expliqué pour une tâche ; n'exécute rien. 2026-11-02 : politique `stable-v2` par défaut selon le risque et le type de tâche, saisie en ligne, comparaison des politiques côte à côte, skills candidats déclarés, rapport des résultats par politique et par risque avec essais appariés |
 
 ## Router et planifier
