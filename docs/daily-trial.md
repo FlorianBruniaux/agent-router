@@ -1,21 +1,33 @@
-# Daily trial: `ar`, a wrapper around your own host
+# Daily trial: `aradv`, a wrapper around your own host
 
 English | [Français](daily-trial.fr.md)
 
 `integrations/daily/ar.py` lets you use `agent-router advise` on every real task
 without thinking about it, then look after a few weeks at whether `stable-v2`
-costs less than `stable-v1` while keeping results acceptable. You run `ar`
+costs less than `stable-v1` while keeping results acceptable. You run `aradv`
 instead of launching `claude` or `codex` yourself. The product still launches
-nothing and stays advisory: `ar` is you running your own host, with the host's
-own permission settings.
+nothing and stays advisory: `aradv` is you running your own host, with the host's
+own permission settings. The command is called `aradv`, not `ar`, because `ar` is
+the system archiver on macOS and Linux.
 
 One run does this:
 
 1. Asks `advise --compare-policies` for the same task under `stable-v1` and `stable-v2`, with `--declare-capability tools` (declared, never verified).
 2. Picks the arm: `--policy` if you pass it, else a deterministic 50/50 on `request_hash` (last hex digit even: `stable-v1`, odd: `stable-v2`). The same request always gets the same arm. It prints the chosen arm and both plans.
-3. Starts the host with that arm, or only prints the argv as JSON with `--dry-run`.
-4. After the host exits, reads the Claude transcripts and estimates the cost (Claude only).
-5. Asks one question with one key, records the outcome with `feedback advisory-record --followed`, appends a line to `runs.jsonl` and prints the decisions recorded per policy.
+3. Starts one host session on the arm's execute model, with its effort capped (`--effort-cap`, default `high`). The session plans and executes itself. For a `high` or `critical` risk, or with `--verify`, it also defines one `ar-verifier` subagent on the verify model. With `--dry-run` it only prints the argv as JSON.
+4. After the host exits, reads the Claude transcripts, estimates the cost and checks which models really ran: the main session must have run the execute model only, and `ar-verifier`, when requested, the verify model only. Any difference makes the run `overridden`, with the reason printed. Other subagents the session started on its own are listed.
+5. Asks one question with one key, records the outcome with `feedback advisory-record --followed` or `--overridden` (with `--used-model`, the first model that ran instead: the store requires one), appends a line to `runs.jsonl` and prints the decisions recorded per policy.
+
+## Why one session and not a planner subagent
+
+The first version defined an Opus `ar-planner` subagent and executed on a cheaper model. Measurements published since then point the other way:
+
+- Anthropic's Applied AI team found a single agent with skills frequently beat an orchestrator with subagents on quality, cost and latency; subagents earn their place for context bloat, parallel disposable work or conflicting instructions (https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop, 2026-10-22).
+- `jev-router`'s benchmark (https://github.com/dominicrico/jev-router/blob/main/benchmarks/README.md, read 2026-11-14) found always-Sonnet matching always-Opus on four hidden-test tasks (38/40 each) for 62% less, switching models inside a long session costing 42% more than staying on Opus, and an uncapped effort costing up to 123% more.
+- `model-routing`'s evals (https://github.com/AqueGen/model-routing/blob/main/evals/README.md, read 2026-11-14) show why delegation is expensive: a fresh subagent pays cache writes for everything it reads, while the main session pays cache reads, 12.5 times cheaper.
+- Anthropic's migration kit keeps a subagent for "independent verification" among its good reasons (https://github.com/anthropics/single-agent-loop-kit, read 2026-11-06).
+
+So the arm decides the main session model and effort, chosen once at launch, and an independent verifier is added only where the risk justifies its price.
 
 ## One-time setup
 
@@ -25,7 +37,7 @@ Install the binary from the branch that holds the catalogs you want:
 cargo install --git https://github.com/FlorianBruniaux/agent-router --branch <branch> --locked agent-router-cli
 ```
 
-Create the private home and copy the files from a checkout of the repository (the home and its `runs` and `store` folders must not be writable by group or others; `ar` creates them with mode 0700):
+Create the private home and copy the files from a checkout of the repository (the home and its `runs` and `store` folders must not be writable by group or others; `aradv` creates them with mode 0700):
 
 ```sh
 mkdir -m 700 -p ~/agent-router-advice
@@ -53,18 +65,18 @@ Write `~/agent-router-advice/claude-host.json` with the models and efforts your 
 | --- | --- |
 | `claude-core-v2.json`, `codex-core-v3.json` | Catalogs (you copy them) |
 | `claude-host.json` | Declared Claude host (you write it) |
-| `observation.json` | Codex snapshot, regenerated by `ar` when missing or older than 20 hours |
+| `observation.json` | Codex snapshot, regenerated by `aradv` when missing or older than 20 hours |
 | `store/` | Feedback store, created on the first recorded run |
 | `consent-preferences.json` | Written on the first recorded run if the store has no consent |
 | `runs/<timestamp>/` | `compare.json` and one folder per policy for each run |
 | `runs.jsonl` | One line per recorded run |
 
-`$AR_HOME` is the `AR_HOME` environment variable, else `~/agent-router-advice`. `AR_BIN` names the `agent-router` binary if it is not on `PATH`. The Codex snapshot needs `~/.codex/models_cache.json`; `ar` passes its `client_version` as `--observed-version`, writes the new snapshot to a temporary file and moves it only if `inspect` succeeded. The snapshot timestamp is the cache's `fetched_at`, so a cache that Codex has not refreshed for 24 hours makes `advise` refuse with `snapshot.stale`; open Codex once and run again.
+`$AR_HOME` is the `AR_HOME` environment variable, else `~/agent-router-advice`. `AR_BIN` names the `agent-router` binary if it is not on `PATH`. The Codex snapshot needs `~/.codex/models_cache.json`; `aradv` passes its `client_version` as `--observed-version`, writes the new snapshot to a temporary file and moves it only if `inspect` succeeded. The snapshot timestamp is the cache's `fetched_at`, so a cache that Codex has not refreshed for 24 hours makes `advise` refuse with `snapshot.stale`; open Codex once and run again.
 
-A zsh alias, with the script and `claude-pricing.json` kept together:
+A shell function in `~/.zshrc`, with the script and `claude-pricing.json` kept together:
 
 ```sh
-alias ar='python3 ~/agent-router/integrations/daily/ar.py'
+aradv() { python3 ~/agent-router/integrations/daily/ar.py "$@"; }
 ```
 
 The first recorded run finds no collection consent and enables it (`collection_enabled` true, `learning_enabled` false, 90 days) with a notice. Remove it later with `feedback purge`.
@@ -72,19 +84,19 @@ The first recorded run finds no collection consent and enables it (`collection_e
 ## Daily use
 
 ```sh
-ar claude --text 'Add a --dry-run flag to scripts/backup.sh' --kind implement --risk medium --scope scripts
-ar codex  --text 'Review the migration plan' --kind review --risk high --scope docs --policy stable-v1
-ar claude --text '...' --kind implement --risk low --scope src --dry-run -- --permission-mode plan
+aradv claude --text 'Add a --dry-run flag to scripts/backup.sh' --kind implement --risk medium --scope scripts
+aradv codex  --text 'Review the migration plan' --kind review --risk high --scope docs --policy stable-v1
+aradv claude --text 'Fix the flaky retry test' --kind implement --risk low --scope src --dry-run -- --permission-mode plan
 ```
 
-`--text`, `--kind`, `--risk` and `--scope` are required. `--scope` has no default: `agent-router` refuses `.` and `./` with `workflow.invalid` (checked 2026-11-03 with `--scope .`, `./`, `*` and `**`), and a scope is a fact the product never defaults. Other options: `--budget MICROUSD:MS:TOKENS` (default `0:1800000:400000`), `--skill ID` (repeatable), `--policy stable-v1|stable-v2`, `--dry-run`. Arguments after `--` go to the host before the task text.
+`--text`, `--kind`, `--risk` and `--scope` are required. `--scope` has no default: `agent-router` refuses `.` and `./` with `workflow.invalid` (checked 2026-11-03 with `--scope .`, `./`, `*` and `**`), and a scope is a fact the product never defaults. Other options: `--budget MICROUSD:MS:TOKENS` (default `0:1800000:400000`), `--skill ID` (repeatable), `--policy stable-v1|stable-v2`, `--effort-cap LEVEL` (default `high`), `--verify` or `--no-verify` (default: verifier only for `high` and `critical`), `--dry-run`. Arguments after `--` go to the host before the task text.
 
 What the host receives:
 
-- Claude: `claude --model <execute model> --effort <execute effort> --session-id <uuid4> --agents <json> --append-system-prompt <text> <task>`. The two subagents `ar-planner` (plan model) and `ar-verifier` (verify model) are defined by `--agents`; the appended prompt tells the session to plan with `ar-planner`, execute itself, verify with `ar-verifier` and lists the recommended skills per stage.
-- Codex: `codex -m <execute model> -c model_reasoning_effort=<effort> <task>`. Plan and verify stages are printed as instructions only.
+- Claude: `claude --model <execute model> --effort <capped execute effort> --session-id <uuid4> [--agents <json>] --append-system-prompt <text> <task>`. The appended prompt tells the session to plan and do the work itself and lists the recommended skills. With a verifier, `--agents` defines `ar-verifier` (verify model, capped verify effort) and the prompt asks the session to call it once before finishing, without passing a model or an effort.
+- Codex: `codex -m <execute model> -c model_reasoning_effort=<capped effort> <task>`. No verifier.
 
-When the host exits, `ar` asks `[a]ccepted as is / [r]ework needed / [x] abandoned / [s]kip`. Skip records nothing, neither in the store nor in `runs.jsonl`. `ar` exits with the host's exit code.
+When the host exits, `aradv` prints `Advice: followed`, `Advice: overridden (<reason>)` or `Advice: UNKNOWN (<reason>), recorded as followed`, then asks `[a]ccepted as is / [r]ework needed / [x] abandoned / [s]kip`. Answer about the work itself: whether the advice was followed is decided from the transcripts, not by you. Skip records nothing, neither in the store nor in `runs.jsonl`. `aradv` exits with the host's exit code.
 
 ## Read the result after a few weeks
 
@@ -92,7 +104,7 @@ When the host exits, `ar` asks `[a]ccepted as is / [r]ework needed / [x] abandon
 agent-router feedback --store ~/agent-router-advice/store --json advisory-report
 ```
 
-Read `groups` (one entry per `policy_version` and `risk`), `paired_trials` and `interpretation_notes`. Rates stay null below 5 decisions per group (`minimum_sample`). `runs.jsonl` holds what the store does not compare: per-model tokens and the estimated cost. Total estimated cost per arm:
+Read `groups` (one entry per `policy_version` and `risk`, each split into `followed` and `overridden`), `paired_trials` and `interpretation_notes`. Rates stay null below 5 decisions per group (`minimum_sample`). `runs.jsonl` holds what the store does not compare: per-model tokens and the estimated cost. Total estimated cost per arm:
 
 ```sh
 jq -s 'map(select(.cost_microusd != null)) | group_by(.arm) | map({arm: .[0].arm, runs: length, microusd: (map(.cost_microusd) | add)})' ~/agent-router-advice/runs.jsonl
@@ -102,7 +114,7 @@ Compare cost only between arms with a similar mix of kinds and risks, and keep t
 
 ## How the cost is estimated
 
-For Claude, `ar` reads `~/.claude/projects/*/<session-id>.jsonl` and `~/.claude/projects/*/<session-id>/subagents/*.jsonl`, keeps `assistant` lines, deduplicates by `message.id` (the last line wins) and sums `input_tokens`, `output_tokens`, `cache_creation_input_tokens` and `cache_read_input_tokens` per `message.model`. Tokens recorded are those four added together. The cost uses `integrations/daily/claude-pricing.json`, list prices in microusd per million tokens copied from `docs/bench/campaign-next/pilot/pricing.json` and `pricing-cache-writes.json` (consulted 2026-09-30), rounded to a whole microusd per model.
+For Claude, `aradv` reads `~/.claude/projects/*/<session-id>.jsonl` and `~/.claude/projects/*/<session-id>/subagents/*.jsonl`, keeps `assistant` lines, deduplicates by `message.id` (the last line wins) and sums `input_tokens`, `output_tokens`, `cache_creation_input_tokens` and `cache_read_input_tokens` per `message.model`. Tokens recorded are those four added together. The cost uses `integrations/daily/claude-pricing.json`, list prices in microusd per million tokens copied from `docs/bench/campaign-next/pilot/pricing.json` and `pricing-cache-writes.json` (consulted 2026-09-30), rounded to a whole microusd per model.
 
 Cache writes are priced at the 5 minute rate. If `cache_creation` carries `ephemeral_5m_input_tokens` and `ephemeral_1h_input_tokens` that add up to `cache_creation_input_tokens`, the 1 hour part uses the 1 hour rate. Those two sub-key names were read on a real Claude Code transcript by the maintainer on 2026-11-03. A model without a price in the table (today `claude-haiku-5-5`, whose cache prices are not in the repo) makes the run cost `null`, while its tokens are still counted.
 
@@ -110,7 +122,9 @@ Cache writes are priced at the 5 minute rate. If `cache_creation` carries `ephem
 
 - The sample is self-selected: you choose the tasks, the arm is deterministic per request, and you may abandon or skip. This is a personal trial, not a controlled experiment.
 - The cost is an estimate from list prices and transcripts, not an invoice. Subscription use, batch discounts and long-context surcharges are not modelled.
-- Subagent model and effort follow the plan. In `--agents` JSON each agent accepts `model` (an alias or a full model id such as `claude-opus-5-5`, same values as `--model`) and `effort` (`low` to `max`, overriding the session effort for that subagent); `ar` sets both on `ar-planner` and `ar-verifier`. Source: the Claude Code docs, https://code.claude.com/docs/en/sub-agents.md and https://code.claude.com/docs/en/cli-reference.md, read 2026-11-03. Subagents inherit the main session's thinking configuration; there is no per-subagent thinking setting. This is not verified with a real `claude` run: check the `per_model` entries of `runs.jsonl` for models you did not expect.
+- A `model` the session passes when it calls a subagent beats the `model` of the subagent's definition. On the first real run (2026-11-04) a global instruction to always set a subagent's model made the session start `ar-planner` on Sonnet and `ar-verifier` on Haiku instead of Opus. The prompt now asks the session not to pass one, and the transcript check records the run as `overridden` if it still does. Efforts are not visible in transcripts, so an effort override goes undetected. `CLAUDE_CODE_EFFORT_LEVEL`, when set, overrides every effort `aradv` passes.
+- When no transcript is found, and for every Codex run, adherence is UNKNOWN and the run is recorded as followed; `runs.jsonl` keeps `adherence: "UNKNOWN"` so you can exclude those runs.
 - Codex cost and tokens stay UNKNOWN: its files are not read. `advisory-record` is called without them.
+- The plan stage of the advice is not used: the session plans on the execute model. On a critical task where the plan stage recommends a stronger model, pass `--policy` or launch the host yourself.
 - The qualities that drive the choice are proposed declarations ([ADR 0057](adr/0057-claude-core-v2-declared-ratings.md)), not measurements. A better cost on `stable-v2` shows the declared ratings route to cheaper models, not that the results are as good; the accepted rate is your own judgement.
 - A forced `--policy` is recorded as `forced` in `runs.jsonl`; exclude those runs from an unbiased comparison.
