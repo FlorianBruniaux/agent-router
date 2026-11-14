@@ -90,6 +90,8 @@ if os.path.basename(sys.argv[0]) == "claude" and "--session-id" in argv:
     with open(base / sid / "subagents" / "agent-1.jsonl", "w") as f:
         for row in spec["sub"]:
             f.write(json.dumps(row) + "\\n")
+    if spec.get("sub_type"):
+        (base / sid / "subagents" / "agent-1.meta.json").write_text(json.dumps({{"agentType": spec["sub_type"]}}))
 sys.exit(int(os.environ.get("FAKE_EXIT", "0")))
 """
 
@@ -145,6 +147,9 @@ class Env:
             argv += ["--", *host_args]
         return subprocess.run(argv, input=stdin, capture_output=True, text=True,
                               env=self.env(**(extra_env or {})), timeout=120)
+
+    def transcript_spec(self, main, sub, sub_type=None):
+        self.transcript.write_text(json.dumps({"main": main, "sub": sub, "sub_type": sub_type}))
 
     def store_report(self):
         out = subprocess.run([str(BIN), "feedback", "--store", str(self.ar_home / "store"), "--json", "advisory-report"],
@@ -213,26 +218,49 @@ class DailyWrapper(unittest.TestCase):
         self.assertFalse(self.t.argv_out.exists(), "dry-run must not launch the host")
         self.assertEqual(argv[0], "claude")
         self.assertEqual(argv[1], "--model")
-        self.assertTrue(argv[2].startswith("claude-"))
         self.assertEqual(argv[3], "--effort")
-        self.assertIn(argv[4], ("low", "medium", "high", "xhigh", "max"))
+        execute = self.t.plan_of(out.stdout, "execute")
+        self.assertEqual(argv[2], execute[0], "the main session runs the execute model")
+        self.assertEqual(argv[4], self.mod.cap_effort(execute[1], "high"))
         self.assertEqual(argv[5], "--session-id")
         self.assertRegex(argv[6], r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
-        agents = json.loads(argv[argv.index("--agents") + 1])
-        self.assertEqual(sorted(agents), ["ar-planner", "ar-verifier"])
-        for agent in agents.values():
-            self.assertTrue(agent["model"].startswith("claude-"))
-            self.assertIn(agent["effort"], ("low", "medium", "high", "xhigh", "max"))
-            self.assertTrue(agent["description"] and agent["prompt"])
-        plan = self.t.plan_of(out.stdout, "plan")
-        verify = self.t.plan_of(out.stdout, "verify")
-        self.assertEqual((agents["ar-planner"]["model"], agents["ar-planner"]["effort"]), plan)
-        self.assertEqual((agents["ar-verifier"]["model"], agents["ar-verifier"]["effort"]), verify)
+        # medium risk: no planner and no verifier subagent, the session plans and executes itself
+        self.assertNotIn("--agents", argv)
         prompt = argv[argv.index("--append-system-prompt") + 1]
-        self.assertIn("ar-planner", prompt)
-        self.assertIn("ar-verifier", prompt)
+        self.assertIn("Plan and do the work yourself", prompt)
+        self.assertNotIn("ar-planner", prompt)
+        self.assertNotIn("ar-verifier", prompt)
         self.assertEqual(argv[-3:-1], ["--permission-mode", "plan"])
         self.assertEqual(argv[-1], "Add a dry-run flag")
+
+    def test_verifier_is_added_for_high_risk_or_on_request_only(self):
+        cases = [(("--risk", "high"), True), (("--risk", "medium"), False),
+                 (("--risk", "medium", "--verify"), True), (("--risk", "high", "--no-verify"), False)]
+        for args, wanted in cases:
+            out = self.t.ar("claude", "--dry-run", "--policy", "stable-v1", *args)
+            self.assertEqual(out.returncode, 0, (args, out.stderr))
+            argv = last_json_line(out.stdout)
+            self.assertEqual("--agents" in argv, wanted, args)
+            if not wanted:
+                continue
+            agents = json.loads(argv[argv.index("--agents") + 1])
+            self.assertEqual(sorted(agents), ["ar-verifier"])
+            verify = self.t.plan_of(out.stdout, "verify")
+            self.assertEqual(agents["ar-verifier"]["model"], verify[0])
+            self.assertEqual(agents["ar-verifier"]["effort"], self.mod.cap_effort(verify[1], "high"))
+            prompt = argv[argv.index("--append-system-prompt") + 1]
+            self.assertIn("Do not pass a model or an effort", prompt)
+
+    def test_effort_cap_lowers_session_and_verifier_efforts(self):
+        self.assertEqual(self.mod.cap_effort("max", "high"), "high")
+        self.assertEqual(self.mod.cap_effort("xhigh", "high"), "high")
+        self.assertEqual(self.mod.cap_effort("medium", "high"), "medium")
+        self.assertEqual(self.mod.cap_effort("ultra", "max"), "max")
+        self.assertEqual(self.mod.cap_effort("strange", "low"), "strange")
+        out = self.t.ar("claude", "--dry-run", "--policy", "stable-v1", "--effort-cap", "low")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertEqual(last_json_line(out.stdout)[4], "low")
+        self.assertIn("effort cap low", out.stdout)
 
     def test_codex_dry_run_prints_the_exact_argv(self):
         self.t.write_cache(time.time())
@@ -301,6 +329,80 @@ class DailyWrapper(unittest.TestCase):
         self.assertIsNone(measured["tokens"])
         self.assertIsNone(measured["cost_microusd"])
 
+    # adherence
+    def expected(self, verifier=True):
+        return {"main": {"model": "claude-sonnet-5-5", "effort": "medium"},
+                "verifier": {"model": "claude-opus-5-5", "effort": "high"} if verifier else None}
+
+    def measured(self, main, subagents, unreadable=0):
+        return {"tokens": 1, "main_models": main, "subagents": subagents, "unreadable": unreadable}
+
+    def test_adherence_followed_when_the_models_match(self):
+        checked = self.mod.adherence(self.expected(), self.measured(
+            ["claude-sonnet-5-5"], [{"agent_type": "ar-verifier", "models": ["claude-opus-5-5"]}]))
+        self.assertEqual(checked["adherence"], "followed")
+        self.assertEqual(checked["reasons"], [])
+
+    def test_adherence_overridden_like_the_first_real_run(self):
+        # 2026-11-04: the session passed model=haiku to ar-verifier, which beats the --agents definition.
+        checked = self.mod.adherence(self.expected(), self.measured(
+            ["claude-sonnet-5-5"], [{"agent_type": "ar-verifier", "models": ["claude-haiku-5-5"]}]))
+        self.assertEqual(checked["adherence"], "overridden")
+        self.assertIn("ar-verifier ran claude-haiku-5-5 instead of claude-opus-5-5", checked["reasons"])
+        self.assertEqual(checked["used_model"], "claude-haiku-5-5")
+
+    def test_adherence_overridden_when_main_model_or_verifier_call_differs(self):
+        checked = self.mod.adherence(self.expected(), self.measured(["claude-opus-5-5"], []))
+        self.assertEqual(checked["adherence"], "overridden")
+        self.assertEqual(checked["used_model"], "claude-opus-5-5")
+        self.assertIn("ar-verifier was not called", checked["reasons"])
+        mixed = self.mod.adherence(self.expected(False), self.measured(["claude-opus-5-5", "claude-sonnet-5-5"], []))
+        self.assertEqual(mixed["adherence"], "overridden")
+        self.assertEqual(mixed["used_model"], "claude-opus-5-5")
+
+    def test_unrequested_subagents_are_reported_and_missing_transcript_is_unknown(self):
+        checked = self.mod.adherence(self.expected(False), self.measured(
+            ["claude-sonnet-5-5"], [{"agent_type": "Explore", "models": ["claude-haiku-5-5"]}]))
+        self.assertEqual(checked["adherence"], "followed")
+        self.assertEqual(checked["extra_subagents"], [{"agent_type": "Explore", "models": ["claude-haiku-5-5"]}])
+        unknown = self.mod.adherence(self.expected(), {"tokens": None, "main_models": [], "subagents": []})
+        self.assertEqual(unknown["adherence"], "UNKNOWN")
+
+    def test_unknown_facts_never_become_an_override(self):
+        empty = self.mod.adherence(self.expected(), self.measured([], []))
+        self.assertEqual(empty["adherence"], "UNKNOWN", "a session quit before any reply")
+        unreadable = self.mod.adherence(self.expected(False), self.measured(["claude-sonnet-5-5"], [], unreadable=1))
+        self.assertEqual(unreadable["adherence"], "UNKNOWN")
+        untyped = self.mod.adherence(self.expected(), self.measured(
+            ["claude-sonnet-5-5"], [{"agent_type": "UNKNOWN", "models": ["claude-opus-5-5"]}]))
+        self.assertEqual(untyped["adherence"], "UNKNOWN", "a verifier without its meta file is not 'not called'")
+        # with a typed subagent that is not the verifier, the missing verifier is a real override
+        typed = self.mod.adherence(self.expected(), self.measured(
+            ["claude-sonnet-5-5"], [{"agent_type": "Explore", "models": ["claude-haiku-5-5"]}]))
+        self.assertEqual(typed["adherence"], "overridden")
+
+    def test_synthetic_and_non_object_lines_are_ignored(self):
+        sid = "55555555-5555-4555-8555-555555555555"
+        base = self.t.home / ".claude" / "projects" / "-x"
+        base.mkdir(parents=True)
+        rows = [json.dumps(MAIN[1]), "123", "[]", json.dumps(assistant("m9", "<synthetic>", usage(0, 0)))]
+        (base / f"{sid}.jsonl").write_text("\n".join(rows) + "\n")
+        measured = self.mod.measure_claude(self.t.home, sid, json.loads(PRICING.read_text()))
+        self.assertEqual(measured["main_models"], ["claude-opus-5-5"])
+
+    def test_transcript_attributes_models_to_main_session_and_typed_subagents(self):
+        sid = "44444444-4444-4444-8444-444444444444"
+        base = self.t.home / ".claude" / "projects" / "-x"
+        (base / sid / "subagents").mkdir(parents=True)
+        (base / f"{sid}.jsonl").write_text(json.dumps(MAIN[1]) + "\n")
+        (base / sid / "subagents" / "agent-a1.jsonl").write_text(json.dumps(SUB[0]) + "\n")
+        (base / sid / "subagents" / "agent-a1.meta.json").write_text(json.dumps({"agentType": "ar-verifier", "model": "haiku"}))
+        (base / sid / "subagents" / "agent-a2.jsonl").write_text(json.dumps(SUB[1]) + "\n")
+        measured = self.mod.measure_claude(self.t.home, sid, json.loads(PRICING.read_text()))
+        self.assertEqual(measured["main_models"], ["claude-opus-5-5"])
+        self.assertEqual(measured["subagents"], [{"agent_type": "ar-verifier", "models": ["claude-opus-5-5"]},
+                                                 {"agent_type": "UNKNOWN", "models": ["claude-haiku-5-5"]}])
+
     # full runs
     def test_claude_run_records_outcome_and_prints_progress(self):
         out = self.t.ar("claude", "--policy", "stable-v2", stdin="a")
@@ -318,9 +420,12 @@ class DailyWrapper(unittest.TestCase):
         self.assertIsNone(run["cost_microusd"], "claude-haiku-5-5 has no shipped price")
         self.assertEqual(run["tokens"], 4450 + 9000 + 10)
         self.assertEqual(run["per_model"]["claude-opus-5-5"]["output"], 550)
+        self.assertEqual(run["adherence"], "overridden", "the fake main transcript mixes opus and sonnet")
+        self.assertIn("Advice: overridden", out.stdout)
         code, report = self.t.store_report()
         self.assertEqual(code, 0, report)
         self.assertEqual(report["decisions"], 1)
+        self.assertEqual(report["groups"][0]["overridden"]["sample_size"], 1)
         self.assertEqual([g["policy_version"] for g in report["groups"]], ["stable-v2"])
         self.assertIn("stable-v1: 0", out.stdout)
         self.assertIn("stable-v2: 1", out.stdout)
@@ -331,6 +436,30 @@ class DailyWrapper(unittest.TestCase):
         self.assertNotIn("collection consent", again.stdout)
         self.assertEqual([r["result"] for r in self.t.runs()], ["accepted-as-is", "accepted-after-rework"])
         self.assertIn("stable-v1: 1", again.stdout)
+
+    def test_run_matching_the_advice_is_recorded_as_followed(self):
+        dry = self.t.ar("claude", "--dry-run", "--policy", "stable-v2")
+        model = last_json_line(dry.stdout)[2]
+        self.t.transcript_spec([assistant("m1", model, usage(10, 5))], [])
+        out = self.t.ar("claude", "--policy", "stable-v2", stdin="a")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("Advice: followed", out.stdout)
+        run = self.t.runs()[0]
+        self.assertEqual(run["adherence"], "followed")
+        self.assertEqual(run["expected"]["main"]["model"], model)
+        code, report = self.t.store_report()
+        self.assertEqual(report["groups"][0]["followed"]["sample_size"], 1)
+
+    def test_high_risk_run_without_the_verifier_is_overridden(self):
+        dry = self.t.ar("claude", "--dry-run", "--policy", "stable-v1", "--risk", "high")
+        model = last_json_line(dry.stdout)[2]
+        self.t.transcript_spec([assistant("m1", model, usage(10, 5))], [])
+        out = self.t.ar("claude", "--policy", "stable-v1", "--risk", "high", stdin="r")
+        self.assertEqual(out.returncode, 0, out.stderr)
+        self.assertIn("ar-verifier was not called", out.stdout)
+        self.assertEqual(self.t.runs()[0]["adherence"], "overridden")
+        code, report = self.t.store_report()
+        self.assertEqual(report["groups"][0]["overridden"]["sample_size"], 1)
 
     def test_abandoned_key_and_host_exit_are_recorded(self):
         out = self.t.ar("claude", "--policy", "stable-v1", stdin="x", extra_env={"FAKE_EXIT": "3"})
@@ -355,6 +484,7 @@ class DailyWrapper(unittest.TestCase):
         self.assertEqual(argv[0], "-m")
         run = self.t.runs()[0]
         self.assertEqual(run["host"], "codex")
+        self.assertEqual(run["adherence"], "UNKNOWN")
         self.assertIsNone(run["tokens"])
         self.assertIsNone(run["cost_microusd"])
 
